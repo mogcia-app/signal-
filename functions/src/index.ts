@@ -4,7 +4,7 @@ import {logger} from "firebase-functions";
 // Start writing Firebase Functions
 // https://firebase.google.com/docs/functions/typescript
 
-export const helloWorld = onRequest((request, response) => {
+export const helloWorld = onRequest({cors: true}, (request, response) => {
   logger.info("Hello logs!", {structuredData: true});
   response.send("Hello from Firebase!");
 });

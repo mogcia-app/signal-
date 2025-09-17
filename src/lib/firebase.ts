@@ -8,12 +8,12 @@ import { getFunctions } from "firebase/functions";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCvX4cKWKtn_qnh3CV-d1UC4GEiVpdPB9w",
-  authDomain: "signal-v1-fc481.firebaseapp.com",
-  projectId: "signal-v1-fc481",
-  storageBucket: "signal-v1-fc481.firebasestorage.app",
-  messagingSenderId: "913459926537",
-  appId: "1:913459926537:web:3f27082cdf1e913c444ad8"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyCvX4cKWKtn_qnh3CV-d1UC4GEiVpdPB9w",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "signal-v1-fc481.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "signal-v1-fc481",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "signal-v1-fc481.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "913459926537",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:913459926537:web:3f27082cdf1e913c444ad8"
 };
 
 // Initialize Firebase
