@@ -5,7 +5,7 @@ import { callHelloWorld, callApi } from '../lib/functions';
 
 export default function Home() {
   const [helloResult, setHelloResult] = useState<string>('');
-  const [apiResult, setApiResult] = useState<any>(null);
+  const [apiResult, setApiResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const testHelloWorld = async () => {
@@ -25,7 +25,7 @@ export default function Home() {
       const result = await callApi(method, method === 'POST' ? { message: 'Hello from frontend!' } : undefined);
       setApiResult(result);
     } catch (error) {
-      setApiResult({ error: error });
+      setApiResult({ error: String(error) });
     }
     setLoading(false);
   };

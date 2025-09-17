@@ -1,5 +1,5 @@
-import { httpsCallable } from 'firebase/functions';
-import { functions } from './firebase';
+// import { httpsCallable } from 'firebase/functions';
+// import { functions } from './firebase';
 
 // Cloud Functions を呼び出すためのヘルパー関数
 
@@ -20,7 +20,7 @@ export const callHelloWorld = async () => {
 };
 
 // API 関数を呼び出す
-export const callApi = async (method: 'GET' | 'POST' = 'GET', body?: any) => {
+export const callApi = async (method: 'GET' | 'POST' = 'GET', body?: Record<string, unknown>) => {
   try {
     const baseUrl = process.env.NODE_ENV === 'development' 
       ? 'http://127.0.0.1:5001/signal-v1-fc481/us-central1'
