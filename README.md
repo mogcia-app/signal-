@@ -22,7 +22,17 @@ npm install
 cd functions && npm install
 ```
 
-### 2. 開発サーバーの起動
+### 2. 環境変数の設定（オプション）
+
+`.env.local` ファイルを作成して、以下を設定：
+
+```bash
+# Firebase Functions URL (本番環境用)
+# 開発環境では設定不要（自動的にローカルエミュレータを使用）
+NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL=https://us-central1-signal-v1-fc481.cloudfunctions.net
+```
+
+### 3. 開発サーバーの起動
 
 ```bash
 # Firebase Functions エミュレータ (ターミナル1)
@@ -32,7 +42,7 @@ cd functions && npm run serve
 npm run dev
 ```
 
-### 3. アクセス
+### 4. アクセス
 
 - フロントエンド: http://localhost:3000
 - Firebase Functions: http://127.0.0.1:5001
