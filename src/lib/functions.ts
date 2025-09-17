@@ -6,7 +6,11 @@ import { functions } from './firebase';
 // Hello World 関数を呼び出す（HTTP関数の場合は直接fetch）
 export const callHelloWorld = async () => {
   try {
-    const response = await fetch('http://127.0.0.1:5001/signal-v1-fc481/us-central1/helloWorld');
+    const baseUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://127.0.0.1:5001/signal-v1-fc481/us-central1'
+      : 'https://us-central1-signal-v1-fc481.cloudfunctions.net';
+    
+    const response = await fetch(`${baseUrl}/helloWorld`);
     const data = await response.text();
     return data;
   } catch (error) {
@@ -18,6 +22,10 @@ export const callHelloWorld = async () => {
 // API 関数を呼び出す
 export const callApi = async (method: 'GET' | 'POST' = 'GET', body?: any) => {
   try {
+    const baseUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://127.0.0.1:5001/signal-v1-fc481/us-central1'
+      : 'https://us-central1-signal-v1-fc481.cloudfunctions.net';
+    
     const options: RequestInit = {
       method,
       headers: {
@@ -29,7 +37,7 @@ export const callApi = async (method: 'GET' | 'POST' = 'GET', body?: any) => {
       options.body = JSON.stringify(body);
     }
 
-    const response = await fetch('http://127.0.0.1:5001/signal-v1-fc481/us-central1/api', options);
+    const response = await fetch(`${baseUrl}/api`, options);
     const data = await response.json();
     return data;
   } catch (error) {
