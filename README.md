@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Signal 🔥
 
-## Getting Started
+Next.js + Firebase Functions を使ったモダンなWebアプリケーション
 
-First, run the development server:
+## 🚀 機能
+
+- ✅ Next.js 15 (App Router)
+- ✅ Firebase Functions (Cloud Functions)
+- ✅ TypeScript
+- ✅ Tailwind CSS
+- ✅ Firebase エミュレータ対応
+
+## 📦 セットアップ
+
+### 1. 依存関係のインストール
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# フロントエンド
+npm install
+
+# バックエンド (Firebase Functions)
+cd functions && npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 開発サーバーの起動
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Firebase Functions エミュレータ (ターミナル1)
+cd functions && npm run serve
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Next.js 開発サーバー (ターミナル2)
+npm run dev
+```
 
-## Learn More
+### 3. アクセス
 
-To learn more about Next.js, take a look at the following resources:
+- フロントエンド: http://localhost:3000
+- Firebase Functions: http://127.0.0.1:5001
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ 技術スタック
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Backend**: Firebase Functions, Node.js
+- **Development**: Firebase Emulators
 
-## Deploy on Vercel
+## 📁 プロジェクト構造
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+signal/
+├── src/
+│   ├── app/
+│   │   └── page.tsx          # メインページ
+│   └── lib/
+│       ├── firebase.ts       # Firebase設定
+│       └── functions.ts      # Functions呼び出し
+├── functions/
+│   ├── src/
+│   │   └── index.ts          # Cloud Functions
+│   ├── package.json
+│   └── tsconfig.json
+├── firebase.json             # Firebase設定
+├── .firebaserc              # プロジェクト設定
+└── package.json
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔧 開発
+
+Firebase Functions の関数を追加・編集する場合は `functions/src/index.ts` を編集してください。
+
+## 🚀 デプロイ
+
+```bash
+# Functions のデプロイ
+cd functions && npm run deploy
+
+# Next.js のビルド
+npm run build
+```
