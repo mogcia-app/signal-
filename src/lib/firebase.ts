@@ -28,8 +28,10 @@ export const functions = getFunctions(app);
 if (process.env.NODE_ENV === 'development') {
   // Connect to Functions emulator
   import('firebase/functions').then(({ connectFunctionsEmulator }) => {
-    if (!functions._delegate._region) {
+    try {
       connectFunctionsEmulator(functions, 'localhost', 5001);
+    } catch (error) {
+      console.log('Functions emulator already connected or not available');
     }
   });
 }
