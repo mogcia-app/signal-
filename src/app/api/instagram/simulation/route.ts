@@ -124,50 +124,191 @@ function calculatePostFrequency(strategyValues: string[], postCategories: string
   return { reel, feed, story };
 }
 
-// ワークロードを計算
+// ワークロードを計算（拡張版）
 function calculateWorkload(monthlyPostCount: number) {
+  const workloadMessages = {
+    light: [
+      '軽い負荷で継続しやすい',
+      '余裕を持って取り組める投稿頻度',
+      '無理なく続けられるスケジュール',
+      '初心者にもおすすめの投稿ペース'
+    ],
+    moderate: [
+      '適度な負荷で継続可能',
+      'バランスの取れた投稿頻度',
+      '効率的な運用が可能',
+      '安定した成長を期待できるペース'
+    ],
+    high: [
+      'やや負荷が高いが達成可能',
+      '集中力が必要だが効果的な投稿頻度',
+      '計画的な運用で目標達成可能',
+      '積極的なアプローチで成果を期待'
+    ],
+    veryHigh: [
+      '高い負荷、計画的な運用が必要',
+      'チーム体制での運用を推奨',
+      '効率化ツールの活用が必須',
+      '戦略的な運用で大きな成果を期待'
+    ]
+  };
+
   if (monthlyPostCount <= 10) {
-    return '軽い負荷で継続しやすい';
+    return getRandomItem(workloadMessages.light);
   } else if (monthlyPostCount <= 20) {
-    return '適度な負荷で継続可能';
+    return getRandomItem(workloadMessages.moderate);
   } else if (monthlyPostCount <= 30) {
-    return 'やや負荷が高いが達成可能';
+    return getRandomItem(workloadMessages.high);
   } else {
-    return '高い負荷、計画的な運用が必要';
+    return getRandomItem(workloadMessages.veryHigh);
   }
 }
 
-// メインアドバイスを生成
+// メインアドバイスを生成（拡張版）
 function generateMainAdvice(strategyValues: string[], goalCategory: string, followerGain: number) {
-  const strategies = strategyValues.join('、');
-  const category = goalCategory === 'follower' ? 'フォロワー獲得' : 'エンゲージメント向上';
-  
-  return `${category}を重視した戦略として、${strategies}を推奨します。週${Math.ceil(followerGain / 1000) + 1}回のリール投稿と週${Math.ceil(followerGain / 800) + 2}回のフィード投稿で目標達成が可能です。`;
+  const adviceTemplates = {
+    reel_focused: [
+      `エンゲージメント向上を重視した戦略として、リール中心の運用を推奨します。週2回のリール投稿と週3回のフィード投稿で目標達成が可能です。`,
+      `リール動画の力を活用しましょう！トレンドを捉えたリール投稿で新規フォロワーを効率的に獲得できます。`,
+      `リール中心戦略で、アルゴリズムに好まれるコンテンツを継続的に投稿し、自然なフォロワー増加を目指しましょう。`,
+      `リール投稿を軸とした戦略で、視覚的にインパクトのあるコンテンツで注目を集めましょう。`
+    ],
+    engagement: [
+      `コミュニティ構築を重視した戦略として、エンゲージメント向上に焦点を当てましょう。フォロワーとの双方向のコミュニケーションが鍵となります。`,
+      `インタラクティブなコンテンツで、フォロワーとのつながりを深めましょう。質問やアンケートを活用してエンゲージメントを高めます。`,
+      `ストーリーズを活用した親密なコミュニケーションで、フォロワーのロイヤルティを向上させましょう。`,
+      `エンゲージメント重視の戦略で、フォロワーが参加したくなるコンテンツ作りを心がけましょう。`
+    ],
+    content_quality: [
+      `高品質なコンテンツ制作に注力し、ブランド価値を高める戦略を推奨します。一貫性のある投稿で信頼性を構築しましょう。`,
+      `コンテンツの質を向上させることで、フォロワーの満足度とエンゲージメント率を同時に高められます。`,
+      `専門性のあるコンテンツで差別化を図り、ターゲット層に刺さる投稿を心がけましょう。`,
+      `質の高いコンテンツで、フォロワーの期待を超える価値を提供しましょう。`
+    ],
+    hashtag: [
+      `ハッシュタグ戦略を強化し、発見可能性を高めることで新規フォロワー獲得を加速させましょう。`,
+      `ニッチなハッシュタグを活用して、興味のあるユーザーに確実にリーチできる戦略が効果的です。`,
+      `トレンドハッシュタグとニッチハッシュタグのバランスを取って、幅広い層にアプローチしましょう。`,
+      `戦略的なハッシュタグ使用で、ターゲット層に確実にリーチしましょう。`
+    ],
+    collaboration: [
+      `コラボレーション戦略で、他アカウントとの連携により相互フォロワー獲得を目指しましょう。`,
+      `同じジャンルのアカウントとの協力で、新たなオーディエンスにリーチできます。`,
+      `インフルエンサーや業界関係者とのコラボで、信頼性と影響力を同時に向上させましょう。`,
+      `コラボレーションを活用して、新しいコミュニティとのつながりを築きましょう。`
+    ]
+  };
+
+  const defaultAdvices = [
+    `目標達成に向けて、${goalCategory === 'follower' ? 'フォロワー獲得' : 'エンゲージメント向上'}を意識したコンテンツ戦略が重要です。一貫性のある投稿で信頼性を構築しましょう。`,
+    `${goalCategory === 'follower' ? 'フォロワー獲得' : 'エンゲージメント向上'}に特化した戦略で、ターゲット層に刺さるコンテンツを継続的に投稿することが成功の鍵です。`,
+    `フォロワー増加には、エンゲージメントを高めるコンテンツと定期的な投稿が不可欠です。`,
+    `目標達成のためには、戦略的な投稿スケジュールと質の高いコンテンツの両立が重要です。`,
+    `${goalCategory === 'follower' ? 'フォロワー獲得' : 'エンゲージメント向上'}を軸とした一貫性のあるブランディングで、フォロワーのロイヤルティ向上を目指しましょう。`
+  ];
+
+  // 戦略に応じたアドバイス選択
+  for (const strategy of strategyValues) {
+    if (strategy.includes('リール') && adviceTemplates.reel_focused) {
+      return getRandomItem(adviceTemplates.reel_focused);
+    }
+    if (strategy.includes('エンゲージメント') && adviceTemplates.engagement) {
+      return getRandomItem(adviceTemplates.engagement);
+    }
+    if (strategy.includes('コンテンツ') && adviceTemplates.content_quality) {
+      return getRandomItem(adviceTemplates.content_quality);
+    }
+    if (strategy.includes('ハッシュタグ') && adviceTemplates.hashtag) {
+      return getRandomItem(adviceTemplates.hashtag);
+    }
+    if (strategy.includes('コラボ') && adviceTemplates.collaboration) {
+      return getRandomItem(adviceTemplates.collaboration);
+    }
+  }
+
+  // 大規模な目標に対する特別なアドバイス
+  if (followerGain > 5000) {
+    const largeScaleAdvices = [
+      '大規模なフォロワー増加を目指すため、広告運用も視野に入れると良いでしょう。',
+      '目標達成には、コンテンツマーケティングと広告戦略の組み合わせが効果的です。',
+      '大規模な成長を実現するには、チーム体制の構築と効率的な運用プロセスの確立が重要です。'
+    ];
+    return getRandomItem(defaultAdvices) + ' ' + getRandomItem(largeScaleAdvices);
+  }
+
+  return getRandomItem(defaultAdvices);
 }
 
-// 改善提案を生成
+// ランダムアイテム選択ヘルパー関数
+function getRandomItem<T>(array: T[]): T {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+// 改善提案を生成（拡張版）
 function generateImprovementTips(strategyValues: string[], hashtagStrategy: string, postCategories: string[]) {
+  const allTips = {
+    hashtag: [
+      'ハッシュタグを15-20個使用してリーチを拡大',
+      'トレンドハッシュタグを3-5個含めて注目度をアップ',
+      'ニッチなハッシュタグでターゲット層にリーチ',
+      'ハッシュタグの組み合わせで発見可能性を向上'
+    ],
+    story: [
+      'ストーリーで日常的な交流を促進',
+      'ストーリーズの質問機能でエンゲージメント向上',
+      'ストーリーでリアルタイムな情報発信',
+      'ストーリーズハイライトでコンテンツを整理'
+    ],
+    timing: [
+      '投稿時間を午後2-4時、夜8-10時に集中',
+      'ターゲット層のアクティブ時間に投稿',
+      '週末の投稿でリーチを最大化',
+      '定期的な投稿スケジュールでフォロワーに習慣化'
+    ],
+    content: [
+      'ノウハウ系投稿で専門性をアピール',
+      '実績紹介で信頼性を向上',
+      'Before/After形式で効果を視覚化',
+      'ユーザー体験談で共感を呼ぶコンテンツ',
+      'トレンドを取り入れた話題性のある投稿',
+      '教育的コンテンツでフォロワーに価値を提供'
+    ],
+    engagement: [
+      '質問やアンケートでフォロワーとの対話促進',
+      'コメント返信でコミュニティ形成',
+      'フォロワーの投稿にいいねやコメント',
+      'ライブ配信でリアルタイム交流'
+    ]
+  };
+
   const tips = [];
 
+  // 戦略に応じた提案
   if (strategyValues.includes('ハッシュタグ見直し')) {
-    tips.push('ハッシュタグを15-20個使用してリーチを拡大');
+    tips.push(getRandomItem(allTips.hashtag));
   }
   
   if (strategyValues.includes('ストーリーで交流を深める')) {
-    tips.push('ストーリーで日常的な交流を促進');
+    tips.push(getRandomItem(allTips.story));
   }
+
+  // 基本的な提案（必ず含める）
+  tips.push(getRandomItem(allTips.timing));
   
-  tips.push('投稿時間を午後2-4時、夜8-10時に集中');
-  
+  // コンテンツカテゴリに応じた提案
   if (postCategories.includes('ノウハウ')) {
-    tips.push('ノウハウ系投稿で専門性をアピール');
+    tips.push(getRandomItem(allTips.content.filter(tip => tip.includes('ノウハウ'))));
   }
   
   if (postCategories.includes('実績紹介')) {
-    tips.push('実績紹介で信頼性を向上');
+    tips.push(getRandomItem(allTips.content.filter(tip => tip.includes('実績'))));
   }
 
-  return tips;
+  // エンゲージメント向上の提案
+  tips.push(getRandomItem(allTips.engagement));
+
+  // 重複を除去して返す
+  return [...new Set(tips)];
 }
 
 // 目標達成日を計算
