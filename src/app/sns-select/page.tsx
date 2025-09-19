@@ -60,7 +60,14 @@ function SNSSelectContent() {
   }
 
   const contractSNS = userProfile.contractSNS || [];
-  const availableSNS = contractSNS.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO]);
+  const snsAISettings = userProfile.snsAISettings || {};
+  const snsWithSettings = Object.keys(snsAISettings);
+  
+  // 契約SNSまたはAI設定があるSNSを利用可能とする
+  const availableSNS = [...new Set([
+    ...contractSNS.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO]),
+    ...snsWithSettings.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO])
+  ])];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,6 +86,12 @@ function SNSSelectContent() {
                 利用可能
               </span>
               <span className="text-gray-600">{availableSNS.length}個</span>
+            </div>
+            <div className="flex items-center">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
+                AI設定済み
+              </span>
+              <span className="text-gray-600">{snsWithSettings.length}個</span>
             </div>
             <div className="flex items-center">
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2">
