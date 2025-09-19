@@ -194,42 +194,9 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
       </div>
 
       {/* メインコンテンツエリア */}
-      <div className="flex-1 flex flex-col">
-        {/* ヘッダー */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className={`w-8 h-8 rounded-full ${currentSNSInfo.color} flex items-center justify-center text-white`}>
-                  {currentSNSInfo.icon}
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900">
-                    {currentSNSInfo.name} Dashboard
-                  </h1>
-                  <p className="text-sm text-gray-600">{currentSNSInfo.description}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => router.push('/sns-select')}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
-                >
-                  SNS選択
-                </button>
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
-                >
-                  全体ダッシュボード
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
+      <div className="flex-1">
         {/* メインコンテンツ */}
-        <main className="flex-1 p-6">
+        <main className="p-6">
           {children}
         </main>
       </div>
