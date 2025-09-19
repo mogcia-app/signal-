@@ -75,7 +75,9 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
         {/* ロゴ・ブランディング */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center">
-            <div className="text-2xl font-bold text-gray-900">🔥 Signal</div>
+            <div className="text-2xl font-bold text-gray-900">
+              Signal<span style={{ color: '#FF8A15' }}>.</span>
+            </div>
           </div>
           <p className="text-sm text-gray-600 mt-1">SNS管理プラットフォーム</p>
         </div>
