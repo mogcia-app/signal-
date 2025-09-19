@@ -195,6 +195,21 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
 
       {/* メインコンテンツエリア */}
       <div className="flex-1">
+        {/* タイトルセクション */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center space-x-3">
+            <div className={`w-8 h-8 rounded-full ${currentSNSInfo.color} flex items-center justify-center text-white`}>
+              {currentSNSInfo.icon}
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {currentSNSInfo.name} Dashboard
+              </h1>
+              <p className="text-sm text-gray-600">{currentSNSInfo.description}</p>
+            </div>
+          </div>
+        </div>
+        
         {/* メインコンテンツ */}
         <main className="p-6">
           {children}
