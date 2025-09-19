@@ -9,7 +9,7 @@ export interface User {
   usageType: 'team' | 'solo'; // 利用形態
   contractType: 'annual' | 'trial'; // 契約タイプ
   contractSNS: string[]; // 契約SNS配列
-  snsAISettings: Record<string, any>; // SNS AI設定
+  snsAISettings: Record<string, unknown>; // SNS AI設定
   businessInfo: {
     industry: string;
     companySize: string;
@@ -22,7 +22,7 @@ export interface User {
   status: 'active' | 'inactive' | 'suspended';
   contractStartDate: string; // 契約開始日
   contractEndDate: string; // 契約終了日
-  billingInfo?: Record<string, any>; // 課金情報
+  billingInfo?: Record<string, unknown>; // 課金情報
   notes?: string; // 管理者メモ
   createdAt: string;
   updatedAt: string;
