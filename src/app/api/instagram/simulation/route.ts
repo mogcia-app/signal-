@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SimulationRequest, SimulationResult } from '../../../instagram/plan/types/plan';
-import { calculateGrowthCurve, calculateAdvancedFeasibility, analyzeCompetitors } from './enhanced-logic';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +26,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// シミュレーション処理ロジック（拡張版）
+// シミュレーション処理ロジック（簡素化版）
 async function runSimulation(requestData: SimulationRequest): Promise<SimulationResult> {
   const {
     followerGain,
@@ -36,44 +35,16 @@ async function runSimulation(requestData: SimulationRequest): Promise<Simulation
     goalCategory,
     strategyValues,
     postCategories,
-    hashtagStrategy,
-    // 拡張要素（デフォルト値付き）
-    accountAge = 6,
-    currentEngagementRate = 0.03,
-    avgPostsPerWeek = 3,
-    contentQuality = 'medium',
-    niche = 'ライフスタイル',
-    budget = 0,
-    teamSize = 1
+    hashtagStrategy
   } = requestData;
 
   // 期間に基づく計算
   const periodMultiplier = getPeriodMultiplier(planPeriod);
-  
-  // 成長曲線を計算（S字カーブ）
-  const growthCurveData = calculateGrowthCurve(followerGain, currentFollowers, planPeriod);
   const monthlyTarget = Math.ceil(followerGain / periodMultiplier);
   const weeklyTarget = Math.ceil(followerGain / (periodMultiplier * 4));
 
-  // 高度な実現可能性の判定
-  const enhancedRequest = {
-    followerGain,
-    currentFollowers,
-    planPeriod,
-    goalCategory,
-    strategyValues,
-    postCategories,
-    hashtagStrategy,
-    accountAge,
-    currentEngagementRate,
-    avgPostsPerWeek,
-    contentQuality,
-    niche,
-    budget,
-    teamSize
-  };
-  
-  const feasibility = calculateAdvancedFeasibility(enhancedRequest);
+  // 実現可能性の判定
+  const feasibility = calculateFeasibility(followerGain, currentFollowers, planPeriod);
   
   // 投稿頻度の計算
   const postsPerWeek = calculatePostFrequency(strategyValues, postCategories, followerGain);
@@ -89,12 +60,6 @@ async function runSimulation(requestData: SimulationRequest): Promise<Simulation
   // 目標達成日を計算
   const targetDate = calculateTargetDate(planPeriod);
 
-  // 競合分析
-  const competitorAnalysis = analyzeCompetitors(niche, currentFollowers);
-
-  // 推奨予算計算
-  const recommendedBudget = calculateRecommendedBudget(followerGain, currentFollowers, planPeriod);
-
   return {
     targetDate,
     monthlyTarget,
@@ -105,18 +70,7 @@ async function runSimulation(requestData: SimulationRequest): Promise<Simulation
     monthlyPostCount,
     workloadMessage,
     mainAdvice,
-    improvementTips,
-    // 拡張要素
-    growthCurve: {
-      month1: growthCurveData.monthly[0] || monthlyTarget,
-      month2: growthCurveData.monthly[1] || monthlyTarget,
-      month3: growthCurveData.monthly[2] || monthlyTarget,
-      total: followerGain
-    },
-    riskFactors: feasibility.riskFactors,
-    successProbability: Math.round(feasibility.successProbability),
-    recommendedBudget,
-    competitorAnalysis
+    improvementTips
   };
 }
 
@@ -131,24 +85,24 @@ function getPeriodMultiplier(planPeriod: string): number {
   }
 }
 
-// 実現可能性を計算（レガシー関数 - 使用されていないが保持）
-// function calculateFeasibility(followerGain: number, currentFollowers: number, planPeriod: string) {
-//   const periodMultiplier = getPeriodMultiplier(planPeriod);
-//   const monthlyGain = followerGain / periodMultiplier;
-//   const growthRate = monthlyGain / Math.max(currentFollowers, 1);
+// 実現可能性を計算
+function calculateFeasibility(followerGain: number, currentFollowers: number, planPeriod: string) {
+  const periodMultiplier = getPeriodMultiplier(planPeriod);
+  const monthlyGain = followerGain / periodMultiplier;
+  const growthRate = monthlyGain / Math.max(currentFollowers, 1);
 
-//   if (growthRate <= 0.05) {
-//     return { level: 'very_realistic', badge: '非常に現実的' };
-//   } else if (growthRate <= 0.1) {
-//     return { level: 'realistic', badge: '現実的' };
-//   } else if (growthRate <= 0.2) {
-//     return { level: 'moderate', badge: '挑戦的' };
-//   } else if (growthRate <= 0.5) {
-//     return { level: 'challenging', badge: '困難' };
-//   } else {
-//     return { level: 'very_challenging', badge: '非常に困難' };
-//   }
-// }
+  if (growthRate <= 0.05) {
+    return { level: 'very_realistic', badge: '非常に現実的' };
+  } else if (growthRate <= 0.1) {
+    return { level: 'realistic', badge: '現実的' };
+  } else if (growthRate <= 0.2) {
+    return { level: 'moderate', badge: '挑戦的' };
+  } else if (growthRate <= 0.5) {
+    return { level: 'challenging', badge: '困難' };
+  } else {
+    return { level: 'very_challenging', badge: '非常に困難' };
+  }
+}
 
 // 投稿頻度を計算
 function calculatePostFrequency(strategyValues: string[], postCategories: string[], followerGain: number) {
@@ -245,27 +199,3 @@ function calculateTargetDate(planPeriod: string): string {
   });
 }
 
-// 推奨予算を計算
-function calculateRecommendedBudget(followerGain: number, currentFollowers: number, planPeriod: string): number {
-  const periodMultiplier = getPeriodMultiplier(planPeriod);
-  const monthlyGain = followerGain / periodMultiplier;
-  const growthRate = monthlyGain / Math.max(currentFollowers, 1);
-  
-  // 成長率に基づく予算計算
-  let baseBudget = 0;
-  
-  if (growthRate <= 0.05) {
-    baseBudget = 3000; // 現実的な成長
-  } else if (growthRate <= 0.1) {
-    baseBudget = 8000; // やや挑戦的
-  } else if (growthRate <= 0.2) {
-    baseBudget = 15000; // 挑戦的
-  } else {
-    baseBudget = 30000; // 非常に挑戦的
-  }
-  
-  // 期間による調整
-  const adjustedBudget = baseBudget * Math.sqrt(periodMultiplier);
-  
-  return Math.round(adjustedBudget);
-}

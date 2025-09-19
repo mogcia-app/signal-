@@ -41,21 +41,6 @@ export interface SimulationResult {
   workloadMessage: string;
   mainAdvice: string;
   improvementTips: string[];
-  // 拡張要素
-  growthCurve?: {
-    month1: number;
-    month2: number;
-    month3: number;
-    total: number;
-  };
-  riskFactors?: string[];
-  successProbability?: number; // 成功確率（0-100%）
-  recommendedBudget?: number;
-  competitorAnalysis?: {
-    avgGrowthRate: number;
-    marketPosition: string;
-    opportunities: string[];
-  };
 }
 
 // デバッグ情報の型定義
