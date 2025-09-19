@@ -18,6 +18,12 @@ const SNS_INFO = {
     color: 'bg-gradient-to-r from-blue-400 to-blue-600',
     description: '短文投稿・リアルタイム情報共有'
   },
+  x: {
+    name: 'X (Twitter)',
+    icon: '🐦',
+    color: 'bg-gradient-to-r from-blue-400 to-blue-600',
+    description: '短文投稿・リアルタイム情報共有'
+  },
   youtube: {
     name: 'YouTube',
     icon: '📺',
@@ -63,6 +69,17 @@ function SNSSelectContent() {
   const snsAISettings = userProfile.snsAISettings || {};
   const snsWithSettings = Object.keys(snsAISettings);
   
+  // デバッグ情報をコンソールに出力
+  if (process.env.NODE_ENV === 'development') {
+    console.group('🔍 SNS Selection Debug Info');
+    console.log('📋 contractSNS:', contractSNS);
+    console.log('⚙️ snsAISettings keys:', snsWithSettings);
+    console.log('📱 SNS_INFO keys:', Object.keys(SNS_INFO));
+    console.log('✅ contractSNS filtered:', contractSNS.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO]));
+    console.log('✅ snsWithSettings filtered:', snsWithSettings.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO]));
+    console.groupEnd();
+  }
+  
   // 契約SNSまたはAI設定があるSNSを利用可能とする
   const availableSNS = [...new Set([
     ...contractSNS.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO]),
@@ -97,7 +114,7 @@ function SNSSelectContent() {
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2">
                 アップデート必要
               </span>
-              <span className="text-gray-600">{4 - availableSNS.length}個</span>
+              <span className="text-gray-600">{Object.keys(SNS_INFO).length - availableSNS.length}個</span>
             </div>
             <div className="text-gray-500">
               利用形態: {userProfile.usageType === 'team' ? 'チーム利用' : '個人利用'}
