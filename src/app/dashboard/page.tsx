@@ -3,10 +3,29 @@
 import { useAuth } from '../../contexts/auth-context';
 import { AuthGuard } from '../../components/auth-guard';
 import { useUserProfile } from '../../hooks/useUserProfile';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 function DashboardContent() {
   const { user, signOut } = useAuth();
   const { userProfile, loading: profileLoading, error: profileError } = useUserProfile();
+  const router = useRouter();
+
+  // SNS契約数に応じたルーティング
+  useEffect(() => {
+    if (userProfile && !profileLoading) {
+      const contractSNS = userProfile.contractSNS || [];
+      
+      if (contractSNS.length === 1) {
+        // 契約SNSが1つの場合、直接そのSNSのダッシュボードに遷移
+        router.push(`/dashboard/${contractSNS[0]}`);
+      } else if (contractSNS.length > 1) {
+        // 契約SNSが複数の場合、SNS選択ページに遷移
+        router.push('/sns-select');
+      }
+      // 契約SNSが0個の場合は現在のページ（全体ダッシュボード）を表示
+    }
+  }, [userProfile, profileLoading, router]);
 
   const handleSignOut = async () => {
     try {
