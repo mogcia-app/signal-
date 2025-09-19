@@ -6,10 +6,12 @@ import SNSLayout from '../../../components/sns-layout'
 import { usePlanForm } from './hooks/usePlanForm'
 import { useSimulation } from './hooks/useSimulation'
 import { useAIDiagnosis } from './hooks/useAIDiagnosis'
+import { useABTest } from './hooks/useABTest'
 import { PlanForm } from './components/PlanForm'
 import { CurrentGoalPanel } from './components/CurrentGoalPanel'
 import { SimulationPanel } from './components/SimulationPanel'
 import { AIDiagnosisPanel } from './components/AIDiagnosisPanel'
+import { ABTestPanel } from './components/ABTestPanel'
 import { SimulationRequest } from './types/plan'
 
 export default function InstagramPlanPage() {
@@ -39,6 +41,13 @@ export default function InstagramPlanPage() {
     handleStartAiDiagnosis, 
     handleSaveAdviceAndContinue 
   } = useAIDiagnosis()
+
+  const { 
+    abTestResult, 
+    isRunningABTest, 
+    abTestError, 
+    runABTest 
+  } = useABTest()
 
   // シミュレーション実行ハンドラー
   const handleRunSimulation = async () => {
@@ -71,6 +80,35 @@ export default function InstagramPlanPage() {
   const handleDeleteCurrentPlan = () => {
     console.log('現在の計画を削除')
     // TODO: 削除確認と実行
+  }
+
+  // A/Bテスト実行ハンドラー
+  const handleRunABTest = async () => {
+    if (!user) {
+      console.error('ユーザーがログインしていません')
+      return
+    }
+
+    const requestData: SimulationRequest = {
+      followerGain: parseInt(formData.followerGain, 10),
+      currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
+      planPeriod: formData.planPeriod,
+      goalCategory: formData.goalCategory,
+      strategyValues: selectedStrategies,
+      postCategories: selectedCategories,
+      hashtagStrategy: formData.tone,
+      referenceAccounts: formData.brandConcept,
+      // 拡張要素（デフォルト値）
+      accountAge: 6,
+      currentEngagementRate: 0.03,
+      avgPostsPerWeek: 3,
+      contentQuality: 'medium' as const,
+      niche: 'ライフスタイル',
+      budget: 0,
+      teamSize: 1
+    }
+
+    await runABTest(requestData)
   }
 
   return (
@@ -119,6 +157,13 @@ export default function InstagramPlanPage() {
               onStartDiagnosis={() => handleStartAiDiagnosis(formData)}
               onSaveAdvice={handleSaveAdviceAndContinue}
               formData={formData}
+            />
+
+            <ABTestPanel
+              result={abTestResult}
+              isRunning={isRunningABTest}
+              error={abTestError}
+              onRunTest={handleRunABTest}
             />
           </div>
         </main>

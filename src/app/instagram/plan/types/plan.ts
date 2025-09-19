@@ -107,3 +107,41 @@ export interface AIDiagnosisResult {
   reelRecommendations: string[];
   storyRecommendations: string[];
 }
+
+// A/Bテスト関連の型定義
+export interface ABTestScenario {
+  id: string;
+  name: string;
+  description: string;
+  strategy: {
+    postsPerWeek: { reel: number; feed: number; story: number };
+    contentMix: Record<string, number>; // コンテンツタイプの比率
+    postingSchedule: string[]; // 投稿時間
+    hashtagStrategy: string;
+    engagementStrategy: string;
+  };
+  expectedOutcome: {
+    followerGrowth: number;
+    engagementRate: number;
+    reach: number;
+  };
+  riskLevel: 'low' | 'medium' | 'high';
+  resourceRequirement: {
+    timePerWeek: number; // 週あたりの時間
+    budget: number; // 月あたりの予算
+    teamSize: number;
+  };
+  score?: number; // シナリオスコア
+}
+
+export interface ABTestComparison {
+  scenarios: ABTestScenario[];
+  winner: string;
+  confidence: number;
+  recommendation: string;
+  timeline: {
+    phase: string;
+    duration: string;
+    expectedResult: string;
+  }[];
+}
