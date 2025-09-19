@@ -1,13 +1,11 @@
 import { useUserProfile } from './useUserProfile';
 
-export interface SNSSettings {
-  [snsName: string]: Record<string, unknown>;
-}
+export type SNSSettings = Record<string, Record<string, unknown>>;
 
 export const useSNSSettings = () => {
   const { userProfile, loading, error } = useUserProfile();
 
-  const snsSettings: SNSSettings = userProfile?.snsAISettings || {};
+  const snsSettings: SNSSettings = (userProfile?.snsAISettings as SNSSettings) || {};
   const snsNames = Object.keys(snsSettings);
   const hasSettings = snsNames.length > 0;
 
