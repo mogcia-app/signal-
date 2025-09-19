@@ -5,35 +5,35 @@ import { useSNSSettings } from '../../../hooks/useSNSSettings';
 import { AuthGuard } from '../../../components/auth-guard';
 import SNSLayout from '../../../components/sns-layout';
 
-function InstagramDashboardContent() {
+function XDashboardContent() {
   const { userProfile, loading: profileLoading } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
 
-  const instagramSettings = getSNSSettings('instagram');
+  const xSettings = getSNSSettings('x');
 
   if (profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <SNSLayout currentSNS="instagram">
+    <SNSLayout currentSNS="x">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 左カラム - AI設定 */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Instagram AI設定</h2>
+                <h2 className="text-lg font-semibold text-gray-900">X (Twitter) AI設定</h2>
                 <p className="text-sm text-gray-600">自動投稿・ハッシュタグ・エンゲージメント設定</p>
               </div>
               <div className="p-6">
-                {Object.keys(instagramSettings).length > 0 ? (
+                {Object.keys(xSettings).length > 0 ? (
                   <div className="grid grid-cols-1 gap-6">
-                    {Object.entries(instagramSettings).map(([key, value]) => (
+                    {Object.entries(xSettings).map(([key, value]) => (
                       <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div>
                           <h3 className="font-medium text-gray-900 capitalize">
@@ -67,7 +67,7 @@ function InstagramDashboardContent() {
                       AI設定が未設定です
                     </h3>
                     <p className="text-gray-600">
-                      管理者にInstagram用のAI設定を依頼してください
+                      管理者にX用のAI設定を依頼してください
                     </p>
                   </div>
                 )}
@@ -108,17 +108,21 @@ function InstagramDashboardContent() {
                 <h3 className="text-lg font-semibold text-gray-900">クイックアクション</h3>
               </div>
               <div className="p-6 space-y-3">
-                <button className="w-full text-left px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
-                  <div className="font-medium text-purple-900">📸 投稿予約</div>
-                  <div className="text-sm text-purple-700">コンテンツの投稿を予約</div>
-                </button>
-                <button className="w-full text-left px-4 py-3 bg-pink-50 hover:bg-pink-100 rounded-lg transition-colors">
-                  <div className="font-medium text-pink-900">📊 分析レポート</div>
-                  <div className="text-sm text-pink-700">エンゲージメント分析</div>
-                </button>
                 <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-                  <div className="font-medium text-blue-900">🏷️ ハッシュタグ生成</div>
-                  <div className="text-sm text-blue-700">AI自動ハッシュタグ</div>
+                  <div className="font-medium text-blue-900">🐦 ツイート投稿</div>
+                  <div className="text-sm text-blue-700">新しいツイートを投稿</div>
+                </button>
+                <button className="w-full text-left px-4 py-3 bg-cyan-50 hover:bg-cyan-100 rounded-lg transition-colors">
+                  <div className="font-medium text-cyan-900">📊 エンゲージメント分析</div>
+                  <div className="text-sm text-cyan-700">フォロワー・いいね分析</div>
+                </button>
+                <button className="w-full text-left px-4 py-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors">
+                  <div className="font-medium text-indigo-900">🏷️ ハッシュタグ提案</div>
+                  <div className="text-sm text-indigo-700">AI自動ハッシュタグ</div>
+                </button>
+                <button className="w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
+                  <div className="font-medium text-green-900">⏰ 投稿スケジュール</div>
+                  <div className="text-sm text-green-700">最適なタイミングで投稿</div>
                 </button>
               </div>
             </div>
@@ -129,10 +133,10 @@ function InstagramDashboardContent() {
   );
 }
 
-export default function InstagramDashboard() {
+export default function XDashboard() {
   return (
     <AuthGuard>
-      <InstagramDashboardContent />
+      <XDashboardContent />
     </AuthGuard>
   );
 }
