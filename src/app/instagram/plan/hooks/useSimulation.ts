@@ -41,44 +41,46 @@ export const useSimulation = () => {
         timestamp: new Date().toLocaleTimeString()
       });
 
-      // 一時的にモックデータを使用
-      setTimeout(() => {
-        const mockResult: SimulationResult = {
-          targetDate: '2024年2月15日',
-          monthlyTarget: Math.ceil(requestData.followerGain / 1),
-          weeklyTarget: Math.ceil(requestData.followerGain / 4),
-          feasibilityLevel: 'realistic',
-          feasibilityBadge: '現実的',
-          postsPerWeek: {
-            reel: 2,
-            feed: 3,
-            story: 5
-          },
-          monthlyPostCount: 20,
-          workloadMessage: '適度な負荷で継続可能',
-          mainAdvice: 'リール中心の運用でフォロワー獲得を効率化しましょう。週2回のリール投稿と週3回のフィード投稿で目標達成が可能です。',
-          improvementTips: [
-            'ハッシュタグを15-20個使用してリーチを拡大',
-            'ストーリーで日常的な交流を促進',
-            '投稿時間を午後2-4時、夜8-10時に集中'
-          ]
-        };
+      // BFF APIを呼び出し
+      const response = await fetch('/api/instagram/simulation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
 
-        setSimulationResult(mockResult);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'シミュレーション処理中にエラーが発生しました');
+      }
 
-        setDebugInfo((prev) => prev ? ({
-          ...prev,
-          step: '完了',
-          improvementTipsCount: mockResult.improvementTips.length,
-          improvementTips: mockResult.improvementTips
-        }) : null);
+      const result: SimulationResult = await response.json();
+      
+      setSimulationResult(result);
 
-        setIsSimulating(false);
-      }, 2000);
+      setDebugInfo((prev) => prev ? ({
+        ...prev,
+        step: '完了',
+        status: response.status,
+        improvementTipsCount: result.improvementTips.length,
+        improvementTips: result.improvementTips
+      }) : null);
+
+      setIsSimulating(false);
 
     } catch (error) {
       console.error('シミュレーションエラー:', error);
-      setSimulationError('シミュレーション処理中にエラーが発生しました');
+      const errorMessage = error instanceof Error ? error.message : 'シミュレーション処理中にエラーが発生しました';
+      setSimulationError(errorMessage);
+      
+      setDebugInfo((prev) => prev ? ({
+        ...prev,
+        step: 'エラー',
+        error: errorMessage,
+        timestamp: new Date().toLocaleTimeString()
+      }) : null);
+      
       setIsSimulating(false);
     }
   };

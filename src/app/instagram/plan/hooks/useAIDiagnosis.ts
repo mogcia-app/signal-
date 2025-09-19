@@ -12,8 +12,8 @@ export const useAIDiagnosis = () => {
     setAiError('');
     
     try {
-      // 実際のAI API呼び出し
-      const response = await fetch('/api/ai/diagnosis', {
+      // BFF APIを呼び出し
+      const response = await fetch('/api/instagram/ai-diagnosis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,11 +25,11 @@ export const useAIDiagnosis = () => {
       });
 
       if (response.ok) {
-        // const result = await response.json()
+        // AI診断結果を取得（現在はモック）
         setShowAiAdvice(true);
       } else {
-        console.error('AI診断エラー:', response.statusText);
-        setAiError('AI診断でエラーが発生しました');
+        const errorData = await response.json();
+        setAiError(errorData.error || 'AI診断でエラーが発生しました');
       }
     } catch (error) {
       console.error('AI診断エラー:', error);
