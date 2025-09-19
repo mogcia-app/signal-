@@ -2,9 +2,11 @@
 
 import { useAuth } from '../../contexts/auth-context';
 import { AuthGuard } from '../../components/auth-guard';
+import { useUserProfile } from '../../hooks/useUserProfile';
 
 function DashboardContent() {
   const { user, signOut } = useAuth();
+  const { userProfile, loading: profileLoading, error: profileError } = useUserProfile();
 
   const handleSignOut = async () => {
     try {
@@ -253,6 +255,172 @@ function DashboardContent() {
                     </dd>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SNS契約情報セクション */}
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  SNS契約情報
+                </h3>
+                {profileLoading ? (
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ) : profileError ? (
+                  <div className="text-red-600">
+                    <p>エラー: {profileError}</p>
+                    <p className="text-sm mt-2">管理者にユーザー情報の登録を依頼してください。</p>
+                  </div>
+                ) : userProfile ? (
+                  <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">契約SNS数</dt>
+                      <dd className="mt-1 text-sm text-gray-900">{userProfile.snsCount}個</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">利用形態</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {userProfile.usageType === 'team' ? 'チーム利用' : '個人利用'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">契約タイプ</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {userProfile.contractType === 'annual' ? '年間契約' : 'トライアル'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">契約SNS</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {userProfile.contractSNS.length > 0 ? 
+                          userProfile.contractSNS.join(', ') : 
+                          '未設定'
+                        }
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">契約開始日</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {new Date(userProfile.contractStartDate).toLocaleDateString('ja-JP')}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">契約終了日</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {new Date(userProfile.contractEndDate).toLocaleDateString('ja-JP')}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">アカウント状態</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          userProfile.status === 'active' ? 'bg-green-100 text-green-800' :
+                          userProfile.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {userProfile.status === 'active' ? 'アクティブ' :
+                           userProfile.status === 'inactive' ? '非アクティブ' : '停止中'}
+                        </span>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">アクティブ状態</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          userProfile.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {userProfile.isActive ? '有効' : '無効'}
+                        </span>
+                      </dd>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">ユーザー情報がありません</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 事業情報セクション */}
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  事業情報
+                </h3>
+                {userProfile?.businessInfo ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">業界</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.industry}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">会社規模</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.companySize}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">事業タイプ</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.businessType}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">ターゲット市場</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.targetMarket}</dd>
+                      </div>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">事業説明</dt>
+                      <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.description}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">目標</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        <ul className="list-disc list-inside space-y-1">
+                          {userProfile.businessInfo.goals.map((goal, index) => (
+                            <li key={index}>{goal}</li>
+                          ))}
+                        </ul>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">課題</dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        <ul className="list-disc list-inside space-y-1">
+                          {userProfile.businessInfo.challenges.map((challenge, index) => (
+                            <li key={index}>{challenge}</li>
+                          ))}
+                        </ul>
+                      </dd>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">事業情報が登録されていません</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* SNS AI設定セクション */}
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  SNS AI設定
+                </h3>
+                {userProfile?.snsAISettings ? (
+                  <div className="bg-gray-100 p-4 rounded-lg">
+                    <pre className="text-xs text-gray-800 overflow-auto max-h-96">
+                      {JSON.stringify(userProfile.snsAISettings, null, 2)}
+                    </pre>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">SNS AI設定が登録されていません</p>
+                )}
               </div>
             </div>
           </div>
