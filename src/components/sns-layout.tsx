@@ -128,24 +128,40 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">メニュー</h3>
           <nav className="space-y-1">
             <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
-              <span>📊</span>
-              <span>ダッシュボード</span>
+              <span>📋</span>
+              <span>運用計画</span>
             </button>
             <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
-              <span>📝</span>
-              <span>投稿管理</span>
+              <span>🧪</span>
+              <span>投稿ラボ</span>
+            </button>
+            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+              <span>📊</span>
+              <span>投稿分析</span>
+            </button>
+            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+              <span>📚</span>
+              <span>過去の投稿</span>
+            </button>
+            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+              <span>🤖</span>
+              <span>AIチャット</span>
             </button>
             <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
               <span>📈</span>
-              <span>分析レポート</span>
-            </button>
-            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
-              <span>⚙️</span>
-              <span>AI設定</span>
+              <span>AI学習進捗</span>
             </button>
             <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
               <span>🔔</span>
-              <span>通知</span>
+              <span>お知らせ</span>
+            </button>
+            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+              <span>👤</span>
+              <span>マイアカウント</span>
+            </button>
+            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+              <span>📄</span>
+              <span>利用規約</span>
             </button>
           </nav>
         </div>
