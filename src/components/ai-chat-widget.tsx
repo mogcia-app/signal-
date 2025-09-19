@@ -64,6 +64,25 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     setIsLoading(true);
 
     try {
+      // まずテストAPIを呼び出して環境を確認
+      const testResponse = await fetch('/api/test-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: inputMessage.trim()
+        })
+      });
+
+      if (!testResponse.ok) {
+        throw new Error(`Test API failed: ${testResponse.status}`);
+      }
+
+      const testData = await testResponse.json();
+      console.log('Test API response:', testData);
+
+      // 実際のAI APIを呼び出し
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
