@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loginSuccess, setLoginSuccess] = useState(false);
   
   const { signIn } = useAuth();
   const router = useRouter();
@@ -20,7 +21,11 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password);
-      router.push('/dashboard');
+      setLoginSuccess(true);
+      // 2秒後にダッシュボードに遷移
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
     } catch (error) {
       setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
       console.error('Login error:', error);
@@ -28,6 +33,32 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // ログイン成功画面
+  if (loginSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div>
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
+              ログイン成功！
+            </h2>
+            <p className="text-gray-600">
+              ダッシュボードに移動しています...
+            </p>
+            <div className="mt-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
