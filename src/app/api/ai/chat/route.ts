@@ -9,30 +9,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    // Firebase Functions の aiChat を呼び出し
-    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL || 
-      (process.env.NODE_ENV === 'development' 
-        ? 'http://127.0.0.1:5001/signal-v1-fc481/us-central1'
-        : 'https://us-central1-signal-v1-fc481.cloudfunctions.net');
+    // OpenAI API を直接呼び出し
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
+      console.error('OpenAI API key not found');
+      return NextResponse.json(
+        { error: 'OpenAI API key not configured' },
+        { status: 500 }
+      );
+    }
 
-    const response = await fetch(`${baseUrl}/aiChat`, {
+    // プロンプトを構築
+    const systemPrompt = `あなたはInstagram運用の専門家です。ユーザーの計画内容とシミュレーション結果を基に、具体的で実用的なアドバイスを提供してください。
+
+現在の計画内容:
+${context ? JSON.stringify(context, null, 2) : '計画情報なし'}
+
+ユーザーの質問に日本語で回答してください。専門的でありながら分かりやすく、実行可能な提案を心がけてください。`;
+
+    console.log('AI Chat request:', { message, hasContext: !!context });
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message,
-        context
-      })
+        model: 'gpt-4',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+      }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'AI Chat API call failed');
+      console.error('OpenAI API error:', errorData);
+      throw new Error(errorData.error?.message || 'OpenAI API call failed');
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    const aiResponse = data.choices[0]?.message?.content || '申し訳ございません。回答を生成できませんでした。';
+
+    console.log('AI Chat response generated:', { 
+      responseLength: aiResponse.length,
+      tokensUsed: data.usage?.total_tokens 
+    });
+
+    return NextResponse.json({
+      response: aiResponse,
+      tokensUsed: data.usage?.total_tokens,
+      timestamp: new Date().toISOString()
+    });
 
   } catch (error) {
     console.error('AI Chat API Error:', error);
