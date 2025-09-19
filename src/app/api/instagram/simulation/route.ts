@@ -85,19 +85,21 @@ function getPeriodMultiplier(planPeriod: string): number {
   }
 }
 
-// 実現可能性を計算
+// 実現可能性を計算（保守的な基準）
 function calculateFeasibility(followerGain: number, currentFollowers: number, planPeriod: string) {
   const periodMultiplier = getPeriodMultiplier(planPeriod);
   const monthlyGain = followerGain / periodMultiplier;
   const growthRate = monthlyGain / Math.max(currentFollowers, 1);
 
-  if (growthRate <= 0.05) {
+  // より保守的な基準に変更
+  // 実際のInstagram運用では月3%以下が現実的、月5%以下が良い成長率
+  if (growthRate <= 0.02) {
     return { level: 'very_realistic', badge: '非常に現実的' };
-  } else if (growthRate <= 0.1) {
+  } else if (growthRate <= 0.05) {
     return { level: 'realistic', badge: '現実的' };
-  } else if (growthRate <= 0.2) {
+  } else if (growthRate <= 0.1) {
     return { level: 'moderate', badge: '挑戦的' };
-  } else if (growthRate <= 0.5) {
+  } else if (growthRate <= 0.2) {
     return { level: 'challenging', badge: '困難' };
   } else {
     return { level: 'very_challenging', badge: '非常に困難' };
@@ -200,10 +202,10 @@ function generateMainAdvice(strategyValues: string[], goalCategory: string, foll
   };
 
   const defaultAdvices = [
-    `目標達成に向けて、${goalCategory === 'follower' ? 'フォロワー獲得' : 'エンゲージメント向上'}を意識したコンテンツ戦略が重要です。一貫性のある投稿で信頼性を構築しましょう。`,
+    `目標達成に向けて、${goalCategory === 'follower' ? 'フォロワー獲得' : 'エンゲージメント向上'}を意識したコンテンツ戦略が重要です。一貫性のある投稿で信頼性を構築しましょう。※結果は個人差があります`,
     `${goalCategory === 'follower' ? 'フォロワー獲得' : 'エンゲージメント向上'}に特化した戦略で、ターゲット層に刺さるコンテンツを継続的に投稿することが成功の鍵です。`,
-    `フォロワー増加には、エンゲージメントを高めるコンテンツと定期的な投稿が不可欠です。`,
-    `目標達成のためには、戦略的な投稿スケジュールと質の高いコンテンツの両立が重要です。`,
+    `フォロワー増加には、エンゲージメントを高めるコンテンツと定期的な投稿が不可欠です。継続的な努力が重要です。`,
+    `目標達成のためには、戦略的な投稿スケジュールと質の高いコンテンツの両立が重要です。※実績は保証されません`,
     `${goalCategory === 'follower' ? 'フォロワー獲得' : 'エンゲージメント向上'}を軸とした一貫性のあるブランディングで、フォロワーのロイヤルティ向上を目指しましょう。`
   ];
 

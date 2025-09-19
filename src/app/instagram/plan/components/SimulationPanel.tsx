@@ -45,6 +45,9 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
             <div className="text-sm text-blue-800 font-medium">
               📅 達成期限：{result.targetDate}
             </div>
+            <div className="text-xs text-blue-500 mt-2">
+              ※ シミュレーション結果は参考値です。実際の成果は個人差があります。
+            </div>
           </div>
 
           {/* サブKPI（2つ並び） */}
