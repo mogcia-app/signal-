@@ -73,26 +73,46 @@ function SNSSelectContent() {
           <p className="text-lg text-gray-600">
             管理したいSNSを選択してください
           </p>
-          <div className="mt-4 text-sm text-gray-500">
-            契約SNS: {contractSNS.length}個 | 利用形態: {userProfile.usageType === 'team' ? 'チーム利用' : '個人利用'}
+          <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
+            <div className="flex items-center">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2">
+                利用可能
+              </span>
+              <span className="text-gray-600">{availableSNS.length}個</span>
+            </div>
+            <div className="flex items-center">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2">
+                アップデート必要
+              </span>
+              <span className="text-gray-600">{4 - availableSNS.length}個</span>
+            </div>
+            <div className="text-gray-500">
+              利用形態: {userProfile.usageType === 'team' ? 'チーム利用' : '個人利用'}
+            </div>
           </div>
         </div>
 
         {/* SNS選択グリッド */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {availableSNS.map((snsName) => {
-            const snsInfo = SNS_INFO[snsName as keyof typeof SNS_INFO];
-            if (!snsInfo) return null;
+          {Object.entries(SNS_INFO).map(([snsKey, snsInfo]) => {
+            const isAvailable = contractSNS.includes(snsKey);
+            const isContractSNS = availableSNS.includes(snsKey);
 
             return (
-              <button
-                key={snsName}
-                onClick={() => handleSNSSelect(snsName)}
-                className="group relative bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 p-6 border-2 border-transparent hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <div
+                key={snsKey}
+                className={`relative bg-white rounded-lg shadow-md transition-all duration-200 p-6 border-2 ${
+                  isContractSNS 
+                    ? 'border-transparent hover:border-blue-300 cursor-pointer' 
+                    : 'border-gray-200 opacity-75'
+                }`}
+                onClick={isContractSNS ? () => handleSNSSelect(snsKey) : undefined}
               >
                 <div className="text-center">
                   {/* SNSアイコン */}
-                  <div className={`w-16 h-16 mx-auto rounded-full ${snsInfo.color} flex items-center justify-center text-white text-2xl mb-4 group-hover:scale-110 transition-transform duration-200`}>
+                  <div className={`w-16 h-16 mx-auto rounded-full ${snsInfo.color} flex items-center justify-center text-white text-2xl mb-4 ${
+                    isContractSNS ? 'group-hover:scale-110 transition-transform duration-200' : ''
+                  }`}>
                     {snsInfo.icon}
                   </div>
                   
@@ -106,15 +126,41 @@ function SNSSelectContent() {
                     {snsInfo.description}
                   </p>
                   
-                  {/* 選択ボタン */}
-                  <div className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 group-hover:bg-blue-700 transition-colors duration-200">
-                    選択
-                    <svg className="ml-2 -mr-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+                  {/* ステータス表示 */}
+                  {isContractSNS ? (
+                    <div className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
+                      選択
+                      <svg className="ml-2 -mr-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-gray-100">
+                        <svg className="w-4 h-4 mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                        アップデートが必要
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        管理者に契約追加を依頼
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </button>
+
+                {/* 利用可能バッジ */}
+                {isContractSNS && (
+                  <div className="absolute top-2 right-2">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      利用可能
+                    </span>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
