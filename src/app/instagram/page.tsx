@@ -7,8 +7,7 @@ import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 
 function InstagramDashboardContent() {
-  const { user } = useAuth();
-  const { userProfile, loading: profileLoading, error: profileError } = useUserProfile();
+  const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
 
   const instagramSettings = getSNSSettings('instagram');

@@ -11,7 +11,16 @@ interface PlanFormProps {
   onRunSimulation: () => void;
   isSimulating: boolean;
   simulationError: string;
-  debugInfo: any;
+  debugInfo: {
+    step: string;
+    requestData?: Record<string, unknown>;
+    timestamp: string;
+    status?: number;
+    error?: string;
+    details?: Record<string, unknown>;
+    improvementTipsCount?: number;
+    improvementTips?: string[];
+  } | null;
 }
 
 export const PlanForm: React.FC<PlanFormProps> = ({
