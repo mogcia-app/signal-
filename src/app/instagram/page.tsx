@@ -1,6 +1,5 @@
 'use client';
 
-import { useAuth } from '../../contexts/auth-context';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { AuthGuard } from '../../components/auth-guard';

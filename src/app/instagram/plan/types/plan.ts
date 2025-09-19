@@ -65,6 +65,7 @@ export interface SimulationRequest {
   postCategories: string[];
   hashtagStrategy: string;
   referenceAccounts: string;
+  [key: string]: unknown;
 }
 
 // AI診断結果の型定義
