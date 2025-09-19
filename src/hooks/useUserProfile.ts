@@ -5,12 +5,18 @@ import { User } from '../types/user';
 import { useAuth } from '../contexts/auth-context';
 
 export const useUserProfile = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 認証の読み込み中は待機
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     if (!user) {
       setUserProfile(null);
       setLoading(false);
@@ -66,8 +72,8 @@ export const useUserProfile = () => {
       }
     );
 
-    return () => unsubscribe();
-  }, [user]);
+           return () => unsubscribe();
+         }, [user, authLoading]);
 
   return { userProfile, loading, error };
 };

@@ -18,7 +18,7 @@ function DashboardContent() {
       
       if (contractSNS.length === 1) {
         // 契約SNSが1つの場合、直接そのSNSのダッシュボードに遷移
-        router.push(`/dashboard/${contractSNS[0]}`);
+        router.push(`/${contractSNS[0]}`);
       } else if (contractSNS.length > 1) {
         // 契約SNSが複数の場合、SNS選択ページに遷移
         router.push('/sns-select');

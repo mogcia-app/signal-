@@ -1,15 +1,24 @@
 'use client';
 
-import { useUserProfile } from '../../../hooks/useUserProfile';
-import { useSNSSettings } from '../../../hooks/useSNSSettings';
-import { AuthGuard } from '../../../components/auth-guard';
-import SNSLayout from '../../../components/sns-layout';
+import { useUserProfile } from '../../hooks/useUserProfile';
+import { useSNSSettings } from '../../hooks/useSNSSettings';
+import { AuthGuard } from '../../components/auth-guard';
+import SNSLayout from '../../components/sns-layout';
 
 function XDashboardContent() {
   const { userProfile, loading: profileLoading } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
 
   const xSettings = getSNSSettings('x');
+
+  // エラーハンドリング
+  if (profileLoading === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-600">エラー: プロフィールの読み込みに失敗しました</div>
+      </div>
+    );
+  }
 
   if (profileLoading) {
     return (

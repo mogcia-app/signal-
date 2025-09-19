@@ -37,7 +37,7 @@ function SNSSelectContent() {
   const { userProfile, loading, error } = useUserProfile();
 
   const handleSNSSelect = (snsName: string) => {
-    router.push(`/dashboard/${snsName}`);
+    router.push(`/${snsName}`);
   };
 
   if (loading) {
@@ -119,7 +119,7 @@ function SNSSelectContent() {
         {/* SNS選択グリッド */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {Object.entries(SNS_INFO).map(([snsKey, snsInfo]) => {
-            const isAvailable = contractSNS.includes(snsKey);
+            // const isAvailable = contractSNS.includes(snsKey);
             const isContractSNS = availableSNS.includes(snsKey);
 
             return (

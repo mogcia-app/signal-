@@ -1,9 +1,9 @@
 'use client';
 
-import { useUserProfile } from '../../../hooks/useUserProfile';
-import { useSNSSettings } from '../../../hooks/useSNSSettings';
-import { AuthGuard } from '../../../components/auth-guard';
-import SNSLayout from '../../../components/sns-layout';
+import { useUserProfile } from '../../hooks/useUserProfile';
+import { useSNSSettings } from '../../hooks/useSNSSettings';
+import { AuthGuard } from '../../components/auth-guard';
+import SNSLayout from '../../components/sns-layout';
 
 function YouTubeDashboardContent() {
   const { userProfile, loading: profileLoading } = useUserProfile();

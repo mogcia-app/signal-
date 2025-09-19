@@ -65,7 +65,7 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
   };
 
   const handleSNSSwitch = (snsKey: string) => {
-    router.push(`/dashboard/${snsKey}`);
+    router.push(`/${snsKey}`);
   };
 
   return (
@@ -127,10 +127,13 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">メニュー</h3>
           <nav className="space-y-1">
-            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
-              <span>📋</span>
-              <span>運用計画</span>
-            </button>
+                   <button 
+                     onClick={() => router.push('/instagram/plan')}
+                     className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                   >
+                     <span>📋</span>
+                     <span>運用計画</span>
+                   </button>
             <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
               <span>🧪</span>
               <span>投稿ラボ</span>
