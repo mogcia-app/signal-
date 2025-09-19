@@ -167,7 +167,7 @@ function DashboardContent() {
                   <div>
                     <dt className="text-sm font-medium text-gray-500">アカウント状態</dt>
                     <dd className="mt-1 text-sm text-gray-900">
-                      {user?.disabled ? '無効' : '有効'}
+                      有効
                     </dd>
                   </div>
                   <div>

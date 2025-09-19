@@ -30,7 +30,7 @@ if (process.env.NODE_ENV === 'development') {
   import('firebase/functions').then(({ connectFunctionsEmulator }) => {
     try {
       connectFunctionsEmulator(functions, 'localhost', 5001);
-    } catch (error) {
+    } catch {
       console.log('Functions emulator already connected or not available');
     }
   });
