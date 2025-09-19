@@ -149,6 +149,125 @@ function DashboardContent() {
                       }
                     </dd>
                   </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">アカウント作成日</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {user?.metadata.creationTime ? 
+                        new Date(user.metadata.creationTime).toLocaleString('ja-JP') : 
+                        '不明'
+                      }
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">プロバイダー</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {user?.providerData.map(provider => provider.providerId).join(', ') || 'email'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">アカウント状態</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {user?.disabled ? '無効' : '有効'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">匿名ユーザー</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {user?.isAnonymous ? 'はい' : 'いいえ'}
+                    </dd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* プロバイダー情報セクション */}
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  認証プロバイダー情報
+                </h3>
+                <div className="space-y-4">
+                  {user?.providerData.map((provider, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">プロバイダーID</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{provider.providerId}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">UID</dt>
+                          <dd className="mt-1 text-sm text-gray-900 break-all">{provider.uid}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">メールアドレス</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{provider.email || 'なし'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">表示名</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{provider.displayName || 'なし'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">電話番号</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{provider.phoneNumber || 'なし'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">写真URL</dt>
+                          <dd className="mt-1 text-sm text-gray-900 break-all">{provider.photoURL || 'なし'}</dd>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* トークン情報セクション */}
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  トークン情報
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">アクセストークン</dt>
+                    <dd className="mt-1 text-sm text-gray-900 break-all font-mono bg-gray-100 p-2 rounded">
+                      {user?.accessToken || '取得中...'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">リフレッシュトークン</dt>
+                    <dd className="mt-1 text-sm text-gray-900 break-all font-mono bg-gray-100 p-2 rounded">
+                      {user?.refreshToken || '取得中...'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">カスタムクレーム</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      <pre className="bg-gray-100 p-2 rounded text-xs">
+                        {JSON.stringify(user?.customClaims || {}, null, 2)}
+                      </pre>
+                    </dd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 生データ表示セクション */}
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  生データ（JSON）
+                </h3>
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <pre className="text-xs text-gray-800 overflow-auto max-h-96">
+                    {JSON.stringify(user, null, 2)}
+                  </pre>
                 </div>
               </div>
             </div>
@@ -167,3 +286,4 @@ export default function Dashboard() {
     </AuthGuard>
   );
 }
+
