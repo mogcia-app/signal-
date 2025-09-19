@@ -248,7 +248,7 @@ function DashboardContent() {
                     <dt className="text-sm font-medium text-gray-500">カスタムクレーム</dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       <pre className="bg-gray-100 p-2 rounded text-xs">
-                        {JSON.stringify(user?.customClaims || {}, null, 2)}
+                        {JSON.stringify({}, null, 2)}
                       </pre>
                     </dd>
                   </div>
