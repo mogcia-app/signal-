@@ -45,8 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               lastSignInTime: user.metadata.lastSignInTime
             }
           });
-          console.log('📱 Access Token (if available):', user.accessToken || 'Not directly accessible');
-          console.log('🔄 Refresh Token (if available):', user.refreshToken || 'Not directly accessible');
+          console.log('📱 Access Token:', 'Not directly accessible from User object');
+          console.log('🔄 Refresh Token:', 'Not directly accessible from User object');
         } else {
           console.log('❌ No user authenticated');
         }
