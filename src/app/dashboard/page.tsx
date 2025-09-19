@@ -413,10 +413,64 @@ function DashboardContent() {
                   SNS AI設定
                 </h3>
                 {userProfile?.snsAISettings ? (
-                  <div className="bg-gray-100 p-4 rounded-lg">
-                    <pre className="text-xs text-gray-800 overflow-auto max-h-96">
-                      {JSON.stringify(userProfile.snsAISettings, null, 2)}
-                    </pre>
+                  <div className="space-y-6">
+                    {/* SNS別設定表示 */}
+                    {Object.entries(userProfile.snsAISettings).map(([snsName, settings]) => (
+                      <div key={snsName} className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
+                          <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                            <span className="text-white font-bold text-sm">
+                              {snsName.charAt(0).toUpperCase()}
+                            </span>
+                          </span>
+                          {snsName.toUpperCase()} AI設定
+                        </h4>
+                        <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                          {typeof settings === 'object' && settings !== null ? (
+                            Object.entries(settings as Record<string, unknown>).map(([key, value]) => (
+                              <div key={key}>
+                                <dt className="text-sm font-medium text-gray-500 capitalize">
+                                  {key.replace(/([A-Z])/g, ' $1').trim()}
+                                </dt>
+                                <dd className="mt-1 text-sm text-gray-900">
+                                  {typeof value === 'boolean' ? (
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {value ? '有効' : '無効'}
+                                    </span>
+                                  ) : typeof value === 'object' && value !== null ? (
+                                    <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
+                                      {JSON.stringify(value, null, 2)}
+                                    </pre>
+                                  ) : (
+                                    String(value)
+                                  )}
+                                </dd>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="col-span-2">
+                              <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
+                                {JSON.stringify(settings, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* 生データ表示（デバッグ用） */}
+                    <details className="mt-6">
+                      <summary className="cursor-pointer text-sm font-medium text-gray-500 hover:text-gray-700">
+                        生データ（JSON）- デバッグ用
+                      </summary>
+                      <div className="mt-2 bg-gray-100 p-4 rounded-lg">
+                        <pre className="text-xs text-gray-800 overflow-auto max-h-96">
+                          {JSON.stringify(userProfile.snsAISettings, null, 2)}
+                        </pre>
+                      </div>
+                    </details>
                   </div>
                 ) : (
                   <p className="text-gray-500">SNS AI設定が登録されていません</p>
