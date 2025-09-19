@@ -6,13 +6,19 @@ interface MLPredictionPanelProps {
   isRunning: boolean;
   error: string;
   onRunPrediction: () => void;
+  learningBoost?: number;
+  dataPoints?: number;
+  learningMessage?: string;
 }
 
 export const MLPredictionPanel: React.FC<MLPredictionPanelProps> = ({
   result,
   isRunning,
   error,
-  onRunPrediction
+  onRunPrediction,
+  learningBoost,
+  dataPoints,
+  learningMessage
 }) => {
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -72,6 +78,26 @@ export const MLPredictionPanel: React.FC<MLPredictionPanelProps> = ({
                 信頼度: {Math.round(result.confidence * 100)}%
               </span>
             </div>
+
+            {/* PDCA学習ブースト表示 */}
+            {learningBoost !== undefined && (
+              <div className="mb-3 p-2 bg-green-100 rounded-md border border-green-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-green-800">📈 PDCA学習ブースト</span>
+                  <span className="text-sm font-bold text-green-600">
+                    {learningBoost > 0 ? '+' : ''}{learningBoost}%
+                  </span>
+                </div>
+                {dataPoints && (
+                  <div className="text-xs text-green-700 mt-1">
+                    過去{dataPoints}回のPDCAサイクルから学習
+                  </div>
+                )}
+                {learningMessage && (
+                  <div className="text-xs text-green-700 mt-1">{learningMessage}</div>
+                )}
+              </div>
+            )}
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">

@@ -161,6 +161,7 @@ export interface MLPredictionRequest {
   followerGain: number;
   planPeriod: string;
   goalCategory: string;
+  [key: string]: unknown; // インデックスシグネチャを追加
 }
 
 export interface MLPredictionResult {
@@ -191,4 +192,68 @@ export interface MLPredictionResult {
     factors: string[];
     mitigation: string[];
   };
+  // PDCA学習統合用の追加プロパティ
+  learningBoost?: number;
+  message?: string;
+}
+
+// PDCA学習システム関連の型定義
+export interface PDCARecord {
+  id: string;
+  userId: string;
+  planId: string;
+  phase: 'plan' | 'do' | 'check' | 'act';
+  startDate: string;
+  endDate: string;
+  targetMetrics: {
+    followerGain: number;
+    engagementRate: number;
+    reach: number;
+  };
+  actualMetrics: {
+    followerGain: number;
+    engagementRate: number;
+    reach: number;
+    posts: number;
+    stories: number;
+    reels: number;
+  };
+  strategies: string[];
+  contentTypes: string[];
+  insights: string[];
+  lessons: string[];
+  nextActions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrendAnalysis {
+  period: string;
+  averageGrowth: number;
+  growthTrend: 'increasing' | 'stable' | 'decreasing';
+  bestStrategies: string[];
+  worstStrategies: string[];
+  seasonalPatterns: {
+    month: string;
+    performance: number;
+  }[];
+  contentPerformance: {
+    type: string;
+    avgEngagement: number;
+    avgReach: number;
+  }[];
+  recommendations: string[];
+}
+
+export interface LearningModel {
+  accuracy: number;
+  lastUpdated: string;
+  dataPoints: number;
+  predictions: {
+    followerGrowth: number;
+    engagementRate: number;
+    reach: number;
+  };
+  confidence: number;
+  improvements: string[];
 }

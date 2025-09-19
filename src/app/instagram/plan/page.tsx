@@ -8,12 +8,14 @@ import { useSimulation } from './hooks/useSimulation'
 import { useAIDiagnosis } from './hooks/useAIDiagnosis'
 import { useABTest } from './hooks/useABTest'
 import { useMLPrediction } from './hooks/useMLPrediction'
+import { usePDCALearning } from './hooks/usePDCALearning'
 import { PlanForm } from './components/PlanForm'
 import { CurrentGoalPanel } from './components/CurrentGoalPanel'
 import { SimulationPanel } from './components/SimulationPanel'
 import { AIDiagnosisPanel } from './components/AIDiagnosisPanel'
 import { ABTestPanel } from './components/ABTestPanel'
 import { MLPredictionPanel } from './components/MLPredictionPanel'
+import { PDCALearningPanel } from './components/PDCALearningPanel'
 import { SimulationRequest, MLPredictionRequest } from './types/plan'
 
 export default function InstagramPlanPage() {
@@ -57,6 +59,15 @@ export default function InstagramPlanPage() {
     mlPredictionError, 
     runMLPrediction 
   } = useMLPrediction()
+
+  const { 
+    trendAnalysis,
+    learningModel,
+    isLoading: pdcaLoading,
+    error: pdcaError,
+    savePDCARecord,
+    improvePrediction
+  } = usePDCALearning()
 
   // シミュレーション実行ハンドラー
   const handleRunSimulation = async () => {
@@ -120,7 +131,7 @@ export default function InstagramPlanPage() {
     await runABTest(requestData)
   }
 
-  // ML予測実行ハンドラー
+  // ML予測実行ハンドラー（PDCA学習統合版）
   const handleRunMLPrediction = async () => {
     if (!user) {
       console.error('ユーザーがログインしていません')
@@ -143,7 +154,15 @@ export default function InstagramPlanPage() {
       goalCategory: formData.goalCategory
     }
 
-    await runMLPrediction(requestData)
+    // PDCA学習による予測改善を試行
+    const improvedPrediction = await improvePrediction(requestData)
+    if (improvedPrediction) {
+      // 改善された予測データでML予測を実行
+      await runMLPrediction(improvedPrediction)
+    } else {
+      // 通常のML予測を実行
+      await runMLPrediction(requestData)
+    }
   }
 
   return (
@@ -206,6 +225,18 @@ export default function InstagramPlanPage() {
               isRunning={isRunningMLPrediction}
               error={mlPredictionError}
               onRunPrediction={handleRunMLPrediction}
+              learningBoost={mlPredictionResult?.learningBoost}
+              dataPoints={learningModel?.dataPoints}
+              learningMessage={mlPredictionResult?.message}
+            />
+
+            <PDCALearningPanel
+              trendAnalysis={trendAnalysis}
+              learningModel={learningModel}
+              isLoading={pdcaLoading}
+              error={pdcaError}
+              onSaveRecord={savePDCARecord}
+              onImprovePrediction={improvePrediction}
             />
           </div>
         </main>
