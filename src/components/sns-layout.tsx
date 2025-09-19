@@ -73,7 +73,7 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
       {/* サイドバー */}
       <div className="w-64 bg-white shadow-lg">
         {/* ロゴ・ブランディング */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-3 border-b border-gray-200">
           <div className="flex items-center">
             <div className="text-2xl font-bold text-gray-900">
               Signal<span style={{ color: '#FF8A15' }}>.</span>
@@ -196,7 +196,7 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
       {/* メインコンテンツエリア */}
       <div className="flex-1">
         {/* タイトルセクション */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-white border-b border-gray-200 px-6 py-3">
           <div className="flex items-center space-x-3">
             <div className={`w-8 h-8 rounded-full ${currentSNSInfo.color} flex items-center justify-center text-white`}>
               {currentSNSInfo.icon}
