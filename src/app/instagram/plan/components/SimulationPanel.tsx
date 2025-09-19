@@ -116,12 +116,116 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
             </div>
           </div>
 
-          {/* メインアドバイス */}
-          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-4 rounded-md border-l-4 border-orange-400">
-            <div className="text-sm text-orange-800">
-              {result.mainAdvice}
-            </div>
-          </div>
+                    {/* 成長曲線 */}
+                    {result.growthCurve && (
+                      <div className="bg-white rounded-md p-4 border border-gray-200">
+                        <h4 className="font-medium text-gray-900 mb-3">📈 成長曲線予測</h4>
+                        <div className="grid grid-cols-3 gap-3 text-sm">
+                          <div className="text-center">
+                            <div className="font-bold text-blue-600">{result.growthCurve.month1}人</div>
+                            <div className="text-gray-600">1ヶ月目</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold text-green-600">{result.growthCurve.month2}人</div>
+                            <div className="text-gray-600">2ヶ月目</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold text-purple-600">{result.growthCurve.month3}人</div>
+                            <div className="text-gray-600">3ヶ月目</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 成功確率 */}
+                    {result.successProbability && (
+                      <div className="bg-white rounded-md p-4 border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-gray-900">成功確率</span>
+                          <span className={`text-2xl font-bold ${
+                            result.successProbability >= 80 ? 'text-green-600' :
+                            result.successProbability >= 60 ? 'text-yellow-600' :
+                            'text-red-600'
+                          }`}>
+                            {result.successProbability}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full ${
+                              result.successProbability >= 80 ? 'bg-green-500' :
+                              result.successProbability >= 60 ? 'bg-yellow-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${result.successProbability}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* リスクファクター */}
+                    {result.riskFactors && result.riskFactors.length > 0 && (
+                      <div className="bg-red-50 rounded-md p-4 border border-red-200">
+                        <h4 className="font-medium text-red-800 mb-2">⚠️ 注意点</h4>
+                        <ul className="text-sm text-red-700 space-y-1">
+                          {result.riskFactors.map((risk, index) => (
+                            <li key={index} className="flex items-start">
+                              <span className="mr-2">•</span>
+                              <span>{risk}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* 推奨予算 */}
+                    {result.recommendedBudget && (
+                      <div className="bg-blue-50 rounded-md p-4 border border-blue-200">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-blue-900">推奨予算（月額）</span>
+                          <span className="text-xl font-bold text-blue-600">
+                            ¥{result.recommendedBudget.toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-blue-700 mt-1">
+                          目標達成のための推奨広告予算です
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 競合分析 */}
+                    {result.competitorAnalysis && (
+                      <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
+                        <h4 className="font-medium text-gray-900 mb-3">🔍 市場分析</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">平均成長率</span>
+                            <span className="font-medium">{(result.competitorAnalysis.avgGrowthRate * 100).toFixed(1)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">市場ポジション</span>
+                            <span className="font-medium">{result.competitorAnalysis.marketPosition}</span>
+                          </div>
+                          {result.competitorAnalysis.opportunities.length > 0 && (
+                            <div>
+                              <span className="text-gray-600">機会</span>
+                              <ul className="mt-1 space-y-1">
+                                {result.competitorAnalysis.opportunities.map((opportunity, index) => (
+                                  <li key={index} className="text-xs text-gray-700">• {opportunity}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* メインアドバイス */}
+                    <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-4 rounded-md border-l-4 border-orange-400">
+                      <div className="text-sm text-orange-800">
+                        {result.mainAdvice}
+                      </div>
+                    </div>
         </div>
       </div>
     </section>

@@ -41,6 +41,21 @@ export interface SimulationResult {
   workloadMessage: string;
   mainAdvice: string;
   improvementTips: string[];
+  // 拡張要素
+  growthCurve?: {
+    month1: number;
+    month2: number;
+    month3: number;
+    total: number;
+  };
+  riskFactors?: string[];
+  successProbability?: number; // 成功確率（0-100%）
+  recommendedBudget?: number;
+  competitorAnalysis?: {
+    avgGrowthRate: number;
+    marketPosition: string;
+    opportunities: string[];
+  };
 }
 
 // デバッグ情報の型定義
@@ -65,6 +80,14 @@ export interface SimulationRequest {
   postCategories: string[];
   hashtagStrategy: string;
   referenceAccounts: string;
+  // 拡張要素（オプション）
+  accountAge?: number; // アカウント開設からの月数
+  currentEngagementRate?: number; // 現在のエンゲージメント率
+  avgPostsPerWeek?: number; // 現在の週間投稿数
+  contentQuality?: 'low' | 'medium' | 'high'; // コンテンツ品質
+  niche?: string; // ジャンル・ニッチ
+  budget?: number; // 広告予算（月額）
+  teamSize?: number; // 運営チーム人数
   [key: string]: unknown;
 }
 
