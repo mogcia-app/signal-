@@ -12,12 +12,6 @@ const SNS_INFO = {
     color: 'bg-gradient-to-r from-purple-500 to-pink-500',
     description: '写真・動画投稿プラットフォーム'
   },
-  twitter: {
-    name: 'X (Twitter)',
-    icon: '🐦',
-    color: 'bg-gradient-to-r from-blue-400 to-blue-600',
-    description: '短文投稿・リアルタイム情報共有'
-  },
   x: {
     name: 'X (Twitter)',
     icon: '🐦',
