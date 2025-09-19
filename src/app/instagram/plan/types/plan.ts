@@ -145,3 +145,50 @@ export interface ABTestComparison {
     expectedResult: string;
   }[];
 }
+
+// 機械学習予測関連の型定義
+export interface MLPredictionRequest {
+  currentFollowers: number;
+  currentEngagementRate: number;
+  avgPostsPerWeek: number;
+  accountAge: number;
+  niche: string;
+  contentTypes: string[];
+  postingTime: 'morning' | 'afternoon' | 'evening' | 'mixed';
+  hashtagCount: number;
+  storyFrequency: number;
+  reelFrequency: number;
+  followerGain: number;
+  planPeriod: string;
+  goalCategory: string;
+}
+
+export interface MLPredictionResult {
+  predictedGrowth: {
+    month1: number;
+    month3: number;
+    month6: number;
+    month12: number;
+  };
+  confidence: number; // 予測の信頼度（0-1）
+  keyFactors: {
+    factor: string;
+    impact: number; // 影響度（-1 to 1）
+    recommendation: string;
+  }[];
+  seasonalAdjustments: {
+    month: string;
+    adjustment: number; // 季節調整係数
+    reason: string;
+  }[];
+  growthPattern: {
+    phase: string;
+    description: string;
+    expectedGrowth: number;
+  }[];
+  riskAssessment: {
+    level: 'low' | 'medium' | 'high';
+    factors: string[];
+    mitigation: string[];
+  };
+}

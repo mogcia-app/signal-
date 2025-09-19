@@ -7,12 +7,14 @@ import { usePlanForm } from './hooks/usePlanForm'
 import { useSimulation } from './hooks/useSimulation'
 import { useAIDiagnosis } from './hooks/useAIDiagnosis'
 import { useABTest } from './hooks/useABTest'
+import { useMLPrediction } from './hooks/useMLPrediction'
 import { PlanForm } from './components/PlanForm'
 import { CurrentGoalPanel } from './components/CurrentGoalPanel'
 import { SimulationPanel } from './components/SimulationPanel'
 import { AIDiagnosisPanel } from './components/AIDiagnosisPanel'
 import { ABTestPanel } from './components/ABTestPanel'
-import { SimulationRequest } from './types/plan'
+import { MLPredictionPanel } from './components/MLPredictionPanel'
+import { SimulationRequest, MLPredictionRequest } from './types/plan'
 
 export default function InstagramPlanPage() {
   const { user } = useAuth()
@@ -48,6 +50,13 @@ export default function InstagramPlanPage() {
     abTestError, 
     runABTest 
   } = useABTest()
+
+  const { 
+    mlPredictionResult, 
+    isRunningMLPrediction, 
+    mlPredictionError, 
+    runMLPrediction 
+  } = useMLPrediction()
 
   // シミュレーション実行ハンドラー
   const handleRunSimulation = async () => {
@@ -111,6 +120,32 @@ export default function InstagramPlanPage() {
     await runABTest(requestData)
   }
 
+  // ML予測実行ハンドラー
+  const handleRunMLPrediction = async () => {
+    if (!user) {
+      console.error('ユーザーがログインしていません')
+      return
+    }
+
+    const requestData: MLPredictionRequest = {
+      currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
+      currentEngagementRate: 0.03, // デフォルト値
+      avgPostsPerWeek: 3, // デフォルト値
+      accountAge: 6, // デフォルト値
+      niche: 'ライフスタイル', // デフォルト値
+      contentTypes: selectedCategories,
+      postingTime: 'mixed' as const, // デフォルト値
+      hashtagCount: 15, // デフォルト値
+      storyFrequency: 0.7, // デフォルト値
+      reelFrequency: 0.3, // デフォルト値
+      followerGain: parseInt(formData.followerGain, 10),
+      planPeriod: formData.planPeriod,
+      goalCategory: formData.goalCategory
+    }
+
+    await runMLPrediction(requestData)
+  }
+
   return (
     <SNSLayout currentSNS="instagram">
       <div className="max-w-7xl mx-auto">
@@ -164,6 +199,13 @@ export default function InstagramPlanPage() {
               isRunning={isRunningABTest}
               error={abTestError}
               onRunTest={handleRunABTest}
+            />
+
+            <MLPredictionPanel
+              result={mlPredictionResult}
+              isRunning={isRunningMLPrediction}
+              error={mlPredictionError}
+              onRunPrediction={handleRunMLPrediction}
             />
           </div>
         </main>
