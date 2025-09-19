@@ -26,6 +26,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      
+      // 開発環境で認証情報をコンソールに表示
+      if (process.env.NODE_ENV === 'development') {
+        console.group('🔐 Firebase Authentication Info');
+        if (user) {
+          console.log('✅ User Authenticated:', {
+            uid: user.uid,
+            email: user.email,
+            emailVerified: user.emailVerified,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            phoneNumber: user.phoneNumber,
+            isAnonymous: user.isAnonymous,
+            providerData: user.providerData,
+            metadata: {
+              creationTime: user.metadata.creationTime,
+              lastSignInTime: user.metadata.lastSignInTime
+            }
+          });
+          console.log('📱 Access Token (if available):', user.accessToken || 'Not directly accessible');
+          console.log('🔄 Refresh Token (if available):', user.refreshToken || 'Not directly accessible');
+        } else {
+          console.log('❌ No user authenticated');
+        }
+        console.groupEnd();
+      }
     });
 
     return () => unsubscribe();

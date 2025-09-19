@@ -27,6 +27,32 @@ export const useUserProfile = () => {
           const userData = { id: doc.id, ...doc.data() } as User;
           setUserProfile(userData);
           setError(null);
+          
+          // 開発環境でユーザープロフィール情報をコンソールに表示
+          if (process.env.NODE_ENV === 'development') {
+            console.group('👤 User Profile Info (Firestore)');
+            console.log('📋 Basic Info:', {
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+              role: userData.role,
+              isActive: userData.isActive,
+              status: userData.status
+            });
+            console.log('📱 SNS Contract Info:', {
+              snsCount: userData.snsCount,
+              usageType: userData.usageType,
+              contractType: userData.contractType,
+              contractSNS: userData.contractSNS,
+              contractStartDate: userData.contractStartDate,
+              contractEndDate: userData.contractEndDate
+            });
+            console.log('🏢 Business Info:', userData.businessInfo);
+            console.log('⚙️ SNS AI Settings:', userData.snsAISettings);
+            console.log('💰 Billing Info:', userData.billingInfo);
+            console.log('📝 Notes:', userData.notes);
+            console.groupEnd();
+          }
         } else {
           setUserProfile(null);
           setError('ユーザー情報が見つかりません');
