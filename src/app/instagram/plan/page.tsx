@@ -3,6 +3,7 @@
 import React from 'react'
 import { useAuth } from '../../../contexts/auth-context'
 import SNSLayout from '../../../components/sns-layout'
+import { AIChatWidget } from '../../../components/ai-chat-widget'
 import { usePlanForm } from './hooks/usePlanForm'
 import { useSimulation } from './hooks/useSimulation'
 import { useAIDiagnosis } from './hooks/useAIDiagnosis'
@@ -152,6 +153,13 @@ export default function InstagramPlanPage() {
               formData={formData}
             />
 
+             <ABTestPanel
+              result={abTestResult}
+              isRunning={isRunningABTest}
+              error={abTestError}
+              onRunTest={handleRunABTest}
+            />
+
             <AIDiagnosisPanel
               showAdvice={showAiAdvice}
               isLoading={isAiLoading}
@@ -159,15 +167,20 @@ export default function InstagramPlanPage() {
               onSaveAdvice={handleSaveAdviceAndContinue}
               formData={formData}
             />
-
-            <ABTestPanel
-              result={abTestResult}
-              isRunning={isRunningABTest}
-              error={abTestError}
-              onRunTest={handleRunABTest}
-            />
+          
           </div>
         </main>
+
+        {/* AIチャットウィジェット */}
+        <AIChatWidget 
+          contextData={{
+            formData: formData as unknown as Record<string, unknown>,
+            selectedStrategies,
+            selectedCategories,
+            simulationResult: simulationResult as unknown as Record<string, unknown>,
+            abTestResult: abTestResult as unknown as Record<string, unknown>
+          }}
+        />
       </div>
     </SNSLayout>
   )
