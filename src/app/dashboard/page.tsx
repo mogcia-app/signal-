@@ -235,13 +235,13 @@ function DashboardContent() {
                   <div>
                     <dt className="text-sm font-medium text-gray-500">アクセストークン</dt>
                     <dd className="mt-1 text-sm text-gray-900 break-all font-mono bg-gray-100 p-2 rounded">
-                      {user?.accessToken || '取得中...'}
+                      Firebase User オブジェクトでは直接取得不可
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">リフレッシュトークン</dt>
                     <dd className="mt-1 text-sm text-gray-900 break-all font-mono bg-gray-100 p-2 rounded">
-                      {user?.refreshToken || '取得中...'}
+                      Firebase User オブジェクトでは直接取得不可
                     </dd>
                   </div>
                   <div>
