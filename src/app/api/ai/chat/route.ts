@@ -1,5 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// SNS運用以外の質問を検出するキーワード
+const nonSNSKeywords = [
+  'こんにちは', 'hello', 'hi', 'hey', '天気', 'テスト', 'test',
+  'ありがとう', 'thank you', 'おはよう', 'こんばんは', 'good morning', 'good evening',
+  '雑談', 'chat', '暇', '退屈', '何してる', 'what are you doing',
+  '今日は', '今日の', '今日の天気', '明日', '昨日',
+  '調子は', '元気', 'お疲れ', '頑張って', '応援',
+  'ランダム', 'random', '面白い', 'funny', 'ジョーク', 'joke',
+  '時間', '何時', 'what time', '日付', 'date',
+  '名前', 'name', '誰', 'who', '何', 'what', 'どこ', 'where',
+  'なぜ', 'why', 'どうして', 'how', 'どのように',
+  'はい', 'いいえ', 'yes', 'no', 'maybe', 'perhaps',
+  'すみません', 'sorry', 'excuse me', 'pardon',
+  'おめでとう', 'congratulations', 'お誕生日', 'birthday',
+  'クリスマス', 'christmas', '新年', 'new year',
+  'おやすみ', 'good night', 'さようなら', 'goodbye', 'bye'
+];
+
+// テンプレート返答
+const templateResponses = [
+  'Instagram運用について何かお困りですか？',
+  'SNS運用のご相談がございましたらお気軽にどうぞ！',
+  'Instagram戦略について質問があればお答えします！',
+  'SNS運用でお悩みのことがあれば教えてください！',
+  'Instagram運用でお手伝いできることがあればどうぞ！',
+  'SNS戦略について何でもご相談ください！',
+  'Instagram運用のコツについて聞きたいことがあればどうぞ！',
+  'SNS運用で困っていることがあれば教えてください！'
+];
+
+// メッセージがSNS運用以外の内容かチェック
+function isNonSNSQuestion(message: string): boolean {
+  const lowerMessage = message.toLowerCase().trim();
+  
+  // 空文字または短すぎるメッセージ
+  if (lowerMessage.length <= 2) return true;
+  
+  // キーワードチェック
+  return nonSNSKeywords.some(keyword => 
+    lowerMessage.includes(keyword.toLowerCase())
+  );
+}
+
+// ランダムなテンプレート返答を取得
+function getRandomTemplateResponse(): string {
+  return templateResponses[Math.floor(Math.random() * templateResponses.length)];
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -7,6 +55,17 @@ export async function POST(request: NextRequest) {
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+    }
+
+    // SNS運用以外の質問の場合はテンプレート返答
+    if (isNonSNSQuestion(message)) {
+      console.log('Non-SNS question detected, using template response:', message);
+      return NextResponse.json({
+        response: getRandomTemplateResponse(),
+        isTemplateResponse: true,
+        tokensUsed: 0,
+        timestamp: new Date().toISOString()
+      });
     }
 
     // OpenAI API を直接呼び出し
@@ -62,6 +121,7 @@ ${context ? JSON.stringify(context, null, 2) : '計画情報なし'}
 
     return NextResponse.json({
       response: aiResponse,
+      isTemplateResponse: false,
       tokensUsed: data.usage?.total_tokens,
       timestamp: new Date().toISOString()
     });

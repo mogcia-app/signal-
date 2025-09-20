@@ -144,6 +144,11 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
       setMessages(prev => [...prev, assistantMessage]);
 
+      // テンプレート返答の場合はログ出力
+      if (data.isTemplateResponse) {
+        console.log('Template response used - no AI tokens consumed');
+      }
+
     } catch (error) {
       console.error('Chat error:', error);
       const errorMessage: Message = {
