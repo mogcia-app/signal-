@@ -97,7 +97,7 @@ export function generateDynamicAdvice(
         title: 'さらなる最適化の機会',
         content: '現在の目標は現実的です。この機会に投稿品質の向上やエンゲージメント戦略の強化に取り組み、目標を上回る成果を目指しましょう。',
         priority: 'medium',
-        category: 'optimization'
+        category: 'strategy'
       });
     }
 
