@@ -24,7 +24,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   // 計画内容が変更されたときに動的アドバイスを生成
   useEffect(() => {
     if (formData) {
-      const advice = generateDynamicAdvice(formData, simulationResult);
+      const advice = generateDynamicAdvice(formData, simulationResult || null);
       setDynamicAdvice(advice);
     }
   }, [formData, simulationResult]);
@@ -48,7 +48,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
           </div>
           
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {dynamicAdvice.slice(0, 5).map((advice, index) => (
+            {dynamicAdvice.slice(0, 5).map((advice) => (
               <div 
                 key={advice.id}
                 className={`p-3 rounded-lg border ${

@@ -242,7 +242,7 @@ function generateRecommendation(winner: ABTestScenario): string {
 }
 
 // タイムライン生成
-function generateTimeline(winner: ABTestScenario) {
+function generateTimeline(_winner: ABTestScenario) {
   return [
     {
       phase: '準備期間',
