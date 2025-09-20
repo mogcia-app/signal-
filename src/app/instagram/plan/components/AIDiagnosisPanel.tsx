@@ -1,5 +1,6 @@
-import React from 'react';
-import { PlanFormData } from '../types/plan';
+import React, { useEffect, useState } from 'react';
+import { PlanFormData, SimulationResult } from '../types/plan';
+import { generateDynamicAdvice, DynamicAdvice } from '../utils/dynamicAdvice';
 
 interface AIDiagnosisPanelProps {
   showAdvice: boolean;
@@ -7,6 +8,7 @@ interface AIDiagnosisPanelProps {
   onStartDiagnosis: () => void;
   onSaveAdvice: () => void;
   formData: PlanFormData;
+  simulationResult?: SimulationResult | null;
 }
 
 export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
@@ -14,8 +16,18 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   isLoading,
   onStartDiagnosis,
   onSaveAdvice,
-  formData
+  formData,
+  simulationResult
 }) => {
+  const [dynamicAdvice, setDynamicAdvice] = useState<DynamicAdvice[]>([]);
+
+  // 計画内容が変更されたときに動的アドバイスを生成
+  useEffect(() => {
+    if (formData) {
+      const advice = generateDynamicAdvice(formData, simulationResult);
+      setDynamicAdvice(advice);
+    }
+  }, [formData, simulationResult]);
   return (
     <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
       <h3 className="text-lg font-semibold mb-2 flex items-center">
@@ -24,6 +36,87 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       <p className="text-sm text-gray-600 mb-4">
         目標や施策をもとに、AIが最適な方向性を提案します。
       </p>
+
+      {/* 動的アドバイス表示 */}
+      {dynamicAdvice.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium text-gray-800">📋 計画に基づく推奨アドバイス</h4>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {dynamicAdvice.length}件
+            </span>
+          </div>
+          
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {dynamicAdvice.slice(0, 5).map((advice, index) => (
+              <div 
+                key={advice.id}
+                className={`p-3 rounded-lg border ${
+                  advice.priority === 'high' 
+                    ? 'bg-red-50 border-red-200' 
+                    : advice.priority === 'medium'
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-blue-50 border-blue-200'
+                }`}
+              >
+                <div className="flex items-start space-x-2">
+                  <span className={`inline-block w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                    advice.priority === 'high' 
+                      ? 'bg-red-500' 
+                      : advice.priority === 'medium'
+                      ? 'bg-yellow-500'
+                      : 'bg-blue-500'
+                  }`}></span>
+                  <div className="flex-1">
+                    <h5 className="font-medium text-sm text-gray-800 mb-1">
+                      {advice.title}
+                    </h5>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      {advice.content}
+                    </p>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        advice.category === 'strategy' 
+                          ? 'bg-purple-100 text-purple-700'
+                          : advice.category === 'timing'
+                          ? 'bg-green-100 text-green-700'
+                          : advice.category === 'content'
+                          ? 'bg-blue-100 text-blue-700'
+                          : advice.category === 'engagement'
+                          ? 'bg-pink-100 text-pink-700'
+                          : 'bg-orange-100 text-orange-700'
+                      }`}>
+                        {advice.category === 'strategy' ? '戦略' :
+                         advice.category === 'timing' ? 'タイミング' :
+                         advice.category === 'content' ? 'コンテンツ' :
+                         advice.category === 'engagement' ? 'エンゲージメント' : '成長'}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        advice.priority === 'high' 
+                          ? 'bg-red-100 text-red-700'
+                          : advice.priority === 'medium'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {advice.priority === 'high' ? '重要' :
+                         advice.priority === 'medium' ? '中程度' : '参考'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {dynamicAdvice.length > 5 && (
+            <div className="text-center mt-2">
+              <span className="text-xs text-gray-500">
+                他 {dynamicAdvice.length - 5} 件のアドバイスがあります
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       <button
         onClick={onStartDiagnosis}

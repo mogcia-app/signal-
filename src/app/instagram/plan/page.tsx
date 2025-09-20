@@ -166,6 +166,7 @@ export default function InstagramPlanPage() {
               onStartDiagnosis={() => handleStartAiDiagnosis(formData)}
               onSaveAdvice={handleSaveAdviceAndContinue}
               formData={formData}
+              simulationResult={simulationResult}
             />
           
           </div>
