@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, X, MessageCircle, Bot, User } from 'lucide-react';
+import { Send, X, MessageCircle, Bot, User, Lightbulb } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -25,7 +25,42 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 計画系テンプレート
+  const planTemplates = [
+    {
+      id: 'current-goal',
+      title: '現在の目標確認',
+      message: '現在の目標フォロワー数と達成期限を確認したいです。'
+    },
+    {
+      id: 'simulation-result',
+      title: 'シミュレーション結果',
+      message: 'シミュレーション結果について詳しく教えてください。'
+    },
+    {
+      id: 'posting-strategy',
+      title: '投稿戦略の確認',
+      message: '推奨されている投稿戦略について教えてください。'
+    },
+    {
+      id: 'feasibility-check',
+      title: '実現可能性の確認',
+      message: 'この計画の実現可能性はどの程度ですか？'
+    },
+    {
+      id: 'workload-check',
+      title: '作業負荷の確認',
+      message: '週間・月間の作業負荷について詳しく教えてください。'
+    },
+    {
+      id: 'improvement-tips',
+      title: '改善のヒント',
+      message: '計画を改善するための具体的なヒントを教えてください。'
+    }
+  ];
 
   // メッセージの自動スクロール
   const scrollToBottom = () => {
@@ -130,6 +165,11 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     }
   };
 
+  const handleTemplateClick = (template: typeof planTemplates[0]) => {
+    setInputMessage(template.message);
+    setShowTemplates(false);
+  };
+
   return (
     <>
       {/* チャットボタン */}
@@ -206,8 +246,53 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* テンプレートエリア */}
+          {showTemplates && (
+            <div className="p-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <Lightbulb size={16} className="text-orange-600" />
+                  <span className="text-sm font-medium text-gray-700">よく使われる質問</span>
+                </div>
+                <button
+                  onClick={() => setShowTemplates(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {planTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => handleTemplateClick(template)}
+                    className="p-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-200 transition-colors"
+                  >
+                    <div className="text-xs font-medium text-gray-800 mb-1">
+                      {template.title}
+                    </div>
+                    <div className="text-xs text-gray-600 line-clamp-2">
+                      {template.message}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 入力エリア */}
           <div className="p-4 border-t border-gray-200">
+            {/* テンプレートボタン */}
+            <div className="mb-2">
+              <button
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="flex items-center space-x-1 text-xs text-orange-600 hover:text-orange-700 transition-colors"
+              >
+                <Lightbulb size={12} />
+                <span>よく使われる質問</span>
+              </button>
+            </div>
+            
             <div className="flex space-x-2">
               <textarea
                 value={inputMessage}
