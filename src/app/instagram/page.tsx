@@ -22,11 +22,8 @@ import {
   Upload,
   Edit3,
   ThumbsUp,
-  MessageSquare,
-  Share2,
   Play,
   Image as ImageIcon,
-  Video,
   Camera
 } from 'lucide-react';
 
@@ -303,12 +300,12 @@ function InstagramDashboardContent() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-yellow-100 rounded-lg">
-                  <MessageSquare className="h-6 w-6 text-yellow-600" />
+                  <Camera className="h-6 w-6 text-yellow-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">コメント数</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.comments}</p>
-                  <p className="text-xs text-yellow-600">今週</p>
+                  <p className="text-sm font-medium text-gray-600">ストーリーズ投稿</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.monthlyStoryPosts}</p>
+                  <p className="text-xs text-yellow-600">今月</p>
                 </div>
               </div>
             </div>
@@ -394,50 +391,45 @@ function InstagramDashboardContent() {
                   </a>
                 </div>
                 <div className="p-6">
-                  <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {recentPosts.map((post) => (
-                      <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex items-start space-x-4">
-                          {/* 画像 */}
-                          <div className="flex-shrink-0">
-                            <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
-                              <img 
-                                src={post.imageUrl} 
-                                alt={post.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
+                      <div key={post.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                        {/* 画像 */}
+                        <div className="aspect-square bg-gray-100 overflow-hidden">
+                          <img 
+                            src={post.imageUrl} 
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        
+                        {/* 投稿情報 */}
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeColor(post.type)}`}>
+                              {getPostTypeIcon(post.type)} {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
+                            </span>
+                            <span className="text-xs text-gray-500">{post.postedAt}</span>
                           </div>
+                          <h3 className="font-medium text-gray-900 mb-3 line-clamp-2">{post.title}</h3>
                           
-                          {/* 投稿情報 */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center mb-2">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeColor(post.type)}`}>
-                                {getPostTypeIcon(post.type)} {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
-                              </span>
-                              <span className="ml-2 text-sm text-gray-500">{post.postedAt}</span>
+                          {/* KPI表示 */}
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="text-center bg-gray-50 rounded-lg p-2">
+                              <div className="text-gray-500 text-xs">いいね</div>
+                              <div className="font-semibold text-gray-900">{post.likes}</div>
                             </div>
-                            <h3 className="font-medium text-gray-900 mb-2">{post.title}</h3>
-                            {post.caption && (
-                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">{post.caption}</p>
-                            )}
-                            <div className="grid grid-cols-4 gap-4 text-sm">
-                              <div className="text-center">
-                                <div className="text-gray-500">いいね</div>
-                                <div className="font-semibold text-gray-900">{post.likes}</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-gray-500">コメント</div>
-                                <div className="font-semibold text-gray-900">{post.comments}</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-gray-500">保存</div>
-                                <div className="font-semibold text-gray-900">{post.saves}</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-gray-500">エンゲージメント率</div>
-                                <div className="font-semibold text-pink-600">{post.engagementRate}%</div>
-                              </div>
+                            <div className="text-center bg-gray-50 rounded-lg p-2">
+                              <div className="text-gray-500 text-xs">コメント</div>
+                              <div className="font-semibold text-gray-900">{post.comments}</div>
+                            </div>
+                            <div className="text-center bg-gray-50 rounded-lg p-2">
+                              <div className="text-gray-500 text-xs">保存</div>
+                              <div className="font-semibold text-gray-900">{post.saves}</div>
+                            </div>
+                            <div className="text-center bg-gray-50 rounded-lg p-2">
+                              <div className="text-gray-500 text-xs">エンゲージメント率</div>
+                              <div className="font-semibold text-pink-600">{post.engagementRate}%</div>
                             </div>
                           </div>
                         </div>
