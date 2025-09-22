@@ -251,7 +251,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   )}
                 </div>
                 <div className="text-gray-500">
-                  {new Date().toLocaleDateString('ja-JP')}
+                  {scheduledDate ? new Date(scheduledDate).toLocaleDateString('ja-JP') : new Date().toLocaleDateString('ja-JP')}
                 </div>
               </div>
             </div>
