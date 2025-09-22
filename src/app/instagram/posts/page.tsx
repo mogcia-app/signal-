@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { postsApi } from '../../../lib/api';
-import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon } from 'lucide-react';
+import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon, TrendingUp } from 'lucide-react';
 
 interface PostData {
   id: string;
@@ -19,6 +19,16 @@ interface PostData {
   imageData?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  // 分析データ（投稿後）
+  analytics?: {
+    likes: number;
+    comments: number;
+    shares: number;
+    views: number;
+    reach: number;
+    engagementRate: number;
+    publishedAt: Date;
+  };
 }
 
 export default function InstagramPostsPage() {
@@ -27,6 +37,7 @@ export default function InstagramPostsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedPostType, setSelectedPostType] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'saved' | 'published'>('saved');
 
   // 投稿一覧を取得
   const fetchPosts = async () => {
@@ -68,12 +79,18 @@ export default function InstagramPostsPage() {
 
   // フィルタリング
   const filteredPosts = posts.filter(post => {
+    // タブによるフィルタリング
+    const matchesTab = activeTab === 'saved' 
+      ? (post.status === 'draft' || post.status === 'scheduled') 
+      : (post.status === 'published' && post.analytics);
+    
+    // 検索によるフィルタリング
     const matchesSearch = !searchTerm || 
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.hashtags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    return matchesSearch;
+    return matchesTab && matchesSearch;
   });
 
   // ステータス表示の色分け
@@ -123,6 +140,34 @@ export default function InstagramPostsPage() {
             <div className="text-sm text-gray-500">
               {filteredPosts.length}件の投稿
             </div>
+          </div>
+        </div>
+
+        {/* タブ */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('saved')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'saved'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📝 保存済み投稿 ({posts.filter(p => p.status === 'draft' || p.status === 'scheduled').length})
+              </button>
+              <button
+                onClick={() => setActiveTab('published')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'published'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📊 過去の投稿・分析 ({posts.filter(p => p.status === 'published' && p.analytics).length})
+              </button>
+            </nav>
           </div>
         </div>
 
@@ -191,14 +236,23 @@ export default function InstagramPostsPage() {
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📝</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">投稿がありません</h3>
-            <p className="text-gray-600 mb-4">まだ投稿を作成していません。</p>
+            <div className="text-gray-400 text-6xl mb-4">
+              {activeTab === 'saved' ? '📝' : '📊'}
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {activeTab === 'saved' ? '保存済み投稿がありません' : '過去の投稿がありません'}
+            </h3>
+            <p className="text-gray-600 mb-4">
+              {activeTab === 'saved' 
+                ? 'まだ投稿を保存していません。投稿ラボで投稿を作成しましょう。'
+                : 'まだ投稿を公開していません。保存済み投稿を公開すると、ここに分析データが表示されます。'
+              }
+            </p>
             <button
               onClick={() => window.location.href = '/instagram/lab'}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
-              投稿を作成する
+              {activeTab === 'saved' ? '投稿を作成する' : '投稿ラボへ'}
             </button>
           </div>
         ) : (
@@ -269,6 +323,57 @@ export default function InstagramPostsPage() {
                       </div>
                     )}
 
+                    {/* 分析データ（過去の投稿の場合） */}
+                    {activeTab === 'published' && post.analytics && (
+                      <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+                            <TrendingUp size={16} className="mr-2 text-blue-600" />
+                            投稿パフォーマンス
+                          </h4>
+                          <span className="text-xs text-gray-500">
+                            投稿日: {new Date(post.analytics.publishedAt).toLocaleDateString('ja-JP')}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-1">
+                              <Heart size={14} className="text-red-500 mr-1" />
+                              <span className="text-sm font-medium text-gray-700">いいね</span>
+                            </div>
+                            <div className="text-lg font-bold text-gray-900">{post.analytics.likes.toLocaleString()}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-1">
+                              <MessageCircle size={14} className="text-blue-500 mr-1" />
+                              <span className="text-sm font-medium text-gray-700">コメント</span>
+                            </div>
+                            <div className="text-lg font-bold text-gray-900">{post.analytics.comments.toLocaleString()}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-1">
+                              <Share size={14} className="text-green-500 mr-1" />
+                              <span className="text-sm font-medium text-gray-700">シェア</span>
+                            </div>
+                            <div className="text-lg font-bold text-gray-900">{post.analytics.shares.toLocaleString()}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-1">
+                              <EyeIcon size={14} className="text-purple-500 mr-1" />
+                              <span className="text-sm font-medium text-gray-700">リーチ</span>
+                            </div>
+                            <div className="text-lg font-bold text-gray-900">{post.analytics.reach.toLocaleString()}</div>
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">エンゲージメント率</span>
+                            <span className="text-lg font-bold text-blue-600">{post.analytics.engagementRate}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* 作成日時 */}
                     <div className="text-xs text-gray-400">
                       作成日: {new Date(post.createdAt).toLocaleString('ja-JP')}
@@ -284,13 +389,32 @@ export default function InstagramPostsPage() {
                     >
                       <Eye size={16} />
                     </button>
-                    <button
-                      onClick={() => alert('投稿を編集')}
-                      className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                      title="編集"
-                    >
-                      <Edit size={16} />
-                    </button>
+                    {activeTab === 'saved' ? (
+                      <>
+                        <button
+                          onClick={() => alert('投稿を編集')}
+                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                          title="編集"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => alert('投稿を公開')}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                          title="投稿"
+                        >
+                          📤
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => alert('詳細分析を表示')}
+                        className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+                        title="詳細分析"
+                      >
+                        📊
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDeletePost(post.id)}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
