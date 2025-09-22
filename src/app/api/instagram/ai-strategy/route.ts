@@ -3,7 +3,7 @@ import { searchRelevantKnowledge, saveUserAnalysis, getLearningInsights } from '
 
 // セキュリティ: APIキーの検証
 function validateApiKey(_request: NextRequest): boolean {
-  const apiKey = request.headers.get('x-api-key');
+  const apiKey = _request.headers.get('x-api-key');
   const validApiKey = process.env.INTERNAL_API_KEY;
   
   if (!validApiKey) {
@@ -45,11 +45,11 @@ function checkRateLimit(ip: string): boolean {
 
 // 入力データの検証
 function validateInputData(_data: unknown): boolean {
-  if (!data || typeof data !== 'object') {
+  if (!_data || typeof _data !== 'object') {
     return false;
   }
   
-  const dataObj = data as Record<string, unknown>;
+  const dataObj = _data as Record<string, unknown>;
   
   // 必須フィールドのチェック
   const requiredFields = ['currentFollowers', 'targetFollowers', 'planPeriod'];
