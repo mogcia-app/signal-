@@ -214,39 +214,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
         </div>
 
-        {/* AI投稿生成 */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            🤖 AI投稿文生成
-          </label>
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマや内容を入力してください...`}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            />
-            <button
-              onClick={handleGeneratePost}
-              disabled={!aiPrompt.trim() || isGenerating}
-              className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  生成中...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={16} className="mr-2" />
-                  AI投稿文を生成
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
         {/* 投稿設定 */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -287,6 +254,39 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className="w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
               style={{ fontFamily: 'inherit' }}
             />
+          </div>
+        </div>
+
+        {/* AI投稿文生成 */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-800 mb-3">
+            🤖 AI投稿文生成
+          </label>
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマや内容を入力してください...`}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80"
+            />
+            <button
+              onClick={handleGeneratePost}
+              disabled={!aiPrompt.trim() || isGenerating}
+              className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  生成中...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} className="mr-2" />
+                  AI投稿文を生成
+                </>
+              )}
+            </button>
           </div>
         </div>
 
