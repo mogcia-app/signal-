@@ -628,11 +628,6 @@ function InstagramDashboardContent() {
                     }
                     return `color-scale-${value.level}`;
                   }}
-                  tooltipDataAttrs={(value) => {
-                    return {
-                      'data-tip': `${value?.date}: ${value?.count} エンゲージメント`,
-                    };
-                  }}
                   onClick={(value) => {
                     console.log('Clicked:', value);
                   }}
@@ -718,7 +713,7 @@ function InstagramDashboardContent() {
                       <span className="text-2xl mr-2">✅</span>
                       TODOリスト
                     </h2>
-                    <button className="flex items-center space-x-1 text-sm text-[#ff8a15] hover:text-orange-600 font-medium px-3 py-1.5 border border-[#ff8a15] hover:bg-[#ff8a15] hover:text-white transition-all duration-200 rounded-md">
+                    <button className="flex items-center space-x-1 text-sm text-[#ff8a15] font-medium px-3 py-1.5 border border-[#ff8a15] hover:bg-[#ff8a15] hover:text-white transition-all duration-200 rounded-md">
                       <span>+</span>
                       <span>追加</span>
                     </button>
