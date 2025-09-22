@@ -18,7 +18,8 @@ import {
   ThumbsUp,
   Play,
   Image as ImageIcon,
-  Camera
+  Camera,
+  TrendingUp
 } from 'lucide-react';
 
 interface DashboardStats {
