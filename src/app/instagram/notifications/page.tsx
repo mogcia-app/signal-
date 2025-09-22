@@ -15,7 +15,7 @@ import {
   Star,
   StarOff
 } from 'lucide-react';
-import { db } from '../../../../lib/firebase';
+import { db } from '../../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
 interface Notification {
