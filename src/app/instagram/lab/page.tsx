@@ -45,8 +45,13 @@ export default function InstagramLabPage() {
             />
           </div>
 
-          {/* 右カラム: ツール・診断 */}
+          {/* 右カラム: 診断・ツール */}
           <div className="space-y-6">
+            <KPIDiagnosis
+              content={postContent}
+              hashtags={selectedHashtags}
+            />
+            
             <ToolPanel
               onTemplateSelect={(template: string) => {
                 setPostContent(prev => prev + template);
@@ -54,11 +59,6 @@ export default function InstagramLabPage() {
               onHashtagSelect={(hashtag: string) => {
                 setSelectedHashtags(prev => [...prev, hashtag]);
               }}
-            />
-            
-            <KPIDiagnosis
-              content={postContent}
-              hashtags={selectedHashtags}
             />
           </div>
         </div>
