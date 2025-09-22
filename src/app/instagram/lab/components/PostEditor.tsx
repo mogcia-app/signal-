@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, RefreshCw, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface PostEditorProps {
   content: string;
@@ -24,9 +24,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   
-  // AI機能の状態
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  // AI投稿チェック機能の状態
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<{
     score: number;
@@ -54,6 +52,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const handleClear = () => {
     onContentChange('');
     onHashtagsChange([]);
+    setScheduledDate('');
+    setScheduledTime('');
+    setCheckResult(null);
   };
 
   const handleHashtagRemove = (index: number) => {
@@ -66,42 +67,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     }
   };
 
-  // AI投稿生成
-  const handleGeneratePost = async () => {
-    if (!aiPrompt.trim()) return;
-    
-    setIsGenerating(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 模擬処理
-      
-      const generatedContent = `✨ ${aiPrompt}について投稿文を生成しました！
-
-この投稿は${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化されています。
-エンゲージメントを高めるために、以下のポイントを意識しました：
-
-• 感情に訴える表現
-• 行動を促すCTA
-• 視覚的に魅力的な文章構成
-
-#${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム'} #${aiPrompt.replace(/\s+/g, '')} #エンゲージメント`;
-
-      const hashtags = [
-        postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム',
-        aiPrompt.replace(/\s+/g, ''),
-        'エンゲージメント',
-        '投稿',
-        'SNS'
-      ];
-
-      onContentChange(generatedContent);
-      onHashtagsChange(hashtags);
-      setAiPrompt('');
-    } catch (error) {
-      console.error('投稿生成エラー:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   // AI投稿チェック
   const handleCheckPost = async () => {
@@ -257,38 +222,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
         </div>
 
-        {/* AI投稿文生成 */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-800 mb-3">
-            🤖 AI投稿文生成
-          </label>
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマや内容を入力してください...`}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80"
-            />
-            <button
-              onClick={handleGeneratePost}
-              disabled={!aiPrompt.trim() || isGenerating}
-              className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  生成中...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={16} className="mr-2" />
-                  AI投稿文を生成
-                </>
-              )}
-            </button>
-          </div>
-        </div>
 
         {/* ハッシュタグ表示・編集 */}
         <div className="mb-6">

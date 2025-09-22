@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import PostEditor from './components/PostEditor';
+import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
 import KPIDiagnosis from './components/KPIDiagnosis';
 import PlanDisplay from './components/PlanDisplay';
@@ -34,6 +35,12 @@ export default function InstagramLabPage() {
   //   createdAt: '2024-09-01'
   // });
 
+  // AI生成ハンドラー
+  const handleAIGenerate = (generatedContent: string, generatedHashtags: string[]) => {
+    setPostContent(generatedContent);
+    setSelectedHashtags(generatedHashtags);
+  };
+
   return (
     <SNSLayout 
       currentSNS="instagram"
@@ -52,6 +59,11 @@ export default function InstagramLabPage() {
               onHashtagsChange={setSelectedHashtags}
               postType={postType}
               onPostTypeChange={setPostType}
+            />
+            
+            <AIPostGenerator
+              postType={postType}
+              onGeneratePost={handleAIGenerate}
             />
           </div>
 
