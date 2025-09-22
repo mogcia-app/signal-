@@ -7,6 +7,7 @@ import {
   Mail,
   MapPin
 } from 'lucide-react';
+import SNSLayout from '../../components/sns-layout';
 
 export default function TermsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,31 +25,12 @@ export default function TermsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ヘッダー */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <FileText className="w-8 h-8 text-blue-600" />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">利用規約</h1>
-                <p className="text-gray-600 mt-1">Signal - SNSマーケティング支援ツール</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">
-                最終更新日: 2024年1月20日
-              </p>
-              <p className="text-sm text-gray-500">
-                効力発生日: 2024年1月20日
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
+    <SNSLayout 
+      currentSNS="instagram" 
+      customTitle="利用規約" 
+      customDescription="Signal. - SNSマーケティング支援ツール"
+    >
+      <div className="max-w-7xl mx-auto">
         <div className="flex gap-8">
           {/* サイドバー */}
           <div className="w-64 flex-shrink-0">
@@ -110,7 +92,7 @@ export default function TermsPage() {
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">第1条 総則</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 目的</h3>
                     <p className="text-gray-700 mb-4">
-                      本利用規約は、Signal株式会社（以下「当社」）が提供するSignalサービス（以下「本サービス」）の利用条件を定めるものです。
+                      本利用規約は、株式会社MOGCIA（以下「当社」）が提供するSignal.サービス（以下「本サービス」）の利用条件を定めるものです。
                     </p>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                       <p className="text-blue-800 text-sm">
@@ -123,7 +105,7 @@ export default function TermsPage() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第2項 サービス内容</h3>
                     <p className="text-gray-700 mb-4">
-                      Signalは、Instagram、Twitter、YouTube、TikTokなどのSNSプラットフォームでのマーケティング活動を支援するツールです。
+                      Signal.は、Instagram、Twitter、YouTube、TikTokなどのSNSプラットフォームでのマーケティング活動を支援するツールです。
                     </p>
                     <ul className="list-disc list-inside text-gray-700 space-y-2">
                       <li>投稿の分析・最適化</li>
@@ -455,7 +437,7 @@ export default function TermsPage() {
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第3項 法的情報</h3>
                     <div className="text-sm text-gray-600 space-y-1">
-                      <p>会社名: Signal株式会社</p>
+                      <p>会社名: 株式会社MOGCIA</p>
                       <p>代表取締役: 田中太郎</p>
                       <p>設立: 2024年1月</p>
                       <p>資本金: 1,000万円</p>
@@ -478,6 +460,6 @@ export default function TermsPage() {
           </p>
         </div>
       </div>
-    </div>
+    </SNSLayout>
   );
 }
