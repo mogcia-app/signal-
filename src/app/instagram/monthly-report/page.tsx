@@ -85,6 +85,128 @@ export default function InstagramMonthlyReportPage() {
   const [selectedWeek, setSelectedWeek] = useState<string>(
     getCurrentWeekString() // YYYY-WW形式
   );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // データ量検証の定数
+  const MIN_DATA_FOR_ANALYSIS = 15;
+
+  // データ量検証関数
+  const validateDataForAnalysis = (data: any[], dataType: string) => {
+    if (data.length < MIN_DATA_FOR_ANALYSIS) {
+      return {
+        isValid: false,
+        message: `${dataType}のデータが${data.length}個しかありません。分析には最低${MIN_DATA_FOR_ANALYSIS}個のデータが必要です。`
+      };
+    }
+    return { isValid: true, message: '' };
+  };
+
+  // バックエンドAPI連携関数
+  const fetchAnalyticsFromBackend = async (period: 'weekly' | 'monthly', date: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // 実際のバックエンドAPI呼び出し
+      const response = await fetch(`/api/analytics/${period}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          date: date,
+          userId: 'current-user'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`APIエラー: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('バックエンドAPI取得エラー:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // CSVエクスポート関数
+  const exportToCSV = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/export/csv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          period: activeTab,
+          date: activeTab === 'weekly' ? selectedWeek : selectedMonth,
+          userId: 'current-user'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('CSVエクスポートに失敗しました');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `instagram-${activeTab}-report-${activeTab === 'weekly' ? selectedWeek : selectedMonth}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('CSVエクスポートエラー:', error);
+      setError('CSVエクスポートに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // PDFエクスポート関数
+  const exportToPDF = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/export/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          period: activeTab,
+          date: activeTab === 'weekly' ? selectedWeek : selectedMonth,
+          userId: 'current-user'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('PDFエクスポートに失敗しました');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `instagram-${activeTab}-report-${activeTab === 'weekly' ? selectedWeek : selectedMonth}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDFエクスポートエラー:', error);
+      setError('PDFエクスポートに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 投稿一覧を取得
   const fetchPosts = async () => {
@@ -166,10 +288,61 @@ export default function InstagramMonthlyReportPage() {
   };
 
   useEffect(() => {
-    fetchPosts();
-    fetchAnalytics();
-    fetchPlanData();
+    const initializeData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // 並行してデータを取得
+        await Promise.all([
+          fetchPosts(),
+          fetchAnalytics(),
+          fetchPlanData()
+        ]);
+        
+        // データ量検証
+        const analyticsValidation = validateDataForAnalysis(analyticsData, '分析');
+        if (!analyticsValidation.isValid) {
+          setError(analyticsValidation.message);
+        }
+        
+      } catch (error) {
+        console.error('データ初期化エラー:', error);
+        setError('データの取得に失敗しました');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
+
+  // 期間変更時のデータ再取得
+  useEffect(() => {
+    if (analyticsData.length > 0) {
+      const fetchPeriodData = async () => {
+        try {
+          setIsLoading(true);
+          const periodData = await fetchAnalyticsFromBackend(activeTab, activeTab === 'weekly' ? selectedWeek : selectedMonth);
+          
+          // データ量検証
+          const validation = validateDataForAnalysis(periodData.analytics || [], '分析');
+          if (!validation.isValid) {
+            setError(validation.message);
+          } else {
+            setError(null);
+          }
+        } catch (error) {
+          console.error('期間データ取得エラー:', error);
+          setError('期間データの取得に失敗しました');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchPeriodData();
+    }
+  }, [activeTab, selectedMonth, selectedWeek]);
 
   // 選択された月の分析データを取得
   const selectedMonthAnalytics = analyticsData.filter(data => {
@@ -297,6 +470,73 @@ export default function InstagramMonthlyReportPage() {
 
   const performanceRating = getPerformanceRating(activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement);
 
+  // ローディング画面
+  if (isLoading) {
+    return (
+      <SNSLayout 
+        currentSNS="instagram"
+        customTitle="月次レポート"
+        customDescription="月次のパフォーマンス分析とレポート"
+      >
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">データを読み込み中...</h2>
+            <p className="text-gray-600">分析データを取得しています</p>
+          </div>
+        </div>
+      </SNSLayout>
+    );
+  }
+
+  // エラー画面
+  if (error) {
+    return (
+      <SNSLayout 
+        currentSNS="instagram"
+        customTitle="月次レポート"
+        customDescription="月次のパフォーマンス分析とレポート"
+      >
+        <div className="space-y-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-red-600 text-xl">⚠️</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-red-900">データ不足</h2>
+                <p className="text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+            <div className="mt-4 p-4 bg-white rounded-lg border border-red-200">
+              <h3 className="font-medium text-gray-900 mb-2">データを増やすには:</h3>
+              <ul className="space-y-1 text-sm text-gray-600">
+                <li>• 投稿ラボでより多くの投稿を作成する</li>
+                <li>• 投稿を公開してエンゲージメントデータを収集する</li>
+                <li>• 運用計画を立てて定期的に投稿する</li>
+                <li>• 最低{MIN_DATA_FOR_ANALYSIS}個の投稿データが必要です</li>
+              </ul>
+            </div>
+            <div className="mt-4 flex space-x-3">
+              <button
+                onClick={() => window.location.href = '/instagram/lab'}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                投稿ラボへ
+              </button>
+              <button
+                onClick={() => window.location.href = '/instagram/plan'}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                運用計画を立てる
+              </button>
+            </div>
+          </div>
+        </div>
+      </SNSLayout>
+    );
+  }
+
   return (
     <SNSLayout 
       currentSNS="instagram"
@@ -306,7 +546,23 @@ export default function InstagramMonthlyReportPage() {
       <div className="max-w-7xl mx-auto p-6">
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-6">
-          
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {activeTab === 'weekly' ? '週次' : '月次'}レポート
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {activeTab === 'weekly' ? getWeekDisplayName(selectedWeek) : getMonthDisplayName(selectedMonth)}の分析結果
+            </p>
+            {/* データ量表示 */}
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <span className="mr-2">📊</span>
+              <span>分析データ: {analyticsData.length}個</span>
+              <span className="mx-2">•</span>
+              <span className={analyticsData.length >= MIN_DATA_FOR_ANALYSIS ? 'text-green-600' : 'text-yellow-600'}>
+                {analyticsData.length >= MIN_DATA_FOR_ANALYSIS ? '✅ 十分なデータ' : `⚠️ 最低${MIN_DATA_FOR_ANALYSIS}個推奨`}
+              </span>
+            </div>
+          </div>
           <div className="flex items-center space-x-3">
             {/* タブ切り替え */}
             <div className="flex bg-gray-100 rounded-lg p-1">
@@ -1088,24 +1344,38 @@ export default function InstagramMonthlyReportPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* CSV出力 */}
-            <button className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors">
+            <button 
+              onClick={exportToCSV}
+              disabled={isLoading || analyticsData.length < MIN_DATA_FOR_ANALYSIS}
+              className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <div className="text-center">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <BarChart3 className="w-6 h-6 text-blue-600" />
                 </div>
                 <h3 className="font-medium text-blue-900 mb-1">CSV出力</h3>
                 <p className="text-sm text-blue-700">生データをExcelで分析</p>
+                {analyticsData.length < MIN_DATA_FOR_ANALYSIS && (
+                  <p className="text-xs text-red-600 mt-1">データ不足</p>
+                )}
               </div>
             </button>
 
             {/* PDFレポート */}
-            <button className="flex items-center justify-center p-4 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors">
+            <button 
+              onClick={exportToPDF}
+              disabled={isLoading || analyticsData.length < MIN_DATA_FOR_ANALYSIS}
+              className="flex items-center justify-center p-4 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <div className="text-center">
                 <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Download className="w-6 h-6 text-red-600" />
                 </div>
                 <h3 className="font-medium text-red-900 mb-1">PDFレポート</h3>
                 <p className="text-sm text-red-700">包括的な分析レポート</p>
+                {analyticsData.length < MIN_DATA_FOR_ANALYSIS && (
+                  <p className="text-xs text-red-600 mt-1">データ不足</p>
+                )}
               </div>
             </button>
 
