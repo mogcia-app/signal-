@@ -7,12 +7,22 @@ interface AIPostGeneratorProps {
   postType: 'feed' | 'reel' | 'story';
   onPostTypeChange: (type: 'feed' | 'reel' | 'story') => void;
   onGeneratePost: (title: string, content: string, hashtags: string[]) => void;
+  planData?: {
+    id: string;
+    title: string;
+    targetFollowers: number;
+    currentFollowers: number;
+    planPeriod: string;
+    strategies: string[];
+    createdAt: string;
+  } | null;
 }
 
 export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   postType,
   onPostTypeChange,
-  onGeneratePost
+  onGeneratePost,
+  planData
 }) => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiTitle, setAiTitle] = useState('');
@@ -53,31 +63,51 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   };
 
   const handleGeneratePost = async () => {
-    if (!aiPrompt.trim()) return;
+    if (!aiPrompt.trim()) {
+      alert('投稿のテーマを入力してください');
+      return;
+    }
+
+    if (!planData) {
+      alert('運用計画を先に作成してください');
+      return;
+    }
     
     setIsGenerating(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 2000)); // 模擬処理
       
-      const generatedTitle = `${aiPrompt}についての${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}投稿`;
+      // 運用計画に基づいた投稿文生成
+      const strategy = planData.strategies[Math.floor(Math.random() * planData.strategies.length)];
+      const targetGrowth = Math.round((planData.targetFollowers - planData.currentFollowers) / planData.targetFollowers * 100);
       
-      const generatedContent = `✨ ${aiPrompt}について投稿文を生成しました！
+      const generatedTitle = `${aiPrompt} - ${strategy}で成長加速`;
+      
+      const generatedContent = `🎯 ${planData.title}の一環として、${aiPrompt}について投稿します！
 
-この投稿は${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化されています。
-エンゲージメントを高めるために、以下のポイントを意識しました：
+📈 目標: ${planData.targetFollowers.toLocaleString()}フォロワー達成まであと${targetGrowth}%！
+期間: ${planData.planPeriod}
 
-• 感情に訴える表現
-• 行動を促すCTA
-• 視覚的に魅力的な文章構成
+✨ 今回の戦略: ${strategy}
+${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化された内容で、エンゲージメント向上を目指します。
 
-#${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム'} #${aiPrompt.replace(/\s+/g, '')} #エンゲージメント`;
+💡 この投稿のポイント:
+• ${strategy}を意識した構成
+• フォロワーとの繋がりを深める内容
+• 行動を促す明確なメッセージ
+
+一緒に成長していきましょう！📱✨
+
+#${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム'} #${strategy.replace(/\s+/g, '')} #成長 #${aiPrompt.replace(/\s+/g, '')} #エンゲージメント`;
 
       const newHashtags = [
         postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム',
+        strategy.replace(/\s+/g, ''),
+        '成長',
         aiPrompt.replace(/\s+/g, ''),
         'エンゲージメント',
-        '投稿',
-        'SNS'
+        'フォロワー',
+        '目標達成'
       ];
 
       onGeneratePost(generatedTitle, generatedContent, newHashtags);
@@ -101,7 +131,12 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">AI投稿文生成</h3>
-              <p className="text-sm text-gray-600">テーマを入力してAIが投稿文を自動生成します</p>
+              <p className="text-sm text-gray-600">
+                {planData 
+                  ? `${planData.title}に基づいてAIが投稿文を自動生成します`
+                  : '運用計画を作成してからAI投稿文を生成できます'
+                }
+              </p>
             </div>
           </div>
           <div className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
@@ -256,8 +291,12 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             <textarea
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}の投稿文を入力してください...`}
-              className="w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+              placeholder={planData 
+                ? `${planData.title}に基づいた${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマを入力してください...`
+                : '運用計画を作成してから投稿テーマを入力してください...'
+              }
+              disabled={!planData}
+              className={`w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm ${!planData ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ fontFamily: 'inherit' }}
             />
           </div>
@@ -276,7 +315,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
         {/* 生成ボタン */}
         <button
           onClick={handleGeneratePost}
-          disabled={!aiPrompt.trim() || isGenerating}
+          disabled={!aiPrompt.trim() || isGenerating || !planData}
           className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-medium"
         >
           {isGenerating ? (
