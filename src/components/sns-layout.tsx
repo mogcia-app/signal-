@@ -134,7 +134,10 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
                      <span>📋</span>
                      <span>運用計画</span>
                    </button>
-            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+            <button 
+              onClick={() => router.push(`/${currentSNS}/lab`)}
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
               <span>🧪</span>
               <span>投稿ラボ</span>
             </button>
