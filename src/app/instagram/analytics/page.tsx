@@ -86,34 +86,12 @@ export default function InstagramAnalyticsPage() {
   const fetchPlanData = async () => {
     try {
       // 実際の実装では plans API を呼び出す
-      // 今回は模擬データを使用
-      const mockPlanData: PlanData = {
-        id: 'plan-001',
-        title: 'Instagram成長加速計画',
-        targetFollowers: 10000,
-        currentFollowers: 3250,
-        planPeriod: '6ヶ月',
-        targetAudience: '20-30代女性',
-        category: 'ライフスタイル',
-        strategies: ['ハッシュタグ最適化', 'ストーリー活用', 'リール投稿', 'エンゲージメント向上'],
-        createdAt: '2024-01-01',
-        simulation: {
-          postTypes: {
-            reel: { weeklyCount: 1, followerEffect: 3 },
-            feed: { weeklyCount: 2, followerEffect: 2 },
-            story: { weeklyCount: 3, followerEffect: 1 }
-          }
-        },
-        aiPersona: {
-          tone: '親しみやすい',
-          style: 'カジュアル',
-          personality: '明るく前向き',
-          interests: ['成長', 'コミュニティ', 'エンゲージメント', 'クリエイティブ']
-        }
-      };
-      setPlanData(mockPlanData);
+      // 現在は計画データが存在しない状態をシミュレート
+      // TODO: 実際のAPIエンドポイントに置き換える
+      setPlanData(null);
     } catch (error) {
       console.error('計画データ取得エラー:', error);
+      setPlanData(null);
     }
   };
 
@@ -490,7 +468,7 @@ export default function InstagramAnalyticsPage() {
           <div className="space-y-6">
             
             {/* 計画内容連携 */}
-            {planData && (
+            {planData ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center mb-6">
                   <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mr-3">
@@ -556,6 +534,25 @@ export default function InstagramAnalyticsPage() {
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Target className="w-8 h-8 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">運用計画がありません</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    効果的な投稿分析のためには、まず運用計画を立てることが重要です。
+                  </p>
+                  <button
+                    onClick={() => window.location.href = '/instagram/plan'}
+                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    <Target className="w-4 h-4 mr-2" />
+                    運用計画を立てましょう
+                  </button>
                 </div>
               </div>
             )}
