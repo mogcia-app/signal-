@@ -158,14 +158,24 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               <span>月次レポート</span>
             </button>
             <button 
-              onClick={() => router.push(`/${currentSNS}/ai-chat`)}
+              onClick={() => {
+                console.log('AIチャットボタンがクリックされました', { currentSNS });
+                const path = `/${currentSNS}/ai-chat`;
+                console.log('ナビゲーションパス:', path);
+                router.push(path);
+              }}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🤖</span>
               <span>AIチャット</span>
             </button>
             <button 
-              onClick={() => router.push(`/${currentSNS}/ai-learning`)}
+              onClick={() => {
+                console.log('AI学習進捗ボタンがクリックされました', { currentSNS });
+                const path = `/${currentSNS}/ai-learning`;
+                console.log('ナビゲーションパス:', path);
+                router.push(path);
+              }}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🧠</span>
@@ -177,14 +187,6 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             >
               <span>📚</span>
               <span>投稿一覧</span>
-            </button>
-            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
-              <span>🤖</span>
-              <span>AIチャット</span>
-            </button>
-            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
-              <span>📈</span>
-              <span>AI学習進捗</span>
             </button>
             <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
               <span>🔔</span>
