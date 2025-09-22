@@ -55,75 +55,76 @@ export default function TermsPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* ページナビゲーション */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">{pages[currentPage - 1]?.title}</h2>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  {currentPage} / {totalPages}
-                </span>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex gap-8">
+          {/* サイドバー */}
+          <div className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">目次</h3>
+              <nav className="space-y-2">
+                {pages.map((page) => (
+                  <button
+                    key={page.id}
+                    onClick={() => setCurrentPage(page.id)}
+                    className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                      currentPage === page.id
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {page.title}
+                  </button>
+                ))}
+              </nav>
+              
+              {/* ページナビゲーション */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-500">
+                    {currentPage} / {totalPages}
+                  </span>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    前へ
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    次へ
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            {/* ページ番号ナビゲーション */}
-            <div className="flex items-center justify-center space-x-2 mt-4">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                前へ
-              </button>
-              
-              {pages.map((page) => (
-                <button
-                  key={page.id}
-                  onClick={() => setCurrentPage(page.id)}
-                  className={`px-3 py-2 text-sm border rounded-md transition-colors ${
-                    currentPage === page.id
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {page.id}
-                </button>
-              ))}
-              
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                次へ
-              </button>
             </div>
           </div>
 
           {/* メインコンテンツ */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
             {/* 第1条 総則 */}
             {currentPage === 1 && (
               <div>
                 <div className="space-y-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
-                      <CheckCircle className="w-5 h-5 mr-2" />
-                      重要なお知らせ
-                    </h3>
-                    <p className="text-blue-800">
-                      本サービスをご利用いただく前に、必ず本利用規約をお読みください。
-                      本サービスをご利用いただくことで、本利用規約に同意したものとみなします。
-                    </p>
-                  </div>
-
                   <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第1条 総則</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 目的</h3>
                     <p className="text-gray-700 mb-4">
                       本利用規約は、Signal株式会社（以下「当社」）が提供するSignalサービス（以下「本サービス」）の利用条件を定めるものです。
                     </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <p className="text-blue-800 text-sm">
+                        <strong>重要：</strong>本サービスをご利用いただく前に、必ず本利用規約をお読みください。
+                        本サービスをご利用いただくことで、本利用規約に同意したものとみなします。
+                      </p>
+                    </div>
                   </div>
 
                   <div>
@@ -160,24 +161,21 @@ export default function TermsPage() {
             {currentPage === 2 && (
               <div>
                 <div className="space-y-6">
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-yellow-900 mb-3 flex items-center">
-                      <AlertTriangle className="w-5 h-5 mr-2" />
-                      解約に関する重要事項
-                    </h3>
-                    <ul className="text-yellow-800 space-y-2">
-                      <li>• 解約は更新日の<strong>1ヶ月前まで</strong>にお手続きください</li>
-                      <li>• 途中解約の場合、残り期間分の料金をお支払いいただきます</li>
-                      <li>• 解約手続き後も、契約期間終了までサービスをご利用いただけます</li>
-                    </ul>
-                  </div>
-
                   <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第2条 サブスクリプション</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 サブスクリプション契約</h3>
                     <p className="text-gray-700 mb-4">
                       本サービスは、月額または年額のサブスクリプション契約によりご利用いただけます。
                       契約期間中は、契約プランに応じた機能をご利用いただけます。
                     </p>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <p className="text-yellow-800 text-sm font-semibold mb-2">解約に関する重要事項：</p>
+                      <ul className="text-yellow-800 text-sm space-y-1">
+                        <li>• 解約は更新日の<strong>1ヶ月前まで</strong>にお手続きください</li>
+                        <li>• 途中解約の場合、残り期間分の料金をお支払いいただきます</li>
+                        <li>• 解約手続き後も、契約期間終了までサービスをご利用いただけます</li>
+                      </ul>
+                    </div>
                   </div>
 
                   <div>
@@ -230,21 +228,18 @@ export default function TermsPage() {
             {currentPage === 3 && (
               <div>
                 <div className="space-y-6">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-red-900 mb-3 flex items-center">
-                      <AlertTriangle className="w-5 h-5 mr-2" />
-                      支払い期限と法的措置
-                    </h3>
-                    <ul className="text-red-800 space-y-2">
-                      <li>• 振り込み支払いの場合、請求書発行から<strong>15日以内</strong>にお支払いください</li>
-                      <li>• 支払いが遅延した場合、最大30日間の猶予期間を設けます</li>
-                      <li>• 支払いがなく、連絡もつかない場合は<strong>法的措置を取らせていただく場合があります</strong></li>
-                      <li>• 延滞料として月利14.6%の利息が発生します</li>
-                    </ul>
-                  </div>
-
                   <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第3条 支払い条件</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 支払い方法</h3>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                      <p className="text-red-800 text-sm font-semibold mb-2">支払い期限と法的措置：</p>
+                      <ul className="text-red-800 text-sm space-y-1">
+                        <li>• 振り込み支払いの場合、請求書発行から<strong>15日以内</strong>にお支払いください</li>
+                        <li>• 支払いが遅延した場合、最大30日間の猶予期間を設けます</li>
+                        <li>• 支払いがなく、連絡もつかない場合は<strong>法的措置を取らせていただく場合があります</strong></li>
+                        <li>• 延滞料として月利14.6%の利息が発生します</li>
+                      </ul>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="border border-gray-200 rounded-lg p-4">
                         <h4 className="font-semibold text-gray-900 mb-2">クレジットカード</h4>
@@ -286,20 +281,17 @@ export default function TermsPage() {
             {currentPage === 4 && (
               <div>
                 <div className="space-y-6">
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-orange-900 mb-3 flex items-center">
-                      <AlertTriangle className="w-5 h-5 mr-2" />
-                      解約に関する重要事項
-                    </h3>
-                    <ul className="text-orange-800 space-y-2">
-                      <li>• 解約は更新日の<strong>1ヶ月前まで</strong>にお手続きください</li>
-                      <li>• 途中解約の場合、残り期間分の料金は<strong>返金されません</strong></li>
-                      <li>• 解約手続き後も、契約期間終了までサービスをご利用いただけます</li>
-                    </ul>
-                  </div>
-
                   <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第4条 解約・返金</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 解約手続き</h3>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                      <p className="text-orange-800 text-sm font-semibold mb-2">解約に関する重要事項：</p>
+                      <ul className="text-orange-800 text-sm space-y-1">
+                        <li>• 解約は更新日の<strong>1ヶ月前まで</strong>にお手続きください</li>
+                        <li>• 途中解約の場合、残り期間分の料金は<strong>返金されません</strong></li>
+                        <li>• 解約手続き後も、契約期間終了までサービスをご利用いただけます</li>
+                      </ul>
+                    </div>
                     <ol className="list-decimal list-inside text-gray-700 space-y-2">
                       <li>マイアカウントページにログイン</li>
                       <li>「アカウント設定」→「サブスクリプション管理」</li>
@@ -328,26 +320,23 @@ export default function TermsPage() {
             {currentPage === 5 && (
               <div>
                 <div className="space-y-6">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-red-900 mb-3 flex items-center">
-                      <Zap className="w-5 h-5 mr-2" />
-                      効果保証に関する免責事項
-                    </h3>
-                    <div className="text-red-800 space-y-3">
-                      <p>
-                        <strong>本サービスは必ずバズる効果を保証するものではありません。</strong>
-                      </p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>SNSでの成果は、コンテンツの質、タイミング、ターゲット層など様々な要因に依存します</li>
-                        <li>フォロワー増加、エンゲージメント向上、売上向上などの効果は保証できません</li>
-                        <li>競合他社の動向や、SNSプラットフォームの仕様変更により効果が変動する可能性があります</li>
-                        <li>AI機能は提案であり、必ずしも最適解とは限りません</li>
-                      </ul>
-                    </div>
-                  </div>
-
                   <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第5条 免責事項</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 サービス利用に関する免責</h3>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                      <p className="text-red-800 text-sm font-semibold mb-2">効果保証に関する免責事項：</p>
+                      <div className="text-red-800 text-sm space-y-2">
+                        <p>
+                          <strong>本サービスは必ずバズる効果を保証するものではありません。</strong>
+                        </p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>SNSでの成果は、コンテンツの質、タイミング、ターゲット層など様々な要因に依存します</li>
+                          <li>フォロワー増加、エンゲージメント向上、売上向上などの効果は保証できません</li>
+                          <li>競合他社の動向や、SNSプラットフォームの仕様変更により効果が変動する可能性があります</li>
+                          <li>AI機能は提案であり、必ずしも最適解とは限りません</li>
+                        </ul>
+                      </div>
+                    </div>
                     <ul className="text-gray-700 space-y-2">
                       <li>• 本サービスの利用により生じた損害について、当社は一切の責任を負いません</li>
                       <li>• サービス停止、データ消失、アクセス不能などが発生しても責任を負いません</li>
@@ -373,6 +362,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第6条 プライバシー</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 個人情報の取り扱い</h3>
                     <ul className="text-gray-700 space-y-2">
                       <li>• お客様の個人情報は、プライバシーポリシーに従って適切に管理されます</li>
@@ -407,6 +397,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第7条 知的財産権</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 著作権・知的財産権</h3>
                     <p className="text-gray-700 mb-4">
                       お客様が作成・投稿したコンテンツの著作権はお客様に帰属します。
@@ -440,6 +431,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第8条 その他</h2>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">第1項 準拠法・管轄裁判所</h3>
                     <p className="text-gray-700 mb-4">
                       本利用規約は、日本法に準拠し、東京地方裁判所を専属的合意管轄とします。
@@ -481,15 +473,18 @@ export default function TermsPage() {
             )}
           </div>
 
-          {/* フッター */}
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500">
-              本利用規約は、日本法に準拠し、東京地方裁判所を専属的合意管轄とします。
-            </p>
-            <p className="text-xs text-gray-400 mt-2">
-              最終更新日: 2024年1月20日 | 効力発生日: 2024年1月20日
-            </p>
+            </div>
           </div>
+        </div>
+
+        {/* フッター */}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500">
+            本利用規約は、日本法に準拠し、東京地方裁判所を専属的合意管轄とします。
+          </p>
+          <p className="text-xs text-gray-400 mt-2">
+            最終更新日: 2024年1月20日 | 効力発生日: 2024年1月20日
+          </p>
         </div>
       </div>
     </div>
