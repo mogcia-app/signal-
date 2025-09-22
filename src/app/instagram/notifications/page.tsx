@@ -451,15 +451,6 @@ export default function InstagramNotificationsPage() {
         customDescription="システムのお知らせと通知"
       >
         <div className="max-w-7xl mx-auto p-6">
-        {/* ヘッダー */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Bell className="w-7 h-7 text-white" />
-            </div>
-           
-          </div>
-
           {/* 統計情報 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -534,8 +525,8 @@ export default function InstagramNotificationsPage() {
           </div>
         </div>
 
-          {/* 通知一覧 */}
-          <div className="space-y-4">
+        {/* 通知一覧 */}
+        <div className="space-y-4">
             {filteredNotifications.length === 0 ? (
               <div className="text-center py-12">
                 <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -675,8 +666,6 @@ export default function InstagramNotificationsPage() {
                 );
               })
             )}
-          </div>
-
         </div>
 
         {/* 詳細モーダル */}
