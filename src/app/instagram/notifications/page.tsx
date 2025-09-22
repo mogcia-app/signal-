@@ -19,7 +19,6 @@ import {
   ChevronUp,
   X,
   Calendar,
-  User,
   Tag
 } from 'lucide-react';
 import { db } from '../../../lib/firebase';
@@ -248,7 +247,15 @@ export default function InstagramNotificationsPage() {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '日付不明';
+    
     const date = new Date(dateString);
+    
+    // Invalid Date チェック
+    if (isNaN(date.getTime())) {
+      return '日付不明';
+    }
+    
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -590,10 +597,6 @@ export default function InstagramNotificationsPage() {
                                     <span>期限: {formatDate(notification.expiresAt)}</span>
                                   </div>
                                 )}
-                                <div className="flex items-center space-x-1">
-                                  <User className="w-4 h-4" />
-                                  <span>作成者: {notification.createdBy}</span>
-                                </div>
                               </div>
 
                               {/* 展開ボタン（詳細内容がある場合のみ） */}
@@ -693,11 +696,6 @@ export default function InstagramNotificationsPage() {
                         <Calendar className="w-4 h-4 text-gray-500" />
                         <span className="text-gray-600">作成日:</span>
                         <span className="font-medium">{formatDate(selectedNotification.createdAt)}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <User className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600">作成者:</span>
-                        <span className="font-medium">{selectedNotification.createdBy}</span>
                       </div>
                       {selectedNotification.expiresAt && (
                         <div className="flex items-center space-x-2">
