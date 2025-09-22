@@ -10,7 +10,6 @@ import {
   Share, 
   Eye, 
   Calendar, 
-  Clock, 
   Save,
   RefreshCw,
   BarChart3,
@@ -203,10 +202,10 @@ export default function InstagramAnalyticsPage() {
   };
 
   // 選択された投稿のデータ
-  const selectedPost = posts.find(post => post.id === selectedPostId);
+  // const selectedPost = posts.find(post => post.id === selectedPostId);
   
   // 最新の分析データ
-  const latestAnalytics = analyticsData[0];
+  // const latestAnalytics = analyticsData[0];
   
   // 今月の分析データを取得
   const currentMonth = new Date().getMonth();

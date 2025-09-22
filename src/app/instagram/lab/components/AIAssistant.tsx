@@ -19,7 +19,7 @@ interface AICheckResult {
 export const AIAssistant: React.FC<AIAssistantProps> = ({
   postType,
   onGeneratePost,
-  onCheckPost: _onCheckPost
+  onCheckPost: _onCheckPost // eslint-disable-line @typescript-eslint/no-unused-vars
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -61,7 +61,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
     }
   };
 
-  const handleCheckPost = async (content: string, _hashtags: string[]) => {
+  const handleCheckPost = async (content: string, _hashtags: string[]) => { // eslint-disable-line @typescript-eslint/no-unused-vars
     if (!content.trim()) return;
     
     setIsChecking(true);

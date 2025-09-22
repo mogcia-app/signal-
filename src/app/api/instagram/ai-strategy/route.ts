@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { searchRelevantKnowledge, saveUserAnalysis, getLearningInsights } from './knowledge-base';
 
 // セキュリティ: APIキーの検証
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function validateApiKey(_request: NextRequest): boolean {
   const apiKey = _request.headers.get('x-api-key');
   const validApiKey = process.env.INTERNAL_API_KEY;
@@ -44,6 +45,7 @@ function checkRateLimit(ip: string): boolean {
 }
 
 // 入力データの検証
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function validateInputData(_data: unknown): boolean {
   if (!_data || typeof _data !== 'object') {
     return false;

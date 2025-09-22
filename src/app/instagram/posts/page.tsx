@@ -61,7 +61,7 @@ export default function InstagramPostsPage() {
 
   useEffect(() => {
     fetchPosts();
-  }, [selectedStatus, selectedPostType]);
+  }, [selectedStatus, selectedPostType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 投稿削除
   const handleDeletePost = async (postId: string) => {

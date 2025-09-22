@@ -10,21 +10,18 @@ import {
   Share, 
   Eye, 
   TrendingUp, 
-  Calendar, 
   Target,
   BarChart3,
   Download,
   ArrowUp,
   ArrowDown,
   Users,
-  Award,
   PieChart,
   LineChart,
   Clock,
   Hash,
   Brain,
-  Zap,
-  TrendingDown
+  Zap
 } from 'lucide-react';
 
 interface PostData {
@@ -92,7 +89,7 @@ export default function InstagramMonthlyReportPage() {
   const MIN_DATA_FOR_ANALYSIS = 15;
 
   // データ量検証関数
-  const validateDataForAnalysis = (data: any[], dataType: string) => {
+  const validateDataForAnalysis = (data: AnalyticsData[], dataType: string) => {
     if (data.length < MIN_DATA_FOR_ANALYSIS) {
       return {
         isValid: false,
@@ -300,11 +297,7 @@ export default function InstagramMonthlyReportPage() {
           fetchPlanData()
         ]);
         
-        // データ量検証
-        const analyticsValidation = validateDataForAnalysis(analyticsData, '分析');
-        if (!analyticsValidation.isValid) {
-          setError(analyticsValidation.message);
-        }
+        // データ量検証は別のuseEffectで行う
         
       } catch (error) {
         console.error('データ初期化エラー:', error);
@@ -316,6 +309,18 @@ export default function InstagramMonthlyReportPage() {
 
     initializeData();
   }, []);
+
+  // データ量検証
+  useEffect(() => {
+    if (analyticsData.length > 0) {
+      const validation = validateDataForAnalysis(analyticsData, '分析');
+      if (!validation.isValid) {
+        setError(validation.message);
+      } else {
+        setError(null);
+      }
+    }
+  }, [analyticsData]);
 
   // 期間変更時のデータ再取得
   useEffect(() => {
@@ -342,7 +347,7 @@ export default function InstagramMonthlyReportPage() {
 
       fetchPeriodData();
     }
-  }, [activeTab, selectedMonth, selectedWeek]);
+  }, [activeTab, selectedMonth, selectedWeek, analyticsData.length]);
 
   // 選択された月の分析データを取得
   const selectedMonthAnalytics = analyticsData.filter(data => {
@@ -427,7 +432,7 @@ export default function InstagramMonthlyReportPage() {
   const commentsChange = calculateChange(monthlyTotals.totalComments, prevMonthTotals.totalComments);
   const sharesChange = calculateChange(monthlyTotals.totalShares, prevMonthTotals.totalShares);
   const reachChange = calculateChange(monthlyTotals.totalReach, prevMonthTotals.totalReach);
-  const followerChange = calculateChange(monthlyTotals.totalFollowerChange, prevMonthTotals.totalFollowerChange);
+  // const followerChange = calculateChange(monthlyTotals.totalFollowerChange, prevMonthTotals.totalFollowerChange);
 
   // 今月の平均エンゲージメント率
   const monthlyAvgEngagement = monthlyTotals.totalReach > 0 

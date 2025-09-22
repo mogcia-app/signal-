@@ -242,6 +242,7 @@ function generateRecommendation(winner: ABTestScenario): string {
 }
 
 // タイムライン生成
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateTimeline(_winner: ABTestScenario) {
   return [
     {
