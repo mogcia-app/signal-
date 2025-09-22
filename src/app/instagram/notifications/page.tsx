@@ -15,6 +15,8 @@ import {
   Star,
   StarOff
 } from 'lucide-react';
+import { db } from '../../../lib/firebase';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
 interface Notification {
   id: string;
@@ -42,7 +44,14 @@ export default function InstagramNotificationsPage() {
 
   useEffect(() => {
     // モックデータの初期化
-    initializeMockNotifications();
+    const unsubscribe = initializeMockNotifications();
+    
+    // クリーンアップ関数
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -50,98 +59,125 @@ export default function InstagramNotificationsPage() {
     filterNotifications();
   }, [notifications, selectedFilter, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const initializeMockNotifications = () => {
-    const mockNotifications: Notification[] = [
-      {
-        id: '1',
-        title: '新機能リリースのお知らせ',
-        message: 'AIチャット機能とAI学習進捗ページがリリースされました。より詳細な分析とパーソナライズされたAIアシスタントをご利用いただけます。',
-        type: 'success',
-        priority: 'high',
-        targetUsers: [],
-        status: 'published',
-        createdAt: '2024-01-20T10:00:00Z',
-        updatedAt: '2024-01-20T10:00:00Z',
-        createdBy: 'system',
-        read: false,
-        starred: false
-      },
-      {
-        id: '2',
-        title: 'メンテナンス予告',
-        message: '2024年1月25日 2:00-4:00（JST）にシステムメンテナンスを実施いたします。この時間帯は一部機能がご利用いただけません。',
-        type: 'warning',
-        priority: 'medium',
-        targetUsers: [],
-        status: 'published',
-        scheduledAt: '2024-01-25T02:00:00Z',
-        expiresAt: '2024-01-25T04:00:00Z',
-        createdAt: '2024-01-19T15:30:00Z',
-        updatedAt: '2024-01-19T15:30:00Z',
-        createdBy: 'admin',
-        read: true,
-        starred: true
-      },
-      {
-        id: '3',
-        title: '月次レポート機能の改善',
-        message: '月次レポートページに新しい分析機能が追加されました。AI予測機能、トレンド分析、データエクスポート機能をご利用いただけます。',
-        type: 'info',
-        priority: 'medium',
-        targetUsers: [],
-        status: 'published',
-        createdAt: '2024-01-18T14:20:00Z',
-        updatedAt: '2024-01-18T14:20:00Z',
-        createdBy: 'dev-team',
-        read: true,
-        starred: false
-      },
-      {
-        id: '4',
-        title: 'データエクスポート機能について',
-        message: 'CSV/PDFエクスポート機能をご利用いただくには、最低15個の投稿データが必要です。データ不足の場合は、投稿ラボでコンテンツを作成してください。',
-        type: 'info',
-        priority: 'low',
-        targetUsers: [],
-        status: 'published',
-        createdAt: '2024-01-17T11:45:00Z',
-        updatedAt: '2024-01-17T11:45:00Z',
-        createdBy: 'support',
-        read: true,
-        starred: false
-      },
-      {
-        id: '5',
-        title: 'AI学習機能の活用方法',
-        message: 'AIチャットを積極的にご利用いただくことで、よりパーソナライズされたAIアシスタントに成長します。質問や相談をどんどんお寄せください。',
-        type: 'info',
-        priority: 'low',
-        targetUsers: [],
-        status: 'published',
-        createdAt: '2024-01-16T09:15:00Z',
-        updatedAt: '2024-01-16T09:15:00Z',
-        createdBy: 'ai-team',
-        read: false,
-        starred: false
-      },
-      {
-        id: '6',
-        title: 'システムエラーの修正完了',
-        message: '先日発生していた投稿分析ページの表示エラーを修正いたしました。ご不便をおかけして申し訳ございませんでした。',
-        type: 'success',
-        priority: 'medium',
-        targetUsers: [],
-        status: 'published',
-        createdAt: '2024-01-15T16:30:00Z',
-        updatedAt: '2024-01-15T16:30:00Z',
-        createdBy: 'dev-team',
-        read: true,
-        starred: false
-      }
-    ];
+  // フィルタや検索が変更されたときにAPIを再呼び出し
+  useEffect(() => {
+    if (selectedFilter !== 'all' || searchQuery.trim()) {
+      fetchNotifications();
+    }
+  }, [selectedFilter, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    setNotifications(mockNotifications);
-    setIsLoading(false);
+  const fetchNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams({
+        userId: 'current-user',
+        filter: selectedFilter,
+        ...(searchQuery && { search: searchQuery })
+      });
+
+      const response = await fetch(`/api/notifications?${params}`);
+      const result = await response.json();
+
+      if (result.success) {
+        // ユーザーごとのアクション状態を取得
+        const notificationsWithActions = await Promise.all(
+          result.data.map(async (notification: Notification) => {
+            try {
+              const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=current-user`);
+              const actionResult = await actionResponse.json();
+              
+              return {
+                ...notification,
+                read: actionResult.success ? actionResult.data.read : false,
+                starred: actionResult.success ? actionResult.data.starred : false
+              };
+            } catch (error) {
+              console.error('アクション状態取得エラー:', error);
+              return {
+                ...notification,
+                read: false,
+                starred: false
+              };
+            }
+          })
+        );
+
+        setNotifications(notificationsWithActions);
+      } else {
+        console.error('通知取得エラー:', result.error);
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error('通知取得エラー:', error);
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const initializeMockNotifications = () => {
+    fetchNotifications();
+    
+    // リアルタイムリスナーを設定
+    setupRealtimeListener();
+  };
+
+  const setupRealtimeListener = () => {
+    try {
+      const notificationsRef = collection(db, 'notifications');
+      const q = query(
+        notificationsRef,
+        where('status', '==', 'published'),
+        orderBy('createdAt', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const realtimeNotifications = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Notification));
+
+        if (realtimeNotifications.length > 0) {
+          // ユーザーごとのアクション状態を取得
+          Promise.all(
+            realtimeNotifications.map(async (notification) => {
+              try {
+                const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=current-user`);
+                const actionResult = await actionResponse.json();
+                
+                return {
+                  ...notification,
+                  read: actionResult.success ? actionResult.data.read : false,
+                  starred: actionResult.success ? actionResult.data.starred : false
+                };
+              } catch (error) {
+                console.error('アクション状態取得エラー:', error);
+                return {
+                  ...notification,
+                  read: false,
+                  starred: false
+                };
+              }
+            })
+          ).then(notificationsWithActions => {
+            setNotifications(notificationsWithActions);
+            setIsLoading(false);
+          });
+        }
+      }, (error) => {
+        console.error('リアルタイムリスナーエラー:', error);
+        // エラーが発生した場合は通常のAPIを呼び出す
+        fetchNotifications();
+      });
+
+      // コンポーネントのアンマウント時にリスナーをクリーンアップ
+      return unsubscribe;
+    } catch (error) {
+      console.error('リアルタイムリスナー設定エラー:', error);
+      // エラーが発生した場合は通常のAPIを呼び出す
+      fetchNotifications();
+      return null;
+    }
   };
 
   const filterNotifications = () => {
@@ -214,34 +250,97 @@ export default function InstagramNotificationsPage() {
     });
   };
 
-  const markAsRead = (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: true }
-          : notification
-      )
-    );
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'read',
+          userId: 'current-user'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setNotifications(prev => 
+          prev.map(notification => 
+            notification.id === notificationId 
+              ? { ...notification, read: true }
+              : notification
+          )
+        );
+      } else {
+        console.error('既読更新エラー:', result.error);
+      }
+    } catch (error) {
+      console.error('既読更新エラー:', error);
+    }
   };
 
-  const toggleStar = (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, starred: !notification.starred }
-          : notification
-      )
-    );
+  const toggleStar = async (notificationId: string) => {
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'star',
+          userId: 'current-user'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setNotifications(prev => 
+          prev.map(notification => 
+            notification.id === notificationId 
+              ? { ...notification, starred: result.data.starred }
+              : notification
+          )
+        );
+      } else {
+        console.error('お気に入り更新エラー:', result.error);
+      }
+    } catch (error) {
+      console.error('お気に入り更新エラー:', error);
+    }
   };
 
-  const archiveNotification = (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, status: 'archived' as const }
-          : notification
-      )
-    );
+  const archiveNotification = async (notificationId: string) => {
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}/actions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'archive',
+          userId: 'current-user'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setNotifications(prev => 
+          prev.map(notification => 
+            notification.id === notificationId 
+              ? { ...notification, status: 'archived' as const }
+              : notification
+          )
+        );
+      } else {
+        console.error('アーカイブ更新エラー:', result.error);
+      }
+    } catch (error) {
+      console.error('アーカイブ更新エラー:', error);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read && n.status === 'published').length;
