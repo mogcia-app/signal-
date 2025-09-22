@@ -10,6 +10,7 @@ import PlanDisplay from './components/PlanDisplay';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
+  const [postTitle, setPostTitle] = useState('');
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [postType, setPostType] = useState<'feed' | 'reel' | 'story'>('feed');
   
@@ -36,7 +37,8 @@ export default function InstagramLabPage() {
   // });
 
   // AI生成ハンドラー
-  const handleAIGenerate = (generatedContent: string, generatedHashtags: string[]) => {
+  const handleAIGenerate = (generatedTitle: string, generatedContent: string, generatedHashtags: string[]) => {
+    setPostTitle(generatedTitle);
     setPostContent(generatedContent);
     setSelectedHashtags(generatedHashtags);
   };
@@ -59,6 +61,8 @@ export default function InstagramLabPage() {
               onHashtagsChange={setSelectedHashtags}
               postType={postType}
               onPostTypeChange={setPostType}
+              title={postTitle}
+              onTitleChange={setPostTitle}
             />
             
             <AIPostGenerator

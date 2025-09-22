@@ -6,7 +6,7 @@ import { Sparkles } from 'lucide-react';
 interface AIPostGeneratorProps {
   postType: 'feed' | 'reel' | 'story';
   onPostTypeChange: (type: 'feed' | 'reel' | 'story') => void;
-  onGeneratePost: (content: string, hashtags: string[]) => void;
+  onGeneratePost: (title: string, content: string, hashtags: string[]) => void;
 }
 
 export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
@@ -15,6 +15,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   onGeneratePost
 }) => {
   const [aiPrompt, setAiPrompt] = useState('');
+  const [aiTitle, setAiTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
@@ -58,6 +59,8 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
     try {
       await new Promise(resolve => setTimeout(resolve, 2000)); // 模擬処理
       
+      const generatedTitle = `${aiPrompt}についての${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}投稿`;
+      
       const generatedContent = `✨ ${aiPrompt}について投稿文を生成しました！
 
 この投稿は${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化されています。
@@ -77,8 +80,9 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
         'SNS'
       ];
 
-      onGeneratePost(generatedContent, newHashtags);
+      onGeneratePost(generatedTitle, generatedContent, newHashtags);
       setAiPrompt('');
+      setAiTitle('');
     } catch (error) {
       console.error('投稿生成エラー:', error);
     } finally {
@@ -227,6 +231,20 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               )}
             </div>
           </div>
+        </div>
+
+        {/* タイトル入力 */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-800 mb-3">
+            タイトル
+          </label>
+          <input
+            type="text"
+            value={aiTitle}
+            onChange={(e) => setAiTitle(e.target.value)}
+            placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のタイトルを入力してください...`}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80"
+          />
         </div>
 
         {/* 投稿文入力エリア */}

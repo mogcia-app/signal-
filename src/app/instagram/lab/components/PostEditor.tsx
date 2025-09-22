@@ -10,6 +10,8 @@ interface PostEditorProps {
   onHashtagsChange: (hashtags: string[]) => void;
   postType?: 'feed' | 'reel' | 'story';
   onPostTypeChange?: (type: 'feed' | 'reel' | 'story') => void;
+  title?: string;
+  onTitleChange?: (title: string) => void;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -18,7 +20,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   hashtags,
   onHashtagsChange,
   postType = 'feed',
-  onPostTypeChange
+  onPostTypeChange,
+  title = '',
+  onTitleChange
 }) => {
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [scheduledDate, setScheduledDate] = useState('');
@@ -211,6 +215,20 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
         </div>
 
+        {/* タイトル入力 */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-800 mb-3">
+            タイトル
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => onTitleChange?.(e.target.value)}
+            placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のタイトルを入力してください...`}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80"
+          />
+        </div>
+
         {/* 投稿文入力エリア */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-gray-800 mb-3">
@@ -307,16 +325,21 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               </div>
             </div>
 
-            {/* 投稿内容 */}
-            {content ? (
-              <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                {content}
-              </div>
-            ) : (
-              <div className="text-gray-400 italic text-center py-4">
-                📝 投稿文を入力するとプレビューが表示されます
-              </div>
-            )}
+                    {/* 投稿内容 */}
+                    {title && (
+                      <div className="text-lg font-semibold text-gray-900 mb-3">
+                        {title}
+                      </div>
+                    )}
+                    {content ? (
+                      <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                        {content}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 italic text-center py-4">
+                        📝 投稿文を入力するとプレビューが表示されます
+                      </div>
+                    )}
             {hashtags.length > 0 && (
               <div className="mt-4 pt-3 border-t border-gray-200">
                 <div className="text-sm text-blue-600 flex flex-wrap gap-1">
