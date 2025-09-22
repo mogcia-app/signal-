@@ -132,6 +132,9 @@ function InstagramDashboardContent() {
   const [manualPostData, setManualPostData] = useState({
     title: '',
     type: 'feed' as 'feed' | 'reel' | 'story',
+    content: '',
+    hashtags: '',
+    thumbnail: '',
     likes: 0,
     comments: 0,
     saves: 0,
@@ -186,17 +189,33 @@ function InstagramDashboardContent() {
       reach: manualPostData.reach,
       engagementRate: ((manualPostData.likes + manualPostData.comments + manualPostData.saves) / manualPostData.reach * 100) || 0,
       postedAt: '今',
-      imageUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=400&fit=crop&crop=center',
-      caption: manualPostData.title
+      imageUrl: manualPostData.thumbnail || 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=400&fit=crop&crop=center',
+      caption: manualPostData.content || manualPostData.title
     };
     
     // ここで実際のデータ更新処理を行う
     console.log('手動投稿結果:', newPost);
+    console.log('投稿内容:', {
+      title: manualPostData.title,
+      content: manualPostData.content,
+      hashtags: manualPostData.hashtags,
+      thumbnail: manualPostData.thumbnail,
+      type: manualPostData.type,
+      metrics: {
+        likes: manualPostData.likes,
+        comments: manualPostData.comments,
+        saves: manualPostData.saves,
+        reach: manualPostData.reach
+      }
+    });
     
     // フォームをリセット
     setManualPostData({
       title: '',
       type: 'feed',
+      content: '',
+      hashtags: '',
+      thumbnail: '',
       likes: 0,
       comments: 0,
       saves: 0,
@@ -618,6 +637,15 @@ function InstagramDashboardContent() {
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">検索</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="投稿を検索..."
+                    />
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイトル</label>
                     <input
                       type="text"
@@ -625,6 +653,39 @@ function InstagramDashboardContent() {
                       onChange={(e) => setManualPostData({...manualPostData, title: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="投稿のタイトルを入力"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">投稿文</label>
+                    <textarea
+                      value={manualPostData.content}
+                      onChange={(e) => setManualPostData({...manualPostData, content: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="投稿の内容を入力"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ハッシュタグ</label>
+                    <input
+                      type="text"
+                      value={manualPostData.hashtags}
+                      onChange={(e) => setManualPostData({...manualPostData, hashtags: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="#hashtag1 #hashtag2 #hashtag3"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">サムネイル画像</label>
+                    <input
+                      type="text"
+                      value={manualPostData.thumbnail}
+                      onChange={(e) => setManualPostData({...manualPostData, thumbnail: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="画像URLを入力"
                     />
                   </div>
                   
