@@ -21,6 +21,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   onPostTypeChange
 }) => {
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
 
   const characterCount = content.length;
   const maxCharacters = 2200;
@@ -132,32 +134,31 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
         </div>
 
-        {/* 文字数カウンター */}
+        {/* 投稿設定 */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">文字数</span>
-            <span className={`text-sm font-semibold ${isOverLimit ? 'text-red-600' : characterCount > maxCharacters * 0.9 ? 'text-yellow-600' : 'text-green-600'}`}>
-              {characterCount} / {maxCharacters}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ease-out ${
-                isOverLimit
-                  ? 'bg-gradient-to-r from-red-400 to-red-600'
-                  : characterCount > maxCharacters * 0.9
-                  ? 'bg-gradient-to-r from-yellow-400 to-orange-500'
-                  : 'bg-gradient-to-r from-green-400 to-blue-500'
-              }`}
-              style={{ width: `${Math.min((characterCount / maxCharacters) * 100, 100)}%` }}
-            />
-          </div>
-          {isOverLimit && (
-            <div className="mt-2 flex items-center text-red-600 text-xs">
-              <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-              文字数制限を超過しています
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            投稿設定
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">投稿日</label>
+              <input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
             </div>
-          )}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">投稿時間</label>
+              <input
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+          </div>
         </div>
 
         {/* 投稿文入力エリア */}
@@ -241,6 +242,26 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             プレビュー
           </h3>
           <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl border-2 border-gray-100 shadow-sm">
+            {/* 投稿情報ヘッダー */}
+            <div className="mb-4 pb-3 border-b border-gray-200">
+              <div className="flex items-center justify-between text-xs text-gray-600">
+                <div className="flex items-center space-x-3">
+                  <span className="font-medium">
+                    {postType === 'feed' ? '📸 フィード' : postType === 'reel' ? '🎬 リール' : '📱 ストーリーズ'}
+                  </span>
+                  {scheduledDate && scheduledTime && (
+                    <span className="text-gray-500">
+                      📅 {new Date(scheduledDate).toLocaleDateString('ja-JP')} {scheduledTime}
+                    </span>
+                  )}
+                </div>
+                <div className="text-gray-500">
+                  {new Date().toLocaleDateString('ja-JP')}
+                </div>
+              </div>
+            </div>
+
+            {/* 投稿内容 */}
             {content ? (
               <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                 {content}
@@ -255,6 +276,34 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 <div className="text-sm text-blue-600 flex flex-wrap gap-1">
                   {hashtags.map(hashtag => `#${hashtag}`).join(' ')}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* 文字数カウンター */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">文字数</span>
+              <span className={`text-sm font-semibold ${isOverLimit ? 'text-red-600' : characterCount > maxCharacters * 0.9 ? 'text-yellow-600' : 'text-green-600'}`}>
+                {characterCount} / {maxCharacters}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ease-out ${
+                  isOverLimit
+                    ? 'bg-gradient-to-r from-red-400 to-red-600'
+                    : characterCount > maxCharacters * 0.9
+                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500'
+                    : 'bg-gradient-to-r from-green-400 to-blue-500'
+                }`}
+                style={{ width: `${Math.min((characterCount / maxCharacters) * 100, 100)}%` }}
+              />
+            </div>
+            {isOverLimit && (
+              <div className="mt-2 flex items-center text-red-600 text-xs">
+                <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                文字数制限を超過しています
               </div>
             )}
           </div>
