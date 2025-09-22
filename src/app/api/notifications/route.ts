@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase';
-import { collection, query, where, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, addDoc } from 'firebase/firestore';
 
 interface Notification {
   id: string;

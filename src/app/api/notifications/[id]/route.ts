@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../lib/firebase';
+import { db } from '../../../../lib/firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 interface Notification {
@@ -49,11 +49,11 @@ const mockNotifications: Notification[] = [
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
-    const userId = request.nextUrl.searchParams.get('userId') || 'current-user';
+    const { id: notificationId } = await params;
+    // const userId = request.nextUrl.searchParams.get('userId') || 'current-user';
 
     // Firestoreから取得
     const docRef = doc(db, 'notifications', notificationId);
@@ -109,10 +109,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
     const body = await request.json();
     const { title, message, type, priority, targetUsers, status } = body;
 
@@ -168,10 +168,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
 
     // Firestoreから削除
     const docRef = doc(db, 'notifications', notificationId);

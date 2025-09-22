@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase';
+import { db } from '../../../../../lib/firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 interface Notification {
@@ -20,10 +20,10 @@ interface Notification {
 // 管理者用の通知詳細取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
 
     const docRef = doc(db, 'notifications', notificationId);
     const docSnap = await getDoc(docRef);
@@ -64,10 +64,10 @@ export async function GET(
 // 管理者用の通知更新
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
     const body = await request.json();
     const { 
       title, 
@@ -137,10 +137,10 @@ export async function PUT(
 // 管理者用の通知削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
 
     const docRef = doc(db, 'notifications', notificationId);
     const docSnap = await getDoc(docRef);

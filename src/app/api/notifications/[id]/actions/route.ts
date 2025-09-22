@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase';
+import { db } from '../../../../../lib/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface UserNotificationAction {
@@ -14,14 +14,14 @@ interface UserNotificationAction {
 }
 
 // モックデータ（実際の実装ではFirestoreのuserNotificationsコレクションを使用）
-const mockUserNotifications: UserNotificationAction[] = [];
+// const mockUserNotifications: UserNotificationAction[] = [];
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
     const body = await request.json();
     const { action, userId = 'current-user' } = body;
 
@@ -107,10 +107,10 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
     const userId = request.nextUrl.searchParams.get('userId') || 'current-user';
 
     // Firestoreから取得

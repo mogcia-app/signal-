@@ -52,7 +52,7 @@ export default function InstagramNotificationsPage() {
         unsubscribe();
       }
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // フィルタリング処理
@@ -115,14 +115,14 @@ export default function InstagramNotificationsPage() {
     }
   };
 
-  const initializeMockNotifications = () => {
+  const initializeMockNotifications = (): (() => void) | null => {
     fetchNotifications();
     
     // リアルタイムリスナーを設定
-    setupRealtimeListener();
+    return setupRealtimeListener();
   };
 
-  const setupRealtimeListener = () => {
+  const setupRealtimeListener = (): (() => void) | null => {
     try {
       const notificationsRef = collection(db, 'notifications');
       const q = query(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase';
-import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { db } from '../../../../../lib/firebase';
+import { doc, writeBatch } from 'firebase/firestore';
 
 interface BulkActionRequest {
   action: 'publish' | 'archive' | 'delete' | 'updateStatus';
