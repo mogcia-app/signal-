@@ -8,13 +8,17 @@ interface PostEditorProps {
   onContentChange: (content: string) => void;
   hashtags: string[];
   onHashtagsChange: (hashtags: string[]) => void;
+  postType?: 'feed' | 'reel';
+  onPostTypeChange?: (type: 'feed' | 'reel') => void;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
   content,
   onContentChange,
   hashtags,
-  onHashtagsChange
+  onHashtagsChange,
+  postType = 'feed',
+  onPostTypeChange
 }) => {
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
 
@@ -70,6 +74,37 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <RefreshCw size={14} />
               <span>クリア</span>
             </button>
+          </div>
+        </div>
+
+        {/* 投稿タイプ選択 */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            投稿タイプ
+          </label>
+          <div className="flex space-x-4">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="postType"
+                value="feed"
+                checked={postType === 'feed'}
+                onChange={() => onPostTypeChange?.('feed')}
+                className="mr-2 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">📸 フィード投稿</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="postType"
+                value="reel"
+                checked={postType === 'reel'}
+                onChange={() => onPostTypeChange?.('reel')}
+                className="mr-2 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">🎬 リール</span>
+            </label>
           </div>
         </div>
 

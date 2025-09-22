@@ -5,10 +5,12 @@ import SNSLayout from '../../../components/sns-layout';
 import PostEditor from './components/PostEditor';
 import ToolPanel from './components/ToolPanel';
 import KPIDiagnosis from './components/KPIDiagnosis';
+import AIAssistant from './components/AIAssistant';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+  const [postType, setPostType] = useState<'feed' | 'reel'>('feed');
 
   return (
     <SNSLayout 
@@ -26,11 +28,25 @@ export default function InstagramLabPage() {
               onContentChange={setPostContent}
               hashtags={selectedHashtags}
               onHashtagsChange={setSelectedHashtags}
+              postType={postType}
+              onPostTypeChange={setPostType}
             />
           </div>
 
-          {/* 右カラム: ツール・診断 */}
+          {/* 右カラム: AIアシスタント・ツール・診断 */}
           <div className="space-y-6">
+            <AIAssistant
+              postType={postType}
+              onGeneratePost={(content, hashtags) => {
+                setPostContent(content);
+                setSelectedHashtags(hashtags);
+              }}
+              onCheckPost={(content, hashtags) => {
+                // AIチェック結果はAIAssistantコンポーネント内で管理
+                console.log('投稿チェック:', content, hashtags);
+              }}
+            />
+
             <ToolPanel
               onTemplateSelect={(template: string) => {
                 setPostContent(prev => prev + template);
