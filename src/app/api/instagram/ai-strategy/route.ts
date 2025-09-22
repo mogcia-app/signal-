@@ -144,13 +144,13 @@ export async function POST(request: NextRequest) {
       keysMatch: apiKey === validApiKey
     });
     
-    // 一時的にAPIキー検証を無効化（テスト用）
-    if (process.env.NODE_ENV === 'production' && !validateApiKey(request)) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Invalid API key' },
-        { status: 401 }
-      );
-    }
+    // APIキー検証を無効化（チャット機能と同じセキュリティレベル）
+    // if (!validateApiKey(request)) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized: Invalid API key' },
+    //     { status: 401 }
+    //   );
+    // }
 
     // レート制限チェック
     const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';

@@ -31,24 +31,10 @@ export function useAIStrategy(): UseAIStrategyReturn {
     });
 
     try {
-      // セキュアなAPIキーを取得
-      const apiKey = process.env.NEXT_PUBLIC_INTERNAL_API_KEY;
-      
-      console.log('API Key check:', {
-        hasApiKey: !!apiKey,
-        keyLength: apiKey?.length || 0,
-        keyPrefix: apiKey?.substring(0, 8) + '...' || 'undefined'
-      });
-      
-      if (!apiKey) {
-        throw new Error('API key not configured');
-      }
-      
       const response = await fetch('/api/instagram/ai-strategy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
         },
         body: JSON.stringify({
           formData,
