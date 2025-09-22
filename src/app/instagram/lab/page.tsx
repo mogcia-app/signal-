@@ -14,6 +14,7 @@ export default function InstagramLabPage() {
   const [postTitle, setPostTitle] = useState('');
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [postType, setPostType] = useState<'feed' | 'reel' | 'story'>('feed');
+  const [postImage, setPostImage] = useState<string | null>(null);
   
   // 模擬的な計画データ（実際のアプリではAPIから取得）
   const [planData] = useState<PlanData | null>(null); // nullに設定して計画なし状態を表示
@@ -62,16 +63,18 @@ export default function InstagramLabPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* 左カラム: 投稿文作成・編集 */}
           <div className="space-y-6">
-            <PostEditor
-              content={postContent}
-              onContentChange={setPostContent}
-              hashtags={selectedHashtags}
-              onHashtagsChange={setSelectedHashtags}
-              postType={postType}
-              onPostTypeChange={setPostType}
-              title={postTitle}
-              onTitleChange={setPostTitle}
-            />
+                    <PostEditor
+                      content={postContent}
+                      onContentChange={setPostContent}
+                      hashtags={selectedHashtags}
+                      onHashtagsChange={setSelectedHashtags}
+                      postType={postType}
+                      onPostTypeChange={setPostType}
+                      title={postTitle}
+                      onTitleChange={setPostTitle}
+                      image={postImage}
+                      onImageChange={setPostImage}
+                    />
             
             <AIPostGenerator
               postType={postType}

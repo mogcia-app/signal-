@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, AlertCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
 
 interface PostEditorProps {
   content: string;
@@ -12,6 +12,8 @@ interface PostEditorProps {
   onPostTypeChange?: (type: 'feed' | 'reel' | 'story') => void;
   title?: string;
   onTitleChange?: (title: string) => void;
+  image?: string | null;
+  onImageChange?: (image: string | null) => void;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -22,11 +24,14 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   postType = 'feed',
   onPostTypeChange,
   title = '',
-  onTitleChange
+  onTitleChange,
+  image = null,
+  onImageChange
 }) => {
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   
   // AI投稿チェック機能の状態
   const [isChecking, setIsChecking] = useState(false);
@@ -59,6 +64,47 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     setScheduledDate('');
     setScheduledTime('');
     setCheckResult(null);
+    onImageChange?.(null);
+  };
+
+  // 画像アップロード処理
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // ファイルサイズチェック（5MB制限）
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ファイルサイズが大きすぎます。5MB以下のファイルを選択してください。');
+      return;
+    }
+
+    // 画像ファイルチェック
+    if (!file.type.startsWith('image/')) {
+      alert('画像ファイルを選択してください。');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // 実際のアプリではここでファイルをサーバーにアップロード
+      // 今回はローカルでプレビュー用のDataURLを作成
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        onImageChange?.(result);
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('画像アップロードエラー:', error);
+      alert('画像のアップロードに失敗しました。');
+      setIsUploading(false);
+    }
+  };
+
+  // 画像削除
+  const handleImageRemove = () => {
+    onImageChange?.(null);
   };
 
   const handleHashtagRemove = (index: number) => {
@@ -299,6 +345,71 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
         </div>
 
+        {/* 画像アップロード */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-800 mb-3">
+            画像（サムネイル）
+          </label>
+          
+          {image ? (
+            <div className="relative">
+              <div className="w-full max-w-md mx-auto">
+                <img
+                  src={image}
+                  alt="投稿画像プレビュー"
+                  className="w-full h-48 object-cover rounded-xl border-2 border-gray-200"
+                />
+                <button
+                  onClick={handleImageRemove}
+                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="mt-2 text-center">
+                <button
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  別の画像を選択
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-gray-400 transition-colors">
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={isUploading}
+              />
+              <label
+                htmlFor="image-upload"
+                className="cursor-pointer flex flex-col items-center space-y-3"
+              >
+                {isUploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <span className="text-gray-600">アップロード中...</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-gray-600 font-medium">画像をアップロード</p>
+                      <p className="text-sm text-gray-500">クリックしてファイルを選択（5MB以下）</p>
+                    </div>
+                  </>
+                )}
+              </label>
+            </div>
+          )}
+        </div>
+
         {/* プレビュー */}
         <div className="border-t border-gray-200 pt-6">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
@@ -331,6 +442,18 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                         {title}
                       </div>
                     )}
+                    
+                    {/* 画像プレビュー */}
+                    {image && (
+                      <div className="mb-3">
+                        <img
+                          src={image}
+                          alt="投稿画像"
+                          className="w-full h-48 object-cover rounded-lg"
+                        />
+                      </div>
+                    )}
+                    
                     {content ? (
                       <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                         {content}
