@@ -45,9 +45,11 @@ const SNS_INFO = {
 interface SNSLayoutProps {
   children: ReactNode;
   currentSNS: keyof typeof SNS_INFO;
+  customTitle?: string;
+  customDescription?: string;
 }
 
-export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
+export default function SNSLayout({ children, currentSNS, customTitle, customDescription }: SNSLayoutProps) {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
@@ -209,9 +211,9 @@ export default function SNSLayout({ children, currentSNS }: SNSLayoutProps) {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                {currentSNSInfo.name} Dashboard
+                {customTitle || `${currentSNSInfo.name} Dashboard`}
               </h1>
-              <p className="text-sm text-gray-600">{currentSNSInfo.description}</p>
+              <p className="text-sm text-gray-600">{customDescription || currentSNSInfo.description}</p>
             </div>
           </div>
         </div>

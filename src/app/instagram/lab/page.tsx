@@ -11,14 +11,12 @@ export default function InstagramLabPage() {
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
 
   return (
-    <SNSLayout currentSNS="instagram">
+    <SNSLayout 
+      currentSNS="instagram"
+      customTitle="投稿ラボ"
+      customDescription="Instagram投稿文を作成・編集し、効果的な投稿を制作しましょう"
+    >
       <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">投稿ラボ</h1>
-          <p className="text-gray-600">
-            Instagram投稿文を作成・編集し、効果的な投稿を制作しましょう
-          </p>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* 左カラム: 投稿文作成・編集 */}

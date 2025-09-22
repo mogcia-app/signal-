@@ -20,7 +20,11 @@ function YouTubeDashboardContent() {
   }
 
   return (
-    <SNSLayout currentSNS="youtube">
+    <SNSLayout 
+      currentSNS="youtube"
+      customTitle="YouTube Dashboard"
+      customDescription="動画配信・チャンネル運営の管理画面"
+    >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 左カラム - AI設定 */}

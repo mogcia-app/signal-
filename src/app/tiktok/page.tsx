@@ -20,7 +20,11 @@ function TikTokDashboardContent() {
   }
 
   return (
-    <SNSLayout currentSNS="tiktok">
+    <SNSLayout 
+      currentSNS="tiktok"
+      customTitle="TikTok Dashboard"
+      customDescription="ショート動画・エンターテイメントの管理画面"
+    >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 左カラム - AI設定 */}

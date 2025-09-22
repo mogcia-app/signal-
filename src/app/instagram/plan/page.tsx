@@ -114,15 +114,12 @@ export default function InstagramPlanPage() {
 
 
   return (
-    <SNSLayout currentSNS="instagram">
+    <SNSLayout 
+      currentSNS="instagram"
+      customTitle="Instagram 運用計画"
+      customDescription="強みを活かす、実行可能なSNS計画を立てましょう"
+    >
       <div className="max-w-7xl mx-auto">
-        {/* ページヘッダー */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Instagram 運用計画</h1>
-          <p className="text-lg text-gray-600">
-            強みを活かす、実行可能なSNS計画を立てましょう
-          </p>
-        </div>
 
         <main className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 左カラム：計画作成フォーム */}
