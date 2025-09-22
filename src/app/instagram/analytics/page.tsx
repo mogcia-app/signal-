@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { postsApi } from '../../../lib/api';
+import { PlanData } from '../plan/types/plan';
 import { 
   Heart, 
   MessageCircle, 
@@ -15,7 +16,12 @@ import {
   RefreshCw,
   BarChart3,
   Target,
-  Zap
+  Zap,
+  Users,
+  Award,
+  TrendingDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 interface PostData {
@@ -51,6 +57,7 @@ export default function InstagramAnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [selectedPostId, setSelectedPostId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [planData, setPlanData] = useState<PlanData | null>(null);
   
   // 入力データ
   const [inputData, setInputData] = useState({
@@ -72,6 +79,41 @@ export default function InstagramAnalyticsPage() {
       setPosts(response.posts || []);
     } catch (error) {
       console.error('投稿取得エラー:', error);
+    }
+  };
+
+  // 計画データを取得
+  const fetchPlanData = async () => {
+    try {
+      // 実際の実装では plans API を呼び出す
+      // 今回は模擬データを使用
+      const mockPlanData: PlanData = {
+        id: 'plan-001',
+        title: 'Instagram成長加速計画',
+        targetFollowers: 10000,
+        currentFollowers: 3250,
+        planPeriod: '6ヶ月',
+        targetAudience: '20-30代女性',
+        category: 'ライフスタイル',
+        strategies: ['ハッシュタグ最適化', 'ストーリー活用', 'リール投稿', 'エンゲージメント向上'],
+        createdAt: '2024-01-01',
+        simulation: {
+          postTypes: {
+            reel: { weeklyCount: 1, followerEffect: 3 },
+            feed: { weeklyCount: 2, followerEffect: 2 },
+            story: { weeklyCount: 3, followerEffect: 1 }
+          }
+        },
+        aiPersona: {
+          tone: '親しみやすい',
+          style: 'カジュアル',
+          personality: '明るく前向き',
+          interests: ['成長', 'コミュニティ', 'エンゲージメント', 'クリエイティブ']
+        }
+      };
+      setPlanData(mockPlanData);
+    } catch (error) {
+      console.error('計画データ取得エラー:', error);
     }
   };
 
@@ -110,6 +152,21 @@ export default function InstagramAnalyticsPage() {
           followerChange: 8,
           publishedAt: new Date('2024-01-12'),
           createdAt: new Date()
+        },
+        {
+          id: '3',
+          postId: 'post-3',
+          userId: 'current-user',
+          likes: 312,
+          comments: 28,
+          shares: 15,
+          reach: 1450,
+          profileClicks: 52,
+          websiteClicks: 12,
+          storyViews: 380,
+          followerChange: 22,
+          publishedAt: new Date('2024-01-10'),
+          createdAt: new Date()
         }
       ];
       setAnalyticsData(mockData);
@@ -121,6 +178,7 @@ export default function InstagramAnalyticsPage() {
   useEffect(() => {
     fetchPosts();
     fetchAnalytics();
+    fetchPlanData();
   }, []);
 
   // 分析データを保存
@@ -179,6 +237,34 @@ export default function InstagramAnalyticsPage() {
   // 最新の分析データ
   const latestAnalytics = analyticsData[0];
   
+  // 今月の分析データを取得
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const thisMonthAnalytics = analyticsData.filter(data => {
+    const dataDate = new Date(data.publishedAt);
+    return dataDate.getMonth() === currentMonth && dataDate.getFullYear() === currentYear;
+  });
+
+  // 今月のトータル計算
+  const monthlyTotals = {
+    totalLikes: thisMonthAnalytics.reduce((sum, data) => sum + data.likes, 0),
+    totalComments: thisMonthAnalytics.reduce((sum, data) => sum + data.comments, 0),
+    totalShares: thisMonthAnalytics.reduce((sum, data) => sum + data.shares, 0),
+    totalReach: thisMonthAnalytics.reduce((sum, data) => sum + data.reach, 0),
+    totalFollowerChange: thisMonthAnalytics.reduce((sum, data) => sum + (data.followerChange || 0), 0),
+    totalPosts: thisMonthAnalytics.length
+  };
+
+  // 今月の平均エンゲージメント率
+  const monthlyAvgEngagement = monthlyTotals.totalReach > 0 
+    ? ((monthlyTotals.totalLikes + monthlyTotals.totalComments + monthlyTotals.totalShares) / monthlyTotals.totalReach * 100).toFixed(1)
+    : '0.0';
+
+  // 計画進捗計算
+  const planProgress = planData 
+    ? ((planData.currentFollowers + monthlyTotals.totalFollowerChange) / planData.targetFollowers * 100)
+    : 0;
+
   // エンゲージメント率計算
   const engagementRate = latestAnalytics 
     ? ((latestAnalytics.likes + latestAnalytics.comments + latestAnalytics.shares) / latestAnalytics.reach * 100).toFixed(1)
@@ -402,6 +488,122 @@ export default function InstagramAnalyticsPage() {
 
           {/* 右カラム: 分析結果 */}
           <div className="space-y-6">
+            
+            {/* 計画内容連携 */}
+            {planData && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center mb-6">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+                    <Target className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">運用計画連携</h2>
+                    <p className="text-sm text-gray-600">{planData.title}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* フォロワー目標進捗 */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">フォロワー目標進捗</span>
+                      <span className="text-sm text-gray-600">
+                        {planData.currentFollowers + monthlyTotals.totalFollowerChange} / {planData.targetFollowers.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(planProgress, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>{planProgress.toFixed(1)}% 達成</span>
+                      <span>残り {Math.max(0, planData.targetFollowers - (planData.currentFollowers + monthlyTotals.totalFollowerChange)).toLocaleString()}人</span>
+                    </div>
+                  </div>
+
+                  {/* 今月の成果 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-lg font-bold text-green-600">
+                        {monthlyTotals.totalFollowerChange > 0 ? '+' : ''}{monthlyTotals.totalFollowerChange}
+                      </div>
+                      <div className="text-xs text-gray-600">今月のフォロワー増加</div>
+                    </div>
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <div className="text-lg font-bold text-blue-600">{monthlyTotals.totalPosts}</div>
+                      <div className="text-xs text-gray-600">今月の投稿数</div>
+                    </div>
+                  </div>
+
+                  {/* 採用戦略 */}
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">採用戦略</div>
+                    <div className="flex flex-wrap gap-2">
+                      {planData.strategies.slice(0, 3).map((strategy, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-md"
+                        >
+                          {strategy}
+                        </span>
+                      ))}
+                      {planData.strategies.length > 3 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                          +{planData.strategies.length - 3}個
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 今月のトータル */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center mb-6">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-600 to-red-600 rounded-lg flex items-center justify-center mr-3">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">今月のトータル</h2>
+                  <p className="text-sm text-gray-600">{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })}の成果</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <Heart className="w-6 h-6 text-red-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-gray-900">{monthlyTotals.totalLikes.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">いいね総数</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <MessageCircle className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-gray-900">{monthlyTotals.totalComments.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">コメント総数</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <Share className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-gray-900">{monthlyTotals.totalShares.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">シェア総数</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <Eye className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-gray-900">{monthlyTotals.totalReach.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">リーチ総数</div>
+                </div>
+              </div>
+
+              {/* 今月の平均エンゲージメント率 */}
+              <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-orange-600">{monthlyAvgEngagement}%</div>
+                  <div className="text-sm text-gray-600">今月の平均エンゲージメント率</div>
+                </div>
+              </div>
+            </div>
+
             {/* パフォーマンス概要 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center mb-6">
