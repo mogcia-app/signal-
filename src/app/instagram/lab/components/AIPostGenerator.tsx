@@ -18,6 +18,38 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
+  const [isSuggestingTime, setIsSuggestingTime] = useState(false);
+  const [suggestedTime, setSuggestedTime] = useState('');
+
+  // AI時間提案
+  const handleSuggestTime = async () => {
+    if (!scheduledDate) {
+      alert('まず投稿日を選択してください');
+      return;
+    }
+
+    setIsSuggestingTime(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬処理
+      
+      // 投稿タイプと内容に基づいて最適な時間を提案
+      const optimalTimes = {
+        feed: ['09:00', '12:00', '18:00', '20:00'],
+        reel: ['07:00', '12:00', '19:00', '21:00'],
+        story: ['08:00', '13:00', '18:00', '22:00']
+      };
+      
+      const times = optimalTimes[postType];
+      const randomTime = times[Math.floor(Math.random() * times.length)];
+      
+      setSuggestedTime(randomTime);
+      setScheduledTime(randomTime);
+    } catch (error) {
+      console.error('時間提案エラー:', error);
+    } finally {
+      setIsSuggestingTime(false);
+    }
+  };
 
   const handleGeneratePost = async () => {
     if (!aiPrompt.trim()) return;
@@ -124,7 +156,8 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-3">
             投稿設定
           </label>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
+            {/* 投稿日 */}
             <div>
               <label className="block text-xs text-gray-600 mb-1">投稿日</label>
               <input
@@ -134,14 +167,59 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
             </div>
+            
+            {/* 投稿時間 */}
             <div>
-              <label className="block text-xs text-gray-600 mb-1">投稿時間</label>
-              <input
-                type="time"
-                value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs text-gray-600">投稿時間</label>
+                <button
+                  onClick={handleSuggestTime}
+                  disabled={!scheduledDate || isSuggestingTime}
+                  className="text-xs text-purple-600 hover:text-purple-800 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center"
+                >
+                  {isSuggestingTime ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b border-purple-600 mr-1"></div>
+                      AI分析中...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={12} className="mr-1" />
+                      AI最適時間を提案
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              <div className="flex space-x-2">
+                <input
+                  type="time"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+                {suggestedTime && (
+                  <button
+                    onClick={() => setScheduledTime(suggestedTime)}
+                    className="px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-xs font-medium"
+                  >
+                    採用
+                  </button>
+                )}
+              </div>
+              
+              {suggestedTime && (
+                <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md">
+                  <div className="flex items-center text-xs text-purple-700">
+                    <Sparkles size={12} className="mr-1" />
+                    <span className="font-medium">AI提案:</span>
+                    <span className="ml-1">{suggestedTime}</span>
+                    <span className="ml-2 text-purple-600">
+                      ({postType === 'feed' ? 'フィード' : postType === 'reel' ? 'リール' : 'ストーリーズ'}に最適)
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
