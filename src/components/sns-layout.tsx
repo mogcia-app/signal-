@@ -165,6 +165,13 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               <span>AIチャット</span>
             </button>
             <button 
+              onClick={() => router.push(`/${currentSNS}/ai-learning`)}
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <span>🧠</span>
+              <span>AI学習進捗</span>
+            </button>
+            <button 
               onClick={() => router.push(`/${currentSNS}/posts`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >

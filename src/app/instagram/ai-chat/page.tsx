@@ -6,12 +6,6 @@ import {
   Send, 
   Bot, 
   User, 
-  MessageCircle, 
-  Lightbulb, 
-  TrendingUp, 
-  BarChart3, 
-  Target,
-  Sparkles,
   Copy,
   RefreshCw
 } from 'lucide-react';
@@ -35,16 +29,16 @@ const AI_SUGGESTIONS = [
   "月次レポートの改善点を教えて"
 ];
 
-const AI_PROMPTS = {
-  performance: "📊 パフォーマンス分析について詳しく教えます。どの指標に興味がありますか？",
-  strategy: "🎯 成長戦略について相談しましょう。現在の目標は何ですか？",
-  engagement: "💬 エンゲージメント向上のコツをお伝えします。",
-  timing: "⏰ 最適な投稿時間について分析します。",
-  hashtags: "#️⃣ ハッシュタグ戦略についてアドバイスします。",
-  competition: "🔍 競合分析の方法をお教えします。",
-  content: "✨ コンテンツ戦略について一緒に考えましょう。",
-  report: "📈 レポート改善のための具体的な提案をします。"
-};
+// const AI_PROMPTS = {
+//   performance: "📊 パフォーマンス分析について詳しく教えます。どの指標に興味がありますか？",
+//   strategy: "🎯 成長戦略について相談しましょう。現在の目標は何ですか？",
+//   engagement: "💬 エンゲージメント向上のコツをお伝えします。",
+//   timing: "⏰ 最適な投稿時間について分析します。",
+//   hashtags: "#️⃣ ハッシュタグ戦略についてアドバイスします。",
+//   competition: "🔍 競合分析の方法をお教えします。",
+//   content: "✨ コンテンツ戦略について一緒に考えましょう。",
+//   report: "📈 レポート改善のための具体的な提案をします。"
+// };
 
 export default function InstagramAIChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
