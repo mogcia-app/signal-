@@ -5,11 +5,34 @@ import SNSLayout from '../../../components/sns-layout';
 import PostEditor from './components/PostEditor';
 import ToolPanel from './components/ToolPanel';
 import KPIDiagnosis from './components/KPIDiagnosis';
+import PlanDisplay from './components/PlanDisplay';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [postType, setPostType] = useState<'feed' | 'reel' | 'story'>('feed');
+  
+  // 模擬的な計画データ（実際のアプリではAPIから取得）
+  const [planData] = useState<{
+    id: string;
+    title: string;
+    targetFollowers: number;
+    currentFollowers: number;
+    planPeriod: string;
+    strategies: string[];
+    createdAt: string;
+  } | null>(null); // nullに設定して計画なし状態を表示
+  
+  // 計画がある場合のサンプルデータ（テスト用）
+  // const [planData] = useState({
+  //   id: 'plan-001',
+  //   title: 'Instagram成長加速計画',
+  //   targetFollowers: 10000,
+  //   currentFollowers: 3250,
+  //   planPeriod: '6ヶ月',
+  //   strategies: ['ハッシュタグ最適化', 'ストーリー活用', 'リール投稿', 'エンゲージメント向上'],
+  //   createdAt: '2024-09-01'
+  // });
 
   return (
     <SNSLayout 
@@ -32,8 +55,10 @@ export default function InstagramLabPage() {
             />
           </div>
 
-          {/* 右カラム: 診断・ツール */}
+          {/* 右カラム: 計画・診断・ツール */}
           <div className="space-y-6">
+            <PlanDisplay planData={planData} />
+            
             <KPIDiagnosis
               content={postContent}
               hashtags={selectedHashtags}
