@@ -19,7 +19,8 @@ import {
   Play,
   Image as ImageIcon,
   Camera,
-  TrendingUp
+  TrendingUp,
+  Calendar
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -262,6 +263,42 @@ function InstagramDashboardContent() {
             </div>
           )}
 
+          {/* 目標達成通知 */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-6 mb-8">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+              <span className="text-2xl mr-2">🎯</span>
+              目標達成通知
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-green-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">週間投稿目標</span>
+                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">達成済み</span>
+                </div>
+                <div className="text-2xl font-bold text-green-600">5/5</div>
+                <div className="text-xs text-gray-500">100% 達成</div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 border border-yellow-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">エンゲージメント目標</span>
+                  <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">進行中</span>
+                </div>
+                <div className="text-2xl font-bold text-yellow-600">4.2%</div>
+                <div className="text-xs text-gray-500">目標: 5.0%</div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">フォロワー増加</span>
+                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">達成済み</span>
+                </div>
+                <div className="text-2xl font-bold text-blue-600">+12.5%</div>
+                <div className="text-xs text-gray-500">目標: +10%</div>
+              </div>
+            </div>
+          </div>
+
           {/* 統計カード */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
@@ -375,6 +412,42 @@ function InstagramDashboardContent() {
             </div>
           </div>
 
+          {/* よく使用したハッシュタグランキング */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                <span className="text-2xl mr-2">#️⃣</span>
+                よく使用したハッシュタグランキング
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { tag: '#インスタグラム', count: 15, engagement: 4.2 },
+                  { tag: '#マーケティング', count: 12, engagement: 3.8 },
+                  { tag: '#ビジネス', count: 10, engagement: 5.1 },
+                  { tag: '#SNS', count: 8, engagement: 3.5 },
+                  { tag: '#デジタル', count: 7, engagement: 4.8 },
+                  { tag: '#戦略', count: 6, engagement: 3.2 }
+                ].map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center">
+                      <span className="text-lg font-bold text-pink-600 mr-3">#{index + 1}</span>
+                      <div>
+                        <div className="font-medium text-gray-900">{item.tag}</div>
+                        <div className="text-sm text-gray-500">{item.count}回使用</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-pink-600">{item.engagement}%</div>
+                      <div className="text-xs text-gray-500">エンゲージメント</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* 左カラム - 最近の投稿とAI設定 */}
             <div className="lg:col-span-2 space-y-6">
@@ -434,6 +507,60 @@ function InstagramDashboardContent() {
 
             {/* 右カラム - クイックアクションと分析 */}
             <div className="space-y-6">
+              {/* 今週の投稿予定 */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                    <Calendar className="h-6 w-6 mr-2 text-blue-600" />
+                    今週の投稿予定
+                  </h2>
+                </div>
+                <div className="p-6 space-y-3">
+                  {[
+                    { day: '月', date: '12/16', type: 'リール', title: '新商品紹介動画', time: '14:00', status: 'scheduled' },
+                    { day: '火', date: '12/17', type: 'フィード', title: 'オフィス風景', time: '10:00', status: 'scheduled' },
+                    { day: '水', date: '12/18', type: 'ストーリー', title: '朝のルーティン', time: '08:00', status: 'scheduled' },
+                    { day: '木', date: '12/19', type: 'リール', title: '業界トレンド解説', time: '16:00', status: 'draft' },
+                    { day: '金', date: '12/20', type: 'フィード', title: '週末の振り返り', time: '18:00', status: 'draft' }
+                  ].map((post, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="text-center mr-4">
+                          <div className="text-xs text-gray-500">{post.day}</div>
+                          <div className="text-sm font-semibold text-gray-900">{post.date}</div>
+                        </div>
+                        <div>
+                          <div className="flex items-center">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2 ${
+                              post.type === 'reel' ? 'bg-purple-100 text-purple-800' :
+                              post.type === 'feed' ? 'bg-blue-100 text-blue-800' :
+                              'bg-pink-100 text-pink-800'
+                            }`}>
+                              {post.type === 'reel' ? '🎬' : post.type === 'feed' ? '📸' : '📱'}
+                              {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
+                            </span>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              post.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {post.status === 'scheduled' ? '予定済み' : '下書き'}
+                            </span>
+                          </div>
+                          <div className="text-sm font-medium text-gray-900 mt-1">{post.title}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-500">{post.time}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                  <a href="/instagram/plan" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    投稿スケジュールを管理 →
+                  </a>
+                </div>
+              </div>
+
               {/* 投稿分析手動入力 */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
@@ -511,6 +638,50 @@ function InstagramDashboardContent() {
                     className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
                   >
                     投稿結果を保存
+                  </button>
+                </div>
+              </div>
+
+              {/* TODOリスト */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                    <span className="text-2xl mr-2">✅</span>
+                    TODOリスト
+                  </h2>
+                </div>
+                <div className="p-6 space-y-3">
+                  {[
+                    { task: '新商品の投稿コンテンツ作成', priority: 'high', due: '今日' },
+                    { task: 'ハッシュタグ分析レポート確認', priority: 'medium', due: '明日' },
+                    { task: '競合他社の投稿内容調査', priority: 'low', due: '今週末' },
+                    { task: 'ストーリー用の素材準備', priority: 'medium', due: '明日' },
+                    { task: 'エンゲージメント率向上の戦略検討', priority: 'high', due: '来週' }
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center">
+                        <input 
+                          type="checkbox" 
+                          className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mr-3"
+                        />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{item.task}</div>
+                          <div className="text-xs text-gray-500">期限: {item.due}</div>
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        item.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {item.priority === 'high' ? '高' : item.priority === 'medium' ? '中' : '低'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                  <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    + 新しいタスクを追加
                   </button>
                 </div>
               </div>
