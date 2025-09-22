@@ -265,10 +265,10 @@ function InstagramDashboardContent() {
 
           {/* 目標達成通知 */}
           <div className="bg-white border border-[#ff8a15] p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="text-2xl mr-2">🎯</span>
-              目標達成通知
-            </h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                  <span className="text-2xl mr-2">🎯</span>
+                  目標達成通知（自動デプロイテスト）
+                </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-4 border border-[#ff8a15]">
                 <div className="flex items-center justify-between mb-2">
