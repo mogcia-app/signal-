@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, X, MessageCircle, Bot, User, Lightbulb } from 'lucide-react';
+import { Send, X, Bot, User, Lightbulb } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -178,10 +178,10 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-[9999]"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-[9999] group"
           aria-label="AIチャットを開く"
         >
-          <MessageCircle size={24} />
+          <Bot size={24} className="group-hover:scale-110 transition-transform duration-200" />
         </button>
       )}
 
