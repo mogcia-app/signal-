@@ -13,18 +13,14 @@ import {
   Eye, 
   Bookmark, 
   TrendingUp, 
-  Calendar,
   Target,
   BarChart3,
-  Plus,
-  Settings,
-  MessageCircle,
-  Upload,
   Edit3,
   ThumbsUp,
   Play,
   Image as ImageIcon,
-  Camera
+  Camera,
+  Settings
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -60,7 +56,7 @@ interface RecentPost {
 function InstagramDashboardContent() {
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
-  const { planData, loading: planLoading } = usePlanData();
+  const { planData } = usePlanData();
   const [stats] = useState<DashboardStats>({
     followers: 1234,
     engagement: 4.2,
@@ -133,7 +129,6 @@ function InstagramDashboardContent() {
   ]);
 
   const instagramSettings = getSNSSettings('instagram');
-  const [showManualInput, setShowManualInput] = useState(false);
   const [manualPostData, setManualPostData] = useState({
     title: '',
     type: 'feed' as 'feed' | 'reel' | 'story',
@@ -207,7 +202,6 @@ function InstagramDashboardContent() {
       saves: 0,
       reach: 0
     });
-    setShowManualInput(false);
   };
 
   return (
@@ -218,11 +212,6 @@ function InstagramDashboardContent() {
         customDescription="あなたのInstagramアカウントの総合管理画面"
       >
         <div className="max-w-7xl mx-auto">
-          {/* ウェルカムメッセージ */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">おかえりなさい！</h1>
-            <p className="text-gray-600">今日のInstagram運用をチェックしましょう</p>
-          </div>
 
           {/* 統計カード */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -393,44 +382,33 @@ function InstagramDashboardContent() {
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {recentPosts.map((post) => (
-                      <div key={post.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                        {/* 画像 */}
-                        <div className="aspect-square bg-gray-100 overflow-hidden">
-                          <img 
-                            src={post.imageUrl} 
-                            alt={post.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        
+                      <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                         {/* 投稿情報 */}
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeColor(post.type)}`}>
-                              {getPostTypeIcon(post.type)} {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
-                            </span>
-                            <span className="text-xs text-gray-500">{post.postedAt}</span>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeColor(post.type)}`}>
+                            {getPostTypeIcon(post.type)} {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
+                          </span>
+                          <span className="text-xs text-gray-500">{post.postedAt}</span>
+                        </div>
+                        <h3 className="font-medium text-gray-900 mb-4 line-clamp-2">{post.title}</h3>
+                        
+                        {/* KPI表示 */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="text-center bg-gray-50 rounded-lg p-2">
+                            <div className="text-gray-500 text-xs">いいね</div>
+                            <div className="font-semibold text-gray-900">{post.likes}</div>
                           </div>
-                          <h3 className="font-medium text-gray-900 mb-3 line-clamp-2">{post.title}</h3>
-                          
-                          {/* KPI表示 */}
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div className="text-center bg-gray-50 rounded-lg p-2">
-                              <div className="text-gray-500 text-xs">いいね</div>
-                              <div className="font-semibold text-gray-900">{post.likes}</div>
-                            </div>
-                            <div className="text-center bg-gray-50 rounded-lg p-2">
-                              <div className="text-gray-500 text-xs">コメント</div>
-                              <div className="font-semibold text-gray-900">{post.comments}</div>
-                            </div>
-                            <div className="text-center bg-gray-50 rounded-lg p-2">
-                              <div className="text-gray-500 text-xs">保存</div>
-                              <div className="font-semibold text-gray-900">{post.saves}</div>
-                            </div>
-                            <div className="text-center bg-gray-50 rounded-lg p-2">
-                              <div className="text-gray-500 text-xs">エンゲージメント率</div>
-                              <div className="font-semibold text-pink-600">{post.engagementRate}%</div>
-                            </div>
+                          <div className="text-center bg-gray-50 rounded-lg p-2">
+                            <div className="text-gray-500 text-xs">コメント</div>
+                            <div className="font-semibold text-gray-900">{post.comments}</div>
+                          </div>
+                          <div className="text-center bg-gray-50 rounded-lg p-2">
+                            <div className="text-gray-500 text-xs">保存</div>
+                            <div className="font-semibold text-gray-900">{post.saves}</div>
+                          </div>
+                          <div className="text-center bg-gray-50 rounded-lg p-2">
+                            <div className="text-gray-500 text-xs">エンゲージメント率</div>
+                            <div className="font-semibold text-pink-600">{post.engagementRate}%</div>
                           </div>
                         </div>
                       </div>
@@ -495,150 +473,86 @@ function InstagramDashboardContent() {
 
             {/* 右カラム - クイックアクションと分析 */}
             <div className="space-y-6">
-              {/* クイックアクション */}
+              {/* 投稿分析手動入力 */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                    <Target className="h-6 w-6 mr-2 text-green-600" />
-                    クイックアクション
+                    <Edit3 className="h-6 w-6 mr-2 text-orange-600" />
+                    投稿分析入力
                   </h2>
                 </div>
-                <div className="p-6 space-y-3">
-                  <a 
-                    href="/instagram/plan" 
-                    className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    運用計画作成
-                  </a>
-                  <a 
-                    href="/instagram/lab" 
-                    className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    投稿ラボ
-                  </a>
-                  <button
-                    onClick={() => setShowManualInput(!showManualInput)}
-                    className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    投稿結果を入力
-                  </button>
-                  <a 
-                    href="/instagram/analytics" 
-                    className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    分析レポート
-                  </a>
-                  <a 
-                    href="/instagram/posts" 
-                    className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    投稿管理
-                  </a>
-                  <a 
-                    href="/instagram/ai-chat" 
-                    className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    AIチャット
-                  </a>
-                </div>
-              </div>
-
-              {/* 手動投稿結果入力フォーム */}
-              {showManualInput && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                      <Edit3 className="h-5 w-5 mr-2 text-orange-600" />
-                      投稿結果を入力
-                    </h3>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイトル</label>
+                    <input
+                      type="text"
+                      value={manualPostData.title}
+                      onChange={(e) => setManualPostData({...manualPostData, title: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="投稿のタイトルを入力"
+                    />
                   </div>
-                  <div className="p-6 space-y-4">
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイプ</label>
+                    <select
+                      value={manualPostData.type}
+                      onChange={(e) => setManualPostData({...manualPostData, type: e.target.value as 'feed' | 'reel' | 'story'})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value="feed">フィード</option>
+                      <option value="reel">リール</option>
+                      <option value="story">ストーリー</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイトル</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">いいね数</label>
                       <input
-                        type="text"
-                        value={manualPostData.title}
-                        onChange={(e) => setManualPostData({...manualPostData, title: e.target.value})}
+                        type="number"
+                        value={manualPostData.likes}
+                        onChange={(e) => setManualPostData({...manualPostData, likes: parseInt(e.target.value) || 0})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="投稿のタイトルを入力"
                       />
                     </div>
-                    
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイプ</label>
-                      <select
-                        value={manualPostData.type}
-                        onChange={(e) => setManualPostData({...manualPostData, type: e.target.value as 'feed' | 'reel' | 'story'})}
+                      <label className="block text-sm font-medium text-gray-700 mb-1">コメント数</label>
+                      <input
+                        type="number"
+                        value={manualPostData.comments}
+                        onChange={(e) => setManualPostData({...manualPostData, comments: parseInt(e.target.value) || 0})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="feed">フィード</option>
-                        <option value="reel">リール</option>
-                        <option value="story">ストーリー</option>
-                      </select>
+                      />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">いいね数</label>
-                        <input
-                          type="number"
-                          value={manualPostData.likes}
-                          onChange={(e) => setManualPostData({...manualPostData, likes: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">コメント数</label>
-                        <input
-                          type="number"
-                          value={manualPostData.comments}
-                          onChange={(e) => setManualPostData({...manualPostData, comments: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">保存数</label>
-                        <input
-                          type="number"
-                          value={manualPostData.saves}
-                          onChange={(e) => setManualPostData({...manualPostData, saves: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">リーチ数</label>
-                        <input
-                          type="number"
-                          value={manualPostData.reach}
-                          onChange={(e) => setManualPostData({...manualPostData, reach: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">保存数</label>
+                      <input
+                        type="number"
+                        value={manualPostData.saves}
+                        onChange={(e) => setManualPostData({...manualPostData, saves: parseInt(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
                     </div>
-
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={handleManualPostSubmit}
-                        className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
-                      >
-                        投稿結果を保存
-                      </button>
-                      <button
-                        onClick={() => setShowManualInput(false)}
-                        className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
-                      >
-                        キャンセル
-                      </button>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">リーチ数</label>
+                      <input
+                        type="number"
+                        value={manualPostData.reach}
+                        onChange={(e) => setManualPostData({...manualPostData, reach: parseInt(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
                     </div>
                   </div>
+
+                  <button
+                    onClick={handleManualPostSubmit}
+                    className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+                  >
+                    投稿結果を保存
+                  </button>
                 </div>
-              )}
+              </div>
 
               {/* 今週の目標 */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
