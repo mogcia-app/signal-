@@ -174,11 +174,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className="w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
               style={{ fontFamily: 'inherit' }}
             />
-            {!content && (
-              <div className="absolute top-4 left-4 text-gray-400 pointer-events-none">
-                💡 ヒント: 感情に訴える表現や、行動を促す言葉を使うとエンゲージメントが向上します
-              </div>
-            )}
           </div>
         </div>
 
