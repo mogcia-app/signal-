@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
+import { usePlanData } from '../../hooks/usePlanData';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
@@ -17,7 +18,16 @@ import {
   BarChart3,
   Plus,
   Settings,
-  MessageCircle
+  MessageCircle,
+  Upload,
+  Edit3,
+  ThumbsUp,
+  MessageSquare,
+  Share2,
+  Play,
+  Image as ImageIcon,
+  Video,
+  Camera
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -25,10 +35,15 @@ interface DashboardStats {
   engagement: number;
   reach: number;
   saves: number;
+  likes: number;
+  comments: number;
   postsThisWeek: number;
   weeklyGoal: number;
   followerGrowth: number;
   topPostType: string;
+  monthlyFeedPosts: number;
+  monthlyReelPosts: number;
+  monthlyStoryPosts: number;
 }
 
 interface RecentPost {
@@ -41,21 +56,28 @@ interface RecentPost {
   reach: number;
   engagementRate: number;
   postedAt: string;
-  imageUrl?: string;
+  imageUrl: string;
+  caption?: string;
 }
 
 function InstagramDashboardContent() {
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
+  const { planData, loading: planLoading } = usePlanData();
   const [stats] = useState<DashboardStats>({
     followers: 1234,
     engagement: 4.2,
     reach: 5678,
     saves: 89,
+    likes: 2340,
+    comments: 156,
     postsThisWeek: 3,
     weeklyGoal: 5,
     followerGrowth: 12.5,
-    topPostType: 'リール'
+    topPostType: 'リール',
+    monthlyFeedPosts: 12,
+    monthlyReelPosts: 8,
+    monthlyStoryPosts: 28
   });
 
   const [recentPosts] = useState<RecentPost[]>([
@@ -68,7 +90,9 @@ function InstagramDashboardContent() {
       saves: 45,
       reach: 1200,
       engagementRate: 5.2,
-      postedAt: '2時間前'
+      postedAt: '2時間前',
+      imageUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=400&fit=crop&crop=center',
+      caption: '新商品の魅力を動画でご紹介！'
     },
     {
       id: '2',
@@ -79,7 +103,9 @@ function InstagramDashboardContent() {
       saves: 18,
       reach: 890,
       engagementRate: 3.8,
-      postedAt: '1日前'
+      postedAt: '1日前',
+      imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=400&fit=crop&crop=center',
+      caption: '今日のオフィスはこんな感じです'
     },
     {
       id: '3',
@@ -90,7 +116,9 @@ function InstagramDashboardContent() {
       saves: 0,
       reach: 450,
       engagementRate: 2.1,
-      postedAt: '2日前'
+      postedAt: '2日前',
+      imageUrl: 'https://images.unsplash.com/photo-1506905925346-14bda5d4b4c0?w=400&h=400&fit=crop&crop=center',
+      caption: '朝のルーティンをストーリーで'
     },
     {
       id: '4',
@@ -101,11 +129,22 @@ function InstagramDashboardContent() {
       saves: 67,
       reach: 2100,
       engagementRate: 6.1,
-      postedAt: '3日前'
+      postedAt: '3日前',
+      imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop&crop=center',
+      caption: '業界の最新トレンドを解説します'
     }
   ]);
 
   const instagramSettings = getSNSSettings('instagram');
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualPostData, setManualPostData] = useState({
+    title: '',
+    type: 'feed' as 'feed' | 'reel' | 'story',
+    likes: 0,
+    comments: 0,
+    saves: 0,
+    reach: 0
+  });
 
   // ローディング状態
   if (profileLoading) {
@@ -141,6 +180,37 @@ function InstagramDashboardContent() {
       case 'story': return 'bg-pink-100 text-pink-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleManualPostSubmit = () => {
+    // 手動投稿結果を追加
+    const newPost: RecentPost = {
+      id: Date.now().toString(),
+      title: manualPostData.title,
+      type: manualPostData.type,
+      likes: manualPostData.likes,
+      comments: manualPostData.comments,
+      saves: manualPostData.saves,
+      reach: manualPostData.reach,
+      engagementRate: ((manualPostData.likes + manualPostData.comments + manualPostData.saves) / manualPostData.reach * 100) || 0,
+      postedAt: '今',
+      imageUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=400&fit=crop&crop=center',
+      caption: manualPostData.title
+    };
+    
+    // ここで実際のデータ更新処理を行う
+    console.log('手動投稿結果:', newPost);
+    
+    // フォームをリセット
+    setManualPostData({
+      title: '',
+      type: 'feed',
+      likes: 0,
+      comments: 0,
+      saves: 0,
+      reach: 0
+    });
+    setShowManualInput(false);
   };
 
   return (
@@ -215,6 +285,97 @@ function InstagramDashboardContent() {
             </div>
           </div>
 
+          {/* 追加のKPIカード */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 bg-red-100 rounded-lg">
+                  <ThumbsUp className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">いいね数</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.likes.toLocaleString()}</p>
+                  <p className="text-xs text-red-600">今週</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 bg-yellow-100 rounded-lg">
+                  <MessageSquare className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">コメント数</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.comments}</p>
+                  <p className="text-xs text-yellow-600">今週</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 bg-indigo-100 rounded-lg">
+                  <ImageIcon className="h-6 w-6 text-indigo-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">フィード投稿</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.monthlyFeedPosts}</p>
+                  <p className="text-xs text-indigo-600">今月</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <Play className="h-6 w-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">リール投稿</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.monthlyReelPosts}</p>
+                  <p className="text-xs text-orange-600">今月</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 計画内容の連携表示 */}
+          {planData && (
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border border-pink-200 p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <Target className="h-6 w-6 mr-2 text-pink-600" />
+                現在の運用計画
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-sm text-gray-600">目標名</p>
+                  <p className="font-semibold text-gray-900">{planData.goalName}</p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-sm text-gray-600">計画期間</p>
+                  <p className="font-semibold text-gray-900">{planData.planPeriod}</p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-sm text-gray-600">目標フォロワー数</p>
+                  <p className="font-semibold text-gray-900">{planData.currentFollowers + planData.followerGain}</p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-sm text-gray-600">カテゴリ</p>
+                  <p className="font-semibold text-gray-900">{planData.goalCategory}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <a 
+                  href="/instagram/plan" 
+                  className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+                >
+                  詳細を見る →
+                </a>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* 左カラム - 最近の投稿とAI設定 */}
             <div className="lg:col-span-2 space-y-6">
@@ -233,18 +394,33 @@ function InstagramDashboardContent() {
                   </a>
                 </div>
                 <div className="p-6">
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {recentPosts.map((post) => (
                       <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                        <div className="flex items-start space-x-4">
+                          {/* 画像 */}
+                          <div className="flex-shrink-0">
+                            <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
+                              <img 
+                                src={post.imageUrl} 
+                                alt={post.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* 投稿情報 */}
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center mb-2">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeColor(post.type)}`}>
                                 {getPostTypeIcon(post.type)} {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
                               </span>
                               <span className="ml-2 text-sm text-gray-500">{post.postedAt}</span>
                             </div>
-                            <h3 className="font-medium text-gray-900 mb-3">{post.title}</h3>
+                            <h3 className="font-medium text-gray-900 mb-2">{post.title}</h3>
+                            {post.caption && (
+                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">{post.caption}</p>
+                            )}
                             <div className="grid grid-cols-4 gap-4 text-sm">
                               <div className="text-center">
                                 <div className="text-gray-500">いいね</div>
@@ -350,6 +526,13 @@ function InstagramDashboardContent() {
                     <Plus className="h-4 w-4 mr-2" />
                     投稿ラボ
                   </a>
+                  <button
+                    onClick={() => setShowManualInput(!showManualInput)}
+                    className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    投稿結果を入力
+                  </button>
                   <a 
                     href="/instagram/analytics" 
                     className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
@@ -374,6 +557,97 @@ function InstagramDashboardContent() {
                 </div>
               </div>
 
+              {/* 手動投稿結果入力フォーム */}
+              {showManualInput && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <Edit3 className="h-5 w-5 mr-2 text-orange-600" />
+                      投稿結果を入力
+                    </h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイトル</label>
+                      <input
+                        type="text"
+                        value={manualPostData.title}
+                        onChange={(e) => setManualPostData({...manualPostData, title: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="投稿のタイトルを入力"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイプ</label>
+                      <select
+                        value={manualPostData.type}
+                        onChange={(e) => setManualPostData({...manualPostData, type: e.target.value as 'feed' | 'reel' | 'story'})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="feed">フィード</option>
+                        <option value="reel">リール</option>
+                        <option value="story">ストーリー</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">いいね数</label>
+                        <input
+                          type="number"
+                          value={manualPostData.likes}
+                          onChange={(e) => setManualPostData({...manualPostData, likes: parseInt(e.target.value) || 0})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">コメント数</label>
+                        <input
+                          type="number"
+                          value={manualPostData.comments}
+                          onChange={(e) => setManualPostData({...manualPostData, comments: parseInt(e.target.value) || 0})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">保存数</label>
+                        <input
+                          type="number"
+                          value={manualPostData.saves}
+                          onChange={(e) => setManualPostData({...manualPostData, saves: parseInt(e.target.value) || 0})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">リーチ数</label>
+                        <input
+                          type="number"
+                          value={manualPostData.reach}
+                          onChange={(e) => setManualPostData({...manualPostData, reach: parseInt(e.target.value) || 0})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleManualPostSubmit}
+                        className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+                      >
+                        投稿結果を保存
+                      </button>
+                      <button
+                        onClick={() => setShowManualInput(false)}
+                        className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 今週の目標 */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
@@ -396,10 +670,10 @@ function InstagramDashboardContent() {
                   
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-700">ストーリー投稿</span>
-                    <span className="text-sm font-medium text-gray-900">5/7</span>
+                    <span className="text-sm font-medium text-gray-900">{stats.monthlyStoryPosts}/30</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-purple-500 h-2 rounded-full" style={{width: '71%'}}></div>
+                    <div className="bg-purple-500 h-2 rounded-full" style={{width: `${(stats.monthlyStoryPosts / 30) * 100}%`}}></div>
                   </div>
                   
                   <div className="flex items-center justify-between">
