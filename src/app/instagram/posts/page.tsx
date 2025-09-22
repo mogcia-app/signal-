@@ -125,12 +125,13 @@ export default function InstagramPostsPage() {
   };
 
   return (
-    <SNSLayout 
-      currentSNS="instagram"
-      customTitle="投稿一覧"
-      customDescription="作成した投稿の管理・編集・削除を行えます"
-    >
-      <div className="max-w-7xl mx-auto p-6">
+    <>
+      <SNSLayout 
+        currentSNS="instagram"
+        customTitle="投稿一覧"
+        customDescription="作成した投稿の管理・編集・削除を行えます"
+      >
+        <div className="max-w-7xl mx-auto p-6">
         {/* ヘッダー */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -437,17 +438,19 @@ export default function InstagramPostsPage() {
           </div>
         )}
 
-        {/* AIチャットウィジェット */}
-        <AIChatWidget 
-          contextData={{
-            posts: posts,
-            selectedStatus: selectedStatus,
-            selectedPostType: selectedPostType,
-            searchTerm: searchTerm,
-            activeTab: activeTab
-          }}
-        />
-      </div>
-    </SNSLayout>
+        </div>
+      </SNSLayout>
+
+      {/* AIチャットウィジェット */}
+      <AIChatWidget 
+        contextData={{
+          posts: posts,
+          selectedStatus: selectedStatus,
+          selectedPostType: selectedPostType,
+          searchTerm: searchTerm,
+          activeTab: activeTab
+        }}
+      />
+    </>
   );
 }

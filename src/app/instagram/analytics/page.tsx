@@ -244,12 +244,13 @@ export default function InstagramAnalyticsPage() {
 
 
   return (
-    <SNSLayout 
-      currentSNS="instagram"
-      customTitle="投稿分析"
-      customDescription="投稿パフォーマンスを分析し、改善点を見つけましょう"
-    >
-      <div className="max-w-7xl mx-auto p-6">
+    <>
+      <SNSLayout 
+        currentSNS="instagram"
+        customTitle="投稿分析"
+        customDescription="投稿パフォーマンスを分析し、改善点を見つけましょう"
+      >
+        <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* 左カラム: データ入力 */}
@@ -586,21 +587,23 @@ export default function InstagramAnalyticsPage() {
           </div>
         </div>
 
-        {/* AIチャットウィジェット */}
-        <AIChatWidget 
-          contextData={{
-            posts: posts,
-            planData: planData as unknown as Record<string, unknown>,
-            monthlyStats: {
-              totalPosts: posts.length,
-              totalLikes: posts.reduce((sum, post) => sum + (post.likes || 0), 0),
-              totalComments: posts.reduce((sum, post) => sum + (post.comments || 0), 0),
-              totalShares: posts.reduce((sum, post) => sum + (post.shares || 0), 0),
-              avgEngagement: monthlyAvgEngagement
-            }
-          }}
-        />
-      </div>
-    </SNSLayout>
+        </div>
+      </SNSLayout>
+
+      {/* AIチャットウィジェット */}
+      <AIChatWidget 
+        contextData={{
+          posts: posts,
+          planData: planData as unknown as Record<string, unknown>,
+          monthlyStats: {
+            totalPosts: posts.length,
+            totalLikes: posts.reduce((sum, post) => sum + (post.likes || 0), 0),
+            totalComments: posts.reduce((sum, post) => sum + (post.comments || 0), 0),
+            totalShares: posts.reduce((sum, post) => sum + (post.shares || 0), 0),
+            avgEngagement: monthlyAvgEngagement
+          }
+        }}
+      />
+    </>
   );
 }
