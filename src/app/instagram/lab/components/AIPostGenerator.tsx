@@ -90,13 +90,18 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       {/* セクションヘッダー */}
       <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mr-3">
-            <Sparkles className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">AI投稿文生成</h3>
+              <p className="text-sm text-gray-600">テーマを入力してAIが投稿文を自動生成します</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">AI投稿文生成</h3>
-            <p className="text-sm text-gray-600">テーマを入力してAIが投稿文を自動生成します</p>
+          <div className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+            🤖 AI Powered
           </div>
         </div>
       </div>
