@@ -133,10 +133,7 @@ export default function InstagramPostsPage() {
         {/* ヘッダー */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">投稿一覧</h1>
-              <p className="text-gray-600 mt-1">作成した投稿を管理しましょう</p>
-            </div>
+            
             <div className="text-sm text-gray-500">
               {filteredPosts.length}件の投稿
             </div>
