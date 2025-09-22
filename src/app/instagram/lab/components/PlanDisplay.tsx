@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Target, TrendingUp, Users, User, Tag } from 'lucide-react';
-import { PlanData } from '../../../types/plan';
+import { Calendar, Target, TrendingUp, User, Tag } from 'lucide-react';
+import { PlanData } from '../../plan/types/plan';
 
 interface PlanDisplayProps {
   planData?: PlanData | null;

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Sparkles } from 'lucide-react';
-import { PlanData } from '../../../types/plan';
+import { PlanData } from '../../plan/types/plan';
 
 interface AIPostGeneratorProps {
   postType: 'feed' | 'reel' | 'story';

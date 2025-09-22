@@ -7,7 +7,7 @@ import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
 import KPIDiagnosis from './components/KPIDiagnosis';
 import PlanDisplay from './components/PlanDisplay';
-import { PlanData, DEFAULT_PLAN_DATA } from '../../../types/plan';
+import { PlanData } from '../plan/types/plan';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
@@ -19,7 +19,30 @@ export default function InstagramLabPage() {
   const [planData] = useState<PlanData | null>(null); // nullに設定して計画なし状態を表示
   
   // 計画がある場合のサンプルデータ（テスト用）
-  // const [planData] = useState<PlanData>(DEFAULT_PLAN_DATA);
+  // const [planData] = useState<PlanData>({
+  //   id: 'plan-001',
+  //   title: 'Instagram成長加速計画',
+  //   targetFollowers: 10000,
+  //   currentFollowers: 3250,
+  //   planPeriod: '6ヶ月',
+  //   targetAudience: '未設定',
+  //   category: '未設定',
+  //   strategies: ['ハッシュタグ最適化', 'ストーリー活用', 'リール投稿', 'エンゲージメント向上'],
+  //   createdAt: '2024-09-01',
+  //   simulation: {
+  //     postTypes: {
+  //       reel: { weeklyCount: 1, followerEffect: 3 },
+  //       feed: { weeklyCount: 2, followerEffect: 2 },
+  //       story: { weeklyCount: 3, followerEffect: 1 }
+  //     }
+  //   },
+  //   aiPersona: {
+  //     tone: '親しみやすい',
+  //     style: 'カジュアル',
+  //     personality: '明るく前向き',
+  //     interests: ['成長', 'コミュニティ', 'エンゲージメント', 'クリエイティブ']
+  //   }
+  // });
 
   // AI生成ハンドラー
   const handleAIGenerate = (generatedTitle: string, generatedContent: string, generatedHashtags: string[]) => {
