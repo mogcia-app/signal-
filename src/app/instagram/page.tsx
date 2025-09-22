@@ -214,7 +214,7 @@ function InstagramDashboardContent() {
         <div className="max-w-7xl mx-auto">
           {/* 計画内容の連携表示 */}
           {planData ? (
-            <div className="bg-white border border-[#ff8a15] p-6 mb-8">
+            <div className="bg-white p-6 mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                 <Target className="h-6 w-6 mr-2 text-pink-600" />
                 現在の運用計画
@@ -247,14 +247,14 @@ function InstagramDashboardContent() {
               </div>
             </div>
           ) : (
-            <div className="bg-white border border-[#ff8a15] p-6 mb-8">
+            <div className="bg-white p-6 mb-8">
               <div className="text-center">
                 <div className="text-4xl mb-4">📋</div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-2">運用計画を作成しましょう</h2>
                 <p className="text-gray-600 mb-4">Instagram運用の目標を設定して、効果的な戦略を立てましょう</p>
                 <a 
                   href="/instagram/plan" 
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium text-white bg-[#ff8a15] hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
                 >
                   <Target className="h-5 w-5 mr-2" />
                   運用計画を作成する
@@ -264,10 +264,10 @@ function InstagramDashboardContent() {
           )}
 
           {/* 目標達成通知 */}
-          <div className="bg-white border border-[#ff8a15] p-6 mb-8">
+          <div className="bg-white p-6 mb-8">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                   <span className="text-2xl mr-2">🎯</span>
-                  目標達成通知（自動デプロイテスト）
+                  目標達成通知
                 </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-4 border border-[#ff8a15]">
@@ -301,7 +301,7 @@ function InstagramDashboardContent() {
 
           {/* 統計カード */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white border border-[#ff8a15] p-6 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-pink-100 rounded-lg">
                   <Users className="h-6 w-6 text-pink-600" />
@@ -317,7 +317,7 @@ function InstagramDashboardContent() {
               </div>
             </div>
 
-            <div className="bg-white border border-[#ff8a15] p-6 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Heart className="h-6 w-6 text-blue-600" />
@@ -330,7 +330,7 @@ function InstagramDashboardContent() {
               </div>
             </div>
 
-            <div className="bg-white border border-[#ff8a15] p-6 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-green-100 rounded-lg">
                   <Eye className="h-6 w-6 text-green-600" />
@@ -343,7 +343,7 @@ function InstagramDashboardContent() {
               </div>
             </div>
 
-            <div className="bg-white border border-[#ff8a15] p-6 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-purple-100 rounded-lg">
                   <Bookmark className="h-6 w-6 text-purple-600" />
@@ -359,7 +359,7 @@ function InstagramDashboardContent() {
 
           {/* 追加のKPIカード */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white border border-[#ff8a15] p-6 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-red-100 rounded-lg">
                   <ThumbsUp className="h-6 w-6 text-red-600" />
@@ -372,7 +372,7 @@ function InstagramDashboardContent() {
               </div>
             </div>
 
-            <div className="bg-white border border-[#ff8a15] p-6 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-yellow-100 rounded-lg">
                   <Camera className="h-6 w-6 text-yellow-600" />
@@ -385,7 +385,7 @@ function InstagramDashboardContent() {
               </div>
             </div>
 
-            <div className="bg-white border border-[#ff8a15] p-6 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-indigo-100 rounded-lg">
                   <ImageIcon className="h-6 w-6 text-indigo-600" />
@@ -398,7 +398,7 @@ function InstagramDashboardContent() {
               </div>
             </div>
 
-            <div className="bg-white border border-[#ff8a15] p-6 hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center">
                 <div className="p-3 bg-orange-100 rounded-lg">
                   <Play className="h-6 w-6 text-orange-600" />
@@ -413,7 +413,7 @@ function InstagramDashboardContent() {
           </div>
 
           {/* よく使用したハッシュタグランキング */}
-          <div className="bg-white border border-[#ff8a15] mb-8">
+          <div className="bg-white mb-8">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800 flex items-center">
                 <span className="text-2xl mr-2">#️⃣</span>
@@ -452,7 +452,7 @@ function InstagramDashboardContent() {
             {/* 左カラム - 最近の投稿とAI設定 */}
             <div className="lg:col-span-2 space-y-6">
               {/* 最近の投稿 */}
-              <div className="bg-white border border-[#ff8a15]">
+              <div className="bg-white">
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-gray-800 flex items-center">
                     <BarChart3 className="h-6 w-6 mr-2 text-pink-600" />
@@ -504,7 +504,7 @@ function InstagramDashboardContent() {
               </div>
 
               {/* TODOリスト */}
-              <div className="bg-white border border-[#ff8a15]">
+              <div className="bg-white">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-800 flex items-center">
                     <span className="text-2xl mr-2">✅</span>
@@ -552,7 +552,7 @@ function InstagramDashboardContent() {
             {/* 右カラム - クイックアクションと分析 */}
             <div className="space-y-6">
               {/* 今週の投稿予定 */}
-              <div className="bg-white border border-[#ff8a15]">
+              <div className="bg-white">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-800 flex items-center">
                     <Calendar className="h-6 w-6 mr-2 text-blue-600" />
@@ -606,7 +606,7 @@ function InstagramDashboardContent() {
               </div>
 
               {/* 投稿分析手動入力 */}
-              <div className="bg-white border border-[#ff8a15]">
+              <div className="bg-white">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-800 flex items-center">
                     <Edit3 className="h-6 w-6 mr-2 text-orange-600" />
