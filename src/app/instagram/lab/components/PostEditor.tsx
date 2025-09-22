@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, RefreshCw, CheckCircle, AlertCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, AlertCircle, Upload, X } from 'lucide-react';
 import { postsApi } from '../../../../lib/api';
+import Image from 'next/image';
 
 interface PostEditorProps {
   content: string;
@@ -65,7 +66,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         userId: 'current-user', // 実際のアプリでは認証済みユーザーIDを使用
         title: title || '',
         content,
-        hashtags: selectedHashtags,
+        hashtags: hashtags,
         postType,
         scheduledDate,
         scheduledTime,
@@ -397,9 +398,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           {image ? (
             <div className="relative">
               <div className="w-full max-w-md mx-auto">
-                <img
+                <Image
                   src={image}
                   alt="投稿画像プレビュー"
+                  width={400}
+                  height={192}
                   className="w-full h-48 object-cover rounded-xl border-2 border-gray-200"
                 />
                 <button
@@ -489,9 +492,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     {/* 画像プレビュー */}
                     {image && (
                       <div className="mb-3">
-                        <img
+                        <Image
                           src={image}
                           alt="投稿画像"
+                          width={400}
+                          height={192}
                           className="w-full h-48 object-cover rounded-lg"
                         />
                       </div>
