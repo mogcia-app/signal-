@@ -22,6 +22,9 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const [showTemplates, setShowTemplates] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // デバッグ用ログ
+  console.log('AIChatWidget rendered, isOpen:', isOpen, 'contextData:', contextData);
+
   // 計画系テンプレート
   const planTemplates = [
     {
@@ -175,7 +178,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-[9999]"
           aria-label="AIチャットを開く"
         >
           <MessageCircle size={24} />
@@ -184,7 +187,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
       {/* チャットウィンドウ */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-50">
+        <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-[9999]">
           {/* ヘッダー */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg">
             <div className="flex items-center space-x-2">
