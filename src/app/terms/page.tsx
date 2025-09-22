@@ -3,13 +3,6 @@
 import React, { useState } from 'react';
 import { 
   FileText, 
-  CheckCircle, 
-  AlertTriangle, 
-  CreditCard, 
-  Calendar, 
-  Shield, 
-  Users, 
-  Zap,
   Phone,
   Mail,
   MapPin
@@ -471,6 +464,7 @@ export default function TermsPage() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
 
