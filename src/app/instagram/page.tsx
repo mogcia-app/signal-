@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { AuthGuard } from '../../components/auth-guard';
@@ -47,7 +47,7 @@ interface RecentPost {
 function InstagramDashboardContent() {
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
-  const [stats, setStats] = useState<DashboardStats>({
+  const [stats] = useState<DashboardStats>({
     followers: 1234,
     engagement: 4.2,
     reach: 5678,
@@ -58,7 +58,7 @@ function InstagramDashboardContent() {
     topPostType: 'リール'
   });
 
-  const [recentPosts, setRecentPosts] = useState<RecentPost[]>([
+  const [recentPosts] = useState<RecentPost[]>([
     {
       id: '1',
       title: '新商品の紹介動画',
