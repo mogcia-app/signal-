@@ -149,7 +149,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             </button>
             <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
               <span>📚</span>
-              <span>過去の投稿</span>
+              <span>投稿一覧</span>
             </button>
             <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
               <span>🤖</span>
