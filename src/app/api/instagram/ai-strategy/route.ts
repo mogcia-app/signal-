@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { searchRelevantKnowledge, saveUserAnalysis, getLearningInsights } from './knowledge-base';
 
 // セキュリティ: APIキーの検証
-function validateApiKey(request: NextRequest): boolean {
+function validateApiKey(_request: NextRequest): boolean {
   const apiKey = request.headers.get('x-api-key');
   const validApiKey = process.env.INTERNAL_API_KEY;
   
@@ -44,7 +44,7 @@ function checkRateLimit(ip: string): boolean {
 }
 
 // 入力データの検証
-function validateInputData(data: unknown): boolean {
+function validateInputData(_data: unknown): boolean {
   if (!data || typeof data !== 'object') {
     return false;
   }

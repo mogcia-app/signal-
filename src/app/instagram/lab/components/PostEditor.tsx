@@ -28,7 +28,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [checkResult, setCheckResult] = useState<any>(null);
+  const [checkResult, setCheckResult] = useState<{
+    score: number;
+    suggestions: string[];
+    hashtagSuggestions: string[];
+    engagementPrediction: number;
+  } | null>(null);
 
   const characterCount = content.length;
   const maxCharacters = 2200;

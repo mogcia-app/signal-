@@ -19,7 +19,7 @@ interface AICheckResult {
 export const AIAssistant: React.FC<AIAssistantProps> = ({
   postType,
   onGeneratePost,
-  onCheckPost
+  onCheckPost: _onCheckPost
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -61,7 +61,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
     }
   };
 
-  const handleCheckPost = async (content: string, hashtags: string[]) => {
+  const handleCheckPost = async (content: string, _hashtags: string[]) => {
     if (!content.trim()) return;
     
     setIsChecking(true);
