@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface AIAssistantProps {
-  postType: 'feed' | 'reel';
+  postType: 'feed' | 'reel' | 'story';
   onGeneratePost: (content: string, hashtags: string[]) => void;
   onCheckPost: (content: string, hashtags: string[]) => void;
 }
@@ -36,17 +36,17 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
       
       const generatedContent = `✨ ${prompt}について投稿文を生成しました！
 
-この投稿は${postType === 'reel' ? 'リール' : 'フィード'}に最適化されています。
+この投稿は${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化されています。
 エンゲージメントを高めるために、以下のポイントを意識しました：
 
 • 感情に訴える表現
 • 行動を促すCTA
 • 視覚的に魅力的な文章構成
 
-#${postType === 'reel' ? 'リール' : 'インスタグラム'} #${prompt.replace(/\s+/g, '')} #エンゲージメント`;
+#${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム'} #${prompt.replace(/\s+/g, '')} #エンゲージメント`;
 
       const hashtags = [
-        postType === 'reel' ? 'リール' : 'インスタグラム',
+        postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム',
         prompt.replace(/\s+/g, ''),
         'エンゲージメント',
         '投稿',
@@ -124,7 +124,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={`${postType === 'reel' ? 'リール' : 'フィード'}のテーマや内容を入力してください...`}
+              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマや内容を入力してください...`}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             <button

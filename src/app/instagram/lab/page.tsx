@@ -10,7 +10,7 @@ import AIAssistant from './components/AIAssistant';
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-  const [postType, setPostType] = useState<'feed' | 'reel'>('feed');
+  const [postType, setPostType] = useState<'feed' | 'reel' | 'story'>('feed');
 
   return (
     <SNSLayout 

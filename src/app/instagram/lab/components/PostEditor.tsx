@@ -8,8 +8,8 @@ interface PostEditorProps {
   onContentChange: (content: string) => void;
   hashtags: string[];
   onHashtagsChange: (hashtags: string[]) => void;
-  postType?: 'feed' | 'reel';
-  onPostTypeChange?: (type: 'feed' | 'reel') => void;
+  postType?: 'feed' | 'reel' | 'story';
+  onPostTypeChange?: (type: 'feed' | 'reel' | 'story') => void;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -54,33 +54,28 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       {/* ヘッダー */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
+      <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <span className="text-white text-lg">✍️</span>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-white">投稿文エディター</h2>
-              <p className="text-purple-100 text-sm">クリエイティブな投稿文を作成しましょう</p>
-            </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">投稿文エディター</h2>
+            <p className="text-sm text-gray-600">投稿文を作成・編集しましょう</p>
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={handleSave}
               disabled={!content.trim()}
-              className="flex items-center space-x-2 px-4 py-2 text-sm bg-white/20 text-white rounded-lg hover:bg-white/30 disabled:bg-white/10 disabled:cursor-not-allowed transition-all duration-200 backdrop-blur-sm"
+              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
-              <Save size={16} />
+              <Save size={14} />
               <span>保存</span>
             </button>
             <button
               onClick={handleClear}
-              className="flex items-center space-x-2 px-4 py-2 text-sm bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={14} />
               <span>クリア</span>
             </button>
           </div>
@@ -91,28 +86,49 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
         {/* 投稿タイプ選択 */}
         <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-800 mb-3">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
             投稿タイプ
           </label>
-          <div className="bg-gray-100 p-1 rounded-xl flex items-center">
-            <span className={`text-sm font-semibold mr-4 transition-colors duration-200 ${postType === 'feed' ? 'text-blue-700' : 'text-gray-500'}`}>
-              📸 フィード投稿
-            </span>
+          <div className="grid grid-cols-3 gap-2">
             <button
-              onClick={() => onPostTypeChange?.(postType === 'feed' ? 'reel' : 'feed')}
-              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                postType === 'reel' ? 'bg-gradient-to-r from-purple-500 to-blue-500 shadow-lg' : 'bg-gray-300'
+              onClick={() => onPostTypeChange?.('feed')}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                postType === 'feed'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-all duration-300 ${
-                  postType === 'reel' ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
+              <div className="text-center">
+                <div className="text-lg mb-1">📸</div>
+                <div className="text-sm font-medium">フィード</div>
+              </div>
             </button>
-            <span className={`text-sm font-semibold ml-4 transition-colors duration-200 ${postType === 'reel' ? 'text-purple-700' : 'text-gray-500'}`}>
-              🎬 リール
-            </span>
+            <button
+              onClick={() => onPostTypeChange?.('reel')}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                postType === 'reel'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <div className="text-center">
+                <div className="text-lg mb-1">🎬</div>
+                <div className="text-sm font-medium">リール</div>
+              </div>
+            </button>
+            <button
+              onClick={() => onPostTypeChange?.('story')}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                postType === 'story'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <div className="text-center">
+                <div className="text-lg mb-1">📱</div>
+                <div className="text-sm font-medium">ストーリーズ</div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -153,7 +169,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             <textarea
               value={content}
               onChange={(e) => onContentChange(e.target.value)}
-              placeholder={`${postType === 'reel' ? 'リール' : 'フィード'}の投稿文を入力してください...`}
+              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}の投稿文を入力してください...`}
               className="w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
               style={{ fontFamily: 'inherit' }}
             />
