@@ -12,15 +12,13 @@ import {
   Heart, 
   Eye, 
   Bookmark, 
-  TrendingUp, 
   Target,
   BarChart3,
   Edit3,
   ThumbsUp,
   Play,
   Image as ImageIcon,
-  Camera,
-  Settings
+  Camera
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -212,6 +210,56 @@ function InstagramDashboardContent() {
         customDescription="あなたのInstagramアカウントの総合管理画面"
       >
         <div className="max-w-7xl mx-auto">
+          {/* 計画内容の連携表示 */}
+          {planData ? (
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border border-pink-200 p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <Target className="h-6 w-6 mr-2 text-pink-600" />
+                現在の運用計画
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-sm text-gray-600">目標名</p>
+                  <p className="font-semibold text-gray-900">{planData.goalName}</p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-sm text-gray-600">計画期間</p>
+                  <p className="font-semibold text-gray-900">{planData.planPeriod}</p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-sm text-gray-600">目標フォロワー数</p>
+                  <p className="font-semibold text-gray-900">{planData.currentFollowers + planData.followerGain}</p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-sm text-gray-600">カテゴリ</p>
+                  <p className="font-semibold text-gray-900">{planData.goalCategory}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <a 
+                  href="/instagram/plan" 
+                  className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+                >
+                  詳細を見る →
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 mb-8">
+              <div className="text-center">
+                <div className="text-4xl mb-4">📋</div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">運用計画を作成しましょう</h2>
+                <p className="text-gray-600 mb-4">Instagram運用の目標を設定して、効果的な戦略を立てましょう</p>
+                <a 
+                  href="/instagram/plan" 
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  <Target className="h-5 w-5 mr-2" />
+                  運用計画を作成する
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* 統計カード */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -326,57 +374,6 @@ function InstagramDashboardContent() {
             </div>
           </div>
 
-          {/* 計画内容の連携表示 */}
-          {planData ? (
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border border-pink-200 p-6 mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                <Target className="h-6 w-6 mr-2 text-pink-600" />
-                現在の運用計画
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg p-4">
-                  <p className="text-sm text-gray-600">目標名</p>
-                  <p className="font-semibold text-gray-900">{planData.goalName}</p>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <p className="text-sm text-gray-600">計画期間</p>
-                  <p className="font-semibold text-gray-900">{planData.planPeriod}</p>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <p className="text-sm text-gray-600">目標フォロワー数</p>
-                  <p className="font-semibold text-gray-900">{planData.currentFollowers + planData.followerGain}</p>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <p className="text-sm text-gray-600">カテゴリ</p>
-                  <p className="font-semibold text-gray-900">{planData.goalCategory}</p>
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end">
-                <a 
-                  href="/instagram/plan" 
-                  className="text-sm text-pink-600 hover:text-pink-700 font-medium"
-                >
-                  詳細を見る →
-                </a>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 mb-8">
-              <div className="text-center">
-                <div className="text-4xl mb-4">📋</div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">運用計画を作成しましょう</h2>
-                <p className="text-gray-600 mb-4">Instagram運用の目標を設定して、効果的な戦略を立てましょう</p>
-                <a 
-                  href="/instagram/plan" 
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  <Target className="h-5 w-5 mr-2" />
-                  運用計画を作成する
-                </a>
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* 左カラム - 最近の投稿とAI設定 */}
             <div className="lg:col-span-2 space-y-6">
@@ -432,58 +429,6 @@ function InstagramDashboardContent() {
                 </div>
               </div>
 
-              {/* AI設定状況 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                    <Settings className="h-6 w-6 mr-2 text-blue-600" />
-                    AI設定状況
-                  </h2>
-                </div>
-                <div className="p-6">
-                  {instagramSettings ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">自動投稿</span>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            有効
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">ハッシュタグ生成</span>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            有効
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">投稿分析</span>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            有効
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">最適化提案</span>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            部分有効
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-gray-400 text-4xl mb-4">⚙️</div>
-                      <p className="text-gray-500 mb-4">InstagramのAI設定は登録されていません</p>
-                      <a 
-                        href="/instagram/plan" 
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-pink-600 hover:bg-pink-700"
-                      >
-                        設定を開始する
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* 右カラム - クイックアクションと分析 */}
@@ -569,106 +514,6 @@ function InstagramDashboardContent() {
                 </div>
               </div>
 
-              {/* 今週の目標 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                    <Target className="h-6 w-6 mr-2 text-purple-600" />
-                    今週の目標
-                  </h2>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">投稿数</span>
-                    <span className="text-sm font-medium text-gray-900">{stats.postsThisWeek}/{stats.weeklyGoal}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-pink-500 h-2 rounded-full transition-all duration-300" 
-                      style={{width: `${(stats.postsThisWeek / stats.weeklyGoal) * 100}%`}}
-                    ></div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">ストーリー投稿</span>
-                    <span className="text-sm font-medium text-gray-900">{stats.monthlyStoryPosts}/30</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-purple-500 h-2 rounded-full" style={{width: `${(stats.monthlyStoryPosts / 30) * 100}%`}}></div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">エンゲージメント</span>
-                    <span className="text-sm font-medium text-gray-900">85%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{width: '85%'}}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* パフォーマンス概要 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                    <TrendingUp className="h-6 w-6 mr-2 text-blue-600" />
-                    パフォーマンス概要
-                  </h2>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">フォロワー増加率</span>
-                      <span className="text-sm font-medium text-green-600">+{stats.followerGrowth}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-500 h-2 rounded-full" style={{width: '75%'}}></div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">エンゲージメント率</span>
-                      <span className="text-sm font-medium text-blue-600">{stats.engagement}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-500 h-2 rounded-full" style={{width: '60%'}}></div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">人気投稿タイプ</span>
-                      <span className="text-sm font-medium text-purple-600">{stats.topPostType}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-500 h-2 rounded-full" style={{width: '80%'}}></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 今週のハイライト */}
-              <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border border-pink-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                  <span className="text-2xl mr-2">🌟</span>
-                  今週のハイライト
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">最高エンゲージメント率</span>
-                    <span className="font-semibold text-pink-600">6.1%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">最多いいね投稿</span>
-                    <span className="font-semibold text-pink-600">234いいね</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">新規フォロワー</span>
-                    <span className="font-semibold text-pink-600">+45人</span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
