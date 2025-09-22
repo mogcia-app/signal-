@@ -63,6 +63,7 @@ export default function InstagramLabPage() {
             
             <AIPostGenerator
               postType={postType}
+              onPostTypeChange={setPostType}
               onGeneratePost={handleAIGenerate}
             />
           </div>

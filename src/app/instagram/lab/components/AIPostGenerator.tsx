@@ -5,15 +5,19 @@ import { Sparkles } from 'lucide-react';
 
 interface AIPostGeneratorProps {
   postType: 'feed' | 'reel' | 'story';
+  onPostTypeChange: (type: 'feed' | 'reel' | 'story') => void;
   onGeneratePost: (content: string, hashtags: string[]) => void;
 }
 
 export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   postType,
+  onPostTypeChange,
   onGeneratePost
 }) => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
 
   const handleGeneratePost = async () => {
     if (!aiPrompt.trim()) return;
@@ -67,38 +71,125 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
 
       {/* コンテンツエリア */}
       <div className="p-6">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              投稿テーマ・内容
-            </label>
-            <input
-              type="text"
+        {/* 投稿タイプ選択 */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            投稿タイプ
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => onPostTypeChange('feed')}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                postType === 'feed'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <div className="text-center">
+                <div className="text-lg mb-1">📸</div>
+                <div className="text-sm font-medium">フィード</div>
+              </div>
+            </button>
+            <button
+              onClick={() => onPostTypeChange('reel')}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                postType === 'reel'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <div className="text-center">
+                <div className="text-lg mb-1">🎬</div>
+                <div className="text-sm font-medium">リール</div>
+              </div>
+            </button>
+            <button
+              onClick={() => onPostTypeChange('story')}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                postType === 'story'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <div className="text-center">
+                <div className="text-lg mb-1">📱</div>
+                <div className="text-sm font-medium">ストーリーズ</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* 投稿設定 */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            投稿設定
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">投稿日</label>
+              <input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">投稿時間</label>
+              <input
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 投稿文入力エリア */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-800 mb-3">
+            投稿文
+          </label>
+          <div className="relative">
+            <textarea
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマや内容を入力してください...`}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white/80"
+              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}の投稿文を入力してください...`}
+              className="w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+              style={{ fontFamily: 'inherit' }}
             />
           </div>
-          
-          <button
-            onClick={handleGeneratePost}
-            disabled={!aiPrompt.trim() || isGenerating}
-            className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-medium"
-          >
-            {isGenerating ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                AI生成中...
-              </>
-            ) : (
-              <>
-                <Sparkles size={18} className="mr-2" />
-                AI投稿文を生成
-              </>
-            )}
-          </button>
         </div>
+
+        {/* ハッシュタグ */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-800 mb-3">
+            ハッシュタグ
+          </label>
+          <div className="text-sm text-gray-600 italic">
+            投稿文生成時に自動でハッシュタグが追加されます
+          </div>
+        </div>
+        
+        {/* 生成ボタン */}
+        <button
+          onClick={handleGeneratePost}
+          disabled={!aiPrompt.trim() || isGenerating}
+          className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-medium"
+        >
+          {isGenerating ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              AI生成中...
+            </>
+          ) : (
+            <>
+              <Sparkles size={18} className="mr-2" />
+              AI投稿文を生成
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
