@@ -7,6 +7,17 @@ import { usePlanData } from '../../hooks/usePlanData';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import { 
   Users, 
   Heart, 
@@ -22,6 +33,17 @@ import {
   TrendingUp,
   Calendar
 } from 'lucide-react';
+
+// Chart.jsの設定
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface DashboardStats {
   followers: number;
@@ -129,6 +151,71 @@ function InstagramDashboardContent() {
   ]);
 
   const instagramSettings = getSNSSettings('instagram');
+  
+  // エンゲージメント推移グラフ用のデータ
+  const engagementChartData = {
+    labels: ['1週間前', '6日前', '5日前', '4日前', '3日前', '2日前', '昨日', '今日'],
+    datasets: [
+      {
+        label: 'いいね数',
+        data: [120, 135, 142, 128, 155, 168, 145, 156],
+        borderColor: '#ff8a15',
+        backgroundColor: 'rgba(255, 138, 21, 0.1)',
+        tension: 0.4,
+        fill: true,
+      },
+      {
+        label: 'コメント数',
+        data: [15, 18, 22, 16, 24, 28, 19, 23],
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        tension: 0.4,
+        fill: true,
+      },
+      {
+        label: '保存数',
+        data: [8, 12, 15, 10, 18, 22, 14, 17],
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        tension: 0.4,
+        fill: true,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+        },
+      },
+      title: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+      },
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
+    },
+  };
+
   const [manualPostData, setManualPostData] = useState({
     title: '',
     type: 'feed' as 'feed' | 'reel' | 'story',
@@ -463,6 +550,35 @@ function InstagramDashboardContent() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* エンゲージメント推移グラフ */}
+          <div className="bg-white mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                <BarChart3 className="h-6 w-6 mr-2 text-[#ff8a15]" />
+                エンゲージメント推移（過去1週間）
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="h-80">
+                <Line data={engagementChartData} options={chartOptions} />
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-[#ff8a15]">156</div>
+                  <div className="text-sm text-gray-600">今日のいいね</div>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">23</div>
+                  <div className="text-sm text-gray-600">今日のコメント</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">17</div>
+                  <div className="text-sm text-gray-600">今日の保存</div>
+                </div>
               </div>
             </div>
           </div>
