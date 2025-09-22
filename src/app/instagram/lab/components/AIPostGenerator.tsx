@@ -2,20 +2,13 @@
 
 import React, { useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import { PlanData } from '../../../types/plan';
 
 interface AIPostGeneratorProps {
   postType: 'feed' | 'reel' | 'story';
   onPostTypeChange: (type: 'feed' | 'reel' | 'story') => void;
   onGeneratePost: (title: string, content: string, hashtags: string[]) => void;
-  planData?: {
-    id: string;
-    title: string;
-    targetFollowers: number;
-    currentFollowers: number;
-    planPeriod: string;
-    strategies: string[];
-    createdAt: string;
-  } | null;
+  planData?: PlanData | null;
 }
 
 export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
@@ -80,23 +73,25 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
       // 運用計画に基づいた投稿文生成
       const strategy = planData.strategies[Math.floor(Math.random() * planData.strategies.length)];
       const targetGrowth = Math.round((planData.targetFollowers - planData.currentFollowers) / planData.targetFollowers * 100);
+      const weeklyTarget = planData.simulation.postTypes[postType].weeklyCount;
+      const followerEffect = planData.simulation.postTypes[postType].followerEffect;
       
-      const generatedTitle = `${aiPrompt} - ${strategy}で成長加速`;
+      const generatedTitle = `${aiPrompt} - ${planData.aiPersona.personality}な${strategy}`;
       
-      const generatedContent = `🎯 ${planData.title}の一環として、${aiPrompt}について投稿します！
+      const generatedContent = `🎯 ${planData.title}の一環として、${aiPrompt}について${planData.aiPersona.tone}に投稿します！
 
 📈 目標: ${planData.targetFollowers.toLocaleString()}フォロワー達成まであと${targetGrowth}%！
 期間: ${planData.planPeriod}
 
 ✨ 今回の戦略: ${strategy}
-${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化された内容で、エンゲージメント向上を目指します。
+${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化された内容で、週${weeklyTarget}回の投稿で+${followerEffect}人/投稿を目指します。
 
 💡 この投稿のポイント:
 • ${strategy}を意識した構成
-• フォロワーとの繋がりを深める内容
-• 行動を促す明確なメッセージ
+• ${planData.aiPersona.personality}な${planData.aiPersona.style}スタイル
+• ${planData.targetAudience === '未設定' ? 'フォロワー' : planData.targetAudience}との繋がりを深める内容
 
-一緒に成長していきましょう！📱✨
+${planData.aiPersona.interests.join('・')}を大切に、一緒に成長していきましょう！📱✨
 
 #${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム'} #${strategy.replace(/\s+/g, '')} #成長 #${aiPrompt.replace(/\s+/g, '')} #エンゲージメント`;
 

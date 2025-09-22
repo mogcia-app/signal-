@@ -1,19 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Target, TrendingUp, Users } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Users, User, Tag } from 'lucide-react';
+import { PlanData } from '../../../types/plan';
 
 interface PlanDisplayProps {
-  // 計画データの型定義（実際のデータ構造に応じて調整）
-  planData?: {
-    id: string;
-    title: string;
-    targetFollowers: number;
-    currentFollowers: number;
-    planPeriod: string;
-    strategies: string[];
-    createdAt: string;
-  } | null;
+  planData?: PlanData | null;
 }
 
 export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
@@ -90,6 +82,20 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
               <div className="text-sm font-medium text-gray-900">{planData.strategies.length}個</div>
             </div>
           </div>
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-gray-400" />
+            <div>
+              <div className="text-xs text-gray-500">ターゲット</div>
+              <div className="text-sm font-medium text-gray-900">{planData.targetAudience}</div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Tag className="w-4 h-4 text-gray-400" />
+            <div>
+              <div className="text-xs text-gray-500">カテゴリ</div>
+              <div className="text-sm font-medium text-gray-900">{planData.category}</div>
+            </div>
+          </div>
         </div>
 
         {/* 戦略一覧 */}
@@ -109,6 +115,51 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
                 +{planData.strategies.length - 3}個
               </span>
             )}
+          </div>
+        </div>
+
+        {/* 目標達成シミュレーション */}
+        <div className="mb-4">
+          <div className="text-sm font-medium text-gray-700 mb-2">目標達成シミュレーション</div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="font-medium text-gray-600">投稿タイプ</div>
+              <div className="font-medium text-gray-600">週間必要数</div>
+              <div className="font-medium text-gray-600">フォロワー効果</div>
+              
+              <div className="text-gray-800">リール</div>
+              <div className="text-gray-800">{planData.simulation.postTypes.reel.weeklyCount}回</div>
+              <div className="text-gray-800">+{planData.simulation.postTypes.reel.followerEffect}人/投稿</div>
+              
+              <div className="text-gray-800">フィード</div>
+              <div className="text-gray-800">{planData.simulation.postTypes.feed.weeklyCount}回</div>
+              <div className="text-gray-800">+{planData.simulation.postTypes.feed.followerEffect}人/投稿</div>
+              
+              <div className="text-gray-800">ストーリー</div>
+              <div className="text-gray-800">{planData.simulation.postTypes.story.weeklyCount}回</div>
+              <div className="text-gray-800">+{planData.simulation.postTypes.story.followerEffect}人/投稿</div>
+            </div>
+          </div>
+        </div>
+
+        {/* AI世界観 */}
+        <div className="mb-4">
+          <div className="text-sm font-medium text-gray-700 mb-2">AI出力の世界観</div>
+          <div className="bg-purple-50 p-3 rounded-lg">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="font-medium text-purple-700">トーン:</span>
+                <span className="ml-1 text-purple-600">{planData.aiPersona.tone}</span>
+              </div>
+              <div>
+                <span className="font-medium text-purple-700">スタイル:</span>
+                <span className="ml-1 text-purple-600">{planData.aiPersona.style}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="font-medium text-purple-700">パーソナリティ:</span>
+                <span className="ml-1 text-purple-600">{planData.aiPersona.personality}</span>
+              </div>
+            </div>
           </div>
         </div>
 

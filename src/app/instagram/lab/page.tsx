@@ -7,6 +7,7 @@ import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
 import KPIDiagnosis from './components/KPIDiagnosis';
 import PlanDisplay from './components/PlanDisplay';
+import { PlanData, DEFAULT_PLAN_DATA } from '../../../types/plan';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
@@ -15,26 +16,10 @@ export default function InstagramLabPage() {
   const [postType, setPostType] = useState<'feed' | 'reel' | 'story'>('feed');
   
   // 模擬的な計画データ（実際のアプリではAPIから取得）
-  const [planData] = useState<{
-    id: string;
-    title: string;
-    targetFollowers: number;
-    currentFollowers: number;
-    planPeriod: string;
-    strategies: string[];
-    createdAt: string;
-  } | null>(null); // nullに設定して計画なし状態を表示
+  const [planData] = useState<PlanData | null>(null); // nullに設定して計画なし状態を表示
   
   // 計画がある場合のサンプルデータ（テスト用）
-  // const [planData] = useState({
-  //   id: 'plan-001',
-  //   title: 'Instagram成長加速計画',
-  //   targetFollowers: 10000,
-  //   currentFollowers: 3250,
-  //   planPeriod: '6ヶ月',
-  //   strategies: ['ハッシュタグ最適化', 'ストーリー活用', 'リール投稿', 'エンゲージメント向上'],
-  //   createdAt: '2024-09-01'
-  // });
+  // const [planData] = useState<PlanData>(DEFAULT_PLAN_DATA);
 
   // AI生成ハンドラー
   const handleAIGenerate = (generatedTitle: string, generatedContent: string, generatedHashtags: string[]) => {
