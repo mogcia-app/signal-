@@ -21,22 +21,11 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
-  const [showWelcomeBubble, setShowWelcomeBubble] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { userProfile } = useUserProfile();
 
   // デバッグ用ログ
   console.log('AIChatWidget rendered, isOpen:', isOpen, 'contextData:', contextData);
-
-  // 吹き出しを5秒後に自動で非表示にする
-  useEffect(() => {
-    if (showWelcomeBubble) {
-      const timer = setTimeout(() => {
-        setShowWelcomeBubble(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showWelcomeBubble]);
 
   // 計画系テンプレート
   const planTemplates = [
@@ -191,38 +180,24 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-[9999]">
           {/* ようこそ吹き出し */}
-          {showWelcomeBubble && (
-            <div className="absolute bottom-16 right-0 mb-2 animate-bounce">
-              <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3 max-w-xs">
-                <div className="flex items-center space-x-2">
-                  <Bot size={16} className="text-orange-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {userProfile?.name ? `${userProfile.name}さん、ようこそ！` : 'ようこそ！'}
-                    </p>
-                    <p className="text-xs text-gray-600">Instagram運用について何でもお聞きください</p>
-                  </div>
-                  <button
-                    onClick={() => setShowWelcomeBubble(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-                {/* 吹き出しの矢印 */}
-                <div className="absolute bottom-0 right-4 transform translate-y-full">
-                  <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
-                </div>
+          <div className="absolute bottom-16 right-0 mb-2">
+            <div className="bg-white rounded-full shadow-lg border border-gray-200 px-4 py-2">
+              <div className="flex items-center space-x-2">
+                <Bot size={16} className="text-orange-600" />
+                <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                  {userProfile?.name ? `${userProfile.name}さん、ようこそ！` : 'ようこそ！'}
+                </p>
+              </div>
+              {/* 吹き出しの矢印 */}
+              <div className="absolute bottom-0 right-4 transform translate-y-full">
+                <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
               </div>
             </div>
-          )}
+          </div>
           
           {/* チャットボタン */}
           <button
-            onClick={() => {
-              setIsOpen(true);
-              setShowWelcomeBubble(false);
-            }}
+            onClick={() => setIsOpen(true)}
             className="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
             aria-label="AIチャットを開く"
           >

@@ -327,7 +327,7 @@ function InstagramDashboardContent() {
           </div>
 
           {/* 計画内容の連携表示 */}
-          {planData && (
+          {planData ? (
             <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border border-pink-200 p-6 mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                 <Target className="h-6 w-6 mr-2 text-pink-600" />
@@ -357,6 +357,21 @@ function InstagramDashboardContent() {
                   className="text-sm text-pink-600 hover:text-pink-700 font-medium"
                 >
                   詳細を見る →
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 mb-8">
+              <div className="text-center">
+                <div className="text-4xl mb-4">📋</div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">運用計画を作成しましょう</h2>
+                <p className="text-gray-600 mb-4">Instagram運用の目標を設定して、効果的な戦略を立てましょう</p>
+                <a 
+                  href="/instagram/plan" 
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  <Target className="h-5 w-5 mr-2" />
+                  運用計画を作成する
                 </a>
               </div>
             </div>
