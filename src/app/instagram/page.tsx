@@ -511,38 +511,41 @@ function InstagramDashboardContent() {
                     TODOリスト
                   </h2>
                 </div>
-                <div className="p-6 space-y-3">
-                  {[
-                    { task: '新商品の投稿コンテンツ作成', priority: 'high', due: '今日' },
-                    { task: 'ハッシュタグ分析レポート確認', priority: 'medium', due: '明日' },
-                    { task: '競合他社の投稿内容調査', priority: 'low', due: '今週末' },
-                    { task: 'ストーリー用の素材準備', priority: 'medium', due: '明日' },
-                    { task: 'エンゲージメント率向上の戦略検討', priority: 'high', due: '来週' }
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center">
+                <div className="p-6">
+                  <div className="space-y-2">
+                    {[
+                      { task: '新商品の投稿コンテンツ作成', priority: 'high', due: '今日' },
+                      { task: 'ハッシュタグ分析レポート確認', priority: 'medium', due: '明日' },
+                      { task: '競合他社の投稿内容調査', priority: 'low', due: '今週末' },
+                      { task: 'ストーリー用の素材準備', priority: 'medium', due: '明日' },
+                      { task: 'エンゲージメント率向上の戦略検討', priority: 'high', due: '来週' }
+                    ].map((item, index) => (
+                      <div key={index} className="flex items-start space-x-3 p-3 hover:bg-gray-50 transition-colors border border-gray-100 rounded-lg">
                         <input 
                           type="checkbox" 
-                          className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mr-3"
+                          className="mt-1 h-4 w-4 text-[#ff8a15] focus:ring-[#ff8a15] border-gray-300 rounded"
                         />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{item.task}</div>
-                          <div className="text-xs text-gray-500">期限: {item.due}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 leading-5">{item.task}</div>
+                          <div className="flex items-center justify-between mt-1">
+                            <div className="text-xs text-gray-500">期限: {item.due}</div>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              item.priority === 'high' ? 'bg-red-100 text-red-700' :
+                              item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {item.priority === 'high' ? '🔴 高' : item.priority === 'medium' ? '🟡 中' : '🟢 低'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        item.priority === 'high' ? 'bg-red-100 text-red-800' :
-                        item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {item.priority === 'high' ? '高' : item.priority === 'medium' ? '中' : '低'}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                  <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2">
-                    + 新しいタスクを追加
+                  <button className="w-full flex items-center justify-center space-x-2 text-sm text-[#ff8a15] hover:text-orange-600 font-medium py-3 border border-[#ff8a15] hover:bg-[#ff8a15] hover:text-white transition-all duration-200 rounded-lg">
+                    <span>+</span>
+                    <span>新しいタスクを追加</span>
                   </button>
                 </div>
               </div>
