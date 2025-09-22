@@ -21,19 +21,7 @@ export default function InstagramLabPage() {
       <div className="max-w-7xl mx-auto p-6">
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 左カラム: 投稿文作成・編集 */}
-          <div className="space-y-6">
-            <PostEditor
-              content={postContent}
-              onContentChange={setPostContent}
-              hashtags={selectedHashtags}
-              onHashtagsChange={setSelectedHashtags}
-              postType={postType}
-              onPostTypeChange={setPostType}
-            />
-          </div>
-
-          {/* 右カラム: AIアシスタント・ツール・診断 */}
+          {/* 左カラム: AIアシスタント・投稿文作成・編集 */}
           <div className="space-y-6">
             <AIAssistant
               postType={postType}
@@ -47,6 +35,18 @@ export default function InstagramLabPage() {
               }}
             />
 
+            <PostEditor
+              content={postContent}
+              onContentChange={setPostContent}
+              hashtags={selectedHashtags}
+              onHashtagsChange={setSelectedHashtags}
+              postType={postType}
+              onPostTypeChange={setPostType}
+            />
+          </div>
+
+          {/* 右カラム: ツール・診断 */}
+          <div className="space-y-6">
             <ToolPanel
               onTemplateSelect={(template: string) => {
                 setPostContent(prev => prev + template);

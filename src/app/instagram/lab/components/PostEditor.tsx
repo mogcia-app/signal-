@@ -82,29 +82,25 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             投稿タイプ
           </label>
-          <div className="flex space-x-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="postType"
-                value="feed"
-                checked={postType === 'feed'}
-                onChange={() => onPostTypeChange?.('feed')}
-                className="mr-2 text-blue-600 focus:ring-blue-500"
+          <div className="flex items-center">
+            <span className={`text-sm font-medium mr-3 ${postType === 'feed' ? 'text-blue-600' : 'text-gray-500'}`}>
+              📸 フィード
+            </span>
+            <button
+              onClick={() => onPostTypeChange?.(postType === 'feed' ? 'reel' : 'feed')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                postType === 'reel' ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  postType === 'reel' ? 'translate-x-6' : 'translate-x-1'
+                }`}
               />
-              <span className="text-sm text-gray-700">📸 フィード投稿</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="postType"
-                value="reel"
-                checked={postType === 'reel'}
-                onChange={() => onPostTypeChange?.('reel')}
-                className="mr-2 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">🎬 リール</span>
-            </label>
+            </button>
+            <span className={`text-sm font-medium ml-3 ${postType === 'reel' ? 'text-blue-600' : 'text-gray-500'}`}>
+              🎬 リール
+            </span>
           </div>
         </div>
 
