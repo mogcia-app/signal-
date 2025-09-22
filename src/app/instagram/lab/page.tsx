@@ -21,8 +21,17 @@ export default function InstagramLabPage() {
       <div className="max-w-7xl mx-auto p-6">
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 左カラム: AIアシスタント・投稿文作成・編集 */}
+          {/* 左カラム: 投稿文作成・編集・AIアシスタント */}
           <div className="space-y-6">
+            <PostEditor
+              content={postContent}
+              onContentChange={setPostContent}
+              hashtags={selectedHashtags}
+              onHashtagsChange={setSelectedHashtags}
+              postType={postType}
+              onPostTypeChange={setPostType}
+            />
+
             <AIAssistant
               postType={postType}
               onGeneratePost={(content, hashtags) => {
@@ -33,15 +42,6 @@ export default function InstagramLabPage() {
                 // AIチェック結果はAIAssistantコンポーネント内で管理
                 console.log('投稿チェック:', content, hashtags);
               }}
-            />
-
-            <PostEditor
-              content={postContent}
-              onContentChange={setPostContent}
-              hashtags={selectedHashtags}
-              onHashtagsChange={setSelectedHashtags}
-              postType={postType}
-              onPostTypeChange={setPostType}
             />
           </div>
 
