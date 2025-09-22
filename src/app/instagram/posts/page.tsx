@@ -242,15 +242,25 @@ export default function InstagramPostsPage() {
             <p className="text-gray-600 mb-4">
               {activeTab === 'saved' 
                 ? 'まだ投稿を保存していません。投稿ラボで投稿を作成しましょう。'
-                : 'まだ投稿を公開していません。保存済み投稿を公開すると、ここに分析データが表示されます。'
+                : 'まだ投稿を公開していません。運用計画から計画を立てて、投稿を公開すると、ここに分析データが表示されます。'
               }
             </p>
-            <button
-              onClick={() => window.location.href = '/instagram/lab'}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              {activeTab === 'saved' ? '投稿を作成する' : '投稿ラボへ'}
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => window.location.href = '/instagram/lab'}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                {activeTab === 'saved' ? '投稿を作成する' : '投稿ラボへ'}
+              </button>
+              {activeTab === 'published' && (
+                <button
+                  onClick={() => window.location.href = '/instagram/plan'}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  運用計画から計画を立てる
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
