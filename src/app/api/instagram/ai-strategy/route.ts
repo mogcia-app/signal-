@@ -83,14 +83,14 @@ async function generateAIStrategy(formData: Record<string, unknown>, simulationR
 ブランド情報が未設定の場合は、一般的なベストプラクティスを提案してください。`;
 
   const userPrompt = `計画データ:
-- 現在のフォロワー数: ${formData.currentFollowers}
-- 目標フォロワー数: ${formData.targetFollowers}
-- 達成期間: ${formData.planPeriod}
-- ブランドコンセプト: ${formData.brandConcept || '未設定'}
-- メインカラー: ${formData.colorVisual || '未設定'}
-- 文章トーン: ${formData.tone || '未設定'}
-- 選択戦略: ${Array.isArray(formData.strategyValues) ? formData.strategyValues.join(', ') : 'なし'}
-- 投稿カテゴリ: ${Array.isArray(formData.postCategories) ? formData.postCategories.join(', ') : 'なし'}
+- 現在のフォロワー数: ${formData?.currentFollowers || '未設定'}
+- 目標フォロワー数: ${formData?.targetFollowers || '未設定'}
+- 達成期間: ${formData?.planPeriod || '未設定'}
+- ブランドコンセプト: ${formData?.brandConcept || '未設定'}
+- メインカラー: ${formData?.colorVisual || '未設定'}
+- 文章トーン: ${formData?.tone || '未設定'}
+- 選択戦略: ${Array.isArray(formData?.strategyValues) ? formData.strategyValues.join(', ') : 'なし'}
+- 投稿カテゴリ: ${Array.isArray(formData?.postCategories) ? formData.postCategories.join(', ') : 'なし'}
 
 シミュレーション結果:
 - 月間目標: ${simulationResult?.monthlyTarget || 'N/A'}
@@ -161,14 +161,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // リクエストボディの取得と検証
+    // リクエストボディの取得
     const body = await request.json();
-    if (!validateInputData(body.formData)) {
-      return NextResponse.json(
-        { error: 'Invalid input data' },
-        { status: 400 }
-      );
-    }
+    console.log('Received request body:', JSON.stringify(body, null, 2));
+    
+    // 入力データ検証を緩和（一時的にコメントアウト）
+    // if (!validateInputData(body.formData)) {
+    //   return NextResponse.json(
+    //     { error: 'Invalid input data' },
+    //     { status: 400 }
+    //   );
+    // }
 
     // AI戦略生成
     const aiStrategy = await generateAIStrategy(body.formData, body.simulationResult);
