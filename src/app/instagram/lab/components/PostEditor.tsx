@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, RefreshCw } from 'lucide-react';
+import { Save, RefreshCw, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface PostEditorProps {
   content: string;
@@ -23,6 +23,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
+  
+  // AI機能の状態
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState<any>(null);
 
   const characterCount = content.length;
   const maxCharacters = 2200;
@@ -52,6 +58,75 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const handleHashtagAdd = (hashtag: string) => {
     if (hashtag.trim() && !hashtags.includes(hashtag)) {
       onHashtagsChange([...hashtags, hashtag]);
+    }
+  };
+
+  // AI投稿生成
+  const handleGeneratePost = async () => {
+    if (!aiPrompt.trim()) return;
+    
+    setIsGenerating(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 模擬処理
+      
+      const generatedContent = `✨ ${aiPrompt}について投稿文を生成しました！
+
+この投稿は${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化されています。
+エンゲージメントを高めるために、以下のポイントを意識しました：
+
+• 感情に訴える表現
+• 行動を促すCTA
+• 視覚的に魅力的な文章構成
+
+#${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム'} #${aiPrompt.replace(/\s+/g, '')} #エンゲージメント`;
+
+      const hashtags = [
+        postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム',
+        aiPrompt.replace(/\s+/g, ''),
+        'エンゲージメント',
+        '投稿',
+        'SNS'
+      ];
+
+      onContentChange(generatedContent);
+      onHashtagsChange(hashtags);
+      setAiPrompt('');
+    } catch (error) {
+      console.error('投稿生成エラー:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // AI投稿チェック
+  const handleCheckPost = async () => {
+    if (!content.trim()) return;
+    
+    setIsChecking(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬処理
+      
+      const result = {
+        score: Math.floor(Math.random() * 30) + 70,
+        suggestions: [
+          'より具体的な数値や事例を追加すると良いでしょう',
+          '感情に訴える表現を増やしてみてください',
+          '行動を促す呼びかけを追加することをお勧めします'
+        ],
+        hashtagSuggestions: [
+          'トレンド',
+          'バイラル',
+          'フォロー',
+          'いいね'
+        ],
+        engagementPrediction: Math.floor(Math.random() * 20) + 5
+      };
+
+      setCheckResult(result);
+    } catch (error) {
+      console.error('投稿チェックエラー:', error);
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -130,6 +205,39 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 <div className="text-lg mb-1">📱</div>
                 <div className="text-sm font-medium">ストーリーズ</div>
               </div>
+            </button>
+          </div>
+        </div>
+
+        {/* AI投稿生成 */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            🤖 AI投稿文生成
+          </label>
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマや内容を入力してください...`}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+            <button
+              onClick={handleGeneratePost}
+              disabled={!aiPrompt.trim() || isGenerating}
+              className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  生成中...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} className="mr-2" />
+                  AI投稿文を生成
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -302,6 +410,79 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               </div>
             )}
           </div>
+        </div>
+
+        {/* AI投稿チェック */}
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            🔍 AI投稿文チェック
+          </h3>
+          <button
+            onClick={handleCheckPost}
+            disabled={!content.trim() || isChecking}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center mb-4"
+          >
+            {isChecking ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                分析中...
+              </>
+            ) : (
+              <>
+                <CheckCircle size={16} className="mr-2" />
+                投稿文をチェック
+              </>
+            )}
+          </button>
+
+          {/* チェック結果 */}
+          {checkResult && (
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className={`p-3 rounded-lg ${checkResult.score >= 90 ? 'bg-green-100' : checkResult.score >= 80 ? 'bg-yellow-100' : 'bg-red-100'}`}>
+                  <div className="text-sm text-gray-600">総合スコア</div>
+                  <div className={`text-2xl font-bold ${checkResult.score >= 90 ? 'text-green-600' : checkResult.score >= 80 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {checkResult.score}/100
+                  </div>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <div className="text-sm text-gray-600">予測エンゲージメント</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {checkResult.engagementPrediction}%
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">改善提案</h4>
+                  <ul className="space-y-1">
+                    {checkResult.suggestions.map((suggestion: string, index: number) => (
+                      <li key={index} className="text-sm text-gray-600 flex items-start">
+                        <AlertCircle size={14} className="mr-2 mt-0.5 text-yellow-500 flex-shrink-0" />
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">ハッシュタグ提案</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {checkResult.hashtagSuggestions.map((hashtag: string, index: number) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
+                      >
+                        #{hashtag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 保存された投稿一覧 */}

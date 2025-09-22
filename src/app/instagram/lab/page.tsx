@@ -5,7 +5,6 @@ import SNSLayout from '../../../components/sns-layout';
 import PostEditor from './components/PostEditor';
 import ToolPanel from './components/ToolPanel';
 import KPIDiagnosis from './components/KPIDiagnosis';
-import AIAssistant from './components/AIAssistant';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
@@ -21,7 +20,7 @@ export default function InstagramLabPage() {
       <div className="max-w-7xl mx-auto p-6">
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 左カラム: 投稿文作成・編集・AIアシスタント */}
+          {/* 左カラム: 投稿文作成・編集 */}
           <div className="space-y-6">
             <PostEditor
               content={postContent}
@@ -30,18 +29,6 @@ export default function InstagramLabPage() {
               onHashtagsChange={setSelectedHashtags}
               postType={postType}
               onPostTypeChange={setPostType}
-            />
-
-            <AIAssistant
-              postType={postType}
-              onGeneratePost={(content, hashtags) => {
-                setPostContent(content);
-                setSelectedHashtags(hashtags);
-              }}
-              onCheckPost={(content, hashtags) => {
-                // AIチェック結果はAIAssistantコンポーネント内で管理
-                console.log('投稿チェック:', content, hashtags);
-              }}
             />
           </div>
 
