@@ -45,7 +45,7 @@ export async function PUT(
     const resolvedParams = await params;
     const postId = resolvedParams.id;
     const body = await request.json();
-    const { title, content, hashtags, postType, scheduledDate, scheduledTime, status } = body;
+    const { title, content, hashtags, postType, scheduledDate, scheduledTime, status, imageUrl, imageData } = body;
 
     const updateData: Record<string, unknown> = {
       updatedAt: new Date()
@@ -59,6 +59,8 @@ export async function PUT(
     if (scheduledDate !== undefined) updateData.scheduledDate = scheduledDate;
     if (scheduledTime !== undefined) updateData.scheduledTime = scheduledTime;
     if (status !== undefined) updateData.status = status;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (imageData !== undefined) updateData.imageData = imageData;
 
     const docRef = doc(db, 'posts', postId);
     await updateDoc(docRef, updateData);

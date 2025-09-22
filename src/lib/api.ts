@@ -33,6 +33,8 @@ export const postsApi = {
     scheduledDate?: string;
     scheduledTime?: string;
     status?: 'draft' | 'scheduled' | 'published';
+    imageUrl?: string | null;
+    imageData?: string | null;
   }) => {
     return apiRequest('/posts', {
       method: 'POST',
@@ -63,7 +65,10 @@ export const postsApi = {
   },
 
   // 投稿更新
-  update: async (id: string, updateData: Record<string, unknown>) => {
+  update: async (id: string, updateData: Record<string, unknown> & {
+    imageUrl?: string | null;
+    imageData?: string | null;
+  }) => {
     return apiRequest(`/posts/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updateData),

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Save, RefreshCw, CheckCircle, AlertCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { postsApi } from '../../../../lib/api';
 
 interface PostEditorProps {
   content: string;
@@ -32,6 +33,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // AI投稿チェック機能の状態
   const [isChecking, setIsChecking] = useState(false);
@@ -46,11 +48,43 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const maxCharacters = 2200;
   const isOverLimit = characterCount > maxCharacters;
 
-  const handleSave = () => {
-    if (content.trim()) {
+  const handleSave = async () => {
+    if (!content.trim()) {
+      alert('投稿文を入力してください');
+      return;
+    }
+
+    if (!scheduledDate || !scheduledTime) {
+      alert('投稿日時を設定してください');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const postData = {
+        userId: 'current-user', // 実際のアプリでは認証済みユーザーIDを使用
+        title: title || '',
+        content,
+        hashtags: selectedHashtags,
+        postType,
+        scheduledDate,
+        scheduledTime,
+        status: 'draft' as const,
+        imageData: image, // Base64データを一時保存
+      };
+
+      const result = await postsApi.create(postData);
+      console.log('投稿を保存しました:', result);
+      
+      // ローカル保存リストにも追加
       setSavedPosts(prev => [...prev, content]);
-      // 実際の実装ではローカルストレージやAPIに保存
-      console.log('投稿を保存しました:', content);
+      
+      alert('投稿が保存されました！');
+    } catch (error) {
+      console.error('保存エラー:', error);
+      alert('保存に失敗しました。もう一度お試しください。');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -165,14 +199,23 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button
-              onClick={handleSave}
-              disabled={!content.trim()}
-              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-            >
-              <Save size={14} />
-              <span>保存</span>
-            </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={!content.trim() || isSaving}
+                      className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isSaving ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>保存中...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save size={14} />
+                          <span>保存</span>
+                        </>
+                      )}
+                    </button>
             <button
               onClick={handleClear}
               className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
