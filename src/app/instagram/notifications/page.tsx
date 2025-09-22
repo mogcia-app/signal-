@@ -16,7 +16,6 @@ import {
   Star,
   StarOff,
   ChevronDown,
-  ChevronUp,
   X,
   Calendar,
   Tag
@@ -50,7 +49,6 @@ export default function InstagramNotificationsPage() {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'unread' | 'starred' | 'archived'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   useEffect(() => {
@@ -77,6 +75,30 @@ export default function InstagramNotificationsPage() {
     }
   }, [selectedFilter, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Firestoreのデータを適切な形式に変換
+  const convertFirestoreData = (data: Record<string, unknown>): Notification => {
+    return {
+      ...data,
+      id: data.id as string,
+      title: data.title as string,
+      message: data.message as string,
+      type: data.type as 'info' | 'warning' | 'success' | 'error',
+      priority: data.priority as 'low' | 'medium' | 'high',
+      targetUsers: data.targetUsers as string[],
+      status: data.status as 'draft' | 'published' | 'archived',
+      createdAt: (data.createdAt as { toDate?: () => Date })?.toDate?.()?.toISOString() || data.createdAt as string,
+      updatedAt: (data.updatedAt as { toDate?: () => Date })?.toDate?.()?.toISOString() || data.updatedAt as string,
+      createdBy: data.createdBy as string,
+      scheduledAt: (data.scheduledAt as { toDate?: () => Date })?.toDate?.()?.toISOString() || data.scheduledAt as string | undefined,
+      expiresAt: (data.expiresAt as { toDate?: () => Date })?.toDate?.()?.toISOString() || data.expiresAt as string | undefined,
+      read: data.read as boolean | undefined,
+      starred: data.starred as boolean | undefined,
+      content: data.content as string | undefined,
+      category: data.category as string | undefined,
+      tags: data.tags as string[] | undefined,
+    };
+  };
+
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
@@ -90,9 +112,12 @@ export default function InstagramNotificationsPage() {
       const result = await response.json();
 
       if (result.success) {
+        // Firestoreデータを変換
+        const convertedData = result.data.map(convertFirestoreData);
+        
         // ユーザーごとのアクション状態を取得
         const notificationsWithActions = await Promise.all(
-          result.data.map(async (notification: Notification) => {
+          convertedData.map(async (notification: Notification) => {
             try {
               const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=current-user`);
               const actionResult = await actionResponse.json();
@@ -143,10 +168,13 @@ export default function InstagramNotificationsPage() {
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const realtimeNotifications = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Notification));
+        const realtimeNotifications = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return convertFirestoreData({
+            id: doc.id,
+            ...data
+          });
+        });
 
         if (realtimeNotifications.length > 0) {
           // ユーザーごとのアクション状態を取得
@@ -246,13 +274,31 @@ export default function InstagramNotificationsPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '日付不明';
+  const formatDate = (dateInput: string | Record<string, unknown>) => {
+    if (!dateInput) return '日付不明';
     
-    const date = new Date(dateString);
+    let date: Date;
+    
+    // FirestoreのTimestampオブジェクトの場合
+    if (dateInput && typeof dateInput === 'object' && 'toDate' in dateInput && typeof dateInput.toDate === 'function') {
+      date = dateInput.toDate();
+    }
+    // FirestoreのTimestampオブジェクト（seconds, nanoseconds）の場合
+    else if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput && typeof dateInput.seconds === 'number') {
+      date = new Date(dateInput.seconds * 1000);
+    }
+    // 文字列の場合
+    else if (typeof dateInput === 'string') {
+      date = new Date(dateInput);
+    }
+    // その他の場合
+    else {
+      date = new Date(String(dateInput));
+    }
     
     // Invalid Date チェック
     if (isNaN(date.getTime())) {
+      console.warn('Invalid date:', dateInput);
       return '日付不明';
     }
     
@@ -365,16 +411,6 @@ export default function InstagramNotificationsPage() {
   const unreadCount = notifications.filter(n => !n.read && n.status === 'published').length;
   const starredCount = notifications.filter(n => n.starred && n.status === 'published').length;
 
-  // 通知の展開/折りたたみ
-  const toggleExpanded = (notificationId: string) => {
-    const newExpanded = new Set(expandedNotifications);
-    if (newExpanded.has(notificationId)) {
-      newExpanded.delete(notificationId);
-    } else {
-      newExpanded.add(notificationId);
-    }
-    setExpandedNotifications(newExpanded);
-  };
 
   // 通知の詳細表示
   const openNotificationDetail = (notification: Notification) => {
@@ -421,10 +457,7 @@ export default function InstagramNotificationsPage() {
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Bell className="w-7 h-7 text-white" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">お知らせ</h1>
-              <p className="text-gray-600">システムのお知らせと重要な通知</p>
-            </div>
+           
           </div>
 
           {/* 統計情報 */}
@@ -516,16 +549,13 @@ export default function InstagramNotificationsPage() {
               </div>
             ) : (
               filteredNotifications.map((notification) => {
-                const isExpanded = expandedNotifications.has(notification.id);
-                const hasContent = notification.content && notification.content.length > 0;
                 
                 return (
                   <div
                     key={notification.id}
-                    className={`bg-white rounded-lg border-2 transition-all hover:shadow-lg cursor-pointer ${
+                    className={`bg-white rounded-lg border-2 transition-all hover:shadow-lg ${
                       notification.read ? '' : 'border-l-4 border-l-blue-500'
                     } ${getNotificationBgColor(notification.type)}`}
-                    onClick={() => openNotificationDetail(notification)}
                   >
                     <div className="p-6">
                       <div className="flex items-start justify-between">
@@ -560,15 +590,6 @@ export default function InstagramNotificationsPage() {
                               {notification.message}
                             </p>
 
-                            {/* 詳細内容（展開時） */}
-                            {isExpanded && hasContent && (
-                              <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                                <h4 className="font-semibold text-gray-900 mb-2">詳細内容</h4>
-                                <div className="text-gray-700 whitespace-pre-wrap">
-                                  {notification.content}
-                                </div>
-                              </div>
-                            )}
 
                             {/* タグ */}
                             {notification.tags && notification.tags.length > 0 && (
@@ -599,21 +620,17 @@ export default function InstagramNotificationsPage() {
                                 )}
                               </div>
 
-                              {/* 展開ボタン（詳細内容がある場合のみ） */}
-                              {hasContent && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleExpanded(notification.id);
-                                  }}
-                                  className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 transition-colors"
-                                >
-                                  <span className="text-sm font-medium">
-                                    {isExpanded ? '詳細を閉じる' : '詳細を見る'}
-                                  </span>
-                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                </button>
-                              )}
+                              {/* 詳細ボタン */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openNotificationDetail(notification);
+                                }}
+                                className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 rounded-md hover:bg-blue-50"
+                              >
+                                <span className="text-sm font-medium">詳細を見る</span>
+                                <ChevronDown className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
                         </div>
