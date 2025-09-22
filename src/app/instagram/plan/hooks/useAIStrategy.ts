@@ -39,6 +39,7 @@ export function useAIStrategy(): UseAIStrategyReturn {
         body: JSON.stringify({
           formData,
           simulationResult,
+          userId: 'user-' + Date.now(), // 簡易的なユーザーID生成
         }),
       });
 

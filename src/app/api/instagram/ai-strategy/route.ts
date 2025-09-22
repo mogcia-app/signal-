@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { searchRelevantKnowledge, saveUserAnalysis, getLearningInsights } from './knowledge-base';
 
 // セキュリティ: APIキーの検証
 function validateApiKey(request: NextRequest): boolean {
@@ -58,15 +59,32 @@ function validateInputData(data: unknown): boolean {
 }
 
 // AI戦略生成のメイン関数
-async function generateAIStrategy(formData: Record<string, unknown>, simulationResult: Record<string, unknown> | null): Promise<string> {
+async function generateAIStrategy(
+  formData: Record<string, unknown>, 
+  simulationResult: Record<string, unknown> | null,
+  userId: string = 'anonymous'
+): Promise<string> {
   const openaiApiKey = process.env.OPENAI_API_KEY;
   
   if (!openaiApiKey) {
     throw new Error('OpenAI API key not configured');
   }
 
-  // セキュアなプロンプト構築
-  const systemPrompt = `あなたはInstagram運用の専門家です。ユーザーの計画データとシミュレーション結果を基に、具体的で実用的な投稿戦略アドバイスを生成してください。
+  // RAG: 関連知識を検索
+  const relevantKnowledge = searchRelevantKnowledge(formData, simulationResult);
+  
+  // 学習機能: 過去の分析結果からインサイトを取得
+  const learningInsights = getLearningInsights(userId);
+  
+  // 初回かどうかを判定（簡易版）
+  const isFirstTime = learningInsights === '';
+  
+  // プロンプトを動的に構築
+  let systemPrompt: string;
+  
+  if (isFirstTime) {
+    // 初回: 詳細なプロンプト
+    systemPrompt = `あなたはInstagram運用の専門家です。ユーザーの計画データとシミュレーション結果を基に、具体的で実用的な投稿戦略アドバイスを生成してください。
 
 以下の8つのセクションで回答してください：
 
@@ -80,6 +98,20 @@ async function generateAIStrategy(formData: Record<string, unknown>, simulationR
 ⑧ ストーリー投稿提案
 
 各セクションは具体的で実行可能なアドバイスを含むようにしてください。`;
+  } else {
+    // 2回目以降: 簡潔なプロンプト + 学習インサイト
+    systemPrompt = `あなたはInstagram運用の専門家です。過去の分析結果を参考に、効率的で実用的な戦略を提案してください。
+
+学習インサイト: ${learningInsights}
+
+8つのセクションで簡潔に回答してください：
+① 全体の投稿戦略 ② 投稿構成の方向性 ③ カスタマージャーニー別の投稿役割 ④ 注意点・成功のコツ ⑤ 世界観診断 ⑥ フィード投稿提案 ⑦ リール投稿提案 ⑧ ストーリー投稿提案`;
+  }
+
+  // RAG: 関連知識をプロンプトに追加
+  const knowledgeContext = relevantKnowledge.length > 0 
+    ? `\n\n関連するベストプラクティス:\n${relevantKnowledge.map(k => `- ${k.content}`).join('\n')}`
+    : '';
 
   const userPrompt = `計画データ:
 - 現在のフォロワー数: ${formData?.currentFollowers || '未設定'}
@@ -94,7 +126,7 @@ async function generateAIStrategy(formData: Record<string, unknown>, simulationR
 シミュレーション結果:
 - 月間目標: ${simulationResult?.monthlyTarget || 'N/A'}
 - 実現可能性: ${simulationResult?.feasibilityLevel || 'N/A'}
-- 週間投稿数: フィード${(simulationResult?.postsPerWeek as Record<string, unknown>)?.feed || 0}回、リール${(simulationResult?.postsPerWeek as Record<string, unknown>)?.reel || 0}回
+- 週間投稿数: フィード${(simulationResult?.postsPerWeek as Record<string, unknown>)?.feed || 0}回、リール${(simulationResult?.postsPerWeek as Record<string, unknown>)?.reel || 0}回${knowledgeContext}
 
 これらの情報を基に、8つのセクションで戦略アドバイスを生成してください。`;
 
@@ -123,7 +155,17 @@ async function generateAIStrategy(formData: Record<string, unknown>, simulationR
     }
 
     const data = await response.json();
-    return data.choices[0]?.message?.content || '戦略の生成に失敗しました。';
+    const generatedStrategy = data.choices[0]?.message?.content || '戦略の生成に失敗しました。';
+    
+    // 分析結果を保存（学習用）
+    saveUserAnalysis({
+      userId,
+      formData,
+      simulationResult: simulationResult || {},
+      generatedStrategy
+    });
+    
+    return generatedStrategy;
 
   } catch (error) {
     console.error('AI Strategy generation error:', error);
@@ -172,8 +214,9 @@ export async function POST(request: NextRequest) {
     //   );
     // }
 
-    // AI戦略生成
-    const aiStrategy = await generateAIStrategy(body.formData, body.simulationResult);
+    // AI戦略生成（ユーザーIDを取得、簡易版では固定値）
+    const userId = body.userId || 'anonymous';
+    const aiStrategy = await generateAIStrategy(body.formData, body.simulationResult, userId);
 
     return NextResponse.json({
       strategy: aiStrategy,
