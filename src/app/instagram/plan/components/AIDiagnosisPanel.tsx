@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlanFormData, SimulationResult } from '../types/plan';
+import { useAIStrategy } from '../hooks/useAIStrategy';
 
 interface AIDiagnosisPanelProps {
   showAdvice: boolean;
@@ -18,6 +19,16 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   formData,
   simulationResult
 }) => {
+  const { strategyState, generateStrategy } = useAIStrategy();
+
+  const handleStartDiagnosis = async () => {
+    try {
+      await generateStrategy(formData, simulationResult || null);
+      onStartDiagnosis();
+    } catch (error) {
+      console.error('Strategy generation failed:', error);
+    }
+  };
   return (
     <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
       <h3 className="text-lg font-semibold mb-2 flex items-center">
@@ -29,124 +40,65 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
 
 
       <button
-        onClick={onStartDiagnosis}
-        disabled={isLoading}
+        onClick={handleStartDiagnosis}
+        disabled={isLoading || strategyState.isLoading}
         className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4"
       >
-        {isLoading ? '診断中です...' : '▶ 診断を開始する'}
+        {isLoading || strategyState.isLoading ? 'AI戦略生成中...' : '▶ 診断を開始する'}
       </button>
+
+      {/* エラー表示 */}
+      {strategyState.error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">
+            {strategyState.error}
+          </p>
+        </div>
+      )}
 
       {/* 診断出力エリア */}
       {showAdvice && (
         <div className="space-y-6">
-          <h4 className="font-semibold text-lg">提案内容</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-lg">提案内容</h4>
+            {strategyState.strategy && (
+              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                AI生成済み
+              </span>
+            )}
+          </div>
           
-          <div className="space-y-4">
-            <div>
-              <h5 className="font-medium mb-2">① 全体の投稿戦略</h5>
-              <p className="text-sm text-gray-600">
-                フォロワー獲得を重視した戦略として、週3回のフィード投稿と週2回のリール投稿を推奨します。
-              </p>
-            </div>
-
-            <div>
-              <h5 className="font-medium mb-2">② 投稿構成の方向性</h5>
-              <p className="text-sm text-gray-600">
-                共感→価値→行動の流れで構成し、保存を促すCTAを各投稿に配置することをお勧めします。
-              </p>
-            </div>
-
-            <div>
-              <h5 className="font-medium mb-2">③ カスタマージャーニー別の投稿役割</h5>
-              <div className="text-sm text-gray-600">
-                <p>認知段階：ブランド世界観の投稿</p>
-                <p>興味段階：ノウハウ・価値提案</p>
-                <p>検討段階：商品紹介・比較</p>
+          {strategyState.strategy ? (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="prose prose-sm max-w-none">
+                <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                  {strategyState.strategy}
+                </div>
               </div>
             </div>
-
-            <div>
-              <h5 className="font-medium mb-2">④ 注意点・成功のコツ</h5>
-              <p className="text-sm text-gray-600">
-                一貫性のある投稿スケジュールを維持し、フォロワーの期待値を定めることが重要です。
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-sm">
+                「診断を開始する」ボタンを押してAI戦略を生成してください
               </p>
             </div>
+          )}
 
-            <div>
-              <h5 className="font-medium mb-2">⑤ 世界観診断</h5>
-              <p className="text-sm text-gray-600 mb-3">
-                AIがあなたのブランド情報から分析した結果、Instagramでは以下のような世界観が最適です。
-              </p>
-
-              <ul className="border border-gray-200 rounded-lg p-4 space-y-3">
-                <li>
-                  <strong>ブランドコンセプト：</strong><br />
-                  <span className="text-gray-600">
-                    {formData.brandConcept || '未設定'}
-                  </span>
-                </li>
-                <li>
-                  <strong>メインカラー：</strong>
-                  <span className="text-gray-600">
-                    {formData.colorVisual || '未設定'}
-                  </span>
-                  <span className="inline-block w-5 h-5 ml-2 border border-gray-400 rounded align-middle bg-[#ff8a15]"></span>
-                </li>
-                <li>
-                  <strong>サブカラー：</strong>
-                  <span className="text-gray-600">
-                    白・グレー
-                  </span>
-                  <div className="inline-flex space-x-1 ml-2">
-                    <span className="w-4 h-4 bg-white border border-gray-400 rounded"></span>
-                    <span className="w-4 h-4 bg-gray-400 rounded"></span>
-                  </div>
-                </li>
-                <li>
-                  <strong>文章トーン：</strong>
-                  <span className="text-gray-600">
-                    {formData.tone || '未設定'}
-                  </span>
-                </li>
-              </ul>
+          {strategyState.strategy && (
+            <div className="pt-4">
+              <button
+                className="w-full bg-[#ff8a15] hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-md transition-colors"
+                onClick={onSaveAdvice}
+              >
+                この戦略を保存する
+              </button>
             </div>
-
-            <div>
-              <h5 className="font-medium mb-2">⑥ フィード投稿提案</h5>
-              <div className="text-sm text-gray-600">
-                <p>• 週3回の投稿で一貫性を保つ</p>
-                <p>• 画像の質と構成を重視</p>
-                <p>• ハッシュタグは15-20個を推奨</p>
-              </div>
-            </div>
-
-            <div>
-              <h5 className="font-medium mb-2">⑦ リール投稿提案</h5>
-              <div className="text-sm text-gray-600">
-                <p>• 週2回の投稿でトレンドを活用</p>
-                <p>• 最初の3秒で興味を引く</p>
-                <p>• 音楽とテキストの組み合わせを重視</p>
-              </div>
-            </div>
-
-            <div>
-              <h5 className="font-medium mb-2">⑧ ストーリー投稿提案</h5>
-              <div className="text-sm text-gray-600">
-                <p>• 日常的な投稿で親近感を演出</p>
-                <p>• インタラクティブ要素を活用</p>
-                <p>• 24時間で消える特性を活かした臨場感</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4">
-            <button
-              className="w-full bg-[#ff8a15] hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-md transition-colors"
-              onClick={onSaveAdvice}
-            >
-              この戦略を保存する
-            </button>
-          </div>
+          )}
         </div>
       )}
     </section>
