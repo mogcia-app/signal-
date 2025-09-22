@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
-import { postsApi } from '../../../../lib/api';
+import { postsApi } from '../../../lib/api';
 import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon } from 'lucide-react';
 
 interface PostData {
