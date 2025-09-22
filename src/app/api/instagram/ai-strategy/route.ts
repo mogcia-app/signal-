@@ -135,6 +135,15 @@ async function generateAIStrategy(formData: Record<string, unknown>, simulationR
 export async function POST(request: NextRequest) {
   try {
     // セキュリティチェック
+    const apiKey = request.headers.get('x-api-key');
+    const validApiKey = process.env.INTERNAL_API_KEY;
+    
+    console.log('API Key validation:', {
+      receivedKey: apiKey ? apiKey.substring(0, 8) + '...' : 'undefined',
+      validKey: validApiKey ? validApiKey.substring(0, 8) + '...' : 'undefined',
+      keysMatch: apiKey === validApiKey
+    });
+    
     if (!validateApiKey(request)) {
       return NextResponse.json(
         { error: 'Unauthorized: Invalid API key' },
