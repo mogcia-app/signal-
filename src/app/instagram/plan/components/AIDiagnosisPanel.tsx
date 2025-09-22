@@ -69,28 +69,17 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
           </div>
           
           {strategyState.strategy ? (
-            <div className="space-y-6">
-              {/* AI生成戦略をセクション別に表示 */}
-              {strategyState.strategy.split('===').filter(section => section.trim()).map((section, index) => {
-                const lines = section.trim().split('\n');
-                const title = lines[0]?.replace(/[①②③④⑤⑥⑦⑧]/g, '').trim();
-                const content = lines.slice(1).join('\n').trim();
-                
-                if (!title || !content) return null;
-                
-                return (
-                  <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h5 className="font-medium mb-3 text-gray-800 border-b border-gray-100 pb-2">
-                      {title}
-                    </h5>
-                    <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                      {content}
-                    </div>
+            <div className="space-y-4">
+              {/* AI生成内容を表示 */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="prose prose-sm max-w-none">
+                  <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                    {strategyState.strategy}
                   </div>
-                );
-              })}
-              
-              {/* フォームデータに基づく世界観情報を追加表示 */}
+                </div>
+              </div>
+
+              {/* フォームデータに基づく世界観情報 */}
               {formData && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h5 className="font-medium mb-3 text-gray-800 border-b border-blue-100 pb-2">
