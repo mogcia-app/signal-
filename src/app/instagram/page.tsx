@@ -270,7 +270,7 @@ function InstagramDashboardContent() {
                   目標達成通知
                 </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white p-4 border border-[#ff8a15]">
+              <div className="bg-white p-4 border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">週間投稿目標</span>
                   <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">達成済み</span>
@@ -279,7 +279,7 @@ function InstagramDashboardContent() {
                 <div className="text-xs text-gray-500">100% 達成</div>
               </div>
               
-              <div className="bg-white p-4 border border-[#ff8a15]">
+              <div className="bg-white p-4 border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">エンゲージメント目標</span>
                   <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">進行中</span>
@@ -288,7 +288,7 @@ function InstagramDashboardContent() {
                 <div className="text-xs text-gray-500">目標: 5.0%</div>
               </div>
               
-              <div className="bg-white p-4 border border-[#ff8a15]">
+              <div className="bg-white p-4 border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">フォロワー増加</span>
                   <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">達成済み</span>
@@ -540,8 +540,8 @@ function InstagramDashboardContent() {
                     </div>
                   ))}
                 </div>
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-                  <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2">
                     + 新しいタスクを追加
                   </button>
                 </div>
@@ -567,7 +567,7 @@ function InstagramDashboardContent() {
                     { day: '木', date: '12/19', type: 'リール', title: '業界トレンド解説', time: '16:00', status: 'draft' },
                     { day: '金', date: '12/20', type: 'フィード', title: '週末の振り返り', time: '18:00', status: 'draft' }
                   ].map((post, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 border border-[#ff8a15]">
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                       <div className="flex items-center">
                         <div className="text-center mr-4">
                           <div className="text-xs text-gray-500">{post.day}</div>
