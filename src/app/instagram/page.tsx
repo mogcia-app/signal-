@@ -506,10 +506,16 @@ function InstagramDashboardContent() {
               {/* TODOリスト */}
               <div className="bg-white">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                    <span className="text-2xl mr-2">✅</span>
-                    TODOリスト
-                  </h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                      <span className="text-2xl mr-2">✅</span>
+                      TODOリスト
+                    </h2>
+                    <button className="flex items-center space-x-1 text-sm text-[#ff8a15] hover:text-orange-600 font-medium px-3 py-1.5 border border-[#ff8a15] hover:bg-[#ff8a15] hover:text-white transition-all duration-200 rounded-md">
+                      <span>+</span>
+                      <span>追加</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="p-6">
                   <div className="space-y-2">
@@ -541,12 +547,6 @@ function InstagramDashboardContent() {
                       </div>
                     ))}
                   </div>
-                </div>
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                  <button className="w-full flex items-center justify-center space-x-2 text-sm text-[#ff8a15] hover:text-orange-600 font-medium py-3 border border-[#ff8a15] hover:bg-[#ff8a15] hover:text-white transition-all duration-200 rounded-lg">
-                    <span>+</span>
-                    <span>新しいタスクを追加</span>
-                  </button>
                 </div>
               </div>
 
