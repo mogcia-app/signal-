@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, Download, Upload, RefreshCw } from 'lucide-react';
+import { Save, RefreshCw } from 'lucide-react';
 
 interface PostEditorProps {
   content: string;
@@ -16,7 +16,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   hashtags,
   onHashtagsChange
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
 
   const characterCount = content.length;
@@ -206,3 +205,5 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     </div>
   );
 };
+
+export default PostEditor;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, Heart, MessageCircle, Share, Eye } from 'lucide-react';
+import { TrendingUp, Heart, MessageCircle, Share, Eye } from 'lucide-react';
 
 interface KPIDiagnosisProps {
   content: string;
@@ -245,3 +245,5 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({
     </div>
   );
 };
+
+export default KPIDiagnosis;

@@ -1,15 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SNSLayout } from '../../../components/sns-layout';
-import { PostEditor } from './components/PostEditor';
-import { ToolPanel } from './components/ToolPanel';
-import { KPIDiagnosis } from './components/KPIDiagnosis';
+import SNSLayout from '../../../components/sns-layout';
+import PostEditor from './components/PostEditor';
+import ToolPanel from './components/ToolPanel';
+import KPIDiagnosis from './components/KPIDiagnosis';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-  const [savedTemplates, setSavedTemplates] = useState<string[]>([]);
 
   return (
     <SNSLayout currentSNS="instagram">
@@ -35,10 +34,10 @@ export default function InstagramLabPage() {
           {/* 右カラム: ツール・診断 */}
           <div className="space-y-6">
             <ToolPanel
-              onTemplateSelect={(template) => {
+              onTemplateSelect={(template: string) => {
                 setPostContent(prev => prev + template);
               }}
-              onHashtagSelect={(hashtag) => {
+              onHashtagSelect={(hashtag: string) => {
                 setSelectedHashtags(prev => [...prev, hashtag]);
               }}
             />

@@ -79,13 +79,14 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
     setHashtags(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleCopyTemplate = (template: string) => {
-    navigator.clipboard.writeText(template);
-  };
+  // コピー機能は将来実装予定
+  // const handleCopyTemplate = (template: string) => {
+  //   navigator.clipboard.writeText(template);
+  // };
 
-  const handleCopyHashtag = (hashtag: string) => {
-    navigator.clipboard.writeText(`#${hashtag}`);
-  };
+  // const handleCopyHashtag = (hashtag: string) => {
+  //   navigator.clipboard.writeText(`#${hashtag}`);
+  // };
 
   return (
     <div className="space-y-6">
@@ -257,3 +258,5 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
     </div>
   );
 };
+
+export default ToolPanel;
