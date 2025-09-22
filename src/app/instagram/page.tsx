@@ -503,6 +503,50 @@ function InstagramDashboardContent() {
                 </div>
               </div>
 
+              {/* TODOリスト */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                    <span className="text-2xl mr-2">✅</span>
+                    TODOリスト
+                  </h2>
+                </div>
+                <div className="p-6 space-y-3">
+                  {[
+                    { task: '新商品の投稿コンテンツ作成', priority: 'high', due: '今日' },
+                    { task: 'ハッシュタグ分析レポート確認', priority: 'medium', due: '明日' },
+                    { task: '競合他社の投稿内容調査', priority: 'low', due: '今週末' },
+                    { task: 'ストーリー用の素材準備', priority: 'medium', due: '明日' },
+                    { task: 'エンゲージメント率向上の戦略検討', priority: 'high', due: '来週' }
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center">
+                        <input 
+                          type="checkbox" 
+                          className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mr-3"
+                        />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{item.task}</div>
+                          <div className="text-xs text-gray-500">期限: {item.due}</div>
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        item.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {item.priority === 'high' ? '高' : item.priority === 'medium' ? '中' : '低'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                  <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    + 新しいタスクを追加
+                  </button>
+                </div>
+              </div>
+
             </div>
 
             {/* 右カラム - クイックアクションと分析 */}
@@ -638,50 +682,6 @@ function InstagramDashboardContent() {
                     className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
                   >
                     投稿結果を保存
-                  </button>
-                </div>
-              </div>
-
-              {/* TODOリスト */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                    <span className="text-2xl mr-2">✅</span>
-                    TODOリスト
-                  </h2>
-                </div>
-                <div className="p-6 space-y-3">
-                  {[
-                    { task: '新商品の投稿コンテンツ作成', priority: 'high', due: '今日' },
-                    { task: 'ハッシュタグ分析レポート確認', priority: 'medium', due: '明日' },
-                    { task: '競合他社の投稿内容調査', priority: 'low', due: '今週末' },
-                    { task: 'ストーリー用の素材準備', priority: 'medium', due: '明日' },
-                    { task: 'エンゲージメント率向上の戦略検討', priority: 'high', due: '来週' }
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center">
-                        <input 
-                          type="checkbox" 
-                          className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mr-3"
-                        />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{item.task}</div>
-                          <div className="text-xs text-gray-500">期限: {item.due}</div>
-                        </div>
-                      </div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        item.priority === 'high' ? 'bg-red-100 text-red-800' :
-                        item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {item.priority === 'high' ? '高' : item.priority === 'medium' ? '中' : '低'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-                  <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    + 新しいタスクを追加
                   </button>
                 </div>
               </div>
