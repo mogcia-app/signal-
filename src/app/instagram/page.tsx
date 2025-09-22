@@ -220,19 +220,19 @@ function InstagramDashboardContent() {
                 現在の運用計画
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-4 border border-[#ff8a15]">
+                <div className="bg-gray-50 p-4">
                   <p className="text-sm text-gray-600">目標名</p>
                   <p className="font-semibold text-gray-900">{planData.goalName}</p>
                 </div>
-                <div className="bg-white p-4 border border-[#ff8a15]">
+                <div className="bg-gray-50 p-4">
                   <p className="text-sm text-gray-600">計画期間</p>
                   <p className="font-semibold text-gray-900">{planData.planPeriod}</p>
                 </div>
-                <div className="bg-white p-4 border border-[#ff8a15]">
+                <div className="bg-gray-50 p-4">
                   <p className="text-sm text-gray-600">目標フォロワー数</p>
                   <p className="font-semibold text-gray-900">{planData.currentFollowers + planData.followerGain}</p>
                 </div>
-                <div className="bg-white p-4 border border-[#ff8a15]">
+                <div className="bg-gray-50 p-4">
                   <p className="text-sm text-gray-600">カテゴリ</p>
                   <p className="font-semibold text-gray-900">{planData.goalCategory}</p>
                 </div>
@@ -430,7 +430,7 @@ function InstagramDashboardContent() {
                   { tag: '#デジタル', count: 7, engagement: 4.8 },
                   { tag: '#戦略', count: 6, engagement: 3.2 }
                 ].map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors border border-[#ff8a15]">
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                     <div className="flex items-center">
                       <span className="text-lg font-bold text-pink-600 mr-3">#{index + 1}</span>
                       <div>
@@ -468,7 +468,7 @@ function InstagramDashboardContent() {
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {recentPosts.map((post) => (
-                      <div key={post.id} className="border border-[#ff8a15] p-4 hover:shadow-md transition-shadow">
+                      <div key={post.id} className="bg-gray-50 p-4 hover:shadow-md transition-shadow">
                         {/* 投稿情報 */}
                         <div className="flex items-center justify-between mb-3">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeColor(post.type)}`}>
@@ -519,7 +519,7 @@ function InstagramDashboardContent() {
                     { task: 'ストーリー用の素材準備', priority: 'medium', due: '明日' },
                     { task: 'エンゲージメント率向上の戦略検討', priority: 'high', due: '来週' }
                   ].map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors border border-[#ff8a15]">
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                       <div className="flex items-center">
                         <input 
                           type="checkbox" 
