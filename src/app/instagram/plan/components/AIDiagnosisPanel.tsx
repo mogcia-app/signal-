@@ -69,12 +69,68 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
           </div>
           
           {strategyState.strategy ? (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="prose prose-sm max-w-none">
-                <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
-                  {strategyState.strategy}
+            <div className="space-y-6">
+              {/* AI生成戦略をセクション別に表示 */}
+              {strategyState.strategy.split('===').filter(section => section.trim()).map((section, index) => {
+                const lines = section.trim().split('\n');
+                const title = lines[0]?.replace(/[①②③④⑤⑥⑦⑧]/g, '').trim();
+                const content = lines.slice(1).join('\n').trim();
+                
+                if (!title || !content) return null;
+                
+                return (
+                  <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                    <h5 className="font-medium mb-3 text-gray-800 border-b border-gray-100 pb-2">
+                      {title}
+                    </h5>
+                    <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                      {content}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* フォームデータに基づく世界観情報を追加表示 */}
+              {formData && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h5 className="font-medium mb-3 text-gray-800 border-b border-blue-100 pb-2">
+                    📊 入力された世界観情報
+                  </h5>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <strong className="text-sm text-gray-700">ブランドコンセプト：</strong>
+                        <span className="text-sm text-gray-600 ml-2">
+                          {formData.brandConcept || '未設定'}
+                        </span>
+                      </div>
+                      <div>
+                        <strong className="text-sm text-gray-700">メインカラー：</strong>
+                        <span className="text-sm text-gray-600 ml-2">
+                          {formData.colorVisual || '未設定'}
+                        </span>
+                        {formData.colorVisual && (
+                          <span className="inline-block w-4 h-4 ml-2 border border-gray-400 rounded align-middle bg-[#ff8a15]"></span>
+                        )}
+                      </div>
+                      <div>
+                        <strong className="text-sm text-gray-700">文章トーン：</strong>
+                        <span className="text-sm text-gray-600 ml-2">
+                          {formData.tone || '未設定'}
+                        </span>
+                      </div>
+                      <div>
+                        <strong className="text-sm text-gray-700">サブカラー：</strong>
+                        <span className="text-sm text-gray-600 ml-2">白・グレー</span>
+                        <div className="inline-flex space-x-1 ml-2 align-middle">
+                          <span className="w-3 h-3 bg-white border border-gray-400 rounded"></span>
+                          <span className="w-3 h-3 bg-gray-400 rounded"></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-8">
