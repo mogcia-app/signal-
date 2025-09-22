@@ -5,20 +5,9 @@ import SNSLayout from '../../../components/sns-layout';
 import { 
   User, 
   Mail, 
-  Camera, 
   Save, 
   Eye, 
   EyeOff, 
-  Settings, 
-  Bell, 
-  Globe, 
-  Palette,
-  Instagram,
-  Twitter,
-  Youtube,
-  Music,
-  Link,
-  Unlink,
   Shield,
   Key,
   Trash2,
@@ -28,40 +17,33 @@ import {
 
 interface UserProfile {
   id?: string;
-  userId: string;
-  email: string;
-  displayName?: string;
-  avatarUrl?: string;
-  bio?: string;
-  preferences: {
-    theme: 'light' | 'dark';
-    language: string;
-    notifications: boolean;
+  email: string;                 // ログイン用メールアドレス（Firebase Auth管理）
+  name: string;                  // 表示名
+  role: 'user' | 'admin';        // 権限（利用者は'user'）
+  isActive: boolean;             // アクティブ状態
+  snsCount: number;              // SNS契約数（1-4）
+  usageType: 'team' | 'solo';    // 利用形態
+  contractType: 'annual' | 'trial'; // 契約タイプ
+  contractSNS: string[];         // 契約SNS配列
+  snsAISettings: object;         // SNS AI設定
+  businessInfo: {               // ビジネス情報
+    industry: string;
+    companySize: string;
+    businessType: string;
+    description: string;
+    targetMarket: string;
+    goals: string[];
+    challenges: string[];
   };
-  socialAccounts: {
-    instagram?: {
-      username: string;
-      connected: boolean;
-    };
-    twitter?: {
-      username: string;
-      connected: boolean;
-    };
-    youtube?: {
-      username: string;
-      connected: boolean;
-    };
-    tiktok?: {
-      username: string;
-      connected: boolean;
-    };
-  };
+  status: 'active' | 'inactive' | 'suspended';
+  contractStartDate: string;     // 契約開始日
+  contractEndDate: string;       // 契約終了日
   createdAt: string;
   updatedAt: string;
 }
 
 export default function MyAccountPage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'settings' | 'security' | 'social'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -70,9 +52,16 @@ export default function MyAccountPage() {
 
   // フォームデータ
   const [profileData, setProfileData] = useState({
-    displayName: '',
-    bio: '',
-    avatarUrl: ''
+    name: '',
+    businessInfo: {
+      industry: '',
+      companySize: '',
+      businessType: '',
+      description: '',
+      targetMarket: '',
+      goals: [] as string[],
+      challenges: [] as string[]
+    }
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -81,11 +70,7 @@ export default function MyAccountPage() {
     confirmPassword: ''
   });
 
-  const [settingsData, setSettingsData] = useState({
-    theme: 'light' as 'light' | 'dark',
-    language: 'ja',
-    notifications: true
-  });
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   useEffect(() => {
     fetchUserProfile();
@@ -97,37 +82,37 @@ export default function MyAccountPage() {
       // モックデータを使用（実際の実装ではAPIから取得）
       const mockProfile: UserProfile = {
         id: '1',
-        userId: 'current-user',
         email: 'user@example.com',
-        displayName: '田中太郎',
-        avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        bio: 'Instagramマーケティングの専門家。ブランド成長のお手伝いをしています。',
-        preferences: {
-          theme: 'light',
-          language: 'ja',
-          notifications: true
+        name: '田中太郎',
+        role: 'user',
+        isActive: true,
+        snsCount: 2,
+        usageType: 'solo',
+        contractType: 'annual',
+        contractSNS: ['instagram', 'twitter'],
+        snsAISettings: {},
+        businessInfo: {
+          industry: 'マーケティング・広告',
+          companySize: '個人事業主',
+          businessType: 'コンサルティング',
+          description: 'Instagramマーケティングの専門家として、ブランドの成長をサポートしています。',
+          targetMarket: '中小企業、個人ブランド',
+          goals: ['フォロワー増加', 'エンゲージメント向上', '売上向上'],
+          challenges: ['コンテンツ制作の効率化', 'ターゲット分析', '競合対策']
         },
-        socialAccounts: {
-          instagram: { username: '@tanaka_marketing', connected: true },
-          twitter: { username: '@tanaka_twitter', connected: true },
-          youtube: { username: '田中マーケティングチャンネル', connected: false },
-          tiktok: { username: '@tanaka_tiktok', connected: false }
-        },
+        status: 'active',
+        contractStartDate: '2024-01-01T00:00:00Z',
+        contractEndDate: '2024-12-31T23:59:59Z',
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-20T10:00:00Z'
       };
 
       setUserProfile(mockProfile);
       setProfileData({
-        displayName: mockProfile.displayName || '',
-        bio: mockProfile.bio || '',
-        avatarUrl: mockProfile.avatarUrl || ''
+        name: mockProfile.name,
+        businessInfo: mockProfile.businessInfo
       });
-      setSettingsData({
-        theme: mockProfile.preferences.theme,
-        language: mockProfile.preferences.language,
-        notifications: mockProfile.preferences.notifications
-      });
+      setTwoFactorEnabled(false); // モックデータでは無効
     } catch (error) {
       console.error('プロファイル取得エラー:', error);
       setMessage({ type: 'error', text: 'プロファイルの取得に失敗しました' });
@@ -145,19 +130,16 @@ export default function MyAccountPage() {
       //   method: 'PUT',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify({
-      //     userId: 'current-user',
-      //     displayName: profileData.displayName,
-      //     bio: profileData.bio,
-      //     avatarUrl: profileData.avatarUrl
+      //     name: profileData.name,
+      //     businessInfo: profileData.businessInfo
       //   })
       // });
 
       // モック更新
       setUserProfile(prev => prev ? {
         ...prev,
-        displayName: profileData.displayName,
-        bio: profileData.bio,
-        avatarUrl: profileData.avatarUrl,
+        name: profileData.name,
+        businessInfo: profileData.businessInfo,
         updatedAt: new Date().toISOString()
       } : null);
 
@@ -199,72 +181,32 @@ export default function MyAccountPage() {
     }
   };
 
-  const handleSaveSettings = async () => {
+  const handleToggleTwoFactor = async () => {
     try {
       setIsSaving(true);
       
       // 実際の実装ではAPIを呼び出し
-      // await fetch('/api/users', {
-      //   method: 'PUT',
+      // await fetch('/api/auth/two-factor', {
+      //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify({
-      //     userId: 'current-user',
-      //     preferences: settingsData
+      //     enabled: !twoFactorEnabled
       //   })
       // });
 
-      // モック更新
-      setUserProfile(prev => prev ? {
-        ...prev,
-        preferences: settingsData,
-        updatedAt: new Date().toISOString()
-      } : null);
-
-      setMessage({ type: 'success', text: '設定が保存されました' });
+      setTwoFactorEnabled(!twoFactorEnabled);
+      setMessage({ 
+        type: 'success', 
+        text: twoFactorEnabled ? '二要素認証を無効にしました' : '二要素認証を有効にしました' 
+      });
     } catch (error) {
-      console.error('設定保存エラー:', error);
-      setMessage({ type: 'error', text: '設定の保存に失敗しました' });
+      console.error('二要素認証設定エラー:', error);
+      setMessage({ type: 'error', text: '二要素認証の設定に失敗しました' });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const connectSocialAccount = async (platform: string) => {
-    try {
-      // 実際の実装ではOAuth認証を実装
-      console.log(`${platform}アカウントを接続中...`);
-      setMessage({ type: 'success', text: `${platform}アカウントが接続されました` });
-    } catch (error) {
-      console.error('ソーシャルアカウント接続エラー:', error);
-      setMessage({ type: 'error', text: 'アカウントの接続に失敗しました' });
-    }
-  };
-
-  const disconnectSocialAccount = async (platform: string) => {
-    try {
-      // 実際の実装ではAPIを呼び出し
-      console.log(`${platform}アカウントを切断中...`);
-      setMessage({ type: 'success', text: `${platform}アカウントが切断されました` });
-    } catch (error) {
-      console.error('ソーシャルアカウント切断エラー:', error);
-      setMessage({ type: 'error', text: 'アカウントの切断に失敗しました' });
-    }
-  };
-
-  const deleteAccount = async () => {
-    if (!confirm('アカウントを削除しますか？この操作は取り消せません。')) {
-      return;
-    }
-
-    try {
-      // 実際の実装ではAPIを呼び出し
-      console.log('アカウント削除中...');
-      setMessage({ type: 'success', text: 'アカウントが削除されました' });
-    } catch (error) {
-      console.error('アカウント削除エラー:', error);
-      setMessage({ type: 'error', text: 'アカウントの削除に失敗しました' });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -321,13 +263,11 @@ export default function MyAccountPage() {
         <div className="flex space-x-1 border-b border-gray-200 mb-8">
           {[
             { id: 'profile', label: 'プロファイル', icon: <User className="w-4 h-4" /> },
-            { id: 'settings', label: '設定', icon: <Settings className="w-4 h-4" /> },
-            { id: 'security', label: 'セキュリティ', icon: <Shield className="w-4 h-4" /> },
-            { id: 'social', label: 'ソーシャル連携', icon: <Link className="w-4 h-4" /> }
+            { id: 'security', label: 'セキュリティ', icon: <Shield className="w-4 h-4" /> }
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'profile' | 'settings' | 'security' | 'social')}
+              onClick={() => setActiveTab(tab.id as 'profile' | 'security')}
               className={`flex items-center space-x-2 px-4 py-3 rounded-t-md transition-colors ${
                 activeTab === tab.id
                   ? 'border-b-2 border-blue-600 text-blue-600 font-semibold bg-blue-50'
@@ -344,78 +284,202 @@ export default function MyAccountPage() {
         <div>
           {/* プロファイルタブ */}
           {activeTab === 'profile' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">プロファイル情報</h2>
-              
-              <div className="space-y-6">
-                {/* アバター */}
-                <div className="flex items-center space-x-6">
-                  <div className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={profileData.avatarUrl || '/default-avatar.png'}
-                      alt="アバター"
-                      className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
-                    />
-                    <button className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors">
-                      <Camera className="w-4 h-4" />
-                    </button>
+            <div className="space-y-6">
+              {/* 基本情報 */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">基本情報</h2>
+                
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-6">
+                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-10 h-10 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{userProfile?.name}</h3>
+                      <p className="text-gray-600">{userProfile?.email}</p>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          userProfile?.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {userProfile?.status === 'active' ? 'アクティブ' : '非アクティブ'}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {userProfile?.role === 'admin' ? '管理者' : 'ユーザー'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{userProfile?.displayName}</h3>
-                    <p className="text-gray-600">{userProfile?.email}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      登録日: {new Date(userProfile?.createdAt || '').toLocaleDateString('ja-JP')}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        表示名
+                      </label>
+                      <input
+                        type="text"
+                        value={profileData.name}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="表示名を入力"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        メールアドレス
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="email"
+                          value={userProfile?.email || ''}
+                          className="w-full pl-10 p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                          disabled
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">メールアドレスは変更できません</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 契約情報 */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">契約情報</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-blue-900 mb-2">契約タイプ</h3>
+                    <p className="text-blue-800">
+                      {userProfile?.contractType === 'annual' ? '年間契約' : 'トライアル'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-green-900 mb-2">SNS契約数</h3>
+                    <p className="text-green-800">{userProfile?.snsCount}/4</p>
+                  </div>
+                  
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-purple-900 mb-2">利用形態</h3>
+                    <p className="text-purple-800">
+                      {userProfile?.usageType === 'team' ? 'チーム利用' : '個人利用'}
                     </p>
                   </div>
                 </div>
 
-                {/* フォーム */}
+                <div className="mt-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">契約SNS</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {userProfile?.contractSNS.map((sns, index) => (
+                      <span key={index} className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                        {sns}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">契約開始日</label>
+                    <p className="text-gray-900">{new Date(userProfile?.contractStartDate || '').toLocaleDateString('ja-JP')}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">契約終了日</label>
+                    <p className="text-gray-900">{new Date(userProfile?.contractEndDate || '').toLocaleDateString('ja-JP')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ビジネス情報 */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">ビジネス情報</h2>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      表示名
+                      業界
                     </label>
                     <input
                       type="text"
-                      value={profileData.displayName}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
+                      value={profileData.businessInfo.industry}
+                      onChange={(e) => setProfileData(prev => ({
+                        ...prev,
+                        businessInfo: { ...prev.businessInfo, industry: e.target.value }
+                      }))}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="表示名を入力"
+                      placeholder="業界を入力"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      メールアドレス
+                      会社規模
                     </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="email"
-                        value={userProfile?.email || ''}
-                        className="w-full pl-10 p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                        disabled
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">メールアドレスは変更できません</p>
+                    <input
+                      type="text"
+                      value={profileData.businessInfo.companySize}
+                      onChange={(e) => setProfileData(prev => ({
+                        ...prev,
+                        businessInfo: { ...prev.businessInfo, companySize: e.target.value }
+                      }))}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="会社規模を入力"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ビジネスタイプ
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.businessInfo.businessType}
+                      onChange={(e) => setProfileData(prev => ({
+                        ...prev,
+                        businessInfo: { ...prev.businessInfo, businessType: e.target.value }
+                      }))}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="ビジネスタイプを入力"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ターゲット市場
+                    </label>
+                    <input
+                      type="text"
+                      value={profileData.businessInfo.targetMarket}
+                      onChange={(e) => setProfileData(prev => ({
+                        ...prev,
+                        businessInfo: { ...prev.businessInfo, targetMarket: e.target.value }
+                      }))}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="ターゲット市場を入力"
+                    />
                   </div>
                 </div>
 
-                <div>
+                <div className="mt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    自己紹介
+                    ビジネス説明
                   </label>
                   <textarea
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                    value={profileData.businessInfo.description}
+                    onChange={(e) => setProfileData(prev => ({
+                      ...prev,
+                      businessInfo: { ...prev.businessInfo, description: e.target.value }
+                    }))}
                     rows={4}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="自己紹介を入力してください"
+                    placeholder="ビジネスについて説明してください"
                   />
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-6">
                   <button
                     onClick={handleSaveProfile}
                     disabled={isSaving}
@@ -429,78 +493,6 @@ export default function MyAccountPage() {
             </div>
           )}
 
-          {/* 設定タブ */}
-          {activeTab === 'settings' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">アプリケーション設定</h2>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Palette className="w-4 h-4 inline mr-2" />
-                    テーマ
-                  </label>
-                  <div className="flex space-x-4">
-                    {[
-                      { value: 'light', label: 'ライト' },
-                      { value: 'dark', label: 'ダーク' }
-                    ].map((theme) => (
-                      <label key={theme.value} className="flex items-center">
-                        <input
-                          type="radio"
-                          name="theme"
-                          value={theme.value}
-                          checked={settingsData.theme === theme.value}
-                          onChange={(e) => setSettingsData(prev => ({ ...prev, theme: e.target.value as 'light' | 'dark' }))}
-                          className="mr-2"
-                        />
-                        {theme.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Globe className="w-4 h-4 inline mr-2" />
-                    言語
-                  </label>
-                  <select
-                    value={settingsData.language}
-                    onChange={(e) => setSettingsData(prev => ({ ...prev, language: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="ja">日本語</option>
-                    <option value="en">English</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={settingsData.notifications}
-                      onChange={(e) => setSettingsData(prev => ({ ...prev, notifications: e.target.checked }))}
-                      className="mr-3"
-                    />
-                    <Bell className="w-4 h-4 mr-2" />
-                    通知を受け取る
-                  </label>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleSaveSettings}
-                    disabled={isSaving}
-                    className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{isSaving ? '保存中...' : '設定を保存'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* セキュリティタブ */}
           {activeTab === 'security' && (
@@ -571,14 +563,52 @@ export default function MyAccountPage() {
                 </div>
               </div>
 
+              {/* 二要素認証 */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">二要素認証</h2>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">二要素認証（2FA）</h3>
+                    <p className="text-gray-600 mb-2">
+                      アカウントのセキュリティを強化するために、二要素認証を有効にできます。
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      現在の状態: <span className={`font-medium ${twoFactorEnabled ? 'text-green-600' : 'text-red-600'}`}>
+                        {twoFactorEnabled ? '有効' : '無効'}
+                      </span>
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleToggleTwoFactor}
+                    disabled={isSaving}
+                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                      twoFactorEnabled
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    } disabled:opacity-50`}
+                  >
+                    {isSaving ? '設定中...' : twoFactorEnabled ? '無効にする' : '有効にする'}
+                  </button>
+                </div>
+              </div>
+
               {/* アカウント削除 */}
               <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-red-900 mb-2">危険な操作</h3>
+                <h3 className="text-lg font-semibold text-red-900 mb-2 flex items-center">
+                  <Trash2 className="w-5 h-5 mr-2" />
+                  アカウント削除
+                </h3>
                 <p className="text-red-700 mb-4">
                   アカウントを削除すると、すべてのデータが永久に失われます。この操作は取り消せません。
                 </p>
                 <button
-                  onClick={deleteAccount}
+                  onClick={() => {
+                    if (confirm('本当にアカウントを削除しますか？この操作は取り消せません。')) {
+                      // 実際の削除処理
+                      setMessage({ type: 'success', text: 'アカウント削除の手続きを開始しました' });
+                    }
+                  }}
                   className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -588,86 +618,6 @@ export default function MyAccountPage() {
             </div>
           )}
 
-          {/* ソーシャル連携タブ */}
-          {activeTab === 'social' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">ソーシャルアカウント連携</h2>
-              
-              <div className="space-y-4">
-                {[
-                  { 
-                    platform: 'instagram', 
-                    name: 'Instagram', 
-                    icon: <Instagram className="w-5 h-5" />,
-                    color: 'bg-gradient-to-r from-purple-500 to-pink-500'
-                  },
-                  { 
-                    platform: 'twitter', 
-                    name: 'Twitter', 
-                    icon: <Twitter className="w-5 h-5" />,
-                    color: 'bg-blue-500'
-                  },
-                  { 
-                    platform: 'youtube', 
-                    name: 'YouTube', 
-                    icon: <Youtube className="w-5 h-5" />,
-                    color: 'bg-red-600'
-                  },
-                  { 
-                    platform: 'tiktok', 
-                    name: 'TikTok', 
-                    icon: <Music className="w-5 h-5" />,
-                    color: 'bg-black'
-                  }
-                ].map((social) => {
-                  const account = userProfile?.socialAccounts[social.platform as keyof typeof userProfile.socialAccounts];
-                  const isConnected = account?.connected || false;
-                  
-                  return (
-                    <div key={social.platform} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-10 h-10 ${social.color} rounded-full flex items-center justify-center text-white`}>
-                          {social.icon}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{social.name}</h3>
-                          {isConnected && account?.username && (
-                            <p className="text-sm text-gray-600">{account.username}</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        {isConnected ? (
-                          <>
-                            <span className="flex items-center text-green-600">
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              接続済み
-                            </span>
-                            <button
-                              onClick={() => disconnectSocialAccount(social.platform)}
-                              className="flex items-center space-x-1 px-3 py-1 text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
-                            >
-                              <Unlink className="w-4 h-4" />
-                              <span>切断</span>
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => connectSocialAccount(social.platform)}
-                            className="flex items-center space-x-1 px-3 py-1 text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
-                          >
-                            <Link className="w-4 h-4" />
-                            <span>接続</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </SNSLayout>
