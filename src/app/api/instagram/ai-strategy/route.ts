@@ -43,20 +43,22 @@ function checkRateLimit(ip: string): boolean {
 }
 
 // 入力データの検証
-function validateInputData(data: any): boolean {
+function validateInputData(data: unknown): boolean {
   if (!data || typeof data !== 'object') {
     return false;
   }
   
+  const dataObj = data as Record<string, unknown>;
+  
   // 必須フィールドのチェック
   const requiredFields = ['currentFollowers', 'targetFollowers', 'planPeriod'];
   return requiredFields.every(field => 
-    data[field] !== undefined && data[field] !== null && data[field] !== ''
+    dataObj[field] !== undefined && dataObj[field] !== null && dataObj[field] !== ''
   );
 }
 
 // AI戦略生成のメイン関数
-async function generateAIStrategy(formData: any, simulationResult: any): Promise<string> {
+async function generateAIStrategy(formData: Record<string, unknown>, simulationResult: Record<string, unknown> | null): Promise<string> {
   const openaiApiKey = process.env.OPENAI_API_KEY;
   
   if (!openaiApiKey) {
@@ -87,13 +89,13 @@ async function generateAIStrategy(formData: any, simulationResult: any): Promise
 - ブランドコンセプト: ${formData.brandConcept || '未設定'}
 - メインカラー: ${formData.colorVisual || '未設定'}
 - 文章トーン: ${formData.tone || '未設定'}
-- 選択戦略: ${formData.strategyValues?.join(', ') || 'なし'}
-- 投稿カテゴリ: ${formData.postCategories?.join(', ') || 'なし'}
+- 選択戦略: ${Array.isArray(formData.strategyValues) ? formData.strategyValues.join(', ') : 'なし'}
+- 投稿カテゴリ: ${Array.isArray(formData.postCategories) ? formData.postCategories.join(', ') : 'なし'}
 
 シミュレーション結果:
 - 月間目標: ${simulationResult?.monthlyTarget || 'N/A'}
 - 実現可能性: ${simulationResult?.feasibilityLevel || 'N/A'}
-- 週間投稿数: フィード${simulationResult?.postsPerWeek?.feed || 0}回、リール${simulationResult?.postsPerWeek?.reel || 0}回
+- 週間投稿数: フィード${(simulationResult?.postsPerWeek as Record<string, unknown>)?.feed || 0}回、リール${(simulationResult?.postsPerWeek as Record<string, unknown>)?.reel || 0}回
 
 これらの情報を基に、8つのセクションで戦略アドバイスを生成してください。`;
 
@@ -141,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     // レート制限チェック
-    const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     if (!checkRateLimit(clientIP)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
