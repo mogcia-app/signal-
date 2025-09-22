@@ -9,13 +9,9 @@ import {
   Info, 
   AlertTriangle,
   Clock,
-  User,
-  Filter,
   Search,
   Archive,
-  Trash2,
   Eye,
-  EyeOff,
   Star,
   StarOff
 } from 'lucide-react';
@@ -52,7 +48,7 @@ export default function InstagramNotificationsPage() {
   useEffect(() => {
     // フィルタリング処理
     filterNotifications();
-  }, [notifications, selectedFilter, searchQuery]);
+  }, [notifications, selectedFilter, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const initializeMockNotifications = () => {
     const mockNotifications: Notification[] = [
@@ -331,7 +327,7 @@ export default function InstagramNotificationsPage() {
               ].map((filter) => (
                 <button
                   key={filter.id}
-                  onClick={() => setSelectedFilter(filter.id as any)}
+                  onClick={() => setSelectedFilter(filter.id as 'all' | 'unread' | 'starred' | 'archived')}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-colors ${
                     selectedFilter === filter.id
                       ? 'bg-white text-blue-600 shadow-sm'
