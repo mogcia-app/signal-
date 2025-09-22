@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import SNSLayout from '../../../components/sns-layout';
+import { AIChatWidget } from '../../../components/ai-chat-widget';
 import PostEditor from './components/PostEditor';
 import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
@@ -103,6 +104,17 @@ export default function InstagramLabPage() {
             />
           </div>
         </div>
+
+        {/* AIチャットウィジェット */}
+        <AIChatWidget 
+          contextData={{
+            postContent,
+            postTitle,
+            selectedHashtags,
+            postType,
+            planData: planData as unknown as Record<string, unknown>
+          }}
+        />
       </div>
     </SNSLayout>
   );

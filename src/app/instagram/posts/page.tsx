@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
+import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { postsApi } from '../../../lib/api';
 import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon, TrendingUp } from 'lucide-react';
 
@@ -435,6 +436,17 @@ export default function InstagramPostsPage() {
             ))}
           </div>
         )}
+
+        {/* AIチャットウィジェット */}
+        <AIChatWidget 
+          contextData={{
+            posts: posts,
+            selectedStatus: selectedStatus,
+            selectedPostType: selectedPostType,
+            searchTerm: searchTerm,
+            activeTab: activeTab
+          }}
+        />
       </div>
     </SNSLayout>
   );

@@ -11,13 +11,7 @@ interface Message {
 }
 
 interface AIChatWidgetProps {
-  contextData?: {
-    formData?: Record<string, unknown>;
-    selectedStrategies?: string[];
-    selectedCategories?: string[];
-    simulationResult?: Record<string, unknown>;
-    abTestResult?: Record<string, unknown>;
-  };
+  contextData?: Record<string, unknown>;
 }
 
 export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {

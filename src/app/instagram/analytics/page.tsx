@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
+import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { postsApi } from '../../../lib/api';
 import { PlanData } from '../plan/types/plan';
 import { 
@@ -26,6 +27,12 @@ interface PostData {
   scheduledTime?: string;
   status: 'draft' | 'scheduled' | 'published';
   createdAt: Date;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  views?: number;
+  reach?: number;
+  engagementRate?: number;
 }
 
 interface AnalyticsData {
@@ -578,6 +585,21 @@ export default function InstagramAnalyticsPage() {
 
           </div>
         </div>
+
+        {/* AIチャットウィジェット */}
+        <AIChatWidget 
+          contextData={{
+            posts: posts,
+            planData: planData as unknown as Record<string, unknown>,
+            monthlyStats: {
+              totalPosts: posts.length,
+              totalLikes: posts.reduce((sum, post) => sum + (post.likes || 0), 0),
+              totalComments: posts.reduce((sum, post) => sum + (post.comments || 0), 0),
+              totalShares: posts.reduce((sum, post) => sum + (post.shares || 0), 0),
+              avgEngagement: monthlyAvgEngagement
+            }
+          }}
+        />
       </div>
     </SNSLayout>
   );

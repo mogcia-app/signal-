@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
+import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { 
   Bell, 
   AlertCircle, 
@@ -559,6 +560,14 @@ export default function InstagramNotificationsPage() {
             ))
           )}
         </div>
+
+        {/* AIチャットウィジェット */}
+        <AIChatWidget 
+          contextData={{
+            notifications: notifications,
+            selectedFilter: selectedFilter
+          }}
+        />
       </div>
     </SNSLayout>
   );

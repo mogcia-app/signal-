@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
+import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { 
   User, 
   Mail, 
@@ -619,6 +620,13 @@ export default function MyAccountPage() {
           )}
 
         </div>
+
+        {/* AIチャットウィジェット */}
+        <AIChatWidget 
+          contextData={{
+            userProfile: userProfile
+          }}
+        />
       </div>
     </SNSLayout>
   );
