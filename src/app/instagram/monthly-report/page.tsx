@@ -48,12 +48,35 @@ interface AnalyticsData {
   createdAt: Date;
 }
 
+// 現在の週を取得する関数
+function getCurrentWeekString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const startOfYear = new Date(year, 0, 1);
+  const days = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+  return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
+}
+
+// 週の開始日と終了日を取得する関数
+function getWeekRange(weekString: string): { start: Date; end: Date } {
+  const [year, week] = weekString.split('-W');
+  const startOfYear = new Date(parseInt(year), 0, 1);
+  const startOfWeek = new Date(startOfYear.getTime() + (parseInt(week) - 1) * 7 * 24 * 60 * 60 * 1000);
+  const endOfWeek = new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000);
+  return { start: startOfWeek, end: endOfWeek };
+}
+
 export default function InstagramMonthlyReportPage() {
   const [posts, setPosts] = useState<PostData[]>([]);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [planData, setPlanData] = useState<PlanData | null>(null);
+  const [activeTab, setActiveTab] = useState<'weekly' | 'monthly'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7) // YYYY-MM形式
+  );
+  const [selectedWeek, setSelectedWeek] = useState<string>(
+    getCurrentWeekString() // YYYY-WW形式
   );
 
   // 投稿一覧を取得
@@ -148,6 +171,13 @@ export default function InstagramMonthlyReportPage() {
     return dataMonth === selectedMonth;
   });
 
+  // 選択された週の分析データを取得
+  const selectedWeekAnalytics = analyticsData.filter(data => {
+    const dataDate = new Date(data.publishedAt);
+    const weekRange = getWeekRange(selectedWeek);
+    return dataDate >= weekRange.start && dataDate <= weekRange.end;
+  });
+
   // 前月の分析データを取得
   const prevMonth = new Date(selectedMonth + '-01');
   prevMonth.setMonth(prevMonth.getMonth() - 1);
@@ -156,6 +186,15 @@ export default function InstagramMonthlyReportPage() {
     const dataDate = new Date(data.publishedAt);
     const dataMonth = dataDate.toISOString().slice(0, 7);
     return dataMonth === prevMonthStr;
+  });
+
+  // 前週の分析データを取得
+  const prevWeekRange = getWeekRange(selectedWeek);
+  const prevWeekStart = new Date(prevWeekRange.start.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const prevWeekEnd = new Date(prevWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+  const prevWeekAnalytics = analyticsData.filter(data => {
+    const dataDate = new Date(data.publishedAt);
+    return dataDate >= prevWeekStart && dataDate <= prevWeekEnd;
   });
 
   // 今月のトータル計算
@@ -168,6 +207,16 @@ export default function InstagramMonthlyReportPage() {
     totalPosts: selectedMonthAnalytics.length
   };
 
+  // 今週のトータル計算
+  const weeklyTotals = {
+    totalLikes: selectedWeekAnalytics.reduce((sum, data) => sum + data.likes, 0),
+    totalComments: selectedWeekAnalytics.reduce((sum, data) => sum + data.comments, 0),
+    totalShares: selectedWeekAnalytics.reduce((sum, data) => sum + data.shares, 0),
+    totalReach: selectedWeekAnalytics.reduce((sum, data) => sum + data.reach, 0),
+    totalFollowerChange: selectedWeekAnalytics.reduce((sum, data) => sum + (data.followerChange || 0), 0),
+    totalPosts: selectedWeekAnalytics.length
+  };
+
   // 前月のトータル計算
   const prevMonthTotals = {
     totalLikes: prevMonthAnalytics.reduce((sum, data) => sum + data.likes, 0),
@@ -176,6 +225,16 @@ export default function InstagramMonthlyReportPage() {
     totalReach: prevMonthAnalytics.reduce((sum, data) => sum + data.reach, 0),
     totalFollowerChange: prevMonthAnalytics.reduce((sum, data) => sum + (data.followerChange || 0), 0),
     totalPosts: prevMonthAnalytics.length
+  };
+
+  // 前週のトータル計算
+  const prevWeekTotals = {
+    totalLikes: prevWeekAnalytics.reduce((sum, data) => sum + data.likes, 0),
+    totalComments: prevWeekAnalytics.reduce((sum, data) => sum + data.comments, 0),
+    totalShares: prevWeekAnalytics.reduce((sum, data) => sum + data.shares, 0),
+    totalReach: prevWeekAnalytics.reduce((sum, data) => sum + data.reach, 0),
+    totalFollowerChange: prevWeekAnalytics.reduce((sum, data) => sum + (data.followerChange || 0), 0),
+    totalPosts: prevWeekAnalytics.length
   };
 
   // 前月比計算
@@ -195,6 +254,11 @@ export default function InstagramMonthlyReportPage() {
     ? ((monthlyTotals.totalLikes + monthlyTotals.totalComments + monthlyTotals.totalShares) / monthlyTotals.totalReach * 100).toFixed(1)
     : '0.0';
 
+  // 今週の平均エンゲージメント率
+  const weeklyAvgEngagement = weeklyTotals.totalReach > 0 
+    ? ((weeklyTotals.totalLikes + weeklyTotals.totalComments + weeklyTotals.totalShares) / weeklyTotals.totalReach * 100).toFixed(1)
+    : '0.0';
+
   // 計画進捗計算
   const planProgress = planData 
     ? ((planData.currentFollowers + monthlyTotals.totalFollowerChange) / planData.targetFollowers * 100)
@@ -206,9 +270,17 @@ export default function InstagramMonthlyReportPage() {
     return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' });
   };
 
+  // 週の表示名を取得
+  const getWeekDisplayName = (weekStr: string) => {
+    const weekRange = getWeekRange(weekStr);
+    const startDate = weekRange.start.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+    const endDate = weekRange.end.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+    return `${startDate} - ${endDate}`;
+  };
+
   // パフォーマンス評価
-  const getPerformanceRating = () => {
-    const avgEngagement = parseFloat(monthlyAvgEngagement);
+  const getPerformanceRating = (engagementRate: string) => {
+    const avgEngagement = parseFloat(engagementRate);
     if (avgEngagement >= 5) return { rating: 'S', color: 'text-purple-600', bg: 'bg-purple-100' };
     if (avgEngagement >= 3) return { rating: 'A', color: 'text-blue-600', bg: 'bg-blue-100' };
     if (avgEngagement >= 2) return { rating: 'B', color: 'text-green-600', bg: 'bg-green-100' };
@@ -216,7 +288,7 @@ export default function InstagramMonthlyReportPage() {
     return { rating: 'D', color: 'text-red-600', bg: 'bg-red-100' };
   };
 
-  const performanceRating = getPerformanceRating();
+  const performanceRating = getPerformanceRating(activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement);
 
   return (
     <SNSLayout 
@@ -227,21 +299,55 @@ export default function InstagramMonthlyReportPage() {
       <div className="max-w-7xl mx-auto p-6">
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">月次レポート</h1>
-            <p className="text-gray-600 mt-1">月次のパフォーマンス分析とレポート</p>
-          </div>
+          
           <div className="flex items-center space-x-3">
-            {/* 月選択 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">対象月</label>
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            {/* タブ切り替え */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('weekly')}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'weekly'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                週次
+              </button>
+              <button
+                onClick={() => setActiveTab('monthly')}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'monthly'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                月次
+              </button>
             </div>
+            
+            {/* 期間選択 */}
+            {activeTab === 'weekly' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">対象週</label>
+                <input
+                  type="week"
+                  value={selectedWeek}
+                  onChange={(e) => setSelectedWeek(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">対象月</label>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+            
             {/* エクスポートボタン */}
             <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
               <Download size={16} className="mr-2" />
@@ -255,7 +361,12 @@ export default function InstagramMonthlyReportPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-2">パフォーマンス評価</h2>
-              <p className="text-sm text-gray-600">{getMonthDisplayName(selectedMonth)}の総合評価</p>
+              <p className="text-sm text-gray-600">
+                {activeTab === 'weekly' 
+                  ? `${getWeekDisplayName(selectedWeek)}の総合評価`
+                  : `${getMonthDisplayName(selectedMonth)}の総合評価`
+                }
+              </p>
             </div>
             <div className="text-center">
               <div className={`w-20 h-20 rounded-full ${performanceRating.bg} flex items-center justify-center mx-auto mb-2`}>
@@ -272,18 +383,24 @@ export default function InstagramMonthlyReportPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">いいね総数</p>
-                <p className="text-2xl font-bold text-gray-900">{monthlyTotals.totalLikes.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(activeTab === 'weekly' ? weeklyTotals.totalLikes : monthlyTotals.totalLikes).toLocaleString()}
+                </p>
               </div>
               <Heart className="w-8 h-8 text-red-500" />
             </div>
             <div className="mt-2 flex items-center">
-              {likesChange >= 0 ? (
+              {(activeTab === 'weekly' ? calculateChange(weeklyTotals.totalLikes, prevWeekTotals.totalLikes) : likesChange) >= 0 ? (
                 <ArrowUp className="w-4 h-4 text-green-500 mr-1" />
               ) : (
                 <ArrowDown className="w-4 h-4 text-red-500 mr-1" />
               )}
-              <span className={`text-sm font-medium ${likesChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {Math.abs(likesChange).toFixed(1)}% 前月比
+              <span className={`text-sm font-medium ${
+                (activeTab === 'weekly' ? calculateChange(weeklyTotals.totalLikes, prevWeekTotals.totalLikes) : likesChange) >= 0 
+                  ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {Math.abs(activeTab === 'weekly' ? calculateChange(weeklyTotals.totalLikes, prevWeekTotals.totalLikes) : likesChange).toFixed(1)}% 
+                {activeTab === 'weekly' ? '前週比' : '前月比'}
               </span>
             </div>
           </div>
@@ -292,18 +409,24 @@ export default function InstagramMonthlyReportPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">コメント総数</p>
-                <p className="text-2xl font-bold text-gray-900">{monthlyTotals.totalComments.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(activeTab === 'weekly' ? weeklyTotals.totalComments : monthlyTotals.totalComments).toLocaleString()}
+                </p>
               </div>
               <MessageCircle className="w-8 h-8 text-blue-500" />
             </div>
             <div className="mt-2 flex items-center">
-              {commentsChange >= 0 ? (
+              {(activeTab === 'weekly' ? calculateChange(weeklyTotals.totalComments, prevWeekTotals.totalComments) : commentsChange) >= 0 ? (
                 <ArrowUp className="w-4 h-4 text-green-500 mr-1" />
               ) : (
                 <ArrowDown className="w-4 h-4 text-red-500 mr-1" />
               )}
-              <span className={`text-sm font-medium ${commentsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {Math.abs(commentsChange).toFixed(1)}% 前月比
+              <span className={`text-sm font-medium ${
+                (activeTab === 'weekly' ? calculateChange(weeklyTotals.totalComments, prevWeekTotals.totalComments) : commentsChange) >= 0 
+                  ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {Math.abs(activeTab === 'weekly' ? calculateChange(weeklyTotals.totalComments, prevWeekTotals.totalComments) : commentsChange).toFixed(1)}% 
+                {activeTab === 'weekly' ? '前週比' : '前月比'}
               </span>
             </div>
           </div>
@@ -312,18 +435,24 @@ export default function InstagramMonthlyReportPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">シェア総数</p>
-                <p className="text-2xl font-bold text-gray-900">{monthlyTotals.totalShares.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(activeTab === 'weekly' ? weeklyTotals.totalShares : monthlyTotals.totalShares).toLocaleString()}
+                </p>
               </div>
               <Share className="w-8 h-8 text-green-500" />
             </div>
             <div className="mt-2 flex items-center">
-              {sharesChange >= 0 ? (
+              {(activeTab === 'weekly' ? calculateChange(weeklyTotals.totalShares, prevWeekTotals.totalShares) : sharesChange) >= 0 ? (
                 <ArrowUp className="w-4 h-4 text-green-500 mr-1" />
               ) : (
                 <ArrowDown className="w-4 h-4 text-red-500 mr-1" />
               )}
-              <span className={`text-sm font-medium ${sharesChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {Math.abs(sharesChange).toFixed(1)}% 前月比
+              <span className={`text-sm font-medium ${
+                (activeTab === 'weekly' ? calculateChange(weeklyTotals.totalShares, prevWeekTotals.totalShares) : sharesChange) >= 0 
+                  ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {Math.abs(activeTab === 'weekly' ? calculateChange(weeklyTotals.totalShares, prevWeekTotals.totalShares) : sharesChange).toFixed(1)}% 
+                {activeTab === 'weekly' ? '前週比' : '前月比'}
               </span>
             </div>
           </div>
@@ -332,18 +461,24 @@ export default function InstagramMonthlyReportPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">リーチ総数</p>
-                <p className="text-2xl font-bold text-gray-900">{monthlyTotals.totalReach.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(activeTab === 'weekly' ? weeklyTotals.totalReach : monthlyTotals.totalReach).toLocaleString()}
+                </p>
               </div>
               <Eye className="w-8 h-8 text-purple-500" />
             </div>
             <div className="mt-2 flex items-center">
-              {reachChange >= 0 ? (
+              {(activeTab === 'weekly' ? calculateChange(weeklyTotals.totalReach, prevWeekTotals.totalReach) : reachChange) >= 0 ? (
                 <ArrowUp className="w-4 h-4 text-green-500 mr-1" />
               ) : (
                 <ArrowDown className="w-4 h-4 text-red-500 mr-1" />
               )}
-              <span className={`text-sm font-medium ${reachChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {Math.abs(reachChange).toFixed(1)}% 前月比
+              <span className={`text-sm font-medium ${
+                (activeTab === 'weekly' ? calculateChange(weeklyTotals.totalReach, prevWeekTotals.totalReach) : reachChange) >= 0 
+                  ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {Math.abs(activeTab === 'weekly' ? calculateChange(weeklyTotals.totalReach, prevWeekTotals.totalReach) : reachChange).toFixed(1)}% 
+                {activeTab === 'weekly' ? '前週比' : '前月比'}
               </span>
             </div>
           </div>
@@ -384,17 +519,24 @@ export default function InstagramMonthlyReportPage() {
                   </div>
                 </div>
 
-                {/* 今月の成果 */}
+                {/* 期間の成果 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <div className="text-lg font-bold text-green-600">
-                      {monthlyTotals.totalFollowerChange > 0 ? '+' : ''}{monthlyTotals.totalFollowerChange}
+                      {(activeTab === 'weekly' ? weeklyTotals.totalFollowerChange : monthlyTotals.totalFollowerChange) > 0 ? '+' : ''}
+                      {activeTab === 'weekly' ? weeklyTotals.totalFollowerChange : monthlyTotals.totalFollowerChange}
                     </div>
-                    <div className="text-xs text-gray-600">今月のフォロワー増加</div>
+                    <div className="text-xs text-gray-600">
+                      {activeTab === 'weekly' ? '今週のフォロワー増加' : '今月のフォロワー増加'}
+                    </div>
                   </div>
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-lg font-bold text-blue-600">{monthlyTotals.totalPosts}</div>
-                    <div className="text-xs text-gray-600">今月の投稿数</div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {activeTab === 'weekly' ? weeklyTotals.totalPosts : monthlyTotals.totalPosts}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {activeTab === 'weekly' ? '今週の投稿数' : '今月の投稿数'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -428,7 +570,12 @@ export default function InstagramMonthlyReportPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">詳細統計</h2>
-                <p className="text-sm text-gray-600">{getMonthDisplayName(selectedMonth)}の詳細データ</p>
+                <p className="text-sm text-gray-600">
+                  {activeTab === 'weekly' 
+                    ? `${getWeekDisplayName(selectedWeek)}の詳細データ`
+                    : `${getMonthDisplayName(selectedMonth)}の詳細データ`
+                  }
+                </p>
               </div>
             </div>
 
@@ -436,7 +583,9 @@ export default function InstagramMonthlyReportPage() {
               {/* 平均エンゲージメント率 */}
               <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-600">{monthlyAvgEngagement}%</div>
+                  <div className="text-3xl font-bold text-orange-600">
+                    {activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement}%
+                  </div>
                   <div className="text-sm text-gray-600">平均エンゲージメント率</div>
                 </div>
               </div>
@@ -448,7 +597,7 @@ export default function InstagramMonthlyReportPage() {
                   <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span className="text-sm text-gray-600">📸 フィード</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {selectedMonthAnalytics.filter(data => {
+                      {(activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics).filter(data => {
                         const post = posts.find(p => p.id === data.postId);
                         return post?.postType === 'feed';
                       }).length}件
@@ -457,7 +606,7 @@ export default function InstagramMonthlyReportPage() {
                   <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span className="text-sm text-gray-600">🎬 リール</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {selectedMonthAnalytics.filter(data => {
+                      {(activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics).filter(data => {
                         const post = posts.find(p => p.id === data.postId);
                         return post?.postType === 'reel';
                       }).length}件
@@ -466,7 +615,7 @@ export default function InstagramMonthlyReportPage() {
                   <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span className="text-sm text-gray-600">📱 ストーリーズ</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {selectedMonthAnalytics.filter(data => {
+                      {(activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics).filter(data => {
                         const post = posts.find(p => p.id === data.postId);
                         return post?.postType === 'story';
                       }).length}件
