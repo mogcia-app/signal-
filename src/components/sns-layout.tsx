@@ -200,7 +200,10 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               <span>🔔</span>
               <span>お知らせ</span>
             </button>
-            <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+            <button 
+              onClick={() => router.push(`/${currentSNS}/my-account`)}
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
               <span>👤</span>
               <span>マイアカウント</span>
             </button>
