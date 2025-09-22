@@ -483,18 +483,49 @@ export default function InstagramMonthlyReportPage() {
         customTitle="月次レポート"
         customDescription="月次のパフォーマンス分析とレポート"
       >
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">データを読み込み中...</h2>
-            <p className="text-gray-600">分析データを取得しています</p>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-6">
+            {/* アニメーション付きローディング */}
+            <div className="relative mb-8">
+              <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                <BarChart3 className="w-12 h-12 text-white animate-pulse" />
+              </div>
+              
+              {/* 回転するリング */}
+              <div className="absolute inset-0 w-24 h-24 mx-auto">
+                <div className="w-full h-full border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+              </div>
+              
+              {/* 浮かぶドット */}
+              <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-bounce"></div>
+              <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">データを読み込み中...</h2>
+            <p className="text-gray-600 mb-6">魅力的な分析レポートを準備しています</p>
+            
+            {/* ローディングステップ */}
+            <div className="space-y-3 text-left">
+              <div className="flex items-center text-sm text-gray-600">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mr-3 animate-pulse"></div>
+                投稿データを取得中...
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mr-3 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                分析データを処理中...
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-3 animate-pulse" style={{ animationDelay: '1s' }}></div>
+                レポートを生成中...
+              </div>
+            </div>
           </div>
         </div>
       </SNSLayout>
     );
   }
 
-  // エラー画面
+  // エラー画面（データ不足）
   if (error) {
     return (
       <SNSLayout 
@@ -502,39 +533,148 @@ export default function InstagramMonthlyReportPage() {
         customTitle="月次レポート"
         customDescription="月次のパフォーマンス分析とレポート"
       >
-        <div className="space-y-6">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
-                <span className="text-red-600 text-xl">⚠️</span>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+          <div className="max-w-4xl mx-auto px-6 py-12">
+            {/* メインヒーローセクション */}
+            <div className="text-center mb-12">
+              <div className="relative inline-block mb-8">
+                <div className="w-32 h-32 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                  <BarChart3 className="w-16 h-16 text-white" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                  <span className="text-yellow-800 text-lg">📊</span>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-red-900">データ不足</h2>
-                <p className="text-red-700 mt-1">{error}</p>
+              
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                分析データを準備しましょう
+              </h1>
+              <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                魅力的なレポートを生成するために、まずは十分なデータを蓄積しましょう
+              </p>
+              
+              {/* データ状況表示 */}
+              <div className="inline-flex items-center px-6 py-3 bg-white rounded-full shadow-lg border border-gray-200 mb-8">
+                <div className="w-3 h-3 bg-yellow-400 rounded-full mr-3 animate-pulse"></div>
+                <span className="text-gray-700 font-medium">
+                  現在: {analyticsData.length}個 / 必要: {MIN_DATA_FOR_ANALYSIS}個
+                </span>
               </div>
             </div>
-            <div className="mt-4 p-4 bg-white rounded-lg border border-red-200">
-              <h3 className="font-medium text-gray-900 mb-2">データを増やすには:</h3>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li>• 投稿ラボでより多くの投稿を作成する</li>
-                <li>• 投稿を公開してエンゲージメントデータを収集する</li>
-                <li>• 運用計画を立てて定期的に投稿する</li>
-                <li>• 最低{MIN_DATA_FOR_ANALYSIS}個の投稿データが必要です</li>
-              </ul>
+
+            {/* データ不足の詳細 */}
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-8">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <span className="text-2xl">🚨</span>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">データ不足の警告</h2>
+                    <p className="text-orange-100 mt-1">{error}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-8">
+                <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
+                  データを増やすためのアクションプラン
+                </h3>
+                
+                {/* ステップカード */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4">
+                      <span className="text-white text-xl">✍️</span>
+                    </div>
+                    <h4 className="font-semibold text-blue-900 mb-2">1. コンテンツ作成</h4>
+                    <p className="text-blue-700 text-sm mb-4">
+                      投稿ラボで魅力的なコンテンツを作成しましょう
+                    </p>
+                    <button
+                      onClick={() => window.location.href = '/instagram/lab'}
+                      className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    >
+                      投稿ラボへ
+                    </button>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                    <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mb-4">
+                      <span className="text-white text-xl">📈</span>
+                    </div>
+                    <h4 className="font-semibold text-green-900 mb-2">2. 運用計画</h4>
+                    <p className="text-green-700 text-sm mb-4">
+                      戦略的な投稿計画を立てて成長を加速させましょう
+                    </p>
+                    <button
+                      onClick={() => window.location.href = '/instagram/plan'}
+                      className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors font-medium"
+                    >
+                      運用計画を立てる
+                    </button>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                    <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-4">
+                      <span className="text-white text-xl">📊</span>
+                    </div>
+                    <h4 className="font-semibold text-purple-900 mb-2">3. データ蓄積</h4>
+                    <p className="text-purple-700 text-sm mb-4">
+                      投稿を公開してエンゲージメントデータを収集しましょう
+                    </p>
+                    <div className="w-full bg-purple-200 text-purple-800 py-2 px-4 rounded-lg text-center font-medium">
+                      最低{MIN_DATA_FOR_ANALYSIS}個必要
+                    </div>
+                  </div>
+                </div>
+
+                {/* プログレスバー */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-medium text-gray-700">データ収集進捗</span>
+                    <span className="text-sm text-gray-500">
+                      {analyticsData.length} / {MIN_DATA_FOR_ANALYSIS}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, (analyticsData.length / MIN_DATA_FOR_ANALYSIS) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600 text-center">
+                    あと{Math.max(0, MIN_DATA_FOR_ANALYSIS - analyticsData.length)}個の投稿データで分析可能になります
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="mt-4 flex space-x-3">
-              <button
-                onClick={() => window.location.href = '/instagram/lab'}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                投稿ラボへ
-              </button>
-              <button
-                onClick={() => window.location.href = '/instagram/plan'}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                運用計画を立てる
-              </button>
+
+            {/* インスピレーションセクション */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-8 text-white text-center">
+              <h3 className="text-2xl font-bold mb-4">🎯 目標達成への道のり</h3>
+              <p className="text-lg mb-6 opacity-90">
+                十分なデータが蓄積されると、以下の魅力的な分析機能が利用可能になります
+              </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white/20 rounded-lg p-4">
+                  <div className="text-2xl mb-2">🤖</div>
+                  <div className="text-sm font-medium">AI予測</div>
+                </div>
+                <div className="bg-white/20 rounded-lg p-4">
+                  <div className="text-2xl mb-2">📊</div>
+                  <div className="text-sm font-medium">トレンド分析</div>
+                </div>
+                <div className="bg-white/20 rounded-lg p-4">
+                  <div className="text-2xl mb-2">📈</div>
+                  <div className="text-sm font-medium">パフォーマンス</div>
+                </div>
+                <div className="bg-white/20 rounded-lg p-4">
+                  <div className="text-2xl mb-2">💡</div>
+                  <div className="text-sm font-medium">改善提案</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
