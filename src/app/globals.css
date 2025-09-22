@@ -24,3 +24,41 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ヒートマップ用のカスタムスタイル */
+.react-calendar-heatmap {
+  width: 100%;
+}
+
+.react-calendar-heatmap .color-empty {
+  fill: #f3f4f6;
+}
+
+.react-calendar-heatmap .color-scale-0 {
+  fill: #fed7aa;
+}
+
+.react-calendar-heatmap .color-scale-1 {
+  fill: #fdba74;
+}
+
+.react-calendar-heatmap .color-scale-2 {
+  fill: #fb923c;
+}
+
+.react-calendar-heatmap .color-scale-3 {
+  fill: #f97316;
+}
+
+.react-calendar-heatmap .color-scale-4 {
+  fill: #ff8a15;
+}
+
+.react-calendar-heatmap text {
+  font-size: 10px;
+  fill: #6b7280;
+}
+
+.react-calendar-heatmap .react-calendar-heatmap-small-text {
+  font-size: 8px;
+}
