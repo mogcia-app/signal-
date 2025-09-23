@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { usePlanData } from '../../hooks/usePlanData';
@@ -125,7 +125,7 @@ function InstagramDashboardContent() {
   const instagramSettings = getSNSSettings('instagram');
 
   // 投稿データを取得して統計を計算
-  const fetchPostsAndCalculateStats = async () => {
+  const fetchPostsAndCalculateStats = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -291,7 +291,7 @@ function InstagramDashboardContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
 
   useEffect(() => {
     fetchPostsAndCalculateStats();
@@ -302,7 +302,7 @@ function InstagramDashboardContent() {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchPostsAndCalculateStats]);
 
   // ローディング状態
   if (profileLoading) {

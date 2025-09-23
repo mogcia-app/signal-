@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase';
-import { collection, addDoc, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     // Firebase接続テスト
     const testCollection = collection(db, 'test');

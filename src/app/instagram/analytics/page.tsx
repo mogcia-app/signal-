@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { postsApi, analyticsApi } from '../../../lib/api';
@@ -96,17 +96,17 @@ export default function InstagramAnalyticsPage() {
   });
 
   // 投稿一覧を取得
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       const response = await postsApi.list({ userId: user?.uid || '' });
       setPosts(response.posts || []);
     } catch (error) {
       console.error('投稿取得エラー:', error);
     }
-  };
+  }, [user?.uid]);
 
   // 計画データを取得
-  const fetchPlanData = async () => {
+  const fetchPlanData = useCallback(async () => {
     try {
       // 実際の実装では plans API を呼び出す
       // 現在は計画データが存在しない状態をシミュレート
@@ -116,10 +116,10 @@ export default function InstagramAnalyticsPage() {
       console.error('計画データ取得エラー:', error);
       setPlanData(null);
     }
-  };
+  }, []);
 
   // 分析データを取得
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       // 実際の実装では analytics API を呼び出す
       // 今回は模擬データを使用
@@ -174,13 +174,13 @@ export default function InstagramAnalyticsPage() {
     } catch (error) {
       console.error('分析データ取得エラー:', error);
     }
-  };
+  }, [user?.uid]);
 
   useEffect(() => {
     fetchPosts();
     fetchAnalytics();
     fetchPlanData();
-  }, []);
+  }, [fetchPosts, fetchAnalytics, fetchPlanData]);
 
   // 投稿検索機能
   const searchPosts = async (query: string) => {
