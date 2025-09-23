@@ -222,6 +222,15 @@ export default function InstagramAnalyticsPage() {
       
       // 新規投稿入力モードの場合は投稿を作成
       if (inputMode === 'manual' && !selectedPostId) {
+        const analyticsData = {
+          likes: parseInt(inputData.likes) || 0,
+          comments: parseInt(inputData.comments) || 0,
+          shares: parseInt(inputData.shares) || 0,
+          reach: parseInt(inputData.reach) || 0,
+          engagementRate: ((parseInt(inputData.likes) + parseInt(inputData.comments) + parseInt(inputData.shares)) / parseInt(inputData.reach) * 100) || 0,
+          publishedAt: new Date(inputData.publishedAt)
+        };
+
         const postData = {
           userId: 'current-user',
           title: newPostData.title,
@@ -229,7 +238,8 @@ export default function InstagramAnalyticsPage() {
           hashtags: newPostData.hashtags.split(' ').filter(tag => tag.trim()),
           postType: newPostData.postType,
           status: 'published' as const,
-          imageUrl: newPostData.thumbnail || null
+          imageUrl: newPostData.thumbnail || null,
+          analytics: analyticsData
         };
         const response = await postsApi.create(postData);
         postId = response.id;
@@ -240,7 +250,22 @@ export default function InstagramAnalyticsPage() {
         return;
       }
 
-      // 分析データを作成
+      // 既存投稿の場合はanalyticsデータを更新
+      if (inputMode === 'search' && selectedPostId) {
+        const analyticsData = {
+          likes: parseInt(inputData.likes) || 0,
+          comments: parseInt(inputData.comments) || 0,
+          shares: parseInt(inputData.shares) || 0,
+          reach: parseInt(inputData.reach) || 0,
+          engagementRate: ((parseInt(inputData.likes) + parseInt(inputData.comments) + parseInt(inputData.shares)) / parseInt(inputData.reach) * 100) || 0,
+          publishedAt: new Date(inputData.publishedAt)
+        };
+
+        // 投稿のanalyticsフィールドを更新
+        await postsApi.update(postId, { analytics: analyticsData });
+      }
+
+      // 分析データをローカルstateにも追加（表示用）
       const newAnalytics: AnalyticsData = {
         id: Date.now().toString(),
         postId: postId,
