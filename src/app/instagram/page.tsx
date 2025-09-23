@@ -123,60 +123,27 @@ function InstagramDashboardContent() {
     monthlyStoryPosts: 0
   });
 
-  const [recentPosts] = useState<RecentPost[]>([
-    {
-      id: '1',
-      title: '新商品の紹介動画',
-      type: 'reel',
-      likes: 156,
-      comments: 23,
-      saves: 45,
-      reach: 1200,
-      engagementRate: 5.2,
-      postedAt: '2時間前',
-      imageUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=400&fit=crop&crop=center',
-      caption: '新商品の魅力を動画でご紹介！'
-    },
-    {
-      id: '2',
-      title: '今日のオフィス風景',
-      type: 'feed',
-      likes: 89,
-      comments: 12,
-      saves: 18,
-      reach: 890,
-      engagementRate: 3.8,
-      postedAt: '1日前',
-      imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=400&fit=crop&crop=center',
-      caption: '今日のオフィスはこんな感じです'
-    },
-    {
-      id: '3',
-      title: 'ストーリー: 朝のルーティン',
-      type: 'story',
-      likes: 0,
-      comments: 0,
-      saves: 0,
-      reach: 450,
-      engagementRate: 2.1,
-      postedAt: '2日前',
-      imageUrl: 'https://images.unsplash.com/photo-1506905925346-14bda5d4b4c0?w=400&h=400&fit=crop&crop=center',
-      caption: '朝のルーティンをストーリーで'
-    },
-    {
-      id: '4',
-      title: '業界の最新トレンド解説',
-      type: 'reel',
-      likes: 234,
-      comments: 45,
-      saves: 67,
-      reach: 2100,
-      engagementRate: 6.1,
-      postedAt: '3日前',
-      imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop&crop=center',
-      caption: '業界の最新トレンドを解説します'
-    }
-  ]);
+  const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
+  const [scheduledPosts, setScheduledPosts] = useState<{
+    day: string;
+    date: string;
+    type: string;
+    title: string;
+    time: string;
+    status: string;
+  }[]>([]);
+  const [hashtagRanking, setHashtagRanking] = useState<{
+    tag: string;
+    count: number;
+    engagement: number;
+  }[]>([]);
+  const [goalNotifications, setGoalNotifications] = useState<{
+    title: string;
+    current: number;
+    target: number;
+    unit: string;
+    status: string;
+  }[]>([]);
 
   const instagramSettings = getSNSSettings('instagram');
 
@@ -267,6 +234,94 @@ function InstagramDashboardContent() {
           monthlyStoryPosts
         });
       }
+
+      // 最近の投稿パフォーマンスを生成
+      const publishedPosts = allPosts.filter((post: PostData) => 
+        post.status === 'published' && post.analytics
+      );
+      
+      const recentPostsData = publishedPosts
+        .slice(0, 4)
+        .map((post: PostData) => ({
+          id: post.id,
+          title: post.title,
+          type: post.postType,
+          likes: post.analytics?.likes || 0,
+          comments: post.analytics?.comments || 0,
+          saves: post.analytics?.shares || 0,
+          reach: post.analytics?.reach || 0,
+          engagementRate: post.analytics?.engagementRate || 0,
+          postedAt: post.analytics ? 
+            new Date(post.analytics.publishedAt).toLocaleDateString('ja-JP') : 
+            new Date(post.createdAt).toLocaleDateString('ja-JP'),
+          imageUrl: post.imageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop&crop=center',
+          caption: post.content
+        }));
+      setRecentPosts(recentPostsData);
+
+      // 今週の投稿予定を生成
+      const scheduledPostsData = allPosts
+        .filter((post: PostData) => 
+          (post.status === 'scheduled' || post.status === 'draft') && 
+          post.scheduledDate
+        )
+        .slice(0, 5)
+        .map((post: PostData) => {
+          const scheduledDate = new Date(post.scheduledDate!);
+          const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+          return {
+            day: dayNames[scheduledDate.getDay()],
+            date: `${scheduledDate.getMonth() + 1}/${scheduledDate.getDate()}`,
+            type: post.postType === 'reel' ? 'リール' : post.postType === 'feed' ? 'フィード' : 'ストーリー',
+            title: post.title,
+            time: post.scheduledTime || '未設定',
+            status: post.status
+          };
+        });
+      setScheduledPosts(scheduledPostsData);
+
+      // ハッシュタグランキングを生成
+      const allHashtags = allPosts.flatMap((post: PostData) => post.hashtags);
+      const hashtagCounts = allHashtags.reduce((acc: Record<string, number>, hashtag: string) => {
+        acc[hashtag] = (acc[hashtag] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const hashtagRankingData = Object.entries(hashtagCounts)
+        .sort(([,a], [,b]) => (b as number) - (a as number))
+        .slice(0, 6)
+        .map(([tag, count]) => ({
+          tag: `#${tag}`,
+          count: count as number,
+          engagement: Math.random() * 3 + 2 // 仮のエンゲージメント率
+        }));
+      setHashtagRanking(hashtagRankingData);
+
+      // 目標達成通知を生成
+      const goalNotificationsData = [
+        {
+          title: '週間投稿目標',
+          current: stats.postsThisWeek,
+          target: stats.weeklyGoal,
+          unit: '件',
+          status: stats.postsThisWeek >= stats.weeklyGoal ? 'achieved' : 'in_progress'
+        },
+        {
+          title: 'エンゲージメント目標',
+          current: stats.engagement,
+          target: 5.0,
+          unit: '%',
+          status: stats.engagement >= 5.0 ? 'achieved' : 'in_progress'
+        },
+        {
+          title: 'フォロワー増加',
+          current: stats.followerGrowth,
+          target: 10.0,
+          unit: '%',
+          status: stats.followerGrowth >= 10.0 ? 'achieved' : 'in_progress'
+        }
+      ];
+      setGoalNotifications(goalNotificationsData);
 
     } catch (error) {
       console.error('データ取得エラー:', error);
@@ -545,32 +600,40 @@ function InstagramDashboardContent() {
                   目標達成通知
                 </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">週間投稿目標</span>
-                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">達成済み</span>
+              {loading ? (
+                <div className="col-span-3 text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">読み込み中...</p>
                 </div>
-                <div className="text-2xl font-bold text-green-600">5/5</div>
-                <div className="text-xs text-gray-500">100% 達成</div>
-              </div>
-              
-              <div className="bg-white p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">エンゲージメント目標</span>
-                  <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">進行中</span>
+              ) : goalNotifications.length === 0 ? (
+                <div className="col-span-3 text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">🎯</div>
+                  <p className="text-gray-600">目標データがありません</p>
                 </div>
-                <div className="text-2xl font-bold text-yellow-600">4.2%</div>
-                <div className="text-xs text-gray-500">目標: 5.0%</div>
-              </div>
-              
-              <div className="bg-white p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">フォロワー増加</span>
-                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">達成済み</span>
-                </div>
-                <div className="text-2xl font-bold text-blue-600">+12.5%</div>
-                <div className="text-xs text-gray-500">目標: +10%</div>
-              </div>
+              ) : (
+                goalNotifications.map((goal, index) => (
+                  <div key={index} className="bg-white p-4 border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">{goal.title}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        goal.status === 'achieved' 
+                          ? 'text-green-600 bg-green-100' 
+                          : 'text-yellow-600 bg-yellow-100'
+                      }`}>
+                        {goal.status === 'achieved' ? '達成済み' : '進行中'}
+                      </span>
+                    </div>
+                    <div className={`text-2xl font-bold ${
+                      goal.status === 'achieved' ? 'text-green-600' : 'text-yellow-600'
+                    }`}>
+                      {goal.unit === '件' ? `${goal.current}/${goal.target}` : `${goal.current}${goal.unit}`}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {goal.unit === '件' ? `${Math.round((goal.current / goal.target) * 100)}% 達成` : `目標: ${goal.target}${goal.unit}`}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -699,14 +762,18 @@ function InstagramDashboardContent() {
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { tag: '#インスタグラム', count: 15, engagement: 4.2 },
-                  { tag: '#マーケティング', count: 12, engagement: 3.8 },
-                  { tag: '#ビジネス', count: 10, engagement: 5.1 },
-                  { tag: '#SNS', count: 8, engagement: 3.5 },
-                  { tag: '#デジタル', count: 7, engagement: 4.8 },
-                  { tag: '#戦略', count: 6, engagement: 3.2 }
-                ].map((item, index) => (
+                {loading ? (
+                  <div className="col-span-3 text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">読み込み中...</p>
+                  </div>
+                ) : hashtagRanking.length === 0 ? (
+                  <div className="col-span-3 text-center py-8">
+                    <div className="text-gray-400 text-4xl mb-2">#️⃣</div>
+                    <p className="text-gray-600">ハッシュタグデータがありません</p>
+                  </div>
+                ) : (
+                  hashtagRanking.map((item, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                     <div className="flex items-center">
                       <span className="text-lg font-bold text-pink-600 mr-3">#{index + 1}</span>
@@ -720,7 +787,8 @@ function InstagramDashboardContent() {
                       <div className="text-xs text-gray-500">エンゲージメント</div>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -828,7 +896,18 @@ function InstagramDashboardContent() {
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {recentPosts.map((post) => (
+                    {loading ? (
+                      <div className="col-span-2 text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto"></div>
+                        <p className="text-gray-600 mt-2">読み込み中...</p>
+                      </div>
+                    ) : recentPosts.length === 0 ? (
+                      <div className="col-span-2 text-center py-8">
+                        <div className="text-gray-400 text-4xl mb-2">📊</div>
+                        <p className="text-gray-600">投稿データがありません</p>
+                      </div>
+                    ) : (
+                      recentPosts.map((post) => (
                       <div key={post.id} className="bg-gray-50 p-4 hover:shadow-md transition-shadow">
                         {/* 投稿情報 */}
                         <div className="flex items-center justify-between mb-3">
@@ -859,7 +938,8 @@ function InstagramDashboardContent() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -927,13 +1007,18 @@ function InstagramDashboardContent() {
                   </a>
                 </div>
                 <div className="p-6 space-y-3">
-                  {[
-                    { day: '月', date: '12/16', type: 'リール', title: '新商品紹介動画', time: '14:00', status: 'scheduled' },
-                    { day: '火', date: '12/17', type: 'フィード', title: 'オフィス風景', time: '10:00', status: 'scheduled' },
-                    { day: '水', date: '12/18', type: 'ストーリー', title: '朝のルーティン', time: '08:00', status: 'scheduled' },
-                    { day: '木', date: '12/19', type: 'リール', title: '業界トレンド解説', time: '16:00', status: 'draft' },
-                    { day: '金', date: '12/20', type: 'フィード', title: '週末の振り返り', time: '18:00', status: 'draft' }
-                  ].map((post, index) => (
+                  {loading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                      <p className="text-gray-600 mt-2">読み込み中...</p>
+                    </div>
+                  ) : scheduledPosts.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-2">📅</div>
+                      <p className="text-gray-600">今週の投稿予定はありません</p>
+                    </div>
+                  ) : (
+                    scheduledPosts.map((post, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                       <div className="flex items-center">
                         <div className="text-center mr-4">
@@ -963,7 +1048,8 @@ function InstagramDashboardContent() {
                         <div className="text-sm text-gray-500">{post.time}</div>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                
               </div>
