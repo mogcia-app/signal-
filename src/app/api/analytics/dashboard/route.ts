@@ -95,6 +95,11 @@ export async function GET(request: NextRequest) {
       post.status === 'published' && post.analytics
     );
 
+    // デバッグ用ログ
+    console.log('Total posts:', allPosts.length);
+    console.log('Published posts with analytics:', publishedPosts.length);
+    console.log('Sample post analytics:', publishedPosts[0]?.analytics);
+
     // 統計データを計算
     const totalLikes = publishedPosts.reduce((sum, post) => 
       sum + (post.analytics?.likes || 0), 0

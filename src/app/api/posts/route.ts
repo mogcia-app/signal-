@@ -59,6 +59,12 @@ export async function POST(request: NextRequest) {
 
     const docRef = await addDoc(collection(db, 'posts'), postData);
     
+    // デバッグ用ログ
+    console.log('Post created with analytics:', {
+      id: docRef.id,
+      analytics: postData.analytics
+    });
+    
     return NextResponse.json({
       id: docRef.id,
       message: '投稿が保存されました',

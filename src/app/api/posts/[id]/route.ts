@@ -66,6 +66,12 @@ export async function PUT(
     const docRef = doc(db, 'posts', postId);
     await updateDoc(docRef, updateData);
 
+    // デバッグ用ログ
+    console.log('Post updated with analytics:', {
+      id: postId,
+      analytics: updateData.analytics
+    });
+
     return NextResponse.json({
       message: '投稿が更新されました',
       id: postId
