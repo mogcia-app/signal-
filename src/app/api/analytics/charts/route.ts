@@ -1,0 +1,216 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '../../../../lib/firebase';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+
+interface PostData {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  hashtags: string[];
+  postType: 'feed' | 'reel' | 'story';
+  scheduledDate?: string;
+  scheduledTime?: string;
+  status: 'draft' | 'scheduled' | 'published';
+  imageUrl?: string | null;
+  imageData?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  analytics?: {
+    likes: number;
+    comments: number;
+    shares: number;
+    views: number;
+    reach: number;
+    engagementRate: number;
+    publishedAt: Date;
+  };
+}
+
+interface ChartData {
+  labels: string[];
+  datasets: {
+    data: number[];
+    borderColor: string;
+    backgroundColor: string;
+    tension: number;
+    fill: boolean;
+  }[];
+}
+
+// グラフ用データ取得
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const type = searchParams.get('type') as 'likes' | 'followers' | 'saves' | 'reach';
+    const period = searchParams.get('period') || '7days'; // 7days, 30days, 90days
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'ユーザーIDが必要です' },
+        { status: 400 }
+      );
+    }
+
+    // ユーザーの投稿を取得
+    const postsQuery = query(
+      collection(db, 'posts'),
+      where('userId', '==', userId),
+      where('status', '==', 'published'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const postsSnapshot = await getDocs(postsQuery);
+    const publishedPosts: PostData[] = postsSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as PostData))
+      .filter(post => post.analytics);
+
+    // 期間に応じてデータをフィルタリング
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (period) {
+      case '7days':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30days':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '90days':
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    const filteredPosts = publishedPosts.filter(post => 
+      post.analytics && new Date(post.analytics.publishedAt) >= startDate
+    );
+
+    // ラベル生成（期間に応じて）
+    const labels: string[] = [];
+    const data: number[] = [];
+    
+    if (period === '7days') {
+      // 過去7日間（日別）
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }));
+        
+        const dayPosts = filteredPosts.filter(post => {
+          if (!post.analytics) return false;
+          const postDate = new Date(post.analytics.publishedAt);
+          return postDate.toDateString() === date.toDateString();
+        });
+
+        const dayValue = dayPosts.reduce((sum, post) => {
+          if (!post.analytics) return sum;
+          switch (type) {
+            case 'likes': return sum + post.analytics.likes;
+            case 'followers': return sum + Math.floor(post.analytics.likes * 0.1);
+            case 'saves': return sum + post.analytics.shares;
+            case 'reach': return sum + post.analytics.reach;
+            default: return sum;
+          }
+        }, 0);
+        
+        data.push(dayValue);
+      }
+    } else if (period === '30days') {
+      // 過去30日間（週別）
+      for (let i = 4; i >= 0; i--) {
+        const weekStart = new Date(now);
+        weekStart.setDate(weekStart.getDate() - (i + 1) * 7);
+        const weekEnd = new Date(now);
+        weekEnd.setDate(weekEnd.getDate() - i * 7);
+        
+        labels.push(`${weekStart.getMonth() + 1}/${weekStart.getDate()}-${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`);
+        
+        const weekPosts = filteredPosts.filter(post => {
+          if (!post.analytics) return false;
+          const postDate = new Date(post.analytics.publishedAt);
+          return postDate >= weekStart && postDate < weekEnd;
+        });
+
+        const weekValue = weekPosts.reduce((sum, post) => {
+          if (!post.analytics) return sum;
+          switch (type) {
+            case 'likes': return sum + post.analytics.likes;
+            case 'followers': return sum + Math.floor(post.analytics.likes * 0.1);
+            case 'saves': return sum + post.analytics.shares;
+            case 'reach': return sum + post.analytics.reach;
+            default: return sum;
+          }
+        }, 0);
+        
+        data.push(weekValue);
+      }
+    } else {
+      // 過去90日間（月別）
+      for (let i = 2; i >= 0; i--) {
+        const monthStart = new Date(now);
+        monthStart.setMonth(monthStart.getMonth() - i);
+        monthStart.setDate(1);
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthEnd.getMonth() + 1);
+        
+        labels.push(`${monthStart.getMonth() + 1}月`);
+        
+        const monthPosts = filteredPosts.filter(post => {
+          if (!post.analytics) return false;
+          const postDate = new Date(post.analytics.publishedAt);
+          return postDate >= monthStart && postDate < monthEnd;
+        });
+
+        const monthValue = monthPosts.reduce((sum, post) => {
+          if (!post.analytics) return sum;
+          switch (type) {
+            case 'likes': return sum + post.analytics.likes;
+            case 'followers': return sum + Math.floor(post.analytics.likes * 0.1);
+            case 'saves': return sum + post.analytics.shares;
+            case 'reach': return sum + post.analytics.reach;
+            default: return sum;
+          }
+        }, 0);
+        
+        data.push(monthValue);
+      }
+    }
+
+    // カラーの設定
+    const colors = {
+      likes: { border: '#ff8a15', bg: 'rgba(255, 138, 21, 0.1)' },
+      followers: { border: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' },
+      saves: { border: '#ea580c', bg: 'rgba(234, 88, 12, 0.1)' },
+      reach: { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.1)' }
+    };
+
+    const chartData: ChartData = {
+      labels,
+      datasets: [{
+        data,
+        borderColor: colors[type]?.border || '#ff8a15',
+        backgroundColor: colors[type]?.bg || 'rgba(255, 138, 21, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    };
+
+    return NextResponse.json({
+      chartData,
+      totalValue: data.reduce((sum, val) => sum + val, 0),
+      period,
+      type,
+      message: 'グラフデータを取得しました'
+    });
+
+  } catch (error) {
+    console.error('グラフデータ取得エラー:', error);
+    return NextResponse.json(
+      { error: 'グラフデータの取得に失敗しました' },
+      { status: 500 }
+    );
+  }
+}

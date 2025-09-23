@@ -188,6 +188,27 @@ export const analyticsApi = {
     
     return apiRequest(`/analytics?${searchParams.toString()}`);
   },
+
+  // ダッシュボード統計データ取得
+  getDashboardStats: async (userId: string) => {
+    return apiRequest(`/analytics/dashboard?userId=${userId}`);
+  },
+
+  // グラフデータ取得
+  getChartData: async (params: {
+    userId: string;
+    type: 'likes' | 'followers' | 'saves' | 'reach';
+    period?: '7days' | '30days' | '90days';
+  }) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, value.toString());
+      }
+    });
+    
+    return apiRequest(`/analytics/charts?${searchParams.toString()}`);
+  },
 };
 
 // エラーハンドリング用のヘルパー

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { usePlanData } from '../../hooks/usePlanData';
+import { postsApi, analyticsApi } from '../../lib/api';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
@@ -32,7 +33,6 @@ import {
   Camera,
   TrendingUp,
   Calendar,
-  MessageCircle
 } from 'lucide-react';
 
 // Chart.jsの設定
@@ -62,6 +62,31 @@ interface DashboardStats {
   monthlyStoryPosts: number;
 }
 
+interface PostData {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  hashtags: string[];
+  postType: 'feed' | 'reel' | 'story';
+  scheduledDate?: string;
+  scheduledTime?: string;
+  status: 'draft' | 'scheduled' | 'published';
+  imageUrl?: string | null;
+  imageData?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  analytics?: {
+    likes: number;
+    comments: number;
+    shares: number;
+    views: number;
+    reach: number;
+    engagementRate: number;
+    publishedAt: Date;
+  };
+}
+
 interface RecentPost {
   id: string;
   title: string;
@@ -80,20 +105,22 @@ function InstagramDashboardContent() {
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
   const { planData } = usePlanData();
-  const [stats] = useState<DashboardStats>({
-    followers: 1234,
-    engagement: 4.2,
-    reach: 5678,
-    saves: 89,
-    likes: 2340,
-    comments: 156,
-    postsThisWeek: 3,
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    followers: 0,
+    engagement: 0,
+    reach: 0,
+    saves: 0,
+    likes: 0,
+    comments: 0,
+    postsThisWeek: 0,
     weeklyGoal: 5,
-    followerGrowth: 12.5,
-    topPostType: 'リール',
-    monthlyFeedPosts: 12,
-    monthlyReelPosts: 8,
-    monthlyStoryPosts: 28
+    followerGrowth: 0,
+    topPostType: 'ー',
+    monthlyFeedPosts: 0,
+    monthlyReelPosts: 0,
+    monthlyStoryPosts: 0
   });
 
   const [recentPosts] = useState<RecentPost[]>([
@@ -152,63 +179,170 @@ function InstagramDashboardContent() {
   ]);
 
   const instagramSettings = getSNSSettings('instagram');
+
+  // 投稿データを取得して統計を計算
+  const fetchPostsAndCalculateStats = async () => {
+    try {
+      setLoading(true);
+      
+      // バックエンドAPIから統計データを取得
+      const [postsResponse, statsResponse] = await Promise.all([
+        postsApi.list({ userId: 'current-user' }),
+        analyticsApi.getDashboardStats('current-user')
+      ]);
+      
+      const allPosts = postsResponse.posts || [];
+      setPosts(allPosts);
+      
+      // バックエンドから取得した統計データを使用
+      if (statsResponse.stats) {
+        setStats(statsResponse.stats);
+      } else {
+        // フォールバック: フロントエンドで計算
+        const publishedPosts = allPosts.filter((post: PostData) => 
+          post.status === 'published' && post.analytics
+        );
+
+        const totalLikes = publishedPosts.reduce((sum: number, post: PostData) => 
+          sum + (post.analytics?.likes || 0), 0
+        );
+        const totalComments = publishedPosts.reduce((sum: number, post: PostData) => 
+          sum + (post.analytics?.comments || 0), 0
+        );
+        const totalSaves = publishedPosts.reduce((sum: number, post: PostData) => 
+          sum + (post.analytics?.shares || 0), 0
+        );
+        const totalReach = publishedPosts.reduce((sum: number, post: PostData) => 
+          sum + (post.analytics?.reach || 0), 0
+        );
+
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const postsThisWeek = publishedPosts.filter((post: PostData) => 
+          post.analytics && new Date(post.analytics.publishedAt) >= oneWeekAgo
+        ).length;
+
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        const monthlyPosts = publishedPosts.filter((post: PostData) => 
+          post.analytics && new Date(post.analytics.publishedAt) >= oneMonthAgo
+        );
+
+        const monthlyFeedPosts = monthlyPosts.filter((post: PostData) => post.postType === 'feed').length;
+        const monthlyReelPosts = monthlyPosts.filter((post: PostData) => post.postType === 'reel').length;
+        const monthlyStoryPosts = monthlyPosts.filter((post: PostData) => post.postType === 'story').length;
+
+        const avgEngagement = publishedPosts.length > 0 
+          ? publishedPosts.reduce((sum: number, post: PostData) => sum + (post.analytics?.engagementRate || 0), 0) / publishedPosts.length
+          : 0;
+
+        const estimatedFollowers = 1000 + (totalLikes * 0.1);
+
+        setStats({
+          followers: Math.round(estimatedFollowers),
+          engagement: Math.round(avgEngagement * 10) / 10,
+          reach: totalReach,
+          saves: totalSaves,
+          likes: totalLikes,
+          comments: totalComments,
+          postsThisWeek,
+          weeklyGoal: 5,
+          followerGrowth: publishedPosts.length > 0 ? 12.5 : 0,
+          topPostType: monthlyPosts.length > 0 
+            ? (() => {
+                const typeCounts = monthlyPosts.reduce((acc: Record<string, number>, post: PostData) => {
+                  acc[post.postType] = (acc[post.postType] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>);
+                const maxType = Object.entries(typeCounts).reduce((a, b) => 
+                  typeCounts[a[0]] > typeCounts[b[0]] ? a : b
+                );
+                return maxType[0] === 'feed' ? 'フィード' : 
+                       maxType[0] === 'reel' ? 'リール' : 
+                       maxType[0] === 'story' ? 'ストーリーズ' : 'ー';
+              })()
+            : 'ー',
+          monthlyFeedPosts,
+          monthlyReelPosts,
+          monthlyStoryPosts
+        });
+      }
+
+    } catch (error) {
+      console.error('データ取得エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPostsAndCalculateStats();
+    
+    // リアルタイム更新のためのポーリング（30秒間隔）
+    const interval = setInterval(() => {
+      fetchPostsAndCalculateStats();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
   
-  // 複数のグラフ用のデータ
-  const likesChartData = {
-    labels: ['月', '火', '水', '木', '金', '土', '日'],
-    datasets: [
-      {
-        label: 'いいね数',
-        data: [120, 190, 300, 500, 200, 300, 450],
-        borderColor: '#ff8a15',
-        backgroundColor: 'rgba(255, 138, 21, 0.1)',
+  // グラフ用のデータを動的に生成
+  const generateChartData = (type: 'likes' | 'followers' | 'saves' | 'reach') => {
+    const labels = ['月', '火', '水', '木', '金', '土', '日'];
+    const data = labels.map(() => 0);
+    
+    if (posts.length === 0) {
+      return { labels, datasets: [{ data, borderColor: '#ff8a15', backgroundColor: 'rgba(255, 138, 21, 0.1)', tension: 0.4, fill: true }] };
+    }
+
+    // 過去7日間のデータを計算
+    const publishedPosts = posts.filter((post: PostData) => post.status === 'published' && post.analytics);
+    
+    labels.forEach((_, index) => {
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() - (6 - index));
+      
+      const dayPosts = publishedPosts.filter((post: PostData) => {
+        if (!post.analytics) return false;
+        const postDate = new Date(post.analytics.publishedAt);
+        return postDate.toDateString() === targetDate.toDateString();
+      });
+
+      data[index] = dayPosts.reduce((sum: number, post: PostData) => {
+        if (!post.analytics) return sum;
+        switch (type) {
+          case 'likes': return sum + post.analytics.likes;
+          case 'followers': return sum + Math.floor(post.analytics.likes * 0.1); // 推定フォロワー増加
+          case 'saves': return sum + post.analytics.shares;
+          case 'reach': return sum + post.analytics.reach;
+          default: return sum;
+        }
+      }, 0);
+    });
+
+    const colors = {
+      likes: { border: '#ff8a15', bg: 'rgba(255, 138, 21, 0.1)' },
+      followers: { border: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' },
+      saves: { border: '#ea580c', bg: 'rgba(234, 88, 12, 0.1)' },
+      reach: { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.1)' }
+    };
+
+    return {
+      labels,
+      datasets: [{
+        data,
+        borderColor: colors[type].border,
+        backgroundColor: colors[type].bg,
         tension: 0.4,
         fill: true,
-      },
-    ],
+      }]
+    };
   };
 
-  const followersChartData = {
-    labels: ['月', '火', '水', '木', '金', '土', '日'],
-    datasets: [
-      {
-        label: 'フォロワー数',
-        data: [1200, 1250, 1280, 1320, 1300, 1350, 1380],
-        borderColor: '#f97316',
-        backgroundColor: 'rgba(249, 115, 22, 0.1)',
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
-
-  const savesChartData = {
-    labels: ['月', '火', '水', '木', '金', '土', '日'],
-    datasets: [
-      {
-        label: '保存数',
-        data: [15, 25, 35, 45, 30, 40, 55],
-        borderColor: '#ea580c',
-        backgroundColor: 'rgba(234, 88, 12, 0.1)',
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
-
-  const reachChartData = {
-    labels: ['月', '火', '水', '木', '金', '土', '日'],
-    datasets: [
-      {
-        label: 'リーチ数',
-        data: [800, 1200, 1500, 2000, 1100, 1800, 2200],
-        borderColor: '#dc2626',
-        backgroundColor: 'rgba(220, 38, 38, 0.1)',
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
+  const likesChartData = generateChartData('likes');
+  const followersChartData = generateChartData('followers');
+  const savesChartData = generateChartData('saves');
+  const reachChartData = generateChartData('reach');
 
   const chartOptions = {
     responsive: true,
@@ -449,10 +583,12 @@ function InstagramDashboardContent() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">フォロワー数</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.followers.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {loading ? 'ー' : stats.followers.toLocaleString()}
+                  </p>
                   <p className="text-xs text-green-600 flex items-center">
                     <TrendingUp className="h-3 w-3 mr-1" />
-                    +{stats.followerGrowth}% 今月
+                    {loading ? 'ー' : `+${stats.followerGrowth}%`} 今月
                   </p>
                 </div>
               </div>
@@ -604,8 +740,10 @@ function InstagramDashboardContent() {
                 <Line data={followersChartData} options={chartOptions} />
               </div>
               <div className="mt-2 text-center">
-                <span className="text-lg font-bold text-[#f97316]">1,380</span>
-                <span className="text-xs text-gray-500 ml-1">今日</span>
+                <span className="text-lg font-bold text-[#f97316]">
+                  {loading ? 'ー' : stats.followers.toLocaleString()}
+                </span>
+                <span className="text-xs text-gray-500 ml-1">現在</span>
               </div>
             </div>
 
@@ -622,8 +760,10 @@ function InstagramDashboardContent() {
                 <Line data={likesChartData} options={chartOptions} />
               </div>
               <div className="mt-2 text-center">
-                <span className="text-lg font-bold text-[#ff8a15]">450</span>
-                <span className="text-xs text-gray-500 ml-1">今日</span>
+                <span className="text-lg font-bold text-[#ff8a15]">
+                  {loading ? 'ー' : stats.likes.toLocaleString()}
+                </span>
+                <span className="text-xs text-gray-500 ml-1">合計</span>
               </div>
             </div>
 
@@ -640,8 +780,10 @@ function InstagramDashboardContent() {
                 <Line data={savesChartData} options={chartOptions} />
               </div>
               <div className="mt-2 text-center">
-                <span className="text-lg font-bold text-[#ea580c]">55</span>
-                <span className="text-xs text-gray-500 ml-1">今日</span>
+                <span className="text-lg font-bold text-[#ea580c]">
+                  {loading ? 'ー' : stats.saves.toLocaleString()}
+                </span>
+                <span className="text-xs text-gray-500 ml-1">合計</span>
               </div>
             </div>
 
@@ -658,8 +800,10 @@ function InstagramDashboardContent() {
                 <Line data={reachChartData} options={chartOptions} />
               </div>
               <div className="mt-2 text-center">
-                <span className="text-lg font-bold text-[#dc2626]">2.2K</span>
-                <span className="text-xs text-gray-500 ml-1">今日</span>
+                <span className="text-lg font-bold text-[#dc2626]">
+                  {loading ? 'ー' : stats.reach.toLocaleString()}
+                </span>
+                <span className="text-xs text-gray-500 ml-1">合計</span>
               </div>
             </div>
           </div>
