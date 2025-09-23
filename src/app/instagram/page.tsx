@@ -146,8 +146,6 @@ function InstagramDashboardContent() {
   }[]>([]);
 
 
-  // 投稿分析入力用のstate
-  const [showPostAnalysis, setShowPostAnalysis] = useState(false);
 
   const instagramSettings = getSNSSettings('instagram');
 
@@ -882,8 +880,133 @@ function InstagramDashboardContent() {
           </div>
 
 
+          {/* 投稿分析入力 - 全幅表示 */}
+          <div className="bg-white mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                <Edit3 className="h-6 w-6 mr-2 text-orange-600" />
+                投稿分析入力
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">検索</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="投稿を検索..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイトル</label>
+                  <input
+                    type="text"
+                    value={manualPostData.title}
+                    onChange={(e) => setManualPostData({...manualPostData, title: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="投稿のタイトルを入力"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイプ</label>
+                  <select
+                    value={manualPostData.type}
+                    onChange={(e) => setManualPostData({...manualPostData, type: e.target.value as 'feed' | 'reel' | 'story'})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="feed">フィード</option>
+                    <option value="reel">リール</option>
+                    <option value="story">ストーリー</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2 lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">投稿文</label>
+                  <textarea
+                    value={manualPostData.content}
+                    onChange={(e) => setManualPostData({...manualPostData, content: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="投稿の内容を入力"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="md:col-span-2 lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ハッシュタグ</label>
+                  <input
+                    type="text"
+                    value={manualPostData.hashtags}
+                    onChange={(e) => setManualPostData({...manualPostData, hashtags: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="#hashtag1 #hashtag2 #hashtag3"
+                  />
+                </div>
+
+                <div className="md:col-span-2 lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">サムネイル画像</label>
+                  <input
+                    type="text"
+                    value={manualPostData.thumbnail}
+                    onChange={(e) => setManualPostData({...manualPostData, thumbnail: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="画像URLを入力"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">いいね数</label>
+                  <input
+                    type="number"
+                    value={manualPostData.likes}
+                    onChange={(e) => setManualPostData({...manualPostData, likes: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">コメント数</label>
+                  <input
+                    type="number"
+                    value={manualPostData.comments}
+                    onChange={(e) => setManualPostData({...manualPostData, comments: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">保存数</label>
+                  <input
+                    type="number"
+                    value={manualPostData.saves}
+                    onChange={(e) => setManualPostData({...manualPostData, saves: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">リーチ数</label>
+                  <input
+                    type="number"
+                    value={manualPostData.reach}
+                    onChange={(e) => setManualPostData({...manualPostData, reach: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <button
+                  onClick={handleManualPostSubmit}
+                  className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  投稿結果を保存
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* 左カラム - 最近の投稿とAI設定 */}
+            {/* 左カラム - 最近の投稿 */}
             <div className="lg:col-span-2 space-y-6">
               {/* 最近の投稿 */}
               <div className="bg-white">
@@ -947,146 +1070,6 @@ function InstagramDashboardContent() {
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* 投稿分析入力 */}
-              <div className="bg-white">
-                <div 
-                  className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => setShowPostAnalysis(!showPostAnalysis)}
-                >
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                      <Edit3 className="h-6 w-6 mr-2 text-orange-600" />
-                      投稿分析入力
-                    </h2>
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-500 mr-2">
-                        {showPostAnalysis ? '閉じる' : '開く'}
-                      </span>
-                      <div className={`transform transition-transform duration-200 ${showPostAnalysis ? 'rotate-180' : ''}`}>
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {showPostAnalysis && (
-                  <div className="p-6 space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">検索</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="投稿を検索..."
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイトル</label>
-                      <input
-                        type="text"
-                        value={manualPostData.title}
-                        onChange={(e) => setManualPostData({...manualPostData, title: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="投稿のタイトルを入力"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿文</label>
-                      <textarea
-                        value={manualPostData.content}
-                        onChange={(e) => setManualPostData({...manualPostData, content: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="投稿の内容を入力"
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">ハッシュタグ</label>
-                      <input
-                        type="text"
-                        value={manualPostData.hashtags}
-                        onChange={(e) => setManualPostData({...manualPostData, hashtags: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="#hashtag1 #hashtag2 #hashtag3"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">サムネイル画像</label>
-                      <input
-                        type="text"
-                        value={manualPostData.thumbnail}
-                        onChange={(e) => setManualPostData({...manualPostData, thumbnail: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="画像URLを入力"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイプ</label>
-                      <select
-                        value={manualPostData.type}
-                        onChange={(e) => setManualPostData({...manualPostData, type: e.target.value as 'feed' | 'reel' | 'story'})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="feed">フィード</option>
-                        <option value="reel">リール</option>
-                        <option value="story">ストーリー</option>
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">いいね数</label>
-                        <input
-                          type="number"
-                          value={manualPostData.likes}
-                          onChange={(e) => setManualPostData({...manualPostData, likes: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">コメント数</label>
-                        <input
-                          type="number"
-                          value={manualPostData.comments}
-                          onChange={(e) => setManualPostData({...manualPostData, comments: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">保存数</label>
-                        <input
-                          type="number"
-                          value={manualPostData.saves}
-                          onChange={(e) => setManualPostData({...manualPostData, saves: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">リーチ数</label>
-                        <input
-                          type="number"
-                          value={manualPostData.reach}
-                          onChange={(e) => setManualPostData({...manualPostData, reach: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleManualPostSubmit}
-                      className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
-                    >
-                      投稿結果を保存
-                    </button>
-                  </div>
-                )}
               </div>
 
             </div>
