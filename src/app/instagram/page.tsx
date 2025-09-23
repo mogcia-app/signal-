@@ -18,8 +18,6 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import CalendarHeatmap from 'react-calendar-heatmap';
-import 'react-calendar-heatmap/dist/styles.css';
 import { 
   Users, 
   Heart, 
@@ -218,28 +216,6 @@ function InstagramDashboardContent() {
     },
   };
 
-  // ヒートマップ用のデータ（過去3ヶ月間）
-  const generateHeatmapData = () => {
-    const data = [];
-    const today = new Date();
-    for (let i = 90; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      
-      // ランダムなエンゲージメント数（0-4のレベル）
-      const engagement = Math.floor(Math.random() * 5);
-      const count = engagement * 50 + Math.floor(Math.random() * 30);
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        count: count,
-        level: engagement
-      });
-    }
-    return data;
-  };
-
-  const heatmapData = generateHeatmapData();
 
   const [manualPostData, setManualPostData] = useState({
     title: '',
@@ -608,47 +584,6 @@ function InstagramDashboardContent() {
             </div>
           </div>
 
-          {/* エンゲージメントヒートマップ */}
-          <div className="bg-white mb-8">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                <BarChart3 className="h-6 w-6 mr-2 text-[#ff8a15]" />
-                エンゲージメントヒートマップ（過去3ヶ月）
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="mb-4">
-                <CalendarHeatmap
-                  startDate={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)}
-                  endDate={new Date()}
-                  values={heatmapData}
-                  classForValue={(value) => {
-                    if (!value) {
-                      return 'color-empty';
-                    }
-                    return `color-scale-${value.level}`;
-                  }}
-                  onClick={(value) => {
-                    console.log('Clicked:', value);
-                  }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>少ない</span>
-                <div className="flex space-x-1">
-                  <div className="w-3 h-3 bg-gray-100 rounded-sm"></div>
-                  <div className="w-3 h-3 rounded-sm" style={{backgroundColor: '#fed7aa'}}></div>
-                  <div className="w-3 h-3 rounded-sm" style={{backgroundColor: '#fdba74'}}></div>
-                  <div className="w-3 h-3 rounded-sm" style={{backgroundColor: '#fb923c'}}></div>
-                  <div className="w-3 h-3 rounded-sm" style={{backgroundColor: '#ff8a15'}}></div>
-                </div>
-                <span>多い</span>
-              </div>
-              <div className="mt-4 text-center text-sm text-gray-500">
-                過去3ヶ月間の日別エンゲージメント活動量
-              </div>
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* 左カラム - 最近の投稿とAI設定 */}
