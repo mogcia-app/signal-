@@ -14,7 +14,9 @@ import {
   Save,
   RefreshCw,
   BarChart3,
-  Target
+  Target,
+  Edit3,
+  Search
 } from 'lucide-react';
 
 interface PostData {
@@ -57,6 +59,25 @@ export default function InstagramAnalyticsPage() {
   const [selectedPostId, setSelectedPostId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [planData, setPlanData] = useState<PlanData | null>(null);
+  
+  // 入力モードの管理
+  const [inputMode, setInputMode] = useState<'search' | 'manual'>('search');
+  
+  // 投稿検索・選択用のstate
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<PostData[]>([]);
+  const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // 新規投稿用のstate
+  const [newPostData, setNewPostData] = useState({
+    title: '',
+    content: '',
+    hashtags: '',
+    thumbnail: '',
+    postType: 'feed' as 'feed' | 'reel' | 'story',
+    publishedAt: new Date().toISOString().split('T')[0]
+  });
   
   // 入力データ
   const [inputData, setInputData] = useState({
@@ -158,19 +179,71 @@ export default function InstagramAnalyticsPage() {
     fetchPlanData();
   }, []);
 
-  // 分析データを保存
-  const handleSaveAnalytics = async () => {
-    if (!selectedPostId) {
-      alert('投稿を選択してください');
+  // 投稿検索機能
+  const searchPosts = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
       return;
     }
 
+    setIsSearching(true);
+    try {
+      const response = await postsApi.list({ userId: 'current-user' });
+      const filteredPosts = response.posts.filter((post: PostData) => 
+        post.title.toLowerCase().includes(query.toLowerCase()) ||
+        post.content.toLowerCase().includes(query.toLowerCase())
+      );
+      setSearchResults(filteredPosts);
+    } catch (error) {
+      console.error('投稿検索エラー:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 投稿選択
+  const selectPost = (post: PostData) => {
+    setSelectedPost(post);
+    setSelectedPostId(post.id);
+    setInputData(prev => ({
+      ...prev,
+      publishedAt: new Date(post.createdAt).toISOString().split('T')[0]
+    }));
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+
+  // 分析データを保存
+  const handleSaveAnalytics = async () => {
     setIsLoading(true);
     try {
-      // 実際の実装では analytics API を呼び出す
+      let postId = selectedPostId;
+      
+      // 新規投稿入力モードの場合は投稿を作成
+      if (inputMode === 'manual' && !selectedPostId) {
+        const postData = {
+          userId: 'current-user',
+          title: newPostData.title,
+          content: newPostData.content,
+          hashtags: newPostData.hashtags.split(' ').filter(tag => tag.trim()),
+          postType: newPostData.postType,
+          status: 'published' as const,
+          imageUrl: newPostData.thumbnail || null
+        };
+        const response = await postsApi.create(postData);
+        postId = response.id;
+      }
+
+      if (!postId) {
+        alert('投稿を選択するか、新規投稿の情報を入力してください');
+        return;
+      }
+
+      // 分析データを作成
       const newAnalytics: AnalyticsData = {
         id: Date.now().toString(),
-        postId: selectedPostId,
+        postId: postId,
         userId: 'current-user',
         likes: parseInt(inputData.likes) || 0,
         comments: parseInt(inputData.comments) || 0,
@@ -186,7 +259,13 @@ export default function InstagramAnalyticsPage() {
 
       setAnalyticsData(prev => [newAnalytics, ...prev]);
       
+      // 投稿一覧を再取得
+      await fetchPosts();
+      
       // 入力データをリセット
+      setSelectedPost(null);
+      setSelectedPostId('');
+      setInputMode('search');
       setInputData({
         likes: '',
         comments: '',
@@ -196,6 +275,14 @@ export default function InstagramAnalyticsPage() {
         websiteClicks: '',
         storyViews: '',
         followerChange: '',
+        publishedAt: new Date().toISOString().split('T')[0]
+      });
+      setNewPostData({
+        title: '',
+        content: '',
+        hashtags: '',
+        thumbnail: '',
+        postType: 'feed',
         publishedAt: new Date().toISOString().split('T')[0]
       });
       
@@ -266,23 +353,176 @@ export default function InstagramAnalyticsPage() {
                 </div>
               </div>
 
-              {/* 投稿選択 */}
+              {/* 入力モード切り替え */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  分析する投稿を選択
-                </label>
-                <select
-                  value={selectedPostId}
-                  onChange={(e) => setSelectedPostId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">投稿を選択してください</option>
-                  {posts.filter(post => post.status === 'published').map(post => (
-                    <option key={post.id} value={post.id}>
-                      {post.title || 'タイトルなし'} - {new Date(post.createdAt).toLocaleDateString('ja-JP')}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex space-x-4 mb-4">
+                  <button
+                    onClick={() => setInputMode('search')}
+                    className={`flex items-center px-4 py-2 rounded-md transition-colors ${
+                      inputMode === 'search'
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
+                        : 'bg-gray-100 text-gray-600 border-2 border-transparent'
+                    }`}
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    既存投稿を選択
+                  </button>
+                  <button
+                    onClick={() => setInputMode('manual')}
+                    className={`flex items-center px-4 py-2 rounded-md transition-colors ${
+                      inputMode === 'manual'
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
+                        : 'bg-gray-100 text-gray-600 border-2 border-transparent'
+                    }`}
+                  >
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    新規投稿を入力
+                  </button>
+                </div>
+
+                {/* 既存投稿選択モード */}
+                {inputMode === 'search' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        投稿を検索
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            searchPosts(e.target.value);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="タイトルや内容で検索..."
+                        />
+                        {isSearching && (
+                          <div className="absolute right-3 top-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 検索結果 */}
+                    {searchResults.length > 0 && (
+                      <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md">
+                        {searchResults.map((post) => (
+                          <div
+                            key={post.id}
+                            onClick={() => selectPost(post)}
+                            className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="font-medium text-gray-900">{post.title || 'タイトルなし'}</div>
+                            <div className="text-sm text-gray-600 truncate">{post.content}</div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(post.createdAt).toLocaleDateString('ja-JP')}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 選択された投稿 */}
+                    {selectedPost && (
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                        <div className="font-medium text-blue-900">選択された投稿</div>
+                        <div className="text-sm text-blue-700">{selectedPost.title || 'タイトルなし'}</div>
+                        <div className="text-xs text-blue-600">
+                          {new Date(selectedPost.createdAt).toLocaleDateString('ja-JP')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 新規投稿入力モード */}
+                {inputMode === 'manual' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          タイトル
+                        </label>
+                        <input
+                          type="text"
+                          value={newPostData.title}
+                          onChange={(e) => setNewPostData(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="投稿のタイトル"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          投稿タイプ
+                        </label>
+                        <select
+                          value={newPostData.postType}
+                          onChange={(e) => setNewPostData(prev => ({ ...prev, postType: e.target.value as 'feed' | 'reel' | 'story' }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="feed">フィード</option>
+                          <option value="reel">リール</option>
+                          <option value="story">ストーリー</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        投稿内容
+                      </label>
+                      <textarea
+                        value={newPostData.content}
+                        onChange={(e) => setNewPostData(prev => ({ ...prev, content: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows={3}
+                        placeholder="投稿の内容を入力してください"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ハッシュタグ
+                        </label>
+                        <input
+                          type="text"
+                          value={newPostData.hashtags}
+                          onChange={(e) => setNewPostData(prev => ({ ...prev, hashtags: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="#hashtag1 #hashtag2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          サムネイルURL
+                        </label>
+                        <input
+                          type="url"
+                          value={newPostData.thumbnail}
+                          onChange={(e) => setNewPostData(prev => ({ ...prev, thumbnail: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://example.com/image.jpg"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        投稿日時
+                      </label>
+                      <input
+                        type="date"
+                        value={newPostData.publishedAt}
+                        onChange={(e) => setNewPostData(prev => ({ ...prev, publishedAt: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 基本データ入力 */}
@@ -401,8 +641,14 @@ export default function InstagramAnalyticsPage() {
                 </label>
                 <input
                   type="date"
-                  value={inputData.publishedAt}
-                  onChange={(e) => setInputData(prev => ({ ...prev, publishedAt: e.target.value }))}
+                  value={inputMode === 'manual' ? newPostData.publishedAt : inputData.publishedAt}
+                  onChange={(e) => {
+                    if (inputMode === 'manual') {
+                      setNewPostData(prev => ({ ...prev, publishedAt: e.target.value }));
+                    } else {
+                      setInputData(prev => ({ ...prev, publishedAt: e.target.value }));
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -427,17 +673,32 @@ export default function InstagramAnalyticsPage() {
                   )}
                 </button>
                 <button
-                  onClick={() => setInputData({
-                    likes: '',
-                    comments: '',
-                    shares: '',
-                    reach: '',
-                    profileClicks: '',
-                    websiteClicks: '',
-                    storyViews: '',
-                    followerChange: '',
-                    publishedAt: new Date().toISOString().split('T')[0]
-                  })}
+                  onClick={() => {
+                    setSelectedPost(null);
+                    setSelectedPostId('');
+                    setInputMode('search');
+                    setInputData({
+                      likes: '',
+                      comments: '',
+                      shares: '',
+                      reach: '',
+                      profileClicks: '',
+                      websiteClicks: '',
+                      storyViews: '',
+                      followerChange: '',
+                      publishedAt: new Date().toISOString().split('T')[0]
+                    });
+                    setNewPostData({
+                      title: '',
+                      content: '',
+                      hashtags: '',
+                      thumbnail: '',
+                      postType: 'feed',
+                      publishedAt: new Date().toISOString().split('T')[0]
+                    });
+                    setSearchQuery('');
+                    setSearchResults([]);
+                  }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   <RefreshCw size={16} />
