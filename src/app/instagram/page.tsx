@@ -71,7 +71,7 @@ interface RecentPost {
 
 function InstagramDashboardContent() {
   const { user } = useAuth();
-  const { loading: profileLoading, error: profileError } = useUserProfile();
+  const { userProfile, loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
   const { planData } = usePlanData();
   const [analyticsData, setAnalyticsData] = useState<{
@@ -183,10 +183,11 @@ function InstagramDashboardContent() {
         ? analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => sum + (analytics.engagementRate || 0), 0) / analyticsData.length
         : 0;
 
-      const estimatedFollowers = 1000 + (totalLikes * 0.1);
+      // 実際のフォロワー数を取得（ユーザープロフィールから）
+      const currentFollowers = userProfile?.snsProfiles?.instagram?.followers || 1000;
 
       setStats({
-        followers: Math.round(estimatedFollowers),
+        followers: currentFollowers,
         engagement: Math.round(avgEngagement * 10) / 10,
         reach: totalReach,
         saves: totalSaves,
@@ -291,7 +292,7 @@ function InstagramDashboardContent() {
     } finally {
       setLoading(false);
     }
-  }, [user?.uid]);
+  }, [user?.uid, userProfile?.snsProfiles?.instagram?.followers]);
 
   useEffect(() => {
     fetchPostsAndCalculateStats();

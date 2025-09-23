@@ -263,3 +263,27 @@ export const handleApiError = (error: unknown) => {
   
   return '予期しないエラーが発生しました。';
 };
+
+// SNSプロフィール関連API
+export const snsProfileApi = {
+  // SNSプロフィール更新
+  update: async (userId: string, platform: string, profileData: {
+    followers?: number;
+    subscribers?: number;
+    username?: string;
+  }) => {
+    return apiRequest('/user/sns-profile', {
+      method: 'PUT',
+      body: JSON.stringify({ userId, platform, profileData }),
+    });
+  },
+
+  // SNSプロフィール取得
+  get: async (userId: string, platform?: string) => {
+    const params = new URLSearchParams({ userId });
+    if (platform) {
+      params.append('platform', platform);
+    }
+    return apiRequest(`/user/sns-profile?${params.toString()}`);
+  }
+};

@@ -10,6 +10,28 @@ export interface User {
   contractType: 'annual' | 'trial'; // 契約タイプ
   contractSNS: string[]; // 契約SNS配列
   snsAISettings: Record<string, unknown>; // SNS AI設定
+  snsProfiles?: {
+    instagram?: {
+      followers: number;
+      username?: string;
+      lastUpdated?: string;
+    };
+    tiktok?: {
+      followers: number;
+      username?: string;
+      lastUpdated?: string;
+    };
+    twitter?: {
+      followers: number;
+      username?: string;
+      lastUpdated?: string;
+    };
+    youtube?: {
+      subscribers: number;
+      username?: string;
+      lastUpdated?: string;
+    };
+  };
   businessInfo: {
     industry: string;
     companySize: string;
