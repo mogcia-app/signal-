@@ -184,7 +184,7 @@ function InstagramDashboardContent() {
         : 0;
 
       // 実際のフォロワー数を取得（ユーザープロフィールから）
-      const currentFollowers = userProfile?.snsProfiles?.instagram?.followers || 1000;
+      const currentFollowers = userProfile?.snsProfiles?.instagram?.followers || 0;
 
       setStats({
         followers: currentFollowers,

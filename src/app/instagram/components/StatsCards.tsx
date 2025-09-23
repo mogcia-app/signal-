@@ -46,7 +46,7 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">フォロワー数</p>
               <p className="text-2xl font-bold text-gray-900">
-                {loading ? 'ー' : stats.followers.toLocaleString()}
+                {loading ? 'ー' : stats.followers === 0 ? '0' : stats.followers.toLocaleString()}
               </p>
               <p className="text-xs text-green-600 flex items-center">
                 <TrendingUp className="h-3 w-3 mr-1" />

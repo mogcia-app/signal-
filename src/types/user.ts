@@ -12,22 +12,22 @@ export interface User {
   snsAISettings: Record<string, unknown>; // SNS AI設定
   snsProfiles?: {
     instagram?: {
-      followers: number;
+      followers?: number;
       username?: string;
       lastUpdated?: string;
     };
     tiktok?: {
-      followers: number;
+      followers?: number;
       username?: string;
       lastUpdated?: string;
     };
     twitter?: {
-      followers: number;
+      followers?: number;
       username?: string;
       lastUpdated?: string;
     };
     youtube?: {
-      subscribers: number;
+      subscribers?: number;
       username?: string;
       lastUpdated?: string;
     };
