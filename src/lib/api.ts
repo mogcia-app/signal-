@@ -174,7 +174,44 @@ export const usersApi = {
 
 // 分析関連API
 export const analyticsApi = {
-  // 分析データ取得
+  // 分析データ作成
+  create: async (analyticsData: {
+    postId: string;
+    userId: string;
+    likes: number;
+    comments: number;
+    shares: number;
+    reach: number;
+    engagementRate: number;
+    profileClicks?: number;
+    websiteClicks?: number;
+    storyViews?: number;
+    followerChange?: number;
+    publishedAt: string;
+  }) => {
+    return apiRequest('/analytics', {
+      method: 'POST',
+      body: JSON.stringify(analyticsData),
+    });
+  },
+
+  // 分析データ一覧取得
+  list: async (params: {
+    userId?: string;
+    postId?: string;
+    limit?: number;
+  } = {}) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.append(key, value.toString());
+      }
+    });
+    
+    return apiRequest(`/analytics?${searchParams.toString()}`);
+  },
+
+  // 分析データ取得（既存）
   getAnalytics: async (params: {
     userId: string;
     period?: 'daily' | 'weekly' | 'monthly';

@@ -91,11 +91,14 @@ export async function GET(request: NextRequest) {
 
     // 本番環境でFirebase設定がない場合は空の配列を返す
     if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+      console.log('Firebase API key not found in production, returning empty posts');
       return NextResponse.json({
         posts: [],
         total: 0
       });
     }
+
+    console.log('Firebase API key found, proceeding with database query');
 
     let q = query(
       collection(db, 'posts'),

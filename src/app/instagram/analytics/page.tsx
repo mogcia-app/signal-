@@ -222,15 +222,6 @@ export default function InstagramAnalyticsPage() {
       
       // 新規投稿入力モードの場合は投稿を作成
       if (inputMode === 'manual' && !selectedPostId) {
-        const analyticsData = {
-          likes: parseInt(inputData.likes) || 0,
-          comments: parseInt(inputData.comments) || 0,
-          shares: parseInt(inputData.shares) || 0,
-          reach: parseInt(inputData.reach) || 0,
-          engagementRate: ((parseInt(inputData.likes) + parseInt(inputData.comments) + parseInt(inputData.shares)) / parseInt(inputData.reach) * 100) || 0,
-          publishedAt: new Date(inputData.publishedAt)
-        };
-
         const postData = {
           userId: 'current-user',
           title: newPostData.title,
@@ -238,11 +229,12 @@ export default function InstagramAnalyticsPage() {
           hashtags: newPostData.hashtags.split(' ').filter(tag => tag.trim()),
           postType: newPostData.postType,
           status: 'published' as const,
-          imageUrl: newPostData.thumbnail || null,
-          analytics: analyticsData
+          imageUrl: newPostData.thumbnail || null
         };
+        console.log('Creating new post:', postData);
         const response = await postsApi.create(postData);
         postId = response.id;
+        console.log('New post created with ID:', postId);
       }
 
       if (!postId) {
@@ -250,35 +242,40 @@ export default function InstagramAnalyticsPage() {
         return;
       }
 
-      // 既存投稿の場合はanalyticsデータを更新
-      if (inputMode === 'search' && selectedPostId) {
-        const analyticsData = {
-          likes: parseInt(inputData.likes) || 0,
-          comments: parseInt(inputData.comments) || 0,
-          shares: parseInt(inputData.shares) || 0,
-          reach: parseInt(inputData.reach) || 0,
-          engagementRate: ((parseInt(inputData.likes) + parseInt(inputData.comments) + parseInt(inputData.shares)) / parseInt(inputData.reach) * 100) || 0,
-          publishedAt: new Date(inputData.publishedAt)
-        };
-
-        // 投稿のanalyticsフィールドを更新
-        await postsApi.update(postId, { analytics: analyticsData });
-      }
-
-      // 分析データをローカルstateにも追加（表示用）
-      const newAnalytics: AnalyticsData = {
-        id: Date.now().toString(),
+      // 分析データをanalyticsコレクションに保存
+      const analyticsData = {
         postId: postId,
         userId: 'current-user',
         likes: parseInt(inputData.likes) || 0,
         comments: parseInt(inputData.comments) || 0,
         shares: parseInt(inputData.shares) || 0,
         reach: parseInt(inputData.reach) || 0,
+        engagementRate: ((parseInt(inputData.likes) + parseInt(inputData.comments) + parseInt(inputData.shares)) / parseInt(inputData.reach) * 100) || 0,
         profileClicks: parseInt(inputData.profileClicks) || 0,
         websiteClicks: parseInt(inputData.websiteClicks) || 0,
         storyViews: parseInt(inputData.storyViews) || 0,
         followerChange: parseInt(inputData.followerChange) || 0,
-        publishedAt: new Date(inputData.publishedAt),
+        publishedAt: inputData.publishedAt
+      };
+
+      console.log('Saving analytics data to collection:', analyticsData);
+      const response = await analyticsApi.create(analyticsData);
+      console.log('Analytics data saved with ID:', response.id);
+
+      // 分析データをローカルstateにも追加（表示用）
+      const newAnalytics: AnalyticsData = {
+        id: response.id,
+        postId: postId,
+        userId: 'current-user',
+        likes: analyticsData.likes,
+        comments: analyticsData.comments,
+        shares: analyticsData.shares,
+        reach: analyticsData.reach,
+        profileClicks: analyticsData.profileClicks,
+        websiteClicks: analyticsData.websiteClicks,
+        storyViews: analyticsData.storyViews,
+        followerChange: analyticsData.followerChange,
+        publishedAt: new Date(analyticsData.publishedAt),
         createdAt: new Date()
       };
 
