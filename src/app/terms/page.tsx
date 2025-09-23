@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Phone,
-  Mail,
-  MapPin
-} from 'lucide-react';
+// import { 
+//   Phone,
+//   Mail,
+//   MapPin
+// } from 'lucide-react';
 import SNSLayout from '../../components/sns-layout';
 
 export default function TermsPage() {

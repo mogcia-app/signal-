@@ -72,8 +72,15 @@ function InstagramDashboardContent() {
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
   const { planData } = usePlanData();
-  const [posts, setPosts] = useState<PostData[]>([]);
-  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<{
+    likes: number;
+    comments: number;
+    shares: number;
+    reach: number;
+    engagementRate: number;
+    publishedAt: Date | string;
+    postId: string;
+  }[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     followers: 0,
@@ -132,40 +139,39 @@ function InstagramDashboardContent() {
       console.log('Fetched posts from API:', allPosts.length, 'posts');
       console.log('Fetched analytics from collection:', analyticsData.length, 'records');
       
-      setPosts(allPosts);
       setAnalyticsData(analyticsData);
       
       // 分析データから統計を計算
-      const totalLikes = analyticsData.reduce((sum: number, analytics: any) => 
+      const totalLikes = analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => 
         sum + (analytics.likes || 0), 0
       );
-      const totalComments = analyticsData.reduce((sum: number, analytics: any) => 
+      const totalComments = analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => 
         sum + (analytics.comments || 0), 0
       );
-      const totalSaves = analyticsData.reduce((sum: number, analytics: any) => 
+      const totalSaves = analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => 
         sum + (analytics.shares || 0), 0
       );
-      const totalReach = analyticsData.reduce((sum: number, analytics: any) => 
+      const totalReach = analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => 
         sum + (analytics.reach || 0), 0
       );
 
       // 今週の投稿数
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      const postsThisWeek = analyticsData.filter((analytics: any) => 
+      const postsThisWeek = analyticsData.filter((analytics: typeof analyticsData[0]) => 
         new Date(analytics.publishedAt) >= oneWeekAgo
       ).length;
 
       // 今月の投稿数
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      const postsThisMonth = analyticsData.filter((analytics: any) => 
+      const postsThisMonth = analyticsData.filter((analytics: typeof analyticsData[0]) => 
         new Date(analytics.publishedAt) >= oneMonthAgo
       ).length;
 
       // 平均エンゲージメント率
       const avgEngagement = analyticsData.length > 0 
-        ? analyticsData.reduce((sum: number, analytics: any) => sum + (analytics.engagementRate || 0), 0) / analyticsData.length
+        ? analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => sum + (analytics.engagementRate || 0), 0) / analyticsData.length
         : 0;
 
       const estimatedFollowers = 1000 + (totalLikes * 0.1);
@@ -189,7 +195,7 @@ function InstagramDashboardContent() {
       // 最近の投稿パフォーマンスを生成（analyticsデータから）
       const recentPostsData = analyticsData
         .slice(0, 4)
-        .map((analytics: any) => {
+        .map((analytics: typeof analyticsData[0]) => {
           const post = allPosts.find((p: PostData) => p.id === analytics.postId);
           return {
             id: analytics.postId,

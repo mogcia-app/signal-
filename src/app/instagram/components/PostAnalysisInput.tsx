@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Edit3 } from 'lucide-react';
-import { postsApi, analyticsApi } from '../../../lib/api';
+import { postsApi } from '../../../lib/api';
 
 interface PostData {
   id: string;

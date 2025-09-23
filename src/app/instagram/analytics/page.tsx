@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
-import { postsApi } from '../../../lib/api';
+import { postsApi, analyticsApi } from '../../../lib/api';
 import { PlanData } from '../plan/types/plan';
 import { 
   Heart, 

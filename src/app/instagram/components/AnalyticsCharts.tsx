@@ -29,8 +29,18 @@ ChartJS.register(
   Legend
 );
 
+interface AnalyticsData {
+  likes: number;
+  comments: number;
+  shares: number;
+  reach: number;
+  engagementRate: number;
+  publishedAt: Date | string;
+  postId: string;
+}
+
 interface AnalyticsChartsProps {
-  analyticsData: any[];
+  analyticsData: AnalyticsData[];
   stats: {
     followers: number;
     likes: number;
@@ -55,12 +65,12 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
       const targetDate = new Date();
       targetDate.setDate(targetDate.getDate() - (6 - index));
       
-      const dayAnalytics = analyticsData.filter((analytics: any) => {
+      const dayAnalytics = analyticsData.filter((analytics: AnalyticsData) => {
         const postDate = new Date(analytics.publishedAt);
         return postDate.toDateString() === targetDate.toDateString();
       });
 
-      data[index] = dayAnalytics.reduce((sum: number, analytics: any) => {
+      data[index] = dayAnalytics.reduce((sum: number, analytics: AnalyticsData) => {
         switch (type) {
           case 'likes': return sum + analytics.likes;
           case 'followers': return sum + Math.floor(analytics.likes * 0.1); // 推定フォロワー増加
