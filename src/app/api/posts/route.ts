@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Firebase API key found, proceeding with database query');
+    console.log('Query parameters:', { userId, status, postType, limit });
 
     let q = query(
       collection(db, 'posts'),
@@ -107,12 +108,15 @@ export async function GET(request: NextRequest) {
 
     // フィルタリング
     if (userId) {
+      console.log('Filtering posts by userId:', userId);
       q = query(q, where('userId', '==', userId));
     }
     if (status) {
+      console.log('Filtering posts by status:', status);
       q = query(q, where('status', '==', status));
     }
     if (postType) {
+      console.log('Filtering posts by postType:', postType);
       q = query(q, where('postType', '==', postType));
     }
 
@@ -121,6 +125,9 @@ export async function GET(request: NextRequest) {
       id: doc.id,
       ...doc.data()
     }));
+
+    console.log('Fetched posts from collection:', posts.length, 'records');
+    console.log('Posts query result sample:', posts.slice(0, 2));
 
     return NextResponse.json({
       posts,

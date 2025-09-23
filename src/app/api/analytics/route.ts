@@ -104,6 +104,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Firebase API key found, proceeding with analytics query');
+    console.log('Query parameters:', { userId, postId, limit });
 
     let q = query(
       collection(db, 'analytics'),
@@ -112,9 +113,11 @@ export async function GET(request: NextRequest) {
 
     // フィルタリング
     if (userId) {
+      console.log('Filtering by userId:', userId);
       q = query(q, where('userId', '==', userId));
     }
     if (postId) {
+      console.log('Filtering by postId:', postId);
       q = query(q, where('postId', '==', postId));
     }
 
@@ -125,6 +128,7 @@ export async function GET(request: NextRequest) {
     }));
 
     console.log('Fetched analytics from collection:', analytics.length, 'records');
+    console.log('Query result sample:', analytics.slice(0, 2));
 
     return NextResponse.json({
       analytics,
