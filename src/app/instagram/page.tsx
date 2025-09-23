@@ -155,6 +155,9 @@ function InstagramDashboardContent() {
   });
   const [showAddTodo, setShowAddTodo] = useState(false);
 
+  // 投稿分析入力用のstate
+  const [showPostAnalysis, setShowPostAnalysis] = useState(false);
+
   const instagramSettings = getSNSSettings('instagram');
 
   // 投稿データを取得して統計を計算
@@ -1187,13 +1190,29 @@ function InstagramDashboardContent() {
 
               {/* 投稿分析手動入力 */}
               <div className="bg-white">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                    <Edit3 className="h-6 w-6 mr-2 text-orange-600" />
-                    投稿分析入力
-                  </h2>
+                <div 
+                  className="px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowPostAnalysis(!showPostAnalysis)}
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                      <Edit3 className="h-6 w-6 mr-2 text-orange-600" />
+                      投稿分析入力
+                    </h2>
+                    <div className="flex items-center">
+                      <span className="text-sm text-gray-500 mr-2">
+                        {showPostAnalysis ? '閉じる' : '開く'}
+                      </span>
+                      <div className={`transform transition-transform duration-200 ${showPostAnalysis ? 'rotate-180' : ''}`}>
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-6 space-y-4">
+                {showPostAnalysis && (
+                  <div className="p-6 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">検索</label>
                     <input
@@ -1299,13 +1318,14 @@ function InstagramDashboardContent() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleManualPostSubmit}
-                    className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
-                  >
-                    投稿結果を保存
-                  </button>
-                </div>
+                    <button
+                      onClick={handleManualPostSubmit}
+                      className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+                    >
+                      投稿結果を保存
+                    </button>
+                  </div>
+                )}
               </div>
 
             </div>
