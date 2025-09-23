@@ -74,6 +74,14 @@ export async function GET(request: NextRequest) {
     const postType = searchParams.get('postType');
     const limit = parseInt(searchParams.get('limit') || '50');
 
+    // 本番環境でFirebase設定がない場合は空の配列を返す
+    if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+      return NextResponse.json({
+        posts: [],
+        total: 0
+      });
+    }
+
     let q = query(
       collection(db, 'posts'),
       orderBy('createdAt', 'desc')
@@ -103,9 +111,10 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('投稿取得エラー:', error);
-    return NextResponse.json(
-      { error: '投稿の取得に失敗しました' },
-      { status: 500 }
-    );
+    // エラーが発生した場合は空の配列を返す
+    return NextResponse.json({
+      posts: [],
+      total: 0
+    });
   }
 }

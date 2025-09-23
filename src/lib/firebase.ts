@@ -25,8 +25,8 @@ export const db = getFirestore(app);
 export const functions = getFunctions(app);
 
 // For local development, connect to emulators
-if (process.env.NODE_ENV === 'development') {
-  // Connect to Functions emulator
+if (process.env.NODE_ENV === 'development' && typeof window === 'undefined') {
+  // Connect to Functions emulator (server-side only)
   import('firebase/functions').then(({ connectFunctionsEmulator }) => {
     try {
       connectFunctionsEmulator(functions, 'localhost', 5001);
