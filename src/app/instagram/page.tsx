@@ -460,6 +460,18 @@ function InstagramDashboardContent() {
   const [searchResults, setSearchResults] = useState<PostData[]>([]);
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  
+  // 入力モードの管理
+  const [inputMode, setInputMode] = useState<'search' | 'manual'>('search');
+  
+  // 新規投稿用のstate
+  const [newPostData, setNewPostData] = useState({
+    title: '',
+    content: '',
+    hashtags: '',
+    thumbnail: '',
+    publishedAt: new Date().toISOString().split('T')[0] // YYYY-MM-DD形式
+  });
 
   // ローディング状態
   if (profileLoading) {
@@ -540,11 +552,6 @@ function InstagramDashboardContent() {
 
   // 投稿分析データの保存
   const handleManualPostSubmit = async () => {
-    if (!selectedPost) {
-      alert('投稿を選択してください');
-      return;
-    }
-
     try {
       const analyticsData = {
         likes: manualPostData.likes,
@@ -553,11 +560,28 @@ function InstagramDashboardContent() {
         views: manualPostData.reach,
         reach: manualPostData.reach,
         engagementRate: ((manualPostData.likes + manualPostData.comments + manualPostData.saves) / manualPostData.reach * 100) || 0,
-        publishedAt: new Date()
+        publishedAt: inputMode === 'search' && selectedPost ? 
+          new Date(selectedPost.createdAt) : 
+          new Date(newPostData.publishedAt)
       };
 
-      // 投稿のanalyticsデータを更新
-      await postsApi.update(selectedPost.id, { analytics: analyticsData });
+      if (inputMode === 'search' && selectedPost) {
+        // 既存投稿のanalyticsデータを更新
+        await postsApi.update(selectedPost.id, { analytics: analyticsData });
+      } else {
+        // 新規投稿を作成してanalyticsデータを設定
+        const postData = {
+          userId: 'current-user',
+          title: newPostData.title,
+          content: newPostData.content,
+          hashtags: newPostData.hashtags.split(' ').filter(tag => tag.trim()),
+          postType: manualPostData.type,
+          status: 'published' as const,
+          imageUrl: newPostData.thumbnail || null,
+          analytics: analyticsData
+        };
+        await postsApi.create(postData);
+      }
 
       // ダッシュボードの統計を再取得
       await fetchPostsAndCalculateStats();
@@ -566,6 +590,7 @@ function InstagramDashboardContent() {
       
       // フォームをリセット
       setSelectedPost(null);
+      setInputMode('search');
       setManualPostData({
         title: '',
         type: 'feed',
@@ -576,6 +601,13 @@ function InstagramDashboardContent() {
         comments: 0,
         saves: 0,
         reach: 0
+      });
+      setNewPostData({
+        title: '',
+        content: '',
+        hashtags: '',
+        thumbnail: '',
+        publishedAt: new Date().toISOString().split('T')[0]
       });
     } catch (error) {
       console.error('投稿分析データ保存エラー:', error);
@@ -935,26 +967,54 @@ function InstagramDashboardContent() {
               </h2>
             </div>
             <div className="p-6">
+              {/* 入力モード切り替え */}
+              <div className="mb-6">
+                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => setInputMode('search')}
+                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                      inputMode === 'search'
+                        ? 'bg-white text-orange-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    既存投稿を選択
+                  </button>
+                  <button
+                    onClick={() => setInputMode('manual')}
+                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                      inputMode === 'manual'
+                        ? 'bg-white text-orange-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    新規投稿を入力
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="md:col-span-2 lg:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">投稿を検索・選択</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        searchPosts(e.target.value);
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="投稿のタイトルや内容で検索..."
-                    />
-                    {isSearching && (
-                      <div className="absolute right-3 top-2.5">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
-                      </div>
-                    )}
-                  </div>
+                {/* 既存投稿検索モード */}
+                {inputMode === 'search' && (
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">投稿を検索・選択</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          searchPosts(e.target.value);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="投稿のタイトルや内容で検索..."
+                      />
+                      {isSearching && (
+                        <div className="absolute right-3 top-2.5">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                        </div>
+                      )}
+                    </div>
                   
                   {/* 検索結果 */}
                   {searchResults.length > 0 && (
@@ -1020,63 +1080,84 @@ function InstagramDashboardContent() {
                       </div>
                     </div>
                   )}
-                </div>
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイトル</label>
-                  <input
-                    type="text"
-                    value={manualPostData.title}
-                    onChange={(e) => setManualPostData({...manualPostData, title: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="投稿のタイトルを入力"
-                  />
-                </div>
+                {/* 新規投稿入力モード */}
+                {inputMode === 'manual' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイトル</label>
+                      <input
+                        type="text"
+                        value={newPostData.title}
+                        onChange={(e) => setNewPostData({...newPostData, title: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="投稿のタイトルを入力"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイプ</label>
-                  <select
-                    value={manualPostData.type}
-                    onChange={(e) => setManualPostData({...manualPostData, type: e.target.value as 'feed' | 'reel' | 'story'})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option value="feed">フィード</option>
-                    <option value="reel">リール</option>
-                    <option value="story">ストーリー</option>
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿タイプ</label>
+                      <select
+                        value={manualPostData.type}
+                        onChange={(e) => setManualPostData({...manualPostData, type: e.target.value as 'feed' | 'reel' | 'story'})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="feed">フィード</option>
+                        <option value="reel">リール</option>
+                        <option value="story">ストーリー</option>
+                      </select>
+                    </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿日時</label>
+                      <input
+                        type="date"
+                        value={newPostData.publishedAt}
+                        onChange={(e) => setNewPostData({...newPostData, publishedAt: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">投稿文</label>
+                      <textarea
+                        value={newPostData.content}
+                        onChange={(e) => setNewPostData({...newPostData, content: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="投稿の内容を入力"
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ハッシュタグ</label>
+                      <input
+                        type="text"
+                        value={newPostData.hashtags}
+                        onChange={(e) => setNewPostData({...newPostData, hashtags: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="#hashtag1 #hashtag2 #hashtag3"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">サムネイル画像</label>
+                      <input
+                        type="text"
+                        value={newPostData.thumbnail}
+                        onChange={(e) => setNewPostData({...newPostData, thumbnail: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="画像URLを入力"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* 共通のKPI入力フィールド */}
                 <div className="md:col-span-2 lg:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">投稿文</label>
-                  <textarea
-                    value={manualPostData.content}
-                    onChange={(e) => setManualPostData({...manualPostData, content: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="投稿の内容を入力"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="md:col-span-2 lg:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ハッシュタグ</label>
-                  <input
-                    type="text"
-                    value={manualPostData.hashtags}
-                    onChange={(e) => setManualPostData({...manualPostData, hashtags: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="#hashtag1 #hashtag2 #hashtag3"
-                  />
-                </div>
-
-                <div className="md:col-span-2 lg:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">サムネイル画像</label>
-                  <input
-                    type="text"
-                    value={manualPostData.thumbnail}
-                    onChange={(e) => setManualPostData({...manualPostData, thumbnail: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="画像URLを入力"
-                  />
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">分析結果のKPI</h3>
                 </div>
 
                 <div>
@@ -1115,6 +1196,7 @@ function InstagramDashboardContent() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
+
               </div>
 
               <div className="mt-6">
