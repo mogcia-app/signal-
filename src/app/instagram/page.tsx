@@ -168,12 +168,12 @@ function InstagramDashboardContent() {
     ],
   };
 
-  const commentsChartData = {
+  const followersChartData = {
     labels: ['月', '火', '水', '木', '金', '土', '日'],
     datasets: [
       {
-        label: 'コメント数',
-        data: [20, 30, 40, 50, 35, 45, 60],
+        label: 'フォロワー数',
+        data: [1200, 1250, 1280, 1320, 1300, 1350, 1380],
         borderColor: '#f97316',
         backgroundColor: 'rgba(249, 115, 22, 0.1)',
         tension: 0.4,
@@ -591,6 +591,24 @@ function InstagramDashboardContent() {
 
           {/* エンゲージメント分析グラフ */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {/* フォロワー数グラフ */}
+            <div className="bg-white border border-[#ff8a15] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                  <Users className="w-4 h-4 mr-1 text-[#f97316]" />
+                  フォロワー数
+                </h4>
+                <span className="text-xs text-gray-500">過去1週間</span>
+              </div>
+              <div className="h-32">
+                <Line data={followersChartData} options={chartOptions} />
+              </div>
+              <div className="mt-2 text-center">
+                <span className="text-lg font-bold text-[#f97316]">1,380</span>
+                <span className="text-xs text-gray-500 ml-1">今日</span>
+              </div>
+            </div>
+
             {/* いいね数グラフ */}
             <div className="bg-white border border-[#ff8a15] p-4">
               <div className="flex items-center justify-between mb-3">
@@ -605,24 +623,6 @@ function InstagramDashboardContent() {
               </div>
               <div className="mt-2 text-center">
                 <span className="text-lg font-bold text-[#ff8a15]">450</span>
-                <span className="text-xs text-gray-500 ml-1">今日</span>
-              </div>
-            </div>
-
-            {/* コメント数グラフ */}
-            <div className="bg-white border border-[#ff8a15] p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-gray-900 flex items-center">
-                  <MessageCircle className="w-4 h-4 mr-1 text-[#f97316]" />
-                  コメント数
-                </h4>
-                <span className="text-xs text-gray-500">過去1週間</span>
-              </div>
-              <div className="h-32">
-                <Line data={commentsChartData} options={chartOptions} />
-              </div>
-              <div className="mt-2 text-center">
-                <span className="text-lg font-bold text-[#f97316]">60</span>
                 <span className="text-xs text-gray-500 ml-1">今日</span>
               </div>
             </div>
@@ -779,7 +779,7 @@ function InstagramDashboardContent() {
                     今週の投稿予定
                   </h2>
                   <a href="/instagram/plan" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    投稿スケジュールを管理 →
+                    投稿管理 →
                   </a>
                 </div>
                 <div className="p-6 space-y-3">
