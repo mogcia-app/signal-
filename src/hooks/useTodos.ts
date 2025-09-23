@@ -16,6 +16,7 @@ export const useTodos = (userId: string) => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [localTodos, setLocalTodos] = useState<TodoItem[]>([]);
 
   // TODOリスト取得
   const fetchTodos = useCallback(async () => {
@@ -24,25 +25,51 @@ export const useTodos = (userId: string) => {
       setError(null);
       const response = await todosApi.list(userId);
       setTodos(response.todos || []);
+      // ローカル状態も更新
+      setLocalTodos(response.todos || []);
     } catch (err) {
       console.error('TODOリスト取得エラー:', err);
       setError('TODOリストの取得に失敗しました。');
+      // エラー時はローカル状態のみを使用
+      setTodos(localTodos);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, localTodos]);
 
   // TODOアイテム作成
   const createTodo = async (task: string, priority: 'high' | 'medium' | 'low', dueDate: string) => {
     try {
       setError(null);
-      await todosApi.create({
+      
+      // ローカル状態に即座に追加
+      const newTodo: TodoItem = {
+        id: `local-${Date.now()}`,
         userId,
         task,
         priority,
         dueDate,
-      });
-      await fetchTodos(); // リストを再取得
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      setLocalTodos(prev => [newTodo, ...prev]);
+      setTodos(prev => [newTodo, ...prev]);
+      
+      // API呼び出し（エラーが発生してもローカル状態は保持）
+      try {
+        await todosApi.create({
+          userId,
+          task,
+          priority,
+          dueDate,
+        });
+        await fetchTodos(); // リストを再取得
+      } catch (apiErr) {
+        console.warn('TODO作成APIエラー（ローカル状態は保持）:', apiErr);
+        // APIエラーは無視してローカル状態を維持
+      }
     } catch (err) {
       console.error('TODO作成エラー:', err);
       setError('TODOアイテムの作成に失敗しました。');
