@@ -15,6 +15,14 @@ interface PostData {
   status: 'draft' | 'scheduled' | 'published';
   imageUrl?: string | null; // 画像URL
   imageData?: string | null; // Base64画像データ（一時保存用）
+  analytics?: {
+    likes: number;
+    comments: number;
+    shares: number;
+    reach: number;
+    engagementRate: number;
+    publishedAt: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,7 +31,7 @@ interface PostData {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, title, content, hashtags, postType, scheduledDate, scheduledTime, status = 'draft', imageUrl, imageData } = body;
+    const { userId, title, content, hashtags, postType, scheduledDate, scheduledTime, status = 'draft', imageUrl, imageData, analytics } = body;
 
     // バリデーション
     if (!userId || !title || !content) {
@@ -44,6 +52,7 @@ export async function POST(request: NextRequest) {
       status,
       imageUrl: imageUrl || null,
       imageData: imageData || null,
+      analytics: analytics || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
