@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, task, priority, dueDate } = body;
 
-    if (!userId || !task || !priority || !dueDate) {
+    if (!userId || !task || !priority) {
       return NextResponse.json({ error: 'Required fields are missing' }, { status: 400 });
     }
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       userId,
       task,
       priority,
-      dueDate,
+      dueDate: dueDate || '', // 空の場合は空文字列
       completed: false,
       createdAt: new Date(),
       updatedAt: new Date(),

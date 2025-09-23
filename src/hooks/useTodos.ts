@@ -38,7 +38,7 @@ export const useTodos = (userId: string) => {
   }, [userId, localTodos]);
 
   // TODOアイテム作成
-  const createTodo = async (task: string, priority: 'high' | 'medium' | 'low', dueDate: string) => {
+  const createTodo = async (task: string, priority: 'high' | 'medium' | 'low', dueDate?: string) => {
     try {
       setError(null);
       
@@ -48,7 +48,7 @@ export const useTodos = (userId: string) => {
         userId,
         task,
         priority,
-        dueDate,
+        dueDate: dueDate || '',
         completed: false,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -63,7 +63,7 @@ export const useTodos = (userId: string) => {
           userId,
           task,
           priority,
-          dueDate,
+          dueDate: dueDate || '',
         });
         await fetchTodos(); // リストを再取得
       } catch (apiErr) {

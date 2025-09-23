@@ -223,7 +223,7 @@ export const todosApi = {
     userId: string;
     task: string;
     priority: 'high' | 'medium' | 'low';
-    dueDate: string;
+    dueDate?: string;
   }) => {
     return apiRequest('/todos', {
       method: 'POST',
