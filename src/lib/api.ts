@@ -211,6 +211,47 @@ export const analyticsApi = {
   },
 };
 
+// TODO関連API
+export const todosApi = {
+  // TODOリスト取得
+  list: async (userId: string) => {
+    return apiRequest(`/todos?userId=${userId}`);
+  },
+
+  // TODOアイテム作成
+  create: async (todoData: {
+    userId: string;
+    task: string;
+    priority: 'high' | 'medium' | 'low';
+    dueDate: string;
+  }) => {
+    return apiRequest('/todos', {
+      method: 'POST',
+      body: JSON.stringify(todoData),
+    });
+  },
+
+  // TODOアイテム更新
+  update: async (id: string, updateData: {
+    task?: string;
+    priority?: 'high' | 'medium' | 'low';
+    dueDate?: string;
+    completed?: boolean;
+  }) => {
+    return apiRequest('/todos', {
+      method: 'PUT',
+      body: JSON.stringify({ id, ...updateData }),
+    });
+  },
+
+  // TODOアイテム削除
+  delete: async (id: string) => {
+    return apiRequest(`/todos?id=${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 // エラーハンドリング用のヘルパー
 export const handleApiError = (error: unknown) => {
   console.error('API Error:', error);

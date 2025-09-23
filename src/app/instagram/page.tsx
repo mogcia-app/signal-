@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { usePlanData } from '../../hooks/usePlanData';
+import { useTodos } from '../../hooks/useTodos';
 import { postsApi, analyticsApi } from '../../lib/api';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
@@ -105,6 +106,7 @@ function InstagramDashboardContent() {
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
   const { planData } = usePlanData();
+  const { todos, loading: todosLoading, createTodo, deleteTodo, toggleComplete } = useTodos('current-user');
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
@@ -144,6 +146,14 @@ function InstagramDashboardContent() {
     unit: string;
     status: string;
   }[]>([]);
+
+  // TODOリスト用のstate
+  const [newTodo, setNewTodo] = useState({
+    task: '',
+    priority: 'medium' as 'high' | 'medium' | 'low',
+    dueDate: ''
+  });
+  const [showAddTodo, setShowAddTodo] = useState(false);
 
   const instagramSettings = getSNSSettings('instagram');
 
@@ -398,6 +408,49 @@ function InstagramDashboardContent() {
   const followersChartData = generateChartData('followers');
   const savesChartData = generateChartData('saves');
   const reachChartData = generateChartData('reach');
+
+  // TODOリスト用のハンドラー関数
+  const handleAddTodo = async () => {
+    if (!newTodo.task.trim()) return;
+    
+    try {
+      await createTodo(newTodo.task, newTodo.priority, newTodo.dueDate);
+      setNewTodo({ task: '', priority: 'medium', dueDate: '' });
+      setShowAddTodo(false);
+    } catch (error) {
+      console.error('TODO追加エラー:', error);
+    }
+  };
+
+  const handleToggleComplete = async (id: string, completed: boolean) => {
+    try {
+      await toggleComplete(id, completed);
+    } catch (error) {
+      console.error('TODO完了状態変更エラー:', error);
+    }
+  };
+
+  const handleDeleteTodo = async (id: string) => {
+    try {
+      await deleteTodo(id);
+    } catch (error) {
+      console.error('TODO削除エラー:', error);
+    }
+  };
+
+  const formatDueDate = (dueDate: string) => {
+    if (!dueDate) return '期限なし';
+    const date = new Date(dueDate);
+    const today = new Date();
+    const diffTime = date.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return '期限切れ';
+    if (diffDays === 0) return '今日';
+    if (diffDays === 1) return '明日';
+    if (diffDays <= 7) return `${diffDays}日後`;
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  };
 
   const chartOptions = {
     responsive: true,
@@ -952,41 +1005,119 @@ function InstagramDashboardContent() {
                       <span className="text-2xl mr-2">✅</span>
                       TODOリスト
                     </h2>
-                    <button className="flex items-center space-x-1 text-sm text-[#ff8a15] font-medium px-3 py-1.5 border border-[#ff8a15] hover:bg-[#ff8a15] hover:text-white transition-all duration-200 rounded-md">
+                    <button 
+                      onClick={() => setShowAddTodo(!showAddTodo)}
+                      className="flex items-center space-x-1 text-sm text-[#ff8a15] font-medium px-3 py-1.5 border border-[#ff8a15] hover:bg-[#ff8a15] hover:text-white transition-all duration-200 rounded-md"
+                    >
                       <span>+</span>
                       <span>追加</span>
                     </button>
                   </div>
                 </div>
                 <div className="p-6">
-                  <div className="space-y-2">
-                    {[
-                      { task: '新商品の投稿コンテンツ作成', priority: 'high', due: '今日' },
-                      { task: 'ハッシュタグ分析レポート確認', priority: 'medium', due: '明日' },
-                      { task: '競合他社の投稿内容調査', priority: 'low', due: '今週末' },
-                      { task: 'ストーリー用の素材準備', priority: 'medium', due: '明日' },
-                      { task: 'エンゲージメント率向上の戦略検討', priority: 'high', due: '来週' }
-                    ].map((item, index) => (
-                      <div key={index} className="flex items-start space-x-3 p-3 hover:bg-gray-50 transition-colors border border-gray-100 rounded-lg">
-                        <input 
-                          type="checkbox" 
-                          className="mt-1 h-4 w-4 text-[#ff8a15] focus:ring-[#ff8a15] border-gray-300 rounded"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 leading-5">{item.task}</div>
-                          <div className="flex items-center justify-between mt-1">
-                            <div className="text-xs text-gray-500">期限: {item.due}</div>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                              item.priority === 'high' ? 'bg-red-100 text-red-700' :
-                              item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-green-100 text-green-700'
-                            }`}>
-                              {item.priority === 'high' ? '🔴 高' : item.priority === 'medium' ? '🟡 中' : '🟢 低'}
-                            </span>
+                  {/* 追加フォーム */}
+                  {showAddTodo && (
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">タスク</label>
+                          <input
+                            type="text"
+                            value={newTodo.task}
+                            onChange={(e) => setNewTodo({...newTodo, task: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
+                            placeholder="タスクを入力してください"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">優先度</label>
+                            <select
+                              value={newTodo.priority}
+                              onChange={(e) => setNewTodo({...newTodo, priority: e.target.value as 'high' | 'medium' | 'low'})}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
+                            >
+                              <option value="low">🟢 低</option>
+                              <option value="medium">🟡 中</option>
+                              <option value="high">🔴 高</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">期限</label>
+                            <input
+                              type="date"
+                              value={newTodo.dueDate}
+                              onChange={(e) => setNewTodo({...newTodo, dueDate: e.target.value})}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
+                            />
                           </div>
                         </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={handleAddTodo}
+                            className="px-4 py-2 bg-[#ff8a15] text-white rounded-md hover:bg-[#e67e00] transition-colors"
+                          >
+                            追加
+                          </button>
+                          <button
+                            onClick={() => setShowAddTodo(false)}
+                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                          >
+                            キャンセル
+                          </button>
+                        </div>
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  {/* TODOリスト */}
+                  <div className="space-y-2">
+                    {todosLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff8a15] mx-auto"></div>
+                        <p className="text-gray-600 mt-2">読み込み中...</p>
+                      </div>
+                    ) : todos.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="text-gray-400 text-4xl mb-2">📝</div>
+                        <p className="text-gray-600">TODOアイテムがありません</p>
+                        <p className="text-sm text-gray-500 mt-1">「追加」ボタンから新しいタスクを作成してください</p>
+                      </div>
+                    ) : (
+                      todos.map((todo) => (
+                        <div key={todo.id} className={`flex items-start space-x-3 p-3 hover:bg-gray-50 transition-colors border border-gray-100 rounded-lg ${todo.completed ? 'opacity-60' : ''}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={todo.completed}
+                            onChange={(e) => handleToggleComplete(todo.id, e.target.checked)}
+                            className="mt-1 h-4 w-4 text-[#ff8a15] focus:ring-[#ff8a15] border-gray-300 rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-medium leading-5 ${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                              {todo.task}
+                            </div>
+                            <div className="flex items-center justify-between mt-1">
+                              <div className="text-xs text-gray-500">期限: {formatDueDate(todo.dueDate)}</div>
+                              <div className="flex items-center space-x-2">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  todo.priority === 'high' ? 'bg-red-100 text-red-700' :
+                                  todo.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-green-100 text-green-700'
+                                }`}>
+                                  {todo.priority === 'high' ? '🔴 高' : todo.priority === 'medium' ? '🟡 中' : '🟢 低'}
+                                </span>
+                                <button
+                                  onClick={() => handleDeleteTodo(todo.id)}
+                                  className="text-red-500 hover:text-red-700 text-xs"
+                                >
+                                  削除
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
