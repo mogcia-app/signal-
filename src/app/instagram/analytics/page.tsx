@@ -97,8 +97,14 @@ export default function InstagramAnalyticsPage() {
 
   // 投稿一覧を取得
   const fetchPosts = useCallback(async () => {
+    if (!user?.uid) {
+      console.log('User not authenticated, skipping posts fetch');
+      return;
+    }
+    
     try {
-      const response = await postsApi.list({ userId: user?.uid || '' });
+      console.log('Fetching posts for user:', user.uid);
+      const response = await postsApi.list({ userId: user.uid });
       setPosts(response.posts || []);
     } catch (error) {
       console.error('投稿取得エラー:', error);
@@ -120,57 +126,15 @@ export default function InstagramAnalyticsPage() {
 
   // 分析データを取得
   const fetchAnalytics = useCallback(async () => {
+    if (!user?.uid) {
+      console.log('User not authenticated, skipping analytics fetch');
+      return;
+    }
+    
     try {
-      // 実際の実装では analytics API を呼び出す
-      // 今回は模擬データを使用
-      const mockData: AnalyticsData[] = [
-        {
-          id: '1',
-          postId: 'post-1',
-          userId: user?.uid || '',
-          likes: 245,
-          comments: 18,
-          shares: 12,
-          reach: 1250,
-          profileClicks: 45,
-          websiteClicks: 8,
-          storyViews: 320,
-          followerChange: 15,
-          publishedAt: new Date('2024-01-15'),
-          createdAt: new Date()
-        },
-        {
-          id: '2',
-          postId: 'post-2',
-          userId: user?.uid || '',
-          likes: 189,
-          comments: 23,
-          shares: 7,
-          reach: 980,
-          profileClicks: 32,
-          websiteClicks: 5,
-          storyViews: 280,
-          followerChange: 8,
-          publishedAt: new Date('2024-01-12'),
-          createdAt: new Date()
-        },
-        {
-          id: '3',
-          postId: 'post-3',
-          userId: user?.uid || '',
-          likes: 312,
-          comments: 28,
-          shares: 15,
-          reach: 1450,
-          profileClicks: 52,
-          websiteClicks: 12,
-          storyViews: 380,
-          followerChange: 22,
-          publishedAt: new Date('2024-01-10'),
-          createdAt: new Date()
-        }
-      ];
-      setAnalyticsData(mockData);
+      console.log('Fetching analytics for user:', user.uid);
+      const response = await analyticsApi.list({ userId: user.uid });
+      setAnalyticsData(response.analytics || []);
     } catch (error) {
       console.error('分析データ取得エラー:', error);
     }
@@ -196,7 +160,8 @@ export default function InstagramAnalyticsPage() {
 
     setIsSearching(true);
     try {
-      const response = await postsApi.list({ userId: user?.uid || '' });
+      console.log('Searching posts for user:', user.uid);
+      const response = await postsApi.list({ userId: user.uid });
       const filteredPosts = response.posts.filter((post: PostData) => 
         post.title.toLowerCase().includes(query.toLowerCase()) ||
         post.content.toLowerCase().includes(query.toLowerCase())
@@ -237,7 +202,7 @@ export default function InstagramAnalyticsPage() {
       // 新規投稿入力モードの場合は投稿を作成
       if (inputMode === 'manual' && !selectedPostId) {
         const postData = {
-          userId: user?.uid || '',
+          userId: user.uid,
           title: newPostData.title,
           content: newPostData.content,
           hashtags: newPostData.hashtags.split(' ').filter(tag => tag.trim()),
@@ -259,7 +224,7 @@ export default function InstagramAnalyticsPage() {
       // 分析データをanalyticsコレクションに保存
       const analyticsData = {
         postId: postId,
-        userId: user?.uid || '',
+        userId: user.uid,
         likes: parseInt(inputData.likes) || 0,
         comments: parseInt(inputData.comments) || 0,
         shares: parseInt(inputData.shares) || 0,
@@ -280,7 +245,7 @@ export default function InstagramAnalyticsPage() {
       const newAnalytics: AnalyticsData = {
         id: response.id,
         postId: postId,
-        userId: user?.uid || '',
+        userId: user.uid,
         likes: analyticsData.likes,
         comments: analyticsData.comments,
         shares: analyticsData.shares,
