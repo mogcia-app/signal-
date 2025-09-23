@@ -773,11 +773,14 @@ function InstagramDashboardContent() {
             <div className="space-y-6">
               {/* 今週の投稿予定 */}
               <div className="bg-white">
-                <div className="px-6 py-4 border-b border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-gray-800 flex items-center">
                     <Calendar className="h-6 w-6 mr-2 text-blue-600" />
                     今週の投稿予定
                   </h2>
+                  <a href="/instagram/plan" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    投稿スケジュールを管理 →
+                  </a>
                 </div>
                 <div className="p-6 space-y-3">
                   {[
@@ -818,11 +821,7 @@ function InstagramDashboardContent() {
                     </div>
                   ))}
                 </div>
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-                  <a href="/instagram/plan" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    投稿スケジュールを管理 →
-                  </a>
-                </div>
+               
               </div>
 
               {/* 投稿分析手動入力 */}
