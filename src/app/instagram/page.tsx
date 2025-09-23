@@ -31,7 +31,8 @@ import {
   Image as ImageIcon,
   Camera,
   TrendingUp,
-  Calendar
+  Calendar,
+  MessageCircle
 } from 'lucide-react';
 
 // Chart.jsの設定
@@ -152,31 +153,57 @@ function InstagramDashboardContent() {
 
   const instagramSettings = getSNSSettings('instagram');
   
-  // エンゲージメント推移グラフ用のデータ
-  const engagementChartData = {
-    labels: ['1週間前', '6日前', '5日前', '4日前', '3日前', '2日前', '昨日', '今日'],
+  // 複数のグラフ用のデータ
+  const likesChartData = {
+    labels: ['月', '火', '水', '木', '金', '土', '日'],
     datasets: [
       {
         label: 'いいね数',
-        data: [120, 135, 142, 128, 155, 168, 145, 156],
+        data: [120, 190, 300, 500, 200, 300, 450],
         borderColor: '#ff8a15',
         backgroundColor: 'rgba(255, 138, 21, 0.1)',
         tension: 0.4,
         fill: true,
       },
+    ],
+  };
+
+  const commentsChartData = {
+    labels: ['月', '火', '水', '木', '金', '土', '日'],
+    datasets: [
       {
         label: 'コメント数',
-        data: [15, 18, 22, 16, 24, 28, 19, 23],
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        data: [20, 30, 40, 50, 35, 45, 60],
+        borderColor: '#f97316',
+        backgroundColor: 'rgba(249, 115, 22, 0.1)',
         tension: 0.4,
         fill: true,
       },
+    ],
+  };
+
+  const savesChartData = {
+    labels: ['月', '火', '水', '木', '金', '土', '日'],
+    datasets: [
       {
         label: '保存数',
-        data: [8, 12, 15, 10, 18, 22, 14, 17],
-        borderColor: '#8b5cf6',
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        data: [15, 25, 35, 45, 30, 40, 55],
+        borderColor: '#ea580c',
+        backgroundColor: 'rgba(234, 88, 12, 0.1)',
+        tension: 0.4,
+        fill: true,
+      },
+    ],
+  };
+
+  const reachChartData = {
+    labels: ['月', '火', '水', '木', '金', '土', '日'],
+    datasets: [
+      {
+        label: 'リーチ数',
+        data: [800, 1200, 1500, 2000, 1100, 1800, 2200],
+        borderColor: '#dc2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.1)',
         tension: 0.4,
         fill: true,
       },
@@ -185,13 +212,10 @@ function InstagramDashboardContent() {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'top' as const,
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-        },
+        display: false,
       },
       title: {
         display: false,
@@ -203,10 +227,20 @@ function InstagramDashboardContent() {
         grid: {
           color: 'rgba(0, 0, 0, 0.05)',
         },
+        ticks: {
+          font: {
+            size: 10,
+          },
+        },
       },
       x: {
         grid: {
-          display: false,
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
+        ticks: {
+          font: {
+            size: 10,
+          },
         },
       },
     },
@@ -555,31 +589,77 @@ function InstagramDashboardContent() {
             </div>
           </div>
 
-          {/* エンゲージメント推移グラフ */}
-          <div className="bg-white mb-8">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                <BarChart3 className="h-6 w-6 mr-2 text-[#ff8a15]" />
-                エンゲージメント推移（過去1週間）
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="h-80">
-                <Line data={engagementChartData} options={chartOptions} />
+          {/* エンゲージメント分析グラフ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {/* いいね数グラフ */}
+            <div className="bg-white border border-[#ff8a15] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                  <Heart className="w-4 h-4 mr-1 text-[#ff8a15]" />
+                  いいね数
+                </h4>
+                <span className="text-xs text-gray-500">過去1週間</span>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                <div className="bg-orange-50 p-3 rounded-lg">
-                  <div className="text-2xl font-bold text-[#ff8a15]">156</div>
-                  <div className="text-sm text-gray-600">今日のいいね</div>
-                </div>
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">23</div>
-                  <div className="text-sm text-gray-600">今日のコメント</div>
-                </div>
-                <div className="bg-purple-50 p-3 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">17</div>
-                  <div className="text-sm text-gray-600">今日の保存</div>
-                </div>
+              <div className="h-32">
+                <Line data={likesChartData} options={chartOptions} />
+              </div>
+              <div className="mt-2 text-center">
+                <span className="text-lg font-bold text-[#ff8a15]">450</span>
+                <span className="text-xs text-gray-500 ml-1">今日</span>
+              </div>
+            </div>
+
+            {/* コメント数グラフ */}
+            <div className="bg-white border border-[#ff8a15] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                  <MessageCircle className="w-4 h-4 mr-1 text-[#f97316]" />
+                  コメント数
+                </h4>
+                <span className="text-xs text-gray-500">過去1週間</span>
+              </div>
+              <div className="h-32">
+                <Line data={commentsChartData} options={chartOptions} />
+              </div>
+              <div className="mt-2 text-center">
+                <span className="text-lg font-bold text-[#f97316]">60</span>
+                <span className="text-xs text-gray-500 ml-1">今日</span>
+              </div>
+            </div>
+
+            {/* 保存数グラフ */}
+            <div className="bg-white border border-[#ff8a15] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                  <Bookmark className="w-4 h-4 mr-1 text-[#ea580c]" />
+                  保存数
+                </h4>
+                <span className="text-xs text-gray-500">過去1週間</span>
+              </div>
+              <div className="h-32">
+                <Line data={savesChartData} options={chartOptions} />
+              </div>
+              <div className="mt-2 text-center">
+                <span className="text-lg font-bold text-[#ea580c]">55</span>
+                <span className="text-xs text-gray-500 ml-1">今日</span>
+              </div>
+            </div>
+
+            {/* リーチ数グラフ */}
+            <div className="bg-white border border-[#ff8a15] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                  <Eye className="w-4 h-4 mr-1 text-[#dc2626]" />
+                  リーチ数
+                </h4>
+                <span className="text-xs text-gray-500">過去1週間</span>
+              </div>
+              <div className="h-32">
+                <Line data={reachChartData} options={chartOptions} />
+              </div>
+              <div className="mt-2 text-center">
+                <span className="text-lg font-bold text-[#dc2626]">2.2K</span>
+                <span className="text-xs text-gray-500 ml-1">今日</span>
               </div>
             </div>
           </div>
