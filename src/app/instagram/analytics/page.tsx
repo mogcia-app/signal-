@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { postsApi, analyticsApi } from '../../../lib/api';
+import { useAuth } from '../../../contexts/auth-context';
 import { PlanData } from '../plan/types/plan';
 import { 
   Heart, 
@@ -79,6 +80,8 @@ export default function InstagramAnalyticsPage() {
     publishedAt: new Date().toISOString().split('T')[0]
   });
   
+  const { user } = useAuth();
+  
   // 入力データ
   const [inputData, setInputData] = useState({
     likes: '',
@@ -95,7 +98,7 @@ export default function InstagramAnalyticsPage() {
   // 投稿一覧を取得
   const fetchPosts = async () => {
     try {
-      const response = await postsApi.list({ userId: 'current-user' });
+      const response = await postsApi.list({ userId: user?.uid || '' });
       setPosts(response.posts || []);
     } catch (error) {
       console.error('投稿取得エラー:', error);
@@ -124,7 +127,7 @@ export default function InstagramAnalyticsPage() {
         {
           id: '1',
           postId: 'post-1',
-          userId: 'current-user',
+          userId: user?.uid || '',
           likes: 245,
           comments: 18,
           shares: 12,
@@ -139,7 +142,7 @@ export default function InstagramAnalyticsPage() {
         {
           id: '2',
           postId: 'post-2',
-          userId: 'current-user',
+          userId: user?.uid || '',
           likes: 189,
           comments: 23,
           shares: 7,
@@ -154,7 +157,7 @@ export default function InstagramAnalyticsPage() {
         {
           id: '3',
           postId: 'post-3',
-          userId: 'current-user',
+          userId: user?.uid || '',
           likes: 312,
           comments: 28,
           shares: 15,
@@ -186,9 +189,14 @@ export default function InstagramAnalyticsPage() {
       return;
     }
 
+    if (!user?.uid) {
+      console.error('User not authenticated');
+      return;
+    }
+
     setIsSearching(true);
     try {
-      const response = await postsApi.list({ userId: 'current-user' });
+      const response = await postsApi.list({ userId: user?.uid || '' });
       const filteredPosts = response.posts.filter((post: PostData) => 
         post.title.toLowerCase().includes(query.toLowerCase()) ||
         post.content.toLowerCase().includes(query.toLowerCase())
@@ -216,6 +224,12 @@ export default function InstagramAnalyticsPage() {
 
   // 分析データを保存
   const handleSaveAnalytics = async () => {
+    if (!user?.uid) {
+      console.error('User not authenticated');
+      alert('ログインが必要です');
+      return;
+    }
+
     setIsLoading(true);
     try {
       let postId = selectedPostId;
@@ -223,7 +237,7 @@ export default function InstagramAnalyticsPage() {
       // 新規投稿入力モードの場合は投稿を作成
       if (inputMode === 'manual' && !selectedPostId) {
         const postData = {
-          userId: 'current-user',
+          userId: user?.uid || '',
           title: newPostData.title,
           content: newPostData.content,
           hashtags: newPostData.hashtags.split(' ').filter(tag => tag.trim()),
@@ -245,7 +259,7 @@ export default function InstagramAnalyticsPage() {
       // 分析データをanalyticsコレクションに保存
       const analyticsData = {
         postId: postId,
-        userId: 'current-user',
+        userId: user?.uid || '',
         likes: parseInt(inputData.likes) || 0,
         comments: parseInt(inputData.comments) || 0,
         shares: parseInt(inputData.shares) || 0,
@@ -266,7 +280,7 @@ export default function InstagramAnalyticsPage() {
       const newAnalytics: AnalyticsData = {
         id: response.id,
         postId: postId,
-        userId: 'current-user',
+        userId: user?.uid || '',
         likes: analyticsData.likes,
         comments: analyticsData.comments,
         shares: analyticsData.shares,

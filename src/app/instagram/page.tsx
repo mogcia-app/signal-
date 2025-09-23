@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { usePlanData } from '../../hooks/usePlanData';
+import { useAuth } from '../../contexts/auth-context';
 import { postsApi, analyticsApi } from '../../lib/api';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
@@ -69,6 +70,7 @@ interface RecentPost {
 }
 
 function InstagramDashboardContent() {
+  const { user } = useAuth();
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
   const { planData } = usePlanData();
@@ -127,10 +129,17 @@ function InstagramDashboardContent() {
     try {
       setLoading(true);
       
+      // 認証されたユーザーのUIDを使用
+      const userId = user?.uid;
+      if (!userId) {
+        console.error('User not authenticated');
+        return;
+      }
+
       // 投稿データと分析データを並行取得
       const [postsResponse, analyticsResponse] = await Promise.all([
-        postsApi.list({ userId: 'current-user' }),
-        analyticsApi.list({ userId: 'current-user' })
+        postsApi.list({ userId }),
+        analyticsApi.list({ userId })
       ]);
       
       const allPosts = postsResponse.posts || [];

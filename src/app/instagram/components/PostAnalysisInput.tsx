@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Edit3 } from 'lucide-react';
 import { postsApi } from '../../../lib/api';
+import { useAuth } from '../../../contexts/auth-context';
 
 interface PostData {
   id: string;
@@ -34,6 +35,7 @@ interface PostAnalysisInputProps {
 }
 
 export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProps) {
+  const { user } = useAuth();
   const [manualPostData, setManualPostData] = useState({
     title: '',
     type: 'feed' as 'feed' | 'reel' | 'story',
@@ -71,9 +73,14 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
       return;
     }
 
+    if (!user?.uid) {
+      console.error('User not authenticated');
+      return;
+    }
+
     setIsSearching(true);
     try {
-      const response = await postsApi.list({ userId: 'current-user' });
+      const response = await postsApi.list({ userId: user.uid });
       const filteredPosts = response.posts.filter((post: PostData) => 
         post.title.toLowerCase().includes(query.toLowerCase()) ||
         post.content.toLowerCase().includes(query.toLowerCase())
@@ -107,6 +114,12 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
 
   // 投稿分析データの保存
   const handleManualPostSubmit = async () => {
+    if (!user?.uid) {
+      console.error('User not authenticated');
+      alert('ログインが必要です');
+      return;
+    }
+
     try {
       const analyticsData = {
         likes: manualPostData.likes,
@@ -125,7 +138,7 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
       } else {
         // 新規投稿を作成してanalyticsデータを設定
         const postData = {
-          userId: 'current-user',
+          userId: user.uid,
           title: newPostData.title,
           content: newPostData.content,
           hashtags: newPostData.hashtags.split(' ').filter(tag => tag.trim()),
