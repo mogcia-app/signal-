@@ -455,6 +455,12 @@ function InstagramDashboardContent() {
     reach: 0
   });
 
+  // 投稿検索・選択用のstate
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<PostData[]>([]);
+  const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
   // ローディング状態
   if (profileLoading) {
     return (
@@ -491,50 +497,90 @@ function InstagramDashboardContent() {
     }
   };
 
-  const handleManualPostSubmit = () => {
-    // 手動投稿結果を追加
-    const newPost: RecentPost = {
-      id: Date.now().toString(),
-      title: manualPostData.title,
-      type: manualPostData.type,
-      likes: manualPostData.likes,
-      comments: manualPostData.comments,
-      saves: manualPostData.saves,
-      reach: manualPostData.reach,
-      engagementRate: ((manualPostData.likes + manualPostData.comments + manualPostData.saves) / manualPostData.reach * 100) || 0,
-      postedAt: '今',
-      imageUrl: manualPostData.thumbnail || 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=400&fit=crop&crop=center',
-      caption: manualPostData.content || manualPostData.title
-    };
-    
-    // ここで実際のデータ更新処理を行う
-    console.log('手動投稿結果:', newPost);
-    console.log('投稿内容:', {
-      title: manualPostData.title,
-      content: manualPostData.content,
-      hashtags: manualPostData.hashtags,
-      thumbnail: manualPostData.thumbnail,
-      type: manualPostData.type,
-      metrics: {
+  // 投稿検索機能
+  const searchPosts = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await postsApi.list({ userId: 'current-user' });
+      const filteredPosts = response.posts.filter((post: PostData) => 
+        post.title.toLowerCase().includes(query.toLowerCase()) ||
+        post.content.toLowerCase().includes(query.toLowerCase())
+      );
+      setSearchResults(filteredPosts);
+    } catch (error) {
+      console.error('投稿検索エラー:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 投稿選択
+  const selectPost = (post: PostData) => {
+    setSelectedPost(post);
+    setManualPostData({
+      title: post.title,
+      type: post.postType,
+      content: post.content,
+      hashtags: post.hashtags.join(' '),
+      thumbnail: post.imageUrl || '',
+      likes: post.analytics?.likes || 0,
+      comments: post.analytics?.comments || 0,
+      saves: post.analytics?.shares || 0,
+      reach: post.analytics?.reach || 0
+    });
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+
+  // 投稿分析データの保存
+  const handleManualPostSubmit = async () => {
+    if (!selectedPost) {
+      alert('投稿を選択してください');
+      return;
+    }
+
+    try {
+      const analyticsData = {
         likes: manualPostData.likes,
         comments: manualPostData.comments,
-        saves: manualPostData.saves,
-        reach: manualPostData.reach
-      }
-    });
-    
-    // フォームをリセット
-    setManualPostData({
-      title: '',
-      type: 'feed',
-      content: '',
-      hashtags: '',
-      thumbnail: '',
-      likes: 0,
-      comments: 0,
-      saves: 0,
-      reach: 0
-    });
+        shares: manualPostData.saves,
+        views: manualPostData.reach,
+        reach: manualPostData.reach,
+        engagementRate: ((manualPostData.likes + manualPostData.comments + manualPostData.saves) / manualPostData.reach * 100) || 0,
+        publishedAt: new Date()
+      };
+
+      // 投稿のanalyticsデータを更新
+      await postsApi.update(selectedPost.id, { analytics: analyticsData });
+
+      // ダッシュボードの統計を再取得
+      await fetchPostsAndCalculateStats();
+
+      alert('投稿の分析データを保存しました！');
+      
+      // フォームをリセット
+      setSelectedPost(null);
+      setManualPostData({
+        title: '',
+        type: 'feed',
+        content: '',
+        hashtags: '',
+        thumbnail: '',
+        likes: 0,
+        comments: 0,
+        saves: 0,
+        reach: 0
+      });
+    } catch (error) {
+      console.error('投稿分析データ保存エラー:', error);
+      alert('保存に失敗しました');
+    }
   };
 
   return (
@@ -890,13 +936,90 @@ function InstagramDashboardContent() {
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">検索</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="投稿を検索..."
-                  />
+                <div className="md:col-span-2 lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">投稿を検索・選択</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        searchPosts(e.target.value);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="投稿のタイトルや内容で検索..."
+                    />
+                    {isSearching && (
+                      <div className="absolute right-3 top-2.5">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* 検索結果 */}
+                  {searchResults.length > 0 && (
+                    <div className="mt-2 border border-gray-200 rounded-md bg-white shadow-lg max-h-48 overflow-y-auto">
+                      {searchResults.map((post) => (
+                        <div
+                          key={post.id}
+                          onClick={() => selectPost(post)}
+                          className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-gray-900">{post.title}</div>
+                              <div className="text-sm text-gray-500 truncate">{post.content}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {post.postType === 'reel' ? 'リール' : post.postType === 'feed' ? 'フィード' : 'ストーリー'} • 
+                                {new Date(post.createdAt).toLocaleDateString('ja-JP')}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {post.analytics ? (
+                                <div className="text-sm text-green-600">分析済み</div>
+                              ) : (
+                                <div className="text-sm text-orange-600">未分析</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* 選択された投稿 */}
+                  {selectedPost && (
+                    <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-orange-900">選択中: {selectedPost.title}</div>
+                          <div className="text-sm text-orange-700">
+                            {selectedPost.postType === 'reel' ? 'リール' : selectedPost.postType === 'feed' ? 'フィード' : 'ストーリー'} • 
+                            {new Date(selectedPost.createdAt).toLocaleDateString('ja-JP')}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedPost(null);
+                            setManualPostData({
+                              title: '',
+                              type: 'feed',
+                              content: '',
+                              hashtags: '',
+                              thumbnail: '',
+                              likes: 0,
+                              comments: 0,
+                              saves: 0,
+                              reach: 0
+                            });
+                          }}
+                          className="text-orange-600 hover:text-orange-800 text-sm"
+                        >
+                          選択解除
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
