@@ -150,6 +150,8 @@ function InstagramDashboardContent() {
       console.log('Fetched posts from API:', allPosts.length, 'posts');
       console.log('Fetched analytics from collection:', analyticsData.length, 'records');
       console.log('Analytics data sample:', analyticsData.slice(0, 2));
+      console.log('Posts response:', postsResponse);
+      console.log('Analytics response:', analyticsResponse);
       
       setAnalyticsData(analyticsData);
       

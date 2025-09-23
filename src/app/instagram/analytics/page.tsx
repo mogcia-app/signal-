@@ -105,6 +105,7 @@ export default function InstagramAnalyticsPage() {
     try {
       console.log('Fetching posts for user:', user.uid);
       const response = await postsApi.list({ userId: user.uid });
+      console.log('Posts API response:', response);
       setPosts(response.posts || []);
     } catch (error) {
       console.error('投稿取得エラー:', error);
@@ -134,6 +135,7 @@ export default function InstagramAnalyticsPage() {
     try {
       console.log('Fetching analytics for user:', user.uid);
       const response = await analyticsApi.list({ userId: user.uid });
+      console.log('Analytics API response:', response);
       setAnalyticsData(response.analytics || []);
     } catch (error) {
       console.error('分析データ取得エラー:', error);
