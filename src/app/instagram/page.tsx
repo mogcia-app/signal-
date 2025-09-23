@@ -136,6 +136,8 @@ function InstagramDashboardContent() {
         return;
       }
 
+      console.log('Fetching data for authenticated user:', userId);
+
       // 投稿データと分析データを並行取得
       const [postsResponse, analyticsResponse] = await Promise.all([
         postsApi.list({ userId }),
@@ -147,6 +149,7 @@ function InstagramDashboardContent() {
       
       console.log('Fetched posts from API:', allPosts.length, 'posts');
       console.log('Fetched analytics from collection:', analyticsData.length, 'records');
+      console.log('Analytics data sample:', analyticsData.slice(0, 2));
       
       setAnalyticsData(analyticsData);
       
@@ -295,15 +298,21 @@ function InstagramDashboardContent() {
   }, [user?.uid, userProfile?.snsProfiles?.instagram?.followers]);
 
   useEffect(() => {
-    fetchPostsAndCalculateStats();
-    
-    // リアルタイム更新のためのポーリング（30秒間隔）
-    const interval = setInterval(() => {
+    // 認証状態が確定してからデータを取得
+    if (user?.uid) {
+      console.log('User authenticated, fetching data for:', user.uid);
       fetchPostsAndCalculateStats();
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [fetchPostsAndCalculateStats]);
+      
+      // リアルタイム更新のためのポーリング（30秒間隔）
+      const interval = setInterval(() => {
+        fetchPostsAndCalculateStats();
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    } else {
+      console.log('User not authenticated, skipping data fetch');
+    }
+  }, [user?.uid, fetchPostsAndCalculateStats]);
 
   // ローディング状態
   if (profileLoading) {
