@@ -122,6 +122,10 @@ function InstagramAnalyticsContent() {
       console.log('Analytics payload validation:', {
         userId: analyticsPayload.userId,
         likes: analyticsPayload.likes,
+        comments: analyticsPayload.comments,
+        shares: analyticsPayload.shares,
+        reach: analyticsPayload.reach,
+        engagementRate: analyticsPayload.engagementRate,
         publishedAt: analyticsPayload.publishedAt,
         createdAt: analyticsPayload.createdAt
       });
@@ -177,185 +181,188 @@ function InstagramAnalyticsContent() {
         customTitle="投稿分析"
         customDescription="投稿の分析データを入力・管理します"
       >
-        <div className="max-w-4xl mx-auto p-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
-                <BarChart3 className="w-5 h-5 text-white" />
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 左カラム: 入力フォーム */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center mb-6">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">投稿分析データ入力</h2>
+                  <p className="text-sm text-gray-600">投稿の分析データを入力してください</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">投稿分析データ入力</h2>
-                <p className="text-sm text-gray-600">投稿の分析データを入力してください</p>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Heart size={16} className="inline mr-1 text-red-500" />
+                    いいね数
+                  </label>
+                  <input
+                    type="number"
+                    value={inputData.likes}
+                    onChange={(e) => setInputData(prev => ({ ...prev, likes: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="例: 245"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    💬 コメント数
+                  </label>
+                  <input
+                    type="number"
+                    value={inputData.comments}
+                    onChange={(e) => setInputData(prev => ({ ...prev, comments: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="例: 12"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🔄 シェア数
+                  </label>
+                  <input
+                    type="number"
+                    value={inputData.shares}
+                    onChange={(e) => setInputData(prev => ({ ...prev, shares: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="例: 8"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    👁️ リーチ数
+                  </label>
+                  <input
+                    type="number"
+                    value={inputData.reach}
+                    onChange={(e) => setInputData(prev => ({ ...prev, reach: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="例: 1200"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar size={16} className="inline mr-1" />
+                  投稿日
+                </label>
+                <input
+                  type="date"
+                  value={inputData.publishedAt}
+                  onChange={(e) => setInputData(prev => ({ ...prev, publishedAt: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleSaveAnalytics}
+                  disabled={isLoading}
+                  className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} className="mr-2" />
+                      分析データを保存
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setInputData({
+                      likes: '',
+                      comments: '',
+                      shares: '',
+                      reach: '',
+                      publishedAt: new Date().toISOString().split('T')[0]
+                    });
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  <RefreshCw size={16} />
+                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Heart size={16} className="inline mr-1 text-red-500" />
-                  いいね数
-                </label>
-                <input
-                  type="number"
-                  value={inputData.likes}
-                  onChange={(e) => setInputData(prev => ({ ...prev, likes: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="例: 245"
-                />
+            {/* 右カラム: 統計表示 */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">投稿分析統計</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">{totalLikes.toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">総いいね数</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{totalComments.toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">総コメント数</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{totalShares.toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">総シェア数</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">{totalReach.toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">総リーチ数</div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  💬 コメント数
-                </label>
-                <input
-                  type="number"
-                  value={inputData.comments}
-                  onChange={(e) => setInputData(prev => ({ ...prev, comments: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="例: 12"
-                />
+              <div className="mt-4 text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-xl font-bold text-gray-900">{(avgEngagementRate || 0).toFixed(2)}%</div>
+                <div className="text-sm text-gray-600">平均エンゲージメント率</div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  🔄 シェア数
-                </label>
-                <input
-                  type="number"
-                  value={inputData.shares}
-                  onChange={(e) => setInputData(prev => ({ ...prev, shares: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="例: 8"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  👁️ リーチ数
-                </label>
-                <input
-                  type="number"
-                  value={inputData.reach}
-                  onChange={(e) => setInputData(prev => ({ ...prev, reach: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="例: 1200"
-                />
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar size={16} className="inline mr-1" />
-                投稿日
-              </label>
-              <input
-                type="date"
-                value={inputData.publishedAt}
-                onChange={(e) => setInputData(prev => ({ ...prev, publishedAt: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={handleSaveAnalytics}
-                disabled={isLoading}
-                className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    保存中...
-                  </>
-                    ) : (
-                      <>
-                        <Save size={16} className="mr-2" />
-                        分析データを保存
-                      </>
-                    )}
-              </button>
-                  <button
-                    onClick={() => {
-                      setInputData({
-                        likes: '',
-                        comments: '',
-                        shares: '',
-                        reach: '',
-                        publishedAt: new Date().toISOString().split('T')[0]
-                      });
-                    }}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                  >
-                    <RefreshCw size={16} />
-                  </button>
             </div>
           </div>
 
-              {/* 統計表示 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">投稿分析統計</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{totalLikes.toLocaleString()}</div>
-                    <div className="text-sm text-gray-600">総いいね数</div>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{totalComments.toLocaleString()}</div>
-                    <div className="text-sm text-gray-600">総コメント数</div>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{totalShares.toLocaleString()}</div>
-                    <div className="text-sm text-gray-600">総シェア数</div>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{totalReach.toLocaleString()}</div>
-                    <div className="text-sm text-gray-600">総リーチ数</div>
-                  </div>
-                </div>
-                <div className="mt-4 text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-xl font-bold text-gray-900">{(avgEngagementRate || 0).toFixed(2)}%</div>
-                  <div className="text-sm text-gray-600">平均エンゲージメント率</div>
-                </div>
-              </div>
-
-              {/* 最近の記録 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">最近の記録</h3>
-                {analyticsData.length === 0 ? (
-                  <p className="text-gray-600 text-center">まだ記録がありません。</p>
-                ) : (
-                  <div className="space-y-3">
-                    {analyticsData.slice(0, 5).map((data) => (
-                      <div key={data.id} className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-gray-700 font-medium">
-                            {new Date(data.publishedAt).toLocaleDateString('ja-JP')}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            エンゲージメント率: {(data.engagementRate || 0).toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-4 gap-2 text-sm">
-                          <div className="text-center">
-                            <div className="text-red-600 font-semibold">{data.likes || 0}</div>
-                            <div className="text-gray-500">いいね</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-blue-600 font-semibold">{data.comments || 0}</div>
-                            <div className="text-gray-500">コメント</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-green-600 font-semibold">{data.shares || 0}</div>
-                            <div className="text-gray-500">シェア</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-purple-600 font-semibold">{data.reach || 0}</div>
-                            <div className="text-gray-500">リーチ</div>
-                          </div>
-                        </div>
+          {/* 最近の記録 - 全幅 */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">最近の記録</h3>
+            {analyticsData.length === 0 ? (
+              <p className="text-gray-600 text-center">まだ記録がありません。</p>
+            ) : (
+              <div className="space-y-3">
+                {analyticsData.slice(0, 5).map((data) => (
+                  <div key={data.id} className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-700 font-medium">
+                        {new Date(data.publishedAt).toLocaleDateString('ja-JP')}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        エンゲージメント率: {(data.engagementRate || 0).toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-sm">
+                      <div className="text-center">
+                        <div className="text-red-600 font-semibold">{data.likes || 0}</div>
+                        <div className="text-gray-500">いいね</div>
                       </div>
-                    ))}
+                      <div className="text-center">
+                        <div className="text-blue-600 font-semibold">{data.comments || 0}</div>
+                        <div className="text-gray-500">コメント</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-green-600 font-semibold">{data.shares || 0}</div>
+                        <div className="text-gray-500">シェア</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-purple-600 font-semibold">{data.reach || 0}</div>
+                        <div className="text-gray-500">リーチ</div>
+                      </div>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
+            )}
+          </div>
         </div>
       </SNSLayout>
 
