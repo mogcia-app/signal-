@@ -5,7 +5,7 @@ import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { usePlanData } from '../../hooks/usePlanData';
 import { useAuth } from '../../contexts/auth-context';
-import { postsApi, analyticsApi } from '../../lib/api';
+import { postsApi } from '../../lib/api';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
@@ -138,14 +138,12 @@ function InstagramDashboardContent() {
 
       console.log('Fetching data for authenticated user:', userId);
 
-      // 投稿データと分析データを並行取得
-      const [postsResponse, analyticsResponse] = await Promise.all([
-        postsApi.list({ userId }),
-        analyticsApi.list({ userId })
-      ]);
-      
+      // 投稿データを取得
+      const postsResponse = await postsApi.list({ userId });
       const allPosts = postsResponse.posts || [];
-      const analyticsData = analyticsResponse.analytics || [];
+      
+      // 分析データは空配列（機能削除のため）
+      const analyticsData: any[] = [];
       
       console.log('Fetched posts from API:', allPosts.length, 'posts');
       console.log('Fetched analytics from collection:', analyticsData.length, 'records');

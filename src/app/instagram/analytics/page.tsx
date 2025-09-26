@@ -6,12 +6,7 @@ import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { 
   BarChart3,
   Target,
-  TrendingUp,
-  Users,
-  Heart,
-  MessageCircle,
-  Share,
-  Eye
+  TrendingUp
 } from 'lucide-react';
 
 export default function InstagramAnalyticsPage() {
