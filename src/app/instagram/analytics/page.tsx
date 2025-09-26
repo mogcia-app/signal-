@@ -241,6 +241,12 @@ export default function InstagramAnalyticsPage() {
       return;
     }
 
+    console.log('=== Analytics Save Debug ===');
+    console.log('Input mode:', inputMode);
+    console.log('Selected post ID:', selectedPostId);
+    console.log('New post data:', newPostData);
+    console.log('Input data:', inputData);
+
     setIsLoading(true);
     try {
       let postId = selectedPostId;
