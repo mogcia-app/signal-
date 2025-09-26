@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const analyticsData: Omit<AnalyticsData, 'id'> = {
+    const newAnalyticsData: AnalyticsData = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       postId,
       userId,
       likes: parseInt(likes) || 0,
@@ -64,12 +65,17 @@ export async function POST(request: NextRequest) {
     };
 
     // Firebaseに保存
-    const docRef = await addDoc(collection(db, 'analytics'), analyticsData);
+    const docRef = await addDoc(collection(db, 'analytics'), newAnalyticsData);
+
+    console.log('Analytics data saved to Firebase:', {
+      id: docRef.id,
+      data: newAnalyticsData
+    });
 
     return NextResponse.json({
       id: docRef.id,
       message: '分析データが保存されました',
-      data: { ...analyticsData, id: docRef.id }
+      data: { ...newAnalyticsData, id: docRef.id }
     });
 
   } catch (error) {
@@ -96,7 +102,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // クエリ構築
+    // Firebaseから取得
     let q = query(
       collection(db, 'analytics'),
       where('userId', '==', userId),
@@ -108,19 +114,25 @@ export async function GET(request: NextRequest) {
     }
 
     const snapshot = await getDocs(q);
-    let analyticsData: AnalyticsData[] = snapshot.docs.map(doc => ({
+    let filteredData: AnalyticsData[] = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     } as AnalyticsData));
 
     // リミット適用
     if (limit) {
-      analyticsData = analyticsData.slice(0, parseInt(limit));
+      filteredData = filteredData.slice(0, parseInt(limit));
     }
 
+    console.log('Analytics data retrieved from Firebase:', {
+      userId,
+      totalRecords: filteredData.length,
+      sampleData: filteredData[0]
+    });
+
     return NextResponse.json({
-      analytics: analyticsData,
-      total: analyticsData.length,
+      analytics: filteredData,
+      total: filteredData.length,
       message: '分析データを取得しました'
     });
 
