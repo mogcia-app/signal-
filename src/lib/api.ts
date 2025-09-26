@@ -172,8 +172,30 @@ export const usersApi = {
   },
 };
 
-// 分析関連API
-// Analytics API removed - functionality moved to dedicated analytics page
+// 分析関連API（最小限版）
+export const analyticsApi = {
+  // いいね数のみ保存
+  create: async (analyticsData: {
+    userId: string;
+    likes: number;
+    publishedAt?: string;
+  }) => {
+    return apiRequest('/analytics', {
+      method: 'POST',
+      body: JSON.stringify(analyticsData),
+    });
+  },
+
+  // 分析データ一覧取得
+  list: async (params: {
+    userId: string;
+  }) => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('userId', params.userId);
+    
+    return apiRequest(`/analytics?${searchParams.toString()}`);
+  },
+};
 
 
 // エラーハンドリング用のヘルパー

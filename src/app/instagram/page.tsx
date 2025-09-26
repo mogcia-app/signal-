@@ -143,13 +143,20 @@ function InstagramDashboardContent() {
       const allPosts = postsResponse.posts || [];
       
       // 分析データは空配列（機能削除のため）
-      const analyticsData: any[] = [];
+      const analyticsData: Array<{
+        likes: number;
+        comments: number;
+        shares: number;
+        reach: number;
+        engagementRate: number;
+        publishedAt: Date | string;
+        postId: string;
+      }> = [];
       
       console.log('Fetched posts from API:', allPosts.length, 'posts');
       console.log('Fetched analytics from collection:', analyticsData.length, 'records');
       console.log('Analytics data sample:', analyticsData.slice(0, 2));
       console.log('Posts response:', postsResponse);
-      console.log('Analytics response:', analyticsResponse);
       
       setAnalyticsData(analyticsData);
       
