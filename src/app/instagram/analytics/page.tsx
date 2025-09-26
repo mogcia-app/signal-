@@ -54,6 +54,8 @@ function InstagramAnalyticsContent() {
         ...doc.data()
       })) as AnalyticsData[];
       console.log('Direct Firestore fetch result:', data);
+      console.log('Analytics data length:', data.length);
+      console.log('Sample analytics data:', data[0]);
       setAnalyticsData(data);
     } catch (error) {
       console.error('Analytics fetch error:', error);
