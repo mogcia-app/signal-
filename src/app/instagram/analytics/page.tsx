@@ -151,12 +151,12 @@ function InstagramAnalyticsContent() {
   };
 
   // 統計計算
-  const totalLikes = analyticsData.reduce((sum, data) => sum + data.likes, 0);
-  const totalComments = analyticsData.reduce((sum, data) => sum + data.comments, 0);
-  const totalShares = analyticsData.reduce((sum, data) => sum + data.shares, 0);
-  const totalReach = analyticsData.reduce((sum, data) => sum + data.reach, 0);
+  const totalLikes = analyticsData.reduce((sum, data) => sum + (data.likes || 0), 0);
+  const totalComments = analyticsData.reduce((sum, data) => sum + (data.comments || 0), 0);
+  const totalShares = analyticsData.reduce((sum, data) => sum + (data.shares || 0), 0);
+  const totalReach = analyticsData.reduce((sum, data) => sum + (data.reach || 0), 0);
   const avgEngagementRate = analyticsData.length > 0 
-    ? analyticsData.reduce((sum, data) => sum + data.engagementRate, 0) / analyticsData.length 
+    ? analyticsData.reduce((sum, data) => sum + (data.engagementRate || 0), 0) / analyticsData.length 
     : 0;
   
   // デバッグログ
@@ -311,7 +311,7 @@ function InstagramAnalyticsContent() {
                   </div>
                 </div>
                 <div className="mt-4 text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-xl font-bold text-gray-900">{avgEngagementRate.toFixed(2)}%</div>
+                  <div className="text-xl font-bold text-gray-900">{(avgEngagementRate || 0).toFixed(2)}%</div>
                   <div className="text-sm text-gray-600">平均エンゲージメント率</div>
                 </div>
               </div>
@@ -330,24 +330,24 @@ function InstagramAnalyticsContent() {
                             {new Date(data.publishedAt).toLocaleDateString('ja-JP')}
                           </span>
                           <span className="text-sm text-gray-500">
-                            エンゲージメント率: {data.engagementRate.toFixed(2)}%
+                            エンゲージメント率: {(data.engagementRate || 0).toFixed(2)}%
                           </span>
                         </div>
                         <div className="grid grid-cols-4 gap-2 text-sm">
                           <div className="text-center">
-                            <div className="text-red-600 font-semibold">{data.likes}</div>
+                            <div className="text-red-600 font-semibold">{data.likes || 0}</div>
                             <div className="text-gray-500">いいね</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-blue-600 font-semibold">{data.comments}</div>
+                            <div className="text-blue-600 font-semibold">{data.comments || 0}</div>
                             <div className="text-gray-500">コメント</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-green-600 font-semibold">{data.shares}</div>
+                            <div className="text-green-600 font-semibold">{data.shares || 0}</div>
                             <div className="text-gray-500">シェア</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-purple-600 font-semibold">{data.reach}</div>
+                            <div className="text-purple-600 font-semibold">{data.reach || 0}</div>
                             <div className="text-gray-500">リーチ</div>
                           </div>
                         </div>
