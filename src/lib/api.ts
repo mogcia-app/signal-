@@ -228,7 +228,7 @@ export const analyticsApi = {
 
   // ダッシュボード統計データ取得
   getDashboardStats: async (userId: string) => {
-    return apiRequest(`/analytics/dashboard?userId=${userId}`);
+    return apiRequest(`/analytics-simple/dashboard?userId=${userId}`);
   },
 
   // グラフデータ取得
