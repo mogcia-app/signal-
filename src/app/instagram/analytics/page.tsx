@@ -31,14 +31,14 @@ function InstagramAnalyticsContent() {
     publishedAt: new Date().toISOString().split('T')[0]
   });
 
-  // 分析データを取得
+  // 分析データを取得（BFF経由）
   const fetchAnalytics = useCallback(async () => {
     if (!user?.uid) return;
     
     try {
-      console.log('Fetching analytics for user:', user.uid);
+      console.log('Fetching analytics via BFF for user:', user.uid);
       const response = await analyticsApi.list({ userId: user.uid });
-      console.log('Analytics response:', response);
+      console.log('BFF analytics response:', response);
       setAnalyticsData(response.analytics || []);
     } catch (error) {
       console.error('Analytics fetch error:', error);
@@ -50,7 +50,7 @@ function InstagramAnalyticsContent() {
     fetchAnalytics();
   }, [fetchAnalytics]);
 
-  // いいね数を保存
+  // いいね数を保存（BFF経由）
   const handleSaveLikes = async () => {
     if (!user?.uid) {
       alert('ログインが必要です');
@@ -70,9 +70,9 @@ function InstagramAnalyticsContent() {
         publishedAt: inputData.publishedAt
       };
 
-      console.log('Saving analytics data:', analyticsPayload);
+      console.log('Saving analytics data via BFF:', analyticsPayload);
       const response = await analyticsApi.create(analyticsPayload);
-      console.log('Analytics saved:', response);
+      console.log('BFF analytics saved:', response);
 
       // データを再取得
       await fetchAnalytics();
