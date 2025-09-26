@@ -117,6 +117,15 @@ function InstagramAnalyticsContent() {
   const totalLikes = analyticsData.reduce((sum, data) => sum + data.likes, 0);
   const avgLikes = analyticsData.length > 0 ? (totalLikes / analyticsData.length).toFixed(1) : '0.0';
   const maxLikes = analyticsData.reduce((max, data) => Math.max(max, data.likes), 0);
+  
+  // デバッグログ
+  console.log('Statistics calculation:', {
+    analyticsDataLength: analyticsData.length,
+    totalLikes,
+    avgLikes,
+    maxLikes,
+    recordedPosts: analyticsData.length
+  });
 
   return (
     <>
@@ -251,6 +260,18 @@ function InstagramAnalyticsContent() {
           latestRecords: analyticsData.slice(0, 3)
         }}
       />
+      
+      {/* デバッグ用の隠しログ */}
+      {(() => {
+        console.log('AIChatWidget contextData:', {
+          totalLikes: totalLikes,
+          avgLikes: avgLikes,
+          maxLikes: maxLikes,
+          recordedPosts: analyticsData.length,
+          latestRecords: analyticsData.slice(0, 3)
+        });
+        return null;
+      })()}
     </>
   );
 }
