@@ -24,8 +24,8 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { userProfile } = useUserProfile();
 
-  // デバッグ用ログ
-  console.log('AIChatWidget rendered, isOpen:', isOpen, 'contextData:', contextData);
+  // デバッグ用ログ（削除）
+  // console.log('AIChatWidget rendered, isOpen:', isOpen, 'contextData:', contextData);
 
   // 計画系テンプレート
   const planTemplates = [
