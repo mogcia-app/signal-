@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
       comments: totalComments,
       postsThisWeek,
       weeklyGoal: 5,
-      followerGrowth: publishedPosts.length > 0 ? 12.5 : 0,
+      followerGrowth: analyticsData.length > 0 ? 12.5 : 0,
       topPostType,
       monthlyFeedPosts,
       monthlyReelPosts,
