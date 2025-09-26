@@ -132,25 +132,15 @@ export default function InstagramAnalyticsPage() {
       return;
     }
     
+    // Firebaseから直接取得（緊急対応）
     try {
-      console.log('Fetching analytics for user:', user.uid);
+      console.log('Fetching analytics from Firebase for user:', user.uid);
       const response = await analyticsApi.list({ userId: user.uid });
-      console.log('Analytics API response:', response);
+      console.log('Firebase analytics response:', response);
       setAnalyticsData(response.analytics || []);
-      
-      // ローカルストレージにも保存（バックアップ用）
-      if (response.analytics && response.analytics.length > 0) {
-        localStorage.setItem(`analytics_${user.uid}`, JSON.stringify(response.analytics));
-      }
     } catch (error) {
-      console.error('分析データ取得エラー:', error);
-      // エラー時はローカルストレージから取得
-      const localData = localStorage.getItem(`analytics_${user.uid}`);
-      if (localData) {
-        const parsedData = JSON.parse(localData);
-        console.log('Loaded analytics from localStorage fallback:', parsedData);
-        setAnalyticsData(parsedData);
-      }
+      console.error('Firebase取得エラー:', error);
+      setAnalyticsData([]);
     }
   }, [user?.uid]);
 
@@ -318,13 +308,14 @@ export default function InstagramAnalyticsPage() {
       
       console.log('Saved to localStorage:', updatedData);
 
-      // ファイルベースのAPIに保存
+      // Firebaseに直接保存（緊急対応）
       try {
         const response = await analyticsApi.create(analyticsPayload);
         console.log('Analytics API response:', response);
         console.log('Analytics data saved with ID:', response.id);
       } catch (apiError) {
-        console.warn('API save failed, but localStorage save succeeded:', apiError);
+        console.error('Firebase save failed:', apiError);
+        alert('データの保存に失敗しました。Firebaseの設定を確認してください。');
       }
 
       setAnalyticsData(prev => [newAnalytics, ...prev]);
