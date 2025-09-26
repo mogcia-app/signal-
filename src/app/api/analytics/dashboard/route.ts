@@ -49,25 +49,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 本番環境でFirebase設定がない場合はデフォルト値を返す
-    if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-      const defaultStats: DashboardStats = {
-        followers: 0,
-        engagement: 0,
-        reach: 0,
-        saves: 0,
-        likes: 0,
-        comments: 0,
-        postsThisWeek: 0,
-        weeklyGoal: 5,
-        followerGrowth: 0,
-        topPostType: 'ー',
-        monthlyFeedPosts: 0,
-        monthlyReelPosts: 0,
-        monthlyStoryPosts: 0
-      };
-      return NextResponse.json({ stats: defaultStats });
-    }
+    // 本番環境でもFirebaseに接続を試行
+    console.log('Dashboard environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      hasApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'Set' : 'Not set'
+    });
 
     // ユーザーの分析データを直接取得
     const analyticsQuery = query(

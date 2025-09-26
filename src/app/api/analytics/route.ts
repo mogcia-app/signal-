@@ -94,14 +94,12 @@ export async function GET(request: NextRequest) {
     const postId = searchParams.get('postId');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    // 本番環境でFirebase設定がない場合は空の配列を返す
-    if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-      console.log('Firebase API key not found in production, returning empty analytics');
-      return NextResponse.json({
-        analytics: [],
-        total: 0
-      });
-    }
+    // 本番環境でもFirebaseに接続を試行
+    console.log('Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      hasApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'Set' : 'Not set'
+    });
 
     console.log('Firebase API key found, proceeding with analytics query');
     console.log('Query parameters:', { userId, postId, limit });
