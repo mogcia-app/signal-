@@ -32,7 +32,7 @@ async function readAnalyticsData() {
 }
 
 // データを保存
-async function writeAnalyticsData(data: any[]) {
+async function writeAnalyticsData(data: Record<string, unknown>[]) {
   try {
     await ensureDataFile();
     await writeFile(ANALYTICS_FILE, JSON.stringify(data, null, 2));
@@ -126,11 +126,11 @@ export async function GET(request: NextRequest) {
     let filteredData = allData;
     
     if (userId) {
-      filteredData = filteredData.filter((item: any) => item.userId === userId);
+      filteredData = filteredData.filter((item: Record<string, unknown>) => item.userId === userId);
     }
     
     if (postId) {
-      filteredData = filteredData.filter((item: any) => item.postId === postId);
+      filteredData = filteredData.filter((item: Record<string, unknown>) => item.postId === postId);
     }
     
     // 制限

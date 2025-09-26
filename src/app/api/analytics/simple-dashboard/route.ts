@@ -50,34 +50,34 @@ export async function GET(request: NextRequest) {
 
     // データを読み込み
     const allData = await readAnalyticsData();
-    const analyticsData = allData.filter((item: any) => item.userId === userId);
+    const analyticsData = allData.filter((item: Record<string, unknown>) => item.userId === userId);
 
     console.log('Dashboard - Total analytics records:', analyticsData.length);
 
     // 統計データを計算
-    const totalLikes = analyticsData.reduce((sum, data) => 
-      sum + (data.likes || 0), 0
+    const totalLikes = analyticsData.reduce((sum: number, data: Record<string, unknown>) => 
+      sum + (Number(data.likes) || 0), 0
     );
-    const totalComments = analyticsData.reduce((sum, data) => 
-      sum + (data.comments || 0), 0
+    const totalComments = analyticsData.reduce((sum: number, data: Record<string, unknown>) => 
+      sum + (Number(data.comments) || 0), 0
     );
-    const totalSaves = analyticsData.reduce((sum, data) => 
-      sum + (data.shares || 0), 0
+    const totalSaves = analyticsData.reduce((sum: number, data: Record<string, unknown>) => 
+      sum + (Number(data.shares) || 0), 0
     );
-    const totalReach = analyticsData.reduce((sum, data) => 
-      sum + (data.reach || 0), 0
+    const totalReach = analyticsData.reduce((sum: number, data: Record<string, unknown>) => 
+      sum + (Number(data.reach) || 0), 0
     );
 
     // 今週の投稿数
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const postsThisWeek = analyticsData.filter(data => 
-      new Date(data.publishedAt) >= oneWeekAgo
+    const postsThisWeek = analyticsData.filter((data: Record<string, unknown>) => 
+      new Date(data.publishedAt as string) >= oneWeekAgo
     ).length;
 
     // エンゲージメント率の計算
     const avgEngagement = analyticsData.length > 0 
-      ? analyticsData.reduce((sum, data) => sum + (data.engagementRate || 0), 0) / analyticsData.length
+      ? analyticsData.reduce((sum: number, data: Record<string, unknown>) => sum + (Number(data.engagementRate) || 0), 0) / analyticsData.length
       : 0;
 
     // フォロワー数の推定

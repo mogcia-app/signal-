@@ -63,13 +63,42 @@ export async function POST(request: NextRequest) {
       createdAt: new Date()
     };
 
-    const docRef = await addDoc(collection(db, 'analytics'), analyticsData);
-    
-    console.log('Analytics data saved to collection:', {
-      id: docRef.id,
-      postId,
-      analyticsData
-    });
+    // コレクションが存在しない場合は作成
+    let docRef;
+    try {
+      docRef = await addDoc(collection(db, 'analytics'), analyticsData);
+      
+      console.log('Analytics data saved to collection:', {
+        id: docRef.id,
+        postId,
+        analyticsData
+      });
+    } catch (error) {
+      console.error('Error saving to analytics collection:', error);
+      // コレクションが存在しない場合は、まずダミーデータで作成
+      try {
+        const dummyData = {
+          postId: 'dummy',
+          userId: 'dummy',
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          reach: 0,
+          engagementRate: 0,
+          publishedAt: new Date(),
+          createdAt: new Date()
+        };
+        await addDoc(collection(db, 'analytics'), dummyData);
+        console.log('Created analytics collection with dummy data');
+        
+        // 再度実際のデータを保存
+        docRef = await addDoc(collection(db, 'analytics'), analyticsData);
+        console.log('Analytics data saved after collection creation:', docRef.id);
+      } catch (secondError) {
+        console.error('Failed to create collection:', secondError);
+        throw secondError;
+      }
+    }
     
     return NextResponse.json({
       id: docRef.id,
