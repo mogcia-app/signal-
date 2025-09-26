@@ -18,10 +18,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, likes, publishedAt } = body;
 
-    // バリデーション
+    // バリデーション強化
     if (!userId || likes === undefined) {
       return NextResponse.json(
         { error: 'userIdとlikesが必要です' },
+        { status: 400 }
+      );
+    }
+
+    // データ型と範囲の検証
+    const likesNumber = Number(likes);
+    if (isNaN(likesNumber) || likesNumber < 0 || likesNumber > 10000000) {
+      return NextResponse.json(
+        { error: 'いいね数は0以上10,000,000以下の数値である必要があります' },
         { status: 400 }
       );
     }
