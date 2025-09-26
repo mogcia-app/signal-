@@ -113,19 +113,8 @@ function InstagramAnalyticsContent() {
     }
   };
 
-  // 統計計算
+  // シンプルな合計計算のみ
   const totalLikes = analyticsData.reduce((sum, data) => sum + data.likes, 0);
-  const avgLikes = analyticsData.length > 0 ? (totalLikes / analyticsData.length).toFixed(1) : '0.0';
-  const maxLikes = analyticsData.reduce((max, data) => Math.max(max, data.likes), 0);
-  
-  // デバッグログ
-  console.log('Statistics calculation:', {
-    analyticsDataLength: analyticsData.length,
-    totalLikes,
-    avgLikes,
-    maxLikes,
-    recordedPosts: analyticsData.length
-  });
 
   return (
     <>
@@ -205,26 +194,12 @@ function InstagramAnalyticsContent() {
             </div>
           </div>
 
-          {/* 統計サマリー */}
+          {/* シンプルな合計表示 */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">いいね数統計</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">{totalLikes.toLocaleString()}</div>
-                <div className="text-xs text-gray-600">総いいね数</div>
-              </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">{avgLikes}</div>
-                <div className="text-xs text-gray-600">平均いいね数</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">{maxLikes.toLocaleString()}</div>
-                <div className="text-xs text-gray-600">最高いいね数</div>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">{analyticsData.length}</div>
-                <div className="text-xs text-gray-600">記録投稿数</div>
-              </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">いいね数合計</h3>
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <div className="text-3xl font-bold text-gray-900">{totalLikes.toLocaleString()}</div>
+              <div className="text-sm text-gray-600">総いいね数</div>
             </div>
           </div>
 
@@ -254,24 +229,9 @@ function InstagramAnalyticsContent() {
       <AIChatWidget 
         contextData={{
           totalLikes: totalLikes,
-          avgLikes: avgLikes,
-          maxLikes: maxLikes,
-          recordedPosts: analyticsData.length,
-          latestRecords: analyticsData.slice(0, 3)
+          recordedPosts: analyticsData.length
         }}
       />
-      
-      {/* デバッグ用の隠しログ */}
-      {(() => {
-        console.log('AIChatWidget contextData:', {
-          totalLikes: totalLikes,
-          avgLikes: avgLikes,
-          maxLikes: maxLikes,
-          recordedPosts: analyticsData.length,
-          latestRecords: analyticsData.slice(0, 3)
-        });
-        return null;
-      })()}
     </>
   );
 }
