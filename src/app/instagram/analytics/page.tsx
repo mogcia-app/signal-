@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
+import { AuthGuard } from '../../../components/auth-guard';
 import { analyticsApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/auth-context';
 import { 
@@ -21,7 +22,7 @@ interface SimpleAnalyticsData {
   createdAt: Date;
 }
 
-export default function InstagramAnalyticsPage() {
+function InstagramAnalyticsContent() {
   const { user } = useAuth();
   const [analyticsData, setAnalyticsData] = useState<SimpleAnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -270,5 +271,13 @@ export default function InstagramAnalyticsPage() {
         }}
       />
     </>
+  );
+}
+
+export default function InstagramAnalyticsPage() {
+  return (
+    <AuthGuard>
+      <InstagramAnalyticsContent />
+    </AuthGuard>
   );
 }

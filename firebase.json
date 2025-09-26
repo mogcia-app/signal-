@@ -12,10 +12,17 @@
       ]
     }
   ],
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
   "emulators": {
     "functions": {
       "port": 5001,
       "host": "localhost"
+    },
+    "firestore": {
+      "port": 8080
     },
     "ui": {
       "enabled": false
