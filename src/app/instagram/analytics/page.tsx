@@ -240,7 +240,11 @@ export default function InstagramAnalyticsPage() {
       };
 
       console.log('Saving analytics data to collection:', analyticsData);
+      console.log('User ID:', user.uid);
+      console.log('Post ID:', postId);
+      
       const response = await analyticsApi.create(analyticsData);
+      console.log('Analytics API response:', response);
       console.log('Analytics data saved with ID:', response.id);
 
       // 分析データをローカルstateにも追加（表示用）
@@ -292,7 +296,11 @@ export default function InstagramAnalyticsPage() {
       alert('分析データを保存しました！');
     } catch (error) {
       console.error('保存エラー:', error);
-      alert('保存に失敗しました');
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      alert(`保存に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
