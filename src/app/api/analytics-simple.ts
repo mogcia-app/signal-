@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Analytics POST error:', error);
     return NextResponse.json(
-      { error: '分析データの保存に失敗しました: ' + error.message },
+      { error: '分析データの保存に失敗しました: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     );
   }
