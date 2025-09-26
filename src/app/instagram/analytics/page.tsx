@@ -268,7 +268,7 @@ export default function InstagramAnalyticsPage() {
       }
 
       // 分析データをanalyticsコレクションに保存
-      const analyticsData = {
+      const analyticsPayload = {
         postId: postId,
         userId: user.uid,
         likes: parseInt(inputData.likes) || 0,
@@ -283,7 +283,7 @@ export default function InstagramAnalyticsPage() {
         publishedAt: inputData.publishedAt
       };
 
-      console.log('Saving analytics data to collection:', analyticsData);
+      console.log('Saving analytics data to collection:', analyticsPayload);
       console.log('User ID:', user.uid);
       console.log('Post ID:', postId);
       
@@ -292,15 +292,15 @@ export default function InstagramAnalyticsPage() {
         id: 'local_' + Date.now(),
         postId: postId,
         userId: user.uid,
-        likes: analyticsData.likes,
-        comments: analyticsData.comments,
-        shares: analyticsData.shares,
-        reach: analyticsData.reach,
-        profileClicks: analyticsData.profileClicks,
-        websiteClicks: analyticsData.websiteClicks,
-        storyViews: analyticsData.storyViews,
-        followerChange: analyticsData.followerChange,
-        publishedAt: new Date(analyticsData.publishedAt),
+        likes: analyticsPayload.likes,
+        comments: analyticsPayload.comments,
+        shares: analyticsPayload.shares,
+        reach: analyticsPayload.reach,
+        profileClicks: analyticsPayload.profileClicks,
+        websiteClicks: analyticsPayload.websiteClicks,
+        storyViews: analyticsPayload.storyViews,
+        followerChange: analyticsPayload.followerChange,
+        publishedAt: new Date(analyticsPayload.publishedAt),
         createdAt: new Date()
       };
 
@@ -314,7 +314,7 @@ export default function InstagramAnalyticsPage() {
 
       // ファイルベースのAPIに保存
       try {
-        const response = await analyticsApi.create(analyticsData);
+        const response = await analyticsApi.create(analyticsPayload);
         console.log('Analytics API response:', response);
         console.log('Analytics data saved with ID:', response.id);
       } catch (apiError) {
@@ -350,7 +350,7 @@ export default function InstagramAnalyticsPage() {
         publishedAt: new Date().toISOString().split('T')[0]
       });
       
-      console.log('Data saved successfully! Current analytics data:', analyticsData);
+      console.log('Data saved successfully! Current analytics data:', analyticsPayload);
       console.log('Updated local state:', [newAnalytics, ...analyticsData]);
       alert('分析データを保存しました！');
     } catch (error) {
