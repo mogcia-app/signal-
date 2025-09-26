@@ -53,18 +53,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // ユーザーの投稿を取得
-    const postsQuery = query(
-      collection(db, 'posts'),
+    // ユーザーの分析データを直接取得
+    const analyticsQuery = query(
+      collection(db, 'analytics'),
       where('userId', '==', userId),
-      where('status', '==', 'published'),
       orderBy('createdAt', 'desc')
     );
 
-    const postsSnapshot = await getDocs(postsQuery);
-    const publishedPosts: PostData[] = postsSnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as PostData))
-      .filter(post => post.analytics);
+    const analyticsSnapshot = await getDocs(analyticsQuery);
+    const analyticsData = analyticsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
 
     // 期間に応じてデータをフィルタリング
     const now = new Date();
@@ -84,8 +84,8 @@ export async function GET(request: NextRequest) {
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     }
 
-    const filteredPosts = publishedPosts.filter(post => 
-      post.analytics && new Date(post.analytics.publishedAt) >= startDate
+    const filteredAnalytics = analyticsData.filter(data => 
+      new Date(data.publishedAt) >= startDate
     );
 
     // ラベル生成（期間に応じて）
@@ -99,19 +99,17 @@ export async function GET(request: NextRequest) {
         date.setDate(date.getDate() - i);
         labels.push(date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }));
         
-        const dayPosts = filteredPosts.filter(post => {
-          if (!post.analytics) return false;
-          const postDate = new Date(post.analytics.publishedAt);
-          return postDate.toDateString() === date.toDateString();
+        const dayAnalytics = filteredAnalytics.filter(data => {
+          const dataDate = new Date(data.publishedAt);
+          return dataDate.toDateString() === date.toDateString();
         });
 
-        const dayValue = dayPosts.reduce((sum, post) => {
-          if (!post.analytics) return sum;
+        const dayValue = dayAnalytics.reduce((sum, data) => {
           switch (type) {
-            case 'likes': return sum + post.analytics.likes;
-            case 'followers': return sum + Math.floor(post.analytics.likes * 0.1);
-            case 'saves': return sum + post.analytics.shares;
-            case 'reach': return sum + post.analytics.reach;
+            case 'likes': return sum + data.likes;
+            case 'followers': return sum + Math.floor(data.likes * 0.1);
+            case 'saves': return sum + data.shares;
+            case 'reach': return sum + data.reach;
             default: return sum;
           }
         }, 0);
@@ -128,19 +126,17 @@ export async function GET(request: NextRequest) {
         
         labels.push(`${weekStart.getMonth() + 1}/${weekStart.getDate()}-${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`);
         
-        const weekPosts = filteredPosts.filter(post => {
-          if (!post.analytics) return false;
-          const postDate = new Date(post.analytics.publishedAt);
-          return postDate >= weekStart && postDate < weekEnd;
+        const weekAnalytics = filteredAnalytics.filter(data => {
+          const dataDate = new Date(data.publishedAt);
+          return dataDate >= weekStart && dataDate < weekEnd;
         });
 
-        const weekValue = weekPosts.reduce((sum, post) => {
-          if (!post.analytics) return sum;
+        const weekValue = weekAnalytics.reduce((sum, data) => {
           switch (type) {
-            case 'likes': return sum + post.analytics.likes;
-            case 'followers': return sum + Math.floor(post.analytics.likes * 0.1);
-            case 'saves': return sum + post.analytics.shares;
-            case 'reach': return sum + post.analytics.reach;
+            case 'likes': return sum + data.likes;
+            case 'followers': return sum + Math.floor(data.likes * 0.1);
+            case 'saves': return sum + data.shares;
+            case 'reach': return sum + data.reach;
             default: return sum;
           }
         }, 0);
@@ -158,19 +154,17 @@ export async function GET(request: NextRequest) {
         
         labels.push(`${monthStart.getMonth() + 1}月`);
         
-        const monthPosts = filteredPosts.filter(post => {
-          if (!post.analytics) return false;
-          const postDate = new Date(post.analytics.publishedAt);
-          return postDate >= monthStart && postDate < monthEnd;
+        const monthAnalytics = filteredAnalytics.filter(data => {
+          const dataDate = new Date(data.publishedAt);
+          return dataDate >= monthStart && dataDate < monthEnd;
         });
 
-        const monthValue = monthPosts.reduce((sum, post) => {
-          if (!post.analytics) return sum;
+        const monthValue = monthAnalytics.reduce((sum, data) => {
           switch (type) {
-            case 'likes': return sum + post.analytics.likes;
-            case 'followers': return sum + Math.floor(post.analytics.likes * 0.1);
-            case 'saves': return sum + post.analytics.shares;
-            case 'reach': return sum + post.analytics.reach;
+            case 'likes': return sum + data.likes;
+            case 'followers': return sum + Math.floor(data.likes * 0.1);
+            case 'saves': return sum + data.shares;
+            case 'reach': return sum + data.reach;
             default: return sum;
           }
         }, 0);

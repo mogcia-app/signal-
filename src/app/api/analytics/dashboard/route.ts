@@ -77,84 +77,66 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ stats: defaultStats });
     }
 
-    // ユーザーの全投稿を取得
-    const postsQuery = query(
-      collection(db, 'posts'),
+    // ユーザーの分析データを直接取得
+    const analyticsQuery = query(
+      collection(db, 'analytics'),
       where('userId', '==', userId),
       orderBy('createdAt', 'desc')
     );
 
-    const postsSnapshot = await getDocs(postsQuery);
-    const allPosts: PostData[] = postsSnapshot.docs.map(doc => ({
+    const analyticsSnapshot = await getDocs(analyticsQuery);
+    const analyticsData = analyticsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    } as PostData));
-
-    // 公開済み投稿のみをフィルタリング
-    const publishedPosts = allPosts.filter(post => 
-      post.status === 'published' && post.analytics
-    );
+    }));
 
     // デバッグ用ログ
-    console.log('Total posts:', allPosts.length);
-    console.log('Published posts with analytics:', publishedPosts.length);
-    console.log('Sample post analytics:', publishedPosts[0]?.analytics);
+    console.log('Total analytics records:', analyticsData.length);
+    console.log('Sample analytics data:', analyticsData[0]);
 
     // 統計データを計算
-    const totalLikes = publishedPosts.reduce((sum, post) => 
-      sum + (post.analytics?.likes || 0), 0
+    const totalLikes = analyticsData.reduce((sum, data) => 
+      sum + (data.likes || 0), 0
     );
-    const totalComments = publishedPosts.reduce((sum, post) => 
-      sum + (post.analytics?.comments || 0), 0
+    const totalComments = analyticsData.reduce((sum, data) => 
+      sum + (data.comments || 0), 0
     );
-    const totalSaves = publishedPosts.reduce((sum, post) => 
-      sum + (post.analytics?.shares || 0), 0
+    const totalSaves = analyticsData.reduce((sum, data) => 
+      sum + (data.shares || 0), 0
     );
-    const totalReach = publishedPosts.reduce((sum, post) => 
-      sum + (post.analytics?.reach || 0), 0
+    const totalReach = analyticsData.reduce((sum, data) => 
+      sum + (data.reach || 0), 0
     );
 
     // 今週の投稿数
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const postsThisWeek = publishedPosts.filter(post => 
-      post.analytics && new Date(post.analytics.publishedAt) >= oneWeekAgo
+    const postsThisWeek = analyticsData.filter(data => 
+      new Date(data.publishedAt) >= oneWeekAgo
     ).length;
 
     // 今月の投稿数（タイプ別）
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const monthlyPosts = publishedPosts.filter(post => 
-      post.analytics && new Date(post.analytics.publishedAt) >= oneMonthAgo
+    const monthlyAnalytics = analyticsData.filter(data => 
+      new Date(data.publishedAt) >= oneMonthAgo
     );
 
-    const monthlyFeedPosts = monthlyPosts.filter(post => post.postType === 'feed').length;
-    const monthlyReelPosts = monthlyPosts.filter(post => post.postType === 'reel').length;
-    const monthlyStoryPosts = monthlyPosts.filter(post => post.postType === 'story').length;
+    // 投稿タイプ別の集計（投稿データから取得する必要がある）
+    const monthlyFeedPosts = 0; // TODO: 投稿データから取得
+    const monthlyReelPosts = 0; // TODO: 投稿データから取得
+    const monthlyStoryPosts = 0; // TODO: 投稿データから取得
 
     // エンゲージメント率の計算
-    const avgEngagement = publishedPosts.length > 0 
-      ? publishedPosts.reduce((sum, post) => sum + (post.analytics?.engagementRate || 0), 0) / publishedPosts.length
+    const avgEngagement = analyticsData.length > 0 
+      ? analyticsData.reduce((sum, data) => sum + (data.engagementRate || 0), 0) / analyticsData.length
       : 0;
 
     // フォロワー数の推定（実際のAPIから取得する場合はここを変更）
     const estimatedFollowers = 1000 + (totalLikes * 0.1);
 
-    // 人気投稿タイプの計算
-    const topPostType = monthlyPosts.length > 0 
-      ? (() => {
-          const typeCounts = monthlyPosts.reduce((acc, post) => {
-            acc[post.postType] = (acc[post.postType] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>);
-          const maxType = Object.entries(typeCounts).reduce((a, b) => 
-            typeCounts[a[0]] > typeCounts[b[0]] ? a : b
-          );
-          return maxType[0] === 'feed' ? 'フィード' : 
-                 maxType[0] === 'reel' ? 'リール' : 
-                 maxType[0] === 'story' ? 'ストーリーズ' : 'ー';
-        })()
-      : 'ー';
+    // 人気投稿タイプの計算（投稿データから取得する必要がある）
+    const topPostType = 'ー'; // TODO: 投稿データから取得
 
     const stats: DashboardStats = {
       followers: Math.round(estimatedFollowers),
@@ -174,8 +156,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       stats,
-      totalPosts: allPosts.length,
-      publishedPosts: publishedPosts.length,
+      totalAnalytics: analyticsData.length,
       message: 'ダッシュボード統計データを取得しました'
     });
 
