@@ -133,25 +133,22 @@ export default function InstagramAnalyticsPage() {
     }
     
     try {
-      // まずローカルストレージから取得を試行
-      const localData = localStorage.getItem(`analytics_${user.uid}`);
-      if (localData) {
-        const parsedData = JSON.parse(localData);
-        console.log('Loaded analytics from localStorage:', parsedData);
-        setAnalyticsData(parsedData);
-        return;
-      }
-      
       console.log('Fetching analytics for user:', user.uid);
       const response = await analyticsApi.list({ userId: user.uid });
       console.log('Analytics API response:', response);
       setAnalyticsData(response.analytics || []);
+      
+      // ローカルストレージにも保存（バックアップ用）
+      if (response.analytics && response.analytics.length > 0) {
+        localStorage.setItem(`analytics_${user.uid}`, JSON.stringify(response.analytics));
+      }
     } catch (error) {
       console.error('分析データ取得エラー:', error);
       // エラー時はローカルストレージから取得
       const localData = localStorage.getItem(`analytics_${user.uid}`);
       if (localData) {
         const parsedData = JSON.parse(localData);
+        console.log('Loaded analytics from localStorage fallback:', parsedData);
         setAnalyticsData(parsedData);
       }
     }
@@ -315,13 +312,13 @@ export default function InstagramAnalyticsPage() {
       
       console.log('Saved to localStorage:', updatedData);
 
-      // Firebaseにも保存を試行（エラーでも続行）
+      // ファイルベースのAPIに保存
       try {
         const response = await analyticsApi.create(analyticsData);
         console.log('Analytics API response:', response);
         console.log('Analytics data saved with ID:', response.id);
-      } catch (firebaseError) {
-        console.warn('Firebase save failed, but localStorage save succeeded:', firebaseError);
+      } catch (apiError) {
+        console.warn('API save failed, but localStorage save succeeded:', apiError);
       }
 
       setAnalyticsData(prev => [newAnalytics, ...prev]);
@@ -353,6 +350,8 @@ export default function InstagramAnalyticsPage() {
         publishedAt: new Date().toISOString().split('T')[0]
       });
       
+      console.log('Data saved successfully! Current analytics data:', analyticsData);
+      console.log('Updated local state:', [newAnalytics, ...analyticsData]);
       alert('分析データを保存しました！');
     } catch (error) {
       console.error('保存エラー:', error);
@@ -379,6 +378,9 @@ export default function InstagramAnalyticsPage() {
     const dataDate = new Date(data.publishedAt);
     return dataDate.getMonth() === currentMonth && dataDate.getFullYear() === currentYear;
   });
+  
+  console.log('Current analytics data for calculations:', analyticsData);
+  console.log('This month analytics:', thisMonthAnalytics);
 
   // 今月のトータル計算
   const monthlyTotals = {

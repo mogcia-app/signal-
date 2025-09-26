@@ -189,7 +189,7 @@ export const analyticsApi = {
     followerChange?: number;
     publishedAt: string;
   }) => {
-    return apiRequest('/analytics/simple', {
+    return apiRequest('/analytics', {
       method: 'POST',
       body: JSON.stringify(analyticsData),
     });
@@ -208,7 +208,7 @@ export const analyticsApi = {
       }
     });
     
-    return apiRequest(`/analytics/simple?${searchParams.toString()}`);
+    return apiRequest(`/analytics?${searchParams.toString()}`);
   },
 
   // 分析データ取得（既存）
@@ -228,7 +228,7 @@ export const analyticsApi = {
 
   // ダッシュボード統計データ取得
   getDashboardStats: async (userId: string) => {
-    return apiRequest(`/analytics/simple-dashboard?userId=${userId}`);
+    return apiRequest(`/analytics/dashboard?userId=${userId}`);
   },
 
   // グラフデータ取得

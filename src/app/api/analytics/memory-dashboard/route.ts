@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 
-// 簡単なファイルベースデータベース（Vercel対応）
-const DATA_DIR = '/tmp';
-const ANALYTICS_FILE = join(DATA_DIR, 'analytics.json');
+// メモリベースのデータストレージ（本番環境対応）
+let analyticsData: Record<string, unknown>[] = [];
 
 // ダッシュボード用の統計データ型定義
 interface DashboardStats {
@@ -23,14 +20,15 @@ interface DashboardStats {
   monthlyStoryPosts: number;
 }
 
-// データを読み込み
-async function readAnalyticsData() {
+// データを取得（他のAPIから同期）
+async function getAnalyticsData(userId: string) {
   try {
-    await mkdir(DATA_DIR, { recursive: true });
-    const data = await readFile(ANALYTICS_FILE, 'utf8');
-    return JSON.parse(data);
+    // 他のAPIからデータを取得
+    const response = await fetch(`${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://localhost:3000'}/api/analytics/memory?userId=${userId}`);
+    const data = await response.json();
+    return data.analytics || [];
   } catch (error) {
-    console.error('Error reading analytics data:', error);
+    console.error('Error fetching analytics data:', error);
     return [];
   }
 }
@@ -48,9 +46,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // データを読み込み
-    const allData = await readAnalyticsData();
-    const analyticsData = allData.filter((item: Record<string, unknown>) => item.userId === userId);
+    // データを取得
+    const analyticsData = await getAnalyticsData(userId);
 
     console.log('Dashboard - Total analytics records:', analyticsData.length);
 
@@ -98,6 +95,8 @@ export async function GET(request: NextRequest) {
       monthlyReelPosts: 0,
       monthlyStoryPosts: 0
     };
+
+    console.log('Dashboard stats calculated:', stats);
 
     return NextResponse.json({
       stats,

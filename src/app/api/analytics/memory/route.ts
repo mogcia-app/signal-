@@ -1,45 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, readFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 
-// 簡単なファイルベースデータベース（Vercel対応）
-const DATA_DIR = '/tmp';
-const ANALYTICS_FILE = join(DATA_DIR, 'analytics.json');
-
-// データディレクトリとファイルの初期化
-async function ensureDataFile() {
-  try {
-    await mkdir(DATA_DIR, { recursive: true });
-    const fileExists = await readFile(ANALYTICS_FILE, 'utf8').catch(() => null);
-    if (!fileExists) {
-      await writeFile(ANALYTICS_FILE, JSON.stringify([]));
-    }
-  } catch (error) {
-    console.error('Error initializing data file:', error);
-  }
-}
-
-// データを読み込み
-async function readAnalyticsData() {
-  try {
-    await ensureDataFile();
-    const data = await readFile(ANALYTICS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error reading analytics data:', error);
-    return [];
-  }
-}
-
-// データを保存
-async function writeAnalyticsData(data: Record<string, unknown>[]) {
-  try {
-    await ensureDataFile();
-    await writeFile(ANALYTICS_FILE, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('Error writing analytics data:', error);
-  }
-}
+// メモリベースのデータストレージ（本番環境対応）
+let analyticsData: Record<string, unknown>[] = [];
 
 // 分析データ作成
 export async function POST(request: NextRequest) {
@@ -68,8 +30,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const analyticsData = {
-      id: 'analytics_' + Date.now(),
+    const newAnalyticsData = {
+      id: 'analytics_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
       postId,
       userId,
       likes: parseInt(likes) || 0,
@@ -85,21 +47,16 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString()
     };
 
-    // 既存データを読み込み
-    const existingData = await readAnalyticsData();
+    // メモリに追加
+    analyticsData = [newAnalyticsData, ...analyticsData];
     
-    // 新しいデータを追加
-    const updatedData = [analyticsData, ...existingData];
-    
-    // データを保存
-    await writeAnalyticsData(updatedData);
-    
-    console.log('Analytics data saved to file:', analyticsData);
+    console.log('Analytics data saved to memory:', newAnalyticsData);
+    console.log('Total analytics records in memory:', analyticsData.length);
     
     return NextResponse.json({
-      id: analyticsData.id,
+      id: newAnalyticsData.id,
       message: '分析データが保存されました',
-      data: analyticsData
+      data: newAnalyticsData
     });
 
   } catch (error) {
@@ -119,11 +76,8 @@ export async function GET(request: NextRequest) {
     const postId = searchParams.get('postId');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    // データを読み込み
-    const allData = await readAnalyticsData();
-    
     // フィルタリング
-    let filteredData = allData;
+    let filteredData = analyticsData;
     
     if (userId) {
       filteredData = filteredData.filter((item: Record<string, unknown>) => item.userId === userId);
@@ -136,7 +90,8 @@ export async function GET(request: NextRequest) {
     // 制限
     const analytics = filteredData.slice(0, limit);
 
-    console.log('Fetched analytics from file:', analytics.length, 'records');
+    console.log('Fetched analytics from memory:', analytics.length, 'records');
+    console.log('Total records in memory:', analyticsData.length);
 
     return NextResponse.json({
       analytics,
