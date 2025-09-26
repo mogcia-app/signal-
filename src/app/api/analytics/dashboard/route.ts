@@ -19,29 +19,21 @@ interface DashboardStats {
   monthlyStoryPosts: number;
 }
 
-interface PostData {
+interface AnalyticsData {
   id: string;
+  postId: string;
   userId: string;
-  title: string;
-  content: string;
-  hashtags: string[];
-  postType: 'feed' | 'reel' | 'story';
-  scheduledDate?: string;
-  scheduledTime?: string;
-  status: 'draft' | 'scheduled' | 'published';
-  imageUrl?: string | null;
-  imageData?: string | null;
+  likes: number;
+  comments: number;
+  shares: number;
+  reach: number;
+  engagementRate: number;
+  profileClicks?: number;
+  websiteClicks?: number;
+  storyViews?: number;
+  followerChange?: number;
+  publishedAt: Date;
   createdAt: Date;
-  updatedAt: Date;
-  analytics?: {
-    likes: number;
-    comments: number;
-    shares: number;
-    views: number;
-    reach: number;
-    engagementRate: number;
-    publishedAt: Date;
-  };
 }
 
 // ダッシュボード統計データ取得
@@ -85,10 +77,10 @@ export async function GET(request: NextRequest) {
     );
 
     const analyticsSnapshot = await getDocs(analyticsQuery);
-    const analyticsData = analyticsSnapshot.docs.map(doc => ({
+    const analyticsData: AnalyticsData[] = analyticsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    } as AnalyticsData));
 
     // デバッグ用ログ
     console.log('Total analytics records:', analyticsData.length);
@@ -118,9 +110,9 @@ export async function GET(request: NextRequest) {
     // 今月の投稿数（タイプ別）
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const monthlyAnalytics = analyticsData.filter(data => 
-      new Date(data.publishedAt) >= oneMonthAgo
-    );
+    // const monthlyAnalytics = analyticsData.filter(data => 
+    //   new Date(data.publishedAt) >= oneMonthAgo
+    // );
 
     // 投稿タイプ別の集計（投稿データから取得する必要がある）
     const monthlyFeedPosts = 0; // TODO: 投稿データから取得
