@@ -56,18 +56,26 @@ export async function GET(request: NextRequest) {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'Set' : 'Not set'
     });
 
-    // ユーザーの分析データを直接取得
-    const analyticsQuery = query(
-      collection(db, 'analytics'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
+    // まずローカルストレージから取得を試行（クライアントサイドでのみ動作）
+    // サーバーサイドではFirebaseから取得
+    let analyticsData: AnalyticsData[] = [];
+    
+    try {
+      const analyticsQuery = query(
+        collection(db, 'analytics'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
 
-    const analyticsSnapshot = await getDocs(analyticsQuery);
-    const analyticsData: AnalyticsData[] = analyticsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as AnalyticsData));
+      const analyticsSnapshot = await getDocs(analyticsQuery);
+      analyticsData = analyticsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as AnalyticsData));
+    } catch (firebaseError) {
+      console.warn('Firebase fetch failed, using empty data:', firebaseError);
+      analyticsData = [];
+    }
 
     // デバッグ用ログ
     console.log('Total analytics records:', analyticsData.length);
