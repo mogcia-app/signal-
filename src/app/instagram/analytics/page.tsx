@@ -104,7 +104,7 @@ function InstagramAnalyticsContent() {
       const reach = parseInt(inputData.reach) || 0;
       
       // エンゲージメント率の計算
-      const engagementRate = reach > 0 ? ((likes + comments + shares) / reach * 100).toFixed(2) : 0;
+      const engagementRate = reach > 0 ? ((likes + comments + shares) / reach * 100).toFixed(2) : "0";
 
       const analyticsPayload = {
         userId: user.uid,
