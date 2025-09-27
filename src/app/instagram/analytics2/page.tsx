@@ -54,20 +54,14 @@ function InstagramAnalyticsContent() {
       console.log('Fetching analytics directly from Firestore for user:', user.uid);
       const q = query(
         collection(db, 'analytics'),
-        where('userId', '==', user.uid)
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
       );
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as AnalyticsData[];
-      
-      // クライアント側でソート（インデックス不要）
-      data.sort((a, b) => {
-        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-        return dateB.getTime() - dateA.getTime();
-      });
       console.log('Direct Firestore fetch result:', data);
       console.log('Analytics data length:', data.length);
       console.log('Sample analytics data:', data[0]);
@@ -80,10 +74,6 @@ function InstagramAnalyticsContent() {
       setAnalyticsData(data);
     } catch (error) {
       console.error('Analytics fetch error:', error);
-      // ネットワークエラーの場合は空配列を設定
-      if (error instanceof Error) {
-        console.error('Error details:', error.message);
-      }
       setAnalyticsData([]);
     } finally {
       setIsLoading(false);
@@ -340,10 +330,8 @@ function InstagramAnalyticsContent() {
               <p className="text-gray-600 text-center">まだ記録がありません。</p>
             ) : (
               <div className="space-y-3">
-                {analyticsData.slice(0, 5).map((data, index) => {
-                  if (!data || !data.id) return null;
-                  return (
-                  <div key={`analytics-${data.id}-${index}`} className="p-4 bg-gray-50 rounded-lg">
+                {analyticsData.slice(0, 5).map((data) => (
+                  <div key={data.id} className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-gray-700 font-medium">
                         {new Date(data.publishedAt).toLocaleDateString('ja-JP')}
@@ -371,8 +359,7 @@ function InstagramAnalyticsContent() {
                       </div>
                     </div>
                   </div>
-                  );
-                })}
+                ))}
               </div>
             )}
           </div>
