@@ -60,8 +60,35 @@ export const useUserProfile = () => {
             console.groupEnd();
           }
         } else {
-          setUserProfile(null);
-          setError('ユーザー情報が見つかりません');
+          // ユーザープロフィールが存在しない場合、デフォルト値を設定
+          const defaultUserProfile: User = {
+            id: user.uid,
+            email: user.email || '',
+            name: user.displayName || 'ユーザー',
+            role: 'user',
+            isActive: true,
+            snsCount: 1,
+            usageType: 'solo',
+            contractType: 'trial',
+            contractSNS: ['instagram'], // デフォルトでInstagramを契約
+            snsAISettings: {},
+            businessInfo: {
+              industry: '',
+              companySize: '',
+              businessType: '',
+              description: '',
+              targetMarket: '',
+              goals: [],
+              challenges: []
+            },
+            status: 'active',
+            contractStartDate: new Date().toISOString(),
+            contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30日後
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          setUserProfile(defaultUserProfile);
+          setError(null);
         }
         setLoading(false);
       },
