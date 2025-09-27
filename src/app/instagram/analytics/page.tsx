@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { AuthGuard } from '../../../components/auth-guard';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
 import Image from 'next/image';
@@ -90,7 +90,7 @@ function InstagramAnalyticsContent() {
     selectedStrategies?: string[];
   } | null>(null);
 
-  // 分析データを取得（直接Firestoreアクセス）
+  // 分析データを取得（BFF経由）
   const fetchAnalytics = useCallback(async () => {
     console.log('Fetch analytics called, user:', user);
     console.log('User UID:', user?.uid);
@@ -101,36 +101,21 @@ function InstagramAnalyticsContent() {
     
     setIsLoading(true);
     try {
-      console.log('Fetching analytics directly from Firestore for user:', user.uid);
-      const q = query(
-        collection(db, 'analytics'),
-        where('userId', '==', user.uid)
-      );
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as AnalyticsData[];
+      console.log('Fetching analytics via BFF for user:', user.uid);
+      const response = await fetch(`/api/analytics?userId=${user.uid}`);
       
-      // クライアント側でソート（インデックス不要）
-      data.sort((a, b) => {
-        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-        return dateB.getTime() - dateA.getTime();
-      });
-      console.log('Direct Firestore fetch result:', data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      const data = result.analytics as AnalyticsData[];
+      
+      console.log('BFF fetch result:', data);
       console.log('Analytics data length:', data.length);
-      console.log('Sample analytics data:', data[0]);
-      console.log('All analytics data:', data.map(item => ({
-        id: item.id,
-        likes: item.likes,
-        userId: item.userId,
-        publishedAt: item.publishedAt
-      })));
       setAnalyticsData(data);
     } catch (error) {
       console.error('Analytics fetch error:', error);
-      // ネットワークエラーの場合は空配列を設定
       if (error instanceof Error) {
         console.error('Error details:', error.message);
       }
@@ -228,7 +213,7 @@ function InstagramAnalyticsContent() {
     post.hashtags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // 投稿分析データを保存（直接Firestoreアクセス）
+  // 投稿分析データを保存（BFF経由）
   const handleSaveAnalytics = async () => {
     if (!user?.uid) {
       alert('ログインが必要です');
@@ -239,54 +224,47 @@ function InstagramAnalyticsContent() {
       alert('いいね数を入力してください');
       return;
     }
+    if (!inputData.reach) {
+      alert('リーチ数を入力してください');
+      return;
+    }
 
     setIsLoading(true);
     try {
-      const likes = parseInt(inputData.likes) || 0;
-      const comments = parseInt(inputData.comments) || 0;
-      const shares = parseInt(inputData.shares) || 0;
-      const reach = parseInt(inputData.reach) || 0;
-      const saves = parseInt(inputData.saves) || 0;
-      const followerIncrease = parseInt(inputData.followerIncrease) || 0;
+      console.log('Saving analytics data via BFF');
       
-      // エンゲージメント率の計算（保存数も含める）
-      const engagementRate = reach > 0 ? ((likes + comments + shares + saves) / reach * 100).toFixed(2) : "0";
-
-      const analyticsPayload = {
-        userId: user.uid,
-        likes,
-        comments,
-        shares,
-        reach,
-        saves,
-        followerIncrease,
-        engagementRate: parseFloat(engagementRate),
-        publishedAt: new Date(`${inputData.publishedAt}T${inputData.publishedTime}:00`),
-        createdAt: new Date(),
-        // 投稿情報
-        title: inputData.title,
-        content: inputData.content,
-        hashtags: inputData.hashtags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        thumbnail: inputData.thumbnail,
-        category: inputData.category
-      };
-
-      console.log('Saving analytics data directly to Firestore:', analyticsPayload);
-      console.log('User UID:', user.uid);
-      console.log('Analytics payload validation:', {
-        userId: analyticsPayload.userId,
-        likes: analyticsPayload.likes,
-        comments: analyticsPayload.comments,
-        shares: analyticsPayload.shares,
-        reach: analyticsPayload.reach,
-        engagementRate: analyticsPayload.engagementRate,
-        publishedAt: analyticsPayload.publishedAt,
-        createdAt: analyticsPayload.createdAt
+      const response = await fetch('/api/analytics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          likes: inputData.likes,
+          comments: inputData.comments,
+          shares: inputData.shares,
+          reach: inputData.reach,
+          saves: inputData.saves,
+          followerIncrease: inputData.followerIncrease,
+          publishedAt: inputData.publishedAt,
+          publishedTime: inputData.publishedTime,
+          title: inputData.title,
+          content: inputData.content,
+          hashtags: inputData.hashtags,
+          thumbnail: inputData.thumbnail,
+          category: inputData.category
+        }),
       });
-      const docRef = await addDoc(collection(db, 'analytics'), analyticsPayload);
-      console.log('Analytics saved with ID:', docRef.id);
 
-      alert('投稿分析データを保存しました！');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '保存に失敗しました');
+      }
+
+      const result = await response.json();
+      console.log('Analytics saved via BFF:', result);
+
+      alert(`投稿分析データを保存しました！（エンゲージメント率: ${result.engagementRate}%）`);
       
       // データを再取得
       await fetchAnalytics();
@@ -308,7 +286,7 @@ function InstagramAnalyticsContent() {
         category: 'feed'
       });
       setSelectedPost(null);
-          setPreviewUrl('');
+      setPreviewUrl('');
 
     } catch (error) {
       console.error('保存エラー:', error);
@@ -513,19 +491,20 @@ function InstagramAnalyticsContent() {
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Heart size={16} className="inline mr-1 text-red-500" />
-                    いいね数
-                  </label>
-                  <input
-                    type="number"
-                    value={inputData.likes}
-                    onChange={(e) => setInputData(prev => ({ ...prev, likes: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    placeholder="例: 245"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Heart size={16} className="inline mr-1 text-red-500" />
+                        いいね数 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={inputData.likes}
+                        onChange={(e) => setInputData(prev => ({ ...prev, likes: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        placeholder="例: 245"
+                        required
+                      />
+                    </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     💬 コメント数
@@ -550,18 +529,19 @@ function InstagramAnalyticsContent() {
                     placeholder="例: 8"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    👁️ リーチ数
-                  </label>
-                  <input
-                    type="number"
-                    value={inputData.reach}
-                    onChange={(e) => setInputData(prev => ({ ...prev, reach: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    placeholder="例: 1200"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        👁️ リーチ数 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={inputData.reach}
+                        onChange={(e) => setInputData(prev => ({ ...prev, reach: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        placeholder="例: 1200"
+                        required
+                      />
+                    </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Bookmark size={16} className="inline mr-1 text-yellow-500" />
