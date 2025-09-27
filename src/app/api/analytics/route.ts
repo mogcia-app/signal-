@@ -37,9 +37,16 @@ export async function POST(request: NextRequest) {
       category
     } = body;
 
-    // バリデーション（サーバー側で厳密にチェック）
-    if (!userId) {
-      return NextResponse.json({ error: 'ユーザーIDが必要です' }, { status: 400 });
+    // ミドルウェアから認証されたユーザーIDを取得
+    const authenticatedUserId = request.headers.get('x-user-id');
+    
+    if (!authenticatedUserId) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+
+    // リクエストのuserIdと認証されたuserIdが一致することを確認
+    if (userId !== authenticatedUserId) {
+      return NextResponse.json({ error: 'アクセス権限がありません' }, { status: 403 });
     }
     
     if (likes === undefined || likes === null) {
@@ -112,11 +119,11 @@ export async function POST(request: NextRequest) {
 // 投稿分析データを取得
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-
+    // ミドルウェアから認証されたユーザーIDを取得
+    const userId = request.headers.get('x-user-id');
+    
     if (!userId) {
-      return NextResponse.json({ error: 'ユーザーIDが必要です' }, { status: 400 });
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }
 
     const q = query(

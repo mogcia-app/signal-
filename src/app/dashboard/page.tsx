@@ -3,24 +3,35 @@
 import { useAuth } from '../../contexts/auth-context';
 import { AuthGuard } from '../../components/auth-guard';
 import { useUserProfile } from '../../hooks/useUserProfile';
+import { UserDataDisplay } from '../../components/UserDataDisplay';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 function DashboardContent() {
   const { user, signOut } = useAuth();
-  const { userProfile, loading: profileLoading, error: profileError } = useUserProfile();
+  const { 
+    userProfile, 
+    loading: profileLoading, 
+    error: profileError,
+    getContractSNS,
+    isContractActive,
+    getContractDaysRemaining
+  } = useUserProfile();
   const router = useRouter();
+  const [showAllData, setShowAllData] = useState(false);
 
   // SNS契約数に応じたルーティング
   useEffect(() => {
     if (userProfile && !profileLoading) {
-      const contractSNS = userProfile.contractSNS || [];
+      const contractSNS = getContractSNS();
       
       // デバッグログ
       console.log('Dashboard routing check:', {
         contractSNS,
         length: contractSNS.length,
-        userProfile: userProfile
+        userProfile: userProfile,
+        contractActive: isContractActive(),
+        daysRemaining: getContractDaysRemaining()
       });
       
       if (contractSNS.length === 1) {
@@ -34,7 +45,7 @@ function DashboardContent() {
       }
       // 契約SNSが0個の場合は現在のページ（全体ダッシュボード）を表示
     }
-  }, [userProfile, profileLoading, router]);
+  }, [userProfile, profileLoading, router, getContractSNS, isContractActive, getContractDaysRemaining]);
 
   const handleSignOut = async () => {
     try {
@@ -523,6 +534,21 @@ function DashboardContent() {
             </div>
           </div>
 
+        </div>
+        
+        {/* ユーザーデータ表示セクション */}
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">ユーザー情報詳細</h2>
+            <button
+              onClick={() => setShowAllData(!showAllData)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              {showAllData ? '基本情報のみ' : '全データ表示'}
+            </button>
+          </div>
+          
+          <UserDataDisplay showAll={showAllData} />
         </div>
       </main>
     </div>

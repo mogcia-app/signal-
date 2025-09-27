@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
+import { UserDataDisplay } from '../../../components/UserDataDisplay';
+import { useUserProfile } from '../../../hooks/useUserProfile';
 import { 
   User, 
   Mail, 
@@ -14,46 +16,34 @@ import {
   Trash2,
   AlertCircle,
   CheckCircle,
+  Settings,
+  Database,
 } from 'lucide-react';
 
-interface UserProfile {
-  id?: string;
-  email: string;                 // ログイン用メールアドレス（Firebase Auth管理）
-  name: string;                  // 表示名
-  role: 'user' | 'admin';        // 権限（利用者は'user'）
-  isActive: boolean;             // アクティブ状態
-  snsCount: number;              // SNS契約数（1-4）
-  usageType: 'team' | 'solo';    // 利用形態
-  contractType: 'annual' | 'trial'; // 契約タイプ
-  contractSNS: string[];         // 契約SNS配列
-  snsAISettings: object;         // SNS AI設定
-  businessInfo: {               // ビジネス情報
-    industry: string;
-    companySize: string;
-    businessType: string;
-    description: string;
-    targetMarket: string;
-    goals: string[];
-    challenges: string[];
-  };
-  status: 'active' | 'inactive' | 'suspended';
-  contractStartDate: string;     // 契約開始日
-  contractEndDate: string;       // 契約終了日
-  createdAt: string;
-  updatedAt: string;
-}
+// UserProfile interface は useUserProfile フックで定義されているため削除
 
 export default function MyAccountPage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showAllData, setShowAllData] = useState(false);
 
-  // フォームデータ
+  // 実際のユーザープロフィールデータを取得
+  const { 
+    userProfile, 
+    loading: profileLoading, 
+    error: profileError,
+    getContractSNS,
+    getSNSAISettings,
+    getBusinessInfo,
+    isContractActive,
+    getContractDaysRemaining
+  } = useUserProfile();
+
+  // フォームデータ（実際のデータで初期化）
   const [profileData, setProfileData] = useState({
-    name: '',
+    name: userProfile?.name || '',
     businessInfo: {
       industry: '',
       companySize: '',
@@ -65,6 +55,25 @@ export default function MyAccountPage() {
     }
   });
 
+  // ユーザープロフィールが変更されたらフォームデータを更新
+  useEffect(() => {
+    if (userProfile) {
+      const businessInfo = getBusinessInfo();
+      setProfileData({
+        name: userProfile.name || '',
+        businessInfo: {
+          industry: businessInfo.industry || '',
+          companySize: businessInfo.companySize || '',
+          businessType: businessInfo.businessType || '',
+          description: businessInfo.description || '',
+          targetMarket: businessInfo.targetMarket || '',
+          goals: businessInfo.goals || [],
+          challenges: businessInfo.challenges || []
+        }
+      });
+    }
+  }, [userProfile, getBusinessInfo]);
+
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -73,54 +82,7 @@ export default function MyAccountPage() {
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      setIsLoading(true);
-      // モックデータを使用（実際の実装ではAPIから取得）
-      const mockProfile: UserProfile = {
-        id: '1',
-        email: 'user@example.com',
-        name: '田中太郎',
-        role: 'user',
-        isActive: true,
-        snsCount: 2,
-        usageType: 'solo',
-        contractType: 'annual',
-        contractSNS: ['instagram', 'twitter'],
-        snsAISettings: {},
-        businessInfo: {
-          industry: 'マーケティング・広告',
-          companySize: '個人事業主',
-          businessType: 'コンサルティング',
-          description: 'Instagramマーケティングの専門家として、ブランドの成長をサポートしています。',
-          targetMarket: '中小企業、個人ブランド',
-          goals: ['フォロワー増加', 'エンゲージメント向上', '売上向上'],
-          challenges: ['コンテンツ制作の効率化', 'ターゲット分析', '競合対策']
-        },
-        status: 'active',
-        contractStartDate: '2024-01-01T00:00:00Z',
-        contractEndDate: '2024-12-31T23:59:59Z',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-20T10:00:00Z'
-      };
-
-      setUserProfile(mockProfile);
-      setProfileData({
-        name: mockProfile.name,
-        businessInfo: mockProfile.businessInfo
-      });
-      setTwoFactorEnabled(false); // モックデータでは無効
-    } catch (error) {
-      console.error('プロファイル取得エラー:', error);
-      setMessage({ type: 'error', text: 'プロファイルの取得に失敗しました' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // モックデータの削除 - 実際のデータを使用
 
   const handleSaveProfile = async () => {
     try {
@@ -136,13 +98,8 @@ export default function MyAccountPage() {
       //   })
       // });
 
-      // モック更新
-      setUserProfile(prev => prev ? {
-        ...prev,
-        name: profileData.name,
-        businessInfo: profileData.businessInfo,
-        updatedAt: new Date().toISOString()
-      } : null);
+      // プロファイル更新（実際のAPI実装が必要）
+      console.log('Profile updated:', profileData);
 
       setMessage({ type: 'success', text: 'プロファイルが更新されました' });
     } catch (error) {
@@ -209,7 +166,7 @@ export default function MyAccountPage() {
   };
 
 
-  if (isLoading) {
+  if (profileLoading) {
     return (
       <SNSLayout 
         currentSNS="instagram"
@@ -220,6 +177,23 @@ export default function MyAccountPage() {
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">プロファイルを読み込み中...</p>
+          </div>
+        </div>
+      </SNSLayout>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <SNSLayout 
+        currentSNS="instagram"
+        customTitle="マイアカウント"
+        customDescription="アカウント設定とプロファイル管理"
+      >
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600">{profileError}</p>
           </div>
         </div>
       </SNSLayout>
@@ -264,11 +238,12 @@ export default function MyAccountPage() {
         <div className="flex space-x-1 border-b border-gray-200 mb-8">
           {[
             { id: 'profile', label: 'プロファイル', icon: <User className="w-4 h-4" /> },
-            { id: 'security', label: 'セキュリティ', icon: <Shield className="w-4 h-4" /> }
+            { id: 'security', label: 'セキュリティ', icon: <Shield className="w-4 h-4" /> },
+            { id: 'data', label: '全データ表示', icon: <Database className="w-4 h-4" /> }
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'profile' | 'security')}
+              onClick={() => setActiveTab(tab.id as 'profile' | 'security' | 'data')}
               className={`flex items-center space-x-2 px-4 py-3 rounded-t-md transition-colors ${
                 activeTab === tab.id
                   ? 'border-b-2 border-blue-600 text-blue-600 font-semibold bg-blue-50'
@@ -491,9 +466,131 @@ export default function MyAccountPage() {
                   </button>
                 </div>
               </div>
+
+              {/* AI設定 */}
+              {userProfile?.snsAISettings && Object.keys(userProfile.snsAISettings).length > 0 && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <Settings className="w-5 h-5 mr-2 text-blue-600" />
+                    AI設定
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    {Object.entries(userProfile.snsAISettings).map(([sns, settings]) => {
+                      const typedSettings = settings as {
+                        aiEnabled?: boolean;
+                        autoPosting?: boolean;
+                        hashtagOptimization?: boolean;
+                        postingFrequency?: string;
+                        optimalPostingTime?: string[];
+                        analyticsEnabled?: boolean;
+                      };
+                      
+                      return (
+                        <div key={sns} className="border rounded-lg p-4">
+                          <h3 className="font-semibold text-gray-900 mb-3 capitalize">{sns} AI設定</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">AI有効:</span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                typedSettings.aiEnabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {typedSettings.aiEnabled ? 'ON' : 'OFF'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">自動投稿:</span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                typedSettings.autoPosting ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {typedSettings.autoPosting ? 'ON' : 'OFF'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">ハッシュタグ最適化:</span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                typedSettings.hashtagOptimization ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {typedSettings.hashtagOptimization ? 'ON' : 'OFF'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">投稿頻度:</span>
+                              <span className="text-gray-700">{typedSettings.postingFrequency || '未設定'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">最適投稿時間:</span>
+                              <span className="text-gray-700">{typedSettings.optimalPostingTime?.join(', ') || '未設定'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">分析機能:</span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                typedSettings.analyticsEnabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {typedSettings.analyticsEnabled ? 'ON' : 'OFF'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* SNSプロフィール */}
+              {userProfile?.snsProfiles && Object.keys(userProfile.snsProfiles).length > 0 && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">SNSプロフィール</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(userProfile.snsProfiles).map(([sns, profile]) => (
+                      <div key={sns} className="border rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-3 capitalize">{sns}</h3>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="font-medium">フォロワー数:</span>
+                            <span className="text-gray-700">{(profile as { followers?: number }).followers || 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">ユーザー名:</span>
+                            <span className="text-gray-700">{(profile as { username?: string }).username || '未設定'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">最終更新:</span>
+                            <span className="text-gray-700">
+                              {(profile as { lastUpdated?: string }).lastUpdated ? 
+                                new Date((profile as { lastUpdated: string }).lastUpdated).toLocaleDateString('ja-JP') : 
+                                '未更新'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
+
+          {/* 全データ表示タブ */}
+          {activeTab === 'data' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">ユーザーデータ詳細</h2>
+                <button
+                  onClick={() => setShowAllData(!showAllData)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  {showAllData ? '基本情報のみ' : '全データ表示'}
+                </button>
+              </div>
+              
+              <UserDataDisplay showAll={showAllData} />
+            </div>
+          )}
 
           {/* セキュリティタブ */}
           {activeTab === 'security' && (
@@ -624,7 +721,12 @@ export default function MyAccountPage() {
         {/* AIチャットウィジェット */}
         <AIChatWidget 
           contextData={{
-            userProfile: userProfile
+            userProfile: userProfile,
+            contractSNS: getContractSNS(),
+            aiSettings: getSNSAISettings('instagram'),
+            businessInfo: getBusinessInfo(),
+            contractActive: isContractActive(),
+            daysRemaining: getContractDaysRemaining()
           }}
         />
       </div>
