@@ -8,12 +8,10 @@ import { useUserProfile } from '../../../hooks/useUserProfile';
 import { 
   User, 
   Mail, 
-  Save, 
   Eye, 
   EyeOff, 
   Shield,
   Key,
-  Trash2,
   AlertCircle,
   CheckCircle,
   Settings,
@@ -84,31 +82,6 @@ export default function MyAccountPage() {
 
   // モックデータの削除 - 実際のデータを使用
 
-  const handleSaveProfile = async () => {
-    try {
-      setIsSaving(true);
-      
-      // 実際の実装ではAPIを呼び出し
-      // await fetch('/api/users', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     name: profileData.name,
-      //     businessInfo: profileData.businessInfo
-      //   })
-      // });
-
-      // プロファイル更新（実際のAPI実装が必要）
-      console.log('Profile updated:', profileData);
-
-      setMessage({ type: 'success', text: 'プロファイルが更新されました' });
-    } catch (error) {
-      console.error('プロファイル更新エラー:', error);
-      setMessage({ type: 'error', text: 'プロファイルの更新に失敗しました' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -264,6 +237,9 @@ export default function MyAccountPage() {
               {/* 基本情報 */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">基本情報</h2>
+                <p className="text-sm text-gray-500 mb-6">
+                  基本情報は管理者によって設定されています。変更が必要な場合は管理者にお問い合わせください。
+                </p>
                 
                 <div className="space-y-6">
                   <div className="flex items-center space-x-6">
@@ -293,13 +269,9 @@ export default function MyAccountPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         表示名
                       </label>
-                      <input
-                        type="text"
-                        value={profileData.name}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="表示名を入力"
-                      />
+                      <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                        {profileData.name || '未設定'}
+                      </div>
                     </div>
 
                     <div>
@@ -319,6 +291,7 @@ export default function MyAccountPage() {
                     </div>
                   </div>
                 </div>
+
               </div>
 
               {/* 契約情報 */}
@@ -372,98 +345,79 @@ export default function MyAccountPage() {
               {/* ビジネス情報 */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">ビジネス情報</h2>
+                <p className="text-sm text-gray-500 mb-6">
+                  ビジネス情報は管理者によって設定されています。変更が必要な場合は管理者にお問い合わせください。
+                </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       業界
                     </label>
-                    <input
-                      type="text"
-                      value={profileData.businessInfo.industry}
-                      onChange={(e) => setProfileData(prev => ({
-                        ...prev,
-                        businessInfo: { ...prev.businessInfo, industry: e.target.value }
-                      }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="業界を入力"
-                    />
+                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      {profileData.businessInfo.industry || '未設定'}
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       会社規模
                     </label>
-                    <input
-                      type="text"
-                      value={profileData.businessInfo.companySize}
-                      onChange={(e) => setProfileData(prev => ({
-                        ...prev,
-                        businessInfo: { ...prev.businessInfo, companySize: e.target.value }
-                      }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="会社規模を入力"
-                    />
+                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      {profileData.businessInfo.companySize || '未設定'}
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       ビジネスタイプ
                     </label>
-                    <input
-                      type="text"
-                      value={profileData.businessInfo.businessType}
-                      onChange={(e) => setProfileData(prev => ({
-                        ...prev,
-                        businessInfo: { ...prev.businessInfo, businessType: e.target.value }
-                      }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="ビジネスタイプを入力"
-                    />
+                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      {profileData.businessInfo.businessType || '未設定'}
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       ターゲット市場
                     </label>
-                    <input
-                      type="text"
-                      value={profileData.businessInfo.targetMarket}
-                      onChange={(e) => setProfileData(prev => ({
-                        ...prev,
-                        businessInfo: { ...prev.businessInfo, targetMarket: e.target.value }
-                      }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="ターゲット市場を入力"
-                    />
+                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      {profileData.businessInfo.targetMarket || '未設定'}
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ビジネス説明
-                  </label>
-                  <textarea
-                    value={profileData.businessInfo.description}
-                    onChange={(e) => setProfileData(prev => ({
-                      ...prev,
-                      businessInfo: { ...prev.businessInfo, description: e.target.value }
-                    }))}
-                    rows={4}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="ビジネスについて説明してください"
-                  />
-                </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ビジネス説明
+                    </label>
+                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[100px]">
+                      {profileData.businessInfo.description || '未設定'}
+                    </div>
+                  </div>
 
-                <div className="flex justify-end mt-6">
-                  <button
-                    onClick={handleSaveProfile}
-                    disabled={isSaving}
-                    className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{isSaving ? '保存中...' : '保存'}</span>
-                  </button>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      目標
+                    </label>
+                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      {profileData.businessInfo.goals.length > 0 
+                        ? profileData.businessInfo.goals.join(', ') 
+                        : '未設定'
+                      }
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      課題
+                    </label>
+                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      {profileData.businessInfo.challenges.length > 0 
+                        ? profileData.businessInfo.challenges.join(', ') 
+                        : '未設定'
+                      }
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -691,28 +645,6 @@ export default function MyAccountPage() {
                 </div>
               </div>
 
-              {/* アカウント削除 */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-red-900 mb-2 flex items-center">
-                  <Trash2 className="w-5 h-5 mr-2" />
-                  アカウント削除
-                </h3>
-                <p className="text-red-700 mb-4">
-                  アカウントを削除すると、すべてのデータが永久に失われます。この操作は取り消せません。
-                </p>
-                <button
-                  onClick={() => {
-                    if (confirm('本当にアカウントを削除しますか？この操作は取り消せません。')) {
-                      // 実際の削除処理
-                      setMessage({ type: 'success', text: 'アカウント削除の手続きを開始しました' });
-                    }
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>アカウントを削除</span>
-                </button>
-              </div>
             </div>
           )}
 
