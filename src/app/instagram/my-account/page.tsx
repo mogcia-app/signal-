@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Settings,
   Database,
+  Calendar,
 } from 'lucide-react';
 
 // UserProfile interface は useUserProfile フックで定義されているため削除
@@ -208,25 +209,27 @@ export default function MyAccountPage() {
         )}
 
         {/* タブナビゲーション */}
-        <div className="flex space-x-1 border-b border-gray-200 mb-8">
-          {[
-            { id: 'profile', label: 'プロファイル', icon: <User className="w-4 h-4" /> },
-            { id: 'security', label: 'セキュリティ', icon: <Shield className="w-4 h-4" /> },
-            { id: 'data', label: '全データ表示', icon: <Database className="w-4 h-4" /> }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'profile' | 'security' | 'data')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-t-md transition-colors ${
-                activeTab === tab.id
-                  ? 'border-b-2 border-blue-600 text-blue-600 font-semibold bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </button>
-          ))}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-8">
+          <div className="flex space-x-2">
+            {[
+              { id: 'profile', label: 'プロファイル', icon: <User className="w-4 h-4" /> },
+              { id: 'security', label: 'セキュリティ', icon: <Shield className="w-4 h-4" /> },
+              { id: 'data', label: '全データ表示', icon: <Database className="w-4 h-4" /> }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as 'profile' | 'security' | 'data')}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                {tab.icon}
+                <span className="font-medium">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* タブコンテンツ */}
@@ -235,171 +238,247 @@ export default function MyAccountPage() {
           {activeTab === 'profile' && (
             <div className="space-y-6">
               {/* 基本情報 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">基本情報</h2>
-                <p className="text-sm text-gray-500 mb-6">
-                  基本情報は管理者によって設定されています。変更が必要な場合は管理者にお問い合わせください。
-                </p>
+              <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 p-8">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">基本情報</h2>
+                    <p className="text-gray-500">アカウントの基本設定</p>
+                  </div>
+                </div>
                 
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-6">
-                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-10 h-10 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{userProfile?.name}</h3>
-                      <p className="text-gray-600">{userProfile?.email}</p>
-                      <div className="flex items-center space-x-4 mt-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          userProfile?.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {userProfile?.status === 'active' ? 'アクティブ' : '非アクティブ'}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {userProfile?.role === 'admin' ? '管理者' : 'ユーザー'}
-                        </span>
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 mb-6">
+                  <p className="text-sm text-gray-600 flex items-center">
+                    <Settings className="w-4 h-4 mr-2 text-blue-500" />
+                    基本情報は管理者によって設定されています。変更が必要な場合は管理者にお問い合わせください。
+                  </p>
+                </div>
+                
+                <div className="space-y-8">
+                  {/* プロフィールカード */}
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-center space-x-6">
+                      <div className="relative">
+                        <div className="w-24 h-24 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                          <User className="w-12 h-12 text-white" />
+                        </div>
+                        <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
+                          userProfile?.status === 'active' ? 'bg-green-400' : 'bg-red-400'
+                        }`}></div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">{userProfile?.name}</h3>
+                        <p className="text-gray-600 mb-3">{userProfile?.email}</p>
+                        <div className="flex items-center space-x-3">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            userProfile?.status === 'active' 
+                              ? 'bg-green-100 text-green-700 border border-green-200' 
+                              : 'bg-red-100 text-red-700 border border-red-200'
+                          }`}>
+                            {userProfile?.status === 'active' ? 'アクティブ' : '非アクティブ'}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            userProfile?.role === 'admin' 
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                              : 'bg-blue-100 text-blue-700 border border-blue-200'
+                          }`}>
+                            {userProfile?.role === 'admin' ? '管理者' : 'ユーザー'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
+                  {/* 情報フィールド */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <User className="w-4 h-4 mr-2 text-gray-500" />
                         表示名
                       </label>
-                      <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      <div className="w-full p-4 border border-gray-200 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium">
                         {profileData.name || '未設定'}
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <Mail className="w-4 h-4 mr-2 text-gray-500" />
                         メールアドレス
                       </label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="email"
-                          value={userProfile?.email || ''}
-                          className="w-full pl-10 p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                          disabled
-                        />
+                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <div className="w-full pl-12 p-4 border border-gray-200 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 font-medium">
+                          {userProfile?.email || '未設定'}
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">メールアドレスは変更できません</p>
+                      <p className="text-xs text-gray-500 mt-2 flex items-center">
+                        <Settings className="w-3 h-3 mr-1" />
+                        メールアドレスは変更できません
+                      </p>
                     </div>
                   </div>
                 </div>
-
               </div>
 
               {/* 契約情報 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">契約情報</h2>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-lg border border-blue-100 p-8">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mr-4">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">契約情報</h2>
+                    <p className="text-gray-600">現在の契約プランと利用状況</p>
+                  </div>
+                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-blue-900 mb-2">契約タイプ</h3>
-                    <p className="text-blue-800">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-blue-100">
+                    <div className="flex items-center mb-4">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+                        <Shield className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-gray-900">契約タイプ</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-600">
                       {userProfile?.contractType === 'annual' ? '年間契約' : 'トライアル'}
                     </p>
                   </div>
                   
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-green-900 mb-2">SNS契約数</h3>
-                    <p className="text-green-800">{userProfile?.contractSNS.length}/4</p>
+                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-green-100">
+                    <div className="flex items-center mb-4">
+                      <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center mr-3">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-gray-900">SNS契約数</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-green-600">{userProfile?.contractSNS.length}/4</p>
                   </div>
                   
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-purple-900 mb-2">利用形態</h3>
-                    <p className="text-purple-800">
+                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-purple-100">
+                    <div className="flex items-center mb-4">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                        <Settings className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-gray-900">利用形態</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-purple-600">
                       {userProfile?.usageType === 'team' ? 'チーム利用' : '個人利用'}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-6">
-                  <h3 className="font-semibold text-gray-900 mb-3">契約SNS</h3>
-                  <div className="flex flex-wrap gap-2">
+                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
+                  <h3 className="font-bold text-gray-900 mb-4 flex items-center">
+                    <User className="w-5 h-5 mr-2 text-blue-500" />
+                    契約SNS
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
                     {userProfile?.contractSNS.map((sns, index) => (
-                      <span key={index} className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                      <span key={index} className="px-4 py-2 bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 rounded-full text-sm font-medium border border-pink-200">
                         {sns}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">契約開始日</label>
-                    <p className="text-gray-900">{new Date(userProfile?.contractStartDate || '').toLocaleDateString('ja-JP')}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center mb-3">
+                      <Calendar className="w-5 h-5 mr-2 text-green-500" />
+                      <label className="block text-sm font-semibold text-gray-700">契約開始日</label>
+                    </div>
+                    <p className="text-lg font-bold text-gray-900">{new Date(userProfile?.contractStartDate || '').toLocaleDateString('ja-JP')}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">契約終了日</label>
-                    <p className="text-gray-900">{new Date(userProfile?.contractEndDate || '').toLocaleDateString('ja-JP')}</p>
+                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center mb-3">
+                      <Calendar className="w-5 h-5 mr-2 text-red-500" />
+                      <label className="block text-sm font-semibold text-gray-700">契約終了日</label>
+                    </div>
+                    <p className="text-lg font-bold text-gray-900">{new Date(userProfile?.contractEndDate || '').toLocaleDateString('ja-JP')}</p>
                   </div>
                 </div>
               </div>
 
               {/* ビジネス情報 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">ビジネス情報</h2>
-                <p className="text-sm text-gray-500 mb-6">
-                  ビジネス情報は管理者によって設定されています。変更が必要な場合は管理者にお問い合わせください。
-                </p>
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl shadow-lg border border-emerald-100 p-8">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mr-4">
+                    <Settings className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">ビジネス情報</h2>
+                    <p className="text-gray-600">企業・事業に関する詳細情報</p>
+                  </div>
+                </div>
+                
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 mb-8">
+                  <p className="text-sm text-gray-600 flex items-center">
+                    <Settings className="w-4 h-4 mr-2 text-emerald-500" />
+                    ビジネス情報は管理者によって設定されています。変更が必要な場合は管理者にお問い合わせください。
+                  </p>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-emerald-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <Settings className="w-4 h-4 mr-2 text-emerald-500" />
                       業界
                     </label>
-                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    <div className="w-full p-4 border border-emerald-200 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 text-gray-700 font-medium">
                       {profileData.businessInfo.industry || '未設定'}
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-emerald-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <User className="w-4 h-4 mr-2 text-emerald-500" />
                       会社規模
                     </label>
-                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    <div className="w-full p-4 border border-emerald-200 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 text-gray-700 font-medium">
                       {profileData.businessInfo.companySize || '未設定'}
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-emerald-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <Shield className="w-4 h-4 mr-2 text-emerald-500" />
                       ビジネスタイプ
                     </label>
-                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    <div className="w-full p-4 border border-emerald-200 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 text-gray-700 font-medium">
                       {profileData.businessInfo.businessType || '未設定'}
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-emerald-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <Settings className="w-4 h-4 mr-2 text-emerald-500" />
                       ターゲット市場
                     </label>
-                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    <div className="w-full p-4 border border-emerald-200 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 text-gray-700 font-medium">
                       {profileData.businessInfo.targetMarket || '未設定'}
                     </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="md:col-span-2 bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-emerald-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <Mail className="w-4 h-4 mr-2 text-emerald-500" />
                       ビジネス説明
                     </label>
-                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[100px]">
+                    <div className="w-full p-4 border border-emerald-200 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 text-gray-700 font-medium min-h-[100px]">
                       {profileData.businessInfo.description || '未設定'}
                     </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="md:col-span-2 bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-emerald-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <Shield className="w-4 h-4 mr-2 text-emerald-500" />
                       目標
                     </label>
-                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    <div className="w-full p-4 border border-emerald-200 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 text-gray-700 font-medium">
                       {profileData.businessInfo.goals.length > 0 
                         ? profileData.businessInfo.goals.join(', ') 
                         : '未設定'
@@ -407,11 +486,12 @@ export default function MyAccountPage() {
                     </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="md:col-span-2 bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-emerald-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-2 text-emerald-500" />
                       課題
                     </label>
-                    <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    <div className="w-full p-4 border border-emerald-200 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 text-gray-700 font-medium">
                       {profileData.businessInfo.challenges.length > 0 
                         ? profileData.businessInfo.challenges.join(', ') 
                         : '未設定'
