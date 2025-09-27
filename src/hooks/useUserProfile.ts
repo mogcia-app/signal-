@@ -34,32 +34,40 @@ export const useUserProfile = () => {
           setUserProfile(userData);
           setError(null);
           
+          // snsCount を contractSNS の長さと一致させる
+          const correctedUserData = {
+            ...userData,
+            snsCount: userData.contractSNS?.length || 0
+          };
+          setUserProfile(correctedUserData);
+
           // 詳細なユーザープロフィール情報をコンソールに表示
           console.group('👤 Complete User Profile Data (Firestore)');
           console.log('📋 Basic Info:', {
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            role: userData.role,
-            isActive: userData.isActive,
-            status: userData.status,
-            createdAt: userData.createdAt,
-            updatedAt: userData.updatedAt
+            id: correctedUserData.id,
+            email: correctedUserData.email,
+            name: correctedUserData.name,
+            role: correctedUserData.role,
+            isActive: correctedUserData.isActive,
+            status: correctedUserData.status,
+            createdAt: correctedUserData.createdAt,
+            updatedAt: correctedUserData.updatedAt
           });
           console.log('📱 SNS Contract Info:', {
-            snsCount: userData.snsCount,
-            usageType: userData.usageType,
-            contractType: userData.contractType,
-            contractSNS: userData.contractSNS,
-            contractStartDate: userData.contractStartDate,
-            contractEndDate: userData.contractEndDate
+            snsCount: correctedUserData.snsCount,
+            contractSNSLength: correctedUserData.contractSNS?.length,
+            usageType: correctedUserData.usageType,
+            contractType: correctedUserData.contractType,
+            contractSNS: correctedUserData.contractSNS,
+            contractStartDate: correctedUserData.contractStartDate,
+            contractEndDate: correctedUserData.contractEndDate
           });
-          console.log('🏢 Business Info:', userData.businessInfo);
-          console.log('⚙️ SNS AI Settings:', userData.snsAISettings);
-          console.log('👥 SNS Profiles:', userData.snsProfiles);
-          console.log('💰 Billing Info:', userData.billingInfo);
-          console.log('📝 Notes:', userData.notes);
-          console.log('📊 Complete Data Object:', userData);
+          console.log('🏢 Business Info:', correctedUserData.businessInfo);
+          console.log('⚙️ SNS AI Settings:', correctedUserData.snsAISettings);
+          console.log('👥 SNS Profiles:', correctedUserData.snsProfiles);
+          console.log('💰 Billing Info:', correctedUserData.billingInfo);
+          console.log('📝 Notes:', correctedUserData.notes);
+          console.log('📊 Complete Data Object:', correctedUserData);
           console.groupEnd();
         } else {
           // ユーザープロフィールが存在しない場合、完全なデフォルト値を設定
@@ -69,7 +77,7 @@ export const useUserProfile = () => {
             name: user.displayName || 'ユーザー',
             role: 'user',
             isActive: true,
-            snsCount: 1,
+            snsCount: 1, // contractSNS.length と一致させる
             usageType: 'solo',
             contractType: 'trial',
             contractSNS: ['instagram'], // デフォルトでInstagramを契約

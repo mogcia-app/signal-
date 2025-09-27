@@ -117,7 +117,7 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">SNS契約数</p>
-              <p className="text-sm">{userProfile.snsCount}個</p>
+              <p className="text-sm">{userProfile.contractSNS.length}個</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">契約開始日</p>

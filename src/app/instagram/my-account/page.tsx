@@ -335,7 +335,7 @@ export default function MyAccountPage() {
                   
                   <div className="bg-green-50 p-4 rounded-lg">
                     <h3 className="font-semibold text-green-900 mb-2">SNS契約数</h3>
-                    <p className="text-green-800">{userProfile?.snsCount}/4</p>
+                    <p className="text-green-800">{userProfile?.contractSNS.length}/4</p>
                   </div>
                   
                   <div className="bg-purple-50 p-4 rounded-lg">

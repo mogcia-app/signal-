@@ -319,7 +319,7 @@ function DashboardContent() {
                   <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">契約SNS数</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{userProfile.snsCount}個</dd>
+                      <dd className="mt-1 text-sm text-gray-900">{userProfile.contractSNS.length}個</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">利用形態</dt>
