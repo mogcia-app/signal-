@@ -32,7 +32,7 @@ export const postsApi = {
     postType: 'feed' | 'reel' | 'story';
     scheduledDate?: string;
     scheduledTime?: string;
-    status?: 'draft' | 'scheduled' | 'published';
+    status?: 'draft' | 'created' | 'scheduled' | 'published';
     imageUrl?: string | null;
     imageData?: string | null;
   }) => {

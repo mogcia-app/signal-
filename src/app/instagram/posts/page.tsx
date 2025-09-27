@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { postsApi } from '../../../lib/api';
+import { useAuth } from '../../../contexts/auth-context';
 import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon, TrendingUp } from 'lucide-react';
 
 interface PostData {
@@ -15,7 +16,7 @@ interface PostData {
   postType: 'feed' | 'reel' | 'story';
   scheduledDate?: string;
   scheduledTime?: string;
-  status: 'draft' | 'scheduled' | 'published';
+  status: 'draft' | 'created' | 'scheduled' | 'published';
   imageUrl?: string | null;
   imageData?: string | null;
   createdAt: Date;
@@ -33,19 +34,26 @@ interface PostData {
 }
 
 export default function InstagramPostsPage() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedPostType, setSelectedPostType] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'saved' | 'published'>('saved');
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
 
   // 投稿一覧を取得
   const fetchPosts = async () => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       const params: Record<string, string> = {
-        userId: 'current-user' // 実際のアプリでは認証済みユーザーIDを使用
+        userId: user.uid
       };
       
       if (selectedStatus) params.status = selectedStatus;
@@ -60,9 +68,25 @@ export default function InstagramPostsPage() {
     }
   };
 
+  // 分析データを取得
+  const fetchAnalytics = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const response = await fetch(`/api/analytics?userId=${user.uid}`);
+      if (response.ok) {
+        const result = await response.json();
+        setAnalyticsData(result.analytics || []);
+      }
+    } catch (error) {
+      console.error('Analytics fetch error:', error);
+    }
+  };
+
   useEffect(() => {
     fetchPosts();
-  }, [selectedStatus, selectedPostType]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchAnalytics();
+  }, [user?.uid, selectedStatus, selectedPostType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 投稿削除
   const handleDeletePost = async (postId: string) => {
@@ -80,10 +104,13 @@ export default function InstagramPostsPage() {
 
   // フィルタリング
   const filteredPosts = posts.filter(post => {
+    // 分析データがあるかチェック
+    const hasAnalytics = analyticsData.some(analytics => analytics.postId === post.id);
+    
     // タブによるフィルタリング
     const matchesTab = activeTab === 'saved' 
-      ? (post.status === 'draft' || post.status === 'scheduled') 
-      : (post.status === 'published' && post.analytics);
+      ? (post.status === 'draft' || post.status === 'created' || post.status === 'scheduled') 
+      : (post.status === 'published' || hasAnalytics); // 分析データがある投稿も「投稿済み」として表示
     
     // 検索によるフィルタリング
     const matchesSearch = !searchTerm || 
@@ -98,6 +125,7 @@ export default function InstagramPostsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'created': return 'bg-purple-100 text-purple-800';
       case 'scheduled': return 'bg-blue-100 text-blue-800';
       case 'published': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -108,6 +136,7 @@ export default function InstagramPostsPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'draft': return '下書き';
+      case 'created': return '作成済み';
       case 'scheduled': return '予約投稿';
       case 'published': return '公開済み';
       default: return status;
@@ -154,7 +183,7 @@ export default function InstagramPostsPage() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                📝 保存済み投稿 ({posts.filter(p => p.status === 'draft' || p.status === 'scheduled').length})
+                📝 保存済み投稿 ({posts.filter(p => p.status === 'draft' || p.status === 'created' || p.status === 'scheduled').length})
               </button>
               <button
                 onClick={() => setActiveTab('published')}
@@ -164,7 +193,7 @@ export default function InstagramPostsPage() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                📊 過去の投稿・分析 ({posts.filter(p => p.status === 'published' && p.analytics).length})
+                📊 過去の投稿・分析 ({posts.filter(p => p.status === 'published' || analyticsData.some(a => a.postId === p.id)).length})
               </button>
             </nav>
           </div>
@@ -195,6 +224,7 @@ export default function InstagramPostsPage() {
               >
                 <option value="">すべて</option>
                 <option value="draft">下書き</option>
+                <option value="created">作成済み</option>
                 <option value="scheduled">予約投稿</option>
                 <option value="published">公開済み</option>
               </select>
@@ -333,7 +363,10 @@ export default function InstagramPostsPage() {
                     )}
 
                     {/* 分析データ（過去の投稿の場合） */}
-                    {activeTab === 'published' && post.analytics && (
+                    {activeTab === 'published' && (() => {
+                      const postAnalytics = analyticsData.find(analytics => analytics.postId === post.id);
+                      return postAnalytics || post.analytics;
+                    })() && (
                       <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="text-sm font-semibold text-gray-800 flex items-center">
@@ -341,7 +374,7 @@ export default function InstagramPostsPage() {
                             投稿パフォーマンス
                           </h4>
                           <span className="text-xs text-gray-500">
-                            投稿日: {new Date(post.analytics.publishedAt).toLocaleDateString('ja-JP')}
+                            投稿日: {new Date((analyticsData.find(a => a.postId === post.id) || post.analytics)?.publishedAt).toLocaleDateString('ja-JP')}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -350,34 +383,34 @@ export default function InstagramPostsPage() {
                               <Heart size={14} className="text-red-500 mr-1" />
                               <span className="text-sm font-medium text-gray-700">いいね</span>
                             </div>
-                            <div className="text-lg font-bold text-gray-900">{post.analytics.likes.toLocaleString()}</div>
+                            <div className="text-lg font-bold text-gray-900">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.likes.toLocaleString()}</div>
                           </div>
                           <div className="text-center">
                             <div className="flex items-center justify-center mb-1">
                               <MessageCircle size={14} className="text-blue-500 mr-1" />
                               <span className="text-sm font-medium text-gray-700">コメント</span>
                             </div>
-                            <div className="text-lg font-bold text-gray-900">{post.analytics.comments.toLocaleString()}</div>
+                            <div className="text-lg font-bold text-gray-900">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.comments.toLocaleString()}</div>
                           </div>
                           <div className="text-center">
                             <div className="flex items-center justify-center mb-1">
                               <Share size={14} className="text-green-500 mr-1" />
                               <span className="text-sm font-medium text-gray-700">シェア</span>
                             </div>
-                            <div className="text-lg font-bold text-gray-900">{post.analytics.shares.toLocaleString()}</div>
+                            <div className="text-lg font-bold text-gray-900">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.shares.toLocaleString()}</div>
                           </div>
                           <div className="text-center">
                             <div className="flex items-center justify-center mb-1">
                               <EyeIcon size={14} className="text-purple-500 mr-1" />
                               <span className="text-sm font-medium text-gray-700">リーチ</span>
                             </div>
-                            <div className="text-lg font-bold text-gray-900">{post.analytics.reach.toLocaleString()}</div>
+                            <div className="text-lg font-bold text-gray-900">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.reach.toLocaleString()}</div>
                           </div>
                         </div>
                         <div className="mt-3 pt-3 border-t border-blue-200">
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-600">エンゲージメント率</span>
-                            <span className="text-lg font-bold text-blue-600">{post.analytics.engagementRate}%</span>
+                            <span className="text-lg font-bold text-blue-600">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.engagementRate}%</span>
                           </div>
                         </div>
                       </div>
@@ -400,13 +433,22 @@ export default function InstagramPostsPage() {
                     </button>
                     {activeTab === 'saved' ? (
                       <>
-                        <button
-                          onClick={() => alert('投稿を編集')}
+                        <a
+                          href={`/instagram/lab?edit=${post.id}`}
                           className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                          title="編集"
+                          title="投稿ラボで編集"
                         >
                           <Edit size={16} />
-                        </button>
+                        </a>
+                        {post.status === 'created' && (
+                          <a
+                            href="/instagram/analytics"
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                            title="分析ページで投稿データを入力"
+                          >
+                            📊
+                          </a>
+                        )}
                         <button
                           onClick={() => alert('投稿を公開')}
                           className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"

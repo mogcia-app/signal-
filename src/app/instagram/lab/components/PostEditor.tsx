@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, RefreshCw, CheckCircle, AlertCircle, Upload, X } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, AlertCircle, Upload, X, Eye } from 'lucide-react';
 import { postsApi } from '../../../../lib/api';
+import { useAuth } from '../../../../contexts/auth-context';
 import Image from 'next/image';
 
 interface PostEditorProps {
@@ -30,11 +31,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   image = null,
   onImageChange
 }) => {
+  const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   
   // AI投稿チェック機能の状態
   const [isChecking, setIsChecking] = useState(false);
@@ -50,6 +53,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const isOverLimit = characterCount > maxCharacters;
 
   const handleSave = async () => {
+    if (!user?.uid) {
+      alert('ログインが必要です');
+      return;
+    }
+
     if (!content.trim()) {
       alert('投稿文を入力してください');
       return;
@@ -63,15 +71,15 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     setIsSaving(true);
     try {
       const postData = {
-        userId: 'current-user', // 実際のアプリでは認証済みユーザーIDを使用
+        userId: user.uid,
         title: title || '',
         content,
         hashtags: hashtags,
         postType,
         scheduledDate,
         scheduledTime,
-        status: 'draft' as const,
-        imageData: image, // Base64データを一時保存
+        status: 'created' as const, // 'draft' → 'created' に変更
+        imageData: image,
       };
 
       const result = await postsApi.create(postData);
@@ -80,7 +88,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       // ローカル保存リストにも追加
       setSavedPosts(prev => [...prev, content]);
       
-      alert('投稿が保存されました！');
+      // 成功メッセージを表示
+      setShowSuccessMessage(true);
+      
+      // 3秒後にメッセージを非表示
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+      
     } catch (error) {
       console.error('保存エラー:', error);
       alert('保存に失敗しました。もう一度お試しください。');
@@ -227,6 +240,32 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 成功メッセージ */}
+      {showSuccessMessage && (
+        <div className="mx-6 mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center">
+            <CheckCircle size={20} className="text-green-600 mr-3" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-800">
+                投稿が保存されました！
+              </p>
+              <p className="text-xs text-green-600 mt-1">
+                投稿一覧ページで確認できます。
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              <a
+                href="/instagram/posts"
+                className="inline-flex items-center px-3 py-1 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                <Eye size={12} className="mr-1" />
+                投稿一覧を見る
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="p-6">
 

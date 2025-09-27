@@ -29,6 +29,7 @@ import {
 interface AnalyticsData {
   id: string;
   userId: string;
+  postId?: string; // 投稿とのリンク
   likes: number;
   comments: number;
   shares: number;
@@ -80,6 +81,7 @@ function InstagramAnalyticsContent() {
     category: 'feed' as 'reel' | 'feed' | 'story'
   });
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [selectedPostId, setSelectedPostId] = useState<string>('');
   const [currentPlan, setCurrentPlan] = useState<{
     id: string;
     goalName?: string;
@@ -184,6 +186,7 @@ function InstagramAnalyticsContent() {
   // 投稿を選択
   const handleSelectPost = (post: PostData) => {
     setSelectedPost(post);
+    setSelectedPostId(post.id);
     setInputData(prev => ({
       ...prev,
       title: post.title,
@@ -240,6 +243,7 @@ function InstagramAnalyticsContent() {
         },
         body: JSON.stringify({
           userId: user.uid,
+          postId: selectedPostId, // 投稿とのリンク
           likes: inputData.likes,
           comments: inputData.comments,
           shares: inputData.shares,
@@ -286,6 +290,7 @@ function InstagramAnalyticsContent() {
         category: 'feed'
       });
       setSelectedPost(null);
+      setSelectedPostId('');
       setPreviewUrl('');
 
     } catch (error) {

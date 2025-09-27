@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       userId, 
+      postId,
       likes, 
       comments, 
       shares, 
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
 
     const analyticsPayload = {
       userId,
+      postId: postId || '', // 投稿とのリンク
       likes: likesNum,
       comments: commentsNum,
       shares: sharesNum,
