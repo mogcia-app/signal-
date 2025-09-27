@@ -4,9 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { AuthGuard } from '../../../components/auth-guard';
-import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
+import Image from 'next/image';
 import { 
   BarChart3,
   Heart,
@@ -19,7 +20,9 @@ import {
   Video,
   Camera,
   Bookmark,
-  Users
+  Users,
+  Target,
+  Plus
 } from 'lucide-react';
 
 // 投稿分析データの型定義
@@ -76,8 +79,16 @@ function InstagramAnalyticsContent() {
     thumbnail: '',
     category: 'feed' as 'reel' | 'feed' | 'story'
   });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [currentPlan, setCurrentPlan] = useState<{
+    id: string;
+    goalName?: string;
+    followerGain?: string;
+    planPeriod?: string;
+    targetAudience?: string;
+    goalCategory?: string;
+    selectedStrategies?: string[];
+  } | null>(null);
 
   // 分析データを取得（直接Firestoreアクセス）
   const fetchAnalytics = useCallback(async () => {
@@ -127,7 +138,7 @@ function InstagramAnalyticsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.uid]);
+  }, [user]);
 
   // 投稿データを取得
   const fetchPosts = useCallback(async () => {
@@ -153,12 +164,37 @@ function InstagramAnalyticsContent() {
       console.error('Posts fetch error:', error);
       setPosts([]);
     }
-  }, [user?.uid]);
+  }, [user]);
+
+  // 運用計画を取得
+  const fetchCurrentPlan = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      console.log('Fetching current plan for user:', user.uid);
+      const q = query(
+        collection(db, 'plans'),
+        where('userId', '==', user.uid)
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const planData = snapshot.docs[0].data();
+        setCurrentPlan({
+          id: snapshot.docs[0].id,
+          ...planData
+        });
+      }
+    } catch (error) {
+      console.error('Plan fetch error:', error);
+      setCurrentPlan(null);
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchAnalytics();
     fetchPosts();
-  }, [fetchAnalytics, fetchPosts]);
+    fetchCurrentPlan();
+  }, [fetchAnalytics, fetchPosts, fetchCurrentPlan]);
 
   // 投稿を選択
   const handleSelectPost = (post: PostData) => {
@@ -175,16 +211,15 @@ function InstagramAnalyticsContent() {
     }));
   };
 
-  // ファイル選択処理
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      setInputData(prev => ({ ...prev, thumbnail: url }));
-    }
-  };
+      // ファイル選択処理
+      const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setPreviewUrl(url);
+          setInputData(prev => ({ ...prev, thumbnail: url }));
+        }
+      };
 
   // 検索フィルタリング
   const filteredPosts = posts.filter(post =>
@@ -273,8 +308,7 @@ function InstagramAnalyticsContent() {
         category: 'feed'
       });
       setSelectedPost(null);
-      setSelectedFile(null);
-      setPreviewUrl('');
+          setPreviewUrl('');
 
     } catch (error) {
       console.error('保存エラー:', error);
@@ -454,15 +488,16 @@ function InstagramAnalyticsContent() {
                       />
                       {previewUrl && (
                         <div className="mt-2">
-                          <img
+                          <Image
                             src={previewUrl}
                             alt="Preview"
+                            width={80}
+                            height={80}
                             className="w-20 h-20 object-cover rounded-md border"
                           />
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedFile(null);
                               setPreviewUrl('');
                               setInputData(prev => ({ ...prev, thumbnail: '' }));
                             }}
@@ -613,8 +648,7 @@ function InstagramAnalyticsContent() {
                       category: 'feed'
                     });
                     setSelectedPost(null);
-                    setSelectedFile(null);
-                    setPreviewUrl('');
+          setPreviewUrl('');
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
@@ -623,37 +657,116 @@ function InstagramAnalyticsContent() {
               </div>
             </div>
 
-            {/* 右カラム: 統計表示 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">投稿分析統計</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <div className="text-xl font-bold text-red-600">{totalLikes.toLocaleString()}</div>
+            {/* 右カラム: 運用計画セクション */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Target size={18} className="mr-2 text-blue-600" />
+                  運用計画
+                </h3>
+                {currentPlan && (
+                  <a 
+                    href="/instagram/plan" 
+                    className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    詳細を見る →
+                  </a>
+                )}
+              </div>
+              
+              {currentPlan ? (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-900">
+                      {currentPlan.goalName || 'Instagram成長計画'}
+                    </h4>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-600">目標フォロワー増加</span>
+                        <div className="font-medium text-blue-600">+{currentPlan.followerGain || 0}人</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">期間</span>
+                        <div className="font-medium">{currentPlan.planPeriod || '未設定'}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">ターゲット</span>
+                        <div className="font-medium">{currentPlan.targetAudience || '未設定'}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">カテゴリ</span>
+                        <div className="font-medium">{currentPlan.goalCategory || '未設定'}</div>
+                      </div>
+                    </div>
+                    
+                    {currentPlan.selectedStrategies && currentPlan.selectedStrategies.length > 0 && (
+                      <div>
+                        <span className="text-sm text-gray-600">選択した戦略</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {currentPlan.selectedStrategies.slice(0, 3).map((strategy: string, index: number) => (
+                            <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                              {strategy}
+                            </span>
+                          ))}
+                          {currentPlan.selectedStrategies.length > 3 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                              +{currentPlan.selectedStrategies.length - 3}個
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Target size={24} className="text-gray-400" />
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">運用計画が設定されていません</p>
+                  <a 
+                    href="/instagram/plan" 
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    計画を作成する
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* 統計表示 */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">投稿分析統計</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-center p-2 bg-red-50 rounded-lg">
+                  <div className="text-lg font-bold text-red-600">{totalLikes.toLocaleString()}</div>
                   <div className="text-xs text-gray-600">総いいね数</div>
                 </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-xl font-bold text-blue-600">{totalComments.toLocaleString()}</div>
+                <div className="text-center p-2 bg-blue-50 rounded-lg">
+                  <div className="text-lg font-bold text-blue-600">{totalComments.toLocaleString()}</div>
                   <div className="text-xs text-gray-600">総コメント数</div>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-xl font-bold text-green-600">{totalShares.toLocaleString()}</div>
+                <div className="text-center p-2 bg-green-50 rounded-lg">
+                  <div className="text-lg font-bold text-green-600">{totalShares.toLocaleString()}</div>
                   <div className="text-xs text-gray-600">総シェア数</div>
                 </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-xl font-bold text-purple-600">{totalReach.toLocaleString()}</div>
+                <div className="text-center p-2 bg-purple-50 rounded-lg">
+                  <div className="text-lg font-bold text-purple-600">{totalReach.toLocaleString()}</div>
                   <div className="text-xs text-gray-600">総リーチ数</div>
                 </div>
-                <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="text-xl font-bold text-yellow-600">{totalSaves.toLocaleString()}</div>
+                <div className="text-center p-2 bg-yellow-50 rounded-lg">
+                  <div className="text-lg font-bold text-yellow-600">{totalSaves.toLocaleString()}</div>
                   <div className="text-xs text-gray-600">総保存数</div>
                 </div>
-                <div className="text-center p-3 bg-emerald-50 rounded-lg">
-                  <div className="text-xl font-bold text-emerald-600">{totalFollowerIncrease.toLocaleString()}</div>
+                <div className="text-center p-2 bg-emerald-50 rounded-lg">
+                  <div className="text-lg font-bold text-emerald-600">{totalFollowerIncrease.toLocaleString()}</div>
                   <div className="text-xs text-gray-600">総フォロワー増加数</div>
                 </div>
               </div>
-              <div className="mt-4 text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">{(avgEngagementRate || 0).toFixed(2)}%</div>
+              <div className="mt-3 text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-lg font-bold text-gray-900">{(avgEngagementRate || 0).toFixed(2)}%</div>
                 <div className="text-sm text-gray-600">平均エンゲージメント率</div>
               </div>
             </div>
