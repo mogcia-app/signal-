@@ -15,14 +15,12 @@ import {
   AlertCircle,
   CheckCircle,
   Settings,
-  Database,
   Calendar,
 } from 'lucide-react';
 
 // UserProfile interface は useUserProfile フックで定義されているため削除
 
 export default function MyAccountPage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -180,7 +178,7 @@ export default function MyAccountPage() {
       customTitle="マイアカウント"
       customDescription="アカウント設定とプロファイル管理"
     >
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="w-full p-6">
 
         {/* メッセージ表示 */}
         {message && (
@@ -198,35 +196,11 @@ export default function MyAccountPage() {
           </div>
         )}
 
-        {/* タブナビゲーション */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-8">
-          <div className="flex space-x-2">
-            {[
-              { id: 'profile', label: 'プロファイル', icon: <User className="w-4 h-4" /> },
-              { id: 'security', label: 'セキュリティ', icon: <Shield className="w-4 h-4" /> },
-              { id: 'data', label: '全データ表示', icon: <Database className="w-4 h-4" /> }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'profile' | 'security' | 'data')}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                {tab.icon}
-                <span className="font-medium">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* タブコンテンツ */}
-        <div>
-          {/* プロファイルタブ */}
-          {activeTab === 'profile' && (
-            <div className="space-y-6">
+        {/* メインコンテンツ - 2カラムレイアウト */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* 左カラム - プロファイル情報 */}
+          <div className="space-y-6">
               {/* 基本情報 */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
                 <div className="flex items-center mb-8">
@@ -491,186 +465,297 @@ export default function MyAccountPage() {
                 </div>
               </div>
 
-              {/* AI設定 */}
-              {userProfile?.snsAISettings && Object.keys(userProfile.snsAISettings).length > 0 && (
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                  <div className="flex items-center mb-8">
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mr-4">
-                      <Settings className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">AI設定</h2>
-                      <p className="text-gray-600">各SNSのAI機能設定</p>
-                    </div>
+              {/* パスワード変更 */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl flex items-center justify-center mr-4">
+                    <Key className="w-6 h-6 text-white" />
                   </div>
-                  
-                  <div className="space-y-6">
-                    {Object.entries(userProfile.snsAISettings).map(([sns, settings]) => {
-                      const typedSettings = settings as {
-                        aiEnabled?: boolean;
-                        autoPosting?: boolean;
-                        hashtagOptimization?: boolean;
-                        postingFrequency?: string;
-                        optimalPostingTime?: string[];
-                        analyticsEnabled?: boolean;
-                      };
-                      
-                      return (
-                        <div key={sns} className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
-                          <h3 className="font-bold text-gray-900 mb-4 capitalize flex items-center">
-                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center mr-3">
-                              <Settings className="w-4 h-4 text-white" />
-                            </div>
-                            {sns} AI設定
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-gray-700">AI有効</span>
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  typedSettings.aiEnabled 
-                                    ? 'bg-green-100 text-green-700 border border-green-200' 
-                                    : 'bg-red-100 text-red-700 border border-red-200'
-                                }`}>
-                                  {typedSettings.aiEnabled ? 'ON' : 'OFF'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-gray-700">自動投稿</span>
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  typedSettings.autoPosting 
-                                    ? 'bg-green-100 text-green-700 border border-green-200' 
-                                    : 'bg-red-100 text-red-700 border border-red-200'
-                                }`}>
-                                  {typedSettings.autoPosting ? 'ON' : 'OFF'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-gray-700">ハッシュタグ最適化</span>
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  typedSettings.hashtagOptimization 
-                                    ? 'bg-green-100 text-green-700 border border-green-200' 
-                                    : 'bg-red-100 text-red-700 border border-red-200'
-                                }`}>
-                                  {typedSettings.hashtagOptimization ? 'ON' : 'OFF'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                              <div className="flex flex-col">
-                                <span className="font-semibold text-gray-700 mb-2">投稿頻度</span>
-                                <span className="text-gray-600 font-medium">{typedSettings.postingFrequency || '未設定'}</span>
-                              </div>
-                            </div>
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                              <div className="flex flex-col">
-                                <span className="font-semibold text-gray-700 mb-2">最適投稿時間</span>
-                                <span className="text-gray-600 font-medium">{typedSettings.optimalPostingTime?.join(', ') || '未設定'}</span>
-                              </div>
-                            </div>
-                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-gray-700">分析機能</span>
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  typedSettings.analyticsEnabled 
-                                    ? 'bg-green-100 text-green-700 border border-green-200' 
-                                    : 'bg-red-100 text-red-700 border border-red-200'
-                                }`}>
-                                  {typedSettings.analyticsEnabled ? 'ON' : 'OFF'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">パスワード変更</h2>
+                    <p className="text-gray-600">アカウントのセキュリティを強化</p>
                   </div>
                 </div>
-              )}
-
-              {/* SNSプロフィール */}
-              {userProfile?.snsProfiles && Object.keys(userProfile.snsProfiles).length > 0 && (
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                  <div className="flex items-center mb-8">
-                    <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mr-4">
-                      <User className="w-6 h-6 text-white" />
-                    </div>
+                
+                <div className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="space-y-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900">SNSプロフィール</h2>
-                      <p className="text-gray-600">各SNSアカウントの詳細情報</p>
+                      <label className="flex text-sm font-semibold text-gray-700 mb-3 items-center">
+                        <Key className="w-4 h-4 mr-2 text-red-500" />
+                        現在のパスワード
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={passwordData.currentPassword}
+                          onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                          className="w-full p-4 pr-12 border border-red-200 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="現在のパスワードを入力"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="flex text-sm font-semibold text-gray-700 mb-3 items-center">
+                        <Key className="w-4 h-4 mr-2 text-red-500" />
+                        新しいパスワード
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        className="w-full p-4 border border-red-200 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        placeholder="新しいパスワードを入力"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="flex text-sm font-semibold text-gray-700 mb-3 items-center">
+                        <Key className="w-4 h-4 mr-2 text-red-500" />
+                        新しいパスワード（確認）
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className="w-full p-4 border border-red-200 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        placeholder="新しいパスワードを再入力"
+                      />
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                      <button
+                        onClick={handleChangePassword}
+                        disabled={isSaving || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                        className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:from-red-600 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
+                      >
+                        <Key className="w-5 h-5" />
+                        <span className="font-medium">{isSaving ? '変更中...' : 'パスワードを変更'}</span>
+                      </button>
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {Object.entries(userProfile.snsProfiles).map(([sns, profile]) => (
+                </div>
+              </div>
+
+              {/* 二要素認証 */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">二要素認証</h2>
+                    <p className="text-gray-600">アカウントセキュリティの強化</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-900 mb-3 flex items-center">
+                        <Shield className="w-5 h-5 mr-2 text-orange-500" />
+                        二要素認証（2FA）
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        アカウントのセキュリティを強化するために、二要素認証を有効にできます。
+                      </p>
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm font-medium text-gray-700">現在の状態:</span>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          twoFactorEnabled 
+                            ? 'bg-green-100 text-green-700 border border-green-200' 
+                            : 'bg-red-100 text-red-700 border border-red-200'
+                        }`}>
+                          {twoFactorEnabled ? '有効' : '無効'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="ml-6">
+                      <button
+                        onClick={handleToggleTwoFactor}
+                        disabled={isSaving}
+                        className={`px-8 py-4 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                          twoFactorEnabled
+                            ? 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
+                            : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {isSaving ? '設定中...' : twoFactorEnabled ? '無効にする' : '有効にする'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          </div>
+
+          {/* 右カラム - AI設定・SNSプロフィール・セキュリティ */}
+          <div className="space-y-6">
+            {/* AI設定 */}
+            {userProfile?.snsAISettings && Object.keys(userProfile.snsAISettings).length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mr-4">
+                    <Settings className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">AI設定</h2>
+                    <p className="text-gray-600">各SNSのAI機能設定</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-6">
+                  {Object.entries(userProfile.snsAISettings).map(([sns, settings]) => {
+                    const typedSettings = settings as {
+                      aiEnabled?: boolean;
+                      autoPosting?: boolean;
+                      hashtagOptimization?: boolean;
+                      postingFrequency?: string;
+                      optimalPostingTime?: string[];
+                      analyticsEnabled?: boolean;
+                    };
+                    
+                    return (
                       <div key={sns} className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
-                        <div className="flex items-center mb-4">
-                          <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
-                            <User className="w-5 h-5 text-white" />
+                        <h3 className="font-bold text-gray-900 mb-4 capitalize flex items-center">
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center mr-3">
+                            <Settings className="w-4 h-4 text-white" />
                           </div>
-                          <h3 className="font-bold text-gray-900 capitalize text-lg">{sns}</h3>
-                        </div>
-                        <div className="space-y-4">
+                          {sns} AI設定
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4">
                           <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                            <div className="flex justify-between items-center">
-                              <span className="font-semibold text-gray-700">フォロワー数</span>
-                              <span className="text-lg font-bold text-cyan-600">
-                                {(profile as { followers?: number }).followers?.toLocaleString() || 0}
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-gray-700">AI有効</span>
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                typedSettings.aiEnabled 
+                                  ? 'bg-green-100 text-green-700 border border-green-200' 
+                                  : 'bg-red-100 text-red-700 border border-red-200'
+                              }`}>
+                                {typedSettings.aiEnabled ? 'ON' : 'OFF'}
                               </span>
                             </div>
                           </div>
                           <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                            <div className="flex justify-between items-center">
-                              <span className="font-semibold text-gray-700">ユーザー名</span>
-                              <span className="text-gray-600 font-medium">
-                                {(profile as { username?: string }).username || '未設定'}
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-gray-700">自動投稿</span>
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                typedSettings.autoPosting 
+                                  ? 'bg-green-100 text-green-700 border border-green-200' 
+                                  : 'bg-red-100 text-red-700 border border-red-200'
+                              }`}>
+                                {typedSettings.autoPosting ? 'ON' : 'OFF'}
                               </span>
                             </div>
                           </div>
                           <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                            <div className="flex justify-between items-center">
-                              <span className="font-semibold text-gray-700">最終更新</span>
-                              <span className="text-gray-600 font-medium">
-                                {(profile as { lastUpdated?: string }).lastUpdated ? 
-                                  new Date((profile as { lastUpdated: string }).lastUpdated).toLocaleDateString('ja-JP') : 
-                                  '未更新'
-                                }
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-gray-700">ハッシュタグ最適化</span>
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                typedSettings.hashtagOptimization 
+                                  ? 'bg-green-100 text-green-700 border border-green-200' 
+                                  : 'bg-red-100 text-red-700 border border-red-200'
+                              }`}>
+                                {typedSettings.hashtagOptimization ? 'ON' : 'OFF'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-700 mb-2">投稿頻度</span>
+                              <span className="text-gray-600 font-medium">{typedSettings.postingFrequency || '未設定'}</span>
+                            </div>
+                          </div>
+                          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-700 mb-2">最適投稿時間</span>
+                              <span className="text-gray-600 font-medium">{typedSettings.optimalPostingTime?.join(', ') || '未設定'}</span>
+                            </div>
+                          </div>
+                          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-gray-700">分析機能</span>
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                typedSettings.analyticsEnabled 
+                                  ? 'bg-green-100 text-green-700 border border-green-200' 
+                                  : 'bg-red-100 text-red-700 border border-red-200'
+                              }`}>
+                                {typedSettings.analyticsEnabled ? 'ON' : 'OFF'}
                               </span>
                             </div>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* SNSプロフィール */}
+            {userProfile?.snsProfiles && Object.keys(userProfile.snsProfiles).length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mr-4">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">SNSプロフィール</h2>
+                    <p className="text-gray-600">各SNSアカウントの詳細情報</p>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-
-          {/* 全データ表示タブ */}
-          {activeTab === 'data' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">ユーザーデータ詳細</h2>
-                <button
-                  onClick={() => setShowAllData(!showAllData)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  {showAllData ? '基本情報のみ' : '全データ表示'}
-                </button>
+                
+                <div className="space-y-4">
+                  {Object.entries(userProfile.snsProfiles).map(([sns, profile]) => (
+                    <div key={sns} className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
+                      <div className="flex items-center mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                        <h3 className="font-bold text-gray-900 capitalize text-lg">{sns}</h3>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-gray-700">フォロワー数</span>
+                            <span className="text-lg font-bold text-cyan-600">
+                              {(profile as { followers?: number }).followers?.toLocaleString() || 0}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-gray-700">ユーザー名</span>
+                            <span className="text-gray-600 font-medium">
+                              {(profile as { username?: string }).username || '未設定'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-gray-700">最終更新</span>
+                            <span className="text-gray-600 font-medium">
+                              {(profile as { lastUpdated?: string }).lastUpdated ? 
+                                new Date((profile as { lastUpdated: string }).lastUpdated).toLocaleDateString('ja-JP') : 
+                                '未更新'
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              
-              <UserDataDisplay showAll={showAllData} />
-            </div>
-          )}
+            )}
 
-          {/* セキュリティタブ */}
-          {activeTab === 'security' && (
+            {/* セキュリティ */}
             <div className="space-y-6">
               {/* パスワード変更 */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
@@ -800,10 +885,23 @@ export default function MyAccountPage() {
                   </div>
                 </div>
               </div>
-
             </div>
-          )}
 
+            {/* 全データ表示 */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">ユーザーデータ詳細</h2>
+                <button
+                  onClick={() => setShowAllData(!showAllData)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  {showAllData ? '基本情報のみ' : '全データ表示'}
+                </button>
+              </div>
+              
+              <UserDataDisplay showAll={showAllData} />
+            </div>
+          </div>
         </div>
 
         {/* AIチャットウィジェット */}
