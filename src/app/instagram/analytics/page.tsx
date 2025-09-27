@@ -16,7 +16,12 @@ import {
   Search,
   Image,
   Hash,
-  FileText
+  FileText,
+  Upload,
+  Video,
+  Camera,
+  Bookmark,
+  Users
 } from 'lucide-react';
 
 // 投稿分析データの型定義
@@ -27,6 +32,8 @@ interface AnalyticsData {
   comments: number;
   shares: number;
   reach: number;
+  saves: number;
+  followerIncrease: number;
   engagementRate: number;
   publishedAt: Date;
   createdAt: Date;
@@ -35,6 +42,7 @@ interface AnalyticsData {
   content?: string;
   hashtags?: string[];
   thumbnail?: string;
+  category?: 'reel' | 'feed' | 'story';
 }
 
 // 投稿データの型定義
@@ -44,6 +52,7 @@ interface PostData {
   content: string;
   hashtags: string[];
   thumbnail: string;
+  category: 'reel' | 'feed' | 'story';
   publishedAt: Date;
 }
 
@@ -59,13 +68,18 @@ function InstagramAnalyticsContent() {
     comments: '',
     shares: '',
     reach: '',
+    saves: '',
+    followerIncrease: '',
     publishedAt: new Date().toISOString().split('T')[0],
     publishedTime: new Date().toTimeString().slice(0, 5), // HH:MM形式
     title: '',
     content: '',
     hashtags: '',
-    thumbnail: ''
+    thumbnail: '',
+    category: 'feed' as 'reel' | 'feed' | 'story'
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
 
   // 分析データを取得（直接Firestoreアクセス）
   const fetchAnalytics = useCallback(async () => {
@@ -157,9 +171,21 @@ function InstagramAnalyticsContent() {
       content: post.content,
       hashtags: post.hashtags.join(', '),
       thumbnail: post.thumbnail,
+      category: post.category || 'feed',
       publishedAt: post.publishedAt.toISOString().split('T')[0],
       publishedTime: post.publishedAt.toTimeString().slice(0, 5)
     }));
+  };
+
+  // ファイル選択処理
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setInputData(prev => ({ ...prev, thumbnail: url }));
+    }
   };
 
   // 検索フィルタリング
@@ -187,9 +213,11 @@ function InstagramAnalyticsContent() {
       const comments = parseInt(inputData.comments) || 0;
       const shares = parseInt(inputData.shares) || 0;
       const reach = parseInt(inputData.reach) || 0;
+      const saves = parseInt(inputData.saves) || 0;
+      const followerIncrease = parseInt(inputData.followerIncrease) || 0;
       
-      // エンゲージメント率の計算
-      const engagementRate = reach > 0 ? ((likes + comments + shares) / reach * 100).toFixed(2) : "0";
+      // エンゲージメント率の計算（保存数も含める）
+      const engagementRate = reach > 0 ? ((likes + comments + shares + saves) / reach * 100).toFixed(2) : "0";
 
       const analyticsPayload = {
         userId: user.uid,
@@ -197,6 +225,8 @@ function InstagramAnalyticsContent() {
         comments,
         shares,
         reach,
+        saves,
+        followerIncrease,
         engagementRate: parseFloat(engagementRate),
         publishedAt: new Date(`${inputData.publishedAt}T${inputData.publishedTime}:00`),
         createdAt: new Date(),
@@ -204,7 +234,8 @@ function InstagramAnalyticsContent() {
         title: inputData.title,
         content: inputData.content,
         hashtags: inputData.hashtags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        thumbnail: inputData.thumbnail
+        thumbnail: inputData.thumbnail,
+        category: inputData.category
       };
 
       console.log('Saving analytics data directly to Firestore:', analyticsPayload);
@@ -233,14 +264,19 @@ function InstagramAnalyticsContent() {
         comments: '',
         shares: '',
         reach: '',
+        saves: '',
+        followerIncrease: '',
         publishedAt: new Date().toISOString().split('T')[0],
         publishedTime: new Date().toTimeString().slice(0, 5),
         title: '',
         content: '',
         hashtags: '',
-        thumbnail: ''
+        thumbnail: '',
+        category: 'feed'
       });
       setSelectedPost(null);
+      setSelectedFile(null);
+      setPreviewUrl('');
 
     } catch (error) {
       console.error('保存エラー:', error);
@@ -255,6 +291,8 @@ function InstagramAnalyticsContent() {
   const totalComments = analyticsData.reduce((sum, data) => sum + (data.comments || 0), 0);
   const totalShares = analyticsData.reduce((sum, data) => sum + (data.shares || 0), 0);
   const totalReach = analyticsData.reduce((sum, data) => sum + (data.reach || 0), 0);
+  const totalSaves = analyticsData.reduce((sum, data) => sum + (data.saves || 0), 0);
+  const totalFollowerIncrease = analyticsData.reduce((sum, data) => sum + (data.followerIncrease || 0), 0);
   const avgEngagementRate = analyticsData.length > 0 
     ? analyticsData.reduce((sum, data) => sum + (data.engagementRate || 0), 0) / analyticsData.length 
     : 0;
@@ -267,6 +305,8 @@ function InstagramAnalyticsContent() {
     totalComments: totalComments,
     totalShares: totalShares,
     totalReach: totalReach,
+    totalSaves: totalSaves,
+    totalFollowerIncrease: totalFollowerIncrease,
     avgEngagementRate: avgEngagementRate
   });
 
@@ -389,16 +429,52 @@ function InstagramAnalyticsContent() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">
-                      <Image size={14} className="inline mr-1" />
-                      サムネイルURL
+                      <Video size={14} className="inline mr-1" />
+                      投稿カテゴリー
                     </label>
-                    <input
-                      type="url"
-                      value={inputData.thumbnail}
-                      onChange={(e) => setInputData(prev => ({ ...prev, thumbnail: e.target.value }))}
+                    <select
+                      value={inputData.category}
+                      onChange={(e) => setInputData(prev => ({ ...prev, category: e.target.value as 'reel' | 'feed' | 'story' }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="https://example.com/image.jpg"
-                    />
+                    >
+                      <option value="feed">📱 フィード</option>
+                      <option value="reel">🎬 リール</option>
+                      <option value="story">📖 ストーリー</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      <Camera size={14} className="inline mr-1" />
+                      サムネイル画像
+                    </label>
+                    <div className="space-y-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      {previewUrl && (
+                        <div className="mt-2">
+                          <img
+                            src={previewUrl}
+                            alt="Preview"
+                            className="w-20 h-20 object-cover rounded-md border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedFile(null);
+                              setPreviewUrl('');
+                              setInputData(prev => ({ ...prev, thumbnail: '' }));
+                            }}
+                            className="ml-2 text-xs text-red-600 hover:text-red-800"
+                          >
+                            削除
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -453,6 +529,32 @@ function InstagramAnalyticsContent() {
                     placeholder="例: 1200"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Bookmark size={16} className="inline mr-1 text-yellow-500" />
+                    保存数
+                  </label>
+                  <input
+                    type="number"
+                    value={inputData.saves}
+                    onChange={(e) => setInputData(prev => ({ ...prev, saves: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    placeholder="例: 45"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Users size={16} className="inline mr-1 text-green-500" />
+                    フォロワー増加数
+                  </label>
+                  <input
+                    type="number"
+                    value={inputData.followerIncrease}
+                    onChange={(e) => setInputData(prev => ({ ...prev, followerIncrease: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    placeholder="例: 23"
+                  />
+                </div>
               </div>
 
               <div className="mb-6">
@@ -502,14 +604,19 @@ function InstagramAnalyticsContent() {
                       comments: '',
                       shares: '',
                       reach: '',
+                      saves: '',
+                      followerIncrease: '',
                       publishedAt: new Date().toISOString().split('T')[0],
                       publishedTime: new Date().toTimeString().slice(0, 5),
                       title: '',
                       content: '',
                       hashtags: '',
-                      thumbnail: ''
+                      thumbnail: '',
+                      category: 'feed'
                     });
                     setSelectedPost(null);
+                    setSelectedFile(null);
+                    setPreviewUrl('');
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
@@ -521,22 +628,30 @@ function InstagramAnalyticsContent() {
             {/* 右カラム: 統計表示 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">投稿分析統計</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">{totalLikes.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">総いいね数</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-red-50 rounded-lg">
+                  <div className="text-xl font-bold text-red-600">{totalLikes.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">総いいね数</div>
                 </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{totalComments.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">総コメント数</div>
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-xl font-bold text-blue-600">{totalComments.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">総コメント数</div>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{totalShares.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">総シェア数</div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-xl font-bold text-green-600">{totalShares.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">総シェア数</div>
                 </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{totalReach.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">総リーチ数</div>
+                <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <div className="text-xl font-bold text-purple-600">{totalReach.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">総リーチ数</div>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                  <div className="text-xl font-bold text-yellow-600">{totalSaves.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">総保存数</div>
+                </div>
+                <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                  <div className="text-xl font-bold text-emerald-600">{totalFollowerIncrease.toLocaleString()}</div>
+                  <div className="text-xs text-gray-600">総フォロワー増加数</div>
                 </div>
               </div>
               <div className="mt-4 text-center p-4 bg-gray-50 rounded-lg">
@@ -565,7 +680,7 @@ function InstagramAnalyticsContent() {
                         エンゲージメント率: {(data.engagementRate || 0).toFixed(2)}%
                       </span>
                     </div>
-                    <div className="grid grid-cols-4 gap-2 text-sm">
+                    <div className="grid grid-cols-3 gap-2 text-xs">
                       <div className="text-center">
                         <div className="text-red-600 font-semibold">{data.likes || 0}</div>
                         <div className="text-gray-500">いいね</div>
@@ -581,6 +696,14 @@ function InstagramAnalyticsContent() {
                       <div className="text-center">
                         <div className="text-purple-600 font-semibold">{data.reach || 0}</div>
                         <div className="text-gray-500">リーチ</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-yellow-600 font-semibold">{data.saves || 0}</div>
+                        <div className="text-gray-500">保存</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-emerald-600 font-semibold">{data.followerIncrease || 0}</div>
+                        <div className="text-gray-500">フォロワー増加</div>
                       </div>
                     </div>
                   </div>
@@ -598,6 +721,8 @@ function InstagramAnalyticsContent() {
           totalComments: totalComments,
           totalShares: totalShares,
           totalReach: totalReach,
+          totalSaves: totalSaves,
+          totalFollowerIncrease: totalFollowerIncrease,
           avgEngagementRate: avgEngagementRate,
           recordedPosts: analyticsData.length
         }}
