@@ -21,7 +21,8 @@ import {
   Video,
   Camera,
   Bookmark,
-  Users
+  Users,
+  TrendingUp
 } from 'lucide-react';
 
 // 投稿分析データの型定義
@@ -657,6 +658,84 @@ function InstagramAnalyticsContent() {
               <div className="mt-4 text-center p-4 bg-gray-50 rounded-lg">
                 <div className="text-xl font-bold text-gray-900">{(avgEngagementRate || 0).toFixed(2)}%</div>
                 <div className="text-sm text-gray-600">平均エンゲージメント率</div>
+              </div>
+            </div>
+          </div>
+
+          {/* エンゲージメント平均線グラフ */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg flex items-center justify-center mr-3">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">エンゲージメント率推移</h3>
+                <p className="text-sm text-gray-600">投稿別のエンゲージメント率と平均線</p>
+              </div>
+            </div>
+            
+            <div className="relative h-64 bg-gray-50 rounded-lg p-4">
+              {analyticsData.length > 0 ? (
+                <div className="h-full flex items-end justify-between space-x-1">
+                  {/* 平均線 */}
+                  <div 
+                    className="absolute w-full border-t-2 border-dashed border-gray-400 opacity-60"
+                    style={{ bottom: `${100 - avgEngagementRate}%` }}
+                  >
+                    <div className="absolute -top-6 left-0 text-xs text-gray-500 bg-white px-1">
+                      平均: {(avgEngagementRate || 0).toFixed(1)}%
+                    </div>
+                  </div>
+                  
+                  {/* データポイント */}
+                  {analyticsData.slice(0, 10).map((data, index) => {
+                    const height = Math.min((data.engagementRate || 0) * 2, 100); // 最大100%で表示
+                    const isAboveAverage = (data.engagementRate || 0) > avgEngagementRate;
+                    
+                    return (
+                      <div key={data.id} className="flex flex-col items-center flex-1">
+                        <div className="relative">
+                          <div
+                            className={`w-8 rounded-t-md transition-all duration-300 hover:w-10 ${
+                              isAboveAverage 
+                                ? 'bg-gradient-to-t from-green-500 to-green-400' 
+                                : 'bg-gradient-to-t from-blue-500 to-blue-400'
+                            }`}
+                            style={{ height: `${height}%`, minHeight: '4px' }}
+                            title={`${new Date(data.publishedAt).toLocaleDateString('ja-JP')}: ${(data.engagementRate || 0).toFixed(2)}%`}
+                          />
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-top-left">
+                          {new Date(data.publishedAt).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>データがありません</p>
+                    <p className="text-sm">投稿分析データを入力してください</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* 凡例 */}
+            <div className="flex justify-center space-x-6 mt-4 text-sm">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gradient-to-t from-green-500 to-green-400 rounded mr-2"></div>
+                <span className="text-gray-600">平均以上</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gradient-to-t from-blue-500 to-blue-400 rounded mr-2"></div>
+                <span className="text-gray-600">平均以下</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-0.5 border-t-2 border-dashed border-gray-400 mr-2"></div>
+                <span className="text-gray-600">平均線</span>
               </div>
             </div>
           </div>
