@@ -41,7 +41,16 @@ export default function InstagramPostsPage() {
   const [selectedPostType, setSelectedPostType] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'saved' | 'published'>('saved');
-  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<{
+    id: string;
+    postId?: string;
+    likes: number;
+    comments: number;
+    shares: number;
+    reach: number;
+    engagementRate: number;
+    publishedAt: Date;
+  }[]>([]);
 
   // 投稿一覧を取得
   const fetchPosts = async () => {
@@ -374,7 +383,11 @@ export default function InstagramPostsPage() {
                             投稿パフォーマンス
                           </h4>
                           <span className="text-xs text-gray-500">
-                            投稿日: {new Date((analyticsData.find(a => a.postId === post.id) || post.analytics)?.publishedAt).toLocaleDateString('ja-JP')}
+                            投稿日: {(() => {
+                              const analytics = analyticsData.find(a => a.postId === post.id) || post.analytics;
+                              const publishedAt = analytics?.publishedAt;
+                              return publishedAt ? new Date(publishedAt).toLocaleDateString('ja-JP') : '不明';
+                            })()}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

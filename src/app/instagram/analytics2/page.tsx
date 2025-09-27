@@ -78,7 +78,7 @@ function InstagramAnalyticsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.uid]);
+  }, [user]);
 
   useEffect(() => {
     fetchAnalytics();
