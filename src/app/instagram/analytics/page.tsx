@@ -12,7 +12,11 @@ import {
   Heart,
   Save,
   Calendar,
-  RefreshCw
+  RefreshCw,
+  Search,
+  Image,
+  Hash,
+  FileText
 } from 'lucide-react';
 
 // 投稿分析データの型定義
@@ -26,18 +30,41 @@ interface AnalyticsData {
   engagementRate: number;
   publishedAt: Date;
   createdAt: Date;
+  // 投稿情報
+  title?: string;
+  content?: string;
+  hashtags?: string[];
+  thumbnail?: string;
+}
+
+// 投稿データの型定義
+interface PostData {
+  id: string;
+  title: string;
+  content: string;
+  hashtags: string[];
+  thumbnail: string;
+  publishedAt: Date;
 }
 
 function InstagramAnalyticsContent() {
   const { user } = useAuth();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [posts, setPosts] = useState<PostData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [inputData, setInputData] = useState({
     likes: '',
     comments: '',
     shares: '',
     reach: '',
-    publishedAt: new Date().toISOString().split('T')[0]
+    publishedAt: new Date().toISOString().split('T')[0],
+    publishedTime: new Date().toTimeString().slice(0, 5), // HH:MM形式
+    title: '',
+    content: '',
+    hashtags: '',
+    thumbnail: ''
   });
 
   // 分析データを取得（直接Firestoreアクセス）
@@ -90,9 +117,57 @@ function InstagramAnalyticsContent() {
     }
   }, [user?.uid]);
 
+  // 投稿データを取得
+  const fetchPosts = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      console.log('Fetching posts for user:', user.uid);
+      const q = query(
+        collection(db, 'posts'),
+        where('userId', '==', user.uid)
+      );
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        publishedAt: doc.data().publishedAt?.toDate() || new Date()
+      })) as PostData[];
+      
+      // クライアント側でソート
+      data.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+      setPosts(data);
+    } catch (error) {
+      console.error('Posts fetch error:', error);
+      setPosts([]);
+    }
+  }, [user?.uid]);
+
   useEffect(() => {
     fetchAnalytics();
-  }, [fetchAnalytics]);
+    fetchPosts();
+  }, [fetchAnalytics, fetchPosts]);
+
+  // 投稿を選択
+  const handleSelectPost = (post: PostData) => {
+    setSelectedPost(post);
+    setInputData(prev => ({
+      ...prev,
+      title: post.title,
+      content: post.content,
+      hashtags: post.hashtags.join(', '),
+      thumbnail: post.thumbnail,
+      publishedAt: post.publishedAt.toISOString().split('T')[0],
+      publishedTime: post.publishedAt.toTimeString().slice(0, 5)
+    }));
+  };
+
+  // 検索フィルタリング
+  const filteredPosts = posts.filter(post =>
+    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.hashtags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   // 投稿分析データを保存（直接Firestoreアクセス）
   const handleSaveAnalytics = async () => {
@@ -123,8 +198,13 @@ function InstagramAnalyticsContent() {
         shares,
         reach,
         engagementRate: parseFloat(engagementRate),
-        publishedAt: new Date(inputData.publishedAt),
-        createdAt: new Date()
+        publishedAt: new Date(`${inputData.publishedAt}T${inputData.publishedTime}:00`),
+        createdAt: new Date(),
+        // 投稿情報
+        title: inputData.title,
+        content: inputData.content,
+        hashtags: inputData.hashtags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        thumbnail: inputData.thumbnail
       };
 
       console.log('Saving analytics data directly to Firestore:', analyticsPayload);
@@ -153,8 +233,14 @@ function InstagramAnalyticsContent() {
         comments: '',
         shares: '',
         reach: '',
-        publishedAt: new Date().toISOString().split('T')[0]
+        publishedAt: new Date().toISOString().split('T')[0],
+        publishedTime: new Date().toTimeString().slice(0, 5),
+        title: '',
+        content: '',
+        hashtags: '',
+        thumbnail: ''
       });
+      setSelectedPost(null);
 
     } catch (error) {
       console.error('保存エラー:', error);
@@ -205,6 +291,118 @@ function InstagramAnalyticsContent() {
                 </div>
               </div>
 
+              {/* 投稿検索機能 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Search size={16} className="inline mr-1" />
+                  投稿を検索・選択
+                </label>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                  placeholder="タイトル、内容、ハッシュタグで検索..."
+                />
+                
+                {/* 投稿一覧 */}
+                {searchTerm && (
+                  <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md">
+                    {filteredPosts.length === 0 ? (
+                      <div className="p-3 text-sm text-gray-500 text-center">
+                        該当する投稿が見つかりません
+                      </div>
+                    ) : (
+                      filteredPosts.slice(0, 5).map((post) => (
+                        <div
+                          key={post.id}
+                          onClick={() => handleSelectPost(post)}
+                          className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                            selectedPost?.id === post.id ? 'bg-blue-50 border-blue-200' : ''
+                          }`}
+                        >
+                          <div className="font-medium text-sm text-gray-900 truncate">
+                            {post.title}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {post.publishedAt.toLocaleDateString('ja-JP')}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 投稿情報表示 */}
+              {selectedPost && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="font-medium text-blue-900 mb-2">選択された投稿</h3>
+                  <div className="text-sm text-blue-800">
+                    <div className="font-medium">{selectedPost.title}</div>
+                    <div className="mt-1 text-xs">{selectedPost.content.slice(0, 100)}...</div>
+                  </div>
+                </div>
+              )}
+
+              {/* 投稿情報手動入力 */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">投稿情報</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      <FileText size={14} className="inline mr-1" />
+                      タイトル
+                    </label>
+                    <input
+                      type="text"
+                      value={inputData.title}
+                      onChange={(e) => setInputData(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="投稿タイトル"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      📝 投稿内容
+                    </label>
+                    <textarea
+                      value={inputData.content}
+                      onChange={(e) => setInputData(prev => ({ ...prev, content: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="投稿内容"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      <Hash size={14} className="inline mr-1" />
+                      ハッシュタグ
+                    </label>
+                    <input
+                      type="text"
+                      value={inputData.hashtags}
+                      onChange={(e) => setInputData(prev => ({ ...prev, hashtags: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="ハッシュタグ1, ハッシュタグ2, ..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                      <Image size={14} className="inline mr-1" />
+                      サムネイルURL
+                    </label>
+                    <input
+                      type="url"
+                      value={inputData.thumbnail}
+                      onChange={(e) => setInputData(prev => ({ ...prev, thumbnail: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -215,7 +413,7 @@ function InstagramAnalyticsContent() {
                     type="number"
                     value={inputData.likes}
                     onChange={(e) => setInputData(prev => ({ ...prev, likes: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                     placeholder="例: 245"
                   />
                 </div>
@@ -227,7 +425,7 @@ function InstagramAnalyticsContent() {
                     type="number"
                     value={inputData.comments}
                     onChange={(e) => setInputData(prev => ({ ...prev, comments: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                     placeholder="例: 12"
                   />
                 </div>
@@ -239,7 +437,7 @@ function InstagramAnalyticsContent() {
                     type="number"
                     value={inputData.shares}
                     onChange={(e) => setInputData(prev => ({ ...prev, shares: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                     placeholder="例: 8"
                   />
                 </div>
@@ -251,7 +449,7 @@ function InstagramAnalyticsContent() {
                     type="number"
                     value={inputData.reach}
                     onChange={(e) => setInputData(prev => ({ ...prev, reach: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                     placeholder="例: 1200"
                   />
                 </div>
@@ -266,6 +464,15 @@ function InstagramAnalyticsContent() {
                   type="date"
                   value={inputData.publishedAt}
                   onChange={(e) => setInputData(prev => ({ ...prev, publishedAt: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  🕐 投稿時間
+                </label>
+                <input
+                  type="time"
+                  value={inputData.publishedTime}
+                  onChange={(e) => setInputData(prev => ({ ...prev, publishedTime: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -295,8 +502,14 @@ function InstagramAnalyticsContent() {
                       comments: '',
                       shares: '',
                       reach: '',
-                      publishedAt: new Date().toISOString().split('T')[0]
+                      publishedAt: new Date().toISOString().split('T')[0],
+                      publishedTime: new Date().toTimeString().slice(0, 5),
+                      title: '',
+                      content: '',
+                      hashtags: '',
+                      thumbnail: ''
                     });
+                    setSelectedPost(null);
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
@@ -346,7 +559,7 @@ function InstagramAnalyticsContent() {
                   <div key={`analytics-${data.id}-${index}`} className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-gray-700 font-medium">
-                        {new Date(data.publishedAt).toLocaleDateString('ja-JP')}
+                        {new Date(data.publishedAt).toLocaleDateString('ja-JP')} {new Date(data.publishedAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <span className="text-sm text-gray-500">
                         エンゲージメント率: {(data.engagementRate || 0).toFixed(2)}%
