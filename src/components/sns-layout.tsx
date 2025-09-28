@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -52,50 +53,6 @@ interface SNSLayoutProps {
 export default function SNSLayout({ children, currentSNS, customTitle, customDescription }: SNSLayoutProps) {
   const router = useRouter();
 
-  // ナビゲーションヘルパー関数
-  const navigateToPage = (pageName: string, path: string) => {
-    console.log(`${pageName}ボタンがクリックされました`, { currentSNS, path });
-    
-    // カスタムナビゲーションイベントを発火
-    const navigationEvent = new CustomEvent('navigation', {
-      detail: { pageName, path, currentSNS, timestamp: Date.now() }
-    });
-    window.dispatchEvent(navigationEvent);
-    
-    try {
-      console.log(`🚀 ${pageName}へのナビゲーション開始:`, path);
-      
-      // まず router.push() を試す
-      router.push(path);
-      console.log(`✅ ${pageName}へのナビゲーション成功`);
-      
-      // 少し待ってから router.replace() も試す
-      setTimeout(() => {
-        if (window.location.pathname !== path) {
-          console.log(`🔄 router.replace() を試行: ${path}`);
-          router.replace(path);
-        }
-      }, 100);
-      
-      // ナビゲーション後の状態確認
-      setTimeout(() => {
-        console.log(`🔍 ナビゲーション後確認:`, {
-          currentPath: window.location.pathname,
-          expectedPath: path,
-          isMatch: window.location.pathname === path
-        });
-        
-        // ページ移動が発生していない場合は強制リロード
-        if (window.location.pathname !== path) {
-          console.log(`🔄 ページ移動が発生していないため強制リロードを実行: ${path}`);
-          window.location.href = path;
-        }
-      }, 200);
-      
-    } catch (error) {
-      console.error(`❌ ${pageName}へのナビゲーションエラー:`, error);
-    }
-  };
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
   const { snsNames } = useSNSSettings();
@@ -174,83 +131,83 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">メニュー</h3>
           <nav className="space-y-1">
-            <button 
-              onClick={() => navigateToPage('運用計画', `/${currentSNS}/plan`)}
+            <Link 
+              href={`/${currentSNS}/plan`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📋</span>
               <span>運用計画</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('投稿ラボ', `/${currentSNS}/lab`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/lab`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🧪</span>
               <span>投稿ラボ</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('投稿分析', `/${currentSNS}/analytics`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/analytics`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📊</span>
               <span>投稿分析</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('月次レポート', `/${currentSNS}/monthly-report`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/monthly-report`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📈</span>
               <span>月次レポート</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('AIチャット', `/${currentSNS}/ai-chat`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/ai-chat`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🤖</span>
               <span>AIチャット</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('AI学習進捗', `/${currentSNS}/ai-learning`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/ai-learning`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🧠</span>
               <span>AI学習進捗</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('投稿一覧', `/${currentSNS}/posts`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/posts`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📚</span>
               <span>投稿一覧</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('お知らせ', `/${currentSNS}/notifications`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/notifications`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🔔</span>
               <span>お知らせ</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('使い方ガイド', `/${currentSNS}/guide`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/guide`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📚</span>
               <span>使い方ガイド</span>
-            </button>
-            <button 
-              onClick={() => navigateToPage('マイアカウント', `/${currentSNS}/my-account`)}
+            </Link>
+            <Link 
+              href={`/${currentSNS}/my-account`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>👤</span>
               <span>マイアカウント</span>
-            </button>
-            <button 
-              onClick={() => router.push('/terms')}
+            </Link>
+            <Link 
+              href="/terms"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📄</span>
               <span>利用規約</span>
-            </button>
+            </Link>
           </nav>
         </div>
 
