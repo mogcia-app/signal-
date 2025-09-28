@@ -23,28 +23,28 @@ export default function MyAccountPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
+  // const [isNavigating, setIsNavigating] = useState(false);
 
-  // ナビゲーションデバッグ用のuseEffect
+  // ナビゲーションデバッグ用のuseEffect（一時的に無効化）
   useEffect(() => {
     console.log('マイアカウントページがマウントされました');
     
-    // ナビゲーションイベントリスナーを追加
-    const handleNavigation = (event: CustomEvent) => {
-      console.log('マイアカウントページでのナビゲーションイベント:', event.detail);
-      setIsNavigating(true);
-      
-      // ナビゲーション完了後に状態をリセット
-      setTimeout(() => {
-        setIsNavigating(false);
-      }, 1000);
-    };
+    // ナビゲーションイベントリスナーを一時的に無効化
+    // const handleNavigation = (event: CustomEvent) => {
+    //   console.log('マイアカウントページでのナビゲーションイベント:', event.detail);
+    //   setIsNavigating(true);
+    //   
+    //   // ナビゲーション完了後に状態をリセット
+    //   setTimeout(() => {
+    //     setIsNavigating(false);
+    //   }, 1000);
+    // };
     
-    window.addEventListener('navigation', handleNavigation as EventListener);
+    // window.addEventListener('navigation', handleNavigation as EventListener);
     
     return () => {
       console.log('マイアカウントページがアンマウントされました');
-      window.removeEventListener('navigation', handleNavigation as EventListener);
+      // window.removeEventListener('navigation', handleNavigation as EventListener);
     };
   }, []);
 
@@ -60,19 +60,19 @@ export default function MyAccountPage() {
     getContractDaysRemaining
   } = useUserProfile();
 
-  // プロフィールデータの変更を監視（ナビゲーション中は無効化）
+  // プロフィールデータの変更を監視（一時的に無効化）
   useEffect(() => {
-    if (isNavigating) {
-      console.log('🚫 ナビゲーション中なのでプロフィールデータ更新をスキップ');
-      return;
-    }
+    // if (isNavigating) {
+    //   console.log('🚫 ナビゲーション中なのでプロフィールデータ更新をスキップ');
+    //   return;
+    // }
     
     console.log('マイアカウントページ - プロフィールデータ更新:', {
       userProfile: !!userProfile,
       loading: profileLoading,
       error: profileError
     });
-  }, [userProfile, profileLoading, profileError, isNavigating]);
+  }, [userProfile, profileLoading, profileError]);
 
   // フォームデータ（実際のデータで初期化）
   const [profileData, setProfileData] = useState({
@@ -88,12 +88,12 @@ export default function MyAccountPage() {
     }
   });
 
-  // ユーザープロフィールが変更されたらフォームデータを更新（ナビゲーション中は無効化）
+  // ユーザープロフィールが変更されたらフォームデータを更新（一時的に無効化）
   useEffect(() => {
-    if (isNavigating) {
-      console.log('🚫 ナビゲーション中なのでフォームデータ更新をスキップ');
-      return;
-    }
+    // if (isNavigating) {
+    //   console.log('🚫 ナビゲーション中なのでフォームデータ更新をスキップ');
+    //   return;
+    // }
     
     if (userProfile) {
       const businessInfo = getBusinessInfo();
@@ -110,7 +110,7 @@ export default function MyAccountPage() {
         }
       });
     }
-  }, [userProfile, getBusinessInfo, isNavigating]);
+  }, [userProfile, getBusinessInfo]);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',

@@ -184,7 +184,11 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             <button 
               onClick={() => {
                 console.log('🔗 お知らせボタンがクリックされました', { currentSNS, path: `/${currentSNS}/notifications` });
-                router.push(`/${currentSNS}/notifications`);
+                console.log('現在のURL:', window.location.href);
+                console.log('目標URL:', `${window.location.origin}/${currentSNS}/notifications`);
+                
+                // まずはシンプルなwindow.location.hrefでテスト
+                window.location.href = `/${currentSNS}/notifications`;
               }}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
@@ -194,7 +198,11 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             <button 
               onClick={() => {
                 console.log('🔗 使い方ガイドボタンがクリックされました', { currentSNS, path: `/${currentSNS}/guide` });
-                router.push(`/${currentSNS}/guide`);
+                console.log('現在のURL:', window.location.href);
+                console.log('目標URL:', `${window.location.origin}/${currentSNS}/guide`);
+                
+                // まずはシンプルなwindow.location.hrefでテスト
+                window.location.href = `/${currentSNS}/guide`;
               }}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
