@@ -302,52 +302,52 @@ export default function MyAccountPage() {
                 {/* 契約情報カード */}
                 <div className="bg-gray-50 p-8 shadow-sm border border-gray-200 mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {/* 契約タイプ */}
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 mx-auto flex items-center justify-center mb-4">
-                        <Shield className="w-8 h-8 text-white" />
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">契約タイプ</h3>
-                      <div className="bg-white p-4 border border-gray-200">
-                        <span className="text-2xl font-bold text-blue-600">
-                          {userProfile?.contractType === 'annual' ? '年間契約' : 'トライアル'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* SNS契約数 */}
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 mx-auto flex items-center justify-center mb-4">
-                        <User className="w-8 h-8 text-white" />
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">SNS契約数</h3>
-                      <div className="bg-white p-4 border border-gray-200">
-                        <span className="text-2xl font-bold text-green-600">
-                          {userProfile?.contractSNS.length}/4
-                        </span>
-                        <div className="mt-2">
-                          <div className="w-full bg-gray-200 h-2">
-                            <div 
-                              className="bg-gradient-to-r from-green-500 to-green-600 h-2" 
-                              style={{ width: `${(userProfile?.contractSNS.length || 0) * 25}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* 利用形態 */}
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 mx-auto flex items-center justify-center mb-4">
-                        <Settings className="w-8 h-8 text-white" />
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">利用形態</h3>
-                      <div className="bg-white p-4 border border-gray-200">
-                        <span className="text-2xl font-bold text-purple-600">
-                          {userProfile?.usageType === 'team' ? 'チーム利用' : '個人利用'}
-                        </span>
-                      </div>
-                    </div>
+            {/* 契約タイプ */}
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 mx-auto flex items-center justify-center mb-3">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">契約タイプ</h3>
+              <div className="bg-white p-3 border border-gray-200">
+                <span className="text-lg font-bold text-blue-600">
+                  {userProfile?.contractType === 'annual' ? '年間契約' : 'トライアル'}
+                </span>
+              </div>
+            </div>
+            
+            {/* SNS契約数 */}
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 mx-auto flex items-center justify-center mb-3">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">SNS契約数</h3>
+              <div className="bg-white p-3 border border-gray-200">
+                <span className="text-lg font-bold text-green-600">
+                  {userProfile?.contractSNS.length}/4
+                </span>
+                <div className="mt-2">
+                  <div className="w-full bg-gray-200 h-1.5">
+                    <div 
+                      className="bg-gradient-to-r from-green-500 to-green-600 h-1.5" 
+                      style={{ width: `${(userProfile?.contractSNS.length || 0) * 25}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 利用形態 */}
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 mx-auto flex items-center justify-center mb-3">
+                <Settings className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 mb-2">利用形態</h3>
+              <div className="bg-white p-3 border border-gray-200">
+                <span className="text-lg font-bold text-purple-600">
+                  {userProfile?.usageType === 'team' ? 'チーム利用' : '個人利用'}
+                </span>
+              </div>
+            </div>
                   </div>
                 </div>
 
