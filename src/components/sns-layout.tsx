@@ -55,6 +55,13 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
   // ナビゲーションヘルパー関数
   const navigateToPage = (pageName: string, path: string) => {
     console.log(`${pageName}ボタンがクリックされました`, { currentSNS, path });
+    
+    // カスタムナビゲーションイベントを発火
+    const navigationEvent = new CustomEvent('navigation', {
+      detail: { pageName, path, currentSNS, timestamp: Date.now() }
+    });
+    window.dispatchEvent(navigationEvent);
+    
     try {
       router.push(path);
       console.log(`${pageName}へのナビゲーション成功`);

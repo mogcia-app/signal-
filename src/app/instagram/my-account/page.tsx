@@ -24,6 +24,23 @@ export default function MyAccountPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // ナビゲーションデバッグ用のuseEffect
+  useEffect(() => {
+    console.log('マイアカウントページがマウントされました');
+    
+    // ナビゲーションイベントリスナーを追加
+    const handleNavigation = (event: CustomEvent) => {
+      console.log('マイアカウントページでのナビゲーションイベント:', event.detail);
+    };
+    
+    window.addEventListener('navigation', handleNavigation as EventListener);
+    
+    return () => {
+      console.log('マイアカウントページがアンマウントされました');
+      window.removeEventListener('navigation', handleNavigation as EventListener);
+    };
+  }, []);
+
   // 実際のユーザープロフィールデータを取得
   const { 
     userProfile, 
@@ -35,6 +52,15 @@ export default function MyAccountPage() {
     isContractActive,
     getContractDaysRemaining
   } = useUserProfile();
+
+  // プロフィールデータの変更を監視
+  useEffect(() => {
+    console.log('マイアカウントページ - プロフィールデータ更新:', {
+      userProfile: !!userProfile,
+      loading: profileLoading,
+      error: profileError
+    });
+  }, [userProfile, profileLoading, profileError]);
 
   // フォームデータ（実際のデータで初期化）
   const [profileData, setProfileData] = useState({
