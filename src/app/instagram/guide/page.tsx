@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { 
@@ -45,6 +45,19 @@ interface GuideStep {
 export default function InstagramGuidePage() {
   const [activeSection, setActiveSection] = useState<string>('getting-started');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // デバッグ用のuseEffect
+  useEffect(() => {
+    console.log('🎯 ガイドページがマウントされました！', {
+      timestamp: Date.now(),
+      pathname: window.location.pathname,
+      search: window.location.search
+    });
+    
+    return () => {
+      console.log('🎯 ガイドページがアンマウントされました！');
+    };
+  }, []);
 
   const guideSections: GuideSection[] = [
     {

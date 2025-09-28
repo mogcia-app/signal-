@@ -63,10 +63,21 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
     window.dispatchEvent(navigationEvent);
     
     try {
+      console.log(`🚀 ${pageName}へのナビゲーション開始:`, path);
       router.push(path);
-      console.log(`${pageName}へのナビゲーション成功`);
+      console.log(`✅ ${pageName}へのナビゲーション成功`);
+      
+      // ナビゲーション後の状態確認
+      setTimeout(() => {
+        console.log(`🔍 ナビゲーション後確認:`, {
+          currentPath: window.location.pathname,
+          expectedPath: path,
+          isMatch: window.location.pathname === path
+        });
+      }, 100);
+      
     } catch (error) {
-      console.error(`${pageName}へのナビゲーションエラー:`, error);
+      console.error(`❌ ${pageName}へのナビゲーションエラー:`, error);
     }
   };
   const { user, signOut } = useAuth();
