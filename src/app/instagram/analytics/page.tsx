@@ -678,7 +678,7 @@ function InstagramAnalyticsContent() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         <Heart size={16} className="inline mr-1 text-red-500" />
-                        いいね数 <span className="text-red-500">*</span>
+                        いいね数
                       </label>
                       <input
                         type="number"
@@ -715,7 +715,7 @@ function InstagramAnalyticsContent() {
                 </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        👁️ 閲覧数 <span className="text-red-500">*</span>
+                        👁️ 閲覧数
                       </label>
                       <input
                         type="number"
@@ -754,27 +754,6 @@ function InstagramAnalyticsContent() {
                 </div>
               </div>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar size={16} className="inline mr-1" />
-                  投稿日
-                </label>
-                <input
-                  type="date"
-                  value={inputData.publishedAt}
-                  onChange={(e) => setInputData(prev => ({ ...prev, publishedAt: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-                />
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  🕐 投稿時間
-                </label>
-                <input
-                  type="time"
-                  value={inputData.publishedTime}
-                  onChange={(e) => setInputData(prev => ({ ...prev, publishedTime: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
 
               {/* オーディエンス分析セクション */}
               <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
@@ -1156,6 +1135,38 @@ function InstagramAnalyticsContent() {
                         placeholder="例: 40"
                       />
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 投稿日・投稿時間 */}
+              <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                  <Calendar size={16} className="inline mr-2" />
+                  投稿情報
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      投稿日
+                    </label>
+                    <input
+                      type="date"
+                      value={inputData.publishedAt}
+                      onChange={(e) => setInputData(prev => ({ ...prev, publishedAt: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🕐 投稿時間
+                    </label>
+                    <input
+                      type="time"
+                      value={inputData.publishedTime}
+                      onChange={(e) => setInputData(prev => ({ ...prev, publishedTime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
                 </div>
               </div>
