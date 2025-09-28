@@ -54,16 +54,22 @@ export default function InstagramNotificationsPage() {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   useEffect(() => {
-    // モックデータの初期化
-    const unsubscribe = initializeMockNotifications();
+    console.log('🔍 認証状態の変化を監視:', { user, uid: user?.uid });
     
-    // クリーンアップ関数
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (user?.uid) {
+      // モックデータの初期化
+      const unsubscribe = initializeMockNotifications();
+      
+      // クリーンアップ関数
+      return () => {
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      };
+    } else {
+      console.log('❌ ユーザーが認証されていないため、通知データを初期化しません');
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // フィルタリング処理
@@ -102,8 +108,10 @@ export default function InstagramNotificationsPage() {
   };
 
   const fetchNotifications = async () => {
+    console.log('🔍 認証状態を確認:', { user, uid: user?.uid, isAuthenticated: !!user });
+    
     if (!user?.uid) {
-      console.log('ユーザーが認証されていません');
+      console.log('❌ ユーザーが認証されていません');
       setIsLoading(false);
       return;
     }
@@ -127,7 +135,11 @@ export default function InstagramNotificationsPage() {
         const notificationsWithActions = await Promise.all(
           convertedData.map(async (notification: Notification) => {
             try {
-              const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=${user?.uid}`);
+              if (!user?.uid) {
+                console.log('❌ アクション実行時: ユーザーが認証されていません');
+                return notification;
+              }
+              const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=${user.uid}`);
               const actionResult = await actionResponse.json();
               
               return {
