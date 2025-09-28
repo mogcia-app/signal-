@@ -46,6 +46,14 @@ async function createAuthMiddleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // 静的ページ（ガイドページなど）は認証不要
+  const staticPages = ['/instagram/guide', '/terms', '/login', '/sns-select'];
+  const isStaticPage = staticPages.some(path => request.nextUrl.pathname.startsWith(path));
+  
+  if (isStaticPage) {
+    return NextResponse.next();
+  }
+
   // 認証が必要なエンドポイント
   const userId = await verifyAuthToken(request);
   if (!userId) {
