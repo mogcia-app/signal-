@@ -202,6 +202,10 @@ export default function InstagramNotificationsPage() {
             setNotifications(notificationsWithActions);
             setIsLoading(false);
           });
+        } else {
+          // データがない場合もローディングを終了
+          setNotifications([]);
+          setIsLoading(false);
         }
       }, (error) => {
         console.error('リアルタイムリスナーエラー:', error);
