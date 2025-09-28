@@ -5,10 +5,27 @@ const API_BASE_URL = '/api';
 // 共通のfetch関数
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  
+  // Firebase認証トークンを取得
+  const { auth } = await import('./firebase');
+  const user = auth.currentUser;
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  // 認証トークンがある場合は追加
+  if (user) {
+    try {
+      const token = await user.getIdToken();
+      headers['Authorization'] = `Bearer ${token}`;
+    } catch (error) {
+      console.warn('認証トークンの取得に失敗しました:', error);
+    }
+  }
+
   const defaultOptions: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
   };
 
   const response = await fetch(url, { ...defaultOptions, ...options });
