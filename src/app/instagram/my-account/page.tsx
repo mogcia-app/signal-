@@ -25,27 +25,9 @@ export default function MyAccountPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   // const [isNavigating, setIsNavigating] = useState(false);
 
-  // ナビゲーションデバッグ用のuseEffect（一時的に無効化）
+  // マイアカウントページのマウントログ（シンプル版）
   useEffect(() => {
     console.log('マイアカウントページがマウントされました');
-    
-    // ナビゲーションイベントリスナーを一時的に無効化
-    // const handleNavigation = (event: CustomEvent) => {
-    //   console.log('マイアカウントページでのナビゲーションイベント:', event.detail);
-    //   setIsNavigating(true);
-    //   
-    //   // ナビゲーション完了後に状態をリセット
-    //   setTimeout(() => {
-    //     setIsNavigating(false);
-    //   }, 1000);
-    // };
-    
-    // window.addEventListener('navigation', handleNavigation as EventListener);
-    
-    return () => {
-      console.log('マイアカウントページがアンマウントされました');
-      // window.removeEventListener('navigation', handleNavigation as EventListener);
-    };
   }, []);
 
   // 実際のユーザープロフィールデータを取得
@@ -60,13 +42,8 @@ export default function MyAccountPage() {
     getContractDaysRemaining
   } = useUserProfile();
 
-  // プロフィールデータの変更を監視（一時的に無効化）
+  // プロフィールデータの変更を監視（シンプル版）
   useEffect(() => {
-    // if (isNavigating) {
-    //   console.log('🚫 ナビゲーション中なのでプロフィールデータ更新をスキップ');
-    //   return;
-    // }
-    
     console.log('マイアカウントページ - プロフィールデータ更新:', {
       userProfile: !!userProfile,
       loading: profileLoading,
@@ -88,13 +65,8 @@ export default function MyAccountPage() {
     }
   });
 
-  // ユーザープロフィールが変更されたらフォームデータを更新（一時的に無効化）
+  // ユーザープロフィールが変更されたらフォームデータを更新（シンプル版）
   useEffect(() => {
-    // if (isNavigating) {
-    //   console.log('🚫 ナビゲーション中なのでフォームデータ更新をスキップ');
-    //   return;
-    // }
-    
     if (userProfile) {
       const businessInfo = getBusinessInfo();
       setProfileData({
