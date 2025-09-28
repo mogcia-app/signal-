@@ -134,6 +134,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             <Link 
               href={`/${currentSNS}/plan`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => console.log('🔗 運用計画Linkがクリックされました', { currentSNS, href: `/${currentSNS}/plan` })}
             >
               <span>📋</span>
               <span>運用計画</span>
@@ -180,20 +181,26 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               <span>📚</span>
               <span>投稿一覧</span>
             </Link>
-            <Link 
-              href={`/${currentSNS}/notifications`}
+            <button 
+              onClick={() => {
+                console.log('🔗 お知らせボタンがクリックされました', { currentSNS, path: `/${currentSNS}/notifications` });
+                router.push(`/${currentSNS}/notifications`);
+              }}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🔔</span>
               <span>お知らせ</span>
-            </Link>
-            <Link 
-              href={`/${currentSNS}/guide`}
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🔗 使い方ガイドボタンがクリックされました', { currentSNS, path: `/${currentSNS}/guide` });
+                router.push(`/${currentSNS}/guide`);
+              }}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📚</span>
               <span>使い方ガイド</span>
-            </Link>
+            </button>
             <Link 
               href={`/${currentSNS}/my-account`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
