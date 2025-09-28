@@ -64,8 +64,18 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
     
     try {
       console.log(`🚀 ${pageName}へのナビゲーション開始:`, path);
+      
+      // まず router.push() を試す
       router.push(path);
       console.log(`✅ ${pageName}へのナビゲーション成功`);
+      
+      // 少し待ってから router.replace() も試す
+      setTimeout(() => {
+        if (window.location.pathname !== path) {
+          console.log(`🔄 router.replace() を試行: ${path}`);
+          router.replace(path);
+        }
+      }, 100);
       
       // ナビゲーション後の状態確認
       setTimeout(() => {
@@ -74,7 +84,13 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
           expectedPath: path,
           isMatch: window.location.pathname === path
         });
-      }, 100);
+        
+        // ページ移動が発生していない場合は強制リロード
+        if (window.location.pathname !== path) {
+          console.log(`🔄 ページ移動が発生していないため強制リロードを実行: ${path}`);
+          window.location.href = path;
+        }
+      }, 200);
       
     } catch (error) {
       console.error(`❌ ${pageName}へのナビゲーションエラー:`, error);
