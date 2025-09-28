@@ -237,13 +237,6 @@ export default function MyAccountPage() {
                         <p className="text-gray-600 mb-3">{userProfile?.email}</p>
                         <div className="flex items-center space-x-3">
                           <span className={`px-3 py-1  text-sm font-medium ${
-                            userProfile?.status === 'active' 
-                              ? 'bg-green-100 text-green-700 border border-green-200' 
-                              : 'bg-red-100 text-red-700 border border-red-200'
-                          }`}>
-                            {userProfile?.status === 'active' ? 'アクティブ' : '非アクティブ'}
-                          </span>
-                          <span className={`px-3 py-1  text-sm font-medium ${
                             userProfile?.role === 'admin' 
                               ? 'bg-purple-100 text-purple-700 border border-purple-200' 
                               : 'bg-blue-100 text-blue-700 border border-blue-200'
