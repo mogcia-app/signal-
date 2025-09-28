@@ -51,6 +51,17 @@ interface SNSLayoutProps {
 
 export default function SNSLayout({ children, currentSNS, customTitle, customDescription }: SNSLayoutProps) {
   const router = useRouter();
+
+  // ナビゲーションヘルパー関数
+  const navigateToPage = (pageName: string, path: string) => {
+    console.log(`${pageName}ボタンがクリックされました`, { currentSNS, path });
+    try {
+      router.push(path);
+      console.log(`${pageName}へのナビゲーション成功`);
+    } catch (error) {
+      console.error(`${pageName}へのナビゲーションエラー:`, error);
+    }
+  };
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
   const { snsNames } = useSNSSettings();
@@ -129,91 +140,71 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">メニュー</h3>
           <nav className="space-y-1">
-                   <button 
-                     onClick={() => router.push('/instagram/plan')}
-                     className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-                   >
-                     <span>📋</span>
-                     <span>運用計画</span>
-                   </button>
             <button 
-              onClick={() => router.push(`/${currentSNS}/lab`)}
+              onClick={() => navigateToPage('運用計画', `/${currentSNS}/plan`)}
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <span>📋</span>
+              <span>運用計画</span>
+            </button>
+            <button 
+              onClick={() => navigateToPage('投稿ラボ', `/${currentSNS}/lab`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🧪</span>
               <span>投稿ラボ</span>
             </button>
             <button 
-              onClick={() => router.push(`/${currentSNS}/analytics`)}
+              onClick={() => navigateToPage('投稿分析', `/${currentSNS}/analytics`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📊</span>
               <span>投稿分析</span>
             </button>
             <button 
-              onClick={() => router.push(`/${currentSNS}/monthly-report`)}
+              onClick={() => navigateToPage('月次レポート', `/${currentSNS}/monthly-report`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📈</span>
               <span>月次レポート</span>
             </button>
             <button 
-              onClick={() => {
-                console.log('AIチャットボタンがクリックされました', { currentSNS });
-                const path = `/${currentSNS}/ai-chat`;
-                console.log('ナビゲーションパス:', path);
-                router.push(path);
-              }}
+              onClick={() => navigateToPage('AIチャット', `/${currentSNS}/ai-chat`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🤖</span>
               <span>AIチャット</span>
             </button>
             <button 
-              onClick={() => {
-                console.log('AI学習進捗ボタンがクリックされました', { currentSNS });
-                const path = `/${currentSNS}/ai-learning`;
-                console.log('ナビゲーションパス:', path);
-                router.push(path);
-              }}
+              onClick={() => navigateToPage('AI学習進捗', `/${currentSNS}/ai-learning`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🧠</span>
               <span>AI学習進捗</span>
             </button>
             <button 
-              onClick={() => router.push(`/${currentSNS}/posts`)}
+              onClick={() => navigateToPage('投稿一覧', `/${currentSNS}/posts`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📚</span>
               <span>投稿一覧</span>
             </button>
             <button 
-              onClick={() => {
-                console.log('お知らせボタンがクリックされました', { currentSNS });
-                const path = `/${currentSNS}/notifications`;
-                console.log('ナビゲーションパス:', path);
-                router.push(path);
-              }}
+              onClick={() => navigateToPage('お知らせ', `/${currentSNS}/notifications`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>🔔</span>
               <span>お知らせ</span>
             </button>
             <button 
-              onClick={() => {
-                console.log('ガイドボタンがクリックされました', { currentSNS });
-                const path = `/${currentSNS}/guide`;
-                console.log('ナビゲーションパス:', path);
-                router.push(path);
-              }}
+              onClick={() => navigateToPage('使い方ガイド', `/${currentSNS}/guide`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>📚</span>
               <span>使い方ガイド</span>
             </button>
             <button 
-              onClick={() => router.push(`/${currentSNS}/my-account`)}
+              onClick={() => navigateToPage('マイアカウント', `/${currentSNS}/my-account`)}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>👤</span>
