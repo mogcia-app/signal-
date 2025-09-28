@@ -85,10 +85,14 @@ const mockNotifications: Notification[] = [
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 通知API呼び出し開始');
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || 'current-user';
     const filter = searchParams.get('filter') || 'all';
     const search = searchParams.get('search') || '';
+
+    console.log('📊 リクエストパラメータ:', { userId, filter, search });
 
     // Firestoreから取得
     const notificationsRef = collection(db, 'notifications');
@@ -108,7 +112,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('🔍 Firestoreクエリを実行中...');
     const snapshot = await getDocs(q);
+    console.log('✅ Firestoreクエリ成功:', { docCount: snapshot.docs.length });
+    
     let firestoreNotifications = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -175,12 +182,19 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('通知取得エラー:', error);
+    console.error('❌ 通知取得エラー:', error);
+    console.error('❌ エラーの詳細:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
     return NextResponse.json(
       { 
         success: false, 
         error: '通知の取得に失敗しました',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     );
