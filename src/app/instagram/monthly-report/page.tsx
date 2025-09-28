@@ -57,6 +57,35 @@ interface AnalyticsData {
   followerChange?: number;
   publishedAt: Date;
   createdAt: Date;
+  audience?: {
+    gender: {
+      male: number;
+      female: number;
+      other: number;
+    };
+    age: {
+      '13-17': number;
+      '18-24': number;
+      '25-34': number;
+      '35-44': number;
+      '45-54': number;
+      '55-64': number;
+      '65+': number;
+    };
+  };
+  reachSource?: {
+    sources: {
+      posts: number;
+      profile: number;
+      explore: number;
+      search: number;
+      other: number;
+    };
+    followers: {
+      followers: number;
+      nonFollowers: number;
+    };
+  };
 }
 
 // 現在の週を取得する関数
@@ -90,27 +119,12 @@ export default function InstagramMonthlyReportPage() {
     getCurrentWeekString() // YYYY-WW形式
   );
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // データ量検証の定数
-  const MIN_DATA_FOR_ANALYSIS = 15;
-
-  // データ量検証関数
-  const validateDataForAnalysis = (data: AnalyticsData[], dataType: string) => {
-    if (data.length < MIN_DATA_FOR_ANALYSIS) {
-      return {
-        isValid: false,
-        message: `${dataType}のデータが${data.length}個しかありません。分析には最低${MIN_DATA_FOR_ANALYSIS}個のデータが必要です。`
-      };
-    }
-    return { isValid: true, message: '' };
-  };
 
   // バックエンドAPI連携関数
   const fetchAnalyticsFromBackend = async (period: 'weekly' | 'monthly', date: string) => {
     try {
       setIsLoading(true);
-      setError(null);
       
       // 実際のバックエンドAPI呼び出し
       const response = await fetch(`/api/analytics/${period}`, {
@@ -169,7 +183,6 @@ export default function InstagramMonthlyReportPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('CSVエクスポートエラー:', error);
-      setError('CSVエクスポートに失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -206,7 +219,6 @@ export default function InstagramMonthlyReportPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('PDFエクスポートエラー:', error);
-      setError('PDFエクスポートに失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -295,7 +307,6 @@ export default function InstagramMonthlyReportPage() {
     const initializeData = async () => {
       try {
         setIsLoading(true);
-        setError(null);
         
         // 並行してデータを取得
         await Promise.all([
@@ -308,7 +319,6 @@ export default function InstagramMonthlyReportPage() {
         
       } catch (error) {
         console.error('データ初期化エラー:', error);
-        setError('データの取得に失敗しました');
       } finally {
         setIsLoading(false);
       }
@@ -317,17 +327,6 @@ export default function InstagramMonthlyReportPage() {
     initializeData();
   }, []);
 
-  // データ量検証
-  useEffect(() => {
-    if (analyticsData.length > 0) {
-      const validation = validateDataForAnalysis(analyticsData, '分析');
-      if (!validation.isValid) {
-        setError(validation.message);
-      } else {
-        setError(null);
-      }
-    }
-  }, [analyticsData]);
 
   // 期間変更時のデータ再取得
   useEffect(() => {
@@ -335,18 +334,9 @@ export default function InstagramMonthlyReportPage() {
       const fetchPeriodData = async () => {
         try {
           setIsLoading(true);
-          const periodData = await fetchAnalyticsFromBackend(activeTab, activeTab === 'weekly' ? selectedWeek : selectedMonth);
-          
-          // データ量検証
-          const validation = validateDataForAnalysis(periodData.analytics || [], '分析');
-          if (!validation.isValid) {
-            setError(validation.message);
-          } else {
-            setError(null);
-          }
+          await fetchAnalyticsFromBackend(activeTab, activeTab === 'weekly' ? selectedWeek : selectedMonth);
         } catch (error) {
           console.error('期間データ取得エラー:', error);
-          setError('期間データの取得に失敗しました');
         } finally {
           setIsLoading(false);
         }
@@ -532,162 +522,6 @@ export default function InstagramMonthlyReportPage() {
     );
   }
 
-  // エラー画面（データ不足）
-  if (error) {
-    return (
-      <SNSLayout 
-        currentSNS="instagram"
-        customTitle="月次レポート"
-        customDescription="月次のパフォーマンス分析とレポート"
-      >
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-          <div className="max-w-4xl mx-auto px-6 py-12">
-            {/* メインヒーローセクション */}
-            <div className="text-center mb-12">
-              <div className="relative inline-block mb-8">
-                <div className="w-32 h-32 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                  <BarChart3 className="w-16 h-16 text-white" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <span className="text-yellow-800 text-lg">📊</span>
-                </div>
-              </div>
-              
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                分析データを準備しましょう
-              </h1>
-              <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                魅力的なレポートを生成するために、まずは十分なデータを蓄積しましょう
-              </p>
-              
-              {/* データ状況表示 */}
-              <div className="inline-flex items-center px-6 py-3 bg-white rounded-full shadow-lg border border-gray-200 mb-8">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full mr-3 animate-pulse"></div>
-                <span className="text-gray-700 font-medium">
-                  現在: {analyticsData.length}個 / 必要: {MIN_DATA_FOR_ANALYSIS}個
-                </span>
-              </div>
-            </div>
-
-            {/* データ不足の詳細 */}
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-8">
-              <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
-                    <span className="text-2xl">🚨</span>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold">データ不足の警告</h2>
-                    <p className="text-orange-100 mt-1">{error}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-                  データを増やすためのアクションプラン
-                </h3>
-                
-                {/* ステップカード */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4">
-                      <span className="text-white text-xl">✍️</span>
-                    </div>
-                    <h4 className="font-semibold text-blue-900 mb-2">1. コンテンツ作成</h4>
-                    <p className="text-blue-700 text-sm mb-4">
-                      投稿ラボで魅力的なコンテンツを作成しましょう
-                    </p>
-                    <button
-                      onClick={() => window.location.href = '/instagram/lab'}
-                      className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                    >
-                      投稿ラボへ
-                    </button>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-                    <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mb-4">
-                      <span className="text-white text-xl">📈</span>
-                    </div>
-                    <h4 className="font-semibold text-green-900 mb-2">2. 運用計画</h4>
-                    <p className="text-green-700 text-sm mb-4">
-                      戦略的な投稿計画を立てて成長を加速させましょう
-                    </p>
-                    <button
-                      onClick={() => window.location.href = '/instagram/plan'}
-                      className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors font-medium"
-                    >
-                      運用計画を立てる
-                    </button>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
-                    <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-4">
-                      <span className="text-white text-xl">📊</span>
-                    </div>
-                    <h4 className="font-semibold text-purple-900 mb-2">3. データ蓄積</h4>
-                    <p className="text-purple-700 text-sm mb-4">
-                      投稿を公開してエンゲージメントデータを収集しましょう
-                    </p>
-                    <div className="w-full bg-purple-200 text-purple-800 py-2 px-4 rounded-lg text-center font-medium">
-                      最低{MIN_DATA_FOR_ANALYSIS}個必要
-                    </div>
-                  </div>
-                </div>
-
-                {/* プログレスバー */}
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-medium text-gray-700">データ収集進捗</span>
-                    <span className="text-sm text-gray-500">
-                      {analyticsData.length} / {MIN_DATA_FOR_ANALYSIS}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
-                    <div 
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (analyticsData.length / MIN_DATA_FOR_ANALYSIS) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-sm text-gray-600 text-center">
-                    あと{Math.max(0, MIN_DATA_FOR_ANALYSIS - analyticsData.length)}個の投稿データで分析可能になります
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* インスピレーションセクション */}
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-8 text-white text-center">
-              <h3 className="text-2xl font-bold mb-4">🎯 目標達成への道のり</h3>
-              <p className="text-lg mb-6 opacity-90">
-                十分なデータが蓄積されると、以下の魅力的な分析機能が利用可能になります
-              </p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white/20 rounded-lg p-4">
-                  <div className="text-2xl mb-2">🤖</div>
-                  <div className="text-sm font-medium">AI予測</div>
-                </div>
-                <div className="bg-white/20 rounded-lg p-4">
-                  <div className="text-2xl mb-2">📊</div>
-                  <div className="text-sm font-medium">トレンド分析</div>
-                </div>
-                <div className="bg-white/20 rounded-lg p-4">
-                  <div className="text-2xl mb-2">📈</div>
-                  <div className="text-sm font-medium">パフォーマンス</div>
-                </div>
-                <div className="bg-white/20 rounded-lg p-4">
-                  <div className="text-2xl mb-2">💡</div>
-                  <div className="text-sm font-medium">改善提案</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </SNSLayout>
-    );
-  }
 
   return (
     <SNSLayout 
@@ -705,15 +539,6 @@ export default function InstagramMonthlyReportPage() {
             <p className="text-gray-600 mt-1">
               {activeTab === 'weekly' ? getWeekDisplayName(selectedWeek) : getMonthDisplayName(selectedMonth)}の分析結果
             </p>
-            {/* データ量表示 */}
-            <div className="mt-2 flex items-center text-sm text-gray-500">
-              <span className="mr-2">📊</span>
-              <span>分析データ: {analyticsData.length}個</span>
-              <span className="mx-2">•</span>
-              <span className={analyticsData.length >= MIN_DATA_FOR_ANALYSIS ? 'text-green-600' : 'text-yellow-600'}>
-                {analyticsData.length >= MIN_DATA_FOR_ANALYSIS ? '✅ 十分なデータ' : `⚠️ 最低${MIN_DATA_FOR_ANALYSIS}個推奨`}
-              </span>
-            </div>
           </div>
           <div className="flex items-center space-x-3">
             {/* タブ切り替え */}
@@ -875,7 +700,7 @@ export default function InstagramMonthlyReportPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">リーチ総数</p>
+                <p className="text-sm font-medium text-gray-600">閲覧数総数</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {(activeTab === 'weekly' ? weeklyTotals.totalReach : monthlyTotals.totalReach).toLocaleString()}
                 </p>
@@ -1117,7 +942,7 @@ export default function InstagramMonthlyReportPage() {
               <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg">
                 <div className="flex items-center">
                   <Eye className="w-4 h-4 text-purple-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700">リーチ</span>
+                  <span className="text-sm font-medium text-gray-700">閲覧数</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -1189,6 +1014,233 @@ export default function InstagramMonthlyReportPage() {
                   );
                 });
               })()}
+            </div>
+          </div>
+        </div>
+
+        {/* オーディエンス分析セクション */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* オーディエンス分析 */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center mb-6">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">オーディエンス分析</h2>
+                <p className="text-sm text-gray-600">
+                  {activeTab === 'weekly' 
+                    ? `${getWeekDisplayName(selectedWeek)}のオーディエンス構成`
+                    : `${getMonthDisplayName(selectedMonth)}のオーディエンス構成`
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* 性別分析 */}
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">性別分析</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      👨 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const audienceData = currentAnalytics.filter(data => data.audience);
+                        if (audienceData.length === 0) return '0';
+                        const avgMale = audienceData.reduce((sum, data) => sum + (data.audience?.gender.male || 0), 0) / audienceData.length;
+                        return avgMale.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">男性</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      👩 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const audienceData = currentAnalytics.filter(data => data.audience);
+                        if (audienceData.length === 0) return '0';
+                        const avgFemale = audienceData.reduce((sum, data) => sum + (data.audience?.gender.female || 0), 0) / audienceData.length;
+                        return avgFemale.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">女性</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      🏳️‍🌈 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const audienceData = currentAnalytics.filter(data => data.audience);
+                        if (audienceData.length === 0) return '0';
+                        const avgOther = audienceData.reduce((sum, data) => sum + (data.audience?.gender.other || 0), 0) / audienceData.length;
+                        return avgOther.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">その他</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 年齢層分析 */}
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">年齢層分析</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-xs font-bold text-gray-700">
+                      {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const audienceData = currentAnalytics.filter(data => data.audience);
+                        if (audienceData.length === 0) return '0';
+                        const avg1824 = audienceData.reduce((sum, data) => sum + (data.audience?.age['18-24'] || 0), 0) / audienceData.length;
+                        return avg1824.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">18-24歳</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-xs font-bold text-gray-700">
+                      {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const audienceData = currentAnalytics.filter(data => data.audience);
+                        if (audienceData.length === 0) return '0';
+                        const avg2534 = audienceData.reduce((sum, data) => sum + (data.audience?.age['25-34'] || 0), 0) / audienceData.length;
+                        return avg2534.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">25-34歳</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-xs font-bold text-gray-700">
+                      {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const audienceData = currentAnalytics.filter(data => data.audience);
+                        if (audienceData.length === 0) return '0';
+                        const avg3544 = audienceData.reduce((sum, data) => sum + (data.audience?.age['35-44'] || 0), 0) / audienceData.length;
+                        return avg3544.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">35-44歳</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-xs font-bold text-gray-700">
+                      {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const audienceData = currentAnalytics.filter(data => data.audience);
+                        if (audienceData.length === 0) return '0';
+                        const avg4554 = audienceData.reduce((sum, data) => sum + (data.audience?.age['45-54'] || 0), 0) / audienceData.length;
+                        return avg4554.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">45-54歳</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 閲覧数ソース分析 */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center mb-6">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center mr-3">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">閲覧数ソース分析</h2>
+                <p className="text-sm text-gray-600">
+                  {activeTab === 'weekly' 
+                    ? `${getWeekDisplayName(selectedWeek)}の閲覧ソース構成`
+                    : `${getMonthDisplayName(selectedMonth)}の閲覧ソース構成`
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* 閲覧ソース分析 */}
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">閲覧ソース別割合</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      📱 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const reachSourceData = currentAnalytics.filter(data => data.reachSource);
+                        if (reachSourceData.length === 0) return '0';
+                        const avgPosts = reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.posts || 0), 0) / reachSourceData.length;
+                        return avgPosts.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">投稿</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      👤 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const reachSourceData = currentAnalytics.filter(data => data.reachSource);
+                        if (reachSourceData.length === 0) return '0';
+                        const avgProfile = reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.profile || 0), 0) / reachSourceData.length;
+                        return avgProfile.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">プロフィール</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      🔍 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const reachSourceData = currentAnalytics.filter(data => data.reachSource);
+                        if (reachSourceData.length === 0) return '0';
+                        const avgExplore = reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.explore || 0), 0) / reachSourceData.length;
+                        return avgExplore.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">発見</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      🔎 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const reachSourceData = currentAnalytics.filter(data => data.reachSource);
+                        if (reachSourceData.length === 0) return '0';
+                        const avgSearch = reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.search || 0), 0) / reachSourceData.length;
+                        return avgSearch.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">検索</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* フォロワー分析 */}
+              <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">フォロワー分析</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      👥 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const reachSourceData = currentAnalytics.filter(data => data.reachSource);
+                        if (reachSourceData.length === 0) return '0';
+                        const avgFollowers = reachSourceData.reduce((sum, data) => sum + (data.reachSource?.followers.followers || 0), 0) / reachSourceData.length;
+                        return avgFollowers.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">フォロワー内</div>
+                  </div>
+                  <div className="text-center p-2 bg-gray-50 rounded">
+                    <div className="text-sm font-bold text-gray-700">
+                      🌐 {(() => {
+                        const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                        const reachSourceData = currentAnalytics.filter(data => data.reachSource);
+                        if (reachSourceData.length === 0) return '0';
+                        const avgNonFollowers = reachSourceData.reduce((sum, data) => sum + (data.reachSource?.followers.nonFollowers || 0), 0) / reachSourceData.length;
+                        return avgNonFollowers.toFixed(1);
+                      })()}%
+                    </div>
+                    <div className="text-xs text-gray-600">フォロワー外</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1447,7 +1499,7 @@ export default function InstagramMonthlyReportPage() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">平均リーチ数</span>
+                    <span className="text-sm text-gray-600">平均閲覧数</span>
                     <span className="text-sm font-bold text-green-600">
                       {Math.round((activeTab === 'weekly' ? weeklyTotals.totalReach : monthlyTotals.totalReach) / Math.max(1, (activeTab === 'weekly' ? weeklyTotals.totalPosts : monthlyTotals.totalPosts)))}
                     </span>
@@ -1498,7 +1550,7 @@ export default function InstagramMonthlyReportPage() {
             {/* CSV出力 */}
             <button 
               onClick={exportToCSV}
-              disabled={isLoading || analyticsData.length < MIN_DATA_FOR_ANALYSIS}
+              disabled={isLoading}
               className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="text-center">
@@ -1507,16 +1559,13 @@ export default function InstagramMonthlyReportPage() {
                 </div>
                 <h3 className="font-medium text-blue-900 mb-1">CSV出力</h3>
                 <p className="text-sm text-blue-700">生データをExcelで分析</p>
-                {analyticsData.length < MIN_DATA_FOR_ANALYSIS && (
-                  <p className="text-xs text-red-600 mt-1">データ不足</p>
-                )}
               </div>
             </button>
 
             {/* PDFレポート */}
             <button 
               onClick={exportToPDF}
-              disabled={isLoading || analyticsData.length < MIN_DATA_FOR_ANALYSIS}
+              disabled={isLoading}
               className="flex items-center justify-center p-4 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="text-center">
@@ -1525,9 +1574,6 @@ export default function InstagramMonthlyReportPage() {
                 </div>
                 <h3 className="font-medium text-red-900 mb-1">PDFレポート</h3>
                 <p className="text-sm text-red-700">包括的な分析レポート</p>
-                {analyticsData.length < MIN_DATA_FOR_ANALYSIS && (
-                  <p className="text-xs text-red-600 mt-1">データ不足</p>
-                )}
               </div>
             </button>
 
