@@ -30,6 +30,35 @@ interface PostData {
     reach: number;
     engagementRate: number;
     publishedAt: Date;
+    audience?: {
+      gender: {
+        male: number;
+        female: number;
+        other: number;
+      };
+      age: {
+        '13-17': number;
+        '18-24': number;
+        '25-34': number;
+        '35-44': number;
+        '45-54': number;
+        '55-64': number;
+        '65+': number;
+      };
+    };
+    reachSource?: {
+      sources: {
+        posts: number;
+        profile: number;
+        explore: number;
+        search: number;
+        other: number;
+      };
+      followers: {
+        followers: number;
+        nonFollowers: number;
+      };
+    };
   };
 }
 
@@ -50,6 +79,35 @@ export default function InstagramPostsPage() {
     reach: number;
     engagementRate: number;
     publishedAt: Date;
+    audience?: {
+      gender: {
+        male: number;
+        female: number;
+        other: number;
+      };
+      age: {
+        '13-17': number;
+        '18-24': number;
+        '25-34': number;
+        '35-44': number;
+        '45-54': number;
+        '55-64': number;
+        '65+': number;
+      };
+    };
+    reachSource?: {
+      sources: {
+        posts: number;
+        profile: number;
+        explore: number;
+        search: number;
+        other: number;
+      };
+      followers: {
+        followers: number;
+        nonFollowers: number;
+      };
+    };
   }[]>([]);
 
   // 投稿一覧を取得
@@ -415,16 +473,66 @@ export default function InstagramPostsPage() {
                           <div className="text-center">
                             <div className="flex items-center justify-center mb-1">
                               <EyeIcon size={14} className="text-purple-500 mr-1" />
-                              <span className="text-sm font-medium text-gray-700">リーチ</span>
+                              <span className="text-sm font-medium text-gray-700">閲覧数</span>
                             </div>
                             <div className="text-lg font-bold text-gray-900">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.reach.toLocaleString()}</div>
                           </div>
                         </div>
                         <div className="mt-3 pt-3 border-t border-blue-200">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mb-3">
                             <span className="text-sm text-gray-600">エンゲージメント率</span>
                             <span className="text-lg font-bold text-blue-600">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.engagementRate}%</span>
                           </div>
+                          
+                          {/* オーディエンス分析 */}
+                          {(analyticsData.find(a => a.postId === post.id) || post.analytics)?.audience && (
+                            <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                              <h4 className="text-sm font-semibold text-gray-800 mb-2">オーディエンス分析</h4>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="flex justify-between">
+                                  <span>👨 男性:</span>
+                                  <span className="font-medium">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.audience?.gender.male || 0}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>👩 女性:</span>
+                                  <span className="font-medium">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.audience?.gender.female || 0}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>18-24歳:</span>
+                                  <span className="font-medium">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.audience?.age['18-24'] || 0}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>25-34歳:</span>
+                                  <span className="font-medium">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.audience?.age['25-34'] || 0}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 閲覧数ソース分析 */}
+                          {(analyticsData.find(a => a.postId === post.id) || post.analytics)?.reachSource && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <h4 className="text-sm font-semibold text-gray-800 mb-2">閲覧数ソース分析</h4>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="flex justify-between">
+                                  <span>📱 投稿:</span>
+                                  <span className="font-medium">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.reachSource?.sources.posts || 0}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>👤 プロフィール:</span>
+                                  <span className="font-medium">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.reachSource?.sources.profile || 0}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>👥 フォロワー内:</span>
+                                  <span className="font-medium">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.reachSource?.followers.followers || 0}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>🌐 フォロワー外:</span>
+                                  <span className="font-medium">{(analyticsData.find(a => a.postId === post.id) || post.analytics)?.reachSource?.followers.nonFollowers || 0}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
