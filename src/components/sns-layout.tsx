@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useSNSSettings } from '../hooks/useSNSSettings';
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect, useCallback } from 'react';
 
 // SNS情報の定義
 const SNS_INFO = {
@@ -52,12 +52,39 @@ interface SNSLayoutProps {
 
 export default function SNSLayout({ children, currentSNS, customTitle, customDescription }: SNSLayoutProps) {
   const router = useRouter();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
   const { snsNames } = useSNSSettings();
   
   const currentSNSInfo = SNS_INFO[currentSNS];
+
+  // 未読通知数を取得する関数
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const response = await fetch(`/api/notifications?userId=${user.uid}&filter=unread`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setUnreadCount(result.data?.length || 0);
+      }
+    } catch (error) {
+      console.error('未読通知数の取得エラー:', error);
+    }
+  }, [user?.uid]);
+
+  // コンポーネントマウント時に未読通知数を取得
+  useEffect(() => {
+    fetchUnreadCount();
+    
+    // 30秒ごとに未読通知数を更新
+    const interval = setInterval(fetchUnreadCount, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user?.uid, fetchUnreadCount]);
 
   const handleSignOut = async () => {
     try {
@@ -190,10 +217,17 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
                 // まずはシンプルなwindow.location.hrefでテスト
                 window.location.href = `/${currentSNS}/notifications`;
               }}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
-              <span>🔔</span>
-              <span>お知らせ</span>
+              <div className="flex items-center space-x-2">
+                <span>🔔</span>
+                <span>お知らせ</span>
+              </div>
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                  {unreadCount}
+                </span>
+              )}
             </button>
             <button 
               onClick={() => {
