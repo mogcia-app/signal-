@@ -1346,7 +1346,7 @@ function InstagramAnalyticsContent() {
                 </div>
 
                 {/* オーディエンス分析統計 */}
-                <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                     <Users className="w-5 h-5 mr-2 text-purple-600" />
                     オーディエンス分析統計
@@ -1356,16 +1356,16 @@ function InstagramAnalyticsContent() {
                   <div className="mb-4">
                     <h4 className="text-sm font-semibold text-gray-800 mb-2">性別分析 (平均%)</h4>
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center p-2 bg-blue-50 rounded">
-                        <div className="text-sm font-bold text-blue-600">👨 {avgAudienceStats.gender.male}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">👨 {avgAudienceStats.gender.male}%</div>
                         <div className="text-xs text-gray-600">男性</div>
                       </div>
-                      <div className="text-center p-2 bg-pink-50 rounded">
-                        <div className="text-sm font-bold text-pink-600">👩 {avgAudienceStats.gender.female}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">👩 {avgAudienceStats.gender.female}%</div>
                         <div className="text-xs text-gray-600">女性</div>
                       </div>
-                      <div className="text-center p-2 bg-rainbow-50 rounded">
-                        <div className="text-sm font-bold text-rainbow-600">🏳️‍🌈 {avgAudienceStats.gender.other}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">🏳️‍🌈 {avgAudienceStats.gender.other}%</div>
                         <div className="text-xs text-gray-600">その他</div>
                       </div>
                     </div>
@@ -1375,32 +1375,32 @@ function InstagramAnalyticsContent() {
                   <div>
                     <h4 className="text-sm font-semibold text-gray-800 mb-2">年齢層分析 (平均%)</h4>
                     <div className="grid grid-cols-4 gap-2">
-                      <div className="text-center p-2 bg-green-50 rounded">
-                        <div className="text-xs font-bold text-green-600">{avgAudienceStats.age['13-17']}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['13-17']}%</div>
                         <div className="text-xs text-gray-600">13-17歳</div>
                       </div>
-                      <div className="text-center p-2 bg-blue-50 rounded">
-                        <div className="text-xs font-bold text-blue-600">{avgAudienceStats.age['18-24']}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['18-24']}%</div>
                         <div className="text-xs text-gray-600">18-24歳</div>
                       </div>
-                      <div className="text-center p-2 bg-purple-50 rounded">
-                        <div className="text-xs font-bold text-purple-600">{avgAudienceStats.age['25-34']}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['25-34']}%</div>
                         <div className="text-xs text-gray-600">25-34歳</div>
                       </div>
-                      <div className="text-center p-2 bg-orange-50 rounded">
-                        <div className="text-xs font-bold text-orange-600">{avgAudienceStats.age['35-44']}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['35-44']}%</div>
                         <div className="text-xs text-gray-600">35-44歳</div>
                       </div>
-                      <div className="text-center p-2 bg-red-50 rounded">
-                        <div className="text-xs font-bold text-red-600">{avgAudienceStats.age['45-54']}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['45-54']}%</div>
                         <div className="text-xs text-gray-600">45-54歳</div>
                       </div>
                       <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-bold text-gray-600">{avgAudienceStats.age['55-64']}%</div>
+                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['55-64']}%</div>
                         <div className="text-xs text-gray-600">55-64歳</div>
                       </div>
-                      <div className="text-center p-2 bg-indigo-50 rounded">
-                        <div className="text-xs font-bold text-indigo-600">{avgAudienceStats.age['65+']}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['65+']}%</div>
                         <div className="text-xs text-gray-600">65歳以上</div>
                       </div>
                     </div>
@@ -1408,7 +1408,7 @@ function InstagramAnalyticsContent() {
                 </div>
 
                 {/* 閲覧数ソース分析統計 */}
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                     <Target className="w-5 h-5 mr-2 text-blue-600" />
                     閲覧数ソース分析統計
@@ -1418,24 +1418,24 @@ function InstagramAnalyticsContent() {
                   <div className="mb-4">
                     <h4 className="text-sm font-semibold text-gray-800 mb-2">閲覧ソース別割合 (平均%)</h4>
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center p-2 bg-blue-50 rounded">
-                        <div className="text-sm font-bold text-blue-600">📱 {avgReachSourceStats.sources.posts}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">📱 {avgReachSourceStats.sources.posts}%</div>
                         <div className="text-xs text-gray-600">投稿</div>
                       </div>
-                      <div className="text-center p-2 bg-green-50 rounded">
-                        <div className="text-sm font-bold text-green-600">👤 {avgReachSourceStats.sources.profile}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">👤 {avgReachSourceStats.sources.profile}%</div>
                         <div className="text-xs text-gray-600">プロフィール</div>
                       </div>
-                      <div className="text-center p-2 bg-purple-50 rounded">
-                        <div className="text-sm font-bold text-purple-600">🔍 {avgReachSourceStats.sources.explore}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">🔍 {avgReachSourceStats.sources.explore}%</div>
                         <div className="text-xs text-gray-600">発見</div>
                       </div>
-                      <div className="text-center p-2 bg-orange-50 rounded">
-                        <div className="text-sm font-bold text-orange-600">🔎 {avgReachSourceStats.sources.search}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">🔎 {avgReachSourceStats.sources.search}%</div>
                         <div className="text-xs text-gray-600">検索</div>
                       </div>
                       <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-600">📋 {avgReachSourceStats.sources.other}%</div>
+                        <div className="text-sm font-bold text-gray-700">📋 {avgReachSourceStats.sources.other}%</div>
                         <div className="text-xs text-gray-600">その他</div>
                       </div>
                     </div>
@@ -1445,12 +1445,12 @@ function InstagramAnalyticsContent() {
                   <div>
                     <h4 className="text-sm font-semibold text-gray-800 mb-2">フォロワー分析 (平均%)</h4>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="text-center p-2 bg-indigo-50 rounded">
-                        <div className="text-sm font-bold text-indigo-600">👥 {avgReachSourceStats.followers.followers}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">👥 {avgReachSourceStats.followers.followers}%</div>
                         <div className="text-xs text-gray-600">フォロワー内</div>
                       </div>
-                      <div className="text-center p-2 bg-cyan-50 rounded">
-                        <div className="text-sm font-bold text-cyan-600">🌐 {avgReachSourceStats.followers.nonFollowers}%</div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-700">🌐 {avgReachSourceStats.followers.nonFollowers}%</div>
                         <div className="text-xs text-gray-600">フォロワー外</div>
                       </div>
                     </div>
