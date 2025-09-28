@@ -65,14 +65,28 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
     if (!user?.uid) return;
     
     try {
-      const response = await fetch(`/api/notifications?userId=${user.uid}&filter=unread`);
+      // Firebase認証トークンを取得
+      const { auth } = await import('../lib/firebase');
+      const token = await auth.currentUser?.getIdToken();
+      
+      const response = await fetch(`/api/notifications?userId=${user.uid}&filter=unread`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       const result = await response.json();
       
       if (result.success) {
         setUnreadCount(result.data?.length || 0);
+      } else {
+        console.error('未読通知数取得エラー:', result.error);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('未読通知数の取得エラー:', error);
+      setUnreadCount(0);
     }
   }, [user?.uid]);
 
