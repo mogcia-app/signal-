@@ -104,22 +104,38 @@ export async function GET(request: NextRequest) {
 
     // ユーザー指定の場合は、対象ユーザーもフィルタ
     if (userId !== 'current-user') {
+      // 複合クエリの代わりに、まずは基本的なクエリを使用
       q = query(
         notificationsRef,
         where('status', '==', 'published'),
-        where('targetUsers', 'array-contains', userId),
         orderBy('createdAt', 'desc')
       );
+      console.log('🔍 ユーザー指定クエリを使用:', { userId });
+    } else {
+      console.log('🔍 全ユーザー向けクエリを使用');
     }
 
     console.log('🔍 Firestoreクエリを実行中...');
-    const snapshot = await getDocs(q);
-    console.log('✅ Firestoreクエリ成功:', { docCount: snapshot.docs.length });
+    let snapshot;
+    try {
+      snapshot = await getDocs(q);
+      console.log('✅ Firestoreクエリ成功:', { docCount: snapshot.docs.length });
+    } catch (firestoreError) {
+      console.error('❌ Firestoreクエリエラー:', firestoreError);
+      throw new Error(`Firestoreクエリエラー: ${firestoreError instanceof Error ? firestoreError.message : 'Unknown error'}`);
+    }
     
-    let firestoreNotifications = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as Notification));
+    let firestoreNotifications;
+    try {
+      firestoreNotifications = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Notification));
+      console.log('✅ データ変換成功:', { notificationCount: firestoreNotifications.length });
+    } catch (mappingError) {
+      console.error('❌ データ変換エラー:', mappingError);
+      throw new Error(`データ変換エラー: ${mappingError instanceof Error ? mappingError.message : 'Unknown error'}`);
+    }
 
     // Firestoreにデータがない場合はモックデータを使用
     if (firestoreNotifications.length === 0) {
