@@ -1140,7 +1140,7 @@ function InstagramAnalyticsContent() {
               </div>
 
               {/* 投稿日・投稿時間 */}
-              <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
+              <div className="mt-8 mb-8 p-6 bg-white rounded-lg border border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                   <Calendar size={16} className="inline mr-2" />
                   投稿情報
