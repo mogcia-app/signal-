@@ -408,6 +408,88 @@ function InstagramAnalyticsContent() {
   const avgEngagementRate = analyticsData.length > 0 
     ? analyticsData.reduce((sum, data) => sum + (data.engagementRate || 0), 0) / analyticsData.length 
     : 0;
+
+  // オーディエンス分析の統計計算
+  const audienceStats = analyticsData.reduce((acc, data) => {
+    if (data.audience) {
+      // 性別分析
+      acc.gender.male += data.audience.gender.male || 0;
+      acc.gender.female += data.audience.gender.female || 0;
+      acc.gender.other += data.audience.gender.other || 0;
+      
+      // 年齢層分析
+      acc.age['13-17'] += data.audience.age['13-17'] || 0;
+      acc.age['18-24'] += data.audience.age['18-24'] || 0;
+      acc.age['25-34'] += data.audience.age['25-34'] || 0;
+      acc.age['35-44'] += data.audience.age['35-44'] || 0;
+      acc.age['45-54'] += data.audience.age['45-54'] || 0;
+      acc.age['55-64'] += data.audience.age['55-64'] || 0;
+      acc.age['65+'] += data.audience.age['65+'] || 0;
+    }
+    return acc;
+  }, {
+    gender: { male: 0, female: 0, other: 0 },
+    age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
+  });
+
+  // 閲覧数ソース分析の統計計算
+  const reachSourceStats = analyticsData.reduce((acc, data) => {
+    if (data.reachSource) {
+      // 閲覧ソース分析
+      acc.sources.posts += data.reachSource.sources.posts || 0;
+      acc.sources.profile += data.reachSource.sources.profile || 0;
+      acc.sources.explore += data.reachSource.sources.explore || 0;
+      acc.sources.search += data.reachSource.sources.search || 0;
+      acc.sources.other += data.reachSource.sources.other || 0;
+      
+      // フォロワー分析
+      acc.followers.followers += data.reachSource.followers.followers || 0;
+      acc.followers.nonFollowers += data.reachSource.followers.nonFollowers || 0;
+    }
+    return acc;
+  }, {
+    sources: { posts: 0, profile: 0, explore: 0, search: 0, other: 0 },
+    followers: { followers: 0, nonFollowers: 0 }
+  });
+
+  // 平均値を計算
+  const dataCount = analyticsData.length;
+  const avgAudienceStats = dataCount > 0 ? {
+    gender: {
+      male: Math.round(audienceStats.gender.male / dataCount),
+      female: Math.round(audienceStats.gender.female / dataCount),
+      other: Math.round(audienceStats.gender.other / dataCount)
+    },
+    age: {
+      '13-17': Math.round(audienceStats.age['13-17'] / dataCount),
+      '18-24': Math.round(audienceStats.age['18-24'] / dataCount),
+      '25-34': Math.round(audienceStats.age['25-34'] / dataCount),
+      '35-44': Math.round(audienceStats.age['35-44'] / dataCount),
+      '45-54': Math.round(audienceStats.age['45-54'] / dataCount),
+      '55-64': Math.round(audienceStats.age['55-64'] / dataCount),
+      '65+': Math.round(audienceStats.age['65+'] / dataCount)
+    }
+  } : {
+    gender: { male: 0, female: 0, other: 0 },
+    age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
+  };
+
+  const avgReachSourceStats = dataCount > 0 ? {
+    sources: {
+      posts: Math.round(reachSourceStats.sources.posts / dataCount),
+      profile: Math.round(reachSourceStats.sources.profile / dataCount),
+      explore: Math.round(reachSourceStats.sources.explore / dataCount),
+      search: Math.round(reachSourceStats.sources.search / dataCount),
+      other: Math.round(reachSourceStats.sources.other / dataCount)
+    },
+    followers: {
+      followers: Math.round(reachSourceStats.followers.followers / dataCount),
+      nonFollowers: Math.round(reachSourceStats.followers.nonFollowers / dataCount)
+    }
+  } : {
+    sources: { posts: 0, profile: 0, explore: 0, search: 0, other: 0 },
+    followers: { followers: 0, nonFollowers: 0 }
+  };
   
   // デバッグログ
   console.log('Statistics calculation debug:', {
@@ -1260,6 +1342,118 @@ function InstagramAnalyticsContent() {
                   <div className="text-center p-2 bg-emerald-50 rounded-lg">
                     <div className="text-lg font-bold text-emerald-600">{totalFollowerIncrease.toLocaleString()}</div>
                     <div className="text-xs text-gray-600">総フォロワー増加数</div>
+                  </div>
+                </div>
+
+                {/* オーディエンス分析統計 */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-purple-600" />
+                    オーディエンス分析統計
+                  </h3>
+                  
+                  {/* 性別分析統計 */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2">性別分析 (平均%)</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center p-2 bg-blue-50 rounded">
+                        <div className="text-sm font-bold text-blue-600">👨 {avgAudienceStats.gender.male}%</div>
+                        <div className="text-xs text-gray-600">男性</div>
+                      </div>
+                      <div className="text-center p-2 bg-pink-50 rounded">
+                        <div className="text-sm font-bold text-pink-600">👩 {avgAudienceStats.gender.female}%</div>
+                        <div className="text-xs text-gray-600">女性</div>
+                      </div>
+                      <div className="text-center p-2 bg-rainbow-50 rounded">
+                        <div className="text-sm font-bold text-rainbow-600">🏳️‍🌈 {avgAudienceStats.gender.other}%</div>
+                        <div className="text-xs text-gray-600">その他</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 年齢層分析統計 */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2">年齢層分析 (平均%)</h4>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="text-center p-2 bg-green-50 rounded">
+                        <div className="text-xs font-bold text-green-600">{avgAudienceStats.age['13-17']}%</div>
+                        <div className="text-xs text-gray-600">13-17歳</div>
+                      </div>
+                      <div className="text-center p-2 bg-blue-50 rounded">
+                        <div className="text-xs font-bold text-blue-600">{avgAudienceStats.age['18-24']}%</div>
+                        <div className="text-xs text-gray-600">18-24歳</div>
+                      </div>
+                      <div className="text-center p-2 bg-purple-50 rounded">
+                        <div className="text-xs font-bold text-purple-600">{avgAudienceStats.age['25-34']}%</div>
+                        <div className="text-xs text-gray-600">25-34歳</div>
+                      </div>
+                      <div className="text-center p-2 bg-orange-50 rounded">
+                        <div className="text-xs font-bold text-orange-600">{avgAudienceStats.age['35-44']}%</div>
+                        <div className="text-xs text-gray-600">35-44歳</div>
+                      </div>
+                      <div className="text-center p-2 bg-red-50 rounded">
+                        <div className="text-xs font-bold text-red-600">{avgAudienceStats.age['45-54']}%</div>
+                        <div className="text-xs text-gray-600">45-54歳</div>
+                      </div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-xs font-bold text-gray-600">{avgAudienceStats.age['55-64']}%</div>
+                        <div className="text-xs text-gray-600">55-64歳</div>
+                      </div>
+                      <div className="text-center p-2 bg-indigo-50 rounded">
+                        <div className="text-xs font-bold text-indigo-600">{avgAudienceStats.age['65+']}%</div>
+                        <div className="text-xs text-gray-600">65歳以上</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 閲覧数ソース分析統計 */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                    <Target className="w-5 h-5 mr-2 text-blue-600" />
+                    閲覧数ソース分析統計
+                  </h3>
+                  
+                  {/* 閲覧ソース分析統計 */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2">閲覧ソース別割合 (平均%)</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center p-2 bg-blue-50 rounded">
+                        <div className="text-sm font-bold text-blue-600">📱 {avgReachSourceStats.sources.posts}%</div>
+                        <div className="text-xs text-gray-600">投稿</div>
+                      </div>
+                      <div className="text-center p-2 bg-green-50 rounded">
+                        <div className="text-sm font-bold text-green-600">👤 {avgReachSourceStats.sources.profile}%</div>
+                        <div className="text-xs text-gray-600">プロフィール</div>
+                      </div>
+                      <div className="text-center p-2 bg-purple-50 rounded">
+                        <div className="text-sm font-bold text-purple-600">🔍 {avgReachSourceStats.sources.explore}%</div>
+                        <div className="text-xs text-gray-600">発見</div>
+                      </div>
+                      <div className="text-center p-2 bg-orange-50 rounded">
+                        <div className="text-sm font-bold text-orange-600">🔎 {avgReachSourceStats.sources.search}%</div>
+                        <div className="text-xs text-gray-600">検索</div>
+                      </div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-sm font-bold text-gray-600">📋 {avgReachSourceStats.sources.other}%</div>
+                        <div className="text-xs text-gray-600">その他</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* フォロワー分析統計 */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2">フォロワー分析 (平均%)</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="text-center p-2 bg-indigo-50 rounded">
+                        <div className="text-sm font-bold text-indigo-600">👥 {avgReachSourceStats.followers.followers}%</div>
+                        <div className="text-xs text-gray-600">フォロワー内</div>
+                      </div>
+                      <div className="text-center p-2 bg-cyan-50 rounded">
+                        <div className="text-sm font-bold text-cyan-600">🌐 {avgReachSourceStats.followers.nonFollowers}%</div>
+                        <div className="text-xs text-gray-600">フォロワー外</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-3 text-center p-3 bg-gray-50 rounded-lg">

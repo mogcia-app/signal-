@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
       content,
       hashtags,
       thumbnail,
-      category
+      category,
+      audience,
+      reachSource
     } = body;
 
     // ミドルウェアから認証されたユーザーIDを取得
@@ -90,7 +92,9 @@ export async function POST(request: NextRequest) {
       content: content || '',
       hashtags: hashtagsArray,
       thumbnail: thumbnail || '',
-      category: category || 'feed'
+      category: category || 'feed',
+      audience: audience || null, // オーディエンス分析データ
+      reachSource: reachSource || null // 閲覧数ソース分析データ
     };
 
     console.log('Saving analytics data via BFF:', {
