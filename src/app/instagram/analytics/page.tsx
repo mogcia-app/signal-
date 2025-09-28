@@ -777,7 +777,7 @@ function InstagramAnalyticsContent() {
               </div>
 
               {/* オーディエンス分析セクション */}
-              <div className="mt-8 p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+              <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                   <Users className="w-5 h-5 mr-2 text-purple-600" />
                   オーディエンス分析
@@ -999,7 +999,7 @@ function InstagramAnalyticsContent() {
               </div>
 
               {/* 閲覧数ソース分析セクション */}
-              <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                   <Target className="w-5 h-5 mr-2 text-blue-600" />
                   閲覧数ソース分析
@@ -1319,28 +1319,28 @@ function InstagramAnalyticsContent() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">投稿分析統計</h3>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="text-center p-2 bg-red-50 rounded-lg">
-                    <div className="text-lg font-bold text-red-600">{totalLikes.toLocaleString()}</div>
+                  <div className="text-center p-2 bg-gray-50 rounded-lg">
+                    <div className="text-lg font-bold text-gray-700">{totalLikes.toLocaleString()}</div>
                     <div className="text-xs text-gray-600">総いいね数</div>
                   </div>
-                  <div className="text-center p-2 bg-blue-50 rounded-lg">
-                    <div className="text-lg font-bold text-blue-600">{totalComments.toLocaleString()}</div>
+                  <div className="text-center p-2 bg-gray-50 rounded-lg">
+                    <div className="text-lg font-bold text-gray-700">{totalComments.toLocaleString()}</div>
                     <div className="text-xs text-gray-600">総コメント数</div>
                   </div>
-                  <div className="text-center p-2 bg-green-50 rounded-lg">
-                    <div className="text-lg font-bold text-green-600">{totalShares.toLocaleString()}</div>
+                  <div className="text-center p-2 bg-gray-50 rounded-lg">
+                    <div className="text-lg font-bold text-gray-700">{totalShares.toLocaleString()}</div>
                     <div className="text-xs text-gray-600">総シェア数</div>
                   </div>
-                  <div className="text-center p-2 bg-purple-50 rounded-lg">
-                    <div className="text-lg font-bold text-purple-600">{totalReach.toLocaleString()}</div>
+                  <div className="text-center p-2 bg-gray-50 rounded-lg">
+                    <div className="text-lg font-bold text-gray-700">{totalReach.toLocaleString()}</div>
                     <div className="text-xs text-gray-600">総閲覧数</div>
                   </div>
-                  <div className="text-center p-2 bg-yellow-50 rounded-lg">
-                    <div className="text-lg font-bold text-yellow-600">{totalSaves.toLocaleString()}</div>
+                  <div className="text-center p-2 bg-gray-50 rounded-lg">
+                    <div className="text-lg font-bold text-gray-700">{totalSaves.toLocaleString()}</div>
                     <div className="text-xs text-gray-600">総保存数</div>
                   </div>
-                  <div className="text-center p-2 bg-emerald-50 rounded-lg">
-                    <div className="text-lg font-bold text-emerald-600">{totalFollowerIncrease.toLocaleString()}</div>
+                  <div className="text-center p-2 bg-gray-50 rounded-lg">
+                    <div className="text-lg font-bold text-gray-700">{totalFollowerIncrease.toLocaleString()}</div>
                     <div className="text-xs text-gray-600">総フォロワー増加数</div>
                   </div>
                 </div>
