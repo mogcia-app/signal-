@@ -23,6 +23,7 @@ import {
 import { db } from '../../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../../../contexts/auth-context';
+import { auth } from '../../../lib/firebase';
 
 interface Notification {
   id: string;
@@ -118,13 +119,23 @@ export default function InstagramNotificationsPage() {
     
     try {
       setIsLoading(true);
+      
+      // Firebase認証トークンを取得
+      const token = await auth.currentUser?.getIdToken();
+      console.log('🔑 認証トークンを取得:', { hasToken: !!token });
+      
       const params = new URLSearchParams({
         userId: user.uid,
         filter: selectedFilter,
         ...(searchQuery && { search: searchQuery })
       });
 
-      const response = await fetch(`/api/notifications?${params}`);
+      const response = await fetch(`/api/notifications?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const result = await response.json();
 
       if (result.success) {
@@ -139,7 +150,15 @@ export default function InstagramNotificationsPage() {
                 console.log('❌ アクション実行時: ユーザーが認証されていません');
                 return notification;
               }
-              const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=${user.uid}`);
+              
+              // Firebase認証トークンを取得
+              const token = await auth.currentUser?.getIdToken();
+              const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=${user.uid}`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
               const actionResult = await actionResponse.json();
               
               return {
