@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
-import { UserDataDisplay } from '../../../components/UserDataDisplay';
 import { useUserProfile } from '../../../hooks/useUserProfile';
 import { 
   User, 
@@ -24,7 +23,6 @@ export default function MyAccountPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [showAllData, setShowAllData] = useState(false);
 
   // 実際のユーザープロフィールデータを取得
   const { 
@@ -846,20 +844,6 @@ export default function MyAccountPage() {
               </div>
             </div>
 
-            {/* 全データ表示 */}
-            <div className="bg-white  shadow-lg border border-gray-100 p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">ユーザーデータ詳細</h2>
-                <button
-                  onClick={() => setShowAllData(!showAllData)}
-                  className="px-4 py-2 bg-blue-600 text-white  hover:bg-blue-700 transition-colors"
-                >
-                  {showAllData ? '基本情報のみ' : '全データ表示'}
-                </button>
-              </div>
-              
-              <UserDataDisplay showAll={showAllData} />
-            </div>
           </div>
         </div>
 
