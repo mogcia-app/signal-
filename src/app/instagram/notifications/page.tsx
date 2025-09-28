@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { db } from '../../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { useAuth } from '../../../contexts/auth-context';
 
 interface Notification {
   id: string;
@@ -44,6 +45,7 @@ interface Notification {
 }
 
 export default function InstagramNotificationsPage() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'unread' | 'starred' | 'archived'>('all');
@@ -100,10 +102,16 @@ export default function InstagramNotificationsPage() {
   };
 
   const fetchNotifications = async () => {
+    if (!user?.uid) {
+      console.log('ユーザーが認証されていません');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       const params = new URLSearchParams({
-        userId: 'current-user',
+        userId: user.uid,
         filter: selectedFilter,
         ...(searchQuery && { search: searchQuery })
       });
@@ -119,7 +127,7 @@ export default function InstagramNotificationsPage() {
         const notificationsWithActions = await Promise.all(
           convertedData.map(async (notification: Notification) => {
             try {
-              const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=current-user`);
+              const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=${user?.uid}`);
               const actionResult = await actionResponse.json();
               
               return {
@@ -181,7 +189,7 @@ export default function InstagramNotificationsPage() {
           Promise.all(
             realtimeNotifications.map(async (notification) => {
               try {
-                const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=current-user`);
+                const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=${user?.uid}`);
                 const actionResult = await actionResponse.json();
                 
                 return {
@@ -328,7 +336,7 @@ export default function InstagramNotificationsPage() {
         },
         body: JSON.stringify({
           action: 'read',
-          userId: 'current-user'
+          userId: user?.uid
         }),
       });
 
@@ -359,7 +367,7 @@ export default function InstagramNotificationsPage() {
         },
         body: JSON.stringify({
           action: 'star',
-          userId: 'current-user'
+          userId: user?.uid
         }),
       });
 
@@ -390,7 +398,7 @@ export default function InstagramNotificationsPage() {
         },
         body: JSON.stringify({
           action: 'archive',
-          userId: 'current-user'
+          userId: user?.uid
         }),
       });
 
