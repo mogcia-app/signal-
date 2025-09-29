@@ -10,7 +10,7 @@ interface AnalyticsFormProps {
   onSave: () => void;
   isLoading: boolean;
   // 検索関連のプロパティを追加
-  posts: any[];
+  posts: unknown[];
   selectedPostId: string;
   onPostSelect: (postId: string) => void;
 }

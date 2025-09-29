@@ -7,7 +7,7 @@ import { AuthGuard } from '../../../components/auth-guard';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
-import PostSelector from '../components/PostSelector';
+// import PostSelector from '../components/PostSelector'; // 削除済み
 import PostPreview from '../components/PostPreview';
 import AudienceAnalysisForm from '../components/AudienceAnalysisForm';
 import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm';
