@@ -48,9 +48,78 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
       </div>
 
       <div className="space-y-6">
-        {/* 投稿情報 */}
+        {/* 投稿情報手動入力 */}
         <div className="p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿情報</h3>
+          <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿情報（手動入力）</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                タイトル
+              </label>
+              <input
+                type="text"
+                value={data.title}
+                onChange={(e) => handleInputChange('title', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="投稿のタイトルを入力"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                内容
+              </label>
+              <textarea
+                value={data.content}
+                onChange={(e) => handleInputChange('content', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={3}
+                placeholder="投稿の内容を入力"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ハッシュタグ
+              </label>
+              <input
+                type="text"
+                value={data.hashtags}
+                onChange={(e) => handleInputChange('hashtags', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="#hashtag1 #hashtag2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                カテゴリ
+              </label>
+              <select
+                value={data.category}
+                onChange={(e) => handleInputChange('category', e.target.value as 'reel' | 'feed' | 'story')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="feed">フィード</option>
+                <option value="reel">リール</option>
+                <option value="story">ストーリー</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                サムネイルURL
+              </label>
+              <input
+                type="url"
+                value={data.thumbnail}
+                onChange={(e) => handleInputChange('thumbnail', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 投稿日時情報 */}
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿日時</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

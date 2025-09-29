@@ -13,10 +13,7 @@ import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm';
 import AnalyticsForm from '../components/AnalyticsForm';
 import AnalyticsStats from '../components/AnalyticsStats';
 import { 
-  RefreshCw,
   BarChart3,
-  Calendar,
-  Save,
   Target,
   Plus
 } from 'lucide-react';
@@ -477,109 +474,7 @@ function InstagramAnalyticsContent() {
                 }))}
               />
 
-              {/* 投稿日・投稿時間 */}
-              <div className="mt-8 mb-8 p-6 bg-white rounded-lg border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Calendar size={16} className="inline mr-2" />
-                  投稿情報
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      投稿日
-                    </label>
-                    <input
-                      type="date"
-                      value={inputData.publishedAt}
-                      onChange={(e) => setInputData(prev => ({ ...prev, publishedAt: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      🕐 投稿時間
-                    </label>
-                    <input
-                      type="time"
-                      value={inputData.publishedTime}
-                      onChange={(e) => setInputData(prev => ({ ...prev, publishedTime: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleSaveAnalytics}
-                  disabled={isLoading}
-                  className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      保存中...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={16} className="mr-2" />
-                      分析データを保存
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    setInputData({
-                      likes: '',
-                      comments: '',
-                      shares: '',
-                      reach: '',
-                      saves: '',
-                      followerIncrease: '',
-                      publishedAt: new Date().toISOString().split('T')[0],
-                      publishedTime: new Date().toTimeString().slice(0, 5),
-                      title: '',
-                      content: '',
-                      hashtags: '',
-                      thumbnail: '',
-                      category: 'feed',
-                      audience: {
-                        gender: {
-                          male: '',
-                          female: '',
-                          other: ''
-                        },
-                        age: {
-                          '13-17': '',
-                          '18-24': '',
-                          '25-34': '',
-                          '35-44': '',
-                          '45-54': '',
-                          '55-64': '',
-                          '65+': ''
-                        }
-                      },
-                      reachSource: {
-                        sources: {
-                          posts: '',
-                          profile: '',
-                          explore: '',
-                          search: '',
-                          other: ''
-                        },
-                        followers: {
-                          followers: '',
-                          nonFollowers: ''
-                        }
-                      }
-                    });
-                    setSelectedPost(null);
-                  }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  <RefreshCw size={16} />
-                </button>
-              </div>
             </div>
 
             {/* 右カラム: 運用計画と統計 */}
