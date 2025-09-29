@@ -7,20 +7,16 @@ import { AuthGuard } from '../../../components/auth-guard';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
-import Image from 'next/image';
+import PostSelector from '../components/PostSelector';
+import AudienceAnalysisForm from '../components/AudienceAnalysisForm';
+import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm';
+import AnalyticsForm from '../components/AnalyticsForm';
+import AnalyticsStats from '../components/AnalyticsStats';
 import { 
-  BarChart3,
-  Heart,
-  Save,
-  Calendar,
   RefreshCw,
-  Search,
-  Hash,
-  FileText,
-  Video,
-  Camera,
-  Bookmark,
-  Users,
+  BarChart3,
+  Calendar,
+  Save,
   Target,
   Plus
 } from 'lucide-react';
@@ -71,6 +67,7 @@ interface AnalyticsData {
   followerIncrease: number;
   engagementRate: number;
   publishedAt: Date;
+  publishedTime: string;
   createdAt: Date;
   // 投稿情報
   title?: string;
@@ -100,7 +97,6 @@ function InstagramAnalyticsContent() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [posts, setPosts] = useState<PostData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [inputData, setInputData] = useState({
     likes: '',
@@ -146,7 +142,6 @@ function InstagramAnalyticsContent() {
       }
     }
   });
-  const [previewUrl, setPreviewUrl] = useState<string>('');
   const [selectedPostId, setSelectedPostId] = useState<string>('');
   const [currentPlan, setCurrentPlan] = useState<{
     id: string;
@@ -275,22 +270,7 @@ function InstagramAnalyticsContent() {
     }));
   };
 
-      // ファイル選択処理
-      const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-          const url = URL.createObjectURL(file);
-          setPreviewUrl(url);
-          setInputData(prev => ({ ...prev, thumbnail: url }));
-        }
-      };
 
-  // 検索フィルタリング
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.hashtags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
 
   // 投稿分析データを保存（BFF経由）
   const handleSaveAnalytics = async () => {
@@ -404,7 +384,6 @@ function InstagramAnalyticsContent() {
       });
       setSelectedPost(null);
       setSelectedPostId('');
-      setPreviewUrl('');
 
     } catch (error) {
       console.error('保存エラー:', error);
@@ -425,87 +404,6 @@ function InstagramAnalyticsContent() {
     ? analyticsData.reduce((sum, data) => sum + (data.engagementRate || 0), 0) / analyticsData.length 
     : 0;
 
-  // オーディエンス分析の統計計算
-  const audienceStats = analyticsData.reduce((acc, data) => {
-    if (data.audience) {
-      // 性別分析
-      acc.gender.male += data.audience.gender.male || 0;
-      acc.gender.female += data.audience.gender.female || 0;
-      acc.gender.other += data.audience.gender.other || 0;
-      
-      // 年齢層分析
-      acc.age['13-17'] += data.audience.age['13-17'] || 0;
-      acc.age['18-24'] += data.audience.age['18-24'] || 0;
-      acc.age['25-34'] += data.audience.age['25-34'] || 0;
-      acc.age['35-44'] += data.audience.age['35-44'] || 0;
-      acc.age['45-54'] += data.audience.age['45-54'] || 0;
-      acc.age['55-64'] += data.audience.age['55-64'] || 0;
-      acc.age['65+'] += data.audience.age['65+'] || 0;
-    }
-    return acc;
-  }, {
-    gender: { male: 0, female: 0, other: 0 },
-    age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
-  });
-
-  // 閲覧数ソース分析の統計計算
-  const reachSourceStats = analyticsData.reduce((acc, data) => {
-    if (data.reachSource) {
-      // 閲覧ソース分析
-      acc.sources.posts += data.reachSource.sources.posts || 0;
-      acc.sources.profile += data.reachSource.sources.profile || 0;
-      acc.sources.explore += data.reachSource.sources.explore || 0;
-      acc.sources.search += data.reachSource.sources.search || 0;
-      acc.sources.other += data.reachSource.sources.other || 0;
-      
-      // フォロワー分析
-      acc.followers.followers += data.reachSource.followers.followers || 0;
-      acc.followers.nonFollowers += data.reachSource.followers.nonFollowers || 0;
-    }
-    return acc;
-  }, {
-    sources: { posts: 0, profile: 0, explore: 0, search: 0, other: 0 },
-    followers: { followers: 0, nonFollowers: 0 }
-  });
-
-  // 平均値を計算
-  const dataCount = analyticsData.length;
-  const avgAudienceStats = dataCount > 0 ? {
-    gender: {
-      male: Math.round(audienceStats.gender.male / dataCount),
-      female: Math.round(audienceStats.gender.female / dataCount),
-      other: Math.round(audienceStats.gender.other / dataCount)
-    },
-    age: {
-      '13-17': Math.round(audienceStats.age['13-17'] / dataCount),
-      '18-24': Math.round(audienceStats.age['18-24'] / dataCount),
-      '25-34': Math.round(audienceStats.age['25-34'] / dataCount),
-      '35-44': Math.round(audienceStats.age['35-44'] / dataCount),
-      '45-54': Math.round(audienceStats.age['45-54'] / dataCount),
-      '55-64': Math.round(audienceStats.age['55-64'] / dataCount),
-      '65+': Math.round(audienceStats.age['65+'] / dataCount)
-    }
-  } : {
-    gender: { male: 0, female: 0, other: 0 },
-    age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
-  };
-
-  const avgReachSourceStats = dataCount > 0 ? {
-    sources: {
-      posts: Math.round(reachSourceStats.sources.posts / dataCount),
-      profile: Math.round(reachSourceStats.sources.profile / dataCount),
-      explore: Math.round(reachSourceStats.sources.explore / dataCount),
-      search: Math.round(reachSourceStats.sources.search / dataCount),
-      other: Math.round(reachSourceStats.sources.other / dataCount)
-    },
-    followers: {
-      followers: Math.round(reachSourceStats.followers.followers / dataCount),
-      nonFollowers: Math.round(reachSourceStats.followers.nonFollowers / dataCount)
-    }
-  } : {
-    sources: { posts: 0, profile: 0, explore: 0, search: 0, other: 0 },
-    followers: { followers: 0, nonFollowers: 0 }
-  };
   
   // デバッグログ
   console.log('Statistics calculation debug:', {
@@ -541,619 +439,43 @@ function InstagramAnalyticsContent() {
                 </div>
               </div>
 
-              {/* 投稿検索機能 */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Search size={16} className="inline mr-1" />
-                  投稿を検索・選択
-                </label>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-                  placeholder="タイトル、内容、ハッシュタグで検索..."
-                />
-                
-                {/* 投稿一覧 */}
-                {searchTerm && (
-                  <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md">
-                    {filteredPosts.length === 0 ? (
-                      <div className="p-3 text-sm text-gray-500 text-center">
-                        該当する投稿が見つかりません
-                      </div>
-                    ) : (
-                      filteredPosts.slice(0, 5).map((post) => (
-                        <div
-                          key={post.id}
-                          onClick={() => handleSelectPost(post)}
-                          className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                            selectedPost?.id === post.id ? 'bg-blue-50 border-blue-200' : ''
-                          }`}
-                        >
-                          <div className="font-medium text-sm text-gray-900 truncate">
-                            {post.title}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {post.publishedAt.toLocaleDateString('ja-JP')}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
+              {/* 投稿選択コンポーネント */}
+              <PostSelector
+                posts={posts}
+                selectedPostId={selectedPost?.id || ''}
+                onPostSelect={(postId) => {
+                  const post = posts.find(p => p.id === postId);
+                  if (post) handleSelectPost(post);
+                }}
+                isLoading={isLoading}
+              />
 
-              {/* 投稿情報表示 */}
-              {selectedPost && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h3 className="font-medium text-blue-900 mb-2">選択された投稿</h3>
-                  <div className="text-sm text-blue-800">
-                    <div className="font-medium">{selectedPost.title}</div>
-                    <div className="mt-1 text-xs">{selectedPost.content.slice(0, 100)}...</div>
-                  </div>
-                </div>
-              )}
-
-              {/* 投稿情報手動入力 */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">投稿情報</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                      <FileText size={14} className="inline mr-1" />
-                      タイトル
-                    </label>
-                    <input
-                      type="text"
-                      value={inputData.title}
-                      onChange={(e) => setInputData(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="投稿タイトル"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                      📝 投稿内容
-                    </label>
-                    <textarea
-                      value={inputData.content}
-                      onChange={(e) => setInputData(prev => ({ ...prev, content: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="投稿内容"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                      <Hash size={14} className="inline mr-1" />
-                      ハッシュタグ
-                    </label>
-                    <input
-                      type="text"
-                      value={inputData.hashtags}
-                      onChange={(e) => setInputData(prev => ({ ...prev, hashtags: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="ハッシュタグ1, ハッシュタグ2, ..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                      <Video size={14} className="inline mr-1" />
-                      投稿カテゴリー
-                    </label>
-                    <select
-                      value={inputData.category}
-                      onChange={(e) => setInputData(prev => ({ ...prev, category: e.target.value as 'reel' | 'feed' | 'story' }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="feed">📱 フィード</option>
-                      <option value="reel">🎬 リール</option>
-                      <option value="story">📖 ストーリー</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                      <Camera size={14} className="inline mr-1" />
-                      サムネイル画像
-                    </label>
-                    <div className="space-y-2">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                      {previewUrl && (
-                        <div className="mt-2">
-                          <Image
-                            src={previewUrl}
-                            alt="Preview"
-                            width={80}
-                            height={80}
-                            className="w-20 h-20 object-cover rounded-md border"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPreviewUrl('');
-                              setInputData(prev => ({ ...prev, thumbnail: '' }));
-                            }}
-                            className="ml-2 text-xs text-red-600 hover:text-red-800"
-                          >
-                            削除
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <Heart size={16} className="inline mr-1 text-red-500" />
-                        いいね数
-                      </label>
-                      <input
-                        type="number"
-                        value={inputData.likes}
-                        onChange={(e) => setInputData(prev => ({ ...prev, likes: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        placeholder="例: 245"
-                        required
-                      />
-                    </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    💬 コメント数
-                  </label>
-                  <input
-                    type="number"
-                    value={inputData.comments}
-                    onChange={(e) => setInputData(prev => ({ ...prev, comments: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    placeholder="例: 12"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    🔄 シェア数
-                  </label>
-                  <input
-                    type="number"
-                    value={inputData.shares}
-                    onChange={(e) => setInputData(prev => ({ ...prev, shares: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    placeholder="例: 8"
-                  />
-                </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        👁️ 閲覧数
-                      </label>
-                      <input
-                        type="number"
-                        value={inputData.reach}
-                        onChange={(e) => setInputData(prev => ({ ...prev, reach: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        placeholder="例: 1200"
-                        required
-                      />
-                    </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Bookmark size={16} className="inline mr-1 text-yellow-500" />
-                    保存数
-                  </label>
-                  <input
-                    type="number"
-                    value={inputData.saves}
-                    onChange={(e) => setInputData(prev => ({ ...prev, saves: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    placeholder="例: 45"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Users size={16} className="inline mr-1 text-green-500" />
-                    フォロワー増加数
-                  </label>
-                  <input
-                    type="number"
-                    value={inputData.followerIncrease}
-                    onChange={(e) => setInputData(prev => ({ ...prev, followerIncrease: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    placeholder="例: 23"
-                  />
-                </div>
-              </div>
+              {/* 分析フォームコンポーネント */}
+              <AnalyticsForm
+                data={inputData}
+                onChange={setInputData}
+                onSave={handleSaveAnalytics}
+                isLoading={isLoading}
+              />
 
 
-              {/* オーディエンス分析セクション */}
-              <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Users className="w-5 h-5 mr-2 text-purple-600" />
-                  オーディエンス分析
-                </h3>
-                
-                {/* 性別分析 */}
-                <div className="mb-6">
-                  <h4 className="text-md font-semibold text-gray-800 mb-3">性別分析 (%)</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        👨 男性
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.gender.male}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            gender: { ...prev.audience.gender, male: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 45"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        👩 女性
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.gender.female}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            gender: { ...prev.audience.gender, female: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 50"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        🏳️‍🌈 その他
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.gender.other}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            gender: { ...prev.audience.gender, other: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 5"
-                      />
-                    </div>
-                  </div>
-                </div>
+              {/* オーディエンス分析フォームコンポーネント */}
+              <AudienceAnalysisForm
+                data={inputData.audience}
+                onChange={(audienceData) => setInputData(prev => ({
+                  ...prev,
+                  audience: audienceData
+                }))}
+              />
 
-                {/* 年齢層分析 */}
-                <div>
-                  <h4 className="text-md font-semibold text-gray-800 mb-3">年齢層分析 (%)</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        13-17歳
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.age['13-17']}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            age: { ...prev.audience.age, '13-17': e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 15"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        18-24歳
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.age['18-24']}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            age: { ...prev.audience.age, '18-24': e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 25"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        25-34歳
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.age['25-34']}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            age: { ...prev.audience.age, '25-34': e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 30"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        35-44歳
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.age['35-44']}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            age: { ...prev.audience.age, '35-44': e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        45-54歳
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.age['45-54']}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            age: { ...prev.audience.age, '45-54': e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 7"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        55-64歳
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.age['55-64']}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            age: { ...prev.audience.age, '55-64': e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        65歳以上
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.audience.age['65+']}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          audience: {
-                            ...prev.audience,
-                            age: { ...prev.audience.age, '65+': e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="例: 1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 閲覧数ソース分析セクション */}
-              <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Target className="w-5 h-5 mr-2 text-blue-600" />
-                  閲覧数ソース分析
-                </h3>
-                
-                {/* 閲覧ソース分析 */}
-                <div className="mb-6">
-                  <h4 className="text-md font-semibold text-gray-800 mb-3">閲覧ソース別割合 (%)</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        📱 投稿
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.reachSource.sources.posts}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          reachSource: {
-                            ...prev.reachSource,
-                            sources: { ...prev.reachSource.sources, posts: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="例: 40"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        👤 プロフィール
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.reachSource.sources.profile}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          reachSource: {
-                            ...prev.reachSource,
-                            sources: { ...prev.reachSource.sources, profile: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="例: 25"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        🔍 発見
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.reachSource.sources.explore}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          reachSource: {
-                            ...prev.reachSource,
-                            sources: { ...prev.reachSource.sources, explore: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="例: 20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        🔎 検索
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.reachSource.sources.search}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          reachSource: {
-                            ...prev.reachSource,
-                            sources: { ...prev.reachSource.sources, search: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="例: 10"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        📋 その他
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.reachSource.sources.other}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          reachSource: {
-                            ...prev.reachSource,
-                            sources: { ...prev.reachSource.sources, other: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="例: 5"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* フォロワー分析 */}
-                <div>
-                  <h4 className="text-md font-semibold text-gray-800 mb-3">フォロワー分析 (%)</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        👥 フォロワー内
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.reachSource.followers.followers}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          reachSource: {
-                            ...prev.reachSource,
-                            followers: { ...prev.reachSource.followers, followers: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="例: 60"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        🌐 フォロワー外
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={inputData.reachSource.followers.nonFollowers}
-                        onChange={(e) => setInputData(prev => ({
-                          ...prev,
-                          reachSource: {
-                            ...prev.reachSource,
-                            followers: { ...prev.reachSource.followers, nonFollowers: e.target.value }
-                          }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="例: 40"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* 閲覧数ソース分析フォームコンポーネント */}
+              <ReachSourceAnalysisForm
+                data={inputData.reachSource}
+                onChange={(reachSourceData) => setInputData(prev => ({
+                  ...prev,
+                  reachSource: reachSourceData
+                }))}
+              />
 
               {/* 投稿日・投稿時間 */}
               <div className="mt-8 mb-8 p-6 bg-white rounded-lg border border-gray-200">
@@ -1252,7 +574,6 @@ function InstagramAnalyticsContent() {
                       }
                     });
                     setSelectedPost(null);
-          setPreviewUrl('');
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
@@ -1342,152 +663,11 @@ function InstagramAnalyticsContent() {
                 )}
               </div>
 
-              {/* 投稿分析統計セクション */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">投稿分析統計</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold text-gray-700">{totalLikes.toLocaleString()}</div>
-                    <div className="text-xs text-gray-600">総いいね数</div>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold text-gray-700">{totalComments.toLocaleString()}</div>
-                    <div className="text-xs text-gray-600">総コメント数</div>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold text-gray-700">{totalShares.toLocaleString()}</div>
-                    <div className="text-xs text-gray-600">総シェア数</div>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold text-gray-700">{totalReach.toLocaleString()}</div>
-                    <div className="text-xs text-gray-600">総閲覧数</div>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold text-gray-700">{totalSaves.toLocaleString()}</div>
-                    <div className="text-xs text-gray-600">総保存数</div>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold text-gray-700">{totalFollowerIncrease.toLocaleString()}</div>
-                    <div className="text-xs text-gray-600">総フォロワー増加数</div>
-                  </div>
-                </div>
-
-                {/* オーディエンス分析統計 */}
-                <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                    <Users className="w-5 h-5 mr-2 text-purple-600" />
-                    オーディエンス分析統計
-                  </h3>
-                  
-                  {/* 性別分析統計 */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-gray-800 mb-2">性別分析 (平均%)</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">👨 {avgAudienceStats.gender.male}%</div>
-                        <div className="text-xs text-gray-600">男性</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">👩 {avgAudienceStats.gender.female}%</div>
-                        <div className="text-xs text-gray-600">女性</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">🏳️‍🌈 {avgAudienceStats.gender.other}%</div>
-                        <div className="text-xs text-gray-600">その他</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 年齢層分析統計 */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-800 mb-2">年齢層分析 (平均%)</h4>
-                    <div className="grid grid-cols-4 gap-2">
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['13-17']}%</div>
-                        <div className="text-xs text-gray-600">13-17歳</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['18-24']}%</div>
-                        <div className="text-xs text-gray-600">18-24歳</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['25-34']}%</div>
-                        <div className="text-xs text-gray-600">25-34歳</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['35-44']}%</div>
-                        <div className="text-xs text-gray-600">35-44歳</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['45-54']}%</div>
-                        <div className="text-xs text-gray-600">45-54歳</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['55-64']}%</div>
-                        <div className="text-xs text-gray-600">55-64歳</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-bold text-gray-700">{avgAudienceStats.age['65+']}%</div>
-                        <div className="text-xs text-gray-600">65歳以上</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 閲覧数ソース分析統計 */}
-                <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                    <Target className="w-5 h-5 mr-2 text-blue-600" />
-                    閲覧数ソース分析統計
-                  </h3>
-                  
-                  {/* 閲覧ソース分析統計 */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-gray-800 mb-2">閲覧ソース別割合 (平均%)</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">📱 {avgReachSourceStats.sources.posts}%</div>
-                        <div className="text-xs text-gray-600">投稿</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">👤 {avgReachSourceStats.sources.profile}%</div>
-                        <div className="text-xs text-gray-600">プロフィール</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">🔍 {avgReachSourceStats.sources.explore}%</div>
-                        <div className="text-xs text-gray-600">発見</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">🔎 {avgReachSourceStats.sources.search}%</div>
-                        <div className="text-xs text-gray-600">検索</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">📋 {avgReachSourceStats.sources.other}%</div>
-                        <div className="text-xs text-gray-600">その他</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* フォロワー分析統計 */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-800 mb-2">フォロワー分析 (平均%)</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">👥 {avgReachSourceStats.followers.followers}%</div>
-                        <div className="text-xs text-gray-600">フォロワー内</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-sm font-bold text-gray-700">🌐 {avgReachSourceStats.followers.nonFollowers}%</div>
-                        <div className="text-xs text-gray-600">フォロワー外</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-bold text-gray-900">{(avgEngagementRate || 0).toFixed(2)}%</div>
-                  <div className="text-sm text-gray-600">平均エンゲージメント率</div>
-                </div>
-              </div>
+              {/* 統計表示コンポーネント */}
+              <AnalyticsStats
+                analyticsData={analyticsData}
+                isLoading={isLoading}
+              />
             </div>
           </div>
 
