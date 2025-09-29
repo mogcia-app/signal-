@@ -426,6 +426,14 @@ function InstagramAnalyticsContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 左カラム: 入力フォーム */}
             <div className="space-y-6">
+              {/* 分析データ入力フォーム */}
+              <AnalyticsForm
+                data={inputData}
+                onChange={setInputData}
+                onSave={handleSaveAnalytics}
+                isLoading={isLoading}
+              />
+
               {/* 投稿選択（検索バーのみ） */}
               <PostSelector
                 posts={posts}
@@ -434,14 +442,6 @@ function InstagramAnalyticsContent() {
                   const post = posts.find(p => p.id === postId);
                   if (post) handleSelectPost(post);
                 }}
-                isLoading={isLoading}
-              />
-
-              {/* 分析データ入力フォーム */}
-              <AnalyticsForm
-                data={inputData}
-                onChange={setInputData}
-                onSave={handleSaveAnalytics}
                 isLoading={isLoading}
               />
 
