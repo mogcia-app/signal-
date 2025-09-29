@@ -170,7 +170,11 @@ function InstagramAnalyticsContent() {
     setIsLoading(true);
     try {
       console.log('Fetching analytics via BFF for user:', user.uid);
-      const response = await fetch(`/api/analytics?userId=${user.uid}`);
+      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
+        headers: {
+          'x-user-id': user.uid,
+        },
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
