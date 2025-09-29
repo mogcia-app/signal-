@@ -14,7 +14,9 @@ import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm';
 import AnalyticsForm from '../components/AnalyticsForm';
 import AnalyticsStats from '../components/AnalyticsStats';
 import { 
-  BarChart3
+  BarChart3,
+  Target,
+  Plus
 } from 'lucide-react';
 
 // オーディエンス分析データの型定義
@@ -139,6 +141,15 @@ function InstagramAnalyticsContent() {
     }
   });
   const [selectedPostId, setSelectedPostId] = useState<string>('');
+  const [currentPlan, setCurrentPlan] = useState<{
+    id: string;
+    goalName?: string;
+    followerGain?: string;
+    planPeriod?: string;
+    targetAudience?: string;
+    goalCategory?: string;
+    selectedStrategies?: string[];
+  } | null>(null);
 
   // 分析データを取得（BFF経由）
   const fetchAnalytics = useCallback(async () => {
@@ -211,10 +222,28 @@ function InstagramAnalyticsContent() {
     }
   }, [user]);
 
-  // 運用計画を取得（削除済み）
+  // 運用計画を取得
   const fetchCurrentPlan = useCallback(async () => {
-    // 運用計画機能は削除されました
-    return;
+    if (!user?.uid) return;
+    
+    try {
+      console.log('Fetching current plan for user:', user.uid);
+      const q = query(
+        collection(db, 'plans'),
+        where('userId', '==', user.uid)
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const planData = snapshot.docs[0].data();
+        setCurrentPlan({
+          id: snapshot.docs[0].id,
+          ...planData
+        });
+      }
+    } catch (error) {
+      console.error('Plan fetch error:', error);
+      setCurrentPlan(null);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -394,10 +423,11 @@ function InstagramAnalyticsContent() {
         customTitle="投稿分析"
         customDescription="投稿の分析データを入力・管理します"
       >
-        <div className="max-w-7xl mx-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 左カラム: 検索バーのみ（シンプル化） */}
-            <div className="lg:col-span-1">
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 左カラム: 入力フォーム */}
+            <div className="space-y-6">
+              {/* 投稿選択 */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center mb-6">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
@@ -409,7 +439,6 @@ function InstagramAnalyticsContent() {
                   </div>
                 </div>
 
-                {/* 投稿選択コンポーネント（検索バーのみ） */}
                 <PostSelector
                   posts={posts}
                   selectedPostId={selectedPost?.id || ''}
@@ -420,15 +449,6 @@ function InstagramAnalyticsContent() {
                   isLoading={isLoading}
                 />
               </div>
-            </div>
-
-            {/* 右カラム: プレビュー + 入力フォーム（統合） */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* 投稿プレビュー */}
-              <PostPreview
-                selectedPost={selectedPost}
-                inputData={inputData}
-              />
 
               {/* 分析データ入力フォーム */}
               <AnalyticsForm
@@ -455,6 +475,94 @@ function InstagramAnalyticsContent() {
                   reachSource: reachSourceData
                 }))}
               />
+            </div>
+
+            {/* 右カラム: 反映・表示 */}
+            <div className="space-y-6">
+              {/* 投稿プレビュー */}
+              <PostPreview
+                selectedPost={selectedPost}
+                inputData={inputData}
+              />
+
+              {/* 運用計画セクション */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Target size={18} className="mr-2 text-blue-600" />
+                    運用計画
+                  </h3>
+                  {currentPlan && (
+                    <a 
+                      href="/instagram/plan" 
+                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      詳細を見る →
+                    </a>
+                  )}
+                </div>
+                
+                {currentPlan ? (
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-900">
+                        {currentPlan.goalName || 'Instagram成長計画'}
+                      </h4>
+                      
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-600">目標フォロワー増加</span>
+                          <div className="font-medium text-blue-600">+{currentPlan.followerGain || 0}人</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">期間</span>
+                          <div className="font-medium">{currentPlan.planPeriod || '未設定'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">ターゲット</span>
+                          <div className="font-medium">{currentPlan.targetAudience || '未設定'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">カテゴリ</span>
+                          <div className="font-medium">{currentPlan.goalCategory || '未設定'}</div>
+                        </div>
+                      </div>
+                      
+                      {currentPlan.selectedStrategies && currentPlan.selectedStrategies.length > 0 && (
+                        <div>
+                          <span className="text-sm text-gray-600">選択した戦略</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {currentPlan.selectedStrategies.slice(0, 3).map((strategy: string, index: number) => (
+                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                                {strategy}
+                              </span>
+                            ))}
+                            {currentPlan.selectedStrategies.length > 3 && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                +{currentPlan.selectedStrategies.length - 3}個
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Target size={24} className="text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 text-sm mb-3">運用計画が設定されていません</p>
+                    <a 
+                      href="/instagram/plan" 
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      計画を作成する
+                    </a>
+                  </div>
+                )}
+              </div>
 
               {/* 統計表示コンポーネント */}
               <AnalyticsStats
