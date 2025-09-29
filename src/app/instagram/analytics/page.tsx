@@ -170,8 +170,14 @@ function InstagramAnalyticsContent() {
     setIsLoading(true);
     try {
       console.log('Fetching analytics via BFF for user:', user.uid);
+      
+      // Firebase認証トークンを取得
+      const { auth } = await import('../../../lib/firebase');
+      const token = await auth.currentUser?.getIdToken();
+      
       const response = await fetch(`/api/analytics?userId=${user.uid}`, {
         headers: {
+          'Authorization': `Bearer ${token}`,
           'x-user-id': user.uid,
         },
       });
@@ -306,10 +312,15 @@ function InstagramAnalyticsContent() {
     try {
       console.log('Saving analytics data via BFF');
       
+      // Firebase認証トークンを取得
+      const { auth } = await import('../../../lib/firebase');
+      const token = await auth.currentUser?.getIdToken();
+      
       const response = await fetch('/api/analytics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
           'x-user-id': user.uid,
         },
         body: JSON.stringify({
