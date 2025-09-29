@@ -68,48 +68,36 @@ const PostSelector: React.FC<PostSelectorProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center mb-6">
-        <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
-          <Search className="w-5 h-5 text-white" />
+    <div>
+      {/* 検索バーのみ */}
+      <div className="flex space-x-2">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="タイトル、内容、ハッシュタグで検索..."
+          />
         </div>
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">投稿を選択</h2>
-          <p className="text-sm text-gray-600">分析したい投稿を選択してください</p>
-        </div>
-      </div>
-
-      {/* 検索バー */}
-      <div className="mb-6">
-        <div className="flex space-x-2">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="タイトル、内容、ハッシュタグで検索..."
-            />
-          </div>
+        <button
+          onClick={handleSearch}
+          disabled={!searchTerm.trim() || isLoading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center"
+        >
+          <Search className="w-4 h-4 mr-2" />
+          検索
+        </button>
+        {showResults && (
           <button
-            onClick={handleSearch}
-            disabled={!searchTerm.trim() || isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center"
+            onClick={handleClear}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
           >
-            <Search className="w-4 h-4 mr-2" />
-            検索
+            <X className="w-4 h-4 mr-2" />
+            クリア
           </button>
-          {showResults && (
-            <button
-              onClick={handleClear}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
-            >
-              <X className="w-4 h-4 mr-2" />
-              クリア
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -188,13 +176,12 @@ const PostSelector: React.FC<PostSelectorProps> = ({
           <p className="text-gray-600">投稿がありません</p>
           <p className="text-sm text-gray-500">まず投稿を作成してください</p>
         </div>
-      ) : (
-        <div className="text-center py-8">
-          <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">投稿を検索してください</p>
-          <p className="text-sm text-gray-500">検索バーにキーワードを入力して検索ボタンを押してください</p>
-        </div>
-      )}
+          ) : (
+            <div className="text-center py-8">
+              <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">投稿を検索してください</p>
+            </div>
+          )}
     </div>
   );
 };

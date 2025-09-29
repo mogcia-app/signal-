@@ -14,7 +14,6 @@ import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm';
 import AnalyticsForm from '../components/AnalyticsForm';
 import AnalyticsStats from '../components/AnalyticsStats';
 import { 
-  BarChart3,
   Target,
   Plus
 } from 'lucide-react';
@@ -427,28 +426,16 @@ function InstagramAnalyticsContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 左カラム: 入力フォーム */}
             <div className="space-y-6">
-              {/* 投稿選択 */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center mb-6">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
-                    <BarChart3 className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">投稿選択</h2>
-                    <p className="text-sm text-gray-600">投稿を検索または手動入力</p>
-                  </div>
-                </div>
-
-                <PostSelector
-                  posts={posts}
-                  selectedPostId={selectedPost?.id || ''}
-                  onPostSelect={(postId) => {
-                    const post = posts.find(p => p.id === postId);
-                    if (post) handleSelectPost(post);
-                  }}
-                  isLoading={isLoading}
-                />
-              </div>
+              {/* 投稿選択（検索バーのみ） */}
+              <PostSelector
+                posts={posts}
+                selectedPostId={selectedPost?.id || ''}
+                onPostSelect={(postId) => {
+                  const post = posts.find(p => p.id === postId);
+                  if (post) handleSelectPost(post);
+                }}
+                isLoading={isLoading}
+              />
 
               {/* 分析データ入力フォーム */}
               <AnalyticsForm
