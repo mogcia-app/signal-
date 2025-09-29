@@ -4,13 +4,20 @@ import { db } from '../../../lib/firebase';
 
 // エンゲージメント率計算のビジネスロジック（サーバー側で保護）
 function calculateEngagementRate(likes: number, comments: number, shares: number, saves: number, reach: number): number {
-  // リーチ数が0または未入力の場合は推定値を使用
-  const estimatedReach = reach > 0 ? reach : (likes + comments + shares + saves) * 10;
+  const likesNum = Number(likes) || 0;
+  const commentsNum = Number(comments) || 0;
+  const sharesNum = Number(shares) || 0;
+  const savesNum = Number(saves) || 0;
+  const reachNum = Number(reach) || 0;
   
-  // エンゲージメント率計算
-  const engagementRate = estimatedReach > 0 
-    ? (likes + comments + shares + saves) / estimatedReach * 100 
-    : 0;
+  // リーチ数が0の場合は計算しない
+  if (reachNum <= 0) {
+    return 0;
+  }
+  
+  // エンゲージメント率計算（リーチ数ベース）
+  const totalEngagement = likesNum + commentsNum + sharesNum + savesNum;
+  const engagementRate = (totalEngagement / reachNum) * 100;
     
   return Math.round(engagementRate * 100) / 100; // 小数点2桁で四捨五入
 }
