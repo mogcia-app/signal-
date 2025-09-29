@@ -11,7 +11,7 @@ async function verifyAuthToken(request: NextRequest): Promise<string | null> {
     const token = authHeader.substring(7);
     
     // Firebase ID Token の検証（Edge Runtime 対応）
-    const response = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`, {
+    const response = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=AIzaSyCvX4cKWKtn_qnh3CV-d1UC4GEiVpdPB9w`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
