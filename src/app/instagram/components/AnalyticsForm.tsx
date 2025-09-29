@@ -9,13 +9,20 @@ interface AnalyticsFormProps {
   onChange: (data: InputData) => void;
   onSave: () => void;
   isLoading: boolean;
+  // 検索関連のプロパティを追加
+  posts: any[];
+  selectedPostId: string;
+  onPostSelect: (postId: string) => void;
 }
 
 const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
   data,
   onChange,
   onSave,
-  isLoading
+  isLoading,
+  posts,
+  selectedPostId,
+  onPostSelect
 }) => {
   const handleInputChange = (field: keyof InputData, value: string) => {
     onChange({
@@ -48,6 +55,23 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
       </div>
 
       <div className="space-y-6">
+        {/* 投稿検索 */}
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿検索</h3>
+          <div className="flex space-x-2">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="タイトル、内容、ハッシュタグで検索..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+              <span>検索</span>
+            </button>
+          </div>
+        </div>
+
         {/* 投稿情報手動入力 */}
         <div className="p-4 bg-gray-50 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿情報（手動入力）</h3>

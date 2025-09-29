@@ -426,23 +426,18 @@ function InstagramAnalyticsContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 左カラム: 入力フォーム */}
             <div className="space-y-6">
-              {/* 投稿選択（検索バーのみ） */}
-              <PostSelector
+              {/* 分析データ入力フォーム（検索バー内蔵） */}
+              <AnalyticsForm
+                data={inputData}
+                onChange={setInputData}
+                onSave={handleSaveAnalytics}
+                isLoading={isLoading}
                 posts={posts}
                 selectedPostId={selectedPost?.id || ''}
                 onPostSelect={(postId) => {
                   const post = posts.find(p => p.id === postId);
                   if (post) handleSelectPost(post);
                 }}
-                isLoading={isLoading}
-              />
-
-              {/* 分析データ入力フォーム */}
-              <AnalyticsForm
-                data={inputData}
-                onChange={setInputData}
-                onSave={handleSaveAnalytics}
-                isLoading={isLoading}
               />
 
               {/* オーディエンス分析フォーム */}
