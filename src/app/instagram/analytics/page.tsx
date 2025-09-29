@@ -306,6 +306,7 @@ function InstagramAnalyticsContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user.uid,
         },
         body: JSON.stringify({
           userId: user.uid,
