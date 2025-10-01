@@ -158,7 +158,9 @@ export default function InstagramPostsPage() {
       if (response.ok) {
         const result = await response.json();
         console.log('Analytics data fetched:', result.analytics);
+        console.log('All postId values:', result.analytics?.map((a: { id: string; postId?: string | null }) => ({ id: a.id, postId: a.postId, postIdType: typeof a.postId })));
         console.log('Manual input data (postId=null):', result.analytics?.filter((a: { postId?: string | null }) => a.postId === null));
+        console.log('Manual input data (postId=empty string):', result.analytics?.filter((a: { postId?: string | null }) => a.postId === ''));
         setAnalyticsData(result.analytics || []);
       } else {
         console.error('Analytics fetch error:', response.status, response.statusText);
@@ -383,7 +385,7 @@ export default function InstagramPostsPage() {
           <div className="space-y-4">
             {/* 手動入力の分析データ（postIdがnull）を表示 */}
             {activeTab === 'published' && (() => {
-              const manualData = analyticsData.filter(a => a.postId === null);
+              const manualData = analyticsData.filter(a => a.postId === null || a.postId === '');
               console.log('Manual data to display:', manualData);
               return manualData;
             })().map((analytics, index) => (
