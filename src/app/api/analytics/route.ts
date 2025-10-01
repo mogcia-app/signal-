@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     const analyticsPayload = {
       userId,
-      postId: postId || '', // 投稿とのリンク
+      postId: postId || null, // 投稿とのリンク（手動入力の場合はnull）
       likes: likesNum,
       comments: commentsNum,
       shares: sharesNum,
