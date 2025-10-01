@@ -302,7 +302,7 @@ function InstagramAnalyticsContent() {
         },
         body: JSON.stringify({
           userId: user.uid,
-          postId: selectedPostId, // 投稿とのリンク
+          postId: selectedPostId || null, // 投稿とのリンク（手動入力の場合はnull）
           likes: inputData.likes,
           comments: inputData.comments,
           shares: inputData.shares,

@@ -79,6 +79,11 @@ export default function InstagramPostsPage() {
     reach: number;
     engagementRate: number;
     publishedAt: Date;
+    title?: string;
+    content?: string;
+    hashtags?: string[];
+    category?: string;
+    thumbnail?: string;
     audience?: {
       gender: {
         male: number;
@@ -188,7 +193,7 @@ export default function InstagramPostsPage() {
     // タブによるフィルタリング
     const matchesTab = activeTab === 'saved' 
       ? (post.status === 'draft' || post.status === 'created' || post.status === 'scheduled') 
-      : (post.status === 'published' || hasAnalytics); // 分析データがある投稿も「投稿済み」として表示
+      : (post.status === 'published' || hasAnalytics || analyticsData.some(a => a.postId === null)); // 分析データがある投稿も「投稿済み」として表示（手動入力データも含む）
     
     // 検索によるフィルタリング
     const matchesSearch = !searchTerm || 
@@ -374,6 +379,102 @@ export default function InstagramPostsPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* 手動入力の分析データ（postIdがnull）を表示 */}
+            {activeTab === 'published' && analyticsData.filter(a => a.postId === null).map((analytics, index) => (
+              <div key={`manual-${index}`} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <span className="text-2xl">📊</span>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{analytics.title || '手動入力データ'}</h3>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            手動入力
+                          </span>
+                          <span className="flex items-center">
+                            <Calendar size={14} className="mr-1" />
+                            {analytics.publishedAt ? new Date(analytics.publishedAt).toLocaleDateString('ja-JP') : '日付未設定'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 分析データ */}
+                    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+                          <TrendingUp size={16} className="mr-2 text-blue-600" />
+                          投稿パフォーマンス
+                        </h4>
+                        <span className="text-xs text-gray-500">
+                          投稿日: {analytics.publishedAt ? new Date(analytics.publishedAt).toLocaleDateString('ja-JP') : '不明'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <Heart size={14} className="text-red-500 mr-1" />
+                            <span className="text-sm font-medium text-gray-700">いいね</span>
+                          </div>
+                          <div className="text-lg font-bold text-gray-900">{analytics.likes.toLocaleString()}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <MessageCircle size={14} className="text-blue-500 mr-1" />
+                            <span className="text-sm font-medium text-gray-700">コメント</span>
+                          </div>
+                          <div className="text-lg font-bold text-gray-900">{analytics.comments.toLocaleString()}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <Share size={14} className="text-green-500 mr-1" />
+                            <span className="text-sm font-medium text-gray-700">シェア</span>
+                          </div>
+                          <div className="text-lg font-bold text-gray-900">{analytics.shares.toLocaleString()}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <EyeIcon size={14} className="text-purple-500 mr-1" />
+                            <span className="text-sm font-medium text-gray-700">閲覧数</span>
+                          </div>
+                          <div className="text-lg font-bold text-gray-900">{analytics.reach.toLocaleString()}</div>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-blue-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm text-gray-600">エンゲージメント率</span>
+                          <span className="text-lg font-bold text-blue-600">{analytics.engagementRate}%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-gray-400">
+                      作成日: {new Date().toLocaleString('ja-JP')}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 ml-4">
+                    <button
+                      onClick={() => alert('詳細分析を表示')}
+                      className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+                      title="詳細分析"
+                    >
+                      📊
+                    </button>
+                    <button
+                      onClick={() => alert('削除機能は実装予定')}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      title="削除"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* 通常の投稿一覧 */}
             {filteredPosts.map((post) => (
               <div key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-start justify-between">
