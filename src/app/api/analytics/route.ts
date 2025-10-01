@@ -148,6 +148,14 @@ export async function GET(request: NextRequest) {
       return {
         id: doc.id,
         ...docData,
+        // 数値フィールドを明示的に数値型に変換
+        likes: Number(docData.likes) || 0,
+        comments: Number(docData.comments) || 0,
+        shares: Number(docData.shares) || 0,
+        reach: Number(docData.reach) || 0,
+        saves: Number(docData.saves) || 0,
+        followerIncrease: Number(docData.followerIncrease) || 0,
+        engagementRate: Number(docData.engagementRate) || 0,
         // 日時の適切な処理
         publishedAt: docData.publishedAt?.toDate ? docData.publishedAt.toDate() : new Date(docData.publishedAt),
         createdAt: docData.createdAt?.toDate ? docData.createdAt.toDate() : new Date(docData.createdAt)
