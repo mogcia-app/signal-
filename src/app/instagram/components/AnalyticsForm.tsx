@@ -173,13 +173,46 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // ファイルをBase64に変換
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        const result = event.target?.result as string;
-                        handleInputChange('thumbnail', result);
+                      // ファイルサイズチェック（2MB制限）
+                      if (file.size > 2 * 1024 * 1024) {
+                        alert('画像ファイルは2MB以下にしてください。');
+                        return;
+                      }
+                      
+                      // 画像を圧縮してBase64に変換
+                      const canvas = document.createElement('canvas');
+                      const ctx = canvas.getContext('2d');
+                      const img = new Image();
+                      
+                      img.onload = () => {
+                        // 最大サイズを200x200に制限
+                        const maxSize = 200;
+                        let { width, height } = img;
+                        
+                        if (width > height) {
+                          if (width > maxSize) {
+                            height = (height * maxSize) / width;
+                            width = maxSize;
+                          }
+                        } else {
+                          if (height > maxSize) {
+                            width = (width * maxSize) / height;
+                            height = maxSize;
+                          }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // 画像を描画
+                        ctx?.drawImage(img, 0, 0, width, height);
+                        
+                        // JPEG形式で圧縮（品質70%）
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        handleInputChange('thumbnail', compressedDataUrl);
                       };
-                      reader.readAsDataURL(file);
+                      
+                      img.src = URL.createObjectURL(file);
                     }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
