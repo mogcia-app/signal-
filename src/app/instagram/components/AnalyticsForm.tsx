@@ -164,15 +164,36 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                サムネイルURL
+                サムネイル画像
               </label>
-              <input
-                type="url"
-                value={data.thumbnail}
-                onChange={(e) => handleInputChange('thumbnail', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://example.com/image.jpg"
-              />
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // ファイルをBase64に変換
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const result = event.target?.result as string;
+                        handleInputChange('thumbnail', result);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {data.thumbnail && (
+                  <div className="mt-2">
+                    <img 
+                      src={data.thumbnail} 
+                      alt="サムネイルプレビュー" 
+                      className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

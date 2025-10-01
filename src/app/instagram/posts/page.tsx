@@ -140,10 +140,21 @@ export default function InstagramPostsPage() {
     if (!user?.uid) return;
     
     try {
-      const response = await fetch(`/api/analytics?userId=${user.uid}`);
+      // Firebase IDトークンを取得
+      const idToken = await user.getIdToken();
+      
+      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
       if (response.ok) {
         const result = await response.json();
         setAnalyticsData(result.analytics || []);
+      } else {
+        console.error('Analytics fetch error:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Analytics fetch error:', error);
