@@ -33,25 +33,9 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">分析データ入力</h2>
-          <p className="text-sm text-gray-600">投稿のパフォーマンスデータを入力してください</p>
-        </div>
-        <button
-          onClick={onSave}
-          disabled={isLoading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center space-x-2"
-        >
-          {isLoading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              <span>保存中...</span>
-            </>
-          ) : (
-            <span>分析データを保存</span>
-          )}
-        </button>
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900">分析データ入力</h2>
+        <p className="text-sm text-gray-600">投稿のパフォーマンスデータを入力してください</p>
       </div>
 
       <div className="space-y-6">
@@ -255,6 +239,24 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               placeholder="0"
             />
           </div>
+        </div>
+
+        {/* 保存ボタン */}
+        <div className="pt-4 border-t border-gray-200">
+          <button
+            onClick={onSave}
+            disabled={isLoading}
+            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>保存中...</span>
+              </>
+            ) : (
+              <span>分析データを保存</span>
+            )}
+          </button>
         </div>
       </div>
     </div>
