@@ -9,8 +9,8 @@ import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
 // import PostSelector from '../components/PostSelector'; // 削除済み
 import PostPreview from '../components/PostPreview';
-import AudienceAnalysisForm from '../components/AudienceAnalysisForm';
-import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm';
+// import AudienceAnalysisForm from '../components/AudienceAnalysisForm'; // 統合済み
+// import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm'; // 統合済み
 import AnalyticsForm from '../components/AnalyticsForm';
 import AnalyticsStats from '../components/AnalyticsStats';
 import { 
@@ -426,7 +426,7 @@ function InstagramAnalyticsContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 左カラム: 入力フォーム */}
             <div className="space-y-6">
-              {/* 分析データ入力フォーム（検索バー内蔵） */}
+              {/* 統合された分析データ入力フォーム */}
               <AnalyticsForm
                 data={inputData}
                 onChange={setInputData}
@@ -438,24 +438,6 @@ function InstagramAnalyticsContent() {
                   const post = posts.find(p => p.id === postId);
                   if (post) handleSelectPost(post);
                 }}
-              />
-
-              {/* オーディエンス分析フォーム */}
-              <AudienceAnalysisForm
-                data={inputData.audience}
-                onChange={(audienceData) => setInputData(prev => ({
-                  ...prev,
-                  audience: audienceData
-                }))}
-              />
-
-              {/* 閲覧数ソース分析フォーム */}
-              <ReachSourceAnalysisForm
-                data={inputData.reachSource}
-                onChange={(reachSourceData) => setInputData(prev => ({
-                  ...prev,
-                  reachSource: reachSourceData
-                }))}
               />
             </div>
 
