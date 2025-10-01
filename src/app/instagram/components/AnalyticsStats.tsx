@@ -163,7 +163,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">性別分析</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
@@ -181,7 +181,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">年齢層分析</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
@@ -216,7 +216,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg border border-green-200">
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">閲覧数ソース</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
@@ -238,7 +238,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">フォロワー構成</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
