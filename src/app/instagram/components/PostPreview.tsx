@@ -72,13 +72,22 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
             {/* サムネイル */}
             <div className="flex-shrink-0">
               {displayData.thumbnail ? (
-                <Image
-                  src={displayData.thumbnail}
-                  alt={displayData.title || '投稿画像'}
-                  width={80}
-                  height={80}
-                  className="w-20 h-20 rounded-lg object-cover"
-                />
+                // Base64画像の場合は通常のimgタグを使用
+                displayData.thumbnail.startsWith('data:image/') ? (
+                  <img
+                    src={displayData.thumbnail}
+                    alt={displayData.title || '投稿画像'}
+                    className="w-20 h-20 rounded-lg object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={displayData.thumbnail}
+                    alt={displayData.title || '投稿画像'}
+                    width={80}
+                    height={80}
+                    className="w-20 h-20 rounded-lg object-cover"
+                  />
+                )
               ) : (
                 <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
                   {getCategoryIcon(displayData.category)}
