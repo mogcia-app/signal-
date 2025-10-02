@@ -128,6 +128,11 @@ export default function InstagramPostsPage() {
     
     try {
       setLoading(true);
+      
+      // Firebase認証トークンを取得
+      const { auth } = await import('../../../lib/firebase');
+      const token = await auth.currentUser?.getIdToken();
+      
       const params: Record<string, string> = {
         userId: user.uid
       };
@@ -135,8 +140,23 @@ export default function InstagramPostsPage() {
       if (selectedStatus) params.status = selectedStatus;
       if (selectedPostType) params.postType = selectedPostType;
       
-      const response = await postsApi.list(params);
-      setPosts(response.posts || []);
+      const searchParams = new URLSearchParams(params);
+      console.log('Fetching posts from /api/posts with params:', searchParams.toString());
+      
+      const response = await fetch(`/api/posts?${searchParams.toString()}`, {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Posts fetched successfully:', result);
+      setPosts(result.posts || []);
     } catch (error) {
       console.error('投稿取得エラー:', error);
     } finally {

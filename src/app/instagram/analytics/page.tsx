@@ -329,6 +329,33 @@ function InstagramAnalyticsContent() {
       const result = await response.json();
       console.log('Analytics saved via BFF:', result);
 
+      // ラボ投稿のステータス更新（postIdがある場合）
+      if (selectedPostId) {
+        try {
+          console.log('Updating post status to published for postId:', selectedPostId);
+          const updateResponse = await fetch(`/api/posts/${selectedPostId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'x-user-id': user.uid,
+            },
+            body: JSON.stringify({ 
+              status: 'published' 
+            }),
+          });
+
+          if (updateResponse.ok) {
+            console.log('Post status updated to published successfully');
+          } else {
+            console.error('Failed to update post status:', await updateResponse.text());
+          }
+        } catch (error) {
+          console.error('Error updating post status:', error);
+          // ステータス更新に失敗しても分析データは保存されているので続行
+        }
+      }
+
       alert(`投稿分析データを保存しました！（エンゲージメント率: ${result.engagementRate}%）`);
       
       // データを再取得
