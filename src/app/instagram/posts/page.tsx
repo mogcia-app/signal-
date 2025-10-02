@@ -385,8 +385,12 @@ export default function InstagramPostsPage() {
           <div className="space-y-4">
             {/* 手動入力の分析データ（postIdがnull）を表示 */}
             {activeTab === 'published' && (() => {
-              const manualData = analyticsData.filter(a => a.postId === null || a.postId === '');
-              console.log('Manual data to display:', manualData);
+              const nullData = analyticsData.filter(a => a.postId === null);
+              const emptyData = analyticsData.filter(a => a.postId === '');
+              const manualData = [...nullData, ...emptyData];
+              console.log('Null data:', nullData);
+              console.log('Empty string data:', emptyData);
+              console.log('Combined manual data to display:', manualData);
               return manualData;
             })().map((analytics, index) => (
               <div key={`manual-${index}`} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
