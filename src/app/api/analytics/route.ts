@@ -106,11 +106,23 @@ export async function POST(request: NextRequest) {
 
     console.log('Saving analytics data via BFF:', {
       userId: analyticsPayload.userId,
+      postId: analyticsPayload.postId,
+      postIdType: typeof analyticsPayload.postId,
       engagementRate: analyticsPayload.engagementRate,
+      title: analyticsPayload.title,
       // その他の詳細はログに出力しない（セキュリティ）
     });
 
+    console.log('About to save to Firestore:', {
+      postId: analyticsPayload.postId,
+      postIdType: typeof analyticsPayload.postId,
+      hasPostId: 'postId' in analyticsPayload,
+      payloadKeys: Object.keys(analyticsPayload)
+    });
+
     const docRef = await addDoc(collection(db, 'analytics'), analyticsPayload);
+
+    console.log('Saved to Firestore with ID:', docRef.id);
 
     return NextResponse.json({ 
       id: docRef.id, 
