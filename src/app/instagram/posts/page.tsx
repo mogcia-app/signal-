@@ -69,7 +69,6 @@ export default function InstagramPostsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedPostType, setSelectedPostType] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'saved' | 'published'>('saved');
   const [analyticsData, setAnalyticsData] = useState<{
     id: string;
     postId?: string;
@@ -214,24 +213,21 @@ export default function InstagramPostsPage() {
     }
   };
 
-  // フィルタリング
+  // フィルタリング（シンプル化）
   const filteredPosts = posts.filter(post => {
-    // 分析データがあるかチェック
-    const hasAnalytics = analyticsData.some(analytics => analytics.postId === post.id);
-    
-    // タブによるフィルタリング
-    const matchesTab = activeTab === 'saved' 
-      ? (post.status === 'draft' || post.status === 'created' || post.status === 'scheduled') 
-      : (post.status === 'published' || hasAnalytics || analyticsData.some(a => a.postId === null)); // 分析データがある投稿も「投稿済み」として表示（手動入力データも含む）
-    
     // 検索によるフィルタリング
     const matchesSearch = !searchTerm || 
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.hashtags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    return matchesTab && matchesSearch;
+    return matchesSearch;
   });
+
+  // 手動入力の分析データ
+  const manualAnalyticsData = analyticsData.filter(a => 
+    a.postId === null || a.postId === '' || a.postId === undefined
+  );
 
   // ステータス表示の色分け
   const getStatusColor = (status: string) => {
@@ -283,34 +279,29 @@ export default function InstagramPostsPage() {
           </div>
         </div>
 
-        {/* タブ */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+        {/* ヘッダー */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">投稿一覧</h1>
+              <p className="text-gray-600 mt-1">
+                すべての投稿と分析データを一覧で表示
+              </p>
+            </div>
+            <div className="flex space-x-3">
               <button
-                onClick={() => setActiveTab('saved')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'saved'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                onClick={() => window.location.href = '/instagram/lab'}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
-                📝 保存済み投稿 ({posts.filter(p => p.status === 'draft' || p.status === 'created' || p.status === 'scheduled').length})
+                投稿を作成する
               </button>
               <button
-                onClick={() => {
-                  console.log("Clicked published tab, setting activeTab to 'published'");
-                  setActiveTab('published');
-                }}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'published'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                onClick={() => window.location.href = '/instagram/analytics'}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
               >
-                📊 過去の投稿・分析 ({posts.filter(p => p.status === 'published' || analyticsData.some(a => a.postId === p.id)).length})
+                分析データを入力
               </button>
-            </nav>
+            </div>
           </div>
         </div>
 
@@ -378,71 +369,28 @@ export default function InstagramPostsPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
             <p className="text-gray-600 mt-2">読み込み中...</p>
           </div>
-        ) : filteredPosts.length === 0 ? (
+        ) : (filteredPosts.length === 0 && manualAnalyticsData.length === 0) ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">
-              {activeTab === 'saved' ? '📝' : '📊'}
-            </div>
+            <div className="text-gray-400 text-6xl mb-4">📝</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {activeTab === 'saved' ? '保存済み投稿がありません' : '過去の投稿がありません'}
+              投稿がありません
             </h3>
             <p className="text-gray-600 mb-4">
-              {activeTab === 'saved' 
-                ? 'まだ投稿を保存していません。投稿ラボで投稿を作成しましょう。'
-                : 'まだ投稿を公開していません。運用計画から計画を立てて、投稿を公開すると、ここに分析データが表示されます。'
-              }
+              まだ投稿を保存していません。投稿ラボで投稿を作成しましょう。
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => window.location.href = '/instagram/lab'}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
-                {activeTab === 'saved' ? '投稿を作成する' : '投稿ラボへ'}
+                投稿を作成する
               </button>
-              {activeTab === 'published' && (
-                <button
-                  onClick={() => window.location.href = '/instagram/plan'}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                >
-                  運用計画から計画を立てる
-                </button>
-              )}
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            {/* 強制表示テスト */}
-            <div className="bg-red-100 p-4 border border-red-300 rounded">
-              <h3 className="font-bold text-red-800">デバッグ: 強制表示テスト</h3>
-              <p>activeTab: {activeTab}</p>
-              <p>analyticsData length: {analyticsData.length}</p>
-              <div className="mt-2">
-                {analyticsData.filter(a => a.postId === null || a.postId === '' || a.postId === undefined).map((item, i) => (
-                  <div key={i} className="bg-white p-2 m-1 border rounded">
-                    {item.title || `Item ${i}`} (postId: {String(item.postId)})
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 手動入力の分析データ（postIdがnull）を表示 */}
-            {(() => {
-              console.log('Current activeTab:', activeTab);
-              console.log('activeTab === "published":', activeTab === 'published');
-              return activeTab === 'published';
-            })() && (() => {
-              const nullData = analyticsData.filter(a => a.postId === null);
-              const emptyData = analyticsData.filter(a => a.postId === '');
-              const undefinedData = analyticsData.filter(a => a.postId === undefined);
-              const manualData = [...nullData, ...emptyData, ...undefinedData];
-              console.log('Null data:', nullData);
-              console.log('Empty string data:', emptyData);
-              console.log('Undefined data:', undefinedData);
-              console.log('Combined manual data to display:', manualData);
-              return manualData;
-            })().map((analytics, index) => {
-              console.log("Rendering published data item:", index, analytics);
-              return (
+            {/* 手動入力の分析データを表示 */}
+            {manualAnalyticsData.map((analytics, index) => (
               <div key={`manual-${index}`} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -451,9 +399,14 @@ export default function InstagramPostsPage() {
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">{analytics.title || '手動入力データ'}</h3>
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            手動入力
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              手動入力
+                            </span>
+                            <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">
+                              📊 分析済み
+                            </span>
+                          </div>
                           <span className="flex items-center">
                             <Calendar size={14} className="mr-1" />
                             {analytics.publishedAt ? new Date(analytics.publishedAt).toLocaleDateString('ja-JP') : '日付未設定'}
@@ -534,8 +487,7 @@ export default function InstagramPostsPage() {
                   </div>
                 </div>
               </div>
-              );
-            })}
+            ))}
 
             {/* 通常の投稿一覧 */}
             {filteredPosts.map((post) => (
@@ -548,9 +500,16 @@ export default function InstagramPostsPage() {
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">{post.title || 'タイトルなし'}</h3>
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
-                            {getStatusLabel(post.status)}
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
+                              {getStatusLabel(post.status)}
+                            </span>
+                            {analyticsData.some(a => a.postId === post.id) && (
+                              <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">
+                                📊 分析済み
+                              </span>
+                            )}
+                          </div>
                           <span className="flex items-center">
                             <Calendar size={14} className="mr-1" />
                             {post.scheduledDate || '日付未設定'}
@@ -604,8 +563,8 @@ export default function InstagramPostsPage() {
                       </div>
                     )}
 
-                    {/* 分析データ（過去の投稿の場合） */}
-                    {activeTab === 'published' && (() => {
+                    {/* 分析データ */}
+                    {(() => {
                       const postAnalytics = analyticsData.find(analytics => analytics.postId === post.id);
                       return postAnalytics || post.analytics;
                     })() && (
@@ -727,41 +686,20 @@ export default function InstagramPostsPage() {
                     >
                       <Eye size={16} />
                     </button>
-                    {activeTab === 'saved' ? (
-                      <>
-                        <a
-                          href={`/instagram/lab?edit=${post.id}`}
-                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                          title="投稿ラボで編集"
-                        >
-                          <Edit size={16} />
-                        </a>
-                        {post.status === 'created' && (
-                          <a
-                            href="/instagram/analytics"
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                            title="分析ページで投稿データを入力"
-                          >
-                            📊
-                          </a>
-                        )}
-                        <button
-                          onClick={() => alert('投稿を公開')}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                          title="投稿"
-                        >
-                          📤
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => alert('詳細分析を表示')}
-                        className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
-                        title="詳細分析"
-                      >
-                        📊
-                      </button>
-                    )}
+                    <a
+                      href={`/instagram/lab?edit=${post.id}`}
+                      className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                      title="投稿ラボで編集"
+                    >
+                      <Edit size={16} />
+                    </a>
+                    <a
+                      href="/instagram/analytics"
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      title="分析ページで投稿データを入力"
+                    >
+                      📊
+                    </a>
                     <button
                       onClick={() => handleDeletePost(post.id)}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
@@ -785,8 +723,7 @@ export default function InstagramPostsPage() {
           posts: posts,
           selectedStatus: selectedStatus,
           selectedPostType: selectedPostType,
-          searchTerm: searchTerm,
-          activeTab: activeTab
+          searchTerm: searchTerm
         }}
       />
     </>
