@@ -117,7 +117,11 @@ export default function InstagramPostsPage() {
 
   // 投稿一覧を取得
   const fetchPosts = async () => {
+    console.log('fetchPosts called, user:', user);
+    console.log('user?.uid:', user?.uid);
+    
     if (!user?.uid) {
+      console.log('No user uid, setting loading to false');
       setLoading(false);
       return;
     }
@@ -171,6 +175,7 @@ export default function InstagramPostsPage() {
   };
 
   useEffect(() => {
+    console.log('useEffect triggered, user?.uid:', user?.uid);
     fetchPosts();
     fetchAnalytics();
   }, [user?.uid, selectedStatus, selectedPostType]); // eslint-disable-line react-hooks/exhaustive-deps
