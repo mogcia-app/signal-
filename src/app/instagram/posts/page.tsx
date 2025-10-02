@@ -273,7 +273,10 @@ export default function InstagramPostsPage() {
                 📝 保存済み投稿 ({posts.filter(p => p.status === 'draft' || p.status === 'created' || p.status === 'scheduled').length})
               </button>
               <button
-                onClick={() => setActiveTab('published')}
+                onClick={() => {
+                  console.log("Clicked published tab, setting activeTab to 'published'");
+                  setActiveTab('published');
+                }}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'published'
                     ? 'border-blue-500 text-blue-600'
@@ -383,8 +386,26 @@ export default function InstagramPostsPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* 強制表示テスト */}
+            <div className="bg-red-100 p-4 border border-red-300 rounded">
+              <h3 className="font-bold text-red-800">デバッグ: 強制表示テスト</h3>
+              <p>activeTab: {activeTab}</p>
+              <p>analyticsData length: {analyticsData.length}</p>
+              <div className="mt-2">
+                {analyticsData.filter(a => a.postId === null || a.postId === '' || a.postId === undefined).map((item, i) => (
+                  <div key={i} className="bg-white p-2 m-1 border rounded">
+                    {item.title || `Item ${i}`} (postId: {String(item.postId)})
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* 手動入力の分析データ（postIdがnull）を表示 */}
-            {activeTab === 'published' && (() => {
+            {(() => {
+              console.log('Current activeTab:', activeTab);
+              console.log('activeTab === "published":', activeTab === 'published');
+              return activeTab === 'published';
+            })() && (() => {
               const nullData = analyticsData.filter(a => a.postId === null);
               const emptyData = analyticsData.filter(a => a.postId === '');
               const undefinedData = analyticsData.filter(a => a.postId === undefined);
@@ -394,7 +415,9 @@ export default function InstagramPostsPage() {
               console.log('Undefined data:', undefinedData);
               console.log('Combined manual data to display:', manualData);
               return manualData;
-            })().map((analytics, index) => (
+            })().map((analytics, index) => {
+              console.log("Rendering published data item:", index, analytics);
+              return (
               <div key={`manual-${index}`} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -486,7 +509,8 @@ export default function InstagramPostsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {/* 通常の投稿一覧 */}
             {filteredPosts.map((post) => (
