@@ -5,6 +5,7 @@ import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { postsApi } from '../../../lib/api';
 import { PlanData } from '../plan/types/plan';
+import { useAuth } from '../../../contexts/auth-context';
 import { 
   Heart, 
   MessageCircle, 
@@ -45,7 +46,7 @@ interface PostData {
 
 interface AnalyticsData {
   id: string;
-  postId: string;
+  postId: string | null;
   userId: string;
   likes: number;
   comments: number;
@@ -57,6 +58,11 @@ interface AnalyticsData {
   followerChange?: number;
   publishedAt: Date;
   createdAt: Date;
+  title?: string;
+  content?: string;
+  hashtags?: string[];
+  category?: string;
+  thumbnail?: string;
   audience?: {
     gender: {
       male: number;
@@ -108,6 +114,7 @@ function getWeekRange(weekString: string): { start: Date; end: Date } {
 }
 
 export default function InstagramMonthlyReportPage() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [planData, setPlanData] = useState<PlanData | null>(null);
@@ -121,21 +128,25 @@ export default function InstagramMonthlyReportPage() {
   const [isLoading, setIsLoading] = useState(true);
 
 
-  // バックエンドAPI連携関数
+  // バックエンドAPI連携関数（期間別フィルタリングはクライアント側で実行）
   const fetchAnalyticsFromBackend = async (period: 'weekly' | 'monthly', date: string) => {
+    if (!user?.uid) {
+      console.log('No user authenticated, skipping API call');
+      return;
+    }
+
     try {
       setIsLoading(true);
       
-      // 実際のバックエンドAPI呼び出し
-      const response = await fetch(`/api/analytics/${period}`, {
-        method: 'POST',
+      // Firebase IDトークンを取得
+      const idToken = await user.getIdToken();
+      
+      // 既存のanalytics APIを使用して全データを取得
+      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          date: date,
-          userId: 'current-user'
-        }),
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
       });
 
       if (!response.ok) {
@@ -143,7 +154,28 @@ export default function InstagramMonthlyReportPage() {
       }
 
       const data = await response.json();
-      return data;
+      
+      // クライアント側で期間別フィルタリング
+      const filteredData = data.analytics.filter((item: AnalyticsData) => {
+        const itemDate = new Date(item.publishedAt);
+        
+        if (period === 'monthly') {
+          const itemMonth = itemDate.toISOString().slice(0, 7);
+          return itemMonth === date;
+        } else if (period === 'weekly') {
+          // 週の範囲を計算
+          const [year, week] = date.split('-W');
+          const startOfYear = new Date(parseInt(year), 0, 1);
+          const startOfWeek = new Date(startOfYear.getTime() + (parseInt(week) - 1) * 7 * 24 * 60 * 60 * 1000);
+          const endOfWeek = new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000);
+          
+          return itemDate >= startOfWeek && itemDate <= endOfWeek;
+        }
+        
+        return true;
+      });
+      
+      return { analytics: filteredData, total: filteredData.length };
     } catch (error) {
       console.error('バックエンドAPI取得エラー:', error);
       throw error;
@@ -154,17 +186,25 @@ export default function InstagramMonthlyReportPage() {
 
   // CSVエクスポート関数
   const exportToCSV = async () => {
+    if (!user?.uid) {
+      console.log('No user authenticated, skipping CSV export');
+      return;
+    }
+
     try {
       setIsLoading(true);
+      const idToken = await user.getIdToken();
       const response = await fetch('/api/export/csv', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({ 
           period: activeTab,
           date: activeTab === 'weekly' ? selectedWeek : selectedMonth,
-          userId: 'current-user'
+          userId: user.uid
         }),
       });
 
@@ -190,17 +230,25 @@ export default function InstagramMonthlyReportPage() {
 
   // PDFエクスポート関数
   const exportToPDF = async () => {
+    if (!user?.uid) {
+      console.log('No user authenticated, skipping PDF export');
+      return;
+    }
+
     try {
       setIsLoading(true);
+      const idToken = await user.getIdToken();
       const response = await fetch('/api/export/pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({ 
           period: activeTab,
           date: activeTab === 'weekly' ? selectedWeek : selectedMonth,
-          userId: 'current-user'
+          userId: user.uid
         }),
       });
 
@@ -226,8 +274,13 @@ export default function InstagramMonthlyReportPage() {
 
   // 投稿一覧を取得
   const fetchPosts = async () => {
+    if (!user?.uid) {
+      console.log('No user authenticated, skipping posts fetch');
+      return;
+    }
+
     try {
-      const response = await postsApi.list({ userId: 'current-user' });
+      const response = await postsApi.list({ userId: user.uid });
       setPosts(response.posts || []);
     } catch (error) {
       console.error('投稿取得エラー:', error);
@@ -247,64 +300,46 @@ export default function InstagramMonthlyReportPage() {
 
   // 分析データを取得
   const fetchAnalytics = async () => {
+    if (!user?.uid) {
+      console.log('No user authenticated, skipping analytics fetch');
+      return;
+    }
+
     try {
-      // 実際の実装では analytics API を呼び出す
-      // 今回は模擬データを使用
-      const mockData: AnalyticsData[] = [
-        {
-          id: '1',
-          postId: 'post-1',
-          userId: 'current-user',
-          likes: 245,
-          comments: 18,
-          shares: 12,
-          reach: 1250,
-          profileClicks: 45,
-          websiteClicks: 8,
-          storyViews: 320,
-          followerChange: 15,
-          publishedAt: new Date('2024-01-15'),
-          createdAt: new Date()
-        },
-        {
-          id: '2',
-          postId: 'post-2',
-          userId: 'current-user',
-          likes: 189,
-          comments: 23,
-          shares: 7,
-          reach: 980,
-          profileClicks: 32,
-          websiteClicks: 5,
-          storyViews: 280,
-          followerChange: 8,
-          publishedAt: new Date('2024-01-12'),
-          createdAt: new Date()
-        },
-        {
-          id: '3',
-          postId: 'post-3',
-          userId: 'current-user',
-          likes: 312,
-          comments: 28,
-          shares: 15,
-          reach: 1450,
-          profileClicks: 52,
-          websiteClicks: 12,
-          storyViews: 380,
-          followerChange: 22,
-          publishedAt: new Date('2024-01-10'),
-          createdAt: new Date()
+      // Firebase IDトークンを取得
+      const idToken = await user.getIdToken();
+      
+      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
         }
-      ];
-      setAnalyticsData(mockData);
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Analytics data fetched for monthly report:', result.analytics);
+        setAnalyticsData(result.analytics || []);
+      } else {
+        console.error('Analytics fetch error:', response.status, response.statusText);
+        // エラーの場合は空配列を設定
+        setAnalyticsData([]);
+      }
     } catch (error) {
       console.error('分析データ取得エラー:', error);
+      // エラーの場合は空配列を設定
+      setAnalyticsData([]);
     }
   };
 
   useEffect(() => {
     const initializeData = async () => {
+      if (!user?.uid) {
+        console.log('No user authenticated, skipping data initialization');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
         
@@ -325,12 +360,12 @@ export default function InstagramMonthlyReportPage() {
     };
 
     initializeData();
-  }, []);
+  }, [user?.uid]);
 
 
   // 期間変更時のデータ再取得
   useEffect(() => {
-    if (analyticsData.length > 0) {
+    if (analyticsData.length > 0 && user?.uid) {
       const fetchPeriodData = async () => {
         try {
           setIsLoading(true);
@@ -344,7 +379,7 @@ export default function InstagramMonthlyReportPage() {
 
       fetchPeriodData();
     }
-  }, [activeTab, selectedMonth, selectedWeek, analyticsData.length]);
+  }, [activeTab, selectedMonth, selectedWeek, analyticsData.length, user?.uid]);
 
   // 選択された月の分析データを取得
   const selectedMonthAnalytics = analyticsData.filter(data => {
@@ -838,6 +873,11 @@ export default function InstagramMonthlyReportPage() {
                     <span className="text-sm text-gray-600">📸 フィード</span>
                     <span className="text-sm font-medium text-gray-900">
                       {(activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics).filter(data => {
+                        // 手動入力データの場合はcategoryフィールドを使用
+                        if (!data.postId) {
+                          return data.category === 'feed';
+                        }
+                        // 投稿データから取得
                         const post = posts.find(p => p.id === data.postId);
                         return post?.postType === 'feed';
                       }).length}件
@@ -847,6 +887,11 @@ export default function InstagramMonthlyReportPage() {
                     <span className="text-sm text-gray-600">🎬 リール</span>
                     <span className="text-sm font-medium text-gray-900">
                       {(activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics).filter(data => {
+                        // 手動入力データの場合はcategoryフィールドを使用
+                        if (!data.postId) {
+                          return data.category === 'reel';
+                        }
+                        // 投稿データから取得
                         const post = posts.find(p => p.id === data.postId);
                         return post?.postType === 'reel';
                       }).length}件
@@ -856,6 +901,11 @@ export default function InstagramMonthlyReportPage() {
                     <span className="text-sm text-gray-600">📱 ストーリーズ</span>
                     <span className="text-sm font-medium text-gray-900">
                       {(activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics).filter(data => {
+                        // 手動入力データの場合はcategoryフィールドを使用
+                        if (!data.postId) {
+                          return data.category === 'story';
+                        }
+                        // 投稿データから取得
                         const post = posts.find(p => p.id === data.postId);
                         return post?.postType === 'story';
                       }).length}件
@@ -976,14 +1026,29 @@ export default function InstagramMonthlyReportPage() {
               {(() => {
                 const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
                 const feedCount = currentAnalytics.filter(data => {
+                  // 手動入力データの場合はcategoryフィールドを使用
+                  if (!data.postId) {
+                    return data.category === 'feed';
+                  }
+                  // 投稿データから取得
                   const post = posts.find(p => p.id === data.postId);
                   return post?.postType === 'feed';
                 }).length;
                 const reelCount = currentAnalytics.filter(data => {
+                  // 手動入力データの場合はcategoryフィールドを使用
+                  if (!data.postId) {
+                    return data.category === 'reel';
+                  }
+                  // 投稿データから取得
                   const post = posts.find(p => p.id === data.postId);
                   return post?.postType === 'reel';
                 }).length;
                 const storyCount = currentAnalytics.filter(data => {
+                  // 手動入力データの場合はcategoryフィールドを使用
+                  if (!data.postId) {
+                    return data.category === 'story';
+                  }
+                  // 投稿データから取得
                   const post = posts.find(p => p.id === data.postId);
                   return post?.postType === 'story';
                 }).length;
@@ -1266,11 +1331,19 @@ export default function InstagramMonthlyReportPage() {
                 const hashtagCounts: { [key: string]: number } = {};
                 
                 currentAnalytics.forEach(data => {
-                  const post = posts.find(p => p.id === data.postId);
-                  if (post?.hashtags) {
-                    post.hashtags.forEach(hashtag => {
+                  // 手動入力データの場合はhashtagsフィールドを直接使用
+                  if (!data.postId && data.hashtags) {
+                    data.hashtags.forEach(hashtag => {
                       hashtagCounts[hashtag] = (hashtagCounts[hashtag] || 0) + 1;
                     });
+                  } else {
+                    // 投稿データから取得
+                    const post = posts.find(p => p.id === data.postId);
+                    if (post?.hashtags) {
+                      post.hashtags.forEach(hashtag => {
+                        hashtagCounts[hashtag] = (hashtagCounts[hashtag] || 0) + 1;
+                      });
+                    }
                   }
                 });
 

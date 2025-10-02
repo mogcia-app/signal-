@@ -6,7 +6,12 @@ export const useSNSSettings = () => {
   const { userProfile, loading, error } = useUserProfile();
 
   const snsSettings: SNSSettings = (userProfile?.snsAISettings as SNSSettings) || {};
-  const snsNames = Object.keys(snsSettings);
+  
+  // デフォルトでTikTokとYouTubeを追加（写真撮り用）
+  const defaultSNS = ['instagram', 'tiktok', 'youtube', 'x'];
+  const snsNames = Object.keys(snsSettings).length > 0 
+    ? Object.keys(snsSettings) 
+    : defaultSNS;
   const hasSettings = snsNames.length > 0;
 
   // 特定のSNS設定を取得する関数

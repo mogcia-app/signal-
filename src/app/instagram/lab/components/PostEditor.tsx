@@ -82,8 +82,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         imageData: image,
       };
 
+      console.log('Saving post data:', postData);
       const result = await postsApi.create(postData);
       console.log('投稿を保存しました:', result);
+      console.log('Post saved successfully with ID:', result.id);
       
       // ローカル保存リストにも追加
       setSavedPosts(prev => [...prev, content]);

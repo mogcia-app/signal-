@@ -9,20 +9,13 @@ interface AnalyticsFormProps {
   onChange: (data: InputData) => void;
   onSave: () => void;
   isLoading: boolean;
-  // 検索関連のプロパティを追加
-  posts: unknown[];
-  selectedPostId: string;
-  onPostSelect: (postId: string) => void;
 }
 
 const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
   data,
   onChange,
   onSave,
-  isLoading,
-  posts,
-  selectedPostId,
-  onPostSelect
+  isLoading
 }) => {
   const handleInputChange = (field: keyof InputData, value: string) => {
     onChange({

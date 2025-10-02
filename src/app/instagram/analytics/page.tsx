@@ -459,12 +459,6 @@ function InstagramAnalyticsContent() {
                 onChange={setInputData}
                 onSave={handleSaveAnalytics}
                 isLoading={isLoading}
-                posts={posts}
-                selectedPostId={selectedPost?.id || ''}
-                onPostSelect={(postId) => {
-                  const post = posts.find(p => p.id === postId);
-                  if (post) handleSelectPost(post);
-                }}
               />
             </div>
 

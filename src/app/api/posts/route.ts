@@ -31,6 +31,7 @@ interface PostData {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('POST /api/posts - Received data:', body);
     const { userId, title, content, hashtags, postType, scheduledDate, scheduledTime, status = 'draft', imageUrl, imageData, analytics } = body;
 
     // バリデーション
@@ -57,12 +58,15 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date()
     };
 
+    console.log('About to save to Firestore:', postData);
     const docRef = await addDoc(collection(db, 'posts'), postData);
     
     // デバッグ用ログ
-    console.log('Post created with analytics:', {
+    console.log('Post created successfully:', {
       id: docRef.id,
-      analytics: postData.analytics
+      status: postData.status,
+      title: postData.title,
+      userId: postData.userId
     });
     
     return NextResponse.json({
