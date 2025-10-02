@@ -387,9 +387,11 @@ export default function InstagramPostsPage() {
             {activeTab === 'published' && (() => {
               const nullData = analyticsData.filter(a => a.postId === null);
               const emptyData = analyticsData.filter(a => a.postId === '');
-              const manualData = [...nullData, ...emptyData];
+              const undefinedData = analyticsData.filter(a => a.postId === undefined);
+              const manualData = [...nullData, ...emptyData, ...undefinedData];
               console.log('Null data:', nullData);
               console.log('Empty string data:', emptyData);
+              console.log('Undefined data:', undefinedData);
               console.log('Combined manual data to display:', manualData);
               return manualData;
             })().map((analytics, index) => (
