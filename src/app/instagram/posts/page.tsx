@@ -194,9 +194,19 @@ export default function InstagramPostsPage() {
   };
 
   useEffect(() => {
-    console.log('useEffect triggered, user?.uid:', user?.uid);
-    fetchPosts();
-    fetchAnalytics();
+    console.log('=== POSTS PAGE useEffect ===');
+    console.log('user:', user);
+    console.log('user?.uid:', user?.uid);
+    console.log('selectedStatus:', selectedStatus);
+    console.log('selectedPostType:', selectedPostType);
+    
+    if (user?.uid) {
+      console.log('User authenticated, calling fetchPosts and fetchAnalytics');
+      fetchPosts();
+      fetchAnalytics();
+    } else {
+      console.log('No user, skipping fetchPosts and fetchAnalytics');
+    }
   }, [user?.uid, selectedStatus, selectedPostType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 投稿削除
