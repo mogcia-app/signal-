@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase';
 import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { checkAndCreateMonthlyReportNotification } from '../../../lib/monthly-report-notifications';
 
 // 投稿データの型定義
 interface PostData {
@@ -68,6 +69,16 @@ export async function POST(request: NextRequest) {
       title: postData.title,
       userId: postData.userId
     });
+
+    // 月次レポート通知をチェック・作成
+    try {
+      const notificationCreated = await checkAndCreateMonthlyReportNotification(userId);
+      if (notificationCreated) {
+        console.log('✅ 月次レポート通知を作成しました');
+      }
+    } catch (notificationError) {
+      console.error('⚠️ 月次レポート通知作成エラー（投稿保存は成功）:', notificationError);
+    }
     
     return NextResponse.json({
       id: docRef.id,

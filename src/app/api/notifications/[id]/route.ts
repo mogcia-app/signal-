@@ -17,35 +17,7 @@ interface Notification {
   createdBy: string;
 }
 
-// モックデータ（実際の実装ではFirestoreから取得）
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    title: '新機能リリースのお知らせ',
-    message: 'AIチャット機能とAI学習進捗ページがリリースされました。より詳細な分析とパーソナライズされたAIアシスタントをご利用いただけます。',
-    type: 'success',
-    priority: 'high',
-    targetUsers: [],
-    status: 'published',
-    createdAt: '2024-01-20T10:00:00Z',
-    updatedAt: '2024-01-20T10:00:00Z',
-    createdBy: 'system'
-  },
-  {
-    id: '2',
-    title: 'メンテナンス予告',
-    message: '2024年1月25日 2:00-4:00（JST）にシステムメンテナンスを実施いたします。この時間帯は一部機能がご利用いただけません。',
-    type: 'warning',
-    priority: 'medium',
-    targetUsers: [],
-    status: 'published',
-    scheduledAt: '2024-01-25T02:00:00Z',
-    expiresAt: '2024-01-25T04:00:00Z',
-    createdAt: '2024-01-19T15:30:00Z',
-    updatedAt: '2024-01-19T15:30:00Z',
-    createdBy: 'admin'
-  }
-];
+// モックデータは削除し、Firestoreの実データのみを使用
 
 export async function GET(
   request: NextRequest,
@@ -67,8 +39,8 @@ export async function GET(
         ...docSnap.data()
       } as Notification;
     } else {
-      // Firestoreにデータがない場合はモックデータから検索
-      notification = mockNotifications.find(n => n.id === notificationId);
+      // Firestoreにデータがない場合はnullを返す
+      notification = undefined;
     }
 
     if (!notification) {

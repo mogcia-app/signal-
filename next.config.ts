@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
   experimental: {
     externalDir: true,
   },
+  // React Server Components の設定
+  reactStrictMode: true,
 };
 
 export default nextConfig;

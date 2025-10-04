@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 
 // 計画データの型定義
 interface PlanData {
@@ -107,30 +107,51 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    let q = query(
-      collection(db, 'plans'),
-      orderBy('createdAt', 'desc')
-    );
-
-    if (userId) {
-      q = query(q, where('userId', '==', userId));
+    // userIdが指定されていない場合はエラー
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'userIdが必要です' },
+        { status: 400 }
+      );
     }
 
+      const q = query(
+      collection(db, 'plans'),
+      where('userId', '==', userId)
+    );
+
     const snapshot = await getDocs(q);
-    const plans = snapshot.docs.slice(0, limit).map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const plans = snapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      .sort((a, b) => {
+        const aTime = (a as any).createdAt instanceof Date ? (a as any).createdAt.getTime() : new Date((a as any).createdAt).getTime();
+        const bTime = (b as any).createdAt instanceof Date ? (b as any).createdAt.getTime() : new Date((b as any).createdAt).getTime();
+        return bTime - aTime; // 降順（新しい順）
+      })
+      .slice(0, limit);
 
     return NextResponse.json({
-      plans,
+      success: true,
+      data: plans,
       total: snapshot.size
     });
 
   } catch (error) {
     console.error('計画取得エラー:', error);
+    console.error('エラーの詳細:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: searchParams.get('userId')
+    });
     return NextResponse.json(
-      { error: '計画の取得に失敗しました' },
+      { 
+        success: false,
+        error: '計画の取得に失敗しました',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

@@ -62,9 +62,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <Heart className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">エンゲージメント率</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.engagement}%</p>
-              <p className="text-xs text-blue-600">業界平均: 3.2%</p>
+              <p className="text-sm font-medium text-gray-600">総シェア数</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.engagement}</p>
             </div>
           </div>
         </div>
@@ -75,7 +74,7 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <Eye className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">リーチ数</p>
+              <p className="text-sm font-medium text-gray-600">閲覧数</p>
               <p className="text-2xl font-bold text-gray-900">{stats.reach.toLocaleString()}</p>
               <p className="text-xs text-green-600">今週</p>
             </div>

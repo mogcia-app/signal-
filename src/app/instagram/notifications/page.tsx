@@ -58,8 +58,8 @@ export default function InstagramNotificationsPage() {
     console.log('🔍 認証状態の変化を監視:', { user, uid: user?.uid });
     
     if (user?.uid) {
-      // モックデータの初期化
-      const unsubscribe = initializeMockNotifications();
+      // 通知データの初期化
+      const unsubscribe = initializeNotifications();
       
       // クリーンアップ関数
       return () => {
@@ -190,7 +190,7 @@ export default function InstagramNotificationsPage() {
     }
   };
 
-  const initializeMockNotifications = (): (() => void) | null => {
+  const initializeNotifications = (): (() => void) | null => {
     fetchNotifications();
     
     // リアルタイムリスナーを設定

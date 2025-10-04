@@ -82,7 +82,7 @@ export default function MyAccountPage() {
         }
       });
     }
-  }, [userProfile, getBusinessInfo]);
+  }, [userProfile]); // getBusinessInfoを依存配列から削除
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
+import { checkAndCreateMonthlyReportNotification } from '../../../lib/monthly-report-notifications';
 
 // エンゲージメント率計算のビジネスロジック（サーバー側で保護）
 function calculateEngagementRate(likes: number, comments: number, shares: number, saves: number, reach: number): number {
@@ -43,7 +44,9 @@ export async function POST(request: NextRequest) {
       thumbnail,
       category,
       audience,
-      reachSource
+      reachSource,
+      sentiment,
+      sentimentMemo
     } = body;
 
     // ミドルウェアから認証されたユーザーIDを取得
@@ -94,6 +97,7 @@ export async function POST(request: NextRequest) {
       followerIncrease: followerIncreaseNum,
       engagementRate, // サーバー側で計算済み
       publishedAt: publishedDateTime,
+      publishedTime: publishedTime || '', // 投稿時間（HH:MM形式）を保存
       createdAt: new Date(),
       title: title || '',
       content: content || '',
@@ -101,7 +105,9 @@ export async function POST(request: NextRequest) {
       thumbnail: thumbnail || '',
       category: category || 'feed',
       audience: audience || null, // オーディエンス分析データ
-      reachSource: reachSource || null // 閲覧数ソース分析データ
+      reachSource: reachSource || null, // 閲覧数ソース分析データ
+      sentiment: sentiment || null, // 感情分析データ（satisfied/dissatisfied）
+      sentimentMemo: sentimentMemo || '' // 感情分析メモ
     };
 
     console.log('Saving analytics data via BFF:', {
@@ -123,6 +129,16 @@ export async function POST(request: NextRequest) {
     const docRef = await addDoc(collection(db, 'analytics'), analyticsPayload);
 
     console.log('Saved to Firestore with ID:', docRef.id);
+
+    // 月次レポート通知をチェック・作成
+    try {
+      const notificationCreated = await checkAndCreateMonthlyReportNotification(userId);
+      if (notificationCreated) {
+        console.log('✅ 月次レポート通知を作成しました');
+      }
+    } catch (notificationError) {
+      console.error('⚠️ 月次レポート通知作成エラー（データ保存は成功）:', notificationError);
+    }
 
     return NextResponse.json({ 
       id: docRef.id, 

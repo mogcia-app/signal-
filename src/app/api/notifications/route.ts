@@ -17,69 +17,40 @@ interface Notification {
   createdBy: string;
 }
 
-// モックデータ（実際の実装ではFirestoreから取得）
-const mockNotifications: Notification[] = [
+// 初期通知データ（Firestoreに保存する用）
+const initialNotifications: Omit<Notification, 'id'>[] = [
   {
-    id: '1',
     title: '新機能リリースのお知らせ',
     message: 'AIチャット機能とAI学習進捗ページがリリースされました。より詳細な分析とパーソナライズされたAIアシスタントをご利用いただけます。',
     type: 'success',
     priority: 'high',
     targetUsers: [],
     status: 'published',
-    createdAt: '2024-01-20T10:00:00Z',
-    updatedAt: '2024-01-20T10:00:00Z',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     createdBy: 'system'
   },
   {
-    id: '2',
-    title: 'メンテナンス予告',
-    message: '2024年1月25日 2:00-4:00（JST）にシステムメンテナンスを実施いたします。この時間帯は一部機能がご利用いただけません。',
-    type: 'warning',
-    priority: 'medium',
-    targetUsers: [],
-    status: 'published',
-    scheduledAt: '2024-01-25T02:00:00Z',
-    expiresAt: '2024-01-25T04:00:00Z',
-    createdAt: '2024-01-19T15:30:00Z',
-    updatedAt: '2024-01-19T15:30:00Z',
-    createdBy: 'admin'
-  },
-  {
-    id: '3',
     title: '月次レポート機能の改善',
     message: '月次レポートページに新しい分析機能が追加されました。AI予測機能、トレンド分析、データエクスポート機能をご利用いただけます。',
     type: 'info',
     priority: 'medium',
     targetUsers: [],
     status: 'published',
-    createdAt: '2024-01-18T14:20:00Z',
-    updatedAt: '2024-01-18T14:20:00Z',
-    createdBy: 'dev-team'
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: 'system'
   },
   {
-    id: '4',
-    title: 'データエクスポート機能について',
-    message: 'CSV/PDFエクスポート機能をご利用いただくには、最低15個の投稿データが必要です。データ不足の場合は、投稿ラボでコンテンツを作成してください。',
-    type: 'info',
-    priority: 'low',
-    targetUsers: [],
-    status: 'published',
-    createdAt: '2024-01-17T11:45:00Z',
-    updatedAt: '2024-01-17T11:45:00Z',
-    createdBy: 'support'
-  },
-  {
-    id: '5',
     title: 'AI学習機能の活用方法',
     message: 'AIチャットを積極的にご利用いただくことで、よりパーソナライズされたAIアシスタントに成長します。質問や相談をどんどんお寄せください。',
     type: 'info',
     priority: 'low',
     targetUsers: [],
     status: 'published',
-    createdAt: '2024-01-16T09:15:00Z',
-    updatedAt: '2024-01-16T09:15:00Z',
-    createdBy: 'ai-team'
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: 'system'
   }
 ];
 
@@ -125,7 +96,7 @@ export async function GET(request: NextRequest) {
       throw new Error(`Firestoreクエリエラー: ${firestoreError instanceof Error ? firestoreError.message : 'Unknown error'}`);
     }
     
-    let firestoreNotifications;
+    let firestoreNotifications: Notification[] = [];
     try {
       firestoreNotifications = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -137,9 +108,27 @@ export async function GET(request: NextRequest) {
       throw new Error(`データ変換エラー: ${mappingError instanceof Error ? mappingError.message : 'Unknown error'}`);
     }
 
-    // Firestoreにデータがない場合はモックデータを使用
+    // Firestoreにデータがない場合は初期データを作成
     if (firestoreNotifications.length === 0) {
-      firestoreNotifications = [...mockNotifications];
+      console.log('📝 Firestoreに通知データがないため、初期データを作成します');
+      try {
+        // 初期通知データをFirestoreに保存
+        for (const notificationData of initialNotifications) {
+          await addDoc(collection(db, 'notifications'), notificationData);
+        }
+        console.log('✅ 初期通知データの作成が完了しました');
+        
+        // 作成したデータを再取得
+        const newSnapshot = await getDocs(q);
+        firestoreNotifications = newSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Notification));
+      } catch (initError) {
+        console.error('❌ 初期データ作成エラー:', initError);
+        // エラーの場合は空配列を返す
+        firestoreNotifications = [];
+      }
     }
 
     let filteredNotifications = [...firestoreNotifications];

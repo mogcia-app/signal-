@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
+import RechartsAreaChart from '../../../components/RechartsAreaChart';
 import { postsApi } from '../../../lib/api';
 import { PlanData } from '../plan/types/plan';
 import { useAuth } from '../../../contexts/auth-context';
+import { checkUserDataCount } from '../../../lib/monthly-report-notifications';
 import { 
   Heart, 
   MessageCircle, 
@@ -19,7 +21,6 @@ import {
   ArrowDown,
   Users,
   PieChart,
-  LineChart,
   Clock,
   Hash,
   Brain,
@@ -57,6 +58,7 @@ interface AnalyticsData {
   storyViews?: number;
   followerChange?: number;
   publishedAt: Date;
+  publishedTime?: string; // 投稿分析ページで保存された時間（HH:MM形式）
   createdAt: Date;
   title?: string;
   content?: string;
@@ -126,7 +128,109 @@ export default function InstagramMonthlyReportPage() {
     getCurrentWeekString() // YYYY-WW形式
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [dataCount, setDataCount] = useState<{ analyticsCount: number; postsCount: number; totalCount: number } | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
+  
+  // BFF API連携の状態
+  const [accountScore, setAccountScore] = useState<Record<string, unknown> | null>(null);
+  const [, setSummaryData] = useState<Record<string, unknown> | null>(null);
+  const [dailyScores, setDailyScores] = useState<Record<string, unknown> | null>(null);
+  const [previousPeriodData, setPreviousPeriodData] = useState<Record<string, unknown> | null>(null);
+  const [monthlyReview, setMonthlyReview] = useState<Record<string, unknown> | null>(null);
 
+  // 日別スコアデータを取得
+  const fetchDailyScores = async (days: number = 30) => {
+    if (!user?.uid) return;
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`/api/analytics/daily-scores?days=${days}`, {
+        headers: { 'x-user-id': user.uid, 'Authorization': `Bearer ${idToken}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDailyScores(data);
+      } else {
+        console.error('Daily scores API error:', response.status, response.statusText);
+        setDailyScores(null);
+      }
+    } catch (error) {
+      console.error('Daily scores fetch error:', error);
+      setDailyScores(null);
+    }
+  };
+
+  // 前期間のデータを取得（比較用）
+  const fetchPreviousPeriodData = async (period: 'weekly' | 'monthly', currentDate: string) => {
+    if (!user?.uid) return;
+    try {
+      const idToken = await user.getIdToken();
+      
+      let previousDate: string;
+      if (period === 'monthly') {
+        const current = new Date(currentDate + '-01');
+        current.setMonth(current.getMonth() - 1);
+        previousDate = current.toISOString().slice(0, 7);
+      } else {
+        const [year, week] = currentDate.split('-W');
+        const currentWeek = parseInt(week);
+        const previousWeek = currentWeek > 1 ? currentWeek - 1 : 52;
+        const previousYear = currentWeek > 1 ? year : (parseInt(year) - 1).toString();
+        previousDate = `${previousYear}-W${previousWeek.toString().padStart(2, '0')}`;
+      }
+
+      const response = await fetch(`/api/analytics/account-score?period=${period}&date=${previousDate}`, {
+        headers: { 'x-user-id': user.uid, 'Authorization': `Bearer ${idToken}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPreviousPeriodData(data);
+      } else {
+        console.error('Previous period data API error:', response.status, response.statusText);
+        setPreviousPeriodData(null);
+      }
+    } catch (error) {
+      console.error('Previous period data fetch error:', error);
+      setPreviousPeriodData(null);
+    }
+  };
+
+  // 月次レビューを取得（月が変わった時のみ）
+  const fetchMonthlyReview = async () => {
+    if (!user?.uid || !accountScore) return;
+    try {
+      const idToken = await user.getIdToken();
+      const currentScore = accountScore.score || 0;
+      const previousScore = previousPeriodData?.score || 0;
+      const performanceRating = accountScore.rating || 'C';
+      
+      // 現在の月をキーに含めて、月が変わった時だけ新しいレビューを取得
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const reviewCacheKey = `monthly-review-${currentMonth}-${currentScore}-${previousScore}-${performanceRating}`;
+      
+      // ローカルストレージで月次レビューをキャッシュ
+      const cachedReview = localStorage.getItem(reviewCacheKey);
+      if (cachedReview) {
+        setMonthlyReview(JSON.parse(cachedReview));
+        return;
+      }
+
+      const response = await fetch(`/api/analytics/monthly-review?currentScore=${currentScore}&previousScore=${previousScore}&performanceRating=${performanceRating}`, {
+        headers: { 'x-user-id': user.uid, 'Authorization': `Bearer ${idToken}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setMonthlyReview(data);
+        // ローカルストレージに保存（月が変わるまで有効）
+        localStorage.setItem(reviewCacheKey, JSON.stringify(data));
+      } else {
+        console.error('Monthly review API error:', response.status, response.statusText);
+        setMonthlyReview(null);
+      }
+    } catch (error) {
+      console.error('Monthly review fetch error:', error);
+      setMonthlyReview(null);
+    }
+  };
 
   // バックエンドAPI連携関数（期間別フィルタリングはクライアント側で実行）
   const fetchAnalyticsFromBackend = async (period: 'weekly' | 'monthly', date: string) => {
@@ -319,6 +423,13 @@ export default function InstagramMonthlyReportPage() {
       if (response.ok) {
         const result = await response.json();
         console.log('Analytics data fetched for monthly report:', result.analytics);
+        console.log('Monthly report - publishedAt values:', result.analytics?.map((a: Record<string, unknown>) => ({ 
+          id: a.id, 
+          publishedAt: a.publishedAt, 
+          publishedTime: a.publishedTime,
+          publishedAtType: typeof a.publishedAt,
+          publishedTimeType: typeof a.publishedTime
+        })));
         setAnalyticsData(result.analytics || []);
       } else {
         console.error('Analytics fetch error:', response.status, response.statusText);
@@ -331,6 +442,25 @@ export default function InstagramMonthlyReportPage() {
       setAnalyticsData([]);
     }
   };
+
+  // データ件数チェック
+  useEffect(() => {
+    const checkDataCount = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const countData = await checkUserDataCount(user.uid);
+        setDataCount(countData);
+        setHasAccess(countData.totalCount >= 15);
+        console.log('📊 データ件数チェック結果:', countData, 'アクセス可能:', countData.totalCount >= 15);
+      } catch (error) {
+        console.error('データ件数チェックエラー:', error);
+        setHasAccess(false);
+      }
+    };
+
+    checkDataCount();
+  }, [user?.uid]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -365,11 +495,24 @@ export default function InstagramMonthlyReportPage() {
 
   // 期間変更時のデータ再取得
   useEffect(() => {
-    if (analyticsData.length > 0 && user?.uid) {
+    if (user?.uid) {
       const fetchPeriodData = async () => {
         try {
           setIsLoading(true);
-          await fetchAnalyticsFromBackend(activeTab, activeTab === 'weekly' ? selectedWeek : selectedMonth);
+          const period = activeTab;
+          const date = activeTab === 'weekly' ? selectedWeek : selectedMonth;
+          
+          await Promise.all([
+            fetchAccountScore(),
+            fetchSummaryData(),
+            fetchDailyScores(activeTab === 'weekly' ? 7 : 30),
+            fetchPreviousPeriodData(period, date)
+          ]);
+          
+          // 月次レビューは他のデータが揃ってから取得
+          setTimeout(() => {
+            fetchMonthlyReview();
+          }, 1000);
         } catch (error) {
           console.error('期間データ取得エラー:', error);
         } finally {
@@ -379,7 +522,7 @@ export default function InstagramMonthlyReportPage() {
 
       fetchPeriodData();
     }
-  }, [activeTab, selectedMonth, selectedWeek, analyticsData.length, user?.uid]);
+  }, [activeTab, selectedMonth, selectedWeek, user?.uid]);
 
   // 選択された月の分析データを取得
   const selectedMonthAnalytics = analyticsData.filter(data => {
@@ -466,15 +609,6 @@ export default function InstagramMonthlyReportPage() {
   const reachChange = calculateChange(monthlyTotals.totalReach, prevMonthTotals.totalReach);
   // const followerChange = calculateChange(monthlyTotals.totalFollowerChange, prevMonthTotals.totalFollowerChange);
 
-  // 今月の平均エンゲージメント率
-  const monthlyAvgEngagement = monthlyTotals.totalReach > 0 
-    ? ((monthlyTotals.totalLikes + monthlyTotals.totalComments + monthlyTotals.totalShares) / monthlyTotals.totalReach * 100).toFixed(1)
-    : '0.0';
-
-  // 今週の平均エンゲージメント率
-  const weeklyAvgEngagement = weeklyTotals.totalReach > 0 
-    ? ((weeklyTotals.totalLikes + weeklyTotals.totalComments + weeklyTotals.totalShares) / weeklyTotals.totalReach * 100).toFixed(1)
-    : '0.0';
 
   // 計画進捗計算
   const planProgress = planData 
@@ -495,17 +629,84 @@ export default function InstagramMonthlyReportPage() {
     return `${startDate} - ${endDate}`;
   };
 
-  // パフォーマンス評価
-  const getPerformanceRating = (engagementRate: string) => {
-    const avgEngagement = parseFloat(engagementRate);
-    if (avgEngagement >= 5) return { rating: 'S', color: 'text-purple-600', bg: 'bg-purple-100' };
-    if (avgEngagement >= 3) return { rating: 'A', color: 'text-blue-600', bg: 'bg-blue-100' };
-    if (avgEngagement >= 2) return { rating: 'B', color: 'text-green-600', bg: 'bg-green-100' };
-    if (avgEngagement >= 1) return { rating: 'C', color: 'text-yellow-600', bg: 'bg-yellow-100' };
-    return { rating: 'D', color: 'text-red-600', bg: 'bg-red-100' };
+  // BFF APIからデータを取得
+  const fetchAccountScore = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const period = activeTab;
+      const date = activeTab === 'weekly' ? selectedWeek : selectedMonth;
+      
+      const response = await fetch(`/api/analytics/account-score?period=${period}&date=${date}`, {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAccountScore(data);
+      } else {
+        console.error('Account score API error:', response.status, response.statusText);
+        // エラーの場合はデフォルト値を設定
+        setAccountScore({
+          score: 0,
+          rating: 'C',
+          label: 'データ読み込みエラー',
+          color: 'gray',
+          breakdown: {}
+        });
+      }
+    } catch (error) {
+      console.error('Account score fetch error:', error);
+      // エラーの場合はデフォルト値を設定
+      setAccountScore({
+        score: 0,
+        rating: 'C',
+        label: 'データ読み込みエラー',
+        color: 'gray',
+        breakdown: {}
+      });
+    }
   };
 
-  const performanceRating = getPerformanceRating(activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement);
+  const fetchSummaryData = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const period = activeTab;
+      const date = activeTab === 'weekly' ? selectedWeek : selectedMonth;
+      
+      const response = await fetch(`/api/analytics/monthly-summary?period=${period}&date=${date}`, {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSummaryData(data);
+      } else {
+        console.error('Summary data API error:', response.status, response.statusText);
+        setSummaryData(null);
+      }
+    } catch (error) {
+      console.error('Summary data fetch error:', error);
+      setSummaryData(null);
+    }
+  };
+
+  // パフォーマンス評価（APIデータから）
+  const performanceRating = accountScore ? {
+    rating: accountScore.rating,
+    color: `text-${accountScore.color}-600`,
+    bg: `bg-${accountScore.color}-100`,
+    label: accountScore.label
+  } : { rating: 'C', color: 'text-yellow-600', bg: 'bg-yellow-100', label: 'データ読み込み中' };
 
   // ローディング画面
   if (isLoading) {
@@ -557,6 +758,95 @@ export default function InstagramMonthlyReportPage() {
     );
   }
 
+  // アクセス制御画面
+  if (!hasAccess) {
+    return (
+      <SNSLayout 
+        currentSNS="instagram"
+        customTitle="月次レポート"
+        customDescription="月次のパフォーマンス分析とレポート"
+      >
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="max-w-md mx-auto text-center p-6">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="relative">
+                <BarChart3 className="w-10 h-10 text-blue-600" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              データを集め中...
+            </h2>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-center mb-2">
+                <Clock className="w-5 h-5 text-blue-600 mr-2" />
+                <span className="font-medium text-blue-800">データ収集中</span>
+              </div>
+              <p className="text-sm text-blue-700">
+                月次レポートの生成には<strong>15件以上のデータ</strong>が必要です
+              </p>
+            </div>
+
+            {dataCount && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h3 className="font-medium text-gray-900 mb-3">収集済みデータ</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{dataCount.analyticsCount}</div>
+                    <div className="text-gray-600">アナリティクス</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{dataCount.postsCount}</div>
+                    <div className="text-gray-600">投稿データ</div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">合計</span>
+                    <span className="text-lg font-bold text-gray-900">{dataCount.totalCount}件</span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min((dataCount.totalCount / 15) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {15 - dataCount.totalCount > 0 ? `あと${15 - dataCount.totalCount}件でレポート生成` : 'レポート生成可能'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <a
+                href="/instagram/analytics"
+                className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                データを追加して収集を進める
+              </a>
+              <a
+                href="/instagram/lab"
+                className="block w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                投稿ラボでコンテンツを作成
+              </a>
+            </div>
+
+            <p className="text-sm text-gray-500 mt-6">
+              データが15件に達すると、自動的に月次レポートが生成されます
+            </p>
+          </div>
+        </div>
+      </SNSLayout>
+    );
+  }
 
   return (
     <SNSLayout 
@@ -645,9 +935,12 @@ export default function InstagramMonthlyReportPage() {
             </div>
             <div className="text-center">
               <div className={`w-20 h-20 rounded-full ${performanceRating.bg} flex items-center justify-center mx-auto mb-2`}>
-                <span className={`text-3xl font-bold ${performanceRating.color}`}>{performanceRating.rating}</span>
+                <span className={`text-3xl font-bold ${performanceRating.color}`}>{String(performanceRating.rating)}</span>
               </div>
-              <div className="text-sm text-gray-600">総合評価</div>
+              <div className="text-sm text-gray-600">{String(performanceRating.label)}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                スコア: {typeof accountScore?.score === 'number' ? accountScore.score : 0}点
+              </div>
             </div>
           </div>
         </div>
@@ -855,19 +1148,55 @@ export default function InstagramMonthlyReportPage() {
             </div>
 
             <div className="space-y-4">
-              {/* 平均エンゲージメント率 */}
+              {/* アカウントスコア */}
               <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-orange-600">
-                    {activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement}%
+                    {typeof accountScore?.score === 'number' ? accountScore.score : 0}点
                   </div>
-                  <div className="text-sm text-gray-600">平均エンゲージメント率</div>
+                  <div className="text-sm text-gray-600">アカウントスコア</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {String(performanceRating.label)}
+                  </div>
+                  
+                  {/* 前期間との比較 */}
+                  {previousPeriodData && (
+                    <div className="mt-3 pt-3 border-t border-orange-200">
+                      <div className="flex items-center justify-center space-x-2">
+                        <span className="text-xs text-gray-500">前期間:</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {typeof previousPeriodData.score === 'number' ? previousPeriodData.score : 0}点
+                        </span>
+                        {accountScore && previousPeriodData?.score !== undefined && (
+                          <div className={`flex items-center space-x-1 ${
+                            (typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score)
+                              ? 'text-green-600' 
+                              : (typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score)
+                                ? 'text-red-600' 
+                                : 'text-gray-600'
+                          }`}>
+                            {(typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? (
+                              <ArrowUp className="w-3 h-3" />
+                            ) : (typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? (
+                              <ArrowDown className="w-3 h-3" />
+                            ) : null}
+                            <span className="text-xs font-medium">
+                              {typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' ? Math.abs(accountScore.score - previousPeriodData.score) : 0}点
+                              {(typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? '↑' : 
+                               (typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? '↓' : '='}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* 投稿タイプ別統計 */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">投稿タイプ別統計</h4>
+                {(activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics).length > 0 ? (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span className="text-sm text-gray-600">📸 フィード</span>
@@ -912,6 +1241,15 @@ export default function InstagramMonthlyReportPage() {
                     </span>
                   </div>
                 </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center">
+                      <span className="text-xl">📊</span>
+                    </div>
+                    <p className="text-gray-600 font-medium mb-1">投稿を分析してみよう！</p>
+                    <p className="text-sm text-gray-500">投稿分析データを入力すると<br />タイプ別統計が表示されます</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -919,94 +1257,13 @@ export default function InstagramMonthlyReportPage() {
 
         {/* 視覚化セクション */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* エンゲージメント推移グラフ */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
-                <LineChart className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">エンゲージメント推移</h2>
-                <p className="text-sm text-gray-600">
-                  {activeTab === 'weekly' ? '週別の推移' : '月別の推移'}
-                </p>
-              </div>
-            </div>
-
-            {/* 簡易グラフ表示（実際のチャートライブラリを使用する場合は置き換え） */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg">
-                <div className="flex items-center">
-                  <Heart className="w-4 h-4 text-red-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700">いいね</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-red-400 to-red-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (activeTab === 'weekly' ? weeklyTotals.totalLikes : monthlyTotals.totalLikes) / 1000 * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">
-                    {(activeTab === 'weekly' ? weeklyTotals.totalLikes : monthlyTotals.totalLikes).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
-                <div className="flex items-center">
-                  <MessageCircle className="w-4 h-4 text-blue-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700">コメント</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (activeTab === 'weekly' ? weeklyTotals.totalComments : monthlyTotals.totalComments) / 100 * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">
-                    {(activeTab === 'weekly' ? weeklyTotals.totalComments : monthlyTotals.totalComments).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
-                <div className="flex items-center">
-                  <Share className="w-4 h-4 text-green-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700">シェア</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (activeTab === 'weekly' ? weeklyTotals.totalShares : monthlyTotals.totalShares) / 50 * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">
-                    {(activeTab === 'weekly' ? weeklyTotals.totalShares : monthlyTotals.totalShares).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg">
-                <div className="flex items-center">
-                  <Eye className="w-4 h-4 text-purple-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700">閲覧数</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (activeTab === 'weekly' ? weeklyTotals.totalReach : monthlyTotals.totalReach) / 2000 * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">
-                    {(activeTab === 'weekly' ? weeklyTotals.totalReach : monthlyTotals.totalReach).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
+          {/* アカウントスコア推移 */}
+          <div>
+            <RechartsAreaChart
+              data={Array.isArray(dailyScores?.dailyScores) ? dailyScores.dailyScores : []}
+              title="アカウントスコア推移"
+              subtitle={`${activeTab === 'weekly' ? '週次' : '月次'}のスコア変動`}
+            />
           </div>
 
           {/* 投稿タイプ別分析 */}
@@ -1362,9 +1619,12 @@ export default function InstagramMonthlyReportPage() {
                     <span className="text-sm font-bold text-gray-900">{count}回</span>
                   </div>
                 )) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Hash className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                    <p>ハッシュタグデータがありません</p>
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+                      <Hash className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <p className="text-gray-600 font-medium mb-1">ハッシュタグを追加してみよう！</p>
+                    <p className="text-sm text-gray-500">投稿にハッシュタグを付けると<br />人気ハッシュタグ分析が表示されます</p>
                   </div>
                 );
               })()}
@@ -1373,20 +1633,31 @@ export default function InstagramMonthlyReportPage() {
 
           {/* 投稿時間分析 */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
-                <Clock className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                  <Clock className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">投稿時間分析</h2>
+                  <p className="text-sm text-gray-600">
+                    投稿分析ページで入力した実際の投稿時間ベースの分析
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">投稿時間分析</h2>
-                <p className="text-sm text-gray-600">最適な投稿時間の分析</p>
+            <div className="text-right">
+              <div className="text-sm text-gray-600">
+                総投稿数: {(activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics).length}件
               </div>
+            </div>
             </div>
 
             {/* 時間別パフォーマンス */}
             <div className="space-y-3">
               {(() => {
+                // 投稿一覧ページと同じデータソースを使用
                 const currentAnalytics = activeTab === 'weekly' ? selectedWeekAnalytics : selectedMonthAnalytics;
+                console.log('月次レポート - 使用中のanalyticsデータ:', currentAnalytics);
                 const timeSlots = [
                   { label: '早朝 (6-9時)', range: [6, 9], color: 'from-blue-400 to-blue-600' },
                   { label: '午前 (9-12時)', range: [9, 12], color: 'from-green-400 to-green-600' },
@@ -1396,47 +1667,112 @@ export default function InstagramMonthlyReportPage() {
                   { label: '深夜 (21-6時)', range: [21, 24], color: 'from-purple-400 to-purple-600' }
                 ];
 
-                return timeSlots.map(({ label, range, color }) => {
+                const timeSlotData = timeSlots.map(({ label, range, color }) => {
                   const postsInRange = currentAnalytics.filter(data => {
-                    const post = posts.find(p => p.id === data.postId);
-                    if (post?.scheduledTime) {
-                      const hour = parseInt(post.scheduledTime.split(':')[0]);
-                      return hour >= range[0] && (range[1] === 24 ? hour < 24 : hour < range[1]);
+                    // 投稿分析ページで入力した実際の投稿時間を使用
+                    if (data.publishedTime && data.publishedTime !== '') {
+                      // 投稿分析ページで入力された実際の投稿時間を使用
+                      const hour = parseInt(data.publishedTime.split(':')[0]);
+                      console.log(`実際の投稿時間使用: ${data.publishedTime} -> hour: ${hour}`);
+                      
+                      // 深夜の場合は特別処理（21-24時と0-6時）
+                      if (range[0] === 21 && range[1] === 24) {
+                        return hour >= 21 || hour < 6;
+                      }
+                      
+                      return hour >= range[0] && hour < range[1];
                     }
+                    
+                    // publishedTimeがない場合はスキップ（データが不完全）
+                    console.log(`publishedTimeなし、スキップ: ${data.id}`);
                     return false;
-                  }).length;
+                  });
 
-                  const avgEngagement = postsInRange > 0 
-                    ? currentAnalytics.filter(data => {
-                        const post = posts.find(p => p.id === data.postId);
-                        if (post?.scheduledTime) {
-                          const hour = parseInt(post.scheduledTime.split(':')[0]);
-                          return hour >= range[0] && (range[1] === 24 ? hour < 24 : hour < range[1]);
-                        }
-                        return false;
-                      }).reduce((sum, data) => sum + (data.likes + data.comments + data.shares), 0) / postsInRange
+                  const avgEngagement = postsInRange.length > 0 
+                    ? postsInRange.reduce((sum, data) => sum + (data.likes + data.comments + data.shares), 0) / postsInRange.length
                     : 0;
 
-                  return (
-                    <div key={label} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">{label}</span>
-                        <span className="text-sm font-bold text-gray-900">{postsInRange}件</span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full bg-gradient-to-r ${color} rounded-full transition-all duration-500`}
-                            style={{ width: `${Math.min(100, postsInRange * 20)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-600">
-                          平均 {Math.round(avgEngagement)} エンゲージ
-                        </span>
-                      </div>
-                    </div>
-                  );
+                  return {
+                    label,
+                    range,
+                    color,
+                    postsInRange: postsInRange.length,
+                    avgEngagement
+                  };
                 });
+
+                // 最適な時間帯を特定
+                const bestTimeSlot = timeSlotData.reduce((best, current) => {
+                  if (current.postsInRange > 0 && current.avgEngagement > best.avgEngagement) {
+                    return current;
+                  }
+                  return best;
+                }, timeSlotData[0]);
+
+                return (
+                  <div className="space-y-3">
+                    {/* 最適な投稿時間の提案 */}
+                    {bestTimeSlot && bestTimeSlot.postsInRange > 0 && (
+                      <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 mb-4">
+                        <div className="flex items-center mb-2">
+                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                            <TrendingUp className="w-4 h-4 text-green-600" />
+                          </div>
+                          <h4 className="font-semibold text-green-900">おすすめ投稿時間</h4>
+                        </div>
+                        <p className="text-sm text-green-800">
+                          <span className="font-medium">{bestTimeSlot.label}</span>が最もエンゲージメントが高い時間帯です。
+                          平均 <span className="font-bold">{Math.round(bestTimeSlot.avgEngagement)}</span> エンゲージを記録しています。
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 時間帯別データ */}
+                    {timeSlotData.map(({ label, range, color, postsInRange, avgEngagement }) => (
+                      <div key={label} className={`p-3 rounded-lg ${postsInRange > 0 ? 'bg-gray-50' : 'bg-gray-25'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">{label}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-bold text-gray-900">{postsInRange}件</span>
+                            {postsInRange > 0 && (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                avgEngagement > bestTimeSlot.avgEngagement * 0.8 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : avgEngagement > bestTimeSlot.avgEngagement * 0.5
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {avgEngagement > bestTimeSlot.avgEngagement * 0.8 ? '高' : 
+                                 avgEngagement > bestTimeSlot.avgEngagement * 0.5 ? '中' : '低'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {postsInRange > 0 ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full bg-gradient-to-r ${color} rounded-full transition-all duration-500`}
+                                  style={{ width: `${Math.min(100, postsInRange * 20)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-600">
+                                平均 {Math.round(avgEngagement)} エンゲージ
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-2">
+                            <div className="text-xs text-gray-400 italic">
+                              📅 この時間帯はまだ投稿なし
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
               })()}
             </div>
           </div>
@@ -1491,7 +1827,7 @@ export default function InstagramMonthlyReportPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">予測エンゲージメント率</span>
-                    <span className="text-sm font-bold text-green-600">{(parseFloat(activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement) * (0.95 + Math.random() * 0.1)).toFixed(1)}%</span>
+                    <span className="text-sm font-bold text-green-600">{((typeof accountScore?.score === 'number' ? accountScore.score : 0) * 0.01 * (0.95 + Math.random() * 0.1)).toFixed(1)}%</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-2">
                     過去のパフォーマンスパターンを基に予測
@@ -1520,85 +1856,107 @@ export default function InstagramMonthlyReportPage() {
             </div>
           </div>
 
-          {/* トレンド分析 */}
+          {/* 先月のまとめ */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center mb-6">
-              <div className="w-8 h-8 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-lg flex items-center justify-center mr-3">
-                <TrendingUp className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                <BarChart3 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">トレンド分析</h2>
-                <p className="text-sm text-gray-600">過去の推移と成長パターン</p>
+                <h2 className="text-lg font-semibold text-gray-900">先月のまとめ</h2>
+                <p className="text-sm text-gray-600">前期間との比較と成果サマリー</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              {/* 成長トレンド */}
+              {/* 前期間との比較 */}
               <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
                 <div className="flex items-center mb-3">
                   <TrendingUp className="w-5 h-5 text-blue-600 mr-2" />
-                  <h3 className="font-semibold text-blue-900">成長トレンド</h3>
+                  <h3 className="font-semibold text-blue-900">前期間との比較</h3>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">エンゲージメント成長率</span>
-                    <span className={`text-sm font-bold ${parseFloat(activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement) > 3 ? 'text-green-600' : 'text-yellow-600'}`}>
-                      {parseFloat(activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement) > 3 ? '📈 上昇傾向' : '📊 安定'}
-                    </span>
+                    <span className="text-sm text-gray-600">アカウントスコア</span>
+                    {previousPeriodData ? (
+                      <span className={`text-sm font-bold ${
+                        (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? 'text-green-600' : 
+                        (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {(typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? '📈 向上' : 
+                         (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? '📉 低下' : '📊 維持'}
+                        ({typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' ? Math.abs(accountScore.score - previousPeriodData.score) : 0}点差)
+                      </span>
+                    ) : (
+                      <span className="text-sm font-bold text-gray-500">📊 初回データ</span>
+                    )}
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">投稿頻度トレンド</span>
+                    <span className="text-sm text-gray-600">投稿数</span>
                     <span className="text-sm font-bold text-blue-600">
-                      {(activeTab === 'weekly' ? weeklyTotals.totalPosts : monthlyTotals.totalPosts) > 2 ? '📈 活発' : '📊 標準'}
+                      {(activeTab === 'weekly' ? weeklyTotals.totalPosts : monthlyTotals.totalPosts)}件
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 mt-2">
-                    過去4週間のデータを基に分析
+                    {activeTab === 'weekly' ? '今週' : '今月'} vs {activeTab === 'weekly' ? '先週' : '先月'}
                   </div>
                 </div>
               </div>
 
-              {/* パフォーマンス比較 */}
+              {/* 今月の成果サマリー */}
               <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                 <div className="flex items-center mb-3">
                   <BarChart3 className="w-5 h-5 text-green-600 mr-2" />
-                  <h3 className="font-semibold text-green-900">パフォーマンス比較</h3>
+                  <h3 className="font-semibold text-green-900">今月の成果サマリー</h3>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">平均いいね数</span>
+                    <span className="text-sm text-gray-600">総いいね数</span>
                     <span className="text-sm font-bold text-green-600">
-                      {Math.round((activeTab === 'weekly' ? weeklyTotals.totalLikes : monthlyTotals.totalLikes) / Math.max(1, (activeTab === 'weekly' ? weeklyTotals.totalPosts : monthlyTotals.totalPosts)))}
+                      {(activeTab === 'weekly' ? weeklyTotals.totalLikes : monthlyTotals.totalLikes).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">平均閲覧数</span>
+                    <span className="text-sm text-gray-600">総リーチ数</span>
                     <span className="text-sm font-bold text-green-600">
-                      {Math.round((activeTab === 'weekly' ? weeklyTotals.totalReach : monthlyTotals.totalReach) / Math.max(1, (activeTab === 'weekly' ? weeklyTotals.totalPosts : monthlyTotals.totalPosts)))}
+                      {(activeTab === 'weekly' ? weeklyTotals.totalReach : monthlyTotals.totalReach).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">総コメント数</span>
+                    <span className="text-sm font-bold text-green-600">
+                      {(activeTab === 'weekly' ? weeklyTotals.totalComments : monthlyTotals.totalComments).toLocaleString()}
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 mt-2">
-                    投稿1件あたりの平均値
+                    {activeTab === 'weekly' ? '今週' : '今月'}の累計成果
                   </div>
                 </div>
               </div>
 
-              {/* 改善ポイント */}
+              {/* 先月の総評 */}
               <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
                 <div className="flex items-center mb-3">
                   <Target className="w-5 h-5 text-purple-600 mr-2" />
-                  <h3 className="font-semibold text-purple-900">改善ポイント</h3>
+                  <h3 className="font-semibold text-purple-900">先月の総評</h3>
                 </div>
-                <div className="space-y-2">
-                  <div className="text-sm text-purple-800">
-                    • ハッシュタグ最適化でリーチ{(parseFloat(activeTab === 'weekly' ? weeklyAvgEngagement : monthlyAvgEngagement) < 3 ? '+15%' : '+5%')}向上
-                  </div>
-                  <div className="text-sm text-purple-800">
-                    • ストーリーズ活用でエンゲージメント+20%向上
-                  </div>
-                  <div className="text-sm text-purple-800">
-                    • 投稿時間最適化で全体的なパフォーマンス向上
-                  </div>
+                <div className="space-y-3">
+                  {monthlyReview ? (
+                    <div className="text-sm text-purple-800">
+                      <div className="font-medium mb-2">{typeof monthlyReview.title === 'string' ? monthlyReview.title : '月次レビュー'}</div>
+                      <div className="text-xs text-purple-700">
+                        {typeof monthlyReview.message === 'string' ? monthlyReview.message : 'レビューを生成中...'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-purple-800">
+                      <div className="font-medium mb-2">📊 月次レビュー準備中</div>
+                      <div className="text-xs text-purple-700">
+                        アカウントスコア: {typeof accountScore?.score === 'number' ? accountScore.score : 0}点 ({String(performanceRating.label)})<br />
+                        データを分析してレビューを生成しています...
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1695,7 +2053,7 @@ export default function InstagramMonthlyReportPage() {
               totalLikes: posts.reduce((sum, post) => sum + (post.likes || 0), 0),
               totalComments: posts.reduce((sum, post) => sum + (post.comments || 0), 0),
               totalShares: posts.reduce((sum, post) => sum + (post.shares || 0), 0),
-              avgEngagement: monthlyAvgEngagement
+              avgEngagement: accountScore?.score || 0
             }
           }}
         />
@@ -1703,3 +2061,4 @@ export default function InstagramMonthlyReportPage() {
     </SNSLayout>
   );
 }
+

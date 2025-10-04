@@ -74,9 +74,11 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
               {displayData.thumbnail ? (
                 // Base64画像の場合は通常のimgタグを使用
                 displayData.thumbnail.startsWith('data:image/') ? (
-                  <img
+                  <Image
                     src={displayData.thumbnail}
                     alt={displayData.title || '投稿画像'}
+                    width={80}
+                    height={80}
                     className="w-20 h-20 rounded-lg object-cover"
                   />
                 ) : (
