@@ -146,15 +146,7 @@ function InstagramAnalyticsContent() {
     }
   });
   const [selectedPostId, setSelectedPostId] = useState<string>('');
-  const [currentPlan, setCurrentPlan] = useState<{
-    id: string;
-    goalName?: string;
-    followerGain?: string;
-    planPeriod?: string;
-    targetAudience?: string;
-    goalCategory?: string;
-    selectedStrategies?: string[];
-  } | null>(null);
+  // currentPlanは削除し、planDataを使用
 
   // 分析データを取得（BFF経由）
   const fetchAnalytics = useCallback(async () => {
@@ -243,28 +235,7 @@ function InstagramAnalyticsContent() {
   }, [user]);
 
   // 運用計画を取得
-  const fetchCurrentPlan = useCallback(async () => {
-    if (!user?.uid) return;
-    
-    try {
-      console.log('Fetching current plan for user:', user.uid);
-      const q = query(
-        collection(db, 'plans'),
-        where('userId', '==', user.uid)
-      );
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const planData = snapshot.docs[0].data();
-        setCurrentPlan({
-          id: snapshot.docs[0].id,
-          ...planData
-        });
-      }
-    } catch (error) {
-      console.error('Plan fetch error:', error);
-      setCurrentPlan(null);
-    }
-  }, [user]);
+  // 計画データはusePlanDataフックで取得済み
 
   // URLパラメータから投稿IDを取得して投稿データを自動入力
   useEffect(() => {
@@ -294,8 +265,7 @@ function InstagramAnalyticsContent() {
   useEffect(() => {
     fetchAnalytics();
     fetchPosts();
-    fetchCurrentPlan();
-  }, [fetchAnalytics, fetchPosts, fetchCurrentPlan]);
+  }, [fetchAnalytics, fetchPosts]);
 
 
 
@@ -519,7 +489,7 @@ function InstagramAnalyticsContent() {
                     <Target size={18} className="mr-2 text-blue-600" />
                     運用計画
                   </h3>
-                  {currentPlan && (
+                  {planData && (
                     <a 
                       href="/instagram/plan" 
                       className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
@@ -529,44 +499,44 @@ function InstagramAnalyticsContent() {
                   )}
                 </div>
                 
-                {currentPlan ? (
+                {planData ? (
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
                     <div className="space-y-3">
                       <h4 className="font-semibold text-gray-900">
-                        {currentPlan.goalName || 'Instagram成長計画'}
+                        {planData.title || 'Instagram成長計画'}
                       </h4>
                       
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
-                          <span className="text-gray-600">目標フォロワー増加</span>
-                          <div className="font-medium text-blue-600">+{currentPlan.followerGain || 0}人</div>
+                          <span className="text-gray-600">目標フォロワー数</span>
+                          <div className="font-medium text-blue-600">{planData.targetFollowers}人</div>
                         </div>
                         <div>
                           <span className="text-gray-600">期間</span>
-                          <div className="font-medium">{currentPlan.planPeriod || '未設定'}</div>
+                          <div className="font-medium">{planData.planPeriod || '未設定'}</div>
                         </div>
                         <div>
                           <span className="text-gray-600">ターゲット</span>
-                          <div className="font-medium">{currentPlan.targetAudience || '未設定'}</div>
+                          <div className="font-medium">{planData.targetAudience || '未設定'}</div>
                         </div>
                         <div>
                           <span className="text-gray-600">カテゴリ</span>
-                          <div className="font-medium">{currentPlan.goalCategory || '未設定'}</div>
+                          <div className="font-medium">{planData.category || '未設定'}</div>
                         </div>
                       </div>
                       
-                      {currentPlan.selectedStrategies && currentPlan.selectedStrategies.length > 0 && (
+                      {planData.strategies && planData.strategies.length > 0 && (
                         <div>
                           <span className="text-sm text-gray-600">選択した戦略</span>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {currentPlan.selectedStrategies.slice(0, 3).map((strategy: string, index: number) => (
+                            {planData.strategies.slice(0, 3).map((strategy: string, index: number) => (
                               <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
                                 {strategy}
                               </span>
                             ))}
-                            {currentPlan.selectedStrategies.length > 3 && (
+                            {planData.strategies.length > 3 && (
                               <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                +{currentPlan.selectedStrategies.length - 3}個
+                                +{planData.strategies.length - 3}個
                               </span>
                             )}
                           </div>

@@ -118,10 +118,9 @@ function getWeekRange(weekString: string): { start: Date; end: Date } {
 
 export default function InstagramMonthlyReportPage() {
   const { user } = useAuth();
-  const { planData: hookPlanData, refetchPlanData } = usePlanData();
+  const { planData, refetchPlanData } = usePlanData();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
-  const [planData, setPlanData] = useState<PlanData | null>(null);
   const [activeTab, setActiveTab] = useState<'weekly' | 'monthly'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7) // YYYY-MM形式
@@ -394,15 +393,7 @@ export default function InstagramMonthlyReportPage() {
   };
 
   // 計画データを取得
-  const fetchPlanData = async () => {
-    try {
-      // 実際の実装では plans API を呼び出す
-      setPlanData(null);
-    } catch (error) {
-      console.error('計画データ取得エラー:', error);
-      setPlanData(null);
-    }
-  };
+  // 計画データはusePlanDataフックで取得済み
 
   // 分析データを取得
   const fetchAnalytics = async () => {
@@ -478,8 +469,7 @@ export default function InstagramMonthlyReportPage() {
         // 並行してデータを取得
         await Promise.all([
           fetchPosts(),
-          fetchAnalytics(),
-          fetchPlanData()
+          fetchAnalytics()
         ]);
         
         // データ量検証は別のuseEffectで行う
