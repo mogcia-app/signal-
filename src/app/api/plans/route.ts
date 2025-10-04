@@ -122,13 +122,18 @@ export async function GET(request: NextRequest) {
 
     const snapshot = await getDocs(q);
     const plans = snapshot.docs
-      .map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
+        };
+      })
       .sort((a, b) => {
-        const aTime = (a as any).createdAt instanceof Date ? (a as any).createdAt.getTime() : new Date((a as any).createdAt).getTime();
-        const bTime = (b as any).createdAt instanceof Date ? (b as any).createdAt.getTime() : new Date((b as any).createdAt).getTime();
+        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
         return bTime - aTime; // 降順（新しい順）
       })
       .slice(0, limit);
@@ -140,6 +145,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
+    const { searchParams } = new URL(request.url);
     console.error('計画取得エラー:', error);
     console.error('エラーの詳細:', {
       message: error instanceof Error ? error.message : 'Unknown error',
