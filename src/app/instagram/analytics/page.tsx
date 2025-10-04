@@ -8,6 +8,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
 import { usePlanData } from '../../../hooks/usePlanData';
+import { PlanCard } from '../../../components/PlanCard';
 // import PostSelector from '../components/PostSelector'; // 削除済み
 import PostPreview from '../components/PostPreview';
 // import AudienceAnalysisForm from '../components/AudienceAnalysisForm'; // 統合済み
@@ -483,83 +484,11 @@ function InstagramAnalyticsContent() {
               />
 
               {/* 運用計画セクション */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <Target size={18} className="mr-2 text-blue-600" />
-                    運用計画
-                  </h3>
-                  {planData && (
-                    <a 
-                      href="/instagram/plan" 
-                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
-                    >
-                      詳細を見る →
-                    </a>
-                  )}
-                </div>
-                
-                {planData ? (
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-gray-900">
-                        {planData.title || 'Instagram成長計画'}
-                      </h4>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-gray-600">目標フォロワー数</span>
-                          <div className="font-medium text-blue-600">{planData.targetFollowers}人</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">期間</span>
-                          <div className="font-medium">{planData.planPeriod || '未設定'}</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">ターゲット</span>
-                          <div className="font-medium">{planData.targetAudience || '未設定'}</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">カテゴリ</span>
-                          <div className="font-medium">{planData.category || '未設定'}</div>
-                        </div>
-                      </div>
-                      
-                      {planData.strategies && planData.strategies.length > 0 && (
-                        <div>
-                          <span className="text-sm text-gray-600">選択した戦略</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {planData.strategies.slice(0, 3).map((strategy: string, index: number) => (
-                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                                {strategy}
-                              </span>
-                            ))}
-                            {planData.strategies.length > 3 && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                +{planData.strategies.length - 3}個
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Target size={24} className="text-gray-400" />
-                    </div>
-                    <p className="text-gray-600 text-sm mb-3">運用計画が設定されていません</p>
-                    <a 
-                      href="/instagram/plan" 
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      <Plus size={16} className="mr-2" />
-                      計画を作成する
-                    </a>
-                  </div>
-                )}
-              </div>
+              <PlanCard 
+                planData={planData}
+                variant="compact"
+                showStrategies={true}
+              />
 
               {/* 統計表示コンポーネント */}
               <AnalyticsStats

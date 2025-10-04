@@ -143,13 +143,6 @@ export default function InstagramPlanPage() {
             onInputChange={handleInputChange}
             onStrategyToggle={handleStrategyToggle}
             onCategoryToggle={handleCategoryToggle}
-            onRunSimulation={handleRunSimulation}
-            onSavePlan={handleSavePlan}
-            isSimulating={isSimulating}
-            simulationError={simulationError}
-            isSaving={isSaving}
-            saveError={saveError}
-            saveSuccess={saveSuccess}
             debugInfo={debugInfo}
           />
 
@@ -160,11 +153,18 @@ export default function InstagramPlanPage() {
               selectedStrategies={selectedStrategies}
               onEditPlan={handleEditCurrentPlan}
               onDeletePlan={handleDeleteCurrentPlan}
+              onSavePlan={handleSavePlan}
+              isSaving={isSaving}
+              saveError={saveError}
+              saveSuccess={saveSuccess}
             />
 
             <SimulationPanel
               result={simulationResult}
               formData={formData}
+              onRunSimulation={handleRunSimulation}
+              isSimulating={isSimulating}
+              simulationError={simulationError}
             />
 
              <ABTestPanel

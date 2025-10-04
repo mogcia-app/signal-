@@ -4,11 +4,17 @@ import { SimulationResult, PlanFormData } from '../types/plan';
 interface SimulationPanelProps {
   result: SimulationResult | null;
   formData: PlanFormData;
+  onRunSimulation?: () => void;
+  isSimulating?: boolean;
+  simulationError?: string;
 }
 
 export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   result,
-  formData
+  formData,
+  onRunSimulation,
+  isSimulating = false,
+  simulationError
 }) => {
   if (!result) {
     return (
@@ -16,11 +22,32 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <span className="mr-2">📊</span>目標達成シミュレーション
         </h3>
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <p className="text-sm text-gray-600">
-            左側で目標を入力し、「シミュレーション実行」ボタンを押すとシミュレーション結果が表示されます
+        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <p className="text-sm text-gray-600 mb-4">
+            左側で目標を入力し、シミュレーションを実行してください
           </p>
+          {onRunSimulation && (
+            <button
+              onClick={onRunSimulation}
+              disabled={isSimulating}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSimulating ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  シミュレーション実行中...
+                </div>
+              ) : (
+                '🎯 シミュレーション実行'
+              )}
+            </button>
+          )}
         </div>
+        {simulationError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm">{simulationError}</p>
+          </div>
+        )}
       </section>
     );
   }

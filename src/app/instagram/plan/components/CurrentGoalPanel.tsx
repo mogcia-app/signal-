@@ -6,13 +6,21 @@ interface CurrentGoalPanelProps {
   selectedStrategies: string[];
   onEditPlan: () => void;
   onDeletePlan: () => void;
+  onSavePlan?: () => Promise<boolean>;
+  isSaving?: boolean;
+  saveError?: string | null;
+  saveSuccess?: boolean;
 }
 
 export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
   formData,
   selectedStrategies,
   onEditPlan,
-  onDeletePlan
+  onDeletePlan,
+  onSavePlan,
+  isSaving = false,
+  saveError = null,
+  saveSuccess = false
 }) => {
   return (
     <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
@@ -60,6 +68,26 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
         </div>
       </div>
       
+      {/* 保存エラー表示 */}
+      {saveError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-center">
+            <div className="text-red-600 mr-2">❌</div>
+            <p className="text-red-800 text-sm">{saveError}</p>
+          </div>
+        </div>
+      )}
+
+      {/* 保存成功表示 */}
+      {saveSuccess && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+          <div className="flex items-center">
+            <div className="text-green-600 mr-2">✅</div>
+            <p className="text-green-800 text-sm">計画が保存されました！</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2">
         <button
           onClick={onEditPlan}
@@ -73,6 +101,22 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
         >
           削除する
         </button>
+        {onSavePlan && (
+          <button
+            onClick={onSavePlan}
+            disabled={isSaving}
+            className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded text-sm transition-colors"
+          >
+            {isSaving ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                保存中...
+              </div>
+            ) : (
+              '💾 保存'
+            )}
+          </button>
+        )}
       </div>
     </section>
   );

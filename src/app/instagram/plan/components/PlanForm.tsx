@@ -8,13 +8,6 @@ interface PlanFormProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   onStrategyToggle: (strategy: string) => void;
   onCategoryToggle: (category: string) => void;
-  onRunSimulation: () => void;
-  onSavePlan: () => Promise<boolean>;
-  isSimulating: boolean;
-  simulationError: string;
-  isSaving: boolean;
-  saveError: string | null;
-  saveSuccess: boolean;
   debugInfo: {
     step: string;
     requestData?: Record<string, unknown>;
@@ -34,13 +27,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   onInputChange,
   onStrategyToggle,
   onCategoryToggle,
-  onRunSimulation,
-  onSavePlan,
-  isSimulating,
-  simulationError,
-  isSaving,
-  saveError,
-  saveSuccess,
   debugInfo
 }) => {
   return (
@@ -398,59 +384,15 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           </div>
         )}
 
-        {/* 保存エラー表示 */}
-        {saveError && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <div className="flex items-center">
-              <div className="text-red-600 mr-2">❌</div>
-              <p className="text-red-800 font-medium">保存エラー</p>
-            </div>
-            <p className="text-red-700 text-sm mt-1">{saveError}</p>
-          </div>
-        )}
 
-        {/* 保存成功表示 */}
-        {saveSuccess && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-            <div className="flex items-center">
-              <div className="text-green-600 mr-2">✅</div>
-              <p className="text-green-800 font-medium">計画が保存されました！</p>
-            </div>
-            <p className="text-green-700 text-sm mt-1">他のページでも計画データが反映されます。</p>
+        {/* フォーム完了メッセージ */}
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center">
+            <div className="text-blue-600 mr-2">💡</div>
+            <p className="text-blue-800 text-sm">
+              フォーム入力が完了しました。右側のパネルでシミュレーションを実行し、計画を保存してください。
+            </p>
           </div>
-        )}
-
-        {/* アクションボタン */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={onRunSimulation}
-            disabled={isSimulating}
-            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSimulating ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                シミュレーション実行中...
-              </div>
-            ) : (
-              '🎯 シミュレーション実行'
-            )}
-          </button>
-          
-          <button
-            onClick={onSavePlan}
-            disabled={isSaving || isSimulating}
-            className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSaving ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                保存中...
-              </div>
-            ) : (
-              '💾 計画を保存'
-            )}
-          </button>
         </div>
 
         {/* デバッグ情報表示 */}
