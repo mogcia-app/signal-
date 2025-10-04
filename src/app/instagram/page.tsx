@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { usePlanData } from '../../hooks/usePlanData';
@@ -10,9 +11,7 @@ import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
 import { Target } from 'lucide-react';
-import StatsCards from './components/StatsCards';
-import PostAnalysisInput from './components/PostAnalysisInput';
-import AnalyticsCharts from './components/AnalyticsCharts';
+// import StatsCards from './components/StatsCards'; // クイックアクションに置き換え
 
 interface DashboardStats {
   followers: number;
@@ -37,12 +36,12 @@ interface PostData {
   content: string;
   hashtags: string[];
   postType: 'feed' | 'reel' | 'story';
-  scheduledDate?: string;
+  scheduledDate?: Date | { toDate(): Date; seconds: number; nanoseconds: number; type?: string } | string;
   scheduledTime?: string;
-  status: 'draft' | 'scheduled' | 'published';
+  status: 'draft' | 'created' | 'scheduled' | 'published';
   imageUrl?: string | null;
   imageData?: string | null;
-  createdAt: Date;
+  createdAt: Date | { toDate(): Date; seconds: number; nanoseconds: number; type?: string } | string;
   updatedAt: Date;
   analytics?: {
     likes: number;
@@ -67,22 +66,14 @@ interface RecentPost {
   postedAt: string;
   imageUrl: string;
   caption?: string;
+  hashtags?: string[];
 }
 
 function InstagramDashboardContent() {
   const { user } = useAuth();
-  const { userProfile, loading: profileLoading, error: profileError } = useUserProfile();
+  const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
   const { planData } = usePlanData();
-  const [analyticsData, setAnalyticsData] = useState<{
-    likes: number;
-    comments: number;
-    shares: number;
-    reach: number;
-    engagementRate: number;
-    publishedAt: Date | string;
-    postId: string;
-  }[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     followers: 0,
@@ -109,11 +100,15 @@ function InstagramDashboardContent() {
     time: string;
     status: string;
   }[]>([]);
-  const [hashtagRanking, setHashtagRanking] = useState<{
-    tag: string;
-    count: number;
-    engagement: number;
-  }[]>([]);
+  
+  const [unanalyzedPosts, setUnanalyzedPosts] = useState<Array<{
+    id: string;
+    title: string;
+    type: string;
+    imageUrl: string | null;
+    createdAt: string;
+    status: string;
+  }>>([]);
   const [goalNotifications, setGoalNotifications] = useState<{
     title: string;
     current: number;
@@ -123,6 +118,95 @@ function InstagramDashboardContent() {
   }[]>([]);
 
   const instagramSettings = getSNSSettings('instagram');
+
+
+  // 目標達成追跡を取得
+  const fetchGoalTracking = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/instagram/goal-tracking', {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setGoalNotifications(result.data.goals.slice(0, 3)); // 上位3件のみ表示
+        }
+      }
+    } catch (error) {
+      console.error('目標達成追跡取得エラー:', error);
+    }
+  }, [user]);
+
+  // アナリティクスデータを取得
+  const fetchAnalyticsData = useCallback(async () => {
+    if (!user?.uid) return [];
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/analytics', {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        return result.data || [];
+      }
+    } catch (error) {
+      console.error('アナリティクスデータ取得エラー:', error);
+    }
+    return [];
+  }, [user]);
+
+  // ダッシュボード統計を取得
+  const fetchDashboardStats = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/instagram/dashboard-stats', {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          const statsData = result.data;
+          setStats({
+            followers: statsData.followers,
+            engagement: statsData.engagement,
+            reach: statsData.reach,
+            saves: statsData.saves,
+            likes: statsData.likes,
+            comments: statsData.comments,
+            postsThisWeek: statsData.postsThisWeek,
+            weeklyGoal: statsData.weeklyGoal,
+            followerGrowth: statsData.followerGrowth,
+            topPostType: statsData.topPostType === 'feed' ? 'フィード' : statsData.topPostType === 'reel' ? 'リール' : 'ストーリー',
+            monthlyFeedPosts: statsData.monthlyFeedPosts,
+            monthlyReelPosts: statsData.monthlyReelPosts,
+            monthlyStoryPosts: statsData.monthlyStoryPosts
+          });
+          console.log('✅ ダッシュボード統計を取得しました:', statsData);
+        }
+      }
+    } catch (error) {
+      console.error('ダッシュボード統計取得エラー:', error);
+    }
+  }, [user]);
+
 
   // 投稿データを取得して統計を計算
   const fetchPostsAndCalculateStats = useCallback(async () => {
@@ -142,106 +226,180 @@ function InstagramDashboardContent() {
       const postsResponse = await postsApi.list({ userId });
       const allPosts = postsResponse.posts || [];
       
-      // 分析データは空配列（機能削除のため）
-      const analyticsData: Array<{
-        likes: number;
-        comments: number;
-        shares: number;
-        reach: number;
-        engagementRate: number;
-        publishedAt: Date | string;
-        postId: string;
-      }> = [];
+      // アナリティクスデータを取得
+      const analyticsData = await fetchAnalyticsData();
       
-      console.log('Fetched posts from API:', allPosts.length, 'posts');
-      console.log('Fetched analytics from collection:', analyticsData.length, 'records');
-      console.log('Analytics data sample:', analyticsData.slice(0, 2));
-      console.log('Posts response:', postsResponse);
-      
-      setAnalyticsData(analyticsData);
-      
-      // 分析データから統計を計算
-      const totalLikes = analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => 
-        sum + (analytics.likes || 0), 0
-      );
-      const totalComments = analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => 
-        sum + (analytics.comments || 0), 0
-      );
-      const totalSaves = analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => 
-        sum + (analytics.shares || 0), 0
-      );
-      const totalReach = analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => 
-        sum + (analytics.reach || 0), 0
-      );
+      // ダッシュボード統計をAPIから取得
+      await fetchDashboardStats();
 
-      // 今週の投稿数
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      const postsThisWeek = analyticsData.filter((analytics: typeof analyticsData[0]) => 
-        new Date(analytics.publishedAt) >= oneWeekAgo
-      ).length;
-
-      // 今月の投稿数
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      const postsThisMonth = analyticsData.filter((analytics: typeof analyticsData[0]) => 
-        new Date(analytics.publishedAt) >= oneMonthAgo
-      ).length;
-
-      // 平均エンゲージメント率
-      const avgEngagement = analyticsData.length > 0 
-        ? analyticsData.reduce((sum: number, analytics: typeof analyticsData[0]) => sum + (analytics.engagementRate || 0), 0) / analyticsData.length
-        : 0;
-
-      // 実際のフォロワー数を取得（ユーザープロフィールから）
-      const currentFollowers = userProfile?.snsProfiles?.instagram?.followers || 0;
-
-      setStats({
-        followers: currentFollowers,
-        engagement: Math.round(avgEngagement * 10) / 10,
-        reach: totalReach,
-        saves: totalSaves,
-        likes: totalLikes,
-        comments: totalComments,
-        postsThisWeek,
-        weeklyGoal: 5,
-        followerGrowth: postsThisMonth > 0 ? 12.5 : 0,
-        topPostType: 'フィード',
-        monthlyFeedPosts: postsThisMonth,
-        monthlyReelPosts: 0,
-        monthlyStoryPosts: 0
+      // 最近の投稿パフォーマンスを生成（投稿一覧ページと同じロジック）
+      console.log('🔍 投稿データの詳細:');
+      allPosts.forEach((post: PostData, index: number) => {
+        console.log(`投稿${index + 1}:`, {
+          id: post.id,
+          title: post.title,
+          createdAt: post.createdAt,
+          createdAtType: typeof post.createdAt,
+          createdAtConstructor: post.createdAt?.constructor?.name,
+          createdAtString: String(post.createdAt)
+        });
       });
-
-      // 最近の投稿パフォーマンスを生成（analyticsデータから）
-      const recentPostsData = analyticsData
+      
+      const recentPostsData = allPosts
         .slice(0, 4)
-        .map((analytics: typeof analyticsData[0]) => {
-          const post = allPosts.find((p: PostData) => p.id === analytics.postId);
+        .map((post: PostData) => {
+          // アナリティクスデータを取得（投稿一覧ページと同じロジック）
+          const analyticsFromData = analyticsData.find((a: { postId: string | null }) => a.postId === post.id);
+          const postAnalytics = analyticsFromData ? {
+            likes: analyticsFromData.likes,
+            comments: analyticsFromData.comments,
+            shares: analyticsFromData.shares,
+            reach: analyticsFromData.reach,
+            engagementRate: analyticsFromData.engagementRate,
+            publishedAt: analyticsFromData.publishedAt,
+            thumbnail: analyticsFromData.thumbnail
+          } : post.analytics ? {
+            likes: post.analytics.likes,
+            comments: post.analytics.comments,
+            shares: post.analytics.shares,
+            reach: post.analytics.reach,
+            engagementRate: post.analytics.engagementRate,
+            publishedAt: post.analytics.publishedAt,
+            thumbnail: undefined
+          } : null;
+
           return {
-            id: analytics.postId,
-            title: post?.title || 'タイトルなし',
-            type: post?.postType || 'feed',
-            likes: analytics.likes || 0,
-            comments: analytics.comments || 0,
-            saves: analytics.shares || 0,
-            reach: analytics.reach || 0,
-            engagementRate: analytics.engagementRate || 0,
-            postedAt: new Date(analytics.publishedAt).toLocaleDateString('ja-JP'),
-            imageUrl: post?.imageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop&crop=center',
-            caption: post?.content || ''
+            id: post.id,
+            title: post.title || 'タイトルなし',
+            type: post.postType || 'feed',
+            likes: postAnalytics?.likes || 0,
+            comments: postAnalytics?.comments || 0,
+            saves: postAnalytics?.shares || 0, // sharesをsavesとして表示
+            reach: postAnalytics?.reach || 0,
+            engagementRate: postAnalytics?.engagementRate || 0,
+            postedAt: (() => {
+              try {
+                // publishedAtを優先し、なければcreatedAtを使用
+                const dateToUse = postAnalytics?.publishedAt || post.createdAt;
+                
+                console.log('🔍 日付変換デバッグ:', {
+                  postId: post.id,
+                  postTitle: post.title,
+                  postAnalytics: postAnalytics,
+                  postCreatedAt: post.createdAt,
+                  postCreatedAtType: typeof post.createdAt,
+                  postCreatedAtConstructor: post.createdAt?.constructor?.name,
+                  publishedAt: postAnalytics?.publishedAt,
+                  publishedAtType: typeof postAnalytics?.publishedAt,
+                  publishedAtConstructor: postAnalytics?.publishedAt?.constructor?.name,
+                  dateToUse: dateToUse,
+                  dateToUseType: typeof dateToUse,
+                  dateToUseConstructor: dateToUse?.constructor?.name,
+                  hasToDate: dateToUse && typeof dateToUse === 'object' && 'toDate' in dateToUse,
+                  isDate: dateToUse instanceof Date
+                });
+                
+                // Firestore Timestampオブジェクトの場合
+                if (dateToUse && typeof dateToUse === 'object' && 'toDate' in dateToUse) {
+                  const convertedDate = dateToUse.toDate();
+                  console.log('✅ Timestamp変換成功:', convertedDate);
+                  return convertedDate.toLocaleDateString('ja-JP');
+                }
+                // Firestore Timestampのシリアライズされた形式の場合
+                else if (dateToUse && typeof dateToUse === 'object' && 'type' in dateToUse && dateToUse.type === 'firestore/timestamp/1.0') {
+                  const convertedDate = new Date(dateToUse.seconds * 1000 + Math.floor(dateToUse.nanoseconds / 1000000));
+                  console.log('✅ Firestore Timestamp変換成功:', convertedDate);
+                  return convertedDate.toLocaleDateString('ja-JP');
+                }
+                // 通常のDateオブジェクトまたは文字列の場合
+                else if (dateToUse && dateToUse !== null && dateToUse !== undefined) {
+                  // 空のオブジェクト{}の場合はスキップ
+                  if (typeof dateToUse === 'object' && Object.keys(dateToUse).length === 0) {
+                    console.log('❌ 空のオブジェクトが検出されました');
+                    return '日付不明';
+                  }
+                  
+                  const date = dateToUse instanceof Date ? dateToUse : new Date(dateToUse);
+                  console.log('✅ Date変換結果:', date, 'isValid:', !isNaN(date.getTime()));
+                  if (isNaN(date.getTime())) {
+                    console.error('❌ Invalid Date detected:', dateToUse);
+                    return '日付不明';
+                  }
+                  return date.toLocaleDateString('ja-JP');
+                } else {
+                  console.log('❌ 日付データなし');
+                  return '日付不明';
+                }
+              } catch (error) {
+                console.error('日付変換エラー:');
+                console.error('エラー:', error);
+                console.error('createdAt:', post.createdAt);
+                console.error('createdAt型:', typeof post.createdAt);
+                console.error('createdAt構造:', post.createdAt?.constructor?.name);
+                console.error('publishedAt:', postAnalytics?.publishedAt);
+                console.error('投稿ID:', post.id);
+                return '日付不明';
+              }
+            })(),
+            imageUrl: postAnalytics?.thumbnail || post.imageUrl || null,
+            caption: post.content || '',
+            hashtags: post.hashtags || []
           };
         });
       setRecentPosts(recentPostsData);
 
       // 今週の投稿予定を生成
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 今日の0時0分0秒
+      
       const scheduledPostsData = allPosts
-        .filter((post: PostData) => 
-          (post.status === 'scheduled' || post.status === 'draft') && 
-          post.scheduledDate
-        )
+        .filter((post: PostData) => {
+          if ((post.status !== 'scheduled' && post.status !== 'draft') || !post.scheduledDate) {
+            return false;
+          }
+          
+          try {
+            let scheduledDate: Date;
+            
+            // Firestore Timestampオブジェクトの場合
+            if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'toDate' in post.scheduledDate) {
+              scheduledDate = (post.scheduledDate as { toDate(): Date }).toDate();
+            }
+            // Firestore Timestampのシリアライズされた形式の場合
+            else if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'type' in post.scheduledDate && (post.scheduledDate as { type: string }).type === 'firestore/timestamp/1.0') {
+              const timestamp = post.scheduledDate as unknown as { seconds: number; nanoseconds: number };
+              scheduledDate = new Date(timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000));
+            }
+            // 通常のDateオブジェクトまたは文字列の場合
+            else {
+              scheduledDate = post.scheduledDate instanceof Date ? post.scheduledDate : new Date(post.scheduledDate as string);
+            }
+            
+            return scheduledDate >= today; // 今日以降の投稿のみ
+          } catch (error) {
+            console.error('投稿予定の日付変換エラー:', error, post);
+            return false;
+          }
+        })
         .slice(0, 5)
         .map((post: PostData) => {
-          const scheduledDate = new Date(post.scheduledDate!);
+          try {
+            let scheduledDate: Date;
+            
+            // Firestore Timestampオブジェクトの場合
+            if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'toDate' in post.scheduledDate) {
+              scheduledDate = (post.scheduledDate as { toDate(): Date }).toDate();
+            }
+            // Firestore Timestampのシリアライズされた形式の場合
+            else if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'type' in post.scheduledDate && (post.scheduledDate as { type: string }).type === 'firestore/timestamp/1.0') {
+              const timestamp = post.scheduledDate as unknown as { seconds: number; nanoseconds: number };
+              scheduledDate = new Date(timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000));
+            }
+            // 通常のDateオブジェクトまたは文字列の場合
+            else {
+              scheduledDate = post.scheduledDate instanceof Date ? post.scheduledDate : new Date(post.scheduledDate as string);
+            }
+            
           const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
           return {
             day: dayNames[scheduledDate.getDay()],
@@ -251,58 +409,97 @@ function InstagramDashboardContent() {
             time: post.scheduledTime || '未設定',
             status: post.status
           };
-        });
+          } catch (error) {
+            console.error('投稿予定の日付変換エラー:', error, post);
+            return null;
+          }
+        })
+        .filter((post: PostData | null): post is PostData => post !== null);
       setScheduledPosts(scheduledPostsData);
 
-      // ハッシュタグランキングを生成
-      const allHashtags = allPosts.flatMap((post: PostData) => post.hashtags);
-      const hashtagCounts = allHashtags.reduce((acc: Record<string, number>, hashtag: string) => {
-        acc[hashtag] = (acc[hashtag] || 0) + 1;
-        return acc;
-      }, {});
-      
-      const hashtagRankingData = Object.entries(hashtagCounts)
-        .sort(([,a], [,b]) => (b as number) - (a as number))
-        .slice(0, 6)
-        .map(([tag, count]) => ({
-          tag: `#${tag}`,
-          count: count as number,
-          engagement: Math.random() * 3 + 2 // 仮のエンゲージメント率
-        }));
-      setHashtagRanking(hashtagRankingData);
+      // 未分析投稿を取得（公開済みまたは作成済みで分析データがない投稿）
+      const unanalyzedPostsData = allPosts
+        .filter((post: PostData) => {
+          // 公開済みまたは作成済みの投稿
+          if (post.status !== 'published' && post.status !== 'created') {
+            return false;
+          }
+          
+          // 分析データがない投稿
+          if (analyticsData.some((analytics: { postId: string | null }) => analytics.postId === post.id)) {
+            return false;
+          }
+          
+          // 作成済みの投稿の場合、過去の投稿のみ（今日より前）
+          if (post.status === 'created' && post.scheduledDate) {
+            try {
+              let scheduledDate: Date;
+              
+              if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'toDate' in post.scheduledDate) {
+                scheduledDate = (post.scheduledDate as { toDate(): Date }).toDate();
+              }
+              else if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'type' in post.scheduledDate && (post.scheduledDate as { type: string }).type === 'firestore/timestamp/1.0') {
+                const timestamp = post.scheduledDate as unknown as { seconds: number; nanoseconds: number };
+              scheduledDate = new Date(timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000));
+              }
+              else {
+                scheduledDate = post.scheduledDate instanceof Date ? post.scheduledDate : new Date(post.scheduledDate as string);
+              }
+              
+              return scheduledDate < today; // 今日より前の投稿のみ
+            } catch (error) {
+              console.error('未分析投稿の日付変換エラー:', error, post);
+              return false;
+            }
+          }
+          
+          return true; // 公開済みの投稿はすべて含める
+        })
+        .slice(0, 5)
+        .map((post: PostData) => {
+          try {
+            let createdAt: Date;
+            
+            // Firestore Timestampオブジェクトの場合
+            if (post.createdAt && typeof post.createdAt === 'object' && 'toDate' in post.createdAt) {
+              createdAt = (post.createdAt as { toDate(): Date }).toDate();
+            }
+            // Firestore Timestampのシリアライズされた形式の場合
+            else if (post.createdAt && typeof post.createdAt === 'object' && 'type' in post.createdAt && (post.createdAt as { type: string }).type === 'firestore/timestamp/1.0') {
+              const timestamp = post.createdAt as unknown as { seconds: number; nanoseconds: number };
+              createdAt = new Date(timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000));
+            }
+            // 通常のDateオブジェクトまたは文字列の場合
+            else {
+              createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt as string);
+            }
+            
+            return {
+              id: post.id,
+              title: post.title,
+              type: post.postType === 'reel' ? 'リール' : post.postType === 'feed' ? 'フィード' : 'ストーリー',
+              imageUrl: post.imageUrl || null,
+              createdAt: createdAt.toLocaleDateString('ja-JP'),
+              status: post.status
+            };
+          } catch (error) {
+            console.error('未分析投稿の日付変換エラー:', error, post);
+            return null;
+          }
+        })
+        .filter((post: PostData | null): post is PostData => post !== null);
+      setUnanalyzedPosts(unanalyzedPostsData);
 
-      // 目標達成通知を生成
-      const goalNotificationsData = [
-        {
-          title: '週間投稿目標',
-          current: postsThisWeek,
-          target: 5,
-          unit: '件',
-          status: postsThisWeek >= 5 ? 'achieved' : 'in_progress'
-        },
-        {
-          title: 'エンゲージメント目標',
-          current: Math.round(avgEngagement * 10) / 10,
-          target: 5.0,
-          unit: '%',
-          status: Math.round(avgEngagement * 10) / 10 >= 5.0 ? 'achieved' : 'in_progress'
-        },
-        {
-          title: 'フォロワー増加',
-          current: postsThisMonth > 0 ? 12.5 : 0,
-          target: 10.0,
-          unit: '%',
-          status: (postsThisMonth > 0 ? 12.5 : 0) >= 10.0 ? 'achieved' : 'in_progress'
-        }
-      ];
-      setGoalNotifications(goalNotificationsData);
+
+      // 目標達成通知をAPIから取得
+      await fetchGoalTracking();
 
     } catch (error) {
       console.error('データ取得エラー:', error);
     } finally {
       setLoading(false);
     }
-  }, [user?.uid, userProfile?.snsProfiles?.instagram?.followers]);
+  }, [user, fetchAnalyticsData, fetchDashboardStats, fetchGoalTracking]);
 
   useEffect(() => {
     // 認証状態が確定してからデータを取得
@@ -310,12 +507,12 @@ function InstagramDashboardContent() {
       console.log('User authenticated, fetching data for:', user.uid);
       fetchPostsAndCalculateStats();
       
-      // リアルタイム更新のためのポーリング（30秒間隔）
-      const interval = setInterval(() => {
-        fetchPostsAndCalculateStats();
-      }, 30000);
+      // ポーリングは一時的に無効化
+      // const interval = setInterval(() => {
+      //   fetchPostsAndCalculateStats();
+      // }, 300000);
       
-      return () => clearInterval(interval);
+      // return () => clearInterval(interval);
     } else {
       console.log('User not authenticated, skipping data fetch');
     }
@@ -460,55 +657,73 @@ function InstagramDashboardContent() {
             </div>
           </div>
 
-          {/* 統計カード */}
-          <StatsCards stats={stats} loading={loading} />
 
-          {/* よく使用したハッシュタグランキング */}
-          <div className="bg-white mb-8">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                <span className="text-2xl mr-2">#️⃣</span>
-                よく使用したハッシュタグランキング
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {loading ? (
-                  <div className="col-span-3 text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto"></div>
-                    <p className="text-gray-600 mt-2">読み込み中...</p>
-                  </div>
-                ) : hashtagRanking.length === 0 ? (
-                  <div className="col-span-3 text-center py-8">
-                    <div className="text-gray-400 text-4xl mb-2">#️⃣</div>
-                    <p className="text-gray-600">ハッシュタグデータがありません</p>
-                  </div>
-                ) : (
-                  hashtagRanking.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center">
-                      <span className="text-lg font-bold text-pink-600 mr-3">#{index + 1}</span>
-                      <div>
-                        <div className="font-medium text-gray-900">{item.tag}</div>
-                        <div className="text-sm text-gray-500">{item.count}回使用</div>
+
+
+
+          {/* 分析待ちの投稿 */}
+          {unanalyzedPosts.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                  <span className="text-2xl mr-2">📊</span>
+                  分析待ちの投稿
+                </h2>
+              </div>
+              <div className="p-6 space-y-3">
+                {unanalyzedPosts.map((post, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-white hover:bg-gray-50 transition-colors rounded-none border border-gray-300">
+                  <div className="flex items-center flex-1">
+                    <div className="w-12 h-12 mr-3 flex-shrink-0">
+                      {post.imageUrl ? (
+                        <Image 
+                          src={post.imageUrl} 
+                          alt={post.title}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">📷</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center mb-1">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2 ${
+                          post.type === 'reel' ? 'bg-purple-100 text-purple-800' :
+                          post.type === 'feed' ? 'bg-blue-100 text-blue-800' :
+                          'bg-pink-100 text-pink-800'
+                        }`}>
+                          {post.type === 'reel' ? '🎬' : post.type === 'feed' ? '📸' : '📱'}
+                          {post.type}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          ⏳ 分析待ち
+                        </span>
+                      </div>
+                      <div className="text-sm font-medium text-gray-900 line-clamp-1">{post.title}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        <span className="mr-2">📅 {post.createdAt}</span>
+                        <span className="text-gray-400">|</span>
+                        <span className="ml-2">📊 分析データなし</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-pink-600">{item.engagement}%</div>
-                      <div className="text-xs text-gray-500">エンゲージメント</div>
-                    </div>
                   </div>
-                  ))
-                )}
+                  <div className="ml-3">
+                    <a 
+                      href={`/instagram/analytics?postId=${post.id}`}
+                      className="inline-flex items-center px-3 py-1.5 bg-orange-500 text-white text-xs font-medium rounded-md hover:bg-orange-600 transition-colors"
+                    >
+                      分析する
+                    </a>
+                  </div>
+                </div>
+                ))}
               </div>
             </div>
-          </div>
-
-          {/* エンゲージメント分析グラフ */}
-          <AnalyticsCharts analyticsData={analyticsData} stats={stats} loading={loading} />
-
-          {/* 投稿分析入力 - 全幅表示 */}
-          <PostAnalysisInput onDataSaved={fetchPostsAndCalculateStats} />
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* 左カラム - 最近の投稿 */}
@@ -541,18 +756,64 @@ function InstagramDashboardContent() {
                       </div>
                     ) : (
                       recentPosts.map((post) => (
-                      <div key={post.id} className="bg-gray-50 p-4 hover:shadow-md transition-shadow">
-                        {/* 投稿情報 */}
-                        <div className="flex items-center justify-between mb-3">
+                      <div key={post.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                        {/* サムネイル画像 */}
+                        <div className="relative">
+                          <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
+                            {post.imageUrl ? (
+                              <Image 
+                                src={post.imageUrl} 
+                                alt={post.title}
+                                width={400}
+                                height={192}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="text-center text-gray-500">
+                                <div className="text-4xl mb-2">📷</div>
+                                <div className="text-sm">サムネがありません</div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="absolute top-2 left-2">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPostTypeColor(post.type)}`}>
                             {getPostTypeIcon(post.type)} {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
                           </span>
-                          <span className="text-xs text-gray-500">{post.postedAt}</span>
+                          </div>
+                          <div className="absolute top-2 right-2">
+                            <span className="text-xs text-gray-500 bg-white bg-opacity-80 px-2 py-1 rounded">{post.postedAt}</span>
+                          </div>
                         </div>
-                        <h3 className="font-medium text-gray-900 mb-4 line-clamp-2">{post.title}</h3>
+                        
+                        <div className="p-4">
+                          {/* タイトル */}
+                          <div className="mb-2">
+                            <h3 className="font-semibold text-gray-900 line-clamp-2">{post.title}</h3>
+                          </div>
+                          
+                          {/* 投稿文（キャプション） */}
+                          <div className="mb-3">
+                            <p className="text-sm text-gray-700 line-clamp-3">{post.caption}</p>
+                          </div>
+                          
+                          {/* ハッシュタグ */}
+                          {post.hashtags && post.hashtags.length > 0 && (
+                            <div className="mb-4">
+                              <div className="flex flex-wrap gap-1">
+                                {post.hashtags.slice(0, 5).map((hashtag: string, index: number) => (
+                                  <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                    #{hashtag}
+                                  </span>
+                                ))}
+                                {post.hashtags.length > 5 && (
+                                  <span className="text-xs text-gray-500">+{post.hashtags.length - 5}個</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         
                         {/* KPI表示 */}
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="grid grid-cols-4 gap-2 text-sm mb-4">
                           <div className="text-center bg-gray-50 rounded-lg p-2">
                             <div className="text-gray-500 text-xs">いいね</div>
                             <div className="font-semibold text-gray-900">{post.likes}</div>
@@ -566,8 +827,26 @@ function InstagramDashboardContent() {
                             <div className="font-semibold text-gray-900">{post.saves}</div>
                           </div>
                           <div className="text-center bg-gray-50 rounded-lg p-2">
-                            <div className="text-gray-500 text-xs">エンゲージメント率</div>
+                              <div className="text-gray-500 text-xs">エンゲージ</div>
                             <div className="font-semibold text-pink-600">{post.engagementRate}%</div>
+                            </div>
+                          </div>
+                          
+                          {/* AIに聞くボタン */}
+                          <div className="text-center">
+                            <button 
+                              onClick={() => {
+                                // AIにこの投稿について聞く処理
+                                const chatWidget = document.querySelector('[data-ai-chat-widget]');
+                                if (chatWidget) {
+                                  chatWidget.scrollIntoView({ behavior: 'smooth' });
+                                }
+                              }}
+                              className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 text-sm font-medium"
+                            >
+                              <span className="mr-2">🤖</span>
+                              この投稿についてAIに聞く
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -604,14 +883,14 @@ function InstagramDashboardContent() {
                     </div>
                   ) : (
                     scheduledPosts.map((post, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center">
-                        <div className="text-center mr-4">
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg">
+                      <div className="flex items-center flex-1">
+                        <div className="text-center mr-4 min-w-[50px]">
                           <div className="text-xs text-gray-500">{post.day}</div>
                           <div className="text-sm font-semibold text-gray-900">{post.date}</div>
                         </div>
-                        <div>
-                          <div className="flex items-center">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-1">
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2 ${
                               post.type === 'reel' ? 'bg-purple-100 text-purple-800' :
                               post.type === 'feed' ? 'bg-blue-100 text-blue-800' :
@@ -626,17 +905,20 @@ function InstagramDashboardContent() {
                               {post.status === 'scheduled' ? '予定済み' : '下書き'}
                             </span>
                           </div>
-                          <div className="text-sm font-medium text-gray-900 mt-1">{post.title}</div>
+                          <div className="text-sm font-medium text-gray-900 line-clamp-1">{post.title}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            <span className="mr-2">⏰ {post.time}</span>
+                            <span className="text-gray-400">|</span>
+                            <span className="ml-2">📅 投稿予定</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-500">{post.time}</div>
                       </div>
                     </div>
                     ))
                   )}
                 </div>
               </div>
+
             </div>
           </div>
         </div>

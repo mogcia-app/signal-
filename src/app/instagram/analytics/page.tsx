@@ -84,9 +84,13 @@ interface PostData {
   title: string;
   content: string;
   hashtags: string[];
-  thumbnail: string;
+  thumbnail?: string;
+  imageUrl?: string;
   category: 'reel' | 'feed' | 'story';
-  publishedAt: Date;
+  type?: 'reel' | 'feed' | 'story';
+  publishedAt?: Date;
+  createdAt?: Date;
+  status?: string;
 }
 
 function InstagramAnalyticsContent() {
@@ -206,14 +210,29 @@ function InstagramAnalyticsContent() {
         where('userId', '==', user.uid)
       );
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        publishedAt: doc.data().publishedAt?.toDate() || new Date()
-      })) as PostData[];
+      const data = snapshot.docs.map(doc => {
+        const docData = doc.data();
+        return {
+          id: doc.id,
+          title: docData.title || '',
+          content: docData.content || '',
+          hashtags: docData.hashtags || [],
+          thumbnail: docData.thumbnail || docData.imageUrl || '',
+          imageUrl: docData.imageUrl || docData.thumbnail || '',
+          category: docData.category || docData.type || 'feed',
+          type: docData.type || docData.category || 'feed',
+          publishedAt: docData.publishedAt?.toDate() || docData.createdAt?.toDate() || new Date(),
+          createdAt: docData.createdAt?.toDate() || new Date(),
+          status: docData.status || 'published'
+        };
+      }) as PostData[];
       
       // クライアント側でソート
-      data.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+      data.sort((a, b) => {
+        const aTime = a.publishedAt?.getTime() || 0;
+        const bTime = b.publishedAt?.getTime() || 0;
+        return bTime - aTime;
+      });
       setPosts(data);
     } catch (error) {
       console.error('Posts fetch error:', error);
@@ -245,32 +264,42 @@ function InstagramAnalyticsContent() {
     }
   }, [user]);
 
+  // URLパラメータから投稿IDを取得して投稿データを自動入力
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('postId');
+    
+    if (postId && posts.length > 0) {
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        setSelectedPost(post);
+        setSelectedPostId(postId);
+        // 投稿データを自動入力
+        setInputData(prev => ({
+          ...prev,
+          title: post.title || '',
+          content: post.content || '',
+          hashtags: post.hashtags?.join(', ') || '',
+          thumbnail: post.thumbnail || post.imageUrl || '',
+          category: post.category || post.type || 'feed',
+          publishedAt: post.publishedAt ? post.publishedAt.toISOString().split('T')[0] : (post.createdAt ? post.createdAt.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+          publishedTime: post.publishedAt ? post.publishedAt.toTimeString().slice(0, 5) : (post.createdAt ? post.createdAt.toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5))
+        }));
+      }
+    }
+  }, [posts]);
+
   useEffect(() => {
     fetchAnalytics();
     fetchPosts();
     fetchCurrentPlan();
   }, [fetchAnalytics, fetchPosts, fetchCurrentPlan]);
 
-  // 投稿を選択
-  const handleSelectPost = (post: PostData) => {
-    setSelectedPost(post);
-    setSelectedPostId(post.id);
-    setInputData(prev => ({
-      ...prev,
-      title: post.title,
-      content: post.content,
-      hashtags: post.hashtags.join(', '),
-      thumbnail: post.thumbnail,
-      category: post.category || 'feed',
-      publishedAt: post.publishedAt.toISOString().split('T')[0],
-      publishedTime: post.publishedAt.toTimeString().slice(0, 5)
-    }));
-  };
 
 
 
   // 投稿分析データを保存（BFF経由）
-  const handleSaveAnalytics = async () => {
+  const handleSaveAnalytics = async (sentimentData?: { sentiment: 'satisfied' | 'dissatisfied' | null; memo: string }) => {
     if (!user?.uid) {
       alert('ログインが必要です');
       return;
@@ -317,7 +346,9 @@ function InstagramAnalyticsContent() {
           thumbnail: inputData.thumbnail,
           category: inputData.category,
           audience: inputData.audience,
-          reachSource: inputData.reachSource
+          reachSource: inputData.reachSource,
+          sentiment: sentimentData?.sentiment || null,
+          sentimentMemo: sentimentData?.memo || ''
         }),
       });
 
@@ -417,6 +448,7 @@ function InstagramAnalyticsContent() {
     }
   };
 
+
   // 統計計算（数値に変換してから計算）
   const totalLikes = analyticsData.reduce((sum, data) => sum + (Number(data.likes) || 0), 0);
   const totalComments = analyticsData.reduce((sum, data) => sum + (Number(data.comments) || 0), 0);
@@ -466,7 +498,15 @@ function InstagramAnalyticsContent() {
             <div className="space-y-6">
               {/* 投稿プレビュー */}
               <PostPreview
-                selectedPost={selectedPost}
+                selectedPost={selectedPost ? {
+                  id: selectedPost.id,
+                  title: selectedPost.title,
+                  content: selectedPost.content,
+                  hashtags: selectedPost.hashtags,
+                  thumbnail: selectedPost.thumbnail || '',
+                  category: selectedPost.category,
+                  publishedAt: selectedPost.publishedAt || new Date()
+                } : null}
                 inputData={inputData}
               />
 

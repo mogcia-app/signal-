@@ -1,13 +1,14 @@
 'use client';
 
-import React from 'react';
-import { Heart, MessageCircle, Share, Eye, Save, UserPlus, Users, Target } from 'lucide-react';
+import React, { useState } from 'react';
+import Image from 'next/image';
+import { Heart, MessageCircle, Share, Eye, Save, UserPlus, Users, Target, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
 import { InputData } from './types';
 
 interface AnalyticsFormProps {
   data: InputData;
   onChange: (data: InputData) => void;
-  onSave: () => void;
+  onSave: (sentimentData?: { sentiment: 'satisfied' | 'dissatisfied' | null; memo: string }) => void;
   isLoading: boolean;
 }
 
@@ -17,6 +18,9 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
   onSave,
   isLoading
 }) => {
+  const [sentiment, setSentiment] = useState<'satisfied' | 'dissatisfied' | null>(null);
+  const [memo, setMemo] = useState('');
+  const [isEditingMemo, setIsEditingMemo] = useState(false);
   const handleInputChange = (field: keyof InputData, value: string) => {
     onChange({
       ...data,
@@ -61,6 +65,18 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
         }
       }
     });
+  };
+
+  const handleSentimentClick = (selectedSentiment: 'satisfied' | 'dissatisfied') => {
+    setSentiment(selectedSentiment);
+  };
+
+  const handleMemoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMemo(e.target.value);
+  };
+
+  const handleSaveMemo = () => {
+    setIsEditingMemo(false);
   };
 
   const handleFollowersChange = (field: 'followers' | 'nonFollowers', value: string) => {
@@ -175,7 +191,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                       // 画像を圧縮してBase64に変換
                       const canvas = document.createElement('canvas');
                       const ctx = canvas.getContext('2d');
-                      const img = new Image();
+                      const img = new window.Image();
                       
                       img.onload = () => {
                         // 最大サイズを200x200に制限
@@ -212,9 +228,11 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
                 {data.thumbnail && (
                   <div className="mt-2">
-                    <img 
+                    <Image 
                       src={data.thumbnail} 
                       alt="サムネイルプレビュー" 
+                      width={80}
+                      height={80}
                       className="w-20 h-20 object-cover rounded-lg border border-gray-200"
                     />
                   </div>
@@ -649,10 +667,109 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
           </div>
         </div>
 
+        {/* 感情分析セクション */}
+        <div className="pt-4 border-t border-gray-200">
+          <div className="mb-4">
+            <div className="flex items-center mb-3">
+              <Heart className="h-5 w-5 text-pink-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">分析結果の感想</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {/* 感情選択 */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-3">この分析結果に満足していますか？</p>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => handleSentimentClick('satisfied')}
+                    className={`flex items-center px-4 py-2 rounded-lg border-2 transition-all ${
+                      sentiment === 'satisfied'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 hover:border-green-300 hover:bg-green-50'
+                    }`}
+                  >
+                    <ThumbsUp className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">満足</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleSentimentClick('dissatisfied')}
+                    className={`flex items-center px-4 py-2 rounded-lg border-2 transition-all ${
+                      sentiment === 'dissatisfied'
+                        ? 'border-red-500 bg-red-50 text-red-700'
+                        : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
+                    }`}
+                  >
+                    <ThumbsDown className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">不満</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* メモ入力 */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-700">改善点や気づき</p>
+                  {!isEditingMemo && memo && (
+                    <button
+                      onClick={() => setIsEditingMemo(true)}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {isEditingMemo ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={memo}
+                      onChange={handleMemoChange}
+                      placeholder="改善点や気づいたことをメモしてください..."
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      rows={3}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={() => setIsEditingMemo(false)}
+                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        onClick={handleSaveMemo}
+                        className="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        保存
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => setIsEditingMemo(true)}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      memo 
+                        ? 'border-gray-300 bg-gray-50 hover:bg-gray-100' 
+                        : 'border-dashed border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    {memo ? (
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{memo}</p>
+                    ) : (
+                      <p className="text-sm text-gray-500">改善点や気づいたことをメモしてください...</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* 保存ボタン */}
         <div className="pt-4 border-t border-gray-200">
           <button
-            onClick={onSave}
+            onClick={() => onSave({ sentiment, memo })}
             disabled={isLoading}
             className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2"
           >
