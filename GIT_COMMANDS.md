@@ -84,7 +84,106 @@ git remote add origin https://github.com/username/repo.git
 git branch -a
 ```
 
+## ⚠️ よくあるエラーと対処法
+
+### 1. リモートが既に存在するエラー
+```bash
+# エラー: remote origin already exists
+git remote remove origin
+git remote add origin https://github.com/username/repo.git
+```
+
+### 2. リモートが存在しないエラー
+```bash
+# エラー: No such remote: 'origin'
+git remote add origin https://github.com/username/repo.git
+```
+
+### 3. 何もコミットするものがないエラー
+```bash
+# エラー: nothing to commit, working tree clean
+# 解決法1: 小さな変更を加える
+echo "# 更新" >> README.md
+git add . && git commit -m "update: 軽微な更新" && git push origin main
+
+# 解決法2: 空のコミットを作成
+git commit --allow-empty -m "trigger: デプロイをトリガー"
+git push origin main
+```
+
+### 4. 権限エラー
+```bash
+# エラー: Read-only file system
+sudo git init
+sudo git remote add origin https://github.com/username/repo.git
+```
+
+### 5. 認証エラー
+```bash
+# ユーザー情報を設定
+git config --global user.name "Your Name"
+git config --global user.email "your-email@example.com"
+
+# GitHubの認証（Personal Access Tokenが必要な場合）
+git remote set-url origin https://username:token@github.com/username/repo.git
+```
+
+### 6. ブランチの競合エラー
+```bash
+# 強制プッシュ（注意：既存のコードが上書きされます）
+git push -u origin main --force
+
+# または、新しいブランチを作成
+git checkout -b new-branch
+git push -u origin new-branch
+```
+
+### 7. マージコンフリクト
+```bash
+# コンフリクトを確認
+git status
+
+# コンフリクトを解決後
+git add .
+git commit -m "resolve: マージコンフリクトを解決"
+git push origin main
+```
+
+### 8. Vercelデプロイが走らない場合
+```bash
+# 方法1: 小さな変更を加えてプッシュ
+echo "# デプロイトリガー" >> README.md
+git add . && git commit -m "trigger: Vercelデプロイ" && git push origin main
+
+# 方法2: Vercel CLIで直接デプロイ
+npx vercel --prod --yes
+
+# 方法3: 空のコミットでトリガー
+git commit --allow-empty -m "trigger: Vercelデプロイをトリガー"
+git push origin main
+```
+
 ## 📝 今回の変更履歴
+
+### 2025-10-04
+- **BFF化実装**: 月次レポートの計算処理をバックエンドに移行
+- **API追加**: `/api/analytics/monthly-report-summary`エンドポイント
+- **パフォーマンス向上**: フロントエンドの計算処理を大幅に簡素化
+- **型安全性**: TypeScriptでAPIレスポンスの型を定義
+- **コンポーネント分割**: 月次レポートページを9つのコンポーネントに分割
+
+### 変更されたファイル
+- `src/app/api/analytics/monthly-report-summary/route.ts` (新規)
+- `src/app/instagram/monthly-report/page.tsx`
+- `src/app/instagram/monthly-report/components/ReportHeader.tsx` (新規)
+- `src/app/instagram/monthly-report/components/PerformanceRating.tsx` (新規)
+- `src/app/instagram/monthly-report/components/MetricsCards.tsx` (新規)
+- `src/app/instagram/monthly-report/components/DetailedStats.tsx` (新規)
+- `src/app/instagram/monthly-report/components/VisualizationSection.tsx` (新規)
+- `src/app/instagram/monthly-report/components/AudienceAnalysis.tsx` (新規)
+- `src/app/instagram/monthly-report/components/AdvancedAnalysis.tsx` (新規)
+- `src/app/instagram/monthly-report/components/AIPredictionAnalysis.tsx` (新規)
+- `src/app/instagram/monthly-report/components/DataExport.tsx` (新規)
 
 ### 2025-10-02
 - **型エラー修正**: `postAnalytics`の型一貫性確保

@@ -38,6 +38,14 @@ interface DetailedStatsProps {
       followerChange: number;
       postsChange: number;
     };
+    postTypeStats: {
+      type: string;
+      count: number;
+      label: string;
+      color: string;
+      bg: string;
+      percentage: number;
+    }[];
   } | null;
   getWeekDisplayName: (weekStr: string) => string;
   getMonthDisplayName: (monthStr: string) => string;
@@ -131,46 +139,27 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
         {/* 投稿タイプ別統計 */}
         <div>
           <h4 className="text-sm font-medium text-gray-700 mb-3">投稿タイプ別統計</h4>
-          {currentAnalytics.length > 0 ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="text-sm text-gray-600">📸 フィード</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {currentAnalytics.filter(data => {
-                    if (!data.postId) {
-                      return data.category === 'feed';
-                    }
-                    const post = posts.find(p => p.id === data.postId);
-                    return post?.postType === 'feed';
-                  }).length}件
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="text-sm text-gray-600">🎬 リール</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {currentAnalytics.filter(data => {
-                    if (!data.postId) {
-                      return data.category === 'reel';
-                    }
-                    const post = posts.find(p => p.id === data.postId);
-                    return post?.postType === 'reel';
-                  }).length}件
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="text-sm text-gray-600">📱 ストーリーズ</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {currentAnalytics.filter(data => {
-                    if (!data.postId) {
-                      return data.category === 'story';
-                    }
-                    const post = posts.find(p => p.id === data.postId);
-                    return post?.postType === 'story';
-                  }).length}件
-                </span>
-              </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span className="text-sm text-gray-600">📸 フィード</span>
+              <span className="text-sm font-medium text-gray-900">
+                {reportSummary?.postTypeStats?.find(p => p.type === 'feed')?.count || 0}件
+              </span>
             </div>
-          ) : (
+            <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span className="text-sm text-gray-600">🎬 リール</span>
+              <span className="text-sm font-medium text-gray-900">
+                {reportSummary?.postTypeStats?.find(p => p.type === 'reel')?.count || 0}件
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span className="text-sm text-gray-600">📱 ストーリーズ</span>
+              <span className="text-sm font-medium text-gray-900">
+                {reportSummary?.postTypeStats?.find(p => p.type === 'story')?.count || 0}件
+              </span>
+            </div>
+          </div>
+          {(!reportSummary?.postTypeStats || reportSummary.postTypeStats.length === 0) && (
             <div className="text-center py-6">
               <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center">
                 <span className="text-xl">📊</span>

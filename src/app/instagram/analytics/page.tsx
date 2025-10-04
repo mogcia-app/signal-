@@ -15,10 +15,7 @@ import PostPreview from '../components/PostPreview';
 // import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm'; // 統合済み
 import AnalyticsForm from '../components/AnalyticsForm';
 import AnalyticsStats from '../components/AnalyticsStats';
-import { 
-  Target,
-  Plus
-} from 'lucide-react';
+import { } from 'lucide-react';
 
 // オーディエンス分析データの型定義
 interface AudienceData {
@@ -97,7 +94,7 @@ interface PostData {
 
 function InstagramAnalyticsContent() {
   const { user } = useAuth();
-  const { planData, refetchPlanData } = usePlanData();
+  const { planData } = usePlanData();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [posts, setPosts] = useState<PostData[]>([]);
   const [isLoading, setIsLoading] = useState(false);

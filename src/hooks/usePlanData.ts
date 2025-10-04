@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/auth-context';
 
 // 統一された計画データの型定義
@@ -47,7 +47,7 @@ export const usePlanData = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const fetchPlanData = async () => {
+  const fetchPlanData = useCallback(async () => {
     if (!user?.uid) {
       setLoading(false);
       return;
@@ -110,11 +110,11 @@ export const usePlanData = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchPlanData();
-  }, [user?.uid]);
+  }, [user?.uid, fetchPlanData]);
 
   // 手動でデータを再取得する関数
   const refetchPlanData = () => {

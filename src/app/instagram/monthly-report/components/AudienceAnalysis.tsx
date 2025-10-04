@@ -39,59 +39,9 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
     followers: { followers: 0, nonFollowers: 0 }
   };
 
-  // オーディエンスデータの平均値を計算
-  const getAudienceData = () => {
-    const audienceData = currentAnalytics.filter(data => data.audience);
-    if (audienceData.length === 0) {
-      return {
-        gender: { male: 0, female: 0, other: 0 },
-        age: { '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0 }
-      };
-    }
-
-    const avgGender = {
-      male: audienceData.reduce((sum, data) => sum + (data.audience?.gender.male || 0), 0) / audienceData.length,
-      female: audienceData.reduce((sum, data) => sum + (data.audience?.gender.female || 0), 0) / audienceData.length,
-      other: audienceData.reduce((sum, data) => sum + (data.audience?.gender.other || 0), 0) / audienceData.length
-    };
-
-    const avgAge = {
-      '18-24': audienceData.reduce((sum, data) => sum + (data.audience?.age['18-24'] || 0), 0) / audienceData.length,
-      '25-34': audienceData.reduce((sum, data) => sum + (data.audience?.age['25-34'] || 0), 0) / audienceData.length,
-      '35-44': audienceData.reduce((sum, data) => sum + (data.audience?.age['35-44'] || 0), 0) / audienceData.length,
-      '45-54': audienceData.reduce((sum, data) => sum + (data.audience?.age['45-54'] || 0), 0) / audienceData.length
-    };
-
-    return { gender: avgGender, age: avgAge };
-  };
-
-  // 閲覧ソースデータの平均値を計算
-  const getReachSourceData = () => {
-    const reachSourceData = currentAnalytics.filter(data => data.reachSource);
-    if (reachSourceData.length === 0) {
-      return {
-        sources: { posts: 0, profile: 0, explore: 0, search: 0 },
-        followers: { followers: 0, nonFollowers: 0 }
-      };
-    }
-
-    const avgSources = {
-      posts: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.posts || 0), 0) / reachSourceData.length,
-      profile: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.profile || 0), 0) / reachSourceData.length,
-      explore: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.explore || 0), 0) / reachSourceData.length,
-      search: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.search || 0), 0) / reachSourceData.length
-    };
-
-    const avgFollowers = {
-      followers: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.followers.followers || 0), 0) / reachSourceData.length,
-      nonFollowers: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.followers.nonFollowers || 0), 0) / reachSourceData.length
-    };
-
-    return { sources: avgSources, followers: avgFollowers };
-  };
-
-  const audienceData = getAudienceData();
-  const reachSourceData = getReachSourceData();
+  // BFFから取得したデータを直接使用
+  const audienceData = audienceAnalysis;
+  const reachSourceData = reachSourceAnalysis;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">

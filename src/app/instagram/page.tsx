@@ -11,7 +11,7 @@ import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
 import { PlanCard } from '../../components/PlanCard';
-import { Target } from 'lucide-react';
+import { } from 'lucide-react';
 // import StatsCards from './components/StatsCards'; // クイックアクションに置き換え
 
 interface DashboardStats {

@@ -18,7 +18,7 @@ interface AdvancedAnalysisProps {
 }
 
 export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
-  activeTab,
+  activeTab, // eslint-disable-line @typescript-eslint/no-unused-vars
   reportSummary
 }) => {
   const hashtagStats = reportSummary?.hashtagStats || [];
@@ -106,7 +106,7 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
           )}
 
           {/* 時間帯別データ */}
-          {timeSlotData.map(({ label, range, color, postsInRange, avgEngagement }) => (
+          {timeSlotData.map(({ label, color, postsInRange, avgEngagement }) => (
             <div key={label} className={`p-3 rounded-lg ${postsInRange > 0 ? 'bg-gray-50' : 'bg-gray-25'}`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">{label}</span>

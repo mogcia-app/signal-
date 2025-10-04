@@ -32,7 +32,7 @@ interface MetricsCardsProps {
 export const MetricsCards: React.FC<MetricsCardsProps> = ({
   activeTab,
   currentTotals,
-  previousTotals,
+  previousTotals: _, // eslint-disable-line @typescript-eslint/no-unused-vars
   changes
 }) => {
   const periodLabel = activeTab === 'weekly' ? '前週比' : '前月比';

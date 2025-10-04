@@ -366,23 +366,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           />
         </div>
 
-        {/* シミュレーション実行ボタン */}
-        <div className="pt-6">
-          <button
-            onClick={onRunSimulation}
-            disabled={isSimulating}
-            className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors"
-          >
-            {isSimulating ? 'シミュレーション中...' : 'シミュレーション実行'}
-          </button>
-        </div>
-
-        {/* エラー表示 */}
-        {simulationError && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-600 text-sm">{simulationError}</p>
-          </div>
-        )}
 
 
         {/* フォーム完了メッセージ */}

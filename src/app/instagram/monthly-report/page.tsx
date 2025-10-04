@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { useAuth } from '../../../contexts/auth-context';
@@ -122,7 +122,7 @@ export default function InstagramMonthlyReportPage() {
   } | null>(null);
 
   // BFFサマリーデータを取得
-  const fetchReportSummary = async (period: 'weekly' | 'monthly', date: string) => {
+  const fetchReportSummary = useCallback(async (period: 'weekly' | 'monthly', date: string) => {
     if (!user?.uid) return;
     
     try {
@@ -146,10 +146,10 @@ export default function InstagramMonthlyReportPage() {
       console.error('BFFサマリーデータ取得エラー:', error);
       setReportSummary(null);
     }
-  };
+  }, [user]);
 
   // 日別スコアデータを取得
-  const fetchDailyScores = async (days: number = 30) => {
+  const fetchDailyScores = useCallback(async (days: number = 30) => {
     if (!user?.uid) return;
     try {
       const idToken = await user.getIdToken();
@@ -167,10 +167,10 @@ export default function InstagramMonthlyReportPage() {
       console.error('Daily scores fetch error:', error);
       setDailyScores(null);
     }
-  };
+  }, [user]);
 
   // 前期間のデータを取得（比較用）
-  const fetchPreviousPeriodData = async (period: 'weekly' | 'monthly', currentDate: string) => {
+  const fetchPreviousPeriodData = useCallback(async (period: 'weekly' | 'monthly', currentDate: string) => {
     if (!user?.uid) return;
     try {
       const idToken = await user.getIdToken();
@@ -202,10 +202,10 @@ export default function InstagramMonthlyReportPage() {
       console.error('Previous period data fetch error:', error);
       setPreviousPeriodData(null);
     }
-  };
+  }, [user]);
 
   // 月次レビューを取得（月が変わった時のみ）
-  const fetchMonthlyReview = async () => {
+  const fetchMonthlyReview = useCallback(async () => {
     if (!user?.uid || !accountScore) return;
     try {
       const idToken = await user.getIdToken();
@@ -240,11 +240,11 @@ export default function InstagramMonthlyReportPage() {
       console.error('Monthly review fetch error:', error);
       setMonthlyReview(null);
     }
-  };
+  }, [user, accountScore, previousPeriodData]);
 
 
   // BFF APIからデータを取得
-  const fetchAccountScore = async () => {
+  const fetchAccountScore = useCallback(async () => {
     if (!user?.uid) return;
     
     try {
@@ -282,7 +282,7 @@ export default function InstagramMonthlyReportPage() {
         breakdown: {}
       });
     }
-  };
+  }, [user, activeTab, selectedMonth, selectedWeek]);
 
 
   // CSVエクスポート関数
