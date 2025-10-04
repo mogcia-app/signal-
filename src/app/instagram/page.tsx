@@ -572,7 +572,7 @@ function InstagramDashboardContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-gray-50 p-4">
                   <p className="text-sm text-gray-600">目標名</p>
-                  <p className="font-semibold text-gray-900">{planData.goalName}</p>
+                  <p className="font-semibold text-gray-900">{planData.title}</p>
                 </div>
                 <div className="bg-gray-50 p-4">
                   <p className="text-sm text-gray-600">計画期間</p>
@@ -580,11 +580,11 @@ function InstagramDashboardContent() {
                 </div>
                 <div className="bg-gray-50 p-4">
                   <p className="text-sm text-gray-600">目標フォロワー数</p>
-                  <p className="font-semibold text-gray-900">{planData.currentFollowers + planData.followerGain}</p>
+                  <p className="font-semibold text-gray-900">{planData.targetFollowers}</p>
                 </div>
                 <div className="bg-gray-50 p-4">
                   <p className="text-sm text-gray-600">カテゴリ</p>
-                  <p className="font-semibold text-gray-900">{planData.goalCategory}</p>
+                  <p className="font-semibold text-gray-900">{planData.category}</p>
                 </div>
               </div>
               <div className="mt-4 flex justify-end">

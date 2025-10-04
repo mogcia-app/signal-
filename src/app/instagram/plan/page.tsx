@@ -23,9 +23,13 @@ export default function InstagramPlanPage() {
     formData, 
     selectedStrategies, 
     selectedCategories, 
+    isSaving,
+    saveError,
+    saveSuccess,
     handleInputChange, 
     handleStrategyToggle, 
-    handleCategoryToggle 
+    handleCategoryToggle,
+    savePlan
   } = usePlanForm()
 
   const { 
@@ -112,6 +116,15 @@ export default function InstagramPlanPage() {
     await runABTest(requestData)
   }
 
+  // 計画保存ハンドラー
+  const handleSavePlan = async (): Promise<boolean> => {
+    const success = await savePlan()
+    if (success) {
+      // 保存成功時の処理（必要に応じてページ遷移など）
+      console.log('計画が正常に保存されました')
+    }
+    return success
+  }
 
   return (
     <SNSLayout 
@@ -131,8 +144,12 @@ export default function InstagramPlanPage() {
             onStrategyToggle={handleStrategyToggle}
             onCategoryToggle={handleCategoryToggle}
             onRunSimulation={handleRunSimulation}
+            onSavePlan={handleSavePlan}
             isSimulating={isSimulating}
             simulationError={simulationError}
+            isSaving={isSaving}
+            saveError={saveError}
+            saveSuccess={saveSuccess}
             debugInfo={debugInfo}
           />
 

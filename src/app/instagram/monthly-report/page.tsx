@@ -7,6 +7,7 @@ import RechartsAreaChart from '../../../components/RechartsAreaChart';
 import { postsApi } from '../../../lib/api';
 import { PlanData } from '../plan/types/plan';
 import { useAuth } from '../../../contexts/auth-context';
+import { usePlanData } from '../../../hooks/usePlanData';
 import { checkUserDataCount } from '../../../lib/monthly-report-notifications';
 import { 
   Heart, 
@@ -117,6 +118,7 @@ function getWeekRange(weekString: string): { start: Date; end: Date } {
 
 export default function InstagramMonthlyReportPage() {
   const { user } = useAuth();
+  const { planData: hookPlanData, refetchPlanData } = usePlanData();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [planData, setPlanData] = useState<PlanData | null>(null);

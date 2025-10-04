@@ -7,6 +7,7 @@ import { AuthGuard } from '../../../components/auth-guard';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
+import { usePlanData } from '../../../hooks/usePlanData';
 // import PostSelector from '../components/PostSelector'; // 削除済み
 import PostPreview from '../components/PostPreview';
 // import AudienceAnalysisForm from '../components/AudienceAnalysisForm'; // 統合済み
@@ -95,6 +96,7 @@ interface PostData {
 
 function InstagramAnalyticsContent() {
   const { user } = useAuth();
+  const { planData, refetchPlanData } = usePlanData();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [posts, setPosts] = useState<PostData[]>([]);
   const [isLoading, setIsLoading] = useState(false);

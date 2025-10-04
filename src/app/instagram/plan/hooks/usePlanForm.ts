@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useAuth } from '../../../../contexts/auth-context';
 import { PlanFormData } from '../types/plan';
 
 export const usePlanForm = () => {
+  const { user } = useAuth();
+  
   // フォーム状態管理
   const [formData, setFormData] = useState<PlanFormData>({
     goalName: '',
@@ -32,6 +35,11 @@ export const usePlanForm = () => {
   // 戦略とカテゴリの選択状態
   const [selectedStrategies, setSelectedStrategies] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  // 保存状態管理
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // フォーム入力ハンドラー
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -125,14 +133,90 @@ export const usePlanForm = () => {
     };
   };
 
+  // 計画保存関数
+  const savePlan = async () => {
+    if (!user?.uid) {
+      setSaveError('ユーザーがログインしていません');
+      return false;
+    }
+
+    const validation = validateForm();
+    if (!validation.isValid) {
+      setSaveError(validation.errors.join(', '));
+      return false;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      const idToken = await user.getIdToken();
+      
+      // 計画データの構築
+      const planData = {
+        userId: user.uid,
+        title: formData.goalName || 'Instagram成長計画',
+        targetFollowers: parseInt(formData.currentFollowers, 10) + parseInt(formData.followerGain, 10),
+        currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
+        planPeriod: formData.planPeriod,
+        targetAudience: formData.targetAudience || '未設定',
+        category: formData.goalCategory || '未設定',
+        strategies: selectedStrategies,
+        simulation: {
+          postTypes: {
+            reel: { weeklyCount: parseInt(formData.reelFreq, 10) || 0, followerEffect: 5 },
+            feed: { weeklyCount: parseInt(formData.feedFreq, 10) || 0, followerEffect: 3 },
+            story: { weeklyCount: parseInt(formData.storyFreq, 10) || 0, followerEffect: 2 }
+          }
+        },
+        aiPersona: {
+          tone: formData.tone || '親しみやすい',
+          style: formData.colorVisual || 'モダン',
+          personality: formData.brandConcept || 'フレンドリー',
+          interests: selectedCategories
+        },
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const response = await fetch('/api/plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify(planData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '計画の保存に失敗しました');
+      }
+
+      setSaveSuccess(true);
+      return true;
+    } catch (error) {
+      console.error('計画保存エラー:', error);
+      setSaveError(error instanceof Error ? error.message : '計画の保存に失敗しました');
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return {
     formData,
     selectedStrategies,
     selectedCategories,
+    isSaving,
+    saveError,
+    saveSuccess,
     handleInputChange,
     handleStrategyToggle,
     handleCategoryToggle,
     resetForm,
-    validateForm
+    validateForm,
+    savePlan
   };
 };

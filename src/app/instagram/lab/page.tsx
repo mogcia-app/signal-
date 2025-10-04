@@ -9,6 +9,7 @@ import ToolPanel from './components/ToolPanel';
 import KPIDiagnosis from './components/KPIDiagnosis';
 import PlanDisplay from './components/PlanDisplay';
 import { PlanData } from '../plan/types/plan';
+import { usePlanData } from '../../../hooks/usePlanData';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
@@ -17,8 +18,8 @@ export default function InstagramLabPage() {
   const [postType, setPostType] = useState<'feed' | 'reel' | 'story'>('feed');
   const [postImage, setPostImage] = useState<string | null>(null);
   
-  // 模擬的な計画データ（実際のアプリではAPIから取得）
-  const [planData] = useState<PlanData | null>(null); // nullに設定して計画なし状態を表示
+  // 計画データを取得
+  const { planData, refetchPlanData } = usePlanData();
   
   // 計画がある場合のサンプルデータ（テスト用）
   // const [planData] = useState<PlanData>({
