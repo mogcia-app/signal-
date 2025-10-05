@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { adminDb } from '../../../../lib/firebase-admin';
 
 // SNS運用以外の質問を検出するキーワード
 const nonSNSKeywords = [
@@ -63,14 +62,13 @@ export async function GET(request: NextRequest) {
 
     if (action === 'logs') {
       // チャットログを取得
-      const logsQuery = query(
-        collection(db, 'chatLogs'),
-        where('userId', '==', userId),
-        orderBy('timestamp', 'desc'),
-        limit(50)
-      );
+      const logsSnapshot = await adminDb
+        .collection('chatLogs')
+        .where('userId', '==', userId)
+        .orderBy('timestamp', 'desc')
+        .limit(50)
+        .get();
 
-      const logsSnapshot = await getDocs(logsQuery);
       const logs = logsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -111,7 +109,7 @@ export async function POST(request: NextRequest) {
       // ログを保存
       if (userId && pageType) {
         try {
-          await addDoc(collection(db, 'chatLogs'), {
+          await adminDb.collection('chatLogs').add({
             userId,
             pageType,
             message,
@@ -188,7 +186,7 @@ ${context ? JSON.stringify(context, null, 2) : '計画情報なし'}
     // ログを保存
     if (userId && pageType) {
       try {
-        await addDoc(collection(db, 'chatLogs'), {
+        await adminDb.collection('chatLogs').add({
           userId,
           pageType,
           message,

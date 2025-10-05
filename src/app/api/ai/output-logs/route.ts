@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { adminDb } from '../../../../lib/firebase-admin';
 
 interface AIOutputLog {
   id: string;
@@ -27,25 +26,21 @@ export async function GET(request: NextRequest) {
     }
 
     // クエリを構築
-    let logsQuery = query(
-      collection(db, 'aiOutputLogs'),
-      where('userId', '==', userId),
-      orderBy('timestamp', 'desc'),
-      limit(limitCount)
-    );
+    let logsQuery = adminDb.collection('aiOutputLogs')
+      .where('userId', '==', userId)
+      .orderBy('timestamp', 'desc')
+      .limit(limitCount);
 
     // ページタイプでフィルタリング
     if (pageType) {
-      logsQuery = query(
-        collection(db, 'aiOutputLogs'),
-        where('userId', '==', userId),
-        where('pageType', '==', pageType),
-        orderBy('timestamp', 'desc'),
-        limit(limitCount)
-      );
+      logsQuery = adminDb.collection('aiOutputLogs')
+        .where('userId', '==', userId)
+        .where('pageType', '==', pageType)
+        .orderBy('timestamp', 'desc')
+        .limit(limitCount);
     }
 
-    const logsSnapshot = await getDocs(logsQuery);
+    const logsSnapshot = await logsQuery.get();
     const logs = logsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
@@ -109,7 +104,7 @@ export async function POST(request: NextRequest) {
       contextData: contextData || null
     };
 
-    const docRef = await addDoc(collection(db, 'aiOutputLogs'), logData);
+    const docRef = await adminDb.collection('aiOutputLogs').add(logData);
 
     return NextResponse.json({
       success: true,
