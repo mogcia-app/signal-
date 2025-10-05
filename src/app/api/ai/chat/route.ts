@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '../../../../lib/firebase';
+import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 // SNS運用以外の質問を検出するキーワード
 const nonSNSKeywords = [
@@ -48,10 +50,54 @@ function getRandomTemplateResponse(): string {
   return templateResponses[Math.floor(Math.random() * templateResponses.length)];
 }
 
+// チャットログを取得
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const action = searchParams.get('action');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    if (action === 'logs') {
+      // チャットログを取得
+      const logsQuery = query(
+        collection(db, 'chatLogs'),
+        where('userId', '==', userId),
+        orderBy('timestamp', 'desc'),
+        limit(50)
+      );
+
+      const logsSnapshot = await getDocs(logsQuery);
+      const logs = logsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate() || new Date()
+      }));
+
+      return NextResponse.json({
+        success: true,
+        logs
+      });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+
+  } catch (error) {
+    console.error('Chat Logs API Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch chat logs', details: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, context } = body;
+    const { message, context, userId, pageType } = body;
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
@@ -60,8 +106,28 @@ export async function POST(request: NextRequest) {
     // SNS運用以外の質問の場合はテンプレート返答
     if (isNonSNSQuestion(message)) {
       console.log('Non-SNS question detected, using template response:', message);
+      const templateResponse = getRandomTemplateResponse();
+      
+      // ログを保存
+      if (userId && pageType) {
+        try {
+          await addDoc(collection(db, 'chatLogs'), {
+            userId,
+            pageType,
+            message,
+            response: templateResponse,
+            timestamp: new Date(),
+            contextData: context,
+            isTemplateResponse: true,
+            tokensUsed: 0
+          });
+        } catch (logError) {
+          console.error('Failed to save chat log:', logError);
+        }
+      }
+      
       return NextResponse.json({
-        response: getRandomTemplateResponse(),
+        response: templateResponse,
         isTemplateResponse: true,
         tokensUsed: 0,
         timestamp: new Date().toISOString()
@@ -118,6 +184,24 @@ ${context ? JSON.stringify(context, null, 2) : '計画情報なし'}
       responseLength: aiResponse.length,
       tokensUsed: data.usage?.total_tokens 
     });
+
+    // ログを保存
+    if (userId && pageType) {
+      try {
+        await addDoc(collection(db, 'chatLogs'), {
+          userId,
+          pageType,
+          message,
+          response: aiResponse,
+          timestamp: new Date(),
+          contextData: context,
+          isTemplateResponse: false,
+          tokensUsed: data.usage?.total_tokens || 0
+        });
+      } catch (logError) {
+        console.error('Failed to save chat log:', logError);
+      }
+    }
 
     return NextResponse.json({
       response: aiResponse,
