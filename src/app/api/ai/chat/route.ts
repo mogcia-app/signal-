@@ -1,5 +1,24 @@
+import { NextResponse } from 'next/server';
+
+// AI学習機能は一時的に無効化
+export async function GET() {
+  return NextResponse.json({ 
+    error: 'AI学習機能は一時的に無効化されています',
+    message: '他の機能を先に完成させてから実装予定です'
+  }, { status: 503 });
+}
+
+export async function POST() {
+  return NextResponse.json({ 
+    error: 'AI学習機能は一時的に無効化されています',
+    message: '他の機能を先に完成させてから実装予定です'
+  }, { status: 503 });
+}
+
+/* AI学習機能（一時的にコメントアウト）
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '../../../../lib/firebase-admin';
+import { db } from '../../../../lib/firebase';
+import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 // SNS運用以外の質問を検出するキーワード
 const nonSNSKeywords = [
@@ -62,13 +81,14 @@ export async function GET(request: NextRequest) {
 
     if (action === 'logs') {
       // チャットログを取得
-      const logsSnapshot = await adminDb
-        .collection('chatLogs')
-        .where('userId', '==', userId)
-        .orderBy('timestamp', 'desc')
-        .limit(50)
-        .get();
+      const logsQuery = query(
+        collection(db, 'chatLogs'),
+        where('userId', '==', userId),
+        orderBy('timestamp', 'desc'),
+        limit(50)
+      );
 
+      const logsSnapshot = await getDocs(logsQuery);
       const logs = logsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -109,7 +129,7 @@ export async function POST(request: NextRequest) {
       // ログを保存
       if (userId && pageType) {
         try {
-          await adminDb.collection('chatLogs').add({
+          await addDoc(collection(db, 'chatLogs'), {
             userId,
             pageType,
             message,
@@ -186,7 +206,7 @@ ${context ? JSON.stringify(context, null, 2) : '計画情報なし'}
     // ログを保存
     if (userId && pageType) {
       try {
-        await adminDb.collection('chatLogs').add({
+        await addDoc(collection(db, 'chatLogs'), {
           userId,
           pageType,
           message,
@@ -216,3 +236,4 @@ ${context ? JSON.stringify(context, null, 2) : '計画情報なし'}
     );
   }
 }
+*/

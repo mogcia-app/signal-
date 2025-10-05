@@ -1,5 +1,24 @@
+import { NextResponse } from 'next/server';
+
+// AI学習機能は一時的に無効化
+export async function GET() {
+  return NextResponse.json({ 
+    error: 'AI学習機能は一時的に無効化されています',
+    message: '他の機能を先に完成させてから実装予定です'
+  }, { status: 503 });
+}
+
+export async function POST() {
+  return NextResponse.json({ 
+    error: 'AI学習機能は一時的に無効化されています',
+    message: '他の機能を先に完成させてから実装予定です'
+  }, { status: 503 });
+}
+
+/* AI学習機能（一時的にコメントアウト）
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '../../../lib/firebase-admin';
+import { db } from '../../../lib/firebase';
+import { collection, doc, getDoc, addDoc, updateDoc } from 'firebase/firestore';
 
 interface LearningProgress {
   userId: string;
@@ -36,15 +55,16 @@ export async function GET(request: NextRequest) {
 
     if (action === 'progress') {
     // 学習進捗を取得
-    const progressDoc = await adminDb.collection('learningProgress').doc(userId).get();
+    const progressRef = doc(db, 'learningProgress', userId);
+    const progressSnap = await getDoc(progressRef);
 
-    if (progressDoc.exists) {
-      const data = progressDoc.data();
+    if (progressSnap.exists()) {
+      const data = progressSnap.data();
       return NextResponse.json({
         success: true,
         data: {
           ...data,
-          lastUpdated: data?.lastUpdated?.toDate() || new Date()
+          lastUpdated: data.lastUpdated?.toDate() || new Date()
         } as LearningProgress
       });
     } else {
@@ -63,7 +83,7 @@ export async function GET(request: NextRequest) {
         lastUpdated: new Date()
       };
 
-      await adminDb.collection('learningProgress').doc(userId).set(initialProgress);
+      await addDoc(collection(db, 'learningProgress'), initialProgress);
 
       return NextResponse.json({
         success: true,
@@ -100,15 +120,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 現在の学習進捗を取得
-    const progressDoc = await adminDb.collection('learningProgress').doc(userId).get();
+    const progressRef = doc(db, 'learningProgress', userId);
+    const progressSnap = await getDoc(progressRef);
 
     let currentProgress: LearningProgress;
     
-    if (progressDoc.exists) {
-      const data = progressDoc.data();
+    if (progressSnap.exists()) {
+      const data = progressSnap.data();
       currentProgress = {
         ...data,
-        lastUpdated: data?.lastUpdated?.toDate() || new Date()
+        lastUpdated: data.lastUpdated?.toDate() || new Date()
       } as LearningProgress;
     } else {
       // 初期データを作成
@@ -162,7 +183,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Firestoreに保存
-    await adminDb.collection('learningProgress').doc(userId).set({
+    await updateDoc(progressRef, {
       ...currentProgress,
       lastUpdated: new Date()
     });
@@ -180,3 +201,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+*/

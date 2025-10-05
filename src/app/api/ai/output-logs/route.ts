@@ -1,5 +1,24 @@
+import { NextResponse } from 'next/server';
+
+// AI学習機能は一時的に無効化
+export async function GET() {
+  return NextResponse.json({ 
+    error: 'AI学習機能は一時的に無効化されています',
+    message: '他の機能を先に完成させてから実装予定です'
+  }, { status: 503 });
+}
+
+export async function POST() {
+  return NextResponse.json({ 
+    error: 'AI学習機能は一時的に無効化されています',
+    message: '他の機能を先に完成させてから実装予定です'
+  }, { status: 503 });
+}
+
+/* AI学習機能（一時的にコメントアウト）
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '../../../../lib/firebase-admin';
+import { db } from '../../../../lib/firebase';
+import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 interface AIOutputLog {
   id: string;
@@ -26,21 +45,25 @@ export async function GET(request: NextRequest) {
     }
 
     // クエリを構築
-    let logsQuery = adminDb.collection('aiOutputLogs')
-      .where('userId', '==', userId)
-      .orderBy('timestamp', 'desc')
-      .limit(limitCount);
+    let logsQuery = query(
+      collection(db, 'aiOutputLogs'),
+      where('userId', '==', userId),
+      orderBy('timestamp', 'desc'),
+      limit(limitCount)
+    );
 
     // ページタイプでフィルタリング
     if (pageType) {
-      logsQuery = adminDb.collection('aiOutputLogs')
-        .where('userId', '==', userId)
-        .where('pageType', '==', pageType)
-        .orderBy('timestamp', 'desc')
-        .limit(limitCount);
+      logsQuery = query(
+        collection(db, 'aiOutputLogs'),
+        where('userId', '==', userId),
+        where('pageType', '==', pageType),
+        orderBy('timestamp', 'desc'),
+        limit(limitCount)
+      );
     }
 
-    const logsSnapshot = await logsQuery.get();
+    const logsSnapshot = await getDocs(logsQuery);
     const logs = logsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
@@ -104,7 +127,7 @@ export async function POST(request: NextRequest) {
       contextData: contextData || null
     };
 
-    const docRef = await adminDb.collection('aiOutputLogs').add(logData);
+    const docRef = await addDoc(collection(db, 'aiOutputLogs'), logData);
 
     return NextResponse.json({
       success: true,
@@ -123,3 +146,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+*/
