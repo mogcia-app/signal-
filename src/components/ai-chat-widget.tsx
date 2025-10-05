@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, X, Bot, User, Lightbulb } from 'lucide-react';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useAuth } from '../contexts/auth-context';
 
 interface Message {
   id: string;
@@ -23,6 +24,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const [showTemplates, setShowTemplates] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { userProfile } = useUserProfile();
+  const { user } = useAuth();
 
   // デバッグ用ログ（削除）
   // console.log('AIChatWidget rendered, isOpen:', isOpen, 'contextData:', contextData);
@@ -124,7 +126,9 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
         },
         body: JSON.stringify({
           message: inputMessage.trim(),
-          context: contextData
+          context: contextData,
+          userId: user?.uid || 'demo-user-123', // 認証されたユーザーIDまたはデモユーザーID
+          pageType: 'ai-learning' // AI学習ページからのチャット
         })
       });
 
