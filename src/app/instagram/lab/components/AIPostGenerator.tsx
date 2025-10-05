@@ -34,9 +34,45 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
 
     setIsSuggestingTime(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬処理
-      
-      // 投稿タイプと内容に基づいて最適な時間を提案
+      // AI APIを呼び出して最適な投稿時間を提案
+      const response = await fetch('/api/ai/post-generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: '最適な投稿時間を提案してください',
+          postType,
+          planData,
+          scheduledDate,
+          action: 'suggestTime'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success && result.data) {
+        // AIが提案した時間を使用
+        const { suggestedTime: aiSuggestedTime } = result.data;
+        setSuggestedTime(aiSuggestedTime);
+        setScheduledTime(aiSuggestedTime);
+      } else {
+        // フォールバック: 既存のロジック
+        const optimalTimes = {
+          feed: ['09:00', '12:00', '18:00', '20:00'],
+          reel: ['07:00', '12:00', '19:00', '21:00'],
+          story: ['08:00', '13:00', '18:00', '22:00']
+        };
+        
+        const times = optimalTimes[postType];
+        const randomTime = times[Math.floor(Math.random() * times.length)];
+        
+        setSuggestedTime(randomTime);
+        setScheduledTime(randomTime);
+      }
+    } catch (error) {
+      console.error('時間提案エラー:', error);
+      // エラー時もフォールバック
       const optimalTimes = {
         feed: ['09:00', '12:00', '18:00', '20:00'],
         reel: ['07:00', '12:00', '19:00', '21:00'],
@@ -48,8 +84,6 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
       
       setSuggestedTime(randomTime);
       setScheduledTime(randomTime);
-    } catch (error) {
-      console.error('時間提案エラー:', error);
     } finally {
       setIsSuggestingTime(false);
     }
@@ -68,48 +102,38 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
     
     setIsGenerating(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 模擬処理
-      
-      // 運用計画に基づいた投稿文生成
-      const strategy = planData.strategies[Math.floor(Math.random() * planData.strategies.length)];
-      const targetGrowth = Math.round((planData.targetFollowers - planData.currentFollowers) / planData.targetFollowers * 100);
-      const weeklyTarget = planData.simulation.postTypes[postType].weeklyCount;
-      const followerEffect = planData.simulation.postTypes[postType].followerEffect;
-      
-      const generatedTitle = `${aiPrompt} - ${planData.aiPersona.personality}な${strategy}`;
-      
-      const generatedContent = `🎯 ${planData.title}の一環として、${aiPrompt}について${planData.aiPersona.tone}に投稿します！
+      // AI APIを呼び出して投稿文を生成
+      const response = await fetch('/api/ai/post-generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          postType,
+          planData,
+          scheduledDate,
+          scheduledTime
+        }),
+      });
 
-📈 目標: ${planData.targetFollowers.toLocaleString()}フォロワー達成まであと${targetGrowth}%！
-期間: ${planData.planPeriod}
+      const result = await response.json();
 
-✨ 今回の戦略: ${strategy}
-${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化された内容で、週${weeklyTarget}回の投稿で+${followerEffect}人/投稿を目指します。
+      if (!response.ok) {
+        throw new Error(result.error || '投稿文生成に失敗しました');
+      }
 
-💡 この投稿のポイント:
-• ${strategy}を意識した構成
-• ${planData.aiPersona.personality}な${planData.aiPersona.style}スタイル
-• ${planData.targetAudience === '未設定' ? 'フォロワー' : planData.targetAudience}との繋がりを深める内容
-
-${planData.aiPersona.interests.join('・')}を大切に、一緒に成長していきましょう！📱✨
-
-#${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム'} #${strategy.replace(/\s+/g, '')} #成長 #${aiPrompt.replace(/\s+/g, '')} #エンゲージメント`;
-
-      const newHashtags = [
-        postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム',
-        strategy.replace(/\s+/g, ''),
-        '成長',
-        aiPrompt.replace(/\s+/g, ''),
-        'エンゲージメント',
-        'フォロワー',
-        '目標達成'
-      ];
-
-      onGeneratePost(generatedTitle, generatedContent, newHashtags);
-      setAiPrompt('');
-      setAiTitle('');
+      if (result.success && result.data) {
+        const { title, content, hashtags } = result.data;
+        onGeneratePost(title, content, hashtags);
+        setAiPrompt('');
+        setAiTitle('');
+      } else {
+        throw new Error('投稿文生成に失敗しました');
+      }
     } catch (error) {
       console.error('投稿生成エラー:', error);
+      alert(`投稿文生成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
     }
@@ -325,6 +349,21 @@ ${planData.aiPersona.interests.join('・')}を大切に、一緒に成長して�
             </>
           )}
         </button>
+
+        {/* 計画情報表示 */}
+        {planData && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+            <div className="text-sm text-blue-800">
+              <div className="font-medium mb-2">📋 現在の運用計画</div>
+              <div className="space-y-1 text-xs">
+                <div>• 計画: {planData.title}</div>
+                <div>• 目標: {planData.targetFollowers.toLocaleString()}フォロワー</div>
+                <div>• 戦略: {planData.strategies.join(', ')}</div>
+                <div>• ペルソナ: {planData.aiPersona.personality}で{planData.aiPersona.style}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
