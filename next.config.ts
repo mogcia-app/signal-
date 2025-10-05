@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   },
   // React Server Components の設定
   reactStrictMode: true,
+  // APIルートの静的生成を無効化
+  output: 'standalone',
+  // 静的生成を無効化してAPIルートの問題を回避
+  trailingSlash: false,
 };
 
 export default nextConfig;

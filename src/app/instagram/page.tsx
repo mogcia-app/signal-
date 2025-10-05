@@ -283,62 +283,33 @@ function InstagramDashboardContent() {
                 // publishedAtを優先し、なければcreatedAtを使用
                 const dateToUse = postAnalytics?.publishedAt || post.createdAt;
                 
-                console.log('🔍 日付変換デバッグ:', {
-                  postId: post.id,
-                  postTitle: post.title,
-                  postAnalytics: postAnalytics,
-                  postCreatedAt: post.createdAt,
-                  postCreatedAtType: typeof post.createdAt,
-                  postCreatedAtConstructor: post.createdAt?.constructor?.name,
-                  publishedAt: postAnalytics?.publishedAt,
-                  publishedAtType: typeof postAnalytics?.publishedAt,
-                  publishedAtConstructor: postAnalytics?.publishedAt?.constructor?.name,
-                  dateToUse: dateToUse,
-                  dateToUseType: typeof dateToUse,
-                  dateToUseConstructor: dateToUse?.constructor?.name,
-                  hasToDate: dateToUse && typeof dateToUse === 'object' && 'toDate' in dateToUse,
-                  isDate: dateToUse instanceof Date
-                });
                 
                 // Firestore Timestampオブジェクトの場合
                 if (dateToUse && typeof dateToUse === 'object' && 'toDate' in dateToUse) {
                   const convertedDate = dateToUse.toDate();
-                  console.log('✅ Timestamp変換成功:', convertedDate);
                   return convertedDate.toLocaleDateString('ja-JP');
                 }
                 // Firestore Timestampのシリアライズされた形式の場合
                 else if (dateToUse && typeof dateToUse === 'object' && 'type' in dateToUse && dateToUse.type === 'firestore/timestamp/1.0') {
                   const convertedDate = new Date(dateToUse.seconds * 1000 + Math.floor(dateToUse.nanoseconds / 1000000));
-                  console.log('✅ Firestore Timestamp変換成功:', convertedDate);
                   return convertedDate.toLocaleDateString('ja-JP');
                 }
                 // 通常のDateオブジェクトまたは文字列の場合
                 else if (dateToUse && dateToUse !== null && dateToUse !== undefined) {
                   // 空のオブジェクト{}の場合はスキップ
                   if (typeof dateToUse === 'object' && Object.keys(dateToUse).length === 0) {
-                    console.log('❌ 空のオブジェクトが検出されました');
                     return '日付不明';
                   }
                   
                   const date = dateToUse instanceof Date ? dateToUse : new Date(dateToUse);
-                  console.log('✅ Date変換結果:', date, 'isValid:', !isNaN(date.getTime()));
                   if (isNaN(date.getTime())) {
-                    console.error('❌ Invalid Date detected:', dateToUse);
                     return '日付不明';
                   }
                   return date.toLocaleDateString('ja-JP');
                 } else {
-                  console.log('❌ 日付データなし');
                   return '日付不明';
                 }
               } catch (error) {
-                console.error('日付変換エラー:');
-                console.error('エラー:', error);
-                console.error('createdAt:', post.createdAt);
-                console.error('createdAt型:', typeof post.createdAt);
-                console.error('createdAt構造:', post.createdAt?.constructor?.name);
-                console.error('publishedAt:', postAnalytics?.publishedAt);
-                console.error('投稿ID:', post.id);
                 return '日付不明';
               }
             })(),

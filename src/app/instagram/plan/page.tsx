@@ -7,12 +7,10 @@ import { AIChatWidget } from '../../../components/ai-chat-widget'
 import { usePlanForm } from './hooks/usePlanForm'
 import { useSimulation } from './hooks/useSimulation'
 import { useAIDiagnosis } from './hooks/useAIDiagnosis'
-import { useABTest } from './hooks/useABTest'
 import { PlanForm } from './components/PlanForm'
 import { CurrentGoalPanel } from './components/CurrentGoalPanel'
 import { SimulationPanel } from './components/SimulationPanel'
 import { AIDiagnosisPanel } from './components/AIDiagnosisPanel'
-import { ABTestPanel } from './components/ABTestPanel'
 import { SimulationRequest } from './types/plan'
 
 export default function InstagramPlanPage() {
@@ -26,10 +24,12 @@ export default function InstagramPlanPage() {
     isSaving,
     saveError,
     saveSuccess,
+    // simulationResult: planFormSimulationResult, // 未使用変数の警告を回避
     handleInputChange, 
     handleStrategyToggle, 
     handleCategoryToggle,
-    savePlan
+    savePlan,
+    setSimulationResultData
   } = usePlanForm()
 
   const { 
@@ -47,12 +47,6 @@ export default function InstagramPlanPage() {
     handleSaveAdviceAndContinue 
   } = useAIDiagnosis()
 
-  const { 
-    abTestResult, 
-    isRunningABTest, 
-    abTestError, 
-    runABTest 
-  } = useABTest()
 
   // シミュレーション実行ハンドラー
   const handleRunSimulation = async () => {
@@ -75,6 +69,13 @@ export default function InstagramPlanPage() {
     await runSimulation(requestData)
   }
 
+  // シミュレーション結果が更新されたらusePlanFormにも設定
+  React.useEffect(() => {
+    if (simulationResult) {
+      setSimulationResultData(simulationResult)
+    }
+  }, [simulationResult, setSimulationResultData])
+
   // 現在の計画編集
   const handleEditCurrentPlan = () => {
     console.log('現在の計画を編集')
@@ -87,34 +88,6 @@ export default function InstagramPlanPage() {
     // TODO: 削除確認と実行
   }
 
-  // A/Bテスト実行ハンドラー
-  const handleRunABTest = async () => {
-    if (!user) {
-      console.error('ユーザーがログインしていません')
-      return
-    }
-
-    const requestData: SimulationRequest = {
-      followerGain: parseInt(formData.followerGain, 10),
-      currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
-      planPeriod: formData.planPeriod,
-      goalCategory: formData.goalCategory,
-      strategyValues: selectedStrategies,
-      postCategories: selectedCategories,
-      hashtagStrategy: formData.tone,
-      referenceAccounts: formData.brandConcept,
-      // 拡張要素（デフォルト値）
-      accountAge: 6,
-      currentEngagementRate: 0.03,
-      avgPostsPerWeek: 3,
-      contentQuality: 'medium' as const,
-      niche: 'ライフスタイル',
-      budget: 0,
-      teamSize: 1
-    }
-
-    await runABTest(requestData)
-  }
 
   // 計画保存ハンドラー
   const handleSavePlan = async (): Promise<boolean> => {
@@ -167,12 +140,6 @@ export default function InstagramPlanPage() {
               simulationError={simulationError}
             />
 
-             <ABTestPanel
-              result={abTestResult}
-              isRunning={isRunningABTest}
-              error={abTestError}
-              onRunTest={handleRunABTest}
-            />
 
             <AIDiagnosisPanel
               showAdvice={showAiAdvice}
@@ -193,7 +160,6 @@ export default function InstagramPlanPage() {
             selectedStrategies,
             selectedCategories,
             simulationResult: simulationResult as unknown as Record<string, unknown>,
-            abTestResult: abTestResult as unknown as Record<string, unknown>
           }}
         />
       </div>

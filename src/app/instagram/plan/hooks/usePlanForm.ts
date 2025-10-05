@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../../../contexts/auth-context';
-import { PlanFormData } from '../types/plan';
+import { PlanFormData, SimulationResult } from '../types/plan';
 
 export const usePlanForm = () => {
   const { user } = useAuth();
@@ -40,6 +40,9 @@ export const usePlanForm = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // シミュレーション結果の状態管理
+  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
 
   // フォーム入力ハンドラー
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -176,6 +179,19 @@ export const usePlanForm = () => {
           personality: formData.brandConcept || 'フレンドリー',
           interests: selectedCategories
         },
+        // シミュレーション結果を含める（現在の型に合わせて簡略化）
+        simulationResult: simulationResult ? {
+          targetDate: simulationResult.targetDate,
+          monthlyTarget: simulationResult.monthlyTarget,
+          weeklyTarget: simulationResult.weeklyTarget,
+          feasibilityLevel: simulationResult.feasibilityLevel,
+          feasibilityBadge: simulationResult.feasibilityBadge,
+          postsPerWeek: simulationResult.postsPerWeek,
+          monthlyPostCount: simulationResult.monthlyPostCount,
+          workloadMessage: simulationResult.workloadMessage,
+          mainAdvice: simulationResult.mainAdvice,
+          improvementTips: simulationResult.improvementTips
+        } : null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -205,6 +221,11 @@ export const usePlanForm = () => {
     }
   };
 
+  // シミュレーション結果を設定する関数
+  const setSimulationResultData = (result: SimulationResult | null) => {
+    setSimulationResult(result);
+  };
+
   return {
     formData,
     selectedStrategies,
@@ -212,11 +233,13 @@ export const usePlanForm = () => {
     isSaving,
     saveError,
     saveSuccess,
+    simulationResult,
     handleInputChange,
     handleStrategyToggle,
     handleCategoryToggle,
     resetForm,
     validateForm,
-    savePlan
+    savePlan,
+    setSimulationResultData
   };
 };

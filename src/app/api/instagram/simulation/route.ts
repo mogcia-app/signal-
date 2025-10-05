@@ -57,6 +57,12 @@ async function runSimulation(requestData: SimulationRequest): Promise<Simulation
   const mainAdvice = generateMainAdvice(strategyValues, goalCategory, followerGain);
   const improvementTips = generateImprovementTips(strategyValues, hashtagStrategy, postCategories);
 
+  // グラフデータ生成
+  const graphData = generateGraphData(currentFollowers, followerGain, planPeriod);
+
+  // ワンポイントアドバイス生成
+  const onePointAdvice = generateOnePointAdvice(graphData.isRealistic, graphData.growthRateComparison);
+
   // 目標達成日を計算
   const targetDate = calculateTargetDate(planPeriod);
 
@@ -70,7 +76,9 @@ async function runSimulation(requestData: SimulationRequest): Promise<Simulation
     monthlyPostCount,
     workloadMessage,
     mainAdvice,
-    improvementTips
+    improvementTips,
+    graphData,
+    onePointAdvice
   };
 }
 
@@ -278,8 +286,7 @@ function generateImprovementTips(strategyValues: string[], hashtagStrategy: stri
     engagement: [
       '質問やアンケートでフォロワーとの対話促進',
       'コメント返信でコミュニティ形成',
-      'フォロワーの投稿にいいねやコメント',
-      'ライブ配信でリアルタイム交流'
+      'フォロワーの投稿にいいねやコメント'
     ]
   };
 
@@ -311,6 +318,63 @@ function generateImprovementTips(strategyValues: string[], hashtagStrategy: stri
 
   // 重複を除去して返す
   return [...new Set(tips)];
+}
+
+// グラフデータ生成
+function generateGraphData(currentFollowers: number, followerGain: number, planPeriod: string) {
+  const targetFollowers = currentFollowers + followerGain;
+  const isMonthly = planPeriod.includes('月');
+  const totalWeeks = isMonthly ? parseInt(planPeriod) * 4 : parseInt(planPeriod);
+  
+  const realisticWeeklyGrowthRate = 0.02; // 2% per week (現実的)
+  const userTargetWeeklyGrowthRate = currentFollowers > 0 ? followerGain / (totalWeeks * currentFollowers) : 0;
+  
+  const data = [];
+  let realisticFollowers = currentFollowers;
+  let userTargetFollowers = currentFollowers;
+  
+  for (let week = 0; week <= totalWeeks; week++) {
+    data.push({
+      week: week === 0 ? '現在' : `第${week}週`,
+      realistic: Math.round(realisticFollowers),
+      userTarget: Math.round(userTargetFollowers)
+    });
+    
+    if (week < totalWeeks) {
+      realisticFollowers *= (1 + realisticWeeklyGrowthRate);
+      userTargetFollowers = currentFollowers + (followerGain * (week + 1) / totalWeeks);
+    }
+  }
+  
+  return {
+    data,
+    realisticFinal: Math.round(realisticFollowers),
+    userTargetFinal: targetFollowers,
+    isRealistic: userTargetWeeklyGrowthRate <= realisticWeeklyGrowthRate * 1.5 && !isNaN(userTargetWeeklyGrowthRate),
+    growthRateComparison: {
+      realistic: realisticWeeklyGrowthRate * 100,
+      userTarget: isNaN(userTargetWeeklyGrowthRate) ? 0 : userTargetWeeklyGrowthRate * 100
+    }
+  };
+}
+
+// ワンポイントアドバイス生成
+function generateOnePointAdvice(isRealistic: boolean, growthRateComparison: { realistic: number; userTarget: number }) {
+  if (!isRealistic) {
+    return {
+      type: 'warning' as const,
+      title: '目標の見直しをお勧めします',
+      message: `週間成長率${growthRateComparison.userTarget.toFixed(1)}%は一般的な成長率${growthRateComparison.realistic.toFixed(1)}%を大幅に上回っています。`,
+      advice: 'エンゲージメント向上に特化した戦略で、ターゲット層に刺さるコンテンツを継続的に投稿することが成功の鍵です。'
+    };
+  } else {
+    return {
+      type: 'success' as const,
+      title: '目標は現実的です！',
+      message: '計画的なアプローチで目標達成を目指しましょう。',
+      advice: 'エンゲージメント向上に特化した戦略で、ターゲット層に刺さるコンテンツを継続的に投稿することが成功の鍵です。'
+    };
+  }
 }
 
 // 目標達成日を計算

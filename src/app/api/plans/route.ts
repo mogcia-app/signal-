@@ -30,6 +30,35 @@ interface PlanData {
     personality: string;
     interests: string[];
   };
+  
+  // シミュレーション結果（オプショナル）
+  simulationResult?: {
+    estimatedFollowers: number;
+    estimatedLikes: number;
+    estimatedComments: number;
+    estimatedShares: number;
+    estimatedReach: number;
+    successProbability: number;
+    improvementTips: string[];
+    weeklyBreakdown: {
+      week: number;
+      followers: number;
+      likes: number;
+      comments: number;
+      shares: number;
+      reach: number;
+    }[];
+    monthlyBreakdown: {
+      month: number;
+      followers: number;
+      likes: number;
+      comments: number;
+      shares: number;
+      reach: number;
+    }[];
+    riskFactors: string[];
+    recommendedActions: string[];
+  } | null;
 }
 
 // 計画作成

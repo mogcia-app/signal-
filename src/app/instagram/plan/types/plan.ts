@@ -41,6 +41,26 @@ export interface SimulationResult {
   workloadMessage: string;
   mainAdvice: string;
   improvementTips: string[];
+  graphData: {
+    data: Array<{
+      week: string;
+      realistic: number;
+      userTarget: number;
+    }>;
+    realisticFinal: number;
+    userTargetFinal: number;
+    isRealistic: boolean;
+    growthRateComparison: {
+      realistic: number;
+      userTarget: number;
+    };
+  };
+  onePointAdvice: {
+    type: 'warning' | 'success';
+    title: string;
+    message: string;
+    advice: string;
+  };
 }
 
 // デバッグ情報の型定義
