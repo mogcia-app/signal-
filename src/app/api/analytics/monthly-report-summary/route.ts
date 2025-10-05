@@ -287,12 +287,17 @@ function calculatePostTypeStats(analytics: AnalyticsData[], posts: PostData[]) {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 API開始: monthly-report-summary');
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const period = searchParams.get('period') as 'weekly' | 'monthly';
     const date = searchParams.get('date');
 
+    console.log('🔍 パラメータ確認:', { userId, period, date });
+
     if (!userId || !period || !date) {
+      console.log('❌ パラメータ不足');
       return NextResponse.json(
         { error: 'userId, period, date パラメータが必要です' },
         { status: 400 }
@@ -301,13 +306,26 @@ export async function GET(request: NextRequest) {
 
     console.log('📊 月次レポートサマリー取得開始:', { userId, period, date });
 
+    // Firebase接続確認
+    console.log('🔍 Firebase接続確認中...');
+    if (!db) {
+      console.error('❌ Firebase接続エラー: db is null');
+      return NextResponse.json(
+        { error: 'Firebase接続エラー' },
+        { status: 500 }
+      );
+    }
+    console.log('✅ Firebase接続OK');
+
     // 分析データを取得
+    console.log('🔍 分析データ取得開始...');
     const analyticsQuery = query(
       collection(db, 'analytics'),
       where('userId', '==', userId),
       orderBy('publishedAt', 'desc')
     );
     const analyticsSnapshot = await getDocs(analyticsQuery);
+    console.log('✅ 分析データ取得完了:', analyticsSnapshot.docs.length, '件');
     const analytics: AnalyticsData[] = analyticsSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -336,12 +354,14 @@ export async function GET(request: NextRequest) {
     });
 
     // 投稿データを取得
+    console.log('🔍 投稿データ取得開始...');
     const postsQuery = query(
       collection(db, 'posts'),
       where('userId', '==', userId),
       orderBy('createdAt', 'desc')
     );
     const postsSnapshot = await getDocs(postsQuery);
+    console.log('✅ 投稿データ取得完了:', postsSnapshot.docs.length, '件');
     const posts: PostData[] = postsSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -432,6 +452,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ 月次レポートサマリー取得エラー:', error);
+    console.error('❌ エラー詳細:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
       {
         success: false,

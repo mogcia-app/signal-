@@ -176,7 +176,7 @@ export default function InstagramAIChatPage() {
       customTitle="AIチャット"
       customDescription="Instagram分析AIアシスタント"
     >
-      <div className="max-w-4xl mx-auto h-screen flex flex-col">
+      <div className="max-w-4xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
         {/* ヘッダー */}
         <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -201,7 +201,7 @@ export default function InstagramAIChatPage() {
         </div>
 
         {/* メッセージエリア */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white min-h-[60vh]">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -223,10 +223,10 @@ export default function InstagramAIChatPage() {
                   </div>
 
                   {/* メッセージコンテンツ */}
-                  <div className={`rounded-2xl px-4 py-3 ${
+                  <div className={`rounded-2xl px-4 py-3 shadow-sm ${
                     message.type === 'user'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-900 border border-gray-200'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                      : 'bg-white text-gray-900 border border-gray-200 shadow-md'
                   }`}>
                     <div className="whitespace-pre-wrap">{message.content}</div>
                     
@@ -282,7 +282,7 @@ export default function InstagramAIChatPage() {
                   <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
+                  <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-md">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -298,7 +298,7 @@ export default function InstagramAIChatPage() {
         </div>
 
         {/* 入力エリア */}
-        <div className="bg-white border-t border-gray-200 p-4">
+        <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
           {/* クイックアクション */}
           <div className="mb-3">
             <p className="text-xs text-gray-500 mb-2">クイックアクション:</p>

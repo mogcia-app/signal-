@@ -416,7 +416,7 @@ export default function InstagramMonthlyReportPage() {
     };
 
     initializeData();
-  }, [user?.uid, activeTab, selectedWeek, selectedMonth, fetchReportSummary]);
+  }, [user?.uid, activeTab, selectedWeek, selectedMonth]);
 
   // 期間変更時のデータ再取得
   useEffect(() => {
@@ -447,7 +447,7 @@ export default function InstagramMonthlyReportPage() {
 
       fetchPeriodData();
     }
-  }, [activeTab, selectedMonth, selectedWeek, user?.uid, fetchReportSummary, fetchAccountScore, fetchDailyScores, fetchPreviousPeriodData, fetchMonthlyReview]);
+  }, [activeTab, selectedMonth, selectedWeek, user?.uid]);
 
   // BFFデータから統計値を取得（フォールバック用のデフォルト値）
   const currentTotals = reportSummary?.totals || {
@@ -732,6 +732,8 @@ export default function InstagramMonthlyReportPage() {
           previousPeriodData={previousPeriodData}
           monthlyReview={monthlyReview}
           performanceRating={performanceRating}
+          selectedMonth={selectedMonth}
+          selectedWeek={selectedWeek}
         />
 
         {/* データエクスポートセクション */}
