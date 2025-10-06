@@ -120,12 +120,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             <option value="">-- 選択してください --</option>
             <option value="follower">フォロワー獲得</option>
             <option value="engagement">エンゲージ促進</option>
-            <option value="like">いいねを増やす</option>
-            <option value="save">保存率向上</option>
+            <option value="retweet">リツイートを増やす</option>
+            <option value="reply">リプライを増やす</option>
             <option value="reach">リーチを増やす</option>
             <option value="impressions">インプレッションを増やす</option>
             <option value="branding">ブランド認知を広める</option>
             <option value="profile">プロフィール誘導</option>
+            <option value="trending">トレンド入りを目指す</option>
+            <option value="community">コミュニティ形成</option>
             <option value="other">その他</option>
           </select>
           {formData.goalCategory === 'other' && (
@@ -150,7 +152,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             {[
               'ツイート投稿強化', 'スレッド中心運用', 'リプライで交流を深める',
               'UGC活用', 'キャンペーン実施', '広告実施', 'リプライ促進',
-              'カルーセル導線設計', 'ハッシュタグ見直し'
+              'トレンド活用', 'ハッシュタグ見直し', 'リアルタイム発信', 'コミュニティ形成'
             ].map((strategy) => (
               <span
                 key={strategy}
@@ -176,7 +178,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             {[
               'ノウハウ', '実績紹介', '世界観', '興味喚起', '比較',
               'お悩み解決', 'ビフォーアフター', '共感メッセージ',
-              'ユーザーの声', 'キャンペーン・お知らせ', 'トレンド活用'
+              'ユーザーの声', 'キャンペーン・お知らせ', 'トレンド活用',
+              'リアルタイム情報', '業界ニュース', '議論・対話'
             ].map((category) => (
               <span
                 key={category}
@@ -217,56 +220,65 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         <div>
           <label className="block text-sm font-medium mb-2">投稿頻度（週あたり）</label>
           <div className="grid grid-cols-3 gap-4">
-            <input
-              type="number"
-              id="feedFreq"
-              name="feedFreq"
-              placeholder="ツイート"
-              value={formData.feedFreq}
-              onChange={onInputChange}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-            <input
-              type="number"
-              id="reelFreq"
-              name="reelFreq"
-              placeholder="スレッド"
-              value={formData.reelFreq}
-              onChange={onInputChange}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-            <input
-              type="number"
-              id="storyFreq"
-              name="storyFreq"
-              placeholder="リプライ"
-              value={formData.storyFreq}
-              onChange={onInputChange}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
+            <div>
+              <label htmlFor="tweetFreq" className="block text-xs text-gray-600 mb-1">ツイート</label>
+              <input
+                type="number"
+                id="tweetFreq"
+                name="tweetFreq"
+                placeholder="回/週"
+                value={formData.tweetFreq}
+                onChange={onInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="threadFreq" className="block text-xs text-gray-600 mb-1">スレッド</label>
+              <input
+                type="number"
+                id="threadFreq"
+                name="threadFreq"
+                placeholder="回/週"
+                value={formData.threadFreq}
+                onChange={onInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="replyFreq" className="block text-xs text-gray-600 mb-1">リプライ</label>
+              <input
+                type="number"
+                id="replyFreq"
+                name="replyFreq"
+                placeholder="回/週"
+                value={formData.replyFreq}
+                onChange={onInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              />
+            </div>
           </div>
         </div>
 
         {/* 目標数値 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="saveGoalInput" className="block text-sm font-medium mb-1">目標保存数</label>
+            <label htmlFor="retweetGoalInput" className="block text-sm font-medium mb-1">目標リツイート数</label>
             <input
               type="number"
-              id="saveGoalInput"
-              name="saveGoal"
-              value={formData.saveGoal}
+              id="retweetGoalInput"
+              name="retweetGoal"
+              value={formData.retweetGoal}
               onChange={onInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
             />
           </div>
           <div>
-            <label htmlFor="likeGoalInput" className="block text-sm font-medium mb-1">目標いいね数</label>
+            <label htmlFor="replyGoalInput" className="block text-sm font-medium mb-1">目標リプライ数</label>
             <input
               type="number"
-              id="likeGoalInput"
-              name="likeGoal"
-              value={formData.likeGoal}
+              id="replyGoalInput"
+              name="replyGoal"
+              value={formData.replyGoal}
               onChange={onInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
             />

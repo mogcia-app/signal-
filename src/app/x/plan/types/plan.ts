@@ -13,11 +13,11 @@ export interface PlanFormData {
   colorVisual: string;
   tone: string;
   weeklyFocus: string;
-  feedFreq: string;
-  reelFreq: string;
-  storyFreq: string;
-  saveGoal: string;
-  likeGoal: string;
+  tweetFreq: string;
+  threadFreq: string;
+  replyFreq: string;
+  retweetGoal: string;
+  replyGoal: string;
   reachGoal: string;
   referenceAccounts: string;
   hashtagStrategy: string;
