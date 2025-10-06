@@ -105,6 +105,7 @@ export default function XLabPage() {
               <KPIDiagnosis
                 content={postContent}
                 hashtags={selectedHashtags}
+                postType={postType}
               />
               
               <ToolPanel
