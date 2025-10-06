@@ -33,9 +33,9 @@ export interface SimulationResult {
   feasibilityLevel: string;
   feasibilityBadge: string;
   postsPerWeek: {
-    reel: number;
-    feed: number;
-    story: number;
+    tweet: number;
+    thread: number;
+    reply: number;
   };
   monthlyPostCount: number;
   workloadMessage: string;

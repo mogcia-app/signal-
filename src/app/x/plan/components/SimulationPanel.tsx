@@ -150,15 +150,15 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
         <h4 className="text-md font-semibold mb-3">推奨投稿頻度</h4>
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-blue-50 p-3 rounded-lg text-center">
-            <div className="text-lg font-bold text-blue-600">{result.postsPerWeek.feed}</div>
+            <div className="text-lg font-bold text-blue-600">{result.postsPerWeek.tweet}</div>
             <div className="text-sm text-blue-800">ツイート/週</div>
           </div>
           <div className="bg-green-50 p-3 rounded-lg text-center">
-            <div className="text-lg font-bold text-green-600">{result.postsPerWeek.reel}</div>
+            <div className="text-lg font-bold text-green-600">{result.postsPerWeek.thread}</div>
             <div className="text-sm text-green-800">スレッド/週</div>
           </div>
           <div className="bg-purple-50 p-3 rounded-lg text-center">
-            <div className="text-lg font-bold text-purple-600">{result.postsPerWeek.story}</div>
+            <div className="text-lg font-bold text-purple-600">{result.postsPerWeek.reply}</div>
             <div className="text-sm text-purple-800">リプライ/週</div>
           </div>
         </div>
