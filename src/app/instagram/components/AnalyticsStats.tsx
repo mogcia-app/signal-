@@ -36,33 +36,33 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
     );
   }
 
-  // 統計計算
-  const totalLikes = analyticsData.reduce((sum, data) => sum + data.likes, 0);
-  const totalComments = analyticsData.reduce((sum, data) => sum + data.comments, 0);
-  const totalShares = analyticsData.reduce((sum, data) => sum + data.shares, 0);
-  const totalReach = analyticsData.reduce((sum, data) => sum + data.reach, 0);
-  const totalSaves = analyticsData.reduce((sum, data) => sum + data.saves, 0);
-  const totalFollowerIncrease = analyticsData.reduce((sum, data) => sum + data.followerIncrease, 0);
+  // 統計計算（数値変換を確実にする）
+  const totalLikes = analyticsData.reduce((sum, data) => sum + (Number(data.likes) || 0), 0);
+  const totalComments = analyticsData.reduce((sum, data) => sum + (Number(data.comments) || 0), 0);
+  const totalShares = analyticsData.reduce((sum, data) => sum + (Number(data.shares) || 0), 0);
+  const totalReach = analyticsData.reduce((sum, data) => sum + (Number(data.reach) || 0), 0);
+  const totalSaves = analyticsData.reduce((sum, data) => sum + (Number(data.saves) || 0), 0);
+  const totalFollowerIncrease = analyticsData.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0);
   const avgEngagementRate = analyticsData.length > 0 
-    ? analyticsData.reduce((sum, data) => sum + data.engagementRate, 0) / analyticsData.length 
+    ? analyticsData.reduce((sum, data) => sum + (Number(data.engagementRate) || 0), 0) / analyticsData.length 
     : 0;
 
   // オーディエンス分析統計
   const audienceData = analyticsData.filter(data => data.audience);
   const avgAudienceStats = audienceData.length > 0 ? {
     gender: {
-      male: audienceData.reduce((sum, data) => sum + (data.audience?.gender.male || 0), 0) / audienceData.length,
-      female: audienceData.reduce((sum, data) => sum + (data.audience?.gender.female || 0), 0) / audienceData.length,
-      other: audienceData.reduce((sum, data) => sum + (data.audience?.gender.other || 0), 0) / audienceData.length,
+      male: audienceData.reduce((sum, data) => sum + (Number(data.audience?.gender.male) || 0), 0) / audienceData.length,
+      female: audienceData.reduce((sum, data) => sum + (Number(data.audience?.gender.female) || 0), 0) / audienceData.length,
+      other: audienceData.reduce((sum, data) => sum + (Number(data.audience?.gender.other) || 0), 0) / audienceData.length,
     },
     age: {
-      '13-17': audienceData.reduce((sum, data) => sum + (data.audience?.age['13-17'] || 0), 0) / audienceData.length,
-      '18-24': audienceData.reduce((sum, data) => sum + (data.audience?.age['18-24'] || 0), 0) / audienceData.length,
-      '25-34': audienceData.reduce((sum, data) => sum + (data.audience?.age['25-34'] || 0), 0) / audienceData.length,
-      '35-44': audienceData.reduce((sum, data) => sum + (data.audience?.age['35-44'] || 0), 0) / audienceData.length,
-      '45-54': audienceData.reduce((sum, data) => sum + (data.audience?.age['45-54'] || 0), 0) / audienceData.length,
-      '55-64': audienceData.reduce((sum, data) => sum + (data.audience?.age['55-64'] || 0), 0) / audienceData.length,
-      '65+': audienceData.reduce((sum, data) => sum + (data.audience?.age['65+'] || 0), 0) / audienceData.length,
+      '13-17': audienceData.reduce((sum, data) => sum + (Number(data.audience?.age['13-17']) || 0), 0) / audienceData.length,
+      '18-24': audienceData.reduce((sum, data) => sum + (Number(data.audience?.age['18-24']) || 0), 0) / audienceData.length,
+      '25-34': audienceData.reduce((sum, data) => sum + (Number(data.audience?.age['25-34']) || 0), 0) / audienceData.length,
+      '35-44': audienceData.reduce((sum, data) => sum + (Number(data.audience?.age['35-44']) || 0), 0) / audienceData.length,
+      '45-54': audienceData.reduce((sum, data) => sum + (Number(data.audience?.age['45-54']) || 0), 0) / audienceData.length,
+      '55-64': audienceData.reduce((sum, data) => sum + (Number(data.audience?.age['55-64']) || 0), 0) / audienceData.length,
+      '65+': audienceData.reduce((sum, data) => sum + (Number(data.audience?.age['65+']) || 0), 0) / audienceData.length,
     }
   } : null;
 
@@ -70,15 +70,15 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
   const reachSourceData = analyticsData.filter(data => data.reachSource);
   const avgReachSourceStats = reachSourceData.length > 0 ? {
     sources: {
-      posts: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.posts || 0), 0) / reachSourceData.length,
-      profile: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.profile || 0), 0) / reachSourceData.length,
-      explore: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.explore || 0), 0) / reachSourceData.length,
-      search: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.search || 0), 0) / reachSourceData.length,
-      other: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.other || 0), 0) / reachSourceData.length,
+      posts: reachSourceData.reduce((sum, data) => sum + (Number(data.reachSource?.sources.posts) || 0), 0) / reachSourceData.length,
+      profile: reachSourceData.reduce((sum, data) => sum + (Number(data.reachSource?.sources.profile) || 0), 0) / reachSourceData.length,
+      explore: reachSourceData.reduce((sum, data) => sum + (Number(data.reachSource?.sources.explore) || 0), 0) / reachSourceData.length,
+      search: reachSourceData.reduce((sum, data) => sum + (Number(data.reachSource?.sources.search) || 0), 0) / reachSourceData.length,
+      other: reachSourceData.reduce((sum, data) => sum + (Number(data.reachSource?.sources.other) || 0), 0) / reachSourceData.length,
     },
     followers: {
-      followers: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.followers.followers || 0), 0) / reachSourceData.length,
-      nonFollowers: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.followers.nonFollowers || 0), 0) / reachSourceData.length,
+      followers: reachSourceData.reduce((sum, data) => sum + (Number(data.reachSource?.followers.followers) || 0), 0) / reachSourceData.length,
+      nonFollowers: reachSourceData.reduce((sum, data) => sum + (Number(data.reachSource?.followers.nonFollowers) || 0), 0) / reachSourceData.length,
     }
   } : null;
 
@@ -100,49 +100,49 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <Heart className="w-5 h-5 text-red-500" />
-              <span className="text-2xl font-bold text-gray-700">{totalLikes.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-gray-700">{isNaN(totalLikes) ? '0' : totalLikes.toLocaleString()}</span>
             </div>
             <p className="text-sm text-gray-600">総いいね数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <MessageCircle className="w-5 h-5 text-blue-500" />
-              <span className="text-2xl font-bold text-gray-700">{totalComments.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-gray-700">{isNaN(totalComments) ? '0' : totalComments.toLocaleString()}</span>
             </div>
             <p className="text-sm text-gray-600">総コメント数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <Share className="w-5 h-5 text-green-500" />
-              <span className="text-2xl font-bold text-gray-700">{totalShares.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-gray-700">{isNaN(totalShares) ? '0' : totalShares.toLocaleString()}</span>
             </div>
             <p className="text-sm text-gray-600">総シェア数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <Eye className="w-5 h-5 text-purple-500" />
-              <span className="text-2xl font-bold text-gray-700">{totalReach.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-gray-700">{isNaN(totalReach) ? '0' : totalReach.toLocaleString()}</span>
             </div>
             <p className="text-sm text-gray-600">総閲覧数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <Save className="w-5 h-5 text-yellow-500" />
-              <span className="text-2xl font-bold text-gray-700">{totalSaves.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-gray-700">{isNaN(totalSaves) ? '0' : totalSaves.toLocaleString()}</span>
             </div>
             <p className="text-sm text-gray-600">総保存数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <UserPlus className="w-5 h-5 text-indigo-500" />
-              <span className="text-2xl font-bold text-gray-700">{totalFollowerIncrease.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-gray-700">{isNaN(totalFollowerIncrease) ? '0' : totalFollowerIncrease.toLocaleString()}</span>
             </div>
             <p className="text-sm text-gray-600">総フォロワー増加数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg col-span-2">
             <div className="flex items-center justify-between mb-2">
               <BarChart3 className="w-5 h-5 text-blue-500" />
-              <span className="text-2xl font-bold text-gray-700">{avgEngagementRate.toFixed(2)}%</span>
+              <span className="text-2xl font-bold text-gray-700">{isNaN(avgEngagementRate) ? '0.00' : avgEngagementRate.toFixed(2)}%</span>
             </div>
             <p className="text-sm text-gray-600">平均エンゲージメント率</p>
           </div>
@@ -168,15 +168,15 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">👨 男性</span>
-                  <span className="font-medium">{avgAudienceStats.gender.male.toFixed(1)}%</span>
+                  <span className="font-medium">{isNaN(avgAudienceStats.gender.male) ? '0.0' : avgAudienceStats.gender.male.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">👩 女性</span>
-                  <span className="font-medium">{avgAudienceStats.gender.female.toFixed(1)}%</span>
+                  <span className="font-medium">{isNaN(avgAudienceStats.gender.female) ? '0.0' : avgAudienceStats.gender.female.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">🏳️‍🌈 その他</span>
-                  <span className="font-medium">{avgAudienceStats.gender.other.toFixed(1)}%</span>
+                  <span className="font-medium">{isNaN(avgAudienceStats.gender.other) ? '0.0' : avgAudienceStats.gender.other.toFixed(1)}%</span>
                 </div>
               </div>
             </div>
@@ -186,15 +186,15 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">18-24歳</span>
-                  <span className="font-medium">{avgAudienceStats.age['18-24'].toFixed(1)}%</span>
+                  <span className="font-medium">{isNaN(avgAudienceStats.age['18-24']) ? '0.0' : avgAudienceStats.age['18-24'].toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">25-34歳</span>
-                  <span className="font-medium">{avgAudienceStats.age['25-34'].toFixed(1)}%</span>
+                  <span className="font-medium">{isNaN(avgAudienceStats.age['25-34']) ? '0.0' : avgAudienceStats.age['25-34'].toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">35-44歳</span>
-                  <span className="font-medium">{avgAudienceStats.age['35-44'].toFixed(1)}%</span>
+                  <span className="font-medium">{isNaN(avgAudienceStats.age['35-44']) ? '0.0' : avgAudienceStats.age['35-44'].toFixed(1)}%</span>
                 </div>
               </div>
             </div>
