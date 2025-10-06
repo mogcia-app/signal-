@@ -139,13 +139,6 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
             </div>
             <p className="text-sm text-gray-600">総フォロワー増加数</p>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg col-span-2">
-            <div className="flex items-center justify-between mb-2">
-              <BarChart3 className="w-5 h-5 text-blue-500" />
-              <span className="text-2xl font-bold text-gray-700">{isNaN(avgEngagementRate) ? '0.00' : avgEngagementRate.toFixed(2)}%</span>
-            </div>
-            <p className="text-sm text-gray-600">平均エンゲージメント率</p>
-          </div>
         </div>
       </div>
 
