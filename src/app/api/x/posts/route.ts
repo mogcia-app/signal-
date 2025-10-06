@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,8 +57,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Firestoreから投稿を取得
-    const { collection, query, where, orderBy, getDocs } = await import('firebase/firestore');
-    
     const postsQuery = query(
       collection(db, 'xposts'),
       where('userId', '==', userId),
