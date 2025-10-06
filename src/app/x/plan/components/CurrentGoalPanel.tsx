@@ -73,29 +73,29 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
       )}
 
       {/* アクションボタン */}
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <button
           onClick={onEditPlan}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
         >
-          計画を編集
+          編集
         </button>
         
         {onSavePlan && (
           <button
             onClick={onSavePlan}
             disabled={isSaving}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 text-sm"
           >
-            {isSaving ? '保存中...' : '計画を保存'}
+            {isSaving ? '保存中...' : '保存'}
           </button>
         )}
         
         <button
           onClick={onDeletePlan}
-          className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
         >
-          計画を削除
+          削除
         </button>
       </div>
 
