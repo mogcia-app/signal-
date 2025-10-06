@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import SNSLayout from '../../../components/sns-layout';
-import { AIChatWidget } from '../../../components/ai-chat-widget';
+import { XChatWidget } from '../../../components/x-chat-widget';
 import PostEditor from './components/PostEditor';
 import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
@@ -83,7 +83,7 @@ export default function XLabPage() {
       </SNSLayout>
 
       {/* AIチャットウィジェット */}
-      <AIChatWidget 
+      <XChatWidget 
         contextData={{
           postContent,
           postTitle,

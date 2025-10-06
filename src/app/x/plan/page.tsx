@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAuth } from '../../../contexts/auth-context';
 import SNSLayout from '../../../components/sns-layout';
-import { AIChatWidget } from '../../../components/ai-chat-widget';
+import { XChatWidget } from '../../../components/x-chat-widget';
 import { usePlanForm } from './hooks/usePlanForm';
 import { useSimulation } from './hooks/useSimulation';
 import { useAIDiagnosis } from './hooks/useAIDiagnosis';
@@ -148,8 +148,8 @@ export default function XPlanPage() {
           </div>
         </main>
 
-        {/* AIチャットウィジェット */}
-        <AIChatWidget 
+        {/* X版AIチャットウィジェット */}
+        <XChatWidget 
           contextData={{
             formData: formData as unknown as Record<string, unknown>,
             selectedStrategies,
