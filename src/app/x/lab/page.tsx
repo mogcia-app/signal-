@@ -7,7 +7,7 @@ import { useAuth } from '../../../contexts/auth-context';
 import PostEditor from './components/PostEditor';
 import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
-import KPIDiagnosis from './components/KPIDiagnosis';
+import PostPredictionAnalysis from './components/PostPredictionAnalysis';
 import PlanDisplay from './components/PlanDisplay';
 import { useXPlanData } from '../../../hooks/useXPlanData';
 
@@ -139,7 +139,7 @@ export default function XLabPage() {
             <div className="space-y-6">
               <PlanDisplay planData={planData} />
               
-              <KPIDiagnosis
+              <PostPredictionAnalysis
                 content={postContent}
                 hashtags={selectedHashtags}
                 postType={postType}

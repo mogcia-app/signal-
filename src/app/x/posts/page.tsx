@@ -149,10 +149,7 @@ export default function XPostsPage() {
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
                   <span className="text-white text-xl">🐦</span>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">X投稿管理</h1>
-                  <p className="text-gray-600 mt-1">作成したX投稿を管理しましょう</p>
-                </div>
+                
               </div>
             </div>
             <div className="flex items-center space-x-4">
