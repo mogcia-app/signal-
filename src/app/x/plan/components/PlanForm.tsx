@@ -34,7 +34,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
       <div className="mb-6">
         <h3 className="text-xl font-semibold mb-2">📋 計画を立てる</h3>
         <p className="text-sm text-gray-600">
-          <span className="text-yellow-500">★</span>はAIが参照するための必須項目です。具体的に記入するほど、精度の高いアドバイスが得られます。
+          <span className="text-blue-500">★</span>はAIが参照するための必須項目です。具体的に記入するほど、精度の高いアドバイスが得られます。
         </p>
       </div>
 
@@ -48,21 +48,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             name="goalName"
             value={formData.goalName}
             onChange={onInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         {/* 期間 */}
         <div>
           <label htmlFor="planPeriod" className="block text-sm font-medium mb-1">
-            <span className="text-yellow-500">★</span>期間
+            <span className="text-blue-500">★</span>期間
           </label>
           <select
             id="planPeriod"
             name="planPeriod"
             value={formData.planPeriod}
             onChange={onInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="1ヶ月">1ヶ月（おすすめ）</option>
             <option value="3ヶ月">3ヶ月</option>
@@ -78,7 +78,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="currentFollowers" className="block text-sm font-medium mb-1">
-              <span className="text-yellow-500">★</span>現在のフォロワー数
+              <span className="text-blue-500">★</span>現在のフォロワー数
             </label>
             <input
               type="number"
@@ -86,13 +86,13 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               name="currentFollowers"
               value={formData.currentFollowers}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
             <label htmlFor="followerGain" className="block text-sm font-medium mb-1">
-              <span className="text-yellow-500">★</span>目標フォロワー数
+              <span className="text-blue-500">★</span>目標フォロワー数
             </label>
             <input
               type="number"
@@ -100,7 +100,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               name="followerGain"
               value={formData.followerGain}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -108,14 +108,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         {/* KPIカテゴリ */}
         <div>
           <label htmlFor="goalCategorySelect" className="block text-sm font-medium mb-1">
-            <span className="text-yellow-500">★</span>KPIカテゴリ
+            <span className="text-blue-500">★</span>KPIカテゴリ
           </label>
           <select
             id="goalCategorySelect"
             name="goalCategory"
             value={formData.goalCategory}
             onChange={onInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">-- 選択してください --</option>
             <option value="follower">フォロワー獲得</option>
@@ -138,7 +138,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               placeholder="その他の目標カテゴリ"
               value={formData.otherGoal}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent mt-2"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2"
             />
           )}
         </div>
@@ -146,7 +146,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         {/* 施策選択 */}
         <div>
           <label className="block text-sm font-medium mb-2">
-            <span className="text-yellow-500">★</span>施策（複数選択可）
+            <span className="text-blue-500">★</span>施策（複数選択可）
           </label>
           <div className="flex flex-wrap gap-2">
             {[
@@ -172,7 +172,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         {/* 投稿カテゴリ */}
         <div>
           <label className="block text-sm font-medium mb-2">
-            <span className="text-yellow-500">★</span>投稿カテゴリ
+            <span className="text-blue-500">★</span>投稿カテゴリ
           </label>
           <div className="flex flex-wrap gap-2">
             {[
@@ -200,7 +200,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="targetAudienceInput" className="block text-sm font-medium mb-1">
-              <span className="text-yellow-500">★</span>ターゲット層
+              <span className="text-blue-500">★</span>ターゲット層
             </label>
             <input
               type="text"
@@ -209,7 +209,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               value={formData.targetAudience}
               onChange={onInputChange}
               placeholder="例：SNS初心者の20〜30代女性 など"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -229,7 +229,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
                 placeholder="回/週"
                 value={formData.tweetFreq}
                 onChange={onInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -241,7 +241,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
                 placeholder="回/週"
                 value={formData.threadFreq}
                 onChange={onInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -253,7 +253,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
                 placeholder="回/週"
                 value={formData.replyFreq}
                 onChange={onInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -269,7 +269,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               name="retweetGoal"
               value={formData.retweetGoal}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
@@ -280,7 +280,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               name="replyGoal"
               value={formData.replyGoal}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
@@ -291,7 +291,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               name="reachGoal"
               value={formData.reachGoal}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -299,7 +299,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         {/* AI相談 */}
         <div>
           <label htmlFor="aiHelpRequest" className="block text-sm font-medium mb-1">
-            <span className="text-yellow-500">★</span>AIに相談したいこと
+            <span className="text-blue-500">★</span>AIに相談したいこと
           </label>
           <textarea
             id="aiHelpRequest"
@@ -307,14 +307,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             value={formData.aiHelpRequest}
             onChange={onInputChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         {/* 前回の振り返り */}
         <div>
           <label htmlFor="pastLearnings" className="block text-sm font-medium mb-1">
-            <span className="text-yellow-500">★</span>前回の振り返り・学び
+            <span className="text-blue-500">★</span>前回の振り返り・学び
           </label>
           <textarea
             id="pastLearnings"
@@ -322,7 +322,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             value={formData.pastLearnings}
             onChange={onInputChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
@@ -335,7 +335,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             value={formData.referenceAccounts}
             onChange={onInputChange}
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
@@ -348,7 +348,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             value={formData.hashtagStrategy}
             onChange={onInputChange}
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
@@ -361,7 +361,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             value={formData.constraints}
             onChange={onInputChange}
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
@@ -374,7 +374,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             value={formData.freeMemo}
             onChange={onInputChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
