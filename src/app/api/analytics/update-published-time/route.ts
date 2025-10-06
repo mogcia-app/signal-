@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
-import { db } from '../../../../lib/firebase';
+import { db } from '@/lib/firebase';
 
 // 既存のanalyticsデータにpublishedTimeフィールドを追加
 export async function POST(request: NextRequest) {

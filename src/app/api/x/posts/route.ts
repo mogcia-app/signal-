@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
@@ -56,11 +56,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // ここでFirestoreから投稿を取得する処理を実装
-    // 現在は基本的なレスポンスを返す
+    // Firestoreから投稿を取得
+    const { collection, query, where, orderBy, getDocs } = await import('firebase/firestore');
+    
+    const postsQuery = query(
+      collection(db, 'xposts'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(postsQuery);
+    const posts = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt ? new Date(doc.data().createdAt) : new Date(),
+      updatedAt: doc.data().updatedAt ? new Date(doc.data().updatedAt) : new Date()
+    }));
+
     return NextResponse.json({
       success: true,
-      posts: [],
+      posts: posts,
       message: '投稿一覧を取得しました'
     });
 

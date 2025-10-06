@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../../../lib/firebase';
+import { db } from '@/lib/firebase';
 import { cache, generateCacheKey } from '../../../../lib/cache';
 
 interface AnalyticsData {

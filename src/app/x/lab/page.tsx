@@ -55,6 +55,8 @@ export default function XLabPage() {
         setPostTitle('');
         setPostContent('');
         setSelectedHashtags([]);
+        // 投稿一覧ページにリダイレクト
+        window.location.href = '/x/posts';
       } else {
         throw new Error('保存に失敗しました');
       }
