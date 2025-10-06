@@ -7,8 +7,6 @@ import { AuthGuard } from '../../../components/auth-guard';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
-import { useXPlanData } from '../../../hooks/useXPlanData';
-import { PlanCard } from '../../../components/PlanCard';
 import PostPreview from './components/PostPreview';
 
 // オーディエンス分析データの型定義
@@ -95,8 +93,6 @@ export default function XAnalyticsPage() {
   // const [showAudienceAnalysis, setShowAudienceAnalysis] = useState(false);
   // const [showReachSourceAnalysis, setShowReachSourceAnalysis] = useState(false);
 
-  // プランデータを取得
-  const { planData } = useXPlanData();
 
   // アナリティクスデータを取得
   const fetchAnalyticsData = useCallback(async () => {
@@ -318,7 +314,7 @@ export default function XAnalyticsPage() {
             <div className="space-y-6">
               <div className="bg-white  p-6">
               <h2 className="text-lg font-semibold text-gray-900">分析データ入力</h2>
-              <p className="text-sm text-gray-600">投稿のパフォーマンスデータを入力してください</p>
+              <p className="text-sm text-gray-600 mb-2">投稿のパフォーマンスデータを入力してください</p>
 
               <div className="space-y-6">
         {/* 投稿検索 */}
@@ -485,7 +481,7 @@ export default function XAnalyticsPage() {
             <div className="space-y-6">
               {/* 1. 投稿プレビュー（一番上） */}
               {selectedPost ? (
-                <div className="bg-white rounded-lg shadow-sm border p-6">
+                <div className="bg-white rounded-lg shadow-sm p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿プレビュー</h3>
                   <PostPreview
                     post={selectedPost}
@@ -493,7 +489,7 @@ export default function XAnalyticsPage() {
                   />
                 </div>
               ) : (
-                <div className="bg-white rounded-lg shadow-sm border p-6">
+                <div className="bg-white rounded-lg shadow-sm p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿プレビュー</h3>
                   <div className="text-center py-8 text-gray-500">
                     <p>投稿を選択すると詳細が表示されます</p>
@@ -501,19 +497,10 @@ export default function XAnalyticsPage() {
                 </div>
               )}
 
-              {/* 2. 運用計画（真ん中） */}
-              {planData && (
-                <div className="bg-white rounded-lg shadow-sm border p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">運用計画</h3>
-                  <PlanCard
-                    planData={planData}
-                  />
-                </div>
-              )}
 
               {/* 3. 分析の統計データ（下） */}
               {analyticsData && (
-                <div className="bg-white rounded-lg shadow-sm border p-6">
+                <div className="bg-white rounded-lg shadow-sm p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">分析統計データ</h3>
                   
                   {/* 基本統計 */}
