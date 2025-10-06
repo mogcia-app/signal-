@@ -228,12 +228,12 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             </Link>
             <button 
               onClick={() => {
-                console.log('🔗 お知らせボタンがクリックされました', { currentSNS, path: `/${currentSNS}/notifications` });
+                console.log('🔗 お知らせボタンがクリックされました', { path: '/notifications' });
                 console.log('現在のURL:', window.location.href);
-                console.log('目標URL:', `${window.location.origin}/${currentSNS}/notifications`);
+                console.log('目標URL:', `${window.location.origin}/notifications`);
                 
                 // まずはシンプルなwindow.location.hrefでテスト
-                window.location.href = `/${currentSNS}/notifications`;
+                window.location.href = '/notifications';
               }}
               className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
@@ -249,12 +249,12 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             </button>
             <button 
               onClick={() => {
-                console.log('🔗 使い方ガイドボタンがクリックされました', { currentSNS, path: `/${currentSNS}/guide` });
+                console.log('🔗 使い方ガイドボタンがクリックされました', { path: '/guide' });
                 console.log('現在のURL:', window.location.href);
-                console.log('目標URL:', `${window.location.origin}/${currentSNS}/guide`);
+                console.log('目標URL:', `${window.location.origin}/guide`);
                 
                 // まずはシンプルなwindow.location.hrefでテスト
-                window.location.href = `/${currentSNS}/guide`;
+                window.location.href = '/guide';
               }}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
@@ -262,7 +262,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               <span>使い方ガイド</span>
             </button>
             <Link 
-              href={`/${currentSNS}/my-account`}
+              href="/my-account"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>👤</span>
