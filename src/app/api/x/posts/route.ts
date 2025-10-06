@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,9 +85,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('X投稿取得エラー詳細:', error);
-    console.error('エラースタック:', error.stack);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('エラースタック:', errorStack);
     return NextResponse.json(
-      { error: '投稿の取得に失敗しました', details: error.message },
+      { error: '投稿の取得に失敗しました', details: errorMessage },
       { status: 500 }
     );
   }
