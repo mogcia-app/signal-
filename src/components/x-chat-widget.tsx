@@ -157,18 +157,19 @@ export const XChatWidget: React.FC<XChatWidgetProps> = ({ contextData }) => {
       {/* チャットボタン */}
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-[9999]">
-          <div className="relative">
-            {/* 通知バッジ */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-            
-            {/* 吹き出し */}
-            <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          {/* 吹き出し */}
+          <div className="absolute bottom-16 right-0 mb-2">
+            <div className="bg-white rounded-full shadow-lg border border-gray-200 px-4 py-2">
               <div className="flex items-center space-x-2">
-                <Bot size={16} className="text-blue-400" />
-                <span>X版AIチャットで質問</span>
+                <Bot size={16} className="text-blue-600" />
+                <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                  {userProfile?.name ? `${userProfile.name}さん、X運用を相談しよう！` : 'X運用を相談しよう！'}
+                </p>
               </div>
               {/* 吹き出しの矢印 */}
-              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+              <div className="absolute bottom-0 right-4 transform translate-y-full">
+                <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
+              </div>
             </div>
           </div>
           

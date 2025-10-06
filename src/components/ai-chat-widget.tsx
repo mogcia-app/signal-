@@ -190,7 +190,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
               <div className="flex items-center space-x-2">
                 <Bot size={16} className="text-orange-600" />
                 <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
-                  {userProfile?.name ? `${userProfile.name}さん、ようこそ！` : 'ようこそ！'}
+                  {userProfile?.name ? `${userProfile.name}さん、Instagram運用を相談しよう！` : 'Instagram運用を相談しよう！'}
                 </p>
               </div>
               {/* 吹き出しの矢印 */}
