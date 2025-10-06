@@ -7,6 +7,8 @@ import { AuthGuard } from '../../../components/auth-guard';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
+import { useXPlanData } from '../../../hooks/useXPlanData';
+import { PlanCard } from '../../../components/PlanCard';
 import PostPreview from './components/PostPreview';
 
 // オーディエンス分析データの型定義
@@ -86,6 +88,7 @@ interface AnalyticsData {
 
 export default function XAnalyticsPage() {
   const { user } = useAuth();
+  const { planData } = useXPlanData();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -497,6 +500,14 @@ export default function XAnalyticsPage() {
                 </div>
               )}
 
+              {/* 2. 運用計画（真ん中） */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <PlanCard 
+                  planData={planData}
+                  variant="compact"
+                  showStrategies={true}
+                />
+              </div>
 
               {/* 3. 分析の統計データ（下） */}
               {analyticsData && (
