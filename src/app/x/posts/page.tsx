@@ -11,12 +11,13 @@ interface PostData {
   title: string;
   content: string;
   hashtags: string[];
-  postType: 'feed' | 'reel' | 'story';
+  postType: 'tweet' | 'thread' | 'reply';
   scheduledDate?: string;
   scheduledTime?: string;
   status: 'draft' | 'scheduled' | 'published';
   imageUrl?: string | null;
   imageData?: string | null;
+  isAIGenerated: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -99,10 +100,20 @@ export default function XPostsPage() {
   // 投稿タイプ表示の絵文字
   const getPostTypeIcon = (postType: string) => {
     switch (postType) {
-      case 'feed': return '🐦';
-      case 'reel': return '📹';
-      case 'story': return '💬';
+      case 'tweet': return '🐦';
+      case 'thread': return '🧵';
+      case 'reply': return '💬';
       default: return '📝';
+    }
+  };
+
+  // 投稿タイプ表示の日本語
+  const getPostTypeLabel = (postType: string) => {
+    switch (postType) {
+      case 'tweet': return 'ツイート';
+      case 'thread': return 'スレッド';
+      case 'reply': return 'リプライ';
+      default: return postType;
     }
   };
 
@@ -165,9 +176,9 @@ export default function XPostsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">すべて</option>
-                <option value="feed">ツイート</option>
-                <option value="reel">動画</option>
-                <option value="story">スレッド</option>
+                <option value="tweet">ツイート</option>
+                <option value="thread">スレッド</option>
+                <option value="reply">リプライ</option>
               </select>
             </div>
 
@@ -211,10 +222,20 @@ export default function XPostsPage() {
                     <div className="flex items-center space-x-3 mb-3">
                       <span className="text-2xl">{getPostTypeIcon(post.postType)}</span>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{post.title || 'タイトルなし'}</h3>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{post.title || 'タイトルなし'}</h3>
+                          {post.isAIGenerated && (
+                            <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">
+                              🤖 AI生成
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
                             {getStatusLabel(post.status)}
+                          </span>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            {getPostTypeLabel(post.postType)}
                           </span>
                           <span className="flex items-center">
                             <Calendar size={14} className="mr-1" />

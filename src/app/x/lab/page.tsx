@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { XChatWidget } from '../../../components/x-chat-widget';
+import { useAuth } from '../../../contexts/auth-context';
 import PostEditor from './components/PostEditor';
 import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
@@ -11,6 +12,7 @@ import PlanDisplay from './components/PlanDisplay';
 import { useXPlanData } from '../../../hooks/useXPlanData';
 
 export default function XLabPage() {
+  const { user } = useAuth();
   const [postContent, setPostContent] = useState('');
   const [postTitle, setPostTitle] = useState('');
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
@@ -25,6 +27,41 @@ export default function XLabPage() {
     setPostTitle(generatedTitle);
     setPostContent(generatedContent);
     setSelectedHashtags(generatedHashtags);
+  };
+
+  // 投稿保存ハンドラー
+  const handleSavePost = async (postData: { title: string; content: string; hashtags: string[]; postType: string; isAIGenerated: boolean }) => {
+    if (!user?.uid) {
+      alert('ログインが必要です');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/x/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...postData,
+          userId: user.uid,
+          createdAt: new Date().toISOString()
+        }),
+      });
+
+      if (response.ok) {
+        alert('投稿を保存しました！');
+        // フォームをリセット
+        setPostTitle('');
+        setPostContent('');
+        setSelectedHashtags([]);
+      } else {
+        throw new Error('保存に失敗しました');
+      }
+    } catch (error) {
+      console.error('保存エラー:', error);
+      alert(`保存に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   return (
@@ -88,10 +125,12 @@ export default function XLabPage() {
                         onTitleChange={setPostTitle}
                         image={postImage}
                         onImageChange={setPostImage}
+                        onSave={handleSavePost}
                       />
               
               <AIPostGenerator
                 onGeneratePost={handleAIGenerate}
+                onSave={handleSavePost}
                 planData={planData}
               />
             </div>

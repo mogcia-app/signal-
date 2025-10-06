@@ -13,6 +13,7 @@ interface PostEditorProps {
   onTitleChange: (title: string) => void;
   image?: string | null;
   onImageChange?: (image: string | null) => void;
+  onSave?: (postData: { title: string; content: string; hashtags: string[]; postType: string; isAIGenerated: boolean }) => void;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -25,7 +26,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   title,
   onTitleChange,
   image,
-  onImageChange
+  onImageChange,
+  onSave
 }) => {
   const handleHashtagRemove = (index: number) => {
     const newHashtags = hashtags.filter((_, i) => i !== index);
@@ -35,6 +37,18 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const handleHashtagAdd = (hashtag: string) => {
     if (hashtag.trim() && !hashtags.includes(hashtag)) {
       onHashtagsChange([...hashtags, hashtag]);
+    }
+  };
+
+  const handleSave = () => {
+    if (onSave && content.trim()) {
+      onSave({
+        title,
+        content,
+        hashtags,
+        postType,
+        isAIGenerated: false // 手動で作成した投稿
+      });
     }
   };
 
@@ -81,7 +95,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               投稿文
             </label>
             <div className="text-sm text-gray-500">
-              {content.length}/280
+              {content.length}/140
             </div>
           </div>
           <textarea
@@ -89,11 +103,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             onChange={(e) => onContentChange(e.target.value)}
             placeholder={`${postType === 'tweet' ? 'ツイート' : postType === 'thread' ? 'スレッド' : 'リプライ'}の内容を入力...`}
             className="w-full h-32 p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            maxLength={280}
+            maxLength={140}
           />
-          {content.length > 250 && (
-            <div className={`text-xs mt-1 ${content.length > 280 ? 'text-red-600' : 'text-yellow-600'}`}>
-              {content.length > 280 ? '文字数制限を超過しています' : '文字数制限に近づいています'}
+          {content.length > 120 && (
+            <div className={`text-xs mt-1 ${content.length > 140 ? 'text-red-600' : 'text-yellow-600'}`}>
+              {content.length > 140 ? '文字数制限を超過しています' : '文字数制限に近づいています'}
             </div>
           )}
         </div>
@@ -191,6 +205,19 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 保存ボタン */}
+        {onSave && (
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={handleSave}
+              disabled={!content.trim()}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              💾 投稿を保存
+            </button>
           </div>
         )}
       </div>

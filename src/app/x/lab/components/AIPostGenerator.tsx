@@ -6,11 +6,13 @@ import { PlanData } from '../../../instagram/plan/types/plan';
 
 interface AIPostGeneratorProps {
   onGeneratePost: (title: string, content: string, hashtags: string[]) => void;
+  onSave?: (postData: { title: string; content: string; hashtags: string[]; postType: string; isAIGenerated: boolean }) => void;
   planData?: PlanData | null;
 }
 
 export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   onGeneratePost,
+  onSave,
   planData
 }) => {
   const [aiPrompt, setAiPrompt] = useState('');
@@ -20,6 +22,9 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   const [scheduledTime, setScheduledTime] = useState('');
   const [isSuggestingTime, setIsSuggestingTime] = useState(false);
   const [suggestedTime, setSuggestedTime] = useState('');
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [generatedTitle, setGeneratedTitle] = useState('');
+  const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
 
   // AI時間提案
   const handleSuggestTime = async () => {
@@ -110,6 +115,10 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
       if (result.success && result.data) {
         const { title, content, hashtags } = result.data;
         onGeneratePost(title, content, hashtags);
+        // 生成された内容を保存用に保持
+        setGeneratedTitle(title);
+        setGeneratedContent(content);
+        setGeneratedHashtags(hashtags);
         setAiPrompt('');
         setAiTitle('');
       } else {
@@ -120,6 +129,18 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
       alert(`投稿文生成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSave = () => {
+    if (onSave && generatedContent.trim()) {
+      onSave({
+        title: generatedTitle,
+        content: generatedContent,
+        hashtags: generatedHashtags,
+        postType: 'tweet',
+        isAIGenerated: true // AI生成された投稿
+      });
     }
   };
 
@@ -300,6 +321,18 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             </>
           )}
         </button>
+
+        {/* 保存ボタン */}
+        {onSave && generatedContent && (
+          <div className="mt-4">
+            <button
+              onClick={handleSave}
+              className="w-full px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-medium"
+            >
+              💾 AI生成投稿を保存
+            </button>
+          </div>
+        )}
 
         {/* 計画情報表示 */}
         {planData && (
