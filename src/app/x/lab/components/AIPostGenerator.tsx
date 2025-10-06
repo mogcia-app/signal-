@@ -5,15 +5,11 @@ import { Sparkles } from 'lucide-react';
 import { PlanData } from '../../../instagram/plan/types/plan';
 
 interface AIPostGeneratorProps {
-  postType: 'tweet' | 'thread' | 'reply';
-  onPostTypeChange: (type: 'tweet' | 'thread' | 'reply') => void;
   onGeneratePost: (title: string, content: string, hashtags: string[]) => void;
   planData?: PlanData | null;
 }
 
 export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
-  postType,
-  onPostTypeChange,
   onGeneratePost,
   planData
 }) => {
@@ -42,7 +38,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
         },
         body: JSON.stringify({
           prompt: '最適な投稿時間を提案してください',
-          postType,
+          postType: 'tweet',
           planData,
           scheduledDate,
           action: 'suggestTime'
@@ -57,15 +53,9 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
         setSuggestedTime(aiSuggestedTime);
         setScheduledTime(aiSuggestedTime);
       } else {
-        // フォールバック: 既存のロジック
-        const optimalTimes = {
-          tweet: ['09:00', '12:00', '15:00', '18:00', '21:00'],
-          thread: ['10:00', '14:00', '19:00'],
-          reply: ['09:00', '13:00', '17:00', '20:00']
-        };
-        
-        const times = optimalTimes[postType];
-        const randomTime = times[Math.floor(Math.random() * times.length)];
+        // フォールバック: ツイート最適時間
+        const optimalTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
+        const randomTime = optimalTimes[Math.floor(Math.random() * optimalTimes.length)];
         
         setSuggestedTime(randomTime);
         setScheduledTime(randomTime);
@@ -73,14 +63,8 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
     } catch (error) {
       console.error('時間提案エラー:', error);
       // エラー時もフォールバック
-      const optimalTimes = {
-        tweet: ['09:00', '12:00', '15:00', '18:00', '21:00'],
-        thread: ['10:00', '14:00', '19:00'],
-        reply: ['09:00', '13:00', '17:00', '20:00']
-      };
-      
-      const times = optimalTimes[postType];
-      const randomTime = times[Math.floor(Math.random() * times.length)];
+      const optimalTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
+      const randomTime = optimalTimes[Math.floor(Math.random() * optimalTimes.length)];
       
       setSuggestedTime(randomTime);
       setScheduledTime(randomTime);
@@ -110,7 +94,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
         },
         body: JSON.stringify({
           prompt: aiPrompt,
-          postType,
+          postType: 'tweet',
           planData,
           scheduledDate,
           scheduledTime
@@ -166,51 +150,14 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
 
       {/* コンテンツエリア */}
       <div className="p-6">
-        {/* 投稿タイプ選択 */}
+        {/* ツイート専用表示 */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            投稿タイプ
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => onPostTypeChange('tweet')}
-              className={`p-3 rounded-lg border-2 transition-colors ${
-                postType === 'tweet'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-lg mb-1">🐦</div>
-                <div className="text-sm font-medium">ツイート</div>
-              </div>
-            </button>
-            <button
-              onClick={() => onPostTypeChange('thread')}
-              className={`p-3 rounded-lg border-2 transition-colors ${
-                postType === 'thread'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-lg mb-1">🧵</div>
-                <div className="text-sm font-medium">スレッド</div>
-              </div>
-            </button>
-            <button
-              onClick={() => onPostTypeChange('reply')}
-              className={`p-3 rounded-lg border-2 transition-colors ${
-                postType === 'reply'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-lg mb-1">💬</div>
-                <div className="text-sm font-medium">リプライ</div>
-              </div>
-            </button>
+          <div className="flex items-center justify-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="text-center">
+              <div className="text-2xl mb-2">🐦</div>
+              <div className="text-lg font-semibold text-blue-800">ツイート生成</div>
+              <div className="text-sm text-blue-600">280文字以内のツイート文を生成します</div>
+            </div>
           </div>
         </div>
 
@@ -278,7 +225,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                     <span className="font-medium">AI提案:</span>
                     <span className="ml-1">{suggestedTime}</span>
                     <span className="ml-2 text-blue-600">
-                      ({postType === 'tweet' ? 'ツイート' : postType === 'thread' ? 'スレッド' : 'リプライ'}に最適)
+                      (ツイートに最適)
                     </span>
                   </div>
                 </div>
@@ -296,7 +243,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             type="text"
             value={aiTitle}
             onChange={(e) => setAiTitle(e.target.value)}
-            placeholder={`${postType === 'tweet' ? 'ツイート' : postType === 'thread' ? 'スレッド' : 'リプライ'}のタイトルを入力してください...`}
+            placeholder="ツイートのタイトルを入力してください..."
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80"
           />
         </div>
@@ -311,8 +258,8 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
               placeholder={planData 
-                ? `${planData.title}に基づいた${postType === 'tweet' ? 'ツイート' : postType === 'thread' ? 'スレッド' : 'リプライ'}のテーマを入力してください...`
-                : '運用計画を作成してから投稿テーマを入力してください...'
+                ? `${planData.title}に基づいたツイートのテーマを入力してください...`
+                : '運用計画を作成してからツイートテーマを入力してください...'
               }
               disabled={!planData}
               className={`w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm ${!planData ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -331,7 +278,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             ハッシュタグ
           </label>
           <div className="text-sm text-gray-600 italic">
-            投稿文生成時に自動でハッシュタグが追加されます（1-3個）
+            ツイート生成時に自動でハッシュタグが追加されます（1-2個）
           </div>
         </div>
         
@@ -349,7 +296,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           ) : (
             <>
               <Sparkles size={18} className="mr-2" />
-              AI投稿文を生成
+              AIツイートを生成
             </>
           )}
         </button>

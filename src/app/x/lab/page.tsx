@@ -91,8 +91,6 @@ export default function XLabPage() {
                       />
               
               <AIPostGenerator
-                postType={postType}
-                onPostTypeChange={setPostType}
                 onGeneratePost={handleAIGenerate}
                 planData={planData}
               />
