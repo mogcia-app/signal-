@@ -14,9 +14,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   showAdvice,
   isLoading,
   onStartDiagnosis,
-  onSaveAdvice,
-  formData,
-  simulationResult
+  onSaveAdvice
 }) => {
   return (
     <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
@@ -30,7 +28,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       <button
         onClick={onStartDiagnosis}
         disabled={isLoading}
-        className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4"
+        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4"
       >
         {isLoading ? 'AI戦略生成中...' : '▶ 診断を開始する'}
       </button>
@@ -49,7 +47,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       {/* ローディング表示 */}
       {isLoading && (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff8a15] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">AIが戦略を生成中...</p>
         </div>
       )}
@@ -163,7 +161,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
           {/* 保存ボタン */}
           <button
             onClick={onSaveAdvice}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-md transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors"
           >
             💾 戦略を保存して続行
           </button>

@@ -13,7 +13,7 @@ export const useAIDiagnosis = () => {
     
     try {
       // BFF APIを呼び出し
-      const response = await fetch('/api/instagram/ai-diagnosis', {
+      const response = await fetch('/api/x/ai-diagnosis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
