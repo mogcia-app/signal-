@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
-import { postsApi } from '../../../lib/api';
-import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon } from 'lucide-react';
+import { useAuth } from '../../../contexts/auth-context';
+import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Plus, Filter, Search, Bot, User } from 'lucide-react';
 
 interface PostData {
   id: string;
@@ -23,25 +23,29 @@ interface PostData {
 }
 
 export default function XPostsPage() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedPostType, setSelectedPostType] = useState<string>('');
+  const [selectedAIType, setSelectedAIType] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   // 投稿一覧を取得
   const fetchPosts = async () => {
+    if (!user?.uid) return;
+    
     try {
       setLoading(true);
-      const params: Record<string, string> = {
-        userId: 'current-user' // 実際のアプリでは認証済みユーザーIDを使用
-      };
+      const response = await fetch(`/api/x/posts?userId=${user.uid}`);
+      const data = await response.json();
       
-      if (selectedStatus) params.status = selectedStatus;
-      if (selectedPostType) params.postType = selectedPostType;
-      
-      const response = await postsApi.list(params);
-      setPosts(response.posts || []);
+      if (data.success) {
+        setPosts(data.posts || []);
+      } else {
+        console.error('投稿取得エラー:', data.error);
+      }
     } catch (error) {
       console.error('投稿取得エラー:', error);
     } finally {
@@ -58,9 +62,16 @@ export default function XPostsPage() {
     if (!confirm('この投稿を削除しますか？')) return;
     
     try {
-      await postsApi.delete(postId);
-      setPosts(posts.filter(post => post.id !== postId));
-      alert('投稿を削除しました');
+      const response = await fetch(`/api/x/posts/${postId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setPosts(posts.filter(post => post.id !== postId));
+        alert('投稿を削除しました');
+      } else {
+        throw new Error('削除に失敗しました');
+      }
     } catch (error) {
       console.error('削除エラー:', error);
       alert('削除に失敗しました');
@@ -74,7 +85,13 @@ export default function XPostsPage() {
       post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.hashtags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    return matchesSearch;
+    const matchesStatus = !selectedStatus || post.status === selectedStatus;
+    const matchesPostType = !selectedPostType || post.postType === selectedPostType;
+    const matchesAIType = !selectedAIType || 
+      (selectedAIType === 'ai' && post.isAIGenerated) ||
+      (selectedAIType === 'manual' && !post.isAIGenerated);
+    
+    return matchesSearch && matchesStatus && matchesPostType && matchesAIType;
   });
 
   // ステータス表示の色分け
@@ -120,77 +137,125 @@ export default function XPostsPage() {
   return (
     <SNSLayout 
       currentSNS="x"
-      customTitle="投稿一覧"
-      customDescription="作成した投稿の管理・編集・削除を行えます"
+      customTitle="X投稿管理"
+      customDescription="作成したX投稿の管理・編集・削除を行えます"
     >
       <div className="max-w-7xl mx-auto p-6">
         {/* ヘッダー */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">投稿一覧</h1>
-              <p className="text-gray-600 mt-1">作成した投稿を管理しましょう</p>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white text-xl">🐦</span>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">X投稿管理</h1>
+                  <p className="text-gray-600 mt-1">作成したX投稿を管理しましょう</p>
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-gray-500">
-              {filteredPosts.length}件の投稿
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-500">
+                {filteredPosts.length}件の投稿
+              </div>
+              <button
+                onClick={() => window.location.href = '/x/lab'}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus size={16} className="mr-2" />
+                新規投稿
+              </button>
             </div>
           </div>
         </div>
 
         {/* フィルター・検索 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* 検索 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">検索</label>
-              <input
-                type="text"
-                placeholder="タイトル、内容、ハッシュタグで検索..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">フィルター・検索</h3>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <Filter size={16} className="mr-1" />
+              {showFilters ? 'フィルターを閉じる' : 'フィルターを開く'}
+            </button>
+          </div>
+          
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 検索 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">検索</label>
+                <div className="relative">
+                  <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="タイトル、内容、ハッシュタグで検索..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
 
-            {/* ステータス */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">ステータス</label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">すべて</option>
-                <option value="draft">下書き</option>
-                <option value="scheduled">予約投稿</option>
-                <option value="published">公開済み</option>
-              </select>
-            </div>
+              {/* ステータス */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ステータス</label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">すべて</option>
+                  <option value="draft">下書き</option>
+                  <option value="scheduled">予約投稿</option>
+                  <option value="published">公開済み</option>
+                </select>
+              </div>
 
-            {/* 投稿タイプ */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">投稿タイプ</label>
-              <select
-                value={selectedPostType}
-                onChange={(e) => setSelectedPostType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">すべて</option>
-                <option value="tweet">ツイート</option>
-                <option value="thread">スレッド</option>
-                <option value="reply">リプライ</option>
-              </select>
-            </div>
+              {/* 投稿タイプ */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">投稿タイプ</label>
+                <select
+                  value={selectedPostType}
+                  onChange={(e) => setSelectedPostType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">すべて</option>
+                  <option value="tweet">ツイート</option>
+                  <option value="thread">スレッド</option>
+                  <option value="reply">リプライ</option>
+                </select>
+              </div>
 
-            {/* 更新ボタン */}
-            <div className="flex items-end">
-              <button
-                onClick={fetchPosts}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                更新
-              </button>
+              {/* AI生成タイプ */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">作成方法</label>
+                <select
+                  value={selectedAIType}
+                  onChange={(e) => setSelectedAIType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">すべて</option>
+                  <option value="ai">AI生成</option>
+                  <option value="manual">手動作成</option>
+                </select>
+              </div>
             </div>
+          )}
+          
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-gray-500">
+              {filteredPosts.length}件の投稿が表示されています
+            </div>
+            <button
+              onClick={fetchPosts}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              更新
+            </button>
           </div>
         </div>
 
@@ -202,15 +267,25 @@ export default function XPostsPage() {
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📝</div>
+            <div className="text-gray-400 text-6xl mb-4">🐦</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">投稿がありません</h3>
-            <p className="text-gray-600 mb-4">まだ投稿を作成していません。</p>
-            <button
-              onClick={() => window.location.href = '/x/lab'}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              投稿を作成する
-            </button>
+            <p className="text-gray-600 mb-4">まだX投稿を作成していません。</p>
+            <div className="flex items-center justify-center space-x-4">
+              <button
+                onClick={() => window.location.href = '/x/lab'}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <Plus size={16} className="mr-2" />
+                投稿を作成する
+              </button>
+              <button
+                onClick={() => window.location.href = '/x/lab'}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+              >
+                <Bot size={16} className="mr-2" />
+                AI生成で作成
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -224,9 +299,15 @@ export default function XPostsPage() {
                       <div>
                         <div className="flex items-center space-x-2 mb-1">
                           <h3 className="text-lg font-semibold text-gray-900">{post.title || 'タイトルなし'}</h3>
-                          {post.isAIGenerated && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">
-                              🤖 AI生成
+                          {post.isAIGenerated ? (
+                            <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium flex items-center">
+                              <Bot size={12} className="mr-1" />
+                              AI生成
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium flex items-center">
+                              <User size={12} className="mr-1" />
+                              手動作成
                             </span>
                           )}
                         </div>
@@ -251,9 +332,24 @@ export default function XPostsPage() {
 
                     {/* 投稿内容 */}
                     <div className="mb-4">
-                      <p className="text-gray-700 line-clamp-3">
-                        {post.content}
-                      </p>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-sm font-bold">U</span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="font-semibold text-gray-900">あなた</span>
+                              <span className="text-gray-500 text-sm">@username</span>
+                              <span className="text-gray-500 text-sm">·</span>
+                              <span className="text-gray-500 text-sm">今</span>
+                            </div>
+                            <p className="text-gray-700 whitespace-pre-wrap">
+                              {post.content}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* 画像プレビュー */}
@@ -276,9 +372,9 @@ export default function XPostsPage() {
                           {post.hashtags.slice(0, 5).map((hashtag, index) => (
                             <span
                               key={index}
-                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md"
+                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md hover:bg-blue-200 transition-colors cursor-pointer"
                             >
-                              #{hashtag}
+                              {hashtag.startsWith('#') ? hashtag : `#${hashtag}`}
                             </span>
                           ))}
                           {post.hashtags.length > 5 && (
@@ -306,7 +402,10 @@ export default function XPostsPage() {
                       <Eye size={16} />
                     </button>
                     <button
-                      onClick={() => alert('投稿を編集')}
+                      onClick={() => {
+                        // 編集用にラボページに遷移
+                        window.location.href = `/x/lab?edit=${post.id}`;
+                      }}
                       className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
                       title="編集"
                     >
