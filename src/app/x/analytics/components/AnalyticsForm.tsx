@@ -80,8 +80,8 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border">
-      <div className="p-6 border-b">
+    <div className="bg-white ">
+      <div className="p-6 ">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿分析</h3>
         
         {/* 検索とフィルター */}

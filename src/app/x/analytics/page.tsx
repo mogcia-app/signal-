@@ -10,7 +10,6 @@ import { useAuth } from '../../../contexts/auth-context';
 import { useXPlanData } from '../../../hooks/useXPlanData';
 import { PlanCard } from '../../../components/PlanCard';
 import PostPreview from './components/PostPreview';
-import AnalyticsStats from './components/AnalyticsStats';
 
 // オーディエンス分析データの型定義
 interface AudienceData {
@@ -317,9 +316,28 @@ export default function XAnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* 左側: 分析データ入力フォーム */}
             <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿のパフォーマンスデータを入力してください</h3>
-                
+              <div className="bg-white  p-6">
+              <h2 className="text-lg font-semibold text-gray-900">分析データ入力</h2>
+              <p className="text-sm text-gray-600">投稿のパフォーマンスデータを入力してください</p>
+
+              <div className="space-y-6">
+        {/* 投稿検索 */}
+        <div className="p-4 bg-white rounded-lg border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿検索</h3>
+          <div className="flex space-x-2">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="タイトル、内容、ハッシュタグで検索..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+              <span>検索</span>
+            </button>
+          </div>
+        </div>
+        
                 {/* 分析データ入力フォーム */}
                 <div className="space-y-4">
                   <div>
@@ -459,23 +477,8 @@ export default function XAnalyticsPage() {
                   </button>
                 </div>
               </div>
+              </div>
 
-              {/* 分析結果 */}
-              {analyticsData && (
-                <div className="space-y-4">
-                  <AnalyticsStats
-                    title="概要統計"
-                    data={analyticsData.overview}
-                    type="overview"
-                  />
-                  
-                  <AnalyticsStats
-                    title="エンゲージメント統計"
-                    data={analyticsData.engagement}
-                    type="engagement"
-                  />
-                </div>
-              )}
             </div>
 
             {/* 右側: 投稿プレビュー、運用計画、統計データ */}
