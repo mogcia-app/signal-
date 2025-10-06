@@ -6,7 +6,6 @@ import PlanForm from './components/PlanForm';
 import CurrentGoalPanel from './components/CurrentGoalPanel';
 import SimulationPanel from './components/SimulationPanel';
 import AIDiagnosisPanel from './components/AIDiagnosisPanel';
-import ABTestPanel from './components/ABTestPanel';
 import { usePlanData } from '../../../hooks/usePlanData';
 
 export default function XPlanPage() {
@@ -53,13 +52,38 @@ export default function XPlanPage() {
 
           {/* 右カラム：KPI・AIアドバイス */}
           <div className="space-y-6">
-            <CurrentGoalPanel planData={planData} />
+            {/* 1. 進行中の目標 */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">進行中の目標</h3>
+                <p className="text-sm text-gray-600">現在の目標と進捗状況</p>
+              </div>
+              <div className="p-6">
+                <CurrentGoalPanel planData={planData} />
+              </div>
+            </div>
             
-            <SimulationPanel planData={planData} />
+            {/* 2. 目標達成シミュレーション */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">目標達成シミュレーション</h3>
+                <p className="text-sm text-gray-600">左側で目標を入力し、シミュレーションを実行してください</p>
+              </div>
+              <div className="p-6">
+                <SimulationPanel planData={planData} />
+              </div>
+            </div>
             
-            <AIDiagnosisPanel planData={planData} />
-            
-            <ABTestPanel planData={planData} />
+            {/* 3. AIによる投稿戦略アドバイス */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">AIによる投稿戦略アドバイス</h3>
+                <p className="text-sm text-gray-600">目標や施策をもとに、AIが最適な方向性を提案します</p>
+              </div>
+              <div className="p-6">
+                <AIDiagnosisPanel planData={planData} />
+              </div>
+            </div>
           </div>
         </main>
       </div>
