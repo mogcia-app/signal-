@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
+import { XChatWidget } from '../../../components/x-chat-widget';
 import { useAuth } from '../../../contexts/auth-context';
 import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Plus, Filter, Search, Bot, User } from 'lucide-react';
 
@@ -422,6 +423,9 @@ export default function XPostsPage() {
           </div>
         )}
       </div>
+
+      {/* AIチャットウィジェット */}
+      <XChatWidget />
     </SNSLayout>
   );
 }
