@@ -71,10 +71,11 @@ export const XChatWidget: React.FC<XChatWidgetProps> = ({ contextData }) => {
   // 初回メッセージを追加
   useEffect(() => {
     if (isOpen && messages.length === 0) {
+      const displayName = userProfile?.name || user?.displayName || 'ユーザー';
       const welcomeMessage: Message = {
         id: 'welcome',
         role: 'assistant',
-        content: `${(userProfile as unknown as Record<string, unknown>)?.displayName || user?.displayName || 'ユーザー'}さん、X版AIアシスタントへようこそ！\n\nX（旧Twitter）の運用について何でもお聞きください。ツイート、スレッド、リプライの戦略など、お手伝いします！`,
+        content: `${displayName}さん、X版AIアシスタントへようこそ！\n\nX（旧Twitter）の運用について何でもお聞きください。ツイート、スレッド、リプライの戦略など、お手伝いします！`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
@@ -159,6 +160,16 @@ export const XChatWidget: React.FC<XChatWidgetProps> = ({ contextData }) => {
           <div className="relative">
             {/* 通知バッジ */}
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            
+            {/* 吹き出し */}
+            <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              <div className="flex items-center space-x-2">
+                <Bot size={16} className="text-blue-400" />
+                <span>X版AIチャットで質問</span>
+              </div>
+              {/* 吹き出しの矢印 */}
+              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+            </div>
           </div>
           
           {/* チャットボタン */}

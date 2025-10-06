@@ -75,15 +75,16 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   // 初期メッセージ
   useEffect(() => {
     if (isOpen && messages.length === 0) {
+      const displayName = userProfile?.name || user?.displayName || 'ユーザー';
       const welcomeMessage: Message = {
         id: '1',
         role: 'assistant',
-        content: 'こんにちは！Instagram運用について何でもお聞きください。現在の計画内容を把握しているので、具体的なアドバイスをお伝えできます。',
+        content: `${displayName}さん、こんにちは！Instagram運用について何でもお聞きください。現在の計画内容を把握しているので、具体的なアドバイスをお伝えできます。`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen, messages.length]);
+  }, [isOpen, messages.length, userProfile, user]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
