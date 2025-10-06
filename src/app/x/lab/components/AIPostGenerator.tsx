@@ -156,7 +156,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             <div className="text-center">
               <div className="text-2xl mb-2">🐦</div>
               <div className="text-lg font-semibold text-blue-800">ツイート生成</div>
-              <div className="text-sm text-blue-600">280文字以内のツイート文を生成します</div>
+              <div className="text-sm text-blue-600">140文字以内のツイート文を生成します</div>
             </div>
           </div>
         </div>
@@ -267,7 +267,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             />
             {/* 文字数カウンター */}
             <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white px-2 py-1 rounded">
-              {aiPrompt.length}/280
+              {aiPrompt.length}/140
             </div>
           </div>
         </div>
@@ -278,7 +278,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             ハッシュタグ
           </label>
           <div className="text-sm text-gray-600 italic">
-            ツイート生成時に自動でハッシュタグが追加されます（1-2個）
+            140文字以内でツイート生成時に自動でハッシュタグが追加されます（1-2個）
           </div>
         </div>
         

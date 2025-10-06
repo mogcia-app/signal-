@@ -12,8 +12,8 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({ content, hashtags, p
   const getEngagementScore = () => {
     let score = 0;
     
-    // 投稿タイプ別の文字数制限チェック
-    const maxLength = postType === 'tweet' ? 280 : postType === 'thread' ? 2800 : 280;
+    // 投稿タイプ別の文字数制限チェック（X版は140文字）
+    const maxLength = postType === 'tweet' ? 140 : postType === 'thread' ? 2800 : 140;
     const minLength = postType === 'reply' ? 10 : 20;
     
     if (content.length >= minLength && content.length <= maxLength) {
@@ -113,9 +113,9 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({ content, hashtags, p
             <span className="text-sm text-gray-600">文字数 ({postType})</span>
             <span className={`text-sm font-medium ${
               content.length >= (postType === 'reply' ? 10 : 20) && 
-              content.length <= (postType === 'thread' ? 2800 : 280) ? 'text-green-600' : 'text-red-600'
+              content.length <= (postType === 'thread' ? 2800 : 140) ? 'text-green-600' : 'text-red-600'
             }`}>
-              {content.length}/{postType === 'thread' ? '2800' : '280'}
+              {content.length}/{postType === 'thread' ? '2800' : '140'}
             </span>
           </div>
           
@@ -166,7 +166,7 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({ content, hashtags, p
               <div className="font-medium mb-1">改善提案:</div>
               <ul className="text-xs space-y-1">
                 {content.length === 0 && <li>• 投稿内容を入力してください</li>}
-                {content.length > (postType === 'thread' ? 2800 : 280) && <li>• 文字数を{postType === 'thread' ? '2800' : '280'}文字以内に調整してください</li>}
+                {content.length > (postType === 'thread' ? 2800 : 140) && <li>• 文字数を{postType === 'thread' ? '2800' : '140'}文字以内に調整してください</li>}
                 {content.length < (postType === 'reply' ? 10 : 20) && content.length > 0 && <li>• もう少し詳しく内容を書いてみてください</li>}
                 {hashtags.length > 2 && <li>• ハッシュタグを2個以内に減らしてください（X版は1-2個が最適）</li>}
                 {!content.includes('?') && !content.includes('！') && !content.includes('みなさん') && <li>• 質問や感嘆符でエンゲージメントを促進</li>}
