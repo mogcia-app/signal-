@@ -316,10 +316,6 @@ function InstagramAnalyticsContent() {
                   <div className="text-sm text-gray-600">総リーチ数</div>
                 </div>
               </div>
-              <div className="mt-4 text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">{(avgEngagementRate || 0).toFixed(2)}%</div>
-                <div className="text-sm text-gray-600">平均エンゲージメント率</div>
-              </div>
             </div>
           </div>
 
@@ -335,9 +331,6 @@ function InstagramAnalyticsContent() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-gray-700 font-medium">
                         {new Date(data.publishedAt).toLocaleDateString('ja-JP')}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        エンゲージメント率: {(data.engagementRate || 0).toFixed(2)}%
                       </span>
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-sm">
