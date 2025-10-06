@@ -179,10 +179,10 @@ function InstagramAnalyticsContent() {
       }
       
       const result = await response.json();
-      const data = result.analytics as AnalyticsData[];
+      const data = result.analytics as AnalyticsData[] || [];
       
       console.log('BFF fetch result:', data);
-      console.log('Analytics data length:', data.length);
+      console.log('Analytics data length:', data?.length || 0);
       setAnalyticsData(data);
     } catch (error) {
       console.error('Analytics fetch error:', error);
@@ -221,7 +221,7 @@ function InstagramAnalyticsContent() {
             totalShares: totalShares,
             totalReach: totalReach,
             avgEngagementRate: avgEngagementRate,
-            recordedPosts: analyticsData.length
+            recordedPosts: analyticsData?.length || 0
           }
         })
       });
@@ -291,7 +291,7 @@ function InstagramAnalyticsContent() {
     const urlParams = new URLSearchParams(window.location.search);
     const postId = urlParams.get('postId');
     
-    if (postId && posts.length > 0) {
+    if (postId && posts && posts.length > 0) {
       const post = posts.find(p => p.id === postId);
       if (post) {
         setSelectedPost(post);
@@ -471,20 +471,20 @@ function InstagramAnalyticsContent() {
 
 
   // 統計計算（数値に変換してから計算）
-  const totalLikes = analyticsData.reduce((sum, data) => sum + (Number(data.likes) || 0), 0);
-  const totalComments = analyticsData.reduce((sum, data) => sum + (Number(data.comments) || 0), 0);
-  const totalShares = analyticsData.reduce((sum, data) => sum + (Number(data.shares) || 0), 0);
-  const totalReach = analyticsData.reduce((sum, data) => sum + (Number(data.reach) || 0), 0);
-  const totalSaves = analyticsData.reduce((sum, data) => sum + (Number(data.saves) || 0), 0);
-  const totalFollowerIncrease = analyticsData.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0);
-  const avgEngagementRate = analyticsData.length > 0 
+  const totalLikes = analyticsData?.reduce((sum, data) => sum + (Number(data.likes) || 0), 0) || 0;
+  const totalComments = analyticsData?.reduce((sum, data) => sum + (Number(data.comments) || 0), 0) || 0;
+  const totalShares = analyticsData?.reduce((sum, data) => sum + (Number(data.shares) || 0), 0) || 0;
+  const totalReach = analyticsData?.reduce((sum, data) => sum + (Number(data.reach) || 0), 0) || 0;
+  const totalSaves = analyticsData?.reduce((sum, data) => sum + (Number(data.saves) || 0), 0) || 0;
+  const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
+  const avgEngagementRate = analyticsData && analyticsData.length > 0 
     ? analyticsData.reduce((sum, data) => sum + (Number(data.engagementRate) || 0), 0) / analyticsData.length 
     : 0;
 
   
   // デバッグログ
   console.log('Statistics calculation debug:', {
-    analyticsDataLength: analyticsData.length,
+    analyticsDataLength: analyticsData?.length || 0,
     analyticsData: analyticsData,
     totalLikes: totalLikes,
     totalComments: totalComments,
@@ -558,7 +558,7 @@ function InstagramAnalyticsContent() {
           totalSaves: totalSaves,
           totalFollowerIncrease: totalFollowerIncrease,
           avgEngagementRate: avgEngagementRate,
-          recordedPosts: analyticsData.length
+          recordedPosts: analyticsData?.length || 0
         }}
       />
 
