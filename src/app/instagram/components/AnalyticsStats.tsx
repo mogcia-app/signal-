@@ -27,10 +27,10 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
   if (analyticsData.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">統計データ</h3>
         <div className="text-center py-8">
           <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">分析データがありません</p>
-          <p className="text-sm text-gray-500">投稿の分析データを入力してください</p>
+          <p className="text-gray-600">データを入力すると統計が表示されます</p>
         </div>
       </div>
     );
