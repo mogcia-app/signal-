@@ -501,13 +501,11 @@ export default function XAnalyticsPage() {
               )}
 
               {/* 2. 運用計画（真ん中） */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <PlanCard 
-                  planData={planData}
-                  variant="compact"
-                  showStrategies={true}
-                />
-              </div>
+              <PlanCard 
+                planData={planData}
+                variant="compact"
+                showStrategies={true}
+              />
 
               {/* 3. 分析の統計データ（下） */}
               {analyticsData && (
