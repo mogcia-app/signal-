@@ -1,102 +1,116 @@
-'use client';
-
 import React from 'react';
-import { PlanData } from '../../../instagram/plan/types/plan';
+import { PlanFormData } from '../types/plan';
 
 interface CurrentGoalPanelProps {
-  planData?: PlanData | null;
+  formData: PlanFormData;
+  selectedStrategies: string[];
+  onEditPlan: () => void;
+  onDeletePlan: () => void;
+  onSavePlan?: () => Promise<boolean>;
+  isSaving?: boolean;
+  saveError?: string | null;
+  saveSuccess?: boolean;
 }
 
-export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({ planData }) => {
-  if (!planData) {
-    return (
-      <div className="text-center">
-        <div className="text-gray-400 text-4xl mb-4">📋</div>
-        <h4 className="text-lg font-medium text-gray-900 mb-2">
-          目標が設定されていません
-        </h4>
-        <p className="text-gray-600">
-          運用計画を作成して目標を設定しましょう
-        </p>
-      </div>
-    );
-  }
-
-  const progressPercentage = Math.round((planData.currentFollowers / planData.targetFollowers) * 100);
-  const remainingFollowers = planData.targetFollowers - planData.currentFollowers;
-
+export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
+  formData,
+  selectedStrategies,
+  onEditPlan,
+  onDeletePlan,
+  onSavePlan,
+  isSaving = false,
+  saveError = null,
+  saveSuccess = false
+}) => {
   return (
-    <div className="space-y-4">
-      {/* 進捗表示 */}
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700">フォロワー進捗</span>
-          <span className="text-sm font-medium text-blue-600">{progressPercentage}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-          ></div>
-        </div>
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>{planData.currentFollowers.toLocaleString()}人</span>
-          <span>{planData.targetFollowers.toLocaleString()}人</span>
-        </div>
-      </div>
-
-      {/* 目標詳細 */}
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">残りフォロワー</span>
-          <span className="text-sm font-medium text-gray-900">
-            {remainingFollowers.toLocaleString()}人
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">計画期間</span>
-          <span className="text-sm font-medium text-gray-900">
-            {planData.planPeriod}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">戦略数</span>
-          <span className="text-sm font-medium text-gray-900">
-            {planData.strategies.length}個
-          </span>
-        </div>
-      </div>
-
-      {/* 戦略一覧 */}
-      <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-2">運用戦略</h4>
-        <div className="space-y-2">
-          {planData.strategies.map((strategy, index) => (
-            <div
-              key={index}
-              className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg"
-            >
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm text-blue-800">{strategy}</span>
+    <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      <h3 className="text-lg font-semibold mb-4 flex items-center">
+        <span className="mr-2">🎯</span>進行中の目標
+      </h3>
+      
+      <div className="bg-gray-50 p-4 rounded-lg mb-4">
+        <div className="space-y-3">
+          <h4 className="font-semibold text-gray-900">
+            {formData.goalName || 'X成長計画'}
+          </h4>
+          
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-gray-600">目標フォロワー増加</span>
+              <div className="font-medium">+{formData.followerGain}人</div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* AIペルソナ */}
-      <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-2">AIペルソナ</h4>
-        <div className="p-3 bg-gray-50 rounded-lg">
-          <div className="text-sm text-gray-800">
-            <div className="font-medium">{planData.aiPersona.personality}</div>
-            <div className="text-xs text-gray-600">
-              {planData.aiPersona.style}で{planData.aiPersona.tone}
+            <div>
+              <span className="text-gray-600">期間</span>
+              <div className="font-medium">{formData.planPeriod}</div>
+            </div>
+            <div>
+              <span className="text-gray-600">ターゲット</span>
+              <div className="font-medium">{formData.targetAudience || '未設定'}</div>
+            </div>
+            <div>
+              <span className="text-gray-600">KPIカテゴリ</span>
+              <div className="font-medium">{formData.goalCategory || '未設定'}</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* 選択された施策 */}
+      {selectedStrategies.length > 0 && (
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">選択された施策</h4>
+          <div className="flex flex-wrap gap-2">
+            {selectedStrategies.map((strategy, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+              >
+                {strategy}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* アクションボタン */}
+      <div className="space-y-2">
+        <button
+          onClick={onEditPlan}
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          計画を編集
+        </button>
+        
+        {onSavePlan && (
+          <button
+            onClick={onSavePlan}
+            disabled={isSaving}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+          >
+            {isSaving ? '保存中...' : '計画を保存'}
+          </button>
+        )}
+        
+        <button
+          onClick={onDeletePlan}
+          className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+        >
+          計画を削除
+        </button>
+      </div>
+
+      {/* 保存状態メッセージ */}
+      {saveError && (
+        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-red-800 text-sm">{saveError}</p>
+        </div>
+      )}
+      
+      {saveSuccess && (
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+          <p className="text-green-800 text-sm">計画が正常に保存されました！</p>
+        </div>
+      )}
+    </section>
   );
 };
-
-export default CurrentGoalPanel;

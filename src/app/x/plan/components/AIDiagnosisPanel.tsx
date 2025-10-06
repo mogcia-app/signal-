@@ -1,226 +1,174 @@
-'use client';
-
 import React from 'react';
-import { PlanData } from '../../../instagram/plan/types/plan';
-
-interface AIDiagnosisResult {
-  score: number;
-  strengths: string[];
-  weaknesses: string[];
-  recommendations: string[];
-  priorityActions: string[];
-}
+import { PlanFormData, SimulationResult } from '../types/plan';
 
 interface AIDiagnosisPanelProps {
-  planData?: PlanData | null;
+  showAdvice: boolean;
+  isLoading: boolean;
+  onStartDiagnosis: () => void;
+  onSaveAdvice: () => void;
+  formData: PlanFormData;
+  simulationResult?: SimulationResult | null;
 }
 
-export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({ planData }) => {
-  if (!planData) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">AI診断</h3>
-        </div>
-        <div className="p-6 text-center">
-          <div className="text-gray-400 text-4xl mb-4">🔍</div>
-          <h4 className="text-lg font-medium text-gray-900 mb-2">
-            AI診断を実行できません
-          </h4>
+export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
+  showAdvice,
+  isLoading,
+  onStartDiagnosis,
+  onSaveAdvice,
+  formData,
+  simulationResult
+}) => {
+  return (
+    <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      <h3 className="text-lg font-semibold mb-2 flex items-center">
+        <span className="mr-2">🤖</span>AIによる投稿戦略アドバイス
+      </h3>
+      <p className="text-sm text-gray-600 mb-4">
+        目標や施策をもとに、AIが最適な方向性を提案します。
+      </p>
+
+      <button
+        onClick={onStartDiagnosis}
+        disabled={isLoading}
+        className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4"
+      >
+        {isLoading ? 'AI戦略生成中...' : '▶ 診断を開始する'}
+      </button>
+
+      {/* エラー表示 */}
+      {!isLoading && !showAdvice && (
+        <div className="text-center py-8">
+          <div className="text-gray-400 text-4xl mb-4">🤖</div>
           <p className="text-gray-600">
-            運用計画を作成してからAI診断を実行してください
+            左側で計画を入力し、シミュレーションを実行してから<br />
+            AI診断を開始してください
           </p>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // AI診断の実行
-  const runDiagnosis = (): AIDiagnosisResult => {
-    let score = 0;
-    const strengths: string[] = [];
-    const weaknesses: string[] = [];
-    const recommendations: string[] = [];
-    const priorityActions: string[] = [];
-
-    // 戦略数の評価
-    if (planData.strategies.length >= 3) {
-      score += 20;
-      strengths.push('多様な戦略を設定');
-    } else {
-      score += planData.strategies.length * 5;
-      weaknesses.push('戦略が少ない');
-      recommendations.push('より多くの戦略を追加しましょう');
-    }
-
-    // 投稿頻度の評価
-    const totalWeeklyPosts = 
-      planData.simulation.postTypes.feed.weeklyCount +
-      planData.simulation.postTypes.reel.weeklyCount +
-      planData.simulation.postTypes.story.weeklyCount;
-
-    if (totalWeeklyPosts >= 10) {
-      score += 25;
-      strengths.push('適切な投稿頻度');
-    } else if (totalWeeklyPosts >= 5) {
-      score += 15;
-      strengths.push('基本的な投稿頻度');
-    } else {
-      score += totalWeeklyPosts * 2;
-      weaknesses.push('投稿頻度が低い');
-      recommendations.push('投稿頻度を増やしましょう');
-      priorityActions.push('週間投稿数を10回以上に設定');
-    }
-
-    // 目標設定の評価
-    const growthRate = (planData.targetFollowers - planData.currentFollowers) / planData.currentFollowers;
-    if (growthRate <= 2 && growthRate > 0) {
-      score += 20;
-      strengths.push('現実的な目標設定');
-    } else if (growthRate > 2) {
-      score += 10;
-      weaknesses.push('目標が高すぎる可能性');
-      recommendations.push('より現実的な目標に調整を検討');
-    } else {
-      score += 5;
-      weaknesses.push('目標設定に問題');
-      recommendations.push('目標フォロワー数を再設定');
-    }
-
-    // AIペルソナの評価
-    if (planData.aiPersona.tone && planData.aiPersona.style && planData.aiPersona.personality) {
-      score += 15;
-      strengths.push('AIペルソナが設定済み');
-    } else {
-      weaknesses.push('AIペルソナが不完全');
-      recommendations.push('AIペルソナを完全に設定');
-    }
-
-    // ターゲット設定の評価
-    if (planData.targetAudience && planData.category) {
-      score += 20;
-      strengths.push('ターゲットが明確');
-    } else {
-      weaknesses.push('ターゲットが不明確');
-      recommendations.push('ターゲットオーディエンスとカテゴリを明確化');
-      priorityActions.push('ターゲット設定の詳細化');
-    }
-
-    return {
-      score: Math.min(score, 100),
-      strengths,
-      weaknesses,
-      recommendations,
-      priorityActions
-    };
-  };
-
-  const diagnosis = runDiagnosis();
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 80) return '優秀';
-    if (score >= 60) return '良好';
-    return '改善必要';
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* 診断結果サマリー */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">AI診断結果</h3>
-        </div>
-        <div className="p-6">
-          <div className="text-center mb-6">
-            <div className={`text-4xl font-bold ${getScoreColor(diagnosis.score)}`}>
-              {diagnosis.score}
-            </div>
-            <div className={`text-lg font-medium ${getScoreColor(diagnosis.score)}`}>
-              {getScoreLabel(diagnosis.score)}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 強み */}
-            <div>
-              <h4 className="text-sm font-semibold text-green-700 mb-3">✅ 強み</h4>
-              <div className="space-y-2">
-                {diagnosis.strengths.length > 0 ? (
-                  diagnosis.strengths.map((strength, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-2 bg-green-50 rounded-lg">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm text-green-800">{strength}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-gray-500 italic">強みが見つかりませんでした</div>
-                )}
-              </div>
-            </div>
-
-            {/* 改善点 */}
-            <div>
-              <h4 className="text-sm font-semibold text-red-700 mb-3">⚠️ 改善点</h4>
-              <div className="space-y-2">
-                {diagnosis.weaknesses.length > 0 ? (
-                  diagnosis.weaknesses.map((weakness, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-2 bg-red-50 rounded-lg">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <span className="text-sm text-red-800">{weakness}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-gray-500 italic">改善点はありません</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 推奨事項 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">推奨事項</h3>
-        </div>
-        <div className="p-6">
-          <div className="space-y-3">
-            {diagnosis.recommendations.map((recommendation, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                <div className="text-sm text-blue-800">{recommendation}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 優先アクション */}
-      {diagnosis.priorityActions.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">優先アクション</h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-3">
-              {diagnosis.priorityActions.map((action, index) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
-                  <div className="text-sm text-orange-800">{action}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* ローディング表示 */}
+      {isLoading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff8a15] mx-auto mb-4"></div>
+          <p className="text-gray-600">AIが戦略を生成中...</p>
         </div>
       )}
-    </div>
+
+      {/* AI戦略表示 */}
+      {showAdvice && !isLoading && (
+        <div className="space-y-6">
+          {/* 全体戦略 */}
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-900 mb-2">📋 全体戦略</h4>
+            <p className="text-blue-800 text-sm">
+              X（旧Twitter）での効果的な運用を目指し、エンゲージメントを重視した投稿戦略を提案します。
+              ツイート、スレッド、リプライを適切に組み合わせ、フォロワーとの関係性を深めていきましょう。
+            </p>
+          </div>
+
+          {/* 投稿構成 */}
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-green-900 mb-2">📝 投稿構成</h4>
+            <div className="space-y-2 text-sm text-green-800">
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
+                <span>ツイート: 日常の気づきや短いメッセージ</span>
+              </div>
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
+                <span>スレッド: 深い洞察やストーリー展開</span>
+              </div>
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
+                <span>リプライ: フォロワーとの積極的な交流</span>
+              </div>
+            </div>
+          </div>
+
+          {/* カスタマージャーニー */}
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-purple-900 mb-2">🎯 カスタマージャーニー</h4>
+            <p className="text-purple-800 text-sm">
+              フォロワーがあなたのアカウントを発見し、フォローし、継続的にエンゲージするまでの
+              一連の流れを意識した投稿を心がけましょう。
+            </p>
+          </div>
+
+          {/* 成功のコツ */}
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-yellow-900 mb-2">💡 成功のコツ</h4>
+            <ul className="space-y-1 text-sm text-yellow-800">
+              <li>• 一貫性のあるブランドメッセージ</li>
+              <li>• 定期的な投稿スケジュール</li>
+              <li>• フォロワーとの積極的な交流</li>
+              <li>• トレンドを活用したタイムリーな投稿</li>
+            </ul>
+          </div>
+
+          {/* ブランド世界観 */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-gray-900 mb-2">🎨 ブランド世界観</h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">コンセプト:</span>
+                <div className="font-medium">親しみやすく信頼できる</div>
+              </div>
+              <div>
+                <span className="text-gray-600">メインカラー:</span>
+                <div className="font-medium">ブルー系</div>
+              </div>
+              <div>
+                <span className="text-gray-600">サブカラー:</span>
+                <div className="font-medium">グレー系</div>
+              </div>
+              <div>
+                <span className="text-gray-600">トーン:</span>
+                <div className="font-medium">親しみやすい</div>
+              </div>
+            </div>
+          </div>
+
+          {/* 推奨投稿内容 */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-900">📱 推奨投稿内容</h4>
+            
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <h5 className="font-medium text-blue-900 mb-2">ツイート</h5>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• 日常の気づきや短いメッセージ</li>
+                <li>• 質問形式でエンゲージメントを促進</li>
+                <li>• トレンドハッシュタグを活用</li>
+              </ul>
+            </div>
+
+            <div className="bg-green-50 p-3 rounded-lg">
+              <h5 className="font-medium text-green-900 mb-2">スレッド</h5>
+              <ul className="text-sm text-green-800 space-y-1">
+                <li>• 深い洞察やストーリー展開</li>
+                <li>• 段階的な情報提供</li>
+                <li>• 読者の興味を引く構成</li>
+              </ul>
+            </div>
+
+            <div className="bg-purple-50 p-3 rounded-lg">
+              <h5 className="font-medium text-purple-900 mb-2">リプライ</h5>
+              <ul className="text-sm text-purple-800 space-y-1">
+                <li>• フォロワーとの積極的な交流</li>
+                <li>• 感謝の気持ちを表現</li>
+                <li>• 建設的な議論を促進</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* 保存ボタン */}
+          <button
+            onClick={onSaveAdvice}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-md transition-colors"
+          >
+            💾 戦略を保存して続行
+          </button>
+        </div>
+      )}
+    </section>
   );
 };
-
-export default AIDiagnosisPanel;

@@ -1,198 +1,234 @@
-'use client';
-
 import React from 'react';
-import { PlanData } from '../../../instagram/plan/types/plan';
-
-interface SimulationResult {
-  totalPosts: number;
-  estimatedFollowers: number;
-  engagementRate: number;
-  reachEstimate: number;
-  recommendations: string[];
-}
+import { SimulationResult, PlanFormData } from '../types/plan';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
 
 interface SimulationPanelProps {
-  planData?: PlanData | null;
+  result: SimulationResult | null;
+  formData: PlanFormData;
+  onRunSimulation?: () => void;
+  isSimulating?: boolean;
+  simulationError?: string;
 }
 
-export const SimulationPanel: React.FC<SimulationPanelProps> = ({ planData }) => {
-  if (!planData) {
+export const SimulationPanel: React.FC<SimulationPanelProps> = ({
+  result,
+  formData,
+  onRunSimulation,
+  isSimulating = false,
+  simulationError
+}) => {
+  
+  const currentFollowers = parseInt(formData.currentFollowers, 10) || 0;
+  const targetFollowers = currentFollowers + parseInt(formData.followerGain, 10);
+  
+  // APIから取得したデータを使用
+  const growthData = result?.graphData || {
+    data: [],
+    realisticFinal: 0,
+    userTargetFinal: 0,
+    isRealistic: true,
+    growthRateComparison: { realistic: 0, userTarget: 0 }
+  };
+  
+  if (!result) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">シミュレーション</h3>
-        </div>
-        <div className="p-6 text-center">
-          <div className="text-gray-400 text-4xl mb-4">🎯</div>
-          <h4 className="text-lg font-medium text-gray-900 mb-2">
-            シミュレーションを実行できません
-          </h4>
-          <p className="text-gray-600">
-            運用計画を作成してからシミュレーションを実行してください
+      <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+        <h3 className="text-lg font-semibold mb-4 flex items-center">
+          <span className="mr-2">📊</span>目標達成シミュレーション
+        </h3>
+        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <p className="text-sm text-gray-600 mb-4">
+            左側で目標を入力し、シミュレーションを実行してください
           </p>
+          {onRunSimulation && (
+            <button
+              onClick={onRunSimulation}
+              disabled={isSimulating}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSimulating ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  シミュレーション実行中...
+                </div>
+              ) : (
+                'シミュレーションを実行'
+              )}
+            </button>
+          )}
         </div>
-      </div>
+        
+        {simulationError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+              <p className="text-red-800 text-sm">{simulationError}</p>
+            </div>
+          </div>
+        )}
+      </section>
     );
   }
 
-  // シミュレーション計算
-  const calculateSimulation = (): SimulationResult => {
-    const totalWeeklyPosts = 
-      planData.simulation.postTypes.feed.weeklyCount +
-      planData.simulation.postTypes.reel.weeklyCount +
-      planData.simulation.postTypes.story.weeklyCount;
-
-    const weeklyFollowerGain = 
-      (planData.simulation.postTypes.feed.weeklyCount * planData.simulation.postTypes.feed.followerEffect) +
-      (planData.simulation.postTypes.reel.weeklyCount * planData.simulation.postTypes.reel.followerEffect) +
-      (planData.simulation.postTypes.story.weeklyCount * planData.simulation.postTypes.story.followerEffect);
-
-    // 計画期間に基づく計算
-    const periodMonths = planData.planPeriod.includes('1ヶ月') ? 1 :
-                        planData.planPeriod.includes('3ヶ月') ? 3 :
-                        planData.planPeriod.includes('6ヶ月') ? 6 :
-                        planData.planPeriod.includes('1年') ? 12 : 3;
-
-    const totalWeeks = periodMonths * 4;
-    const estimatedFollowers = planData.currentFollowers + (weeklyFollowerGain * totalWeeks);
-    const totalPosts = totalWeeklyPosts * totalWeeks;
-
-    return {
-      totalPosts,
-      estimatedFollowers,
-      engagementRate: Math.min(5 + (totalWeeklyPosts * 0.5), 15), // 投稿頻度に基づく推定
-      reachEstimate: estimatedFollowers * 2.5, // フォロワーの2.5倍のリーチ
-      recommendations: [
-        totalWeeklyPosts < 10 ? '投稿頻度を増やしてエンゲージメントを向上させましょう' : '',
-        planData.simulation.postTypes.reel.weeklyCount < 2 ? 'スレッド投稿を増やして詳細な情報発信を強化しましょう' : '',
-        planData.simulation.postTypes.story.weeklyCount < 5 ? 'リプライを増やしてコミュニティとの交流を深めましょう' : '',
-        'ハッシュタグを効果的に使用してリーチを拡大しましょう'
-      ].filter(Boolean)
-    };
-  };
-
-  const simulation = calculateSimulation();
-
   return (
-    <div className="space-y-6">
-      {/* シミュレーション結果 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">シミュレーション結果</h3>
-          <p className="text-sm text-gray-600">現在の設定での予測結果</p>
+    <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      <h3 className="text-lg font-semibold mb-4 flex items-center">
+        <span className="mr-2">📊</span>目標達成シミュレーション
+      </h3>
+      
+      {/* 結果サマリー */}
+      <div className="bg-gray-50 p-4 rounded-lg mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">{result.monthlyTarget}</div>
+            <div className="text-sm text-gray-600">月間目標</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{result.weeklyTarget}</div>
+            <div className="text-sm text-gray-600">週間目標</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">{result.monthlyPostCount}</div>
+            <div className="text-sm text-gray-600">月間投稿数</div>
+          </div>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {simulation.totalPosts}
-              </div>
-              <div className="text-sm text-gray-600">総投稿数</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {simulation.estimatedFollowers.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">予測フォロワー数</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {simulation.engagementRate.toFixed(1)}%
-              </div>
-              <div className="text-sm text-gray-600">予測エンゲージメント率</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {simulation.reachEstimate.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">予測リーチ数</div>
-            </div>
+        
+        <div className="flex items-center justify-center mb-4">
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+            result.feasibilityLevel === '高' 
+              ? 'bg-green-100 text-green-800' 
+              : result.feasibilityLevel === '中'
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {result.feasibilityBadge}
+          </span>
+        </div>
+        
+        <p className="text-sm text-gray-700 text-center">{result.workloadMessage}</p>
+      </div>
+
+      {/* 成長予測グラフ */}
+      {growthData.data.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-md font-semibold mb-3 flex items-center">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            成長予測
+          </h4>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={growthData.data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="week" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="realistic" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  name="現実的な成長"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="userTarget" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  name="ユーザー目標"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* 投稿頻度 */}
+      <div className="mb-6">
+        <h4 className="text-md font-semibold mb-3">推奨投稿頻度</h4>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-blue-50 p-3 rounded-lg text-center">
+            <div className="text-lg font-bold text-blue-600">{result.postsPerWeek.feed}</div>
+            <div className="text-sm text-blue-800">ツイート/週</div>
+          </div>
+          <div className="bg-green-50 p-3 rounded-lg text-center">
+            <div className="text-lg font-bold text-green-600">{result.postsPerWeek.reel}</div>
+            <div className="text-sm text-green-800">スレッド/週</div>
+          </div>
+          <div className="bg-purple-50 p-3 rounded-lg text-center">
+            <div className="text-lg font-bold text-purple-600">{result.postsPerWeek.story}</div>
+            <div className="text-sm text-purple-800">リプライ/週</div>
           </div>
         </div>
       </div>
 
-      {/* 投稿タイプ別分析 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">投稿タイプ別分析</h3>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl">🐦</div>
-                <div>
-                  <div className="font-medium text-blue-900">ツイート</div>
-                  <div className="text-sm text-blue-700">短文投稿</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-semibold text-blue-900">
-                  {planData.simulation.postTypes.feed.weeklyCount}回/週
-                </div>
-                <div className="text-sm text-blue-700">
-                  +{planData.simulation.postTypes.feed.followerEffect}人/投稿
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl">🧵</div>
-                <div>
-                  <div className="font-medium text-green-900">スレッド</div>
-                  <div className="text-sm text-green-700">連続投稿</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-semibold text-green-900">
-                  {planData.simulation.postTypes.reel.weeklyCount}回/週
-                </div>
-                <div className="text-sm text-green-700">
-                  +{planData.simulation.postTypes.reel.followerEffect}人/投稿
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl">💬</div>
-                <div>
-                  <div className="font-medium text-purple-900">リプライ</div>
-                  <div className="text-sm text-purple-700">コミュニケーション</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-semibold text-purple-900">
-                  {planData.simulation.postTypes.story.weeklyCount}回/週
-                </div>
-                <div className="text-sm text-purple-700">
-                  +{planData.simulation.postTypes.story.followerEffect}人/投稿
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* メインアドバイス */}
+      <div className="mb-6">
+        <h4 className="text-md font-semibold mb-3 flex items-center">
+          <Target className="h-4 w-4 mr-2" />
+          メインアドバイス
+        </h4>
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <p className="text-blue-800">{result.mainAdvice}</p>
         </div>
       </div>
 
-      {/* 推奨事項 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">推奨事項</h3>
-        </div>
-        <div className="p-6">
-          <div className="space-y-3">
-            {simulation.recommendations.map((recommendation, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-                <div className="text-sm text-yellow-800">{recommendation}</div>
-              </div>
+      {/* 改善提案 */}
+      {result.improvementTips && result.improvementTips.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-md font-semibold mb-3">改善提案</h4>
+          <ul className="space-y-2">
+            {result.improvementTips.map((tip, index) => (
+              <li key={index} className="flex items-start">
+                <span className="text-blue-600 mr-2">•</span>
+                <span className="text-sm text-gray-700">{tip}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
-      </div>
-    </div>
+      )}
+
+      {/* ワンポイントアドバイス */}
+      {result.onePointAdvice && (
+        <div className={`p-4 rounded-lg ${
+          result.onePointAdvice.type === 'warning' 
+            ? 'bg-yellow-50 border border-yellow-200' 
+            : 'bg-green-50 border border-green-200'
+        }`}>
+          <h4 className="font-semibold mb-2 flex items-center">
+            {result.onePointAdvice.type === 'warning' ? (
+              <AlertTriangle className="h-4 w-4 mr-2 text-yellow-600" />
+            ) : (
+              <Target className="h-4 w-4 mr-2 text-green-600" />
+            )}
+            {result.onePointAdvice.title}
+          </h4>
+          <p className="text-sm mb-2">{result.onePointAdvice.message}</p>
+          <p className="text-sm font-medium">{result.onePointAdvice.advice}</p>
+        </div>
+      )}
+
+      {/* 再実行ボタン */}
+      {onRunSimulation && (
+        <div className="mt-6">
+          <button
+            onClick={onRunSimulation}
+            disabled={isSimulating}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSimulating ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                シミュレーション実行中...
+              </div>
+            ) : (
+              'シミュレーションを再実行'
+            )}
+          </button>
+        </div>
+      )}
+    </section>
   );
 };
-
-export default SimulationPanel;
