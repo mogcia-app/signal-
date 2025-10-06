@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
+    console.log('X投稿取得API - userId:', userId);
+
     if (!userId) {
       return NextResponse.json(
         { error: 'userIdが必要です' },
@@ -56,20 +58,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Firestoreから投稿を取得
+    // Firestoreから投稿を取得（orderByを一時的に削除してテスト）
     const postsQuery = query(
       collection(db, 'xposts'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     );
     
+    console.log('Firestoreクエリ実行中...');
     const querySnapshot = await getDocs(postsQuery);
+    console.log('クエリ結果:', querySnapshot.docs.length, '件の投稿を取得');
+    
     const posts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt ? new Date(doc.data().createdAt) : new Date(),
       updatedAt: doc.data().updatedAt ? new Date(doc.data().updatedAt) : new Date()
     }));
+
+    console.log('投稿データ処理完了:', posts.length, '件');
 
     return NextResponse.json({
       success: true,
@@ -78,9 +84,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('X投稿取得エラー:', error);
+    console.error('X投稿取得エラー詳細:', error);
+    console.error('エラースタック:', error.stack);
     return NextResponse.json(
-      { error: '投稿の取得に失敗しました' },
+      { error: '投稿の取得に失敗しました', details: error.message },
       { status: 500 }
     );
   }
