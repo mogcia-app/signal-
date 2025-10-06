@@ -53,7 +53,7 @@ export default function XPlanPage() {
       return;
     }
 
-    const requestData: SimulationRequest = {
+    const requestData: SimulationRequest & { userId?: string } = {
       followerGain: parseInt(formData.followerGain, 10),
       currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
       planPeriod: formData.planPeriod,
@@ -61,7 +61,8 @@ export default function XPlanPage() {
       strategyValues: selectedStrategies,
       postCategories: selectedCategories,
       hashtagStrategy: formData.tone,
-      referenceAccounts: formData.brandConcept
+      referenceAccounts: formData.brandConcept,
+      userId: user?.uid
     };
 
     await runSimulation(requestData);

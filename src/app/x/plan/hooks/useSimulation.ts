@@ -8,7 +8,7 @@ export const useSimulation = () => {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
 
   // シミュレーション実行
-  const runSimulation = async (requestData: SimulationRequest) => {
+  const runSimulation = async (requestData: SimulationRequest & { userId?: string }) => {
     console.log('=== シミュレーション実行開始 ===');
     console.log('requestData:', requestData);
 
@@ -42,7 +42,7 @@ export const useSimulation = () => {
       });
 
       // BFF APIを呼び出し
-      const response = await fetch('/api/instagram/simulation', {
+      const response = await fetch('/api/x/simulation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

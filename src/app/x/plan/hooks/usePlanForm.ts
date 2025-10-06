@@ -83,7 +83,7 @@ export const usePlanForm = () => {
     setSaveSuccess(false);
 
     try {
-      const response = await fetch('/api/plans', {
+      const response = await fetch('/api/x/plans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
