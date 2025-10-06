@@ -322,15 +322,6 @@ export default function XAnalyticsPage() {
             <p className="text-gray-600">Xアカウントのパフォーマンスを分析・改善しましょう</p>
           </div>
 
-          {/* プラン情報 */}
-          {planData && (
-            <div className="mb-8">
-              <PlanCard
-                planData={planData}
-              />
-            </div>
-          )}
-
           {/* 時間範囲選択 */}
           <div className="mb-6">
             <div className="flex space-x-2">
@@ -350,147 +341,257 @@ export default function XAnalyticsPage() {
             </div>
           </div>
 
-          {/* アナリティクスデータ表示 */}
-          {analyticsData && (
-            <div className="space-y-8">
-              {/* 概要統計 */}
-              <AnalyticsStats
-                title="概要統計"
-                data={analyticsData.overview}
-                type="overview"
-              />
-
-              {/* エンゲージメント統計 */}
-              <AnalyticsStats
-                title="エンゲージメント統計"
-                data={analyticsData.engagement}
-                type="engagement"
-              />
-
-              {/* オーディエンス分析 */}
+          {/* 2カラムレイアウト */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* 左側: 分析データ入力フォーム */}
+            <div className="lg:col-span-1 space-y-6">
               <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">オーディエンス分析</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿のパフォーマンスデータを入力してください</h3>
+                
+                {/* 分析データ入力フォーム */}
+                <div className="space-y-4">
                   <div>
-                    <h4 className="text-lg font-medium text-gray-800 mb-3">性別分布</h4>
-                    <div className="space-y-2">
-                      {Object.entries(analyticsData.audience.gender).map(([gender, percentage]) => (
-                        <div key={gender} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">
-                            {gender === 'male' ? '男性' : gender === 'female' ? '女性' : 'その他'}
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-32 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-blue-600 h-2 rounded-full"
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900 w-12 text-right">
-                              {percentage}%
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      インプレッション数
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="例: 15420"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
+                  
                   <div>
-                    <h4 className="text-lg font-medium text-gray-800 mb-3">年齢分布</h4>
-                    <div className="space-y-2">
-                      {Object.entries(analyticsData.audience.age).map(([age, percentage]) => (
-                        <div key={age} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{age}歳</span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-32 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-green-600 h-2 rounded-full"
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900 w-12 text-right">
-                              {percentage}%
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      プロフィール閲覧数
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="例: 892"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      いいね数
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="例: 425"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      リツイート数
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="例: 156"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      返信数
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="例: 89"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      クリック数
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="例: 234"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    データを分析する
+                  </button>
                 </div>
               </div>
 
-              {/* 閲覧数ソース分析 */}
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">閲覧数ソース分析</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="text-lg font-medium text-gray-800 mb-3">ソース別閲覧数</h4>
-                    <div className="space-y-2">
-                      {Object.entries(analyticsData.reachSource.sources).map(([source, percentage]) => (
-                        <div key={source} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">
-                            {source === 'home' ? 'ホーム' : 
-                             source === 'profile' ? 'プロフィール' :
-                             source === 'explore' ? 'エクスプローラー' :
-                             source === 'search' ? '検索' : 'その他'}
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-32 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-purple-600 h-2 rounded-full"
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900 w-12 text-right">
-                              {percentage}%
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium text-gray-800 mb-3">フォロワー別閲覧数</h4>
-                    <div className="space-y-2">
-                      {Object.entries(analyticsData.reachSource.followers).map(([type, percentage]) => (
-                        <div key={type} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">
-                            {type === 'followers' ? 'フォロワー' : '非フォロワー'}
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-32 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-orange-600 h-2 rounded-full"
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900 w-12 text-right">
-                              {percentage}%
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              {/* 分析結果 */}
+              {analyticsData && (
+                <div className="space-y-4">
+                  <AnalyticsStats
+                    title="概要統計"
+                    data={analyticsData.overview}
+                    type="overview"
+                  />
+                  
+                  <AnalyticsStats
+                    title="エンゲージメント統計"
+                    data={analyticsData.engagement}
+                    type="engagement"
+                  />
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* 投稿分析フォーム */}
-              <AnalyticsForm
-                onPostAnalysis={handlePostSelect}
-                selectedPost={selectedPost}
-                posts={analyticsData.recentPosts}
-              />
+            {/* 右側: 投稿プレビューと運用計画 */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* 運用計画 */}
+              {planData && (
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">運用計画</h3>
+                  <PlanCard
+                    planData={planData}
+                  />
+                </div>
+              )}
 
               {/* 投稿プレビュー */}
-              {selectedPost && (
-                <PostPreview
-                  post={selectedPost}
-                  onClose={() => setSelectedPost(null)}
+              {selectedPost ? (
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿プレビュー</h3>
+                  <PostPreview
+                    post={selectedPost}
+                    onClose={() => setSelectedPost(null)}
+                  />
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿プレビュー</h3>
+                  <div className="text-center py-8 text-gray-500">
+                    <p>投稿を選択すると詳細が表示されます</p>
+                  </div>
+                </div>
+              )}
+
+              {/* 投稿分析フォーム */}
+              {analyticsData && (
+                <AnalyticsForm
+                  onPostAnalysis={handlePostSelect}
+                  selectedPost={selectedPost}
+                  posts={analyticsData.recentPosts}
                 />
               )}
 
+              {/* オーディエンス分析 */}
+              {analyticsData && (
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">オーディエンス分析</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-800 mb-3">性別分布</h4>
+                      <div className="space-y-2">
+                        {Object.entries(analyticsData.audience.gender).map(([gender, percentage]) => (
+                          <div key={gender} className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">
+                              {gender === 'male' ? '男性' : gender === 'female' ? '女性' : 'その他'}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-32 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-blue-600 h-2 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-medium text-gray-900 w-12 text-right">
+                                {percentage}%
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-800 mb-3">年齢分布</h4>
+                      <div className="space-y-2">
+                        {Object.entries(analyticsData.audience.age).map(([age, percentage]) => (
+                          <div key={age} className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">{age}歳</span>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-32 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-green-600 h-2 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-medium text-gray-900 w-12 text-right">
+                                {percentage}%
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 閲覧数ソース分析 */}
+              {analyticsData && (
+                <div className="bg-white rounded-lg shadow-sm border p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">閲覧数ソース分析</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-800 mb-3">ソース別閲覧数</h4>
+                      <div className="space-y-2">
+                        {Object.entries(analyticsData.reachSource.sources).map(([source, percentage]) => (
+                          <div key={source} className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">
+                              {source === 'home' ? 'ホーム' : 
+                               source === 'profile' ? 'プロフィール' :
+                               source === 'explore' ? 'エクスプローラー' :
+                               source === 'search' ? '検索' : 'その他'}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-32 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-purple-600 h-2 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-medium text-gray-900 w-12 text-right">
+                                {percentage}%
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-800 mb-3">フォロワー別閲覧数</h4>
+                      <div className="space-y-2">
+                        {Object.entries(analyticsData.reachSource.followers).map(([type, percentage]) => (
+                          <div key={type} className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">
+                              {type === 'followers' ? 'フォロワー' : '非フォロワー'}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-32 bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-orange-600 h-2 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-medium text-gray-900 w-12 text-right">
+                                {percentage}%
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* トップ投稿 */}
-              {analyticsData.topPosts.length > 0 && (
+              {analyticsData && analyticsData.topPosts.length > 0 && (
                 <div className="bg-white rounded-lg shadow-sm border p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">エンゲージメント上位の投稿</h3>
                   <div className="space-y-4">
@@ -518,17 +619,17 @@ export default function XAnalyticsPage() {
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* 更新ボタン */}
-          <div className="mt-8 text-center">
-            <button
-              onClick={fetchAnalyticsData}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              データを更新
-            </button>
+              {/* 更新ボタン */}
+              <div className="text-center">
+                <button
+                  onClick={fetchAnalyticsData}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  データを更新
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
