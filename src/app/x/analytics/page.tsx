@@ -89,6 +89,7 @@ export default function XAnalyticsPage() {
   const { user } = useAuth();
   const { planData } = useXPlanData();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [latestAnalytics, setLatestAnalytics] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
@@ -228,15 +229,16 @@ export default function XAnalyticsPage() {
       
       // データがある場合は処理
       if (result.analytics && result.analytics.length > 0) {
-        const latestAnalytics = result.analytics[0]; // 最新の分析データを使用
+        const analyticsRecord = result.analytics[0]; // 最新の分析データを使用
+        setLatestAnalytics(analyticsRecord);
         
         // X専用の分析データ構造に変換
         const analytics: AnalyticsData = {
           overview: {
-            impressions: Number(latestAnalytics.impressions) || 0,
-            profileViews: Number(latestAnalytics.profileClicks) || 0,
-            mentions: Number(latestAnalytics.detailClicks) || 0,
-            followers: Number(latestAnalytics.engagements) || 0,
+            impressions: Number(analyticsRecord.likes as number) || 0,
+            profileViews: Number(analyticsRecord.retweets as number) || 0,
+            mentions: Number(analyticsRecord.comments as number) || 0,
+            followers: Number(analyticsRecord.saves as number) || 0,
             following: 450,
             tweets: result.total || 1,
           },
@@ -248,11 +250,11 @@ export default function XAnalyticsPage() {
             replyRate: 0,
             clickRate: 0,
           },
-          audience: latestAnalytics.audience || {
+          audience: (analyticsRecord.audience as AudienceData) || {
             gender: { male: 65, female: 30, other: 5 },
             age: { '13-17': 10, '18-24': 35, '25-34': 40, '35-44': 10, '45-54': 3, '55-64': 1, '65+': 1 },
           },
-          reachSource: latestAnalytics.reachSource || {
+          reachSource: (analyticsRecord.reachSource as ReachSourceData) || {
             sources: { home: 60, profile: 20, explore: 15, search: 3, other: 2 },
             followers: { followers: 75, nonFollowers: 25 },
           },
@@ -265,6 +267,7 @@ export default function XAnalyticsPage() {
       } else {
         // データがない場合はダミーデータを表示
         console.log('No X analytics data found, showing placeholder');
+        setLatestAnalytics(null);
         
         const demoData: AnalyticsData = {
           overview: {
@@ -601,44 +604,44 @@ export default function XAnalyticsPage() {
                   <div className="mb-6">
                     <h4 className="text-lg font-medium text-gray-800 mb-3">基本統計</h4>
                     <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-red-50 rounded-lg">
+                        <div className="text-2xl font-bold text-red-600">{Number(analyticsData.overview.impressions) || 0}</div>
+                        <div className="text-sm text-gray-600">いいね数</div>
+                      </div>
                       <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">{analyticsData.overview.impressions.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">総インプレッション</div>
+                        <div className="text-2xl font-bold text-blue-600">{Number(analyticsData.overview.profileViews) || 0}</div>
+                        <div className="text-sm text-gray-600">リツイート数</div>
                       </div>
                       <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{analyticsData.overview.profileViews.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">プロフィール閲覧</div>
+                        <div className="text-2xl font-bold text-green-600">{Number(analyticsData.overview.mentions) || 0}</div>
+                        <div className="text-sm text-gray-600">コメント数</div>
                       </div>
                       <div className="text-center p-4 bg-purple-50 rounded-lg">
-                        <div className="text-2xl font-bold text-purple-600">{analyticsData.overview.mentions.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">メンション</div>
-                      </div>
-                      <div className="text-center p-4 bg-orange-50 rounded-lg">
-                        <div className="text-2xl font-bold text-orange-600">{analyticsData.overview.followers.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">フォロワー数</div>
+                        <div className="text-2xl font-bold text-purple-600">{Number(analyticsData.overview.followers) || 0}</div>
+                        <div className="text-sm text-gray-600">保存数</div>
                       </div>
                     </div>
                   </div>
 
 
-                  {/* 投稿データ */}
+                  {/* 詳細統計 */}
                   <div className="mb-6">
-                    <h4 className="text-lg font-medium text-gray-800 mb-3">投稿データ</h4>
+                    <h4 className="text-lg font-medium text-gray-800 mb-3">詳細統計</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 bg-pink-50 rounded-lg">
-                        <div className="text-2xl font-bold text-pink-600">{analyticsData.overview.impressions.toLocaleString()}</div>
+                        <div className="text-2xl font-bold text-pink-600">{Number(latestAnalytics?.impressions as number) || 0}</div>
                         <div className="text-sm text-gray-600">インプレッション数</div>
                       </div>
                       <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                        <div className="text-2xl font-bold text-indigo-600">{analyticsData.overview.profileViews.toLocaleString()}</div>
+                        <div className="text-2xl font-bold text-indigo-600">{Number(latestAnalytics?.profileClicks as number) || 0}</div>
                         <div className="text-sm text-gray-600">プロフィールアクセス数</div>
                       </div>
                       <div className="text-center p-4 bg-teal-50 rounded-lg">
-                        <div className="text-2xl font-bold text-teal-600">{analyticsData.overview.mentions.toLocaleString()}</div>
+                        <div className="text-2xl font-bold text-teal-600">{Number(latestAnalytics?.detailClicks as number) || 0}</div>
                         <div className="text-sm text-gray-600">詳細クリック数</div>
                       </div>
                       <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                        <div className="text-2xl font-bold text-yellow-600">{analyticsData.overview.followers.toLocaleString()}</div>
+                        <div className="text-2xl font-bold text-yellow-600">{Number(latestAnalytics?.engagements as number) || 0}</div>
                         <div className="text-sm text-gray-600">エンゲージメント数</div>
                       </div>
                     </div>
