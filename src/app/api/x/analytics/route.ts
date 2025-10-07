@@ -61,10 +61,16 @@ interface XAnalyticsData {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('X Analytics GET request started');
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
+    console.log('Request URL:', request.url);
+    console.log('User ID from params:', userId);
+
     if (!userId) {
+      console.log('No userId provided, returning 400');
       return NextResponse.json(
         { error: 'userId is required' },
         { status: 400 }
@@ -82,13 +88,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    console.log('Creating Firebase query...');
     const q = query(
       collection(db, 'xanalytics'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
+      // orderBy('createdAt', 'desc') - 一時的に削除（インデックスエラーの可能性）
     );
 
+    console.log('Executing Firebase query...');
     const snapshot = await getDocs(q);
+    console.log('Firebase query completed, snapshot size:', snapshot.size);
+    
     const analytics = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -102,9 +112,18 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('X Analytics fetch error:', error);
+    console.error('X Analytics fetch error details:', {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
+    
     return NextResponse.json(
-      { error: 'Failed to fetch X analytics data' },
+      { 
+        error: 'Failed to fetch X analytics data',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

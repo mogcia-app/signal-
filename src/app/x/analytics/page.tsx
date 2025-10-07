@@ -223,7 +223,8 @@ export default function XAnalyticsPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch X analytics data');
+        console.error('X Analytics API error response:', result);
+        throw new Error(result.error || result.details || 'Failed to fetch X analytics data');
       }
 
       console.log('X Analytics API response:', result);
