@@ -168,16 +168,31 @@ export default function CommonLayout({ children, customTitle, customDescription 
   };
 
   const handleSNSSwitch = (snsKey: string) => {
+    console.log('🔄 SNS切り替え開始:', { 
+      from: currentSNS, 
+      to: snsKey, 
+      availableSNS: availableSNS,
+      timestamp: new Date().toISOString()
+    });
+    
     // 契約済みSNSかチェック
     if (!availableSNS.includes(snsKey)) {
       console.warn('⚠️ 契約していないSNSへの切り替えを試行:', snsKey);
+      console.warn('利用可能なSNS:', availableSNS);
       return;
     }
     
-    console.log('🔄 SNS切り替え:', { from: currentSNS, to: snsKey });
-    setCurrentSNS(snsKey);
-    sessionStorage.setItem('lastAccessedSNS', snsKey);
-    router.push(`/${snsKey}`);
+    try {
+      setCurrentSNS(snsKey);
+      sessionStorage.setItem('lastAccessedSNS', snsKey);
+      console.log('✅ セッションストレージに保存:', snsKey);
+      
+      const targetURL = `/${snsKey}`;
+      console.log('🚀 ナビゲーション開始:', targetURL);
+      router.push(targetURL);
+    } catch (error) {
+      console.error('❌ SNS切り替えエラー:', error);
+    }
   };
 
   // 認証チェック
@@ -290,7 +305,15 @@ export default function CommonLayout({ children, customTitle, customDescription 
               return (
                 <button
                   key={snsKey}
-                  onClick={() => handleSNSSwitch(snsKey)}
+                  onClick={(e) => {
+                    console.log('🖱️ SNS切り替えボタンクリック:', { 
+                      snsKey: snsKey, 
+                      event: e,
+                      currentSNS: currentSNS,
+                      availableSNS: availableSNS
+                    });
+                    handleSNSSwitch(snsKey);
+                  }}
                   className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-left transition-colors ${
                     isActive 
                       ? `${snsInfo.bgColor} ${snsInfo.textColor} font-medium` 

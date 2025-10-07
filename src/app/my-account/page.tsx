@@ -17,55 +17,7 @@ import {
   Calendar,
 } from 'lucide-react';
 
-// SNSを判定する関数（複数の方法を組み合わせ）
-const getCurrentSNS = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
-  if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
-  
-  // 1. セッションストレージから最後にアクセスしたSNSを取得
-  const lastAccessedSNS = sessionStorage.getItem('lastAccessedSNS');
-  
-  // 2. リファラーから判定
-  const referrer = document.referrer;
-  
-  console.log('🔍 マイアカウントページ - SNS判定デバッグ:', {
-    lastAccessedSNS: lastAccessedSNS,
-    referrer: referrer,
-    pathname: window.location.pathname,
-    fullURL: window.location.href
-  });
-  
-  // リファラーから判定（最優先）
-  if (referrer.includes('/x/')) {
-    console.log('✅ Xページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'x');
-    return 'x';
-  }
-  if (referrer.includes('/instagram/')) {
-    console.log('✅ Instagramページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'instagram');
-    return 'instagram';
-  }
-  if (referrer.includes('/tiktok/')) {
-    console.log('✅ TikTokページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'tiktok');
-    return 'tiktok';
-  }
-  if (referrer.includes('/youtube/')) {
-    console.log('✅ YouTubeページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'youtube');
-    return 'youtube';
-  }
-  
-  // リファラーから判定できない場合は、最後にアクセスしたSNSを使用
-  if (lastAccessedSNS && ['instagram', 'x', 'tiktok', 'youtube'].includes(lastAccessedSNS)) {
-    console.log(`✅ セッションストレージからSNS復元: ${lastAccessedSNS}`);
-    return lastAccessedSNS as 'instagram' | 'x' | 'tiktok' | 'youtube';
-  }
-  
-  console.log('⚠️ 判定できず、デフォルトのInstagramを使用');
-  // 最終的にデフォルト
-  return 'instagram';
-};
+// CommonLayoutでSNS判定が行われるため、ここでは不要
 
 // UserProfile interface は useUserProfile フックで定義されているため削除
 
@@ -73,16 +25,10 @@ export default function MyAccountPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
-  // const [isNavigating, setIsNavigating] = useState(false);
 
-  // SNS判定とマイアカウントページのマウントログ
+  // マイアカウントページのマウントログ
   useEffect(() => {
-    const detectedSNS = getCurrentSNS();
-    setCurrentSNS(detectedSNS);
-    
     console.log('🎯 マイアカウントページがマウントされました！', {
-      detectedSNS: detectedSNS,
       referrer: typeof window !== 'undefined' ? document.referrer : 'SSR',
       pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR'
     });
@@ -100,25 +46,12 @@ export default function MyAccountPage() {
     getContractDaysRemaining
   } = useUserProfile();
 
-  // デバッグ用：useUserProfileフックの状態をログ出力
-  console.log('🔍 useUserProfileフック状態:', {
-    userProfile: userProfile,
-    profileLoading: profileLoading,
-    profileError: profileError,
-    getContractSNS: typeof getContractSNS,
-    getSNSAISettings: typeof getSNSAISettings,
-    getBusinessInfo: typeof getBusinessInfo
-  });
-
-  // プロフィールデータの変更を監視（デバッグ強化版）
+  // プロフィールデータの変更を監視
   useEffect(() => {
     console.log('🔍 マイアカウントページ - プロフィールデータ更新:', {
-      userProfile: userProfile,
-      loading: profileLoading,
-      error: profileError,
       hasUserProfile: !!userProfile,
-      userProfileKeys: userProfile ? Object.keys(userProfile) : [],
-      timestamp: new Date().toISOString()
+      loading: profileLoading,
+      error: profileError
     });
   }, [userProfile, profileLoading, profileError]);
 
