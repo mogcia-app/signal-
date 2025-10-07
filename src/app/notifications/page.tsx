@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import CommonHeader from '../../components/common-header';
+import CommonLayout from '../../components/common-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
 import { 
   Bell, 
@@ -533,24 +533,26 @@ export default function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <>
-        <CommonHeader />
-        <div className="pt-16 min-h-screen bg-gray-50 flex items-center justify-center">
+      <CommonLayout 
+        customTitle="お知らせ"
+        customDescription="システムのお知らせと通知"
+      >
+        <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">お知らせを読み込み中...</h2>
             <p className="text-gray-600">通知データを取得しています</p>
           </div>
         </div>
-      </>
+      </CommonLayout>
     );
   }
 
   return (
-    <>
-      <CommonHeader unreadCount={notifications.filter(n => !n.read).length} />
-      <div className="pt-16 min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <CommonLayout 
+      customTitle="お知らせ"
+      customDescription="システムのお知らせと通知"
+    >
         <div className="max-w-7xl mx-auto p-6">
           {/* 統計情報 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -900,8 +902,6 @@ export default function NotificationsPage() {
             selectedFilter: selectedFilter
           }}
         />
-        </div>
-      </div>
-    </>
+    </CommonLayout>
   );
 }
