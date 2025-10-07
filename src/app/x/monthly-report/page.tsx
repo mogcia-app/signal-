@@ -118,44 +118,7 @@ export default function XMonthlyReportPage() {
     } catch (error) {
       console.error('X月次レポートデータ取得エラー:', error);
       setError('データの取得に失敗しました');
-      
-      // エラー時はダミーデータを表示
-      const dummyData: XMonthlyReportData = {
-        period,
-        date,
-        totals: {
-          totalLikes: 1250,
-          totalRetweets: 340,
-          totalComments: 89,
-          totalSaves: 67,
-          totalImpressions: 45620,
-          totalEngagements: 1746,
-          totalPosts: 156,
-          totalFollowers: 2847,
-        },
-        engagement: {
-          engagementRate: 3.8,
-          likeRate: 2.7,
-          retweetRate: 0.7,
-          replyRate: 0.2,
-        },
-        reachSourceAnalysis: {
-          sources: {
-            home: 45,
-            profile: 20,
-            explore: 15,
-            search: 12,
-            other: 8,
-          },
-          followers: {
-            followers: 68,
-            nonFollowers: 32,
-          },
-        },
-        topPosts: [],
-      };
-      
-      setReportData(dummyData);
+      setReportData(null);
     } finally {
       setLoading(false);
     }
@@ -226,6 +189,55 @@ export default function XMonthlyReportPage() {
             </button>
           </div>
         </div>
+
+        {/* エラー表示 */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-red-900">データ取得エラー</h3>
+                <p className="text-red-700">{error}</p>
+                <button
+                  onClick={() => {
+                    setError(null);
+                    if (user) {
+                      fetchReportData(activeTab, activeTab === 'monthly' ? selectedMonth : selectedWeek);
+                    }
+                  }}
+                  className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  再試行
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* データなし表示 */}
+        {!loading && !error && !reportData && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
+            <div className="p-3 bg-gray-100 rounded-lg w-fit mx-auto mb-4">
+              <BarChart3 className="h-8 w-8 text-gray-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">データがありません</h3>
+            <p className="text-gray-600 mb-4">
+              {activeTab === 'monthly' ? '今月の' : '今週の'}分析データが見つかりませんでした。
+              <br />
+              まずはX analyticsページでデータを入力してください。
+            </p>
+            <a
+              href="/x/analytics"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              データを入力する
+            </a>
+          </div>
+        )}
 
         {/* 運用計画 */}
         {planData && (
