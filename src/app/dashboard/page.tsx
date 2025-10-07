@@ -1,13 +1,28 @@
 'use client';
 
 import { useAuth } from '../../contexts/auth-context';
-import { AuthGuard } from '../../components/auth-guard';
 import { useUserProfile } from '../../hooks/useUserProfile';
-import { UserDataDisplay } from '../../components/UserDataDisplay';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { 
+  User, 
+  Mail, 
+  Settings,
+  ArrowRight,
+  Calendar,
+  Shield,
+  Bell,
+  Globe,
+  Heart,
+  LogOut,
+  Key,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertCircle
+} from 'lucide-react';
 
-function DashboardContent() {
+export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const { 
     userProfile, 
@@ -18,548 +33,401 @@ function DashboardContent() {
     getContractDaysRemaining
   } = useUserProfile();
   const router = useRouter();
-  const [showAllData, setShowAllData] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // パスワード変更機能の状態
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // SNS契約数に応じたルーティング
   useEffect(() => {
+    console.log('🎯 ダッシュボードページがマウントされました！', {
+      user: !!user,
+      userProfile: !!userProfile,
+      profileLoading: profileLoading,
+      error: profileError,
+      referrer: typeof window !== 'undefined' ? document.referrer : 'SSR',
+      pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR'
+    });
+
+    // ユーザーがログインしていない場合はログインページにリダイレクト
+    if (!user) {
+      console.log('❌ ユーザーがログインしていません。ログインページにリダイレクトします。');
+      router.push('/login');
+      return;
+    }
+
+    // プロフィールが読み込まれたら契約SNSに応じてリダイレクト
     if (userProfile && !profileLoading) {
       const contractSNS = getContractSNS();
+      console.log('🔍 契約SNS:', contractSNS);
       
-      // デバッグログ
-      console.log('Dashboard routing check:', {
-        contractSNS,
-        length: contractSNS.length,
-        userProfile: userProfile,
-        contractActive: isContractActive(),
-        daysRemaining: getContractDaysRemaining()
-      });
-      
-      if (contractSNS.length === 1) {
-        // 契約SNSが1つの場合、直接そのSNSのダッシュボードに遷移
-        console.log('Redirecting to single SNS:', contractSNS[0]);
-        router.push(`/${contractSNS[0]}`);
-      } else if (contractSNS.length > 1) {
-        // 契約SNSが複数の場合、SNS選択ページに遷移
-        console.log('Redirecting to SNS select page');
+      if (contractSNS && contractSNS.length === 1) {
+        console.log('✅ 単一SNS契約。Instagramページにリダイレクトします。');
+        router.push('/instagram');
+      } else if (contractSNS && contractSNS.length > 1) {
+        console.log('✅ 複数SNS契約。SNS選択ページにリダイレクトします。');
         router.push('/sns-select');
       }
-      // 契約SNSが0個の場合は現在のページ（全体ダッシュボード）を表示
+      // 契約SNSが0個の場合は現在のページを表示
     }
-  }, [userProfile, profileLoading, router, getContractSNS, isContractActive, getContractDaysRemaining]);
+  }, [user, userProfile, profileLoading, router, getContractSNS]);
 
   const handleSignOut = async () => {
     try {
+      setIsLoading(true);
       await signOut();
+      router.push('/login');
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('ログアウトエラー:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'すべてのフィールドを入力してください' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ type: 'error', text: '新しいパスワードが一致しません' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordMessage({ type: 'error', text: '新しいパスワードは6文字以上で入力してください' });
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      setPasswordMessage(null);
+
+      // パスワード変更APIを呼び出し
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      if (response.ok) {
+        setPasswordMessage({ type: 'success', text: 'パスワードが正常に変更されました' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setShowPasswordChange(false);
+      } else {
+        const errorData = await response.json();
+        setPasswordMessage({ type: 'error', text: errorData.error || 'パスワード変更に失敗しました' });
+      }
+    } catch (error) {
+      console.error('パスワード変更エラー:', error);
+      setPasswordMessage({ type: 'error', text: 'パスワード変更中にエラーが発生しました' });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">認証が必要です</h1>
+          <p className="text-gray-600 mb-6">ダッシュボードにアクセスするにはログインしてください</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">ダッシュボード</h1>
+          <p className="text-gray-600 mb-6">プロフィールを読み込み中...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">エラーが発生しました</h1>
+          <p className="text-red-600 mb-6">{profileError}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            ページを再読み込み
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const contractSNS = getContractSNS();
+  const hasActiveContract = isContractActive();
+  const daysRemaining = getContractDaysRemaining();
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
-      <header className="bg-white shadow">
+      <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <h1 className="text-3xl font-bold text-gray-900">
-                🔥 Signal Dashboard
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {user?.email}
-              </span>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                ログアウト
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            {/* ユーザー情報カード */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-medium">
-                        {user?.email?.[0]?.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        ユーザー情報
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {user?.email}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* UID情報カード */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-medium">#</span>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        ユーザーID (UID)
-                      </dt>
-                      <dd className="text-sm font-medium text-gray-900 break-all">
-                        {user?.uid}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ステータスカード */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-medium">✓</span>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        ログイン状態
-                      </dt>
-                      <dd className="text-lg font-medium text-green-600">
-                        認証済み
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* 詳細情報セクション */}
-          <div className="mt-8">
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  認証情報詳細
-                </h3>
-                <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">メールアドレス</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user?.email}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">UID</dt>
-                    <dd className="mt-1 text-sm text-gray-900 break-all">{user?.uid}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">メール確認状態</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {user?.emailVerified ? '確認済み' : '未確認'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">最終ログイン</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {user?.metadata.lastSignInTime ? 
-                        new Date(user.metadata.lastSignInTime).toLocaleString('ja-JP') : 
-                        '不明'
-                      }
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">アカウント作成日</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {user?.metadata.creationTime ? 
-                        new Date(user.metadata.creationTime).toLocaleString('ja-JP') : 
-                        '不明'
-                      }
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">プロバイダー</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {user?.providerData.map(provider => provider.providerId).join(', ') || 'email'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">アカウント状態</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      有効
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">匿名ユーザー</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {user?.isAnonymous ? 'はい' : 'いいえ'}
-                    </dd>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* プロバイダー情報セクション */}
-          <div className="mt-8">
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  認証プロバイダー情報
-                </h3>
-                <div className="space-y-4">
-                  {user?.providerData.map((provider, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
-                      <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">プロバイダーID</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{provider.providerId}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">UID</dt>
-                          <dd className="mt-1 text-sm text-gray-900 break-all">{provider.uid}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">メールアドレス</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{provider.email || 'なし'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">表示名</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{provider.displayName || 'なし'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">電話番号</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{provider.phoneNumber || 'なし'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">写真URL</dt>
-                          <dd className="mt-1 text-sm text-gray-900 break-all">{provider.photoURL || 'なし'}</dd>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* トークン情報セクション */}
-          <div className="mt-8">
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  トークン情報
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">アクセストークン</dt>
-                    <dd className="mt-1 text-sm text-gray-900 break-all font-mono bg-gray-100 p-2 rounded">
-                      Firebase User オブジェクトでは直接取得不可
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">リフレッシュトークン</dt>
-                    <dd className="mt-1 text-sm text-gray-900 break-all font-mono bg-gray-100 p-2 rounded">
-                      Firebase User オブジェクトでは直接取得不可
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">カスタムクレーム</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      <pre className="bg-gray-100 p-2 rounded text-xs">
-                        {JSON.stringify({}, null, 2)}
-                      </pre>
-                    </dd>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* SNS契約情報セクション */}
-          <div className="mt-8">
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  SNS契約情報
-                </h3>
-                {profileLoading ? (
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ) : profileError ? (
-                  <div className="text-red-600">
-                    <p>エラー: {profileError}</p>
-                    <p className="text-sm mt-2">管理者にユーザー情報の登録を依頼してください。</p>
-                  </div>
-                ) : userProfile ? (
-                  <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">契約SNS数</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{userProfile.contractSNS.length}個</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">利用形態</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {userProfile.usageType === 'team' ? 'チーム利用' : '個人利用'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">契約タイプ</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {userProfile.contractType === 'annual' ? '年間契約' : 'トライアル'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">契約SNS</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {userProfile.contractSNS.length > 0 ? 
-                          userProfile.contractSNS.join(', ') : 
-                          '未設定'
-                        }
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">契約開始日</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {new Date(userProfile.contractStartDate).toLocaleDateString('ja-JP')}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">契約終了日</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {new Date(userProfile.contractEndDate).toLocaleDateString('ja-JP')}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">アカウント状態</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          userProfile.status === 'active' ? 'bg-green-100 text-green-800' :
-                          userProfile.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {userProfile.status === 'active' ? 'アクティブ' :
-                           userProfile.status === 'inactive' ? '非アクティブ' : '停止中'}
-                        </span>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">アクティブ状態</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          userProfile.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {userProfile.isActive ? '有効' : '無効'}
-                        </span>
-                      </dd>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">ユーザー情報がありません</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 事業情報セクション */}
-          <div className="mt-8">
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  事業情報
-                </h3>
-                {userProfile?.businessInfo ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">業界</dt>
-                        <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.industry}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">会社規模</dt>
-                        <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.companySize}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">事業タイプ</dt>
-                        <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.businessType}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">ターゲット市場</dt>
-                        <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.targetMarket}</dd>
-                      </div>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">事業説明</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{userProfile.businessInfo.description}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">目標</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        <ul className="list-disc list-inside space-y-1">
-                          {userProfile.businessInfo.goals.map((goal, index) => (
-                            <li key={index}>{goal}</li>
-                          ))}
-                        </ul>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">課題</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        <ul className="list-disc list-inside space-y-1">
-                          {userProfile.businessInfo.challenges.map((challenge, index) => (
-                            <li key={index}>{challenge}</li>
-                          ))}
-                        </ul>
-                      </dd>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">事業情報が登録されていません</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* SNS AI設定セクション */}
-          <div className="mt-8">
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  SNS AI設定
-                </h3>
-                {userProfile?.snsAISettings ? (
-                  <div className="space-y-6">
-                    {/* SNS別設定表示 */}
-                    {Object.entries(userProfile.snsAISettings).map(([snsName, settings]) => (
-                      <div key={snsName} className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
-                          <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                            <span className="text-white font-bold text-sm">
-                              {snsName.charAt(0).toUpperCase()}
-                            </span>
-                          </span>
-                          {snsName.toUpperCase()} AI設定
-                        </h4>
-                        <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-                          {typeof settings === 'object' && settings !== null ? (
-                            Object.entries(settings as Record<string, unknown>).map(([key, value]) => (
-                              <div key={key}>
-                                <dt className="text-sm font-medium text-gray-500 capitalize">
-                                  {key.replace(/([A-Z])/g, ' $1').trim()}
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900">
-                                  {typeof value === 'boolean' ? (
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                      value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }`}>
-                                      {value ? '有効' : '無効'}
-                                    </span>
-                                  ) : typeof value === 'object' && value !== null ? (
-                                    <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
-                                      {JSON.stringify(value, null, 2)}
-                                    </pre>
-                                  ) : (
-                                    String(value)
-                                  )}
-                                </dd>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="col-span-2">
-                              <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
-                                {JSON.stringify(settings, null, 2)}
-                              </pre>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* 生データ表示（デバッグ用） */}
-                    <details className="mt-6">
-                      <summary className="cursor-pointer text-sm font-medium text-gray-500 hover:text-gray-700">
-                        生データ（JSON）- デバッグ用
-                      </summary>
-                      <div className="mt-2 bg-gray-100 p-4 rounded-lg">
-                        <pre className="text-xs text-gray-800 overflow-auto max-h-96">
-                          {JSON.stringify(userProfile.snsAISettings, null, 2)}
-                        </pre>
-                      </div>
-                    </details>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">SNS AI設定が登録されていません</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 生データ表示セクション */}
-          <div className="mt-8">
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  生データ（JSON）
-                </h3>
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <pre className="text-xs text-gray-800 overflow-auto max-h-96">
-                    {JSON.stringify(user, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        
-        {/* ユーザーデータ表示セクション */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">ユーザー情報詳細</h2>
+          <div className="flex items-center justify-between h-16">
+            <h1 className="text-xl font-semibold text-gray-900">マイアカウント</h1>
             <button
-              onClick={() => setShowAllData(!showAllData)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              onClick={handleSignOut}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
             >
-              {showAllData ? '基本情報のみ' : '全データ表示'}
+              <LogOut className="w-4 h-4" />
+              <span>{isLoading ? 'ログアウト中...' : 'ログアウト'}</span>
             </button>
           </div>
-          
-          <UserDataDisplay showAll={showAllData} />
         </div>
-      </main>
+      </div>
+
+      {/* メインコンテンツ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* プロフィールセクション */}
+        <div className="bg-white rounded-lg shadow-sm border mb-8">
+          <div className="px-6 py-8 border-b">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-8 h-8 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  {userProfile?.name || user.displayName || 'ユーザー'}
+                </h2>
+                <p className="text-gray-600 flex items-center space-x-2">
+                  <Mail className="w-4 h-4" />
+                  <span>{user.email}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 契約情報 */}
+          <div className="px-6 py-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">契約情報</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">契約状況</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-600 mt-2">
+                  {hasActiveContract ? 'アクティブ' : '非アクティブ'}
+                </p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Globe className="w-5 h-5 text-green-600" />
+                  <span className="text-sm font-medium text-green-900">契約SNS数</span>
+                </div>
+                <p className="text-2xl font-bold text-green-600 mt-2">
+                  {contractSNS?.length || 0}
+                </p>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-5 h-5 text-purple-600" />
+                  <span className="text-sm font-medium text-purple-900">残り日数</span>
+                </div>
+                <p className="text-2xl font-bold text-purple-600 mt-2">
+                  {daysRemaining || 0}日
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 契約SNS一覧 */}
+          {contractSNS && contractSNS.length > 0 && (
+            <div className="px-6 py-6 border-t">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">契約SNS</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {contractSNS.map((sns) => (
+                  <button
+                    key={sns}
+                    onClick={() => router.push(`/${sns}`)}
+                    className="p-4 bg-gray-50 hover:bg-gray-100 rounded-lg text-center transition-colors"
+                  >
+                    <div className="text-2xl mb-2">
+                      {sns === 'instagram' ? '📷' : 
+                       sns === 'x' ? '🐦' : 
+                       sns === 'tiktok' ? '🎵' : 
+                       sns === 'youtube' ? '📺' : '📱'}
+                    </div>
+                    <div className="text-sm font-medium text-gray-900 capitalize">
+                      {sns === 'x' ? 'X (Twitter)' : sns}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* アカウント管理 */}
+          <div className="px-6 py-6 border-t">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">アカウント管理</h3>
+            <div className="space-y-4">
+              <button
+                onClick={() => setShowPasswordChange(!showPasswordChange)}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 rounded-lg border"
+              >
+                <Key className="w-5 h-5 text-gray-400" />
+                <div className="flex-1">
+                  <span className="text-gray-900 font-medium">パスワード変更</span>
+                  <p className="text-sm text-gray-500">アカウントのパスワードを変更します</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-400" />
+              </button>
+
+              {showPasswordChange && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="text-md font-medium text-gray-900 mb-4">パスワード変更</h4>
+                  
+                  {passwordMessage && (
+                    <div className={`mb-4 p-3 rounded-lg flex items-center space-x-2 ${
+                      passwordMessage.type === 'success' 
+                        ? 'bg-green-50 text-green-700' 
+                        : 'bg-red-50 text-red-700'
+                    }`}>
+                      {passwordMessage.type === 'success' ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
+                      <span className="text-sm">{passwordMessage.text}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        現在のパスワード
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="現在のパスワードを入力"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                        >
+                          {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        新しいパスワード
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="新しいパスワードを入力"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                        >
+                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        新しいパスワード（確認）
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="新しいパスワードを再入力"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handlePasswordChange}
+                        disabled={isChangingPassword}
+                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isChangingPassword ? '変更中...' : 'パスワードを変更'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowPasswordChange(false);
+                          setCurrentPassword('');
+                          setNewPassword('');
+                          setConfirmPassword('');
+                          setPasswordMessage(null);
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* デバッグ情報 */}
+          <div className="px-6 py-4 bg-gray-50 border-t">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">デバッグ情報</h4>
+            <div className="text-xs text-gray-500 space-y-1">
+              <p>User ID: {user.uid}</p>
+              <p>Profile Loading: {profileLoading ? 'Yes' : 'No'}</p>
+              <p>Has Active Contract: {hasActiveContract ? 'Yes' : 'No'}</p>
+              <p>Contract SNS: {contractSNS?.join(', ') || 'None'}</p>
+              <p>Days Remaining: {daysRemaining || 0}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default function Dashboard() {
-  return (
-    <AuthGuard>
-      <DashboardContent />
-    </AuthGuard>
-  );
-}
-
