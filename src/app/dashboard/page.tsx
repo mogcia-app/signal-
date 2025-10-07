@@ -68,13 +68,14 @@ export default function DashboardPage() {
       const contractSNS = getContractSNS();
       console.log('🔍 契約SNS:', contractSNS);
       
-      if (contractSNS && contractSNS.length === 1) {
-        console.log('✅ 単一SNS契約。Instagramページにリダイレクトします。');
-        router.push('/instagram');
-      } else if (contractSNS && contractSNS.length > 1) {
-        console.log('✅ 複数SNS契約。SNS選択ページにリダイレクトします。');
-        router.push('/sns-select');
-      }
+      // 自動リダイレクトを無効化 - ダッシュボードページとして表示
+      // if (contractSNS && contractSNS.length === 1) {
+      //   console.log('✅ 単一SNS契約。Instagramページにリダイレクトします。');
+      //   router.push('/instagram');
+      // } else if (contractSNS && contractSNS.length > 1) {
+      //   console.log('✅ 複数SNS契約。SNS選択ページにリダイレクトします。');
+      //   router.push('/sns-select');
+      // }
       // 契約SNSが0個の場合は現在のページを表示
     }
   }, [user, userProfile, profileLoading, router, getContractSNS]);

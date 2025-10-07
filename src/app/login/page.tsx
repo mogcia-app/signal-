@@ -22,9 +22,9 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       setLoginSuccess(true);
-      // 2秒後にダッシュボードに遷移
+      // 2秒後にSNS選択ページに遷移
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/sns-select');
       }, 2000);
     } catch (error) {
       setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
