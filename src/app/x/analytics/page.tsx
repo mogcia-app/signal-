@@ -109,12 +109,6 @@ export default function XAnalyticsPage() {
     profileClicks: '',
     publishedAt: '',
     publishedTime: '',
-    engagementRate: '',
-    avgEngagementRate: '',
-    retweetRate: '',
-    likeRate: '',
-    replyRate: '',
-    clickRate: '',
     audience: {
       gender: { male: 0, female: 0, other: 0 },
       age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
@@ -194,12 +188,6 @@ export default function XAnalyticsPage() {
         profileClicks: '',
         publishedAt: '',
         publishedTime: '',
-        engagementRate: '',
-        avgEngagementRate: '',
-        retweetRate: '',
-        likeRate: '',
-        replyRate: '',
-        clickRate: '',
         audience: {
           gender: { male: 0, female: 0, other: 0 },
           age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
@@ -256,12 +244,12 @@ export default function XAnalyticsPage() {
             tweets: result.total || 1,
           },
           engagement: {
-            engagementRate: Number(latestAnalytics.engagementRate) || 0,
-            avgEngagementRate: Number(latestAnalytics.avgEngagementRate) || 0,
-            retweetRate: Number(latestAnalytics.retweetRate) || 0,
-            likeRate: Number(latestAnalytics.likeRate) || 0,
-            replyRate: Number(latestAnalytics.replyRate) || 0,
-            clickRate: Number(latestAnalytics.clickRate) || 0,
+            engagementRate: 0,
+            avgEngagementRate: 0,
+            retweetRate: 0,
+            likeRate: 0,
+            replyRate: 0,
+            clickRate: 0,
           },
           audience: latestAnalytics.audience || {
             gender: { male: 65, female: 30, other: 5 },
@@ -576,96 +564,6 @@ export default function XAnalyticsPage() {
                     />
                   </div>
 
-                  {/* エンゲージメント統計 */}
-                  <div className="border-t pt-4">
-                    <h3 className="text-md font-medium text-gray-800 mb-4">エンゲージメント統計</h3>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          エンゲージメント率 (%)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          placeholder="例: 4.2"
-                          value={formData.engagementRate}
-                          onChange={(e) => setFormData({ ...formData, engagementRate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          平均エンゲージメント率 (%)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          placeholder="例: 3.8"
-                          value={formData.avgEngagementRate}
-                          onChange={(e) => setFormData({ ...formData, avgEngagementRate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          リツイート率 (%)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          placeholder="例: 2.1"
-                          value={formData.retweetRate}
-                          onChange={(e) => setFormData({ ...formData, retweetRate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          いいね率 (%)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          placeholder="例: 5.8"
-                          value={formData.likeRate}
-                          onChange={(e) => setFormData({ ...formData, likeRate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          返信率 (%)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          placeholder="例: 1.2"
-                          value={formData.replyRate}
-                          onChange={(e) => setFormData({ ...formData, replyRate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          クリック率 (%)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          placeholder="例: 3.4"
-                          value={formData.clickRate}
-                          onChange={(e) => setFormData({ ...formData, clickRate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
                   
                   <button 
                     onClick={handleSaveAnalytics}
@@ -735,28 +633,6 @@ export default function XAnalyticsPage() {
                     </div>
                   </div>
 
-                  {/* エンゲージメント統計 */}
-                  <div className="mb-6">
-                    <h4 className="text-lg font-medium text-gray-800 mb-3">エンゲージメント統計</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 bg-red-50 rounded-lg">
-                        <div className="text-2xl font-bold text-red-600">{analyticsData.engagement.engagementRate.toFixed(2)}%</div>
-                        <div className="text-sm text-gray-600">エンゲージメント率</div>
-                      </div>
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">{analyticsData.engagement.likeRate.toFixed(2)}%</div>
-                        <div className="text-sm text-gray-600">いいね率</div>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{analyticsData.engagement.retweetRate.toFixed(2)}%</div>
-                        <div className="text-sm text-gray-600">リツイート率</div>
-                      </div>
-                      <div className="text-center p-4 bg-purple-50 rounded-lg">
-                        <div className="text-2xl font-bold text-purple-600">{analyticsData.engagement.replyRate.toFixed(2)}%</div>
-                        <div className="text-sm text-gray-600">返信率</div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* 実際の数値表示 */}
                   <div className="mb-6">
