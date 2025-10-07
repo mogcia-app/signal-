@@ -197,21 +197,24 @@ export default function XPostsPage() {
       customDescription="作成したX投稿の管理・編集・削除を行えます"
     >
       <div className="max-w-7xl mx-auto p-6">
-        {/* ヘッダー */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-xl">🐦</span>
-                </div>
-                
-              </div>
-            </div>
+
+        {/* フィルター・検索 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
+              <h3 className="text-lg font-semibold text-gray-900">フィルター・検索</h3>
               <div className="text-sm text-gray-500">
                 {filteredPosts.length}件の投稿
               </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <Filter size={16} className="mr-1" />
+                {showFilters ? 'フィルターを閉じる' : 'フィルターを開く'}
+              </button>
               <button
                 onClick={() => window.location.href = '/x/lab'}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -220,20 +223,6 @@ export default function XPostsPage() {
                 新規投稿
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* フィルター・検索 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">フィルター・検索</h3>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <Filter size={16} className="mr-1" />
-              {showFilters ? 'フィルターを閉じる' : 'フィルターを開く'}
-            </button>
           </div>
           
           {showFilters && (
@@ -348,7 +337,6 @@ export default function XPostsPage() {
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">🐦</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">投稿がありません</h3>
             <p className="text-gray-600 mb-4">まだX投稿を作成していません。</p>
             <div className="flex items-center justify-center space-x-4">
@@ -556,7 +544,13 @@ export default function XPostsPage() {
                     <div className="flex items-center space-x-3">
                       <span className="flex items-center">
                         <Calendar size={12} className="mr-1" />
-                        {post.scheduledDate ? new Date(post.scheduledDate).toLocaleDateString('ja-JP') : '未設定'}
+{post.scheduledDate ? (() => {
+                          try {
+                            return new Date(post.scheduledDate).toLocaleDateString('ja-JP');
+                          } catch {
+                            return post.scheduledDate;
+                          }
+                        })() : '未設定'}
                       </span>
                       <span className="flex items-center">
                         <Clock size={12} className="mr-1" />
@@ -564,7 +558,13 @@ export default function XPostsPage() {
                       </span>
                     </div>
                     <div>
-                      {new Date(post.createdAt).toLocaleDateString('ja-JP')}
+                      {(() => {
+                        try {
+                          return new Date(post.createdAt).toLocaleDateString('ja-JP');
+                        } catch {
+                          return '日付不明';
+                        }
+                      })()}
                     </div>
                   </div>
                 </div>
