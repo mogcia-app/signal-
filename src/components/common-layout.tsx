@@ -168,10 +168,11 @@ export default function CommonLayout({ children, customTitle, customDescription 
   };
 
   const handleSNSSwitch = (snsKey: string) => {
-    console.log('🔄 SNS切り替え開始:', { 
+    console.log('🔄 handleSNSSwitch関数呼び出し:', { 
       from: currentSNS, 
       to: snsKey, 
       availableSNS: availableSNS,
+      availableSNSCount: availableSNS.length,
       timestamp: new Date().toISOString()
     });
     
@@ -183,13 +184,23 @@ export default function CommonLayout({ children, customTitle, customDescription 
     }
     
     try {
+      console.log('📝 currentSNS状態更新前:', currentSNS);
       setCurrentSNS(snsKey);
+      console.log('📝 currentSNS状態更新後:', snsKey);
+      
       sessionStorage.setItem('lastAccessedSNS', snsKey);
       console.log('✅ セッションストレージに保存:', snsKey);
       
       const targetURL = `/${snsKey}`;
       console.log('🚀 ナビゲーション開始:', targetURL);
+      console.log('🚀 router.push実行前の状態:', {
+        currentURL: typeof window !== 'undefined' ? window.location.href : 'SSR',
+        targetURL: targetURL,
+        router: typeof router
+      });
+      
       router.push(targetURL);
+      console.log('✅ router.push実行完了');
     } catch (error) {
       console.error('❌ SNS切り替えエラー:', error);
     }
@@ -296,11 +307,28 @@ export default function CommonLayout({ children, customTitle, customDescription 
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">SNS切り替え</h3>
           <div className="space-y-2">
+            {(() => {
+              console.log('🔍 SNS切り替えレンダリング:', {
+                availableSNS: availableSNS,
+                availableSNSCount: availableSNS.length,
+                currentSNS: currentSNS
+              });
+              return null;
+            })()}
             {availableSNS.length > 0 ? availableSNS.map((snsKey) => {
               const snsInfo = SNS_INFO[snsKey as keyof typeof SNS_INFO];
-              if (!snsInfo) return null;
+              if (!snsInfo) {
+                console.warn('⚠️ SNS情報が見つかりません:', snsKey);
+                return null;
+              }
               
               const isActive = snsKey === currentSNS;
+              console.log('🎨 SNSボタンレンダリング:', {
+                snsKey: snsKey,
+                snsName: snsInfo.name,
+                isActive: isActive,
+                currentSNS: currentSNS
+              });
               
               return (
                 <button
@@ -308,10 +336,14 @@ export default function CommonLayout({ children, customTitle, customDescription 
                   onClick={(e) => {
                     console.log('🖱️ SNS切り替えボタンクリック:', { 
                       snsKey: snsKey, 
+                      snsName: snsInfo.name,
                       event: e,
                       currentSNS: currentSNS,
-                      availableSNS: availableSNS
+                      availableSNS: availableSNS,
+                      timestamp: new Date().toISOString()
                     });
+                    e.preventDefault();
+                    e.stopPropagation();
                     handleSNSSwitch(snsKey);
                   }}
                   className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-left transition-colors ${
