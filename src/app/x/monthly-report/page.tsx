@@ -2,31 +2,39 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
-import { AIChatWidget } from '../../../components/ai-chat-widget';
+import { XChatWidget } from '../../../components/x-chat-widget';
 import { useAuth } from '../../../contexts/auth-context';
 import { useXPlanData } from '../../../hooks/useXPlanData';
 import { PlanCard } from '../../../components/PlanCard';
-import { BarChart3, Calendar, Users, MessageCircle, Heart, Repeat2, Eye, MousePointer } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
+
+// コンポーネントのインポート
+import { MetricsCards } from './components/MetricsCards';
+import { DetailedStats } from './components/DetailedStats';
+import { AudienceAnalysis } from './components/AudienceAnalysis';
+import { TopPosts } from './components/TopPosts';
 
 // X用のデータ型定義
 interface XMonthlyReportData {
-  overview: {
-    tweets: number;
-    followers: number;
-    following: number;
-    impressions: number;
-    profileViews: number;
-    mentions: number;
+  period: 'weekly' | 'monthly';
+  date: string;
+  totals: {
+    totalLikes: number;
+    totalRetweets: number;
+    totalComments: number;
+    totalSaves: number;
+    totalImpressions: number;
+    totalEngagements: number;
+    totalPosts: number;
+    totalFollowers: number;
   };
   engagement: {
     engagementRate: number;
-    avgEngagementRate: number;
-    retweetRate: number;
     likeRate: number;
+    retweetRate: number;
     replyRate: number;
-    clickRate: number;
   };
-  audience: {
+  audienceAnalysis: {
     gender: {
       male: number;
       female: number;
@@ -42,8 +50,32 @@ interface XMonthlyReportData {
       '65+': number;
     };
   };
-  topPosts: unknown[];
-  recentPosts: unknown[];
+  reachSourceAnalysis: {
+    sources: {
+      home: number;
+      profile: number;
+      explore: number;
+      search: number;
+      other: number;
+    };
+    followers: {
+      followers: number;
+      nonFollowers: number;
+    };
+  };
+  topPosts: Array<{
+    id: string;
+    title?: string;
+    content?: string;
+    hashtags?: string;
+    likes: number;
+    retweets: number;
+    comments: number;
+    saves: number;
+    impressions: number;
+    engagements: number;
+    createdAt: string;
+  }>;
 }
 
 export default function XMonthlyReportPage() {
@@ -61,32 +93,50 @@ export default function XMonthlyReportPage() {
   const [error, setError] = useState<string | null>(null);
 
   // 月次レポートデータを取得
-  const fetchReportData = useCallback(async (_period: 'weekly' | 'monthly', _date: string) => {
+  const fetchReportData = useCallback(async (period: 'weekly' | 'monthly', date: string) => {
     if (!user?.uid) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      // 現在はダミーデータを使用（後でAPI実装）
+      console.log('X月次レポートデータ取得開始:', { userId: user.uid, period, date });
+
+      // X月次レポートAPIを呼び出し
+      const response = await fetch(`/api/x/monthly-report?userId=${user.uid}&period=${period}&date=${date}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch X monthly report data');
+      }
+
+      console.log('X月次レポートデータ取得完了:', data);
+      setReportData(data);
+    } catch (error) {
+      console.error('X月次レポートデータ取得エラー:', error);
+      setError('データの取得に失敗しました');
+      
+      // エラー時はダミーデータを表示
       const dummyData: XMonthlyReportData = {
-        overview: {
-          tweets: 156,
-          followers: 2847,
-          following: 892,
-          impressions: 45620,
-          profileViews: 1234,
-          mentions: 67,
+        period,
+        date,
+        totals: {
+          totalLikes: 1250,
+          totalRetweets: 340,
+          totalComments: 89,
+          totalSaves: 67,
+          totalImpressions: 45620,
+          totalEngagements: 1746,
+          totalPosts: 156,
+          totalFollowers: 2847,
         },
         engagement: {
-          engagementRate: 4.2,
-          avgEngagementRate: 3.8,
-          retweetRate: 2.1,
-          likeRate: 5.8,
-          replyRate: 1.2,
-          clickRate: 3.4,
+          engagementRate: 3.8,
+          likeRate: 2.7,
+          retweetRate: 0.7,
+          replyRate: 0.2,
         },
-        audience: {
+        audienceAnalysis: {
           gender: {
             male: 65,
             female: 32,
@@ -102,14 +152,23 @@ export default function XMonthlyReportPage() {
             '65+': 1,
           },
         },
+        reachSourceAnalysis: {
+          sources: {
+            home: 45,
+            profile: 20,
+            explore: 15,
+            search: 12,
+            other: 8,
+          },
+          followers: {
+            followers: 68,
+            nonFollowers: 32,
+          },
+        },
         topPosts: [],
-        recentPosts: [],
       };
       
       setReportData(dummyData);
-    } catch (error) {
-      console.error('X月次レポートデータ取得エラー:', error);
-      setError('データの取得に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -189,101 +248,38 @@ export default function XMonthlyReportPage() {
           </div>
         )}
 
-        {/* オーバービュー統計 */}
+        {/* メトリクスカード */}
         {reportData && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <MessageCircle className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{reportData.overview.tweets}</p>
-                  <p className="text-sm text-gray-600">投稿数</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Users className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{reportData.overview.followers.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600">フォロワー</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Eye className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{reportData.overview.impressions.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600">インプレッション</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Heart className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{reportData.engagement.likeRate.toFixed(1)}%</p>
-                  <p className="text-sm text-gray-600">いいね率</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Repeat2 className="h-5 w-5 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{reportData.engagement.retweetRate.toFixed(1)}%</p>
-                  <p className="text-sm text-gray-600">リツイート率</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <MousePointer className="h-5 w-5 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{reportData.engagement.engagementRate.toFixed(1)}%</p>
-                  <p className="text-sm text-gray-600">エンゲージメント率</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MetricsCards 
+            totals={reportData.totals}
+            engagement={reportData.engagement}
+          />
         )}
 
-        {/* 開発中メッセージ */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-orange-100 mb-6">
-              <Calendar className="h-10 w-10 text-orange-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              詳細分析機能は開発中です
-            </h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              より詳細な分析機能（グラフ、トレンド分析、AI分析など）を現在開発中です。
-            </p>
-          </div>
-        </div>
+        {/* 詳細統計 */}
+        {reportData && (
+          <DetailedStats 
+            totals={reportData.totals}
+          />
+        )}
+
+        {/* オーディエンス分析 */}
+        {reportData && (
+          <AudienceAnalysis 
+            audienceAnalysis={reportData.audienceAnalysis}
+          />
+        )}
+
+        {/* トップ投稿 */}
+        {reportData && (
+          <TopPosts 
+            topPosts={reportData.topPosts}
+          />
+        )}
       </div>
 
       {/* AIチャットウィジェット */}
-      <AIChatWidget />
+      <XChatWidget />
     </SNSLayout>
   );
 }
