@@ -47,7 +47,7 @@ async function createAuthMiddleware(request: NextRequest) {
   }
 
   // 静的ページ（ガイドページなど）は認証不要
-  const staticPages = ['/instagram/guide', '/terms', '/login', '/sns-select'];
+  const staticPages = ['/instagram/guide', '/guide', '/notifications', '/my-account', '/terms', '/login', '/sns-select'];
   const isStaticPage = staticPages.some(path => request.nextUrl.pathname.startsWith(path));
   
   if (isStaticPage) {

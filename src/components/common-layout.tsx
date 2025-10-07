@@ -288,14 +288,31 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/guide"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={(e) => {
+              onClick={async (e) => {
                 console.log('🖱️ 使い方ガイドリンククリック:', {
                   href: '/guide',
                   timestamp: new Date().toISOString()
                 });
                 e.preventDefault();
                 console.log('🚀 手動ナビゲーション開始: /guide');
-                router.push('/guide');
+                console.log('🔍 現在のURL:', window.location.href);
+                console.log('🔍 router object:', router);
+                
+                try {
+                  await router.push('/guide');
+                  console.log('✅ router.push完了: /guide');
+                  
+                  // 少し待ってからURLをチェック
+                  setTimeout(() => {
+                    console.log('🔍 ナビゲーション後のURL:', window.location.href);
+                  }, 100);
+                } catch (error) {
+                  console.error('❌ router.pushエラー:', error);
+                  
+                  // router.pushが失敗した場合のフォールバック
+                  console.log('🔄 フォールバック: window.location.hrefを使用');
+                  window.location.href = '/guide';
+                }
               }}
             >
               <span>📖</span>
