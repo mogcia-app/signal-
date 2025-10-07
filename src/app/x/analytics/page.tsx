@@ -92,9 +92,121 @@ export default function XAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
-  // const [showAudienceAnalysis, setShowAudienceAnalysis] = useState(false);
-  // const [showReachSourceAnalysis, setShowReachSourceAnalysis] = useState(false);
+  
+  // フォームの状態管理
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    hashtags: '',
+    imageThumbnail: '',
+    likes: '',
+    retweets: '',
+    comments: '',
+    saves: '',
+    impressions: '',
+    engagements: '',
+    detailClicks: '',
+    profileClicks: '',
+    publishedAt: '',
+    publishedTime: '',
+    audience: {
+      gender: { male: 0, female: 0, other: 0 },
+      age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
+    },
+    reachSource: {
+      sources: { home: 0, profile: 0, explore: 0, search: 0, other: 0 },
+      followers: { followers: 0, nonFollowers: 0 }
+    }
+  });
+  const [saving, setSaving] = useState(false);
 
+  // フォームデータを保存する関数
+  const handleSaveAnalytics = async () => {
+    if (!user) return;
+
+    try {
+      setSaving(true);
+
+      // 必須フィールドのバリデーション
+      if (!formData.impressions || !formData.likes) {
+        alert('インプレッション数といいね数は必須です');
+        return;
+      }
+
+      console.log('Saving X analytics data:', formData);
+
+      const response = await fetch('/api/x/analytics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          title: formData.title,
+          content: formData.content,
+          hashtags: formData.hashtags,
+          imageThumbnail: formData.imageThumbnail,
+          likes: Number(formData.likes),
+          retweets: Number(formData.retweets),
+          comments: Number(formData.comments),
+          saves: Number(formData.saves),
+          impressions: Number(formData.impressions),
+          engagements: Number(formData.engagements),
+          detailClicks: Number(formData.detailClicks),
+          profileClicks: Number(formData.profileClicks),
+          publishedAt: formData.publishedAt || new Date().toISOString(),
+          publishedTime: formData.publishedTime || new Date().toTimeString(),
+          audience: formData.audience,
+          reachSource: formData.reachSource,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save analytics data');
+      }
+
+      console.log('Analytics data saved successfully:', result);
+
+      // データ保存後に分析データを再取得
+      await fetchAnalyticsData();
+
+      // フォームをリセット
+      setFormData({
+        title: '',
+        content: '',
+        hashtags: '',
+        imageThumbnail: '',
+        likes: '',
+        retweets: '',
+        comments: '',
+        saves: '',
+        impressions: '',
+        engagements: '',
+        detailClicks: '',
+        profileClicks: '',
+        publishedAt: '',
+        publishedTime: '',
+        audience: {
+          gender: { male: 0, female: 0, other: 0 },
+          age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
+        },
+        reachSource: {
+          sources: { home: 0, profile: 0, explore: 0, search: 0, other: 0 },
+          followers: { followers: 0, nonFollowers: 0 }
+        }
+      });
+
+      alert('分析データが保存されました！');
+
+    } catch (error) {
+      console.error('Save analytics error:', error);
+      alert('データの保存に失敗しました: ' + (error as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Xアナリティクスデータを取得
   const fetchAnalyticsData = useCallback(async () => {
@@ -301,6 +413,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="text"
                       placeholder="投稿のタイトルを入力"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -312,6 +426,8 @@ export default function XAnalyticsPage() {
                     <textarea
                       placeholder="投稿内容を入力"
                       rows={4}
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -323,6 +439,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="text"
                       placeholder="#hashtag1 #hashtag2"
+                      value={formData.hashtags}
+                      onChange={(e) => setFormData({ ...formData, hashtags: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -345,6 +463,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="number"
                       placeholder="例: 425"
+                      value={formData.likes}
+                      onChange={(e) => setFormData({ ...formData, likes: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -356,6 +476,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="number"
                       placeholder="例: 156"
+                      value={formData.retweets}
+                      onChange={(e) => setFormData({ ...formData, retweets: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -389,6 +511,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="number"
                       placeholder="例: 15420"
+                      value={formData.impressions}
+                      onChange={(e) => setFormData({ ...formData, impressions: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -426,8 +550,12 @@ export default function XAnalyticsPage() {
                     />
                   </div>
                   
-                  <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-                    データを分析する
+                  <button 
+                    onClick={handleSaveAnalytics}
+                    disabled={saving}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                  >
+                    {saving ? '保存中...' : 'データを分析する'}
                   </button>
                 </div>
               </div>
