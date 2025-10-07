@@ -11,7 +11,6 @@ import { BarChart3 } from 'lucide-react';
 // コンポーネントのインポート
 import { MetricsCards } from './components/MetricsCards';
 import { DetailedStats } from './components/DetailedStats';
-import { AudienceAnalysis } from './components/AudienceAnalysis';
 import { TopPosts } from './components/TopPosts';
 import { GrowthTrendAnalysis } from './components/GrowthTrendAnalysis';
 import { ActionPlan } from './components/ActionPlan';
@@ -53,22 +52,6 @@ interface XMonthlyReportData {
     likeRate: number;
     retweetRate: number;
     replyRate: number;
-  };
-  audienceAnalysis: {
-    gender: {
-      male: number;
-      female: number;
-      other: number;
-    };
-    age: {
-      '13-17': number;
-      '18-24': number;
-      '25-34': number;
-      '35-44': number;
-      '45-54': number;
-      '55-64': number;
-      '65+': number;
-    };
   };
   reachSourceAnalysis: {
     sources: {
@@ -155,22 +138,6 @@ export default function XMonthlyReportPage() {
           likeRate: 2.7,
           retweetRate: 0.7,
           replyRate: 0.2,
-        },
-        audienceAnalysis: {
-          gender: {
-            male: 65,
-            female: 32,
-            other: 3,
-          },
-          age: {
-            '13-17': 5,
-            '18-24': 28,
-            '25-34': 35,
-            '35-44': 20,
-            '45-54': 8,
-            '55-64': 3,
-            '65+': 1,
-          },
         },
         reachSourceAnalysis: {
           sources: {
@@ -292,12 +259,6 @@ export default function XMonthlyReportPage() {
           />
         )}
 
-        {/* オーディエンス分析 */}
-        {reportData && (
-          <AudienceAnalysis 
-            audienceAnalysis={reportData.audienceAnalysis}
-          />
-        )}
 
         {/* アクションプラン */}
         {reportData && (
