@@ -267,11 +267,14 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/notifications"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
                 console.log('🖱️ お知らせリンククリック:', {
                   href: '/notifications',
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始: /notifications');
+                router.push('/notifications');
               }}
             >
               <span>🔔</span>
@@ -285,11 +288,14 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/guide"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
                 console.log('🖱️ 使い方ガイドリンククリック:', {
                   href: '/guide',
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始: /guide');
+                router.push('/guide');
               }}
             >
               <span>📖</span>
@@ -298,11 +304,14 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/my-account"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
                 console.log('🖱️ マイアカウントリンククリック:', {
                   href: '/my-account',
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始: /my-account');
+                router.push('/my-account');
               }}
             >
               <span>👤</span>
@@ -311,11 +320,14 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/terms"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
                 console.log('🖱️ 利用規約リンククリック:', {
                   href: '/terms',
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始: /terms');
+                router.push('/terms');
               }}
             >
               <span>📄</span>
@@ -410,12 +422,16 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/plan`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
+                const href = `/${currentSNS}/plan`;
                 console.log('🖱️ 運用計画リンククリック:', {
-                  href: `/${currentSNS}/plan`,
+                  href: href,
                   currentSNS: currentSNS,
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始:', href);
+                router.push(href);
               }}
             >
               <span>📋</span>
@@ -424,12 +440,16 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/lab`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
+                const href = `/${currentSNS}/lab`;
                 console.log('🖱️ 投稿ラボリンククリック:', {
-                  href: `/${currentSNS}/lab`,
+                  href: href,
                   currentSNS: currentSNS,
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始:', href);
+                router.push(href);
               }}
             >
               <span>🧪</span>
@@ -438,12 +458,16 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/analytics`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
+                const href = `/${currentSNS}/analytics`;
                 console.log('🖱️ 投稿分析リンククリック:', {
-                  href: `/${currentSNS}/analytics`,
+                  href: href,
                   currentSNS: currentSNS,
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始:', href);
+                router.push(href);
               }}
             >
               <span>📊</span>
@@ -452,12 +476,16 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/monthly-report`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
+                const href = `/${currentSNS}/monthly-report`;
                 console.log('🖱️ 月次レポートリンククリック:', {
-                  href: `/${currentSNS}/monthly-report`,
+                  href: href,
                   currentSNS: currentSNS,
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始:', href);
+                router.push(href);
               }}
             >
               <span>📈</span>
@@ -466,12 +494,16 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/posts`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => {
+              onClick={(e) => {
+                const href = `/${currentSNS}/posts`;
                 console.log('🖱️ 投稿一覧リンククリック:', {
-                  href: `/${currentSNS}/posts`,
+                  href: href,
                   currentSNS: currentSNS,
                   timestamp: new Date().toISOString()
                 });
+                e.preventDefault();
+                console.log('🚀 手動ナビゲーション開始:', href);
+                router.push(href);
               }}
             >
               <span>📚</span>
