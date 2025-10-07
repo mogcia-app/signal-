@@ -248,20 +248,20 @@ export default function XAnalyticsPage() {
         // X専用の分析データ構造に変換
         const analytics: AnalyticsData = {
           overview: {
-            impressions: latestAnalytics.impressions || 0,
-            profileViews: 0, // Xでは利用できない
-            mentions: 0,
-            followers: 1250, // 実際のデータがない場合は固定値
+            impressions: Number(latestAnalytics.impressions) || 0,
+            profileViews: Number(latestAnalytics.profileClicks) || 0,
+            mentions: Number(latestAnalytics.detailClicks) || 0,
+            followers: Number(latestAnalytics.engagements) || 0,
             following: 450,
             tweets: result.total || 1,
           },
           engagement: {
-            engagementRate: latestAnalytics.engagementRate || 0,
-            avgEngagementRate: latestAnalytics.avgEngagementRate || 0,
-            retweetRate: latestAnalytics.retweetRate || 0,
-            likeRate: latestAnalytics.likeRate || 0,
-            replyRate: latestAnalytics.replyRate || 0,
-            clickRate: latestAnalytics.clickRate || 0,
+            engagementRate: Number(latestAnalytics.engagementRate) || 0,
+            avgEngagementRate: Number(latestAnalytics.avgEngagementRate) || 0,
+            retweetRate: Number(latestAnalytics.retweetRate) || 0,
+            likeRate: Number(latestAnalytics.likeRate) || 0,
+            replyRate: Number(latestAnalytics.replyRate) || 0,
+            clickRate: Number(latestAnalytics.clickRate) || 0,
           },
           audience: latestAnalytics.audience || {
             gender: { male: 65, female: 30, other: 5 },
@@ -505,6 +505,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="number"
                       placeholder="例: 89"
+                      value={formData.comments}
+                      onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -516,6 +518,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="number"
                       placeholder="例: 67"
+                      value={formData.saves}
+                      onChange={(e) => setFormData({ ...formData, saves: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -540,6 +544,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="number"
                       placeholder="例: 736"
+                      value={formData.engagements}
+                      onChange={(e) => setFormData({ ...formData, engagements: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -551,6 +557,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="number"
                       placeholder="例: 234"
+                      value={formData.detailClicks}
+                      onChange={(e) => setFormData({ ...formData, detailClicks: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -562,6 +570,8 @@ export default function XAnalyticsPage() {
                     <input
                       type="number"
                       placeholder="例: 892"
+                      value={formData.profileClicks}
+                      onChange={(e) => setFormData({ ...formData, profileClicks: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -744,6 +754,29 @@ export default function XAnalyticsPage() {
                       <div className="text-center p-4 bg-purple-50 rounded-lg">
                         <div className="text-2xl font-bold text-purple-600">{analyticsData.engagement.replyRate.toFixed(2)}%</div>
                         <div className="text-sm text-gray-600">返信率</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 実際の数値表示 */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-medium text-gray-800 mb-3">投稿データ</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-pink-50 rounded-lg">
+                        <div className="text-2xl font-bold text-pink-600">{analyticsData.overview.impressions.toLocaleString()}</div>
+                        <div className="text-sm text-gray-600">インプレッション数</div>
+                      </div>
+                      <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                        <div className="text-2xl font-bold text-indigo-600">{analyticsData.overview.profileViews.toLocaleString()}</div>
+                        <div className="text-sm text-gray-600">プロフィールアクセス数</div>
+                      </div>
+                      <div className="text-center p-4 bg-teal-50 rounded-lg">
+                        <div className="text-2xl font-bold text-teal-600">{analyticsData.overview.mentions.toLocaleString()}</div>
+                        <div className="text-sm text-gray-600">詳細クリック数</div>
+                      </div>
+                      <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-600">{analyticsData.overview.followers.toLocaleString()}</div>
+                        <div className="text-sm text-gray-600">エンゲージメント数</div>
                       </div>
                     </div>
                   </div>
