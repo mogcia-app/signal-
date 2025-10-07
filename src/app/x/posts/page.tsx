@@ -376,208 +376,215 @@ export default function XPostsPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-start justify-between">
-                  {/* 投稿情報 */}
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
+              <div key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                {/* カードヘッダー */}
+                <div className="p-4 border-b border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
                       <span className="text-2xl">{getPostTypeIcon(post.postType)}</span>
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="text-lg font-semibold text-gray-900">{post.title || 'タイトルなし'}</h3>
-                          {post.isAIGenerated ? (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium flex items-center">
-                              <Bot size={12} className="mr-1" />
-                              AI生成
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium flex items-center">
-                              <User size={12} className="mr-1" />
-                              手動作成
-                            </span>
-                          )}
-                          {post.source === 'lab' && (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                              ラボ
-                            </span>
-                          )}
-                          {post.source === 'analytics' && (
-                            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">
-                              アナリティクス
-                            </span>
-                          )}
-                          {post.isAnalyzed ? (
-                            <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full font-medium flex items-center">
-                              <BarChart3 size={12} className="mr-1" />
-                              分析済み
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
-                              未分析
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
-                            {getStatusLabel(post.status)}
+                      <div className="flex flex-wrap gap-1">
+                        {post.isAIGenerated ? (
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium flex items-center">
+                            <Bot size={10} className="mr-1" />
+                            AI
                           </span>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                            {getPostTypeLabel(post.postType)}
+                        ) : (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium flex items-center">
+                            <User size={10} className="mr-1" />
+                            手動
                           </span>
-                          <span className="flex items-center">
-                            <Calendar size={14} className="mr-1" />
-                            {post.scheduledDate || '日付未設定'}
+                        )}
+                        {post.source === 'lab' && (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                            ラボ
                           </span>
-                          <span className="flex items-center">
-                            <Clock size={14} className="mr-1" />
-                            {post.scheduledTime || '時間未設定'}
+                        )}
+                        {post.source === 'analytics' && (
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">
+                            分析
                           </span>
-                        </div>
+                        )}
                       </div>
                     </div>
-
-                    {/* 投稿内容 */}
-                    <div className="mb-4">
-                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-sm font-bold">U</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="font-semibold text-gray-900">あなた</span>
-                              <span className="text-gray-500 text-sm">@username</span>
-                              <span className="text-gray-500 text-sm">·</span>
-                              <span className="text-gray-500 text-sm">今</span>
-                            </div>
-                            <p className="text-gray-700 whitespace-pre-wrap">
-                              {post.content}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => alert('投稿詳細を表示')}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        title="詳細表示"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      {post.source === 'lab' && (
+                        <button
+                          onClick={() => {
+                            window.location.href = `/x/lab?edit=${post.id}`;
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                          title="編集"
+                        >
+                          <Edit size={14} />
+                        </button>
+                      )}
+                      {post.source === 'analytics' && (
+                        <button
+                          onClick={() => {
+                            window.location.href = '/x/analytics';
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                          title="分析データを確認"
+                        >
+                          <BarChart3 size={14} />
+                        </button>
+                      )}
+                      {post.source === 'lab' && (
+                        <button
+                          onClick={() => handleDeletePost(post.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="削除"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
+                  </div>
+                  
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 overflow-hidden" style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
+                    {post.title || 'タイトルなし'}
+                  </h3>
+                  
+                  <div className="flex items-center space-x-2 text-xs">
+                    <span className={`px-2 py-1 rounded-full font-medium ${getStatusColor(post.status)}`}>
+                      {getStatusLabel(post.status)}
+                    </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                      {getPostTypeLabel(post.postType)}
+                    </span>
+                    {post.isAnalyzed ? (
+                      <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full font-medium flex items-center">
+                        <BarChart3 size={10} className="mr-1" />
+                        分析済み
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-medium">
+                        未分析
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-                    {/* 画像プレビュー */}
-                    {(post.imageData || post.imageUrl) && (
-                      <div className="mb-4">
-                        <div className="flex items-center text-sm text-gray-500 mb-2">
-                          <ImageIcon size={16} className="mr-1" />
-                          画像付き投稿
+                {/* カードボディ */}
+                <div className="p-4">
+                  {/* 投稿内容 */}
+                  <div className="mb-4">
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-start space-x-2">
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-xs font-bold">U</span>
                         </div>
-                        <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <ImageIcon size={24} className="text-gray-400" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-1 mb-1">
+                            <span className="font-semibold text-gray-900 text-sm">あなた</span>
+                            <span className="text-gray-500 text-xs">@username</span>
+                          </div>
+                          <p className="text-gray-700 text-sm overflow-hidden" style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical'
+                          }}>
+                            {post.content}
+                          </p>
                         </div>
                       </div>
-                    )}
-
-                    {/* ハッシュタグ */}
-                    {post.hashtags.length > 0 && (
-                      <div className="mb-4">
-                        <div className="flex flex-wrap gap-1">
-                          {post.hashtags.slice(0, 5).map((hashtag, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md hover:bg-blue-200 transition-colors cursor-pointer"
-                            >
-                              {hashtag.startsWith('#') ? hashtag : `#${hashtag}`}
-                            </span>
-                          ))}
-                          {post.hashtags.length > 5 && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-                              +{post.hashtags.length - 5}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 分析データ（分析済み投稿の場合） */}
-                    {post.isAnalyzed && post.analyticsData && (
-                      <div className="mt-4 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                        <div className="flex items-center space-x-2 mb-3">
-                          <TrendingUp size={16} className="text-indigo-600" />
-                          <h4 className="text-sm font-semibold text-indigo-900">分析データ</h4>
-                        </div>
-                        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-red-600">{post.analyticsData.likes?.toLocaleString() || 0}</div>
-                            <div className="text-xs text-gray-600">いいね</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-blue-600">{post.analyticsData.retweets?.toLocaleString() || 0}</div>
-                            <div className="text-xs text-gray-600">リツイート</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-green-600">{post.analyticsData.comments?.toLocaleString() || 0}</div>
-                            <div className="text-xs text-gray-600">コメント</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-purple-600">{post.analyticsData.saves?.toLocaleString() || 0}</div>
-                            <div className="text-xs text-gray-600">保存</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-orange-600">{post.analyticsData.impressions?.toLocaleString() || 0}</div>
-                            <div className="text-xs text-gray-600">インプレッション</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-indigo-600">{post.analyticsData.engagements?.toLocaleString() || 0}</div>
-                            <div className="text-xs text-gray-600">エンゲージメント</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 作成日時 */}
-                    <div className="text-xs text-gray-400 mt-4">
-                      作成日: {new Date(post.createdAt).toLocaleString('ja-JP')}
                     </div>
                   </div>
 
-                  {/* アクションボタン */}
-                  <div className="flex items-center space-x-2 ml-4">
-                    <button
-                      onClick={() => alert('投稿詳細を表示')}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                      title="詳細表示"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    {post.source === 'lab' && (
-                      <button
-                        onClick={() => {
-                          // 編集用にラボページに遷移
-                          window.location.href = `/x/lab?edit=${post.id}`;
-                        }}
-                        className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                        title="編集"
-                      >
-                        <Edit size={16} />
-                      </button>
-                    )}
-                    {post.source === 'analytics' && (
-                      <button
-                        onClick={() => {
-                          // アナリティクスページに遷移
-                          window.location.href = '/x/analytics';
-                        }}
-                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                        title="分析データを確認"
-                      >
-                        <BarChart3 size={16} />
-                      </button>
-                    )}
-                    {post.source === 'lab' && (
-                      <button
-                        onClick={() => handleDeletePost(post.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                        title="削除"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
+                  {/* ハッシュタグ */}
+                  {post.hashtags.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex flex-wrap gap-1">
+                        {post.hashtags.slice(0, 3).map((hashtag, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md hover:bg-blue-200 transition-colors cursor-pointer"
+                          >
+                            {hashtag.startsWith('#') ? hashtag : `#${hashtag}`}
+                          </span>
+                        ))}
+                        {post.hashtags.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                            +{post.hashtags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 画像プレビュー */}
+                  {(post.imageData || post.imageUrl) && (
+                    <div className="mb-4">
+                      <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <ImageIcon size={24} className="text-gray-400" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 分析データ（分析済み投稿の場合） */}
+                  {post.isAnalyzed && post.analyticsData && (
+                    <div className="mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                      <div className="flex items-center space-x-1 mb-2">
+                        <TrendingUp size={14} className="text-indigo-600" />
+                        <h4 className="text-xs font-semibold text-indigo-900">分析データ</h4>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-red-600">{(post.analyticsData.likes || 0).toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">いいね</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-blue-600">{(post.analyticsData.retweets || 0).toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">RT</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-green-600">{(post.analyticsData.comments || 0).toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">コメント</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-purple-600">{(post.analyticsData.saves || 0).toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">保存</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-orange-600">{(post.analyticsData.impressions || 0).toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">インプレ</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* カードフッター */}
+                <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center space-x-3">
+                      <span className="flex items-center">
+                        <Calendar size={12} className="mr-1" />
+                        {post.scheduledDate || '未設定'}
+                      </span>
+                      <span className="flex items-center">
+                        <Clock size={12} className="mr-1" />
+                        {post.scheduledTime || '未設定'}
+                      </span>
+                    </div>
+                    <div>
+                      {new Date(post.createdAt).toLocaleDateString('ja-JP')}
+                    </div>
                   </div>
                 </div>
               </div>
