@@ -4,8 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { XChatWidget } from '../../../components/x-chat-widget';
 import { AuthGuard } from '../../../components/auth-guard';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+// Firebase imports removed - now using X analytics API
 import { useAuth } from '../../../contexts/auth-context';
 import { useXPlanData } from '../../../hooks/useXPlanData';
 import { PlanCard } from '../../../components/PlanCard';
@@ -97,7 +96,7 @@ export default function XAnalyticsPage() {
   // const [showReachSourceAnalysis, setShowReachSourceAnalysis] = useState(false);
 
 
-  // アナリティクスデータを取得
+  // Xアナリティクスデータを取得
   const fetchAnalyticsData = useCallback(async () => {
     if (!user) return;
 
@@ -105,34 +104,57 @@ export default function XAnalyticsPage() {
       setLoading(true);
       setError(null);
 
-      // FirebaseからX投稿データを取得
-      const postsRef = collection(db, 'x_posts');
-      const q = query(postsRef, where('userId', '==', user.uid));
-      const postsSnapshot = await getDocs(q);
-      
-      const posts: PostData[] = [];
-      postsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        posts.push({
-          id: doc.id,
-          content: data.content || '',
-          mediaUrls: data.mediaUrls || [],
-          timestamp: data.timestamp?.toDate?.()?.toISOString() || data.timestamp || '',
-          metrics: {
-            impressions: data.metrics?.impressions || 0,
-            engagements: data.metrics?.engagements || 0,
-            retweets: data.metrics?.retweets || 0,
-            likes: data.metrics?.likes || 0,
-            replies: data.metrics?.replies || 0,
-            clicks: data.metrics?.clicks || 0,
-            profileClicks: data.metrics?.profileClicks || 0,
-            linkClicks: data.metrics?.linkClicks || 0,
-          },
-        });
-      });
+      console.log('Fetching X analytics data for user:', user.uid);
 
-      // デモデータ（実際のデータがない場合）
-      if (posts.length === 0) {
+      // X専用のanalytics APIを呼び出し
+      const response = await fetch(`/api/x/analytics?userId=${user.uid}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch X analytics data');
+      }
+
+      console.log('X Analytics API response:', result);
+      
+      // データがある場合は処理
+      if (result.analytics && result.analytics.length > 0) {
+        const latestAnalytics = result.analytics[0]; // 最新の分析データを使用
+        
+        // X専用の分析データ構造に変換
+        const analytics: AnalyticsData = {
+          overview: {
+            impressions: latestAnalytics.impressions || 0,
+            profileViews: 0, // Xでは利用できない
+            mentions: 0,
+            followers: 1250, // 実際のデータがない場合は固定値
+            following: 450,
+            tweets: result.total || 1,
+          },
+          engagement: {
+            engagementRate: latestAnalytics.engagementRate || 0,
+            avgEngagementRate: latestAnalytics.engagementRate || 0,
+            retweetRate: latestAnalytics.impressions > 0 ? ((latestAnalytics.retweets || 0) / latestAnalytics.impressions) * 100 : 0,
+            likeRate: latestAnalytics.impressions > 0 ? ((latestAnalytics.likes || 0) / latestAnalytics.impressions) * 100 : 0,
+            replyRate: latestAnalytics.impressions > 0 ? ((latestAnalytics.comments || 0) / latestAnalytics.impressions) * 100 : 0,
+            clickRate: latestAnalytics.impressions > 0 ? ((latestAnalytics.detailClicks || 0) / latestAnalytics.impressions) * 100 : 0,
+          },
+          audience: latestAnalytics.audience || {
+            gender: { male: 65, female: 30, other: 5 },
+            age: { '13-17': 10, '18-24': 35, '25-34': 40, '35-44': 10, '45-54': 3, '55-64': 1, '65+': 1 },
+          },
+          reachSource: latestAnalytics.reachSource || {
+            sources: { home: 60, profile: 20, explore: 15, search: 3, other: 2 },
+            followers: { followers: 75, nonFollowers: 25 },
+          },
+          topPosts: [], // 投稿データは別途取得
+          recentPosts: [], // 投稿データは別途取得
+        };
+
+        setAnalyticsData(analytics);
+      } else {
+        // データがない場合はダミーデータを表示
+        console.log('No X analytics data found, showing placeholder');
+        
         const demoData: AnalyticsData = {
           overview: {
             impressions: 15420,
@@ -183,77 +205,10 @@ export default function XAnalyticsPage() {
           recentPosts: [],
         };
         setAnalyticsData(demoData);
-      } else {
-        // 実際のデータからアナリティクスを計算
-        const totalImpressions = posts.reduce((sum, post) => sum + post.metrics.impressions, 0);
-        const totalEngagements = posts.reduce((sum, post) => sum + post.metrics.engagements, 0);
-        const totalRetweets = posts.reduce((sum, post) => sum + post.metrics.retweets, 0);
-        const totalLikes = posts.reduce((sum, post) => sum + post.metrics.likes, 0);
-        const totalReplies = posts.reduce((sum, post) => sum + post.metrics.replies, 0);
-        const totalClicks = posts.reduce((sum, post) => sum + post.metrics.clicks, 0);
-
-        const calculatedData: AnalyticsData = {
-          overview: {
-            impressions: totalImpressions,
-            profileViews: Math.floor(totalImpressions * 0.1),
-            mentions: Math.floor(totalEngagements * 0.05),
-            followers: 1250, // 実際のフォロワー数を取得する必要がある
-            following: 342,
-            tweets: posts.length,
-          },
-          engagement: {
-            engagementRate: totalImpressions > 0 ? (totalEngagements / totalImpressions) * 100 : 0,
-            avgEngagementRate: posts.length > 0 ? posts.reduce((sum, post) => {
-              const rate = post.metrics.impressions > 0 ? (post.metrics.engagements / post.metrics.impressions) * 100 : 0;
-              return sum + rate;
-            }, 0) / posts.length : 0,
-            retweetRate: totalImpressions > 0 ? (totalRetweets / totalImpressions) * 100 : 0,
-            likeRate: totalImpressions > 0 ? (totalLikes / totalImpressions) * 100 : 0,
-            replyRate: totalImpressions > 0 ? (totalReplies / totalImpressions) * 100 : 0,
-            clickRate: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
-          },
-          audience: {
-            gender: {
-              male: 65,
-              female: 32,
-              other: 3,
-            },
-            age: {
-              '13-17': 5,
-              '18-24': 28,
-              '25-34': 35,
-              '35-44': 20,
-              '45-54': 8,
-              '55-64': 3,
-              '65+': 1,
-            },
-          },
-          reachSource: {
-            sources: {
-              home: 45,
-              profile: 20,
-              explore: 15,
-              search: 12,
-              other: 8,
-            },
-            followers: {
-              followers: 68,
-              nonFollowers: 32,
-            },
-          },
-          topPosts: posts
-            .sort((a, b) => b.metrics.engagements - a.metrics.engagements)
-            .slice(0, 5),
-          recentPosts: posts
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-            .slice(0, 10),
-        };
-        setAnalyticsData(calculatedData);
       }
-    } catch (err) {
-      console.error('アナリティクスデータの取得エラー:', err);
-      setError('アナリティクスデータの取得に失敗しました');
-    } finally {
+    } catch (error) {
+      console.error('X Analytics fetch error:', error);
+      setError('Xアナリティクスデータの取得に失敗しました');
       setLoading(false);
     }
   }, [user]);
