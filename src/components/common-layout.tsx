@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
 import { useUserProfile } from '../hooks/useUserProfile';
-import { ReactNode, useState, useEffect, useCallback } from 'react';
+import { ReactNode, useState, useEffect, useCallback, useMemo } from 'react';
 
 // SNS情報の定義
 const SNS_INFO = {
@@ -54,15 +54,40 @@ export default function CommonLayout({ children, customTitle, customDescription 
   const [currentSNS, setCurrentSNS] = useState<string>('instagram');
 
   const { user, signOut } = useAuth();
-  const { userProfile } = useUserProfile();
+  const { 
+    userProfile, 
+    getContractSNS,
+    isContractActive,
+    loading: profileLoading 
+  } = useUserProfile();
   
-  // シンプルなSNSリスト（useSNSSettingsフックの問題を回避）
-  const snsNames = ['instagram', 'x', 'tiktok', 'youtube'];
+  // 認証チェックと契約SNS数の確認（useMemoで最適化）
+  const availableSNS = useMemo(() => {
+    if (!getContractSNS || !userProfile) return [];
+    const contractSNS = getContractSNS();
+    return contractSNS && contractSNS.length > 0 ? contractSNS : [];
+  }, [getContractSNS, userProfile]);
+  
+  const hasActiveContract = useMemo(() => {
+    if (!isContractActive || !userProfile) return false;
+    return isContractActive();
+  }, [isContractActive, userProfile]);
+  
+  // デバッグログ
+  console.log('🔍 CommonLayout認証状態:', {
+    user: !!user,
+    userProfile: !!userProfile,
+    hasActiveContract: hasActiveContract,
+    availableSNS: availableSNS,
+    profileLoading: profileLoading
+  });
 
-  // SNS判定のuseEffect
+  // SNS判定のuseEffect（契約済みSNSのみ対象）
   useEffect(() => {
-    const getCurrentSNS = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
-      if (typeof window === 'undefined') return 'instagram';
+    if (!availableSNS || availableSNS.length === 0) return;
+    
+    const getCurrentSNS = (): string => {
+      if (typeof window === 'undefined') return availableSNS[0] || 'instagram';
       
       // セッションストレージから最後にアクセスしたSNSを取得
       const lastAccessedSNS = sessionStorage.getItem('lastAccessedSNS');
@@ -70,35 +95,26 @@ export default function CommonLayout({ children, customTitle, customDescription 
       // リファラーから判定
       const referrer = document.referrer;
       
-      // リファラーから判定（最優先）
-      if (referrer.includes('/x/')) {
-        sessionStorage.setItem('lastAccessedSNS', 'x');
-        return 'x';
-      }
-      if (referrer.includes('/instagram/')) {
-        sessionStorage.setItem('lastAccessedSNS', 'instagram');
-        return 'instagram';
-      }
-      if (referrer.includes('/tiktok/')) {
-        sessionStorage.setItem('lastAccessedSNS', 'tiktok');
-        return 'tiktok';
-      }
-      if (referrer.includes('/youtube/')) {
-        sessionStorage.setItem('lastAccessedSNS', 'youtube');
-        return 'youtube';
+      // リファラーから判定（契約済みSNSのみ）
+      for (const sns of availableSNS) {
+        if (referrer.includes(`/${sns}/`)) {
+          sessionStorage.setItem('lastAccessedSNS', sns);
+          return sns;
+        }
       }
       
-      // リファラーから判定できない場合は、最後にアクセスしたSNSを使用
-      if (lastAccessedSNS && ['instagram', 'x', 'tiktok', 'youtube'].includes(lastAccessedSNS)) {
-        return lastAccessedSNS as 'instagram' | 'x' | 'tiktok' | 'youtube';
+      // リファラーから判定できない場合は、最後にアクセスしたSNSを使用（契約済みかチェック）
+      if (lastAccessedSNS && availableSNS.includes(lastAccessedSNS)) {
+        return lastAccessedSNS;
       }
       
-      return 'instagram';
+      // デフォルトは契約済みSNSの最初のもの
+      return availableSNS[0] || 'instagram';
     };
 
     const detectedSNS = getCurrentSNS();
     setCurrentSNS(detectedSNS);
-  }, []); // 空の依存配列でマウント時のみ実行
+  }, [availableSNS]); // availableSNSが変更された時に再実行
 
   const currentSNSInfo = SNS_INFO[currentSNS as keyof typeof SNS_INFO] || SNS_INFO.instagram;
 
@@ -152,8 +168,47 @@ export default function CommonLayout({ children, customTitle, customDescription 
   };
 
   const handleSNSSwitch = (snsKey: string) => {
+    // 契約済みSNSかチェック
+    if (!availableSNS.includes(snsKey)) {
+      console.warn('⚠️ 契約していないSNSへの切り替えを試行:', snsKey);
+      return;
+    }
+    
+    console.log('🔄 SNS切り替え:', { from: currentSNS, to: snsKey });
+    setCurrentSNS(snsKey);
+    sessionStorage.setItem('lastAccessedSNS', snsKey);
     router.push(`/${snsKey}`);
   };
+
+  // 認証チェック
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">認証が必要です</h1>
+          <p className="text-gray-600 mb-6">このページにアクセスするにはログインしてください</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            ログイン
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // プロフィール読み込み中
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">プロフィールを読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -226,7 +281,7 @@ export default function CommonLayout({ children, customTitle, customDescription 
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">SNS切り替え</h3>
           <div className="space-y-2">
-            {snsNames.map((snsKey) => {
+            {availableSNS.length > 0 ? availableSNS.map((snsKey) => {
               const snsInfo = SNS_INFO[snsKey as keyof typeof SNS_INFO];
               if (!snsInfo) return null;
               
@@ -246,7 +301,12 @@ export default function CommonLayout({ children, customTitle, customDescription 
                   <span className="text-sm">{snsInfo.name}</span>
                 </button>
               );
-            })}
+            }) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500">契約済みSNSがありません</p>
+                <p className="text-xs text-gray-400 mt-1">プランをご確認ください</p>
+              </div>
+            )}
           </div>
         </div>
 

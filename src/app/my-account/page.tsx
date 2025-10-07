@@ -100,12 +100,25 @@ export default function MyAccountPage() {
     getContractDaysRemaining
   } = useUserProfile();
 
-  // プロフィールデータの変更を監視（シンプル版）
+  // デバッグ用：useUserProfileフックの状態をログ出力
+  console.log('🔍 useUserProfileフック状態:', {
+    userProfile: userProfile,
+    profileLoading: profileLoading,
+    profileError: profileError,
+    getContractSNS: typeof getContractSNS,
+    getSNSAISettings: typeof getSNSAISettings,
+    getBusinessInfo: typeof getBusinessInfo
+  });
+
+  // プロフィールデータの変更を監視（デバッグ強化版）
   useEffect(() => {
-    console.log('マイアカウントページ - プロフィールデータ更新:', {
-      userProfile: !!userProfile,
+    console.log('🔍 マイアカウントページ - プロフィールデータ更新:', {
+      userProfile: userProfile,
       loading: profileLoading,
-      error: profileError
+      error: profileError,
+      hasUserProfile: !!userProfile,
+      userProfileKeys: userProfile ? Object.keys(userProfile) : [],
+      timestamp: new Date().toISOString()
     });
   }, [userProfile, profileLoading, profileError]);
 
@@ -226,6 +239,7 @@ export default function MyAccountPage() {
   }
 
   if (profileError) {
+    console.error('❌ マイアカウントページ - プロフィールエラー:', profileError);
     return (
       <CommonLayout 
         customTitle="マイアカウント"
@@ -234,7 +248,14 @@ export default function MyAccountPage() {
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600">{profileError}</p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">エラーが発生しました</h2>
+            <p className="text-red-600 mb-4">{profileError}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              ページを再読み込み
+            </button>
           </div>
         </div>
       </CommonLayout>
