@@ -109,6 +109,12 @@ export default function XAnalyticsPage() {
     profileClicks: '',
     publishedAt: '',
     publishedTime: '',
+    engagementRate: '',
+    avgEngagementRate: '',
+    retweetRate: '',
+    likeRate: '',
+    replyRate: '',
+    clickRate: '',
     audience: {
       gender: { male: 0, female: 0, other: 0 },
       age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
@@ -188,6 +194,12 @@ export default function XAnalyticsPage() {
         profileClicks: '',
         publishedAt: '',
         publishedTime: '',
+        engagementRate: '',
+        avgEngagementRate: '',
+        retweetRate: '',
+        likeRate: '',
+        replyRate: '',
+        clickRate: '',
         audience: {
           gender: { male: 0, female: 0, other: 0 },
           age: { '13-17': 0, '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0, '55-64': 0, '65+': 0 }
@@ -245,11 +257,11 @@ export default function XAnalyticsPage() {
           },
           engagement: {
             engagementRate: latestAnalytics.engagementRate || 0,
-            avgEngagementRate: latestAnalytics.engagementRate || 0,
-            retweetRate: latestAnalytics.impressions > 0 ? ((latestAnalytics.retweets || 0) / latestAnalytics.impressions) * 100 : 0,
-            likeRate: latestAnalytics.impressions > 0 ? ((latestAnalytics.likes || 0) / latestAnalytics.impressions) * 100 : 0,
-            replyRate: latestAnalytics.impressions > 0 ? ((latestAnalytics.comments || 0) / latestAnalytics.impressions) * 100 : 0,
-            clickRate: latestAnalytics.impressions > 0 ? ((latestAnalytics.detailClicks || 0) / latestAnalytics.impressions) * 100 : 0,
+            avgEngagementRate: latestAnalytics.avgEngagementRate || 0,
+            retweetRate: latestAnalytics.retweetRate || 0,
+            likeRate: latestAnalytics.likeRate || 0,
+            replyRate: latestAnalytics.replyRate || 0,
+            clickRate: latestAnalytics.clickRate || 0,
           },
           audience: latestAnalytics.audience || {
             gender: { male: 65, female: 30, other: 5 },
@@ -552,6 +564,97 @@ export default function XAnalyticsPage() {
                       placeholder="例: 892"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
+                  </div>
+
+                  {/* エンゲージメント統計 */}
+                  <div className="border-t pt-4">
+                    <h3 className="text-md font-medium text-gray-800 mb-4">エンゲージメント統計</h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          エンゲージメント率 (%)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="例: 4.2"
+                          value={formData.engagementRate}
+                          onChange={(e) => setFormData({ ...formData, engagementRate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          平均エンゲージメント率 (%)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="例: 3.8"
+                          value={formData.avgEngagementRate}
+                          onChange={(e) => setFormData({ ...formData, avgEngagementRate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          リツイート率 (%)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="例: 2.1"
+                          value={formData.retweetRate}
+                          onChange={(e) => setFormData({ ...formData, retweetRate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          いいね率 (%)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="例: 5.8"
+                          value={formData.likeRate}
+                          onChange={(e) => setFormData({ ...formData, likeRate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          返信率 (%)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="例: 1.2"
+                          value={formData.replyRate}
+                          onChange={(e) => setFormData({ ...formData, replyRate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          クリック率 (%)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="例: 3.4"
+                          value={formData.clickRate}
+                          onChange={(e) => setFormData({ ...formData, clickRate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
                   </div>
                   
                   <button 
