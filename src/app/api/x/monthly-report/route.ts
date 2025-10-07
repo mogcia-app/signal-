@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase';
 
 export async function GET(request: NextRequest) {
@@ -20,28 +20,30 @@ export async function GET(request: NextRequest) {
     const analyticsQuery = query(
       analyticsRef,
       where('userId', '==', userId),
-      orderBy('createdAt', 'desc'),
+      // orderBy('createdAt', 'desc'), // 一時的にコメントアウト
       limit(100)
     );
 
     const analyticsSnapshot = await getDocs(analyticsQuery);
-    const analyticsData = analyticsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate?.() || new Date()
-    })) as Array<{
-      id: string;
-      likes: number;
-      retweets: number;
-      comments: number;
-      saves: number;
-      impressions: number;
-      engagements: number;
-      followers: number;
-      audience?: Record<string, unknown>;
-      reachSource?: Record<string, unknown>;
-      createdAt: Date;
-    }>;
+    const analyticsData = (analyticsSnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || new Date()
+      }))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())) as Array<{
+        id: string;
+        likes: number;
+        retweets: number;
+        comments: number;
+        saves: number;
+        impressions: number;
+        engagements: number;
+        followers: number;
+        audience?: Record<string, unknown>;
+        reachSource?: Record<string, unknown>;
+        createdAt: Date;
+      }>;
 
     console.log('X analyticsデータ取得完了:', analyticsData.length, '件');
 
@@ -50,20 +52,22 @@ export async function GET(request: NextRequest) {
     const postsQuery = query(
       postsRef,
       where('userId', '==', userId),
-      orderBy('createdAt', 'desc'),
+      // orderBy('createdAt', 'desc'), // 一時的にコメントアウト
       limit(100)
     );
 
     const postsSnapshot = await getDocs(postsQuery);
-    const postsData = postsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate?.() || new Date()
-    }));
+    const postsData = postsSnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || new Date()
+      }))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // クライアント側でソート
 
     console.log('X postsデータ取得完了:', postsData.length, '件');
 
-    // データ集計
+    // データ集計（データが存在しない場合も考慮）
     const totals = {
       totalLikes: analyticsData.reduce((sum, data) => sum + (Number(data.likes) || 0), 0),
       totalRetweets: analyticsData.reduce((sum, data) => sum + (Number(data.retweets) || 0), 0),
@@ -74,6 +78,8 @@ export async function GET(request: NextRequest) {
       totalPosts: postsData.length,
       totalFollowers: analyticsData.length > 0 ? (Number(analyticsData[0].followers) || 0) : 0,
     };
+
+    console.log('データ集計結果:', totals);
 
     // エンゲージメント率計算
     const engagementRate = totals.totalImpressions > 0 
@@ -133,8 +139,16 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('X月次レポート取得エラー:', error);
+    console.error('エラー詳細:', {
+      name: (error as Error).name,
+      message: (error as Error).message,
+      stack: (error as Error).stack
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch X monthly report data' },
+      { 
+        error: 'Failed to fetch X monthly report data',
+        details: (error as Error).message 
+      },
       { status: 500 }
     );
   }
