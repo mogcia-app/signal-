@@ -98,7 +98,6 @@ export default function XAnalyticsPage() {
     title: '',
     content: '',
     hashtags: '',
-    imageThumbnail: '',
     likes: '',
     retweets: '',
     comments: '',
@@ -145,7 +144,6 @@ export default function XAnalyticsPage() {
           title: formData.title,
           content: formData.content,
           hashtags: formData.hashtags,
-          imageThumbnail: formData.imageThumbnail,
           likes: Number(formData.likes),
           retweets: Number(formData.retweets),
           comments: Number(formData.comments),
@@ -177,7 +175,6 @@ export default function XAnalyticsPage() {
         title: '',
         content: '',
         hashtags: '',
-        imageThumbnail: '',
         likes: '',
         retweets: '',
         comments: '',
@@ -449,16 +446,6 @@ export default function XAnalyticsPage() {
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      画像サムネイル
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -634,7 +621,7 @@ export default function XAnalyticsPage() {
                   </div>
 
 
-                  {/* 実際の数値表示 */}
+                  {/* 投稿データ */}
                   <div className="mb-6">
                     <h4 className="text-lg font-medium text-gray-800 mb-3">投稿データ</h4>
                     <div className="grid grid-cols-2 gap-4">
