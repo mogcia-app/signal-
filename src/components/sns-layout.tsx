@@ -159,7 +159,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               <span>使い方ガイド</span>
             </Link>
             <Link 
-              href="/my-account"
+              href="/dashboard"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               <span>👤</span>

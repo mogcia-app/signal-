@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/auth-context';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import SNSLayout from '../../components/sns-layout';
 import { 
   User, 
   Mail, 
@@ -188,7 +189,7 @@ export default function DashboardPage() {
   const daysRemaining = getContractDaysRemaining();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <SNSLayout currentSNS="instagram" customTitle="マイアカウント" customDescription="アカウント設定とプロフィール管理">
       {/* ヘッダー */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -429,6 +430,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+    </SNSLayout>
   );
 }
