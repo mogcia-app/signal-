@@ -30,20 +30,32 @@ const getCurrentSNSFromURL = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
   if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
   
   const referrer = document.referrer;
-  const pathname = window.location.pathname;
   
-  // リファラーから判定
-  if (referrer.includes('/x/')) return 'x';
-  if (referrer.includes('/instagram/')) return 'instagram';
-  if (referrer.includes('/tiktok/')) return 'tiktok';
-  if (referrer.includes('/youtube/')) return 'youtube';
+  console.log('🔍 SNS判定デバッグ:', {
+    referrer: referrer,
+    pathname: window.location.pathname,
+    fullURL: window.location.href
+  });
   
-  // URLパスから判定
-  if (pathname.includes('/x/')) return 'x';
-  if (pathname.includes('/instagram/')) return 'instagram';
-  if (pathname.includes('/tiktok/')) return 'tiktok';
-  if (pathname.includes('/youtube/')) return 'youtube';
+  // リファラーから判定（優先度高い）
+  if (referrer.includes('/x/')) {
+    console.log('✅ Xページからアクセス検出');
+    return 'x';
+  }
+  if (referrer.includes('/instagram/')) {
+    console.log('✅ Instagramページからアクセス検出');
+    return 'instagram';
+  }
+  if (referrer.includes('/tiktok/')) {
+    console.log('✅ TikTokページからアクセス検出');
+    return 'tiktok';
+  }
+  if (referrer.includes('/youtube/')) {
+    console.log('✅ YouTubeページからアクセス検出');
+    return 'youtube';
+  }
   
+  console.log('⚠️ リファラーから判定できず、デフォルトのInstagramを使用');
   // デフォルト
   return 'instagram';
 };
