@@ -267,6 +267,12 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/notifications"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ お知らせリンククリック:', {
+                  href: '/notifications',
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>🔔</span>
               <span>お知らせ</span>
@@ -279,6 +285,12 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/guide"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ 使い方ガイドリンククリック:', {
+                  href: '/guide',
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>📖</span>
               <span>使い方ガイド</span>
@@ -286,6 +298,12 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/my-account"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ マイアカウントリンククリック:', {
+                  href: '/my-account',
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>👤</span>
               <span>マイアカウント</span>
@@ -293,6 +311,12 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href="/terms"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ 利用規約リンククリック:', {
+                  href: '/terms',
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>📄</span>
               <span>利用規約</span>
@@ -309,6 +333,10 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <div>
               <div className="font-semibold text-gray-900">{currentSNSInfo.name}</div>
               <div className="text-xs text-gray-500">{currentSNSInfo.description}</div>
+              {/* デバッグ情報 */}
+              <div className="text-xs text-gray-400 mt-1">
+                Debug: {currentSNS} | Available: {availableSNS.join(', ')}
+              </div>
             </div>
           </div>
         </div>
@@ -382,6 +410,13 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/plan`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ 運用計画リンククリック:', {
+                  href: `/${currentSNS}/plan`,
+                  currentSNS: currentSNS,
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>📋</span>
               <span>運用計画</span>
@@ -389,6 +424,13 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/lab`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ 投稿ラボリンククリック:', {
+                  href: `/${currentSNS}/lab`,
+                  currentSNS: currentSNS,
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>🧪</span>
               <span>投稿ラボ</span>
@@ -396,6 +438,13 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/analytics`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ 投稿分析リンククリック:', {
+                  href: `/${currentSNS}/analytics`,
+                  currentSNS: currentSNS,
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>📊</span>
               <span>投稿分析</span>
@@ -403,6 +452,13 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/monthly-report`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ 月次レポートリンククリック:', {
+                  href: `/${currentSNS}/monthly-report`,
+                  currentSNS: currentSNS,
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>📈</span>
               <span>月次レポート</span>
@@ -410,6 +466,13 @@ export default function CommonLayout({ children, customTitle, customDescription 
             <Link 
               href={`/${currentSNS}/posts`}
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => {
+                console.log('🖱️ 投稿一覧リンククリック:', {
+                  href: `/${currentSNS}/posts`,
+                  currentSNS: currentSNS,
+                  timestamp: new Date().toISOString()
+                });
+              }}
             >
               <span>📚</span>
               <span>投稿一覧</span>
