@@ -13,6 +13,8 @@ import { MetricsCards } from './components/MetricsCards';
 import { DetailedStats } from './components/DetailedStats';
 import { AudienceAnalysis } from './components/AudienceAnalysis';
 import { TopPosts } from './components/TopPosts';
+import { GrowthTrendAnalysis } from './components/GrowthTrendAnalysis';
+import { ActionPlan } from './components/ActionPlan';
 
 // X用のデータ型定義
 interface XMonthlyReportData {
@@ -28,6 +30,24 @@ interface XMonthlyReportData {
     totalPosts: number;
     totalFollowers: number;
   };
+  previousTotals?: {
+    totalLikes: number;
+    totalRetweets: number;
+    totalComments: number;
+    totalSaves: number;
+    totalImpressions: number;
+    totalEngagements: number;
+    totalPosts: number;
+    totalFollowers: number;
+  };
+  weeklyTrend?: Array<{
+    period: string;
+    likes: number;
+    retweets: number;
+    comments: number;
+    impressions: number;
+    followers: number;
+  }>;
   engagement: {
     engagementRate: number;
     likeRate: number;
@@ -256,6 +276,15 @@ export default function XMonthlyReportPage() {
           />
         )}
 
+        {/* 成長トレンド分析 */}
+        {reportData && (
+          <GrowthTrendAnalysis 
+            currentData={reportData.totals}
+            previousData={reportData.previousTotals}
+            weeklyTrend={reportData.weeklyTrend}
+          />
+        )}
+
         {/* 詳細統計 */}
         {reportData && (
           <DetailedStats 
@@ -267,6 +296,20 @@ export default function XMonthlyReportPage() {
         {reportData && (
           <AudienceAnalysis 
             audienceAnalysis={reportData.audienceAnalysis}
+          />
+        )}
+
+        {/* アクションプラン */}
+        {reportData && (
+          <ActionPlan 
+            currentData={{
+              ...reportData.totals,
+              engagementRate: reportData.engagement.engagementRate
+            }}
+            previousData={reportData.previousTotals ? {
+              ...reportData.previousTotals,
+              engagementRate: 0 // 前月のエンゲージメント率は計算しない
+            } : undefined}
           />
         )}
 
