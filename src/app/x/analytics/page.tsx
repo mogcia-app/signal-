@@ -315,7 +315,7 @@ export default function XAnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* 左側: 分析データ入力フォーム */}
             <div className="space-y-6">
-              <div className="bg-white  p-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h2 className="text-lg font-semibold text-gray-900">分析データ入力</h2>
               <p className="text-sm text-gray-600 mb-2">投稿のパフォーマンスデータを入力してください</p>
 
@@ -484,7 +484,7 @@ export default function XAnalyticsPage() {
             <div className="space-y-6">
               {/* 1. 投稿プレビュー（一番上） */}
               {selectedPost ? (
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿プレビュー</h3>
                   <PostPreview
                     post={selectedPost}
@@ -492,7 +492,7 @@ export default function XAnalyticsPage() {
                   />
                 </div>
               ) : (
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿プレビュー</h3>
                   <div className="text-center py-8 text-gray-500">
                     <p>投稿を選択すると詳細が表示されます</p>
@@ -509,7 +509,7 @@ export default function XAnalyticsPage() {
 
               {/* 3. 分析の統計データ（下） */}
               {analyticsData && (
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">分析統計データ</h3>
                   
                   {/* 基本統計 */}
