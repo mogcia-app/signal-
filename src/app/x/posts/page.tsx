@@ -83,6 +83,8 @@ export default function XPostsPage() {
           postType: 'tweet' as const,
           status: 'published' as const,
           isAIGenerated: false,
+          scheduledDate: (analytics.publishedAt as string) || undefined,
+          scheduledTime: (analytics.publishedTime as string) || undefined,
           createdAt: analytics.createdAt || new Date(),
           updatedAt: analytics.createdAt || new Date(),
           source: 'analytics' as const,

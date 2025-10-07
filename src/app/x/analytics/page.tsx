@@ -554,6 +554,31 @@ export default function XAnalyticsPage() {
                     />
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        投稿日
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.publishedAt}
+                        onChange={(e) => setFormData({ ...formData, publishedAt: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        投稿時間
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.publishedTime}
+                        onChange={(e) => setFormData({ ...formData, publishedTime: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
                   
                   <button 
                     onClick={handleSaveAnalytics}

@@ -208,6 +208,47 @@ export async function POST(request: NextRequest) {
       engagementRate: analyticsData.engagementRate
     });
 
+    // x_postsコレクションにも投稿データを保存
+    try {
+      const postData = {
+        userId,
+        title: title || '分析済み投稿',
+        content: content || '',
+        hashtags: hashtags ? hashtags.split(' ').filter((tag: string) => tag.trim()) : [],
+        postType: 'tweet',
+        scheduledDate: publishedAt,
+        scheduledTime: publishedTime,
+        status: 'published',
+        isAIGenerated: false,
+        imageUrl: imageThumbnail || null,
+        imageData: null,
+        source: 'analytics',
+        isAnalyzed: true,
+        analyticsData: {
+          likes: Number(likes),
+          retweets: Number(retweets),
+          comments: Number(comments),
+          saves: Number(saves),
+          impressions: Number(impressions),
+          engagements: Number(engagements)
+        },
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const postDocRef = await addDoc(collection(db, 'x_posts'), postData);
+      console.log('X Post saved successfully:', postDocRef.id);
+
+      // analyticsデータのpostIdを更新
+      await updateDoc(doc(db, 'xanalytics', docRef.id), {
+        postId: postDocRef.id
+      });
+
+    } catch (error) {
+      console.error('Failed to save X post data:', error);
+      // 投稿の保存に失敗してもanalytics保存は成功しているので続行
+    }
+
     // X投稿にanalyticsデータをリンク（postIdがある場合）
     if (postId) {
       try {
