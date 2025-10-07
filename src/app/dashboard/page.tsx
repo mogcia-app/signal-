@@ -190,123 +190,108 @@ export default function DashboardPage() {
 
   return (
     <SNSLayout currentSNS="instagram" customTitle="マイアカウント" customDescription="アカウント設定とプロフィール管理">
-      {/* ヘッダー */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <h1 className="text-xl font-semibold text-gray-900">マイアカウント</h1>
-            <button
-              onClick={handleSignOut}
-              disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>{isLoading ? 'ログアウト中...' : 'ログアウト'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* メインコンテンツ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* プロフィールセクション */}
-        <div className="bg-white rounded-lg shadow-sm border mb-8">
-          <div className="px-6 py-8 border-b">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {userProfile?.name || user.displayName || 'ユーザー'}
-                </h2>
-                <p className="text-gray-600 flex items-center space-x-2">
-                  <Mail className="w-4 h-4" />
-                  <span>{user.email}</span>
-                </p>
-              </div>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-lg backdrop-blur-sm p-8">
+          <div className="flex items-center space-x-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <User className="w-10 h-10 text-white" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                {userProfile?.name || user.displayName || 'ユーザー'}
+              </h2>
+              <p className="text-gray-600 flex items-center space-x-2 text-lg">
+                <Mail className="w-5 h-5" />
+                <span>{user.email}</span>
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* 契約情報 */}
-          <div className="px-6 py-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">契約情報</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Shield className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-900">契約状況</span>
-                </div>
-                <p className="text-2xl font-bold text-blue-600 mt-2">
-                  {hasActiveContract ? 'アクティブ' : '非アクティブ'}
-                </p>
+        {/* 契約情報 */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">契約情報</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
+              <div className="flex items-center space-x-3 mb-3">
+                <Shield className="w-6 h-6" />
+                <span className="font-semibold">契約状況</span>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Globe className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-medium text-green-900">契約SNS数</span>
-                </div>
-                <p className="text-2xl font-bold text-green-600 mt-2">
-                  {contractSNS?.length || 0}
-                </p>
+              <p className="text-3xl font-bold">
+                {hasActiveContract ? 'アクティブ' : '非アクティブ'}
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-2xl text-white shadow-lg">
+              <div className="flex items-center space-x-3 mb-3">
+                <Globe className="w-6 h-6" />
+                <span className="font-semibold">契約SNS数</span>
               </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  <span className="text-sm font-medium text-purple-900">残り日数</span>
-                </div>
-                <p className="text-2xl font-bold text-purple-600 mt-2">
-                  {daysRemaining || 0}日
-                </p>
+              <p className="text-3xl font-bold">
+                {contractSNS?.length || 0}
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl text-white shadow-lg">
+              <div className="flex items-center space-x-3 mb-3">
+                <Calendar className="w-6 h-6" />
+                <span className="font-semibold">残り日数</span>
               </div>
+              <p className="text-3xl font-bold">
+                {daysRemaining || 0}日
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* 契約SNS一覧 */}
-          {contractSNS && contractSNS.length > 0 && (
-            <div className="px-6 py-6 border-t">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">契約SNS</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {contractSNS.map((sns) => (
-                  <button
-                    key={sns}
-                    onClick={() => router.push(`/${sns}`)}
-                    className="p-4 bg-gray-50 hover:bg-gray-100 rounded-lg text-center transition-colors"
-                  >
-                    <div className="text-2xl mb-2">
-                      {sns === 'instagram' ? '📷' : 
-                       sns === 'x' ? '🐦' : 
-                       sns === 'tiktok' ? '🎵' : 
-                       sns === 'youtube' ? '📺' : '📱'}
-                    </div>
-                    <div className="text-sm font-medium text-gray-900 capitalize">
-                      {sns === 'x' ? 'X (Twitter)' : sns}
-                    </div>
-                  </button>
-                ))}
-              </div>
+        {/* 契約SNS一覧 */}
+        {contractSNS && contractSNS.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">契約SNS</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {contractSNS.map((sns) => (
+                <button
+                  key={sns}
+                  onClick={() => router.push(`/${sns}`)}
+                  className="group p-6 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-blue-50 hover:to-indigo-100 rounded-2xl text-center transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                >
+                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                    {sns === 'instagram' ? '📷' : 
+                     sns === 'x' ? '🐦' : 
+                     sns === 'tiktok' ? '🎵' : 
+                     sns === 'youtube' ? '📺' : '📱'}
+                  </div>
+                  <div className="text-sm font-bold text-gray-900 capitalize group-hover:text-blue-600 transition-colors">
+                    {sns === 'x' ? 'X (Twitter)' : sns}
+                  </div>
+                </button>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* アカウント管理 */}
-          <div className="px-6 py-6 border-t">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">アカウント管理</h3>
-            <div className="space-y-4">
-              <button
-                onClick={() => setShowPasswordChange(!showPasswordChange)}
-                className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 rounded-lg border"
-              >
-                <Key className="w-5 h-5 text-gray-400" />
-                <div className="flex-1">
-                  <span className="text-gray-900 font-medium">パスワード変更</span>
-                  <p className="text-sm text-gray-500">アカウントのパスワードを変更します</p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-400" />
-              </button>
+        {/* アカウント管理 */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">アカウント管理</h3>
+          <div className="space-y-4">
+            <button
+              onClick={() => setShowPasswordChange(!showPasswordChange)}
+              className="w-full flex items-center space-x-4 px-6 py-4 text-left hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center">
+                <Key className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <span className="text-gray-900 font-bold text-lg">パスワード変更</span>
+                <p className="text-gray-600">アカウントのパスワードを変更します</p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gray-400" />
+            </button>
 
-              {showPasswordChange && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="text-md font-medium text-gray-900 mb-4">パスワード変更</h4>
+            {showPasswordChange && (
+              <div className="mt-6 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
+                <h4 className="text-xl font-bold text-gray-900 mb-6">パスワード変更</h4>
                   
                   {passwordMessage && (
                     <div className={`mb-4 p-3 rounded-lg flex items-center space-x-2 ${
@@ -416,20 +401,7 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-
-          {/* デバッグ情報 */}
-          <div className="px-6 py-4 bg-gray-50 border-t">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">デバッグ情報</h4>
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>User ID: {user.uid}</p>
-              <p>Profile Loading: {profileLoading ? 'Yes' : 'No'}</p>
-              <p>Has Active Contract: {hasActiveContract ? 'Yes' : 'No'}</p>
-              <p>Contract SNS: {contractSNS?.join(', ') || 'None'}</p>
-              <p>Days Remaining: {daysRemaining || 0}</p>
-            </div>
-          </div>
         </div>
-      </div>
     </SNSLayout>
   );
 }
