@@ -26,38 +26,53 @@ import {
   Download
 } from 'lucide-react';
 
-// URLからSNSを判定する関数
-const getCurrentSNSFromURL = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
+// SNSを判定する関数（複数の方法を組み合わせ）
+const getCurrentSNS = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
   if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
   
+  // 1. セッションストレージから最後にアクセスしたSNSを取得
+  const lastAccessedSNS = sessionStorage.getItem('lastAccessedSNS');
+  
+  // 2. リファラーから判定
   const referrer = document.referrer;
   
   console.log('🔍 ガイドページ - SNS判定デバッグ:', {
+    lastAccessedSNS: lastAccessedSNS,
     referrer: referrer,
     pathname: window.location.pathname,
     fullURL: window.location.href
   });
   
-  // リファラーから判定（優先度高い）
+  // リファラーから判定（最優先）
   if (referrer.includes('/x/')) {
     console.log('✅ Xページからアクセス検出');
+    sessionStorage.setItem('lastAccessedSNS', 'x');
     return 'x';
   }
   if (referrer.includes('/instagram/')) {
     console.log('✅ Instagramページからアクセス検出');
+    sessionStorage.setItem('lastAccessedSNS', 'instagram');
     return 'instagram';
   }
   if (referrer.includes('/tiktok/')) {
     console.log('✅ TikTokページからアクセス検出');
+    sessionStorage.setItem('lastAccessedSNS', 'tiktok');
     return 'tiktok';
   }
   if (referrer.includes('/youtube/')) {
     console.log('✅ YouTubeページからアクセス検出');
+    sessionStorage.setItem('lastAccessedSNS', 'youtube');
     return 'youtube';
   }
   
-  console.log('⚠️ リファラーから判定できず、デフォルトのInstagramを使用');
-  // デフォルト
+  // リファラーから判定できない場合は、最後にアクセスしたSNSを使用
+  if (lastAccessedSNS && ['instagram', 'x', 'tiktok', 'youtube'].includes(lastAccessedSNS)) {
+    console.log(`✅ セッションストレージからSNS復元: ${lastAccessedSNS}`);
+    return lastAccessedSNS as 'instagram' | 'x' | 'tiktok' | 'youtube';
+  }
+  
+  console.log('⚠️ 判定できず、デフォルトのInstagramを使用');
+  // 最終的にデフォルト
   return 'instagram';
 };
 
@@ -84,7 +99,7 @@ export default function GuidePage() {
 
   // SNS判定とデバッグ用のuseEffect
   useEffect(() => {
-    const detectedSNS = getCurrentSNSFromURL();
+    const detectedSNS = getCurrentSNS();
     setCurrentSNS(detectedSNS);
     
     console.log('🎯 ガイドページがマウントされました！', {

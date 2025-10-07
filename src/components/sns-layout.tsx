@@ -60,6 +60,14 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
   
   const currentSNSInfo = SNS_INFO[currentSNS];
 
+  // SNSアクセス時にセッションストレージに記録
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('lastAccessedSNS', currentSNS);
+      console.log(`📝 SNSアクセス記録: ${currentSNS}`);
+    }
+  }, [currentSNS]);
+
   // 未読通知数を取得する関数
   const fetchUnreadCount = useCallback(async () => {
     if (!user?.uid) return;
