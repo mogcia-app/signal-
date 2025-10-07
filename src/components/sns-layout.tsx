@@ -135,6 +135,46 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
           <p className="text-sm text-gray-600 mt-1">SNS管理プラットフォーム</p>
         </div>
 
+        {/* 共通メニュー */}
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">共通メニュー</h3>
+          <nav className="space-y-1">
+            <Link 
+              href="/notifications"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <span>🔔</span>
+              <span>お知らせ</span>
+              {unreadCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+            <Link 
+              href="/guide"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <span>📖</span>
+              <span>使い方ガイド</span>
+            </Link>
+            <Link 
+              href="/my-account"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <span>👤</span>
+              <span>マイアカウント</span>
+            </Link>
+            <Link 
+              href="/terms"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <span>📄</span>
+              <span>利用規約</span>
+            </Link>
+          </nav>
+        </div>
+
         {/* 現在のSNS */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -233,48 +273,6 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             >
               <span>📚</span>
               <span>投稿一覧</span>
-            </Link>
-            <button 
-              onClick={() => {
-                console.log('🔗 お知らせボタンがクリックされました', { path: '/notifications' });
-                console.log('現在のURL:', window.location.href);
-                console.log('目標URL:', `${window.location.origin}/notifications`);
-                
-                // まずはシンプルなwindow.location.hrefでテスト
-                window.location.href = '/notifications';
-              }}
-              className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
-              <div className="flex items-center space-x-2">
-                <span>🔔</span>
-                <span>お知らせ</span>
-              </div>
-              {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            <button 
-              onClick={() => {
-                console.log('🔗 使い方ガイドボタンがクリックされました', { path: '/guide' });
-                console.log('現在のURL:', window.location.href);
-                console.log('目標URL:', `${window.location.origin}/guide`);
-                
-                // まずはシンプルなwindow.location.hrefでテスト
-                window.location.href = '/guide';
-              }}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
-              <span>📚</span>
-              <span>使い方ガイド</span>
-            </button>
-            <Link 
-              href="/my-account"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
-              <span>👤</span>
-              <span>マイアカウント</span>
             </Link>
             <Link 
               href="/terms"

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import SNSLayout from '../../components/sns-layout';
+import CommonHeader from '../../components/common-header';
 import { AIChatWidget } from '../../components/ai-chat-widget';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { 
@@ -211,45 +211,37 @@ export default function MyAccountPage() {
 
   if (profileLoading) {
     return (
-      <SNSLayout 
-        currentSNS={currentSNS}
-        customTitle="マイアカウント"
-        customDescription="アカウント設定とプロファイル管理"
-      >
-        <div className="flex items-center justify-center min-h-96">
+      <>
+        <CommonHeader />
+        <div className="pt-16 min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600  animate-spin mx-auto mb-4"></div>
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">プロファイルを読み込み中...</p>
           </div>
         </div>
-      </SNSLayout>
+      </>
     );
   }
 
   if (profileError) {
     return (
-      <SNSLayout 
-        currentSNS={currentSNS}
-        customTitle="マイアカウント"
-        customDescription="アカウント設定とプロファイル管理"
-      >
-        <div className="flex items-center justify-center min-h-96">
+      <>
+        <CommonHeader />
+        <div className="pt-16 min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <p className="text-red-600">{profileError}</p>
           </div>
         </div>
-      </SNSLayout>
+      </>
     );
   }
 
   return (
-    <SNSLayout 
-      currentSNS="instagram"
-      customTitle="マイアカウント"
-      customDescription="アカウント設定とプロファイル管理"
-    >
-      <div className="w-full p-6">
+    <>
+      <CommonHeader />
+      <div className="pt-16 min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* メッセージ表示 */}
         {message && (
@@ -850,7 +842,8 @@ export default function MyAccountPage() {
             daysRemaining: getContractDaysRemaining()
           }}
         />
+        </div>
       </div>
-    </SNSLayout>
+    </>
   );
 }

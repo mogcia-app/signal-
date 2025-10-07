@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import SNSLayout from '../../components/sns-layout';
+import CommonHeader from '../../components/common-header';
 import { AIChatWidget } from '../../components/ai-chat-widget';
 import { 
   BookOpen, 
@@ -327,12 +327,9 @@ export default function GuidePage() {
 
   return (
     <>
-      <SNSLayout 
-        currentSNS={currentSNS}
-        customTitle="使い方ガイド"
-        customDescription="Signalの機能と使い方を詳しく解説"
-      >
-        <div className="max-w-7xl mx-auto p-6">
+      <CommonHeader />
+      <div className="pt-16 min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* ヘッダー */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -479,7 +476,7 @@ export default function GuidePage() {
             </div>
           </div>
         </div>
-      </SNSLayout>
+      </div>
 
       {/* AIチャットウィジェット */}
       <AIChatWidget 
