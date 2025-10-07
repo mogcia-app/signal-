@@ -264,6 +264,7 @@ export default function XAnalyticsPage() {
         };
 
         setAnalyticsData(analytics);
+        setLoading(false);
       } else {
         // データがない場合はダミーデータを表示
         console.log('No X analytics data found, showing placeholder');
@@ -319,6 +320,8 @@ export default function XAnalyticsPage() {
         };
         setAnalyticsData(demoData);
       }
+
+      setLoading(false);
     } catch (error) {
       console.error('X Analytics fetch error:', error);
       setError('Xアナリティクスデータの取得に失敗しました');
