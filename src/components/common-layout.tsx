@@ -64,23 +64,33 @@ export default function CommonLayout({ children, customTitle, customDescription 
   // 認証チェックと契約SNS数の確認（useMemoで最適化）
   const availableSNS = useMemo(() => {
     if (!getContractSNS || !userProfile) return [];
-    const contractSNS = getContractSNS();
-    return contractSNS && contractSNS.length > 0 ? contractSNS : [];
-  }, [getContractSNS, userProfile]);
+    try {
+      const contractSNS = getContractSNS();
+      return Array.isArray(contractSNS) && contractSNS.length > 0 ? contractSNS : [];
+    } catch (error) {
+      console.error('契約SNS取得エラー:', error);
+      return [];
+    }
+  }, [getContractSNS, userProfile?.id]); // userProfile.idで依存関係を安定化
   
   const hasActiveContract = useMemo(() => {
     if (!isContractActive || !userProfile) return false;
-    return isContractActive();
-  }, [isContractActive, userProfile]);
+    try {
+      return isContractActive();
+    } catch (error) {
+      console.error('契約状態確認エラー:', error);
+      return false;
+    }
+  }, [isContractActive, userProfile?.id]); // userProfile.idで依存関係を安定化
   
-  // デバッグログ
-  console.log('🔍 CommonLayout認証状態:', {
-    user: !!user,
-    userProfile: !!userProfile,
-    hasActiveContract: hasActiveContract,
-    availableSNS: availableSNS,
-    profileLoading: profileLoading
-  });
+  // デバッグログ（無限ループ防止のため一時的に無効化）
+  // console.log('🔍 CommonLayout認証状態:', {
+  //   user: !!user,
+  //   userProfile: !!userProfile,
+  //   hasActiveContract: hasActiveContract,
+  //   availableSNS: availableSNS,
+  //   profileLoading: profileLoading
+  // });
 
   // SNS判定のuseEffect（契約済みSNSのみ対象）
   useEffect(() => {
@@ -114,7 +124,7 @@ export default function CommonLayout({ children, customTitle, customDescription 
 
     const detectedSNS = getCurrentSNS();
     setCurrentSNS(detectedSNS);
-  }, [availableSNS]); // availableSNSが変更された時に再実行
+  }, [availableSNS.length, availableSNS.join(',')]); // availableSNSの内容が変更された時に再実行
 
   const currentSNSInfo = SNS_INFO[currentSNS as keyof typeof SNS_INFO] || SNS_INFO.instagram;
 
@@ -307,14 +317,15 @@ export default function CommonLayout({ children, customTitle, customDescription 
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">SNS切り替え</h3>
           <div className="space-y-2">
-            {(() => {
+            {/* デバッグログ（無限ループ防止のため一時的に無効化） */}
+            {/* {(() => {
               console.log('🔍 SNS切り替えレンダリング:', {
                 availableSNS: availableSNS,
                 availableSNSCount: availableSNS.length,
                 currentSNS: currentSNS
               });
               return null;
-            })()}
+            })()} */}
             {availableSNS.length > 0 ? availableSNS.map((snsKey) => {
               const snsInfo = SNS_INFO[snsKey as keyof typeof SNS_INFO];
               if (!snsInfo) {
@@ -323,12 +334,13 @@ export default function CommonLayout({ children, customTitle, customDescription 
               }
               
               const isActive = snsKey === currentSNS;
-              console.log('🎨 SNSボタンレンダリング:', {
-                snsKey: snsKey,
-                snsName: snsInfo.name,
-                isActive: isActive,
-                currentSNS: currentSNS
-              });
+              // デバッグログ（無限ループ防止のため一時的に無効化）
+              // console.log('🎨 SNSボタンレンダリング:', {
+              //   snsKey: snsKey,
+              //   snsName: snsInfo.name,
+              //   isActive: isActive,
+              //   currentSNS: currentSNS
+              // });
               
               return (
                 <button
@@ -337,9 +349,7 @@ export default function CommonLayout({ children, customTitle, customDescription 
                     console.log('🖱️ SNS切り替えボタンクリック:', { 
                       snsKey: snsKey, 
                       snsName: snsInfo.name,
-                      event: e,
                       currentSNS: currentSNS,
-                      availableSNS: availableSNS,
                       timestamp: new Date().toISOString()
                     });
                     e.preventDefault();
