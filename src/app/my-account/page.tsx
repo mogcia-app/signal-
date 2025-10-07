@@ -17,17 +17,48 @@ import {
   Calendar,
 } from 'lucide-react';
 
+// URLからSNSを判定する関数
+const getCurrentSNSFromURL = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
+  if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
+  
+  const referrer = document.referrer;
+  const pathname = window.location.pathname;
+  
+  // リファラーから判定
+  if (referrer.includes('/x/')) return 'x';
+  if (referrer.includes('/instagram/')) return 'instagram';
+  if (referrer.includes('/tiktok/')) return 'tiktok';
+  if (referrer.includes('/youtube/')) return 'youtube';
+  
+  // URLパスから判定
+  if (pathname.includes('/x/')) return 'x';
+  if (pathname.includes('/instagram/')) return 'instagram';
+  if (pathname.includes('/tiktok/')) return 'tiktok';
+  if (pathname.includes('/youtube/')) return 'youtube';
+  
+  // デフォルト
+  return 'instagram';
+};
+
 // UserProfile interface は useUserProfile フックで定義されているため削除
 
 export default function MyAccountPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
   // const [isNavigating, setIsNavigating] = useState(false);
 
-  // マイアカウントページのマウントログ（シンプル版）
+  // SNS判定とマイアカウントページのマウントログ
   useEffect(() => {
-    console.log('マイアカウントページがマウントされました');
+    const detectedSNS = getCurrentSNSFromURL();
+    setCurrentSNS(detectedSNS);
+    
+    console.log('🎯 マイアカウントページがマウントされました！', {
+      detectedSNS: detectedSNS,
+      referrer: typeof window !== 'undefined' ? document.referrer : 'SSR',
+      pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR'
+    });
   }, []);
 
   // 実際のユーザープロフィールデータを取得
@@ -154,7 +185,7 @@ export default function MyAccountPage() {
   if (profileLoading) {
     return (
       <SNSLayout 
-        currentSNS="instagram"
+        currentSNS={currentSNS}
         customTitle="マイアカウント"
         customDescription="アカウント設定とプロファイル管理"
       >
@@ -171,7 +202,7 @@ export default function MyAccountPage() {
   if (profileError) {
     return (
       <SNSLayout 
-        currentSNS="instagram"
+        currentSNS={currentSNS}
         customTitle="マイアカウント"
         customDescription="アカウント設定とプロファイル管理"
       >

@@ -26,6 +26,29 @@ import {
   Download
 } from 'lucide-react';
 
+// URLからSNSを判定する関数
+const getCurrentSNSFromURL = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
+  if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
+  
+  const referrer = document.referrer;
+  const pathname = window.location.pathname;
+  
+  // リファラーから判定
+  if (referrer.includes('/x/')) return 'x';
+  if (referrer.includes('/instagram/')) return 'instagram';
+  if (referrer.includes('/tiktok/')) return 'tiktok';
+  if (referrer.includes('/youtube/')) return 'youtube';
+  
+  // URLパスから判定
+  if (pathname.includes('/x/')) return 'x';
+  if (pathname.includes('/instagram/')) return 'instagram';
+  if (pathname.includes('/tiktok/')) return 'tiktok';
+  if (pathname.includes('/youtube/')) return 'youtube';
+  
+  // デフォルト
+  return 'instagram';
+};
+
 interface GuideSection {
   id: string;
   title: string;
@@ -42,16 +65,22 @@ interface GuideStep {
   icon?: React.ReactNode;
 }
 
-export default function InstagramGuidePage() {
+export default function GuidePage() {
   const [activeSection, setActiveSection] = useState<string>('getting-started');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
 
-  // デバッグ用のuseEffect
+  // SNS判定とデバッグ用のuseEffect
   useEffect(() => {
+    const detectedSNS = getCurrentSNSFromURL();
+    setCurrentSNS(detectedSNS);
+    
     console.log('🎯 ガイドページがマウントされました！', {
       timestamp: Date.now(),
-      pathname: window.location.pathname,
-      search: window.location.search
+      pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR',
+      search: typeof window !== 'undefined' ? window.location.search : 'SSR',
+      detectedSNS: detectedSNS,
+      referrer: typeof window !== 'undefined' ? document.referrer : 'SSR'
     });
     
     return () => {
@@ -272,7 +301,7 @@ export default function InstagramGuidePage() {
   return (
     <>
       <SNSLayout 
-        currentSNS="instagram"
+        currentSNS={currentSNS}
         customTitle="使い方ガイド"
         customDescription="Signalの機能と使い方を詳しく解説"
       >

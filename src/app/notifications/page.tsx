@@ -25,6 +25,29 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { useAuth } from '../../contexts/auth-context';
 import { auth } from '../../lib/firebase';
 
+// URLからSNSを判定する関数
+const getCurrentSNSFromURL = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
+  if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
+  
+  const referrer = document.referrer;
+  const pathname = window.location.pathname;
+  
+  // リファラーから判定
+  if (referrer.includes('/x/')) return 'x';
+  if (referrer.includes('/instagram/')) return 'instagram';
+  if (referrer.includes('/tiktok/')) return 'tiktok';
+  if (referrer.includes('/youtube/')) return 'youtube';
+  
+  // URLパスから判定
+  if (pathname.includes('/x/')) return 'x';
+  if (pathname.includes('/instagram/')) return 'instagram';
+  if (pathname.includes('/tiktok/')) return 'tiktok';
+  if (pathname.includes('/youtube/')) return 'youtube';
+  
+  // デフォルト
+  return 'instagram';
+};
+
 interface Notification {
   id: string;
   title: string;
@@ -45,14 +68,27 @@ interface Notification {
   tags?: string[]; // タグ
 }
 
-export default function InstagramNotificationsPage() {
+export default function NotificationsPage() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
   const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'unread' | 'starred' | 'archived'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+
+  // SNS判定のuseEffect
+  useEffect(() => {
+    const detectedSNS = getCurrentSNSFromURL();
+    setCurrentSNS(detectedSNS);
+    
+    console.log('🎯 お知らせページ - SNS判定:', {
+      detectedSNS: detectedSNS,
+      referrer: typeof window !== 'undefined' ? document.referrer : 'SSR',
+      pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR'
+    });
+  }, []);
 
   useEffect(() => {
     console.log('🔍 認証状態の変化を監視:', { user, uid: user?.uid });
@@ -471,7 +507,7 @@ export default function InstagramNotificationsPage() {
   if (isLoading) {
     return (
       <SNSLayout 
-        currentSNS="instagram"
+        currentSNS={currentSNS}
         customTitle="お知らせ"
         customDescription="システムのお知らせと通知"
       >
@@ -489,7 +525,7 @@ export default function InstagramNotificationsPage() {
   return (
     <>
       <SNSLayout 
-        currentSNS="instagram"
+        currentSNS={currentSNS}
         customTitle="お知らせ"
         customDescription="システムのお知らせと通知"
       >
