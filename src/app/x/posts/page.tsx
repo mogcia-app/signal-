@@ -179,15 +179,6 @@ export default function XPostsPage() {
     }
   };
 
-  // 投稿タイプ表示の絵文字
-  const getPostTypeIcon = (postType: string) => {
-    switch (postType) {
-      case 'tweet': return '🐦';
-      case 'thread': return '🧵';
-      case 'reply': return '💬';
-      default: return '📝';
-    }
-  };
 
   // 投稿タイプ表示の日本語
   const getPostTypeLabel = (postType: string) => {
@@ -385,7 +376,6 @@ export default function XPostsPage() {
                 <div className="p-4 border-b border-gray-100">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      <span className="text-2xl">{getPostTypeIcon(post.postType)}</span>
                       <div className="flex flex-wrap gap-1">
                         {post.isAIGenerated ? (
                           <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium flex items-center">
@@ -485,24 +475,13 @@ export default function XPostsPage() {
                   {/* 投稿内容 */}
                   <div className="mb-4">
                     <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                      <div className="flex items-start space-x-2">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-bold">U</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-1 mb-1">
-                            <span className="font-semibold text-gray-900 text-sm">あなた</span>
-                            <span className="text-gray-500 text-xs">@username</span>
-                          </div>
-                          <p className="text-gray-700 text-sm overflow-hidden" style={{
-                            display: '-webkit-box',
-                            WebkitLineClamp: 3,
-                            WebkitBoxOrient: 'vertical'
-                          }}>
-                            {post.content}
-                          </p>
-                        </div>
-                      </div>
+                      <p className="text-gray-700 text-sm overflow-hidden" style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical'
+                      }}>
+                        {post.content}
+                      </p>
                     </div>
                   </div>
 
@@ -510,7 +489,7 @@ export default function XPostsPage() {
                   {post.hashtags.length > 0 && (
                     <div className="mb-4">
                       <div className="flex flex-wrap gap-1">
-                        {post.hashtags.slice(0, 3).map((hashtag, index) => (
+                        {post.hashtags.slice(0, 5).map((hashtag, index) => (
                           <span
                             key={index}
                             className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md hover:bg-blue-200 transition-colors cursor-pointer"
@@ -518,9 +497,9 @@ export default function XPostsPage() {
                             {hashtag.startsWith('#') ? hashtag : `#${hashtag}`}
                           </span>
                         ))}
-                        {post.hashtags.length > 3 && (
+                        {post.hashtags.length > 5 && (
                           <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-                            +{post.hashtags.length - 3}
+                            +{post.hashtags.length - 5}
                           </span>
                         )}
                       </div>
@@ -577,7 +556,7 @@ export default function XPostsPage() {
                     <div className="flex items-center space-x-3">
                       <span className="flex items-center">
                         <Calendar size={12} className="mr-1" />
-                        {post.scheduledDate || '未設定'}
+                        {post.scheduledDate ? new Date(post.scheduledDate).toLocaleDateString('ja-JP') : '未設定'}
                       </span>
                       <span className="flex items-center">
                         <Clock size={12} className="mr-1" />
