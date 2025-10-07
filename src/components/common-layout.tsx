@@ -319,16 +319,16 @@ export default function CommonLayout({ children, customTitle, customDescription 
               <span>使い方ガイド</span>
             </Link>
             <Link 
-              href="/my-account"
+              href="/dashboard"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
               onClick={(e) => {
                 console.log('🖱️ マイアカウントリンククリック:', {
-                  href: '/my-account',
+                  href: '/dashboard',
                   timestamp: new Date().toISOString()
                 });
                 e.preventDefault();
-                console.log('🚀 手動ナビゲーション開始: /my-account');
-                router.push('/my-account');
+                console.log('🚀 手動ナビゲーション開始: /dashboard');
+                router.push('/dashboard');
               }}
             >
               <span>👤</span>

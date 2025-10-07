@@ -63,7 +63,7 @@ export default function CommonHeader({ unreadCount = 0 }: CommonHeaderProps) {
             </Link>
             
             <Link 
-              href="/my-account"
+              href="/dashboard"
               className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
             >
               <span className="text-lg">👤</span>
