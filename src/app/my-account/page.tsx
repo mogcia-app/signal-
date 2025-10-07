@@ -86,7 +86,7 @@ export default function MyAccountPage() {
       referrer: typeof window !== 'undefined' ? document.referrer : 'SSR',
       pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR'
     });
-  }, []);
+  }, []); // 空の依存配列でマウント時のみ実行
 
   // 実際のユーザープロフィールデータを取得
   const { 
@@ -140,7 +140,7 @@ export default function MyAccountPage() {
         }
       });
     }
-  }, [userProfile, getBusinessInfo]);
+  }, [userProfile, getBusinessInfo]); // 依存関係を明示的に指定
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',

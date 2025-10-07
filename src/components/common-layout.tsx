@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
 import { useUserProfile } from '../hooks/useUserProfile';
-import { useSNSSettings } from '../hooks/useSNSSettings';
 import { ReactNode, useState, useEffect, useCallback } from 'react';
 
 // SNS情報の定義
@@ -56,7 +55,9 @@ export default function CommonLayout({ children, customTitle, customDescription 
 
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
-  const { snsNames } = useSNSSettings();
+  
+  // シンプルなSNSリスト（useSNSSettingsフックの問題を回避）
+  const snsNames = ['instagram', 'x', 'tiktok', 'youtube'];
 
   // SNS判定のuseEffect
   useEffect(() => {
@@ -97,7 +98,7 @@ export default function CommonLayout({ children, customTitle, customDescription 
 
     const detectedSNS = getCurrentSNS();
     setCurrentSNS(detectedSNS);
-  }, []);
+  }, []); // 空の依存配列でマウント時のみ実行
 
   const currentSNSInfo = SNS_INFO[currentSNS as keyof typeof SNS_INFO] || SNS_INFO.instagram;
 
