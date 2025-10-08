@@ -82,23 +82,9 @@ export const useUserProfile = () => {
             contractSNS: ['instagram'], // デフォルトでInstagramを契約
             snsAISettings: {
               instagram: {
-                aiEnabled: true,
-                autoPosting: false,
-                hashtagOptimization: true,
-                contentSuggestion: true,
-                postingFrequency: 'daily',
-                optimalPostingTime: ['09:00', '18:00'],
-                contentTypes: ['feed', 'reel', 'story'],
-                analyticsEnabled: true,
-                engagementTracking: true,
-                competitorAnalysis: false
-              }
-            },
-            snsProfiles: {
-              instagram: {
-                followers: 0,
-                username: '',
-                lastUpdated: new Date().toISOString()
+                enabled: true,
+                tone: 'professional',
+                features: ['hashtag-optimization', 'content-suggestion', 'analytics']
               }
             },
             businessInfo: {
