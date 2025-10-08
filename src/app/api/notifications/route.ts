@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase';
-import { collection, query, where, orderBy, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 
 interface Notification {
   id: string;
@@ -67,33 +67,33 @@ export async function GET(request: NextRequest) {
 
     // Firestoreから取得
     const notificationsRef = collection(db, 'notifications');
-    let q = query(
-      notificationsRef,
-      where('status', '==', 'published'),
-      orderBy('createdAt', 'desc')
-    );
-
-    // ユーザー指定の場合は、対象ユーザーもフィルタ
-    if (userId !== 'current-user') {
-      // 複合クエリの代わりに、まずは基本的なクエリを使用
-      q = query(
-        notificationsRef,
-        where('status', '==', 'published'),
-        orderBy('createdAt', 'desc')
-      );
-      console.log('🔍 ユーザー指定クエリを使用:', { userId });
-    } else {
-      console.log('🔍 全ユーザー向けクエリを使用');
-    }
-
+    
     console.log('🔍 Firestoreクエリを実行中...');
     let snapshot;
     try {
+      // シンプルなクエリを使用（インデックス不要）
+      // orderByとwhereの複合クエリはインデックスが必要なため、まずは基本的なクエリのみ
+      const q = query(
+        notificationsRef,
+        where('status', '==', 'published')
+        // orderBy('createdAt', 'desc') // 一時的にコメントアウト - クライアント側でソート
+      );
+      
       snapshot = await getDocs(q);
       console.log('✅ Firestoreクエリ成功:', { docCount: snapshot.docs.length });
     } catch (firestoreError) {
       console.error('❌ Firestoreクエリエラー:', firestoreError);
-      throw new Error(`Firestoreクエリエラー: ${firestoreError instanceof Error ? firestoreError.message : 'Unknown error'}`);
+      
+      // フォールバック: statusフィルタなしで全件取得
+      try {
+        console.log('🔄 フォールバック: 全件取得を試行');
+        const fallbackQuery = query(notificationsRef);
+        snapshot = await getDocs(fallbackQuery);
+        console.log('✅ フォールバッククエリ成功:', { docCount: snapshot.docs.length });
+      } catch (fallbackError) {
+        console.error('❌ フォールバッククエリもエラー:', fallbackError);
+        throw new Error(`Firestoreクエリエラー: ${firestoreError instanceof Error ? firestoreError.message : 'Unknown error'}`);
+      }
     }
     
     let firestoreNotifications: Notification[] = [];
@@ -119,7 +119,8 @@ export async function GET(request: NextRequest) {
         console.log('✅ 初期通知データの作成が完了しました');
         
         // 作成したデータを再取得
-        const newSnapshot = await getDocs(q);
+        const refreshQuery = query(notificationsRef, where('status', '==', 'published'));
+        const newSnapshot = await getDocs(refreshQuery);
         firestoreNotifications = newSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()

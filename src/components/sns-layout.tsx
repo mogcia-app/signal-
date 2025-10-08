@@ -89,11 +89,22 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
       if (result.success) {
         setUnreadCount(result.data?.length || 0);
       } else {
-        console.error('未読通知数取得エラー:', result.error);
+        // エラーの詳細をログに出力（開発時のみ）
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('未読通知数取得エラー:', {
+            error: result.error,
+            details: result.details,
+            timestamp: result.timestamp
+          });
+        }
+        // エラーの場合も0件として扱う（ユーザー体験を損なわない）
         setUnreadCount(0);
       }
     } catch (error) {
-      console.error('未読通知数の取得エラー:', error);
+      // ネットワークエラーなどの場合
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('未読通知数の取得エラー:', error);
+      }
       setUnreadCount(0);
     }
   }, [user?.uid]);
