@@ -1,6 +1,7 @@
 /**
- * Firestore Security Rules - 利用者側アプリ対応版
- * Admin Panelとの連携仕様に基づく
+ * Firestore Security Rules - 統合版
+ * - 既存のブログ機能
+ * - Admin Panelとの連携仕様（利用者側アプリ）
  * 
  * 【重要】このファイルをFirebaseコンソールで設定してください
  * Firebase Console > Firestore Database > ルール
@@ -10,20 +11,50 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ヘルパー関数: 認証済みユーザーかチェック
+    // ========================================
+    // ヘルパー関数
+    // ========================================
+    
+    // 認証済みユーザーかチェック
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // ヘルパー関数: 管理者かチェック
+    // 管理者かチェック（@signalapp.jp または admin token）
     function isAdmin() {
       return isAuthenticated() && 
-             request.auth.token.email.matches('.*@signalapp.jp$');
+             (request.auth.token.email.matches('.*@signalapp.jp$') || 
+              request.auth.token.admin == true);
     }
     
-    // ヘルパー関数: 自分自身のデータかチェック
+    // 自分自身のデータかチェック
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ========================================
+    // 既存のブログ機能（保持）
+    // ========================================
+    
+    match /blogPosts/{postId} {
+      // 公開済み記事は誰でも読み取り可能
+      allow read: if resource.data.status == 'published';
+      // 管理者のみ作成・更新・削除可能
+      allow write: if isAdmin();
+    }
+    
+    match /blogCategories/{categoryId} {
+      // 誰でも読み取り可能
+      allow read: if true;
+      // 管理者のみ作成・更新・削除可能
+      allow write: if isAdmin();
+    }
+    
+    match /blogTags/{tagId} {
+      // 誰でも読み取り可能
+      allow read: if true;
+      // 管理者のみ作成・更新・削除可能
+      allow write: if isAdmin();
     }
     
     // ========================================
@@ -160,7 +191,15 @@ service cloud.firestore {
     }
     
     // ========================================
-    // デフォルト: すべて拒否
+    // 開発環境用の一時的なルール（本番前に削除推奨）
+    // ========================================
+    // 注意: 以下のルールは開発中のみ使用し、本番環境では削除してください
+    // match /{document=**} {
+    //   allow read, write: if true;
+    // }
+    
+    // ========================================
+    // デフォルト: 明示的に許可されていないものは拒否
     // ========================================
     match /{document=**} {
       allow read, write: if false;
@@ -172,16 +211,18 @@ service cloud.firestore {
  * 【設定手順】
  * 
  * 1. Firebase Console にアクセス
- *    https://console.firebase.google.com/
+ *    https://console.firebase.google.com/project/signal-v1-fc481
  * 
- * 2. プロジェクトを選択
- *    signal-v1-fc481
+ * 2. Firestore Database > ルール を開く
  * 
- * 3. Firestore Database > ルール を開く
+ * 3. このファイルの内容（rules_version から最後の } まで）をコピー＆ペースト
  * 
- * 4. このファイルの内容をコピー＆ペースト
+ * 4. 「公開」ボタンをクリック
  * 
- * 5. 「公開」ボタンをクリック
+ * 【重要な変更点】
+ * - 既存のブログ機能のルールは保持されています
+ * - 新しいユーザー管理・通知システムのルールが追加されました
+ * - isAdmin() 関数が統合され、両方の管理者タイプに対応しています
  * 
  * 【テスト方法】
  * 
