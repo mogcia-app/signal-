@@ -283,7 +283,22 @@ export default function NotificationsPage() {
           Promise.all(
             realtimeNotifications.map(async (notification) => {
               try {
-                const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=${user?.uid}`);
+                if (!user?.uid) {
+                  return {
+                    ...notification,
+                    read: false,
+                    starred: false
+                  };
+                }
+                
+                // Firebase認証トークンを取得
+                const token = await auth.currentUser?.getIdToken();
+                const actionResponse = await fetch(`/api/notifications/${notification.id}/actions?userId=${user.uid}`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
                 const actionResult = await actionResponse.json();
                 
                 return {
