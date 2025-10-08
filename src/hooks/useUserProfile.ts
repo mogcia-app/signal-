@@ -100,11 +100,9 @@ export const useUserProfile = () => {
             contractStartDate: new Date().toISOString(),
             contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30日後
             billingInfo: {
-              plan: 'trial',
               paymentMethod: 'none',
               nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              amount: 0,
-              currency: 'JPY'
+              amount: 0
             },
             notes: '新規ユーザー',
             createdAt: new Date().toISOString(),
@@ -139,7 +137,8 @@ export const useUserProfile = () => {
   };
 
   const getSNSProfile = (snsName: string) => {
-    return (userProfile?.snsProfiles as Record<string, unknown>)?.[snsName] || {};
+    // snsProfilesは削除されたため、空オブジェクトを返す
+    return {};
   };
 
   const getBusinessInfo = () => {
