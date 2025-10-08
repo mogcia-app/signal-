@@ -30,7 +30,7 @@ export const useUserProfile = () => {
       userDocRef,
       (doc) => {
         if (doc.exists()) {
-          const userData = { id: doc.id, ...doc.data() } as User;
+          const userData = { id: doc.id, ...doc.data() } as UserProfile;
           setUserProfile(userData);
           setError(null);
           
@@ -64,14 +64,13 @@ export const useUserProfile = () => {
           });
           console.log('🏢 Business Info:', correctedUserData.businessInfo);
           console.log('⚙️ SNS AI Settings:', correctedUserData.snsAISettings);
-          console.log('👥 SNS Profiles:', correctedUserData.snsProfiles);
           console.log('💰 Billing Info:', correctedUserData.billingInfo);
           console.log('📝 Notes:', correctedUserData.notes);
           console.log('📊 Complete Data Object:', correctedUserData);
           console.groupEnd();
         } else {
           // ユーザープロフィールが存在しない場合、完全なデフォルト値を設定
-          const defaultUserProfile: User = {
+          const defaultUserProfile: UserProfile = {
             id: user.uid,
             email: user.email || '',
             name: user.displayName || 'ユーザー',
