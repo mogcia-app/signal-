@@ -79,5 +79,7 @@ export const config = {
     '/api/notifications/:path*',
     '/api/user/:path*',
     '/api/admin/:path*',
+    '/api/x/:path*',
+    '/api/instagram/:path*',
   ],
 };

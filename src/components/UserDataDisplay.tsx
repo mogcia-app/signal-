@@ -132,7 +132,7 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
           <div>
             <p className="text-sm font-medium text-gray-500 mb-2">契約SNS</p>
             <div className="flex flex-wrap gap-2">
-              {contractSNS.map(sns => (
+              {contractSNS.map((sns: string) => (
                 <Badge key={sns} variant="secondary">
                   {sns}
                 </Badge>
@@ -254,7 +254,7 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
               <div>
                 <p className="text-sm font-medium text-gray-500">目標</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {businessInfo.goals.map((goal, index) => (
+                  {businessInfo.goals.map((goal: string, index: number) => (
                     <Badge key={index} variant="outline">{goal}</Badge>
                   ))}
                 </div>
@@ -264,7 +264,7 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
               <div>
                 <p className="text-sm font-medium text-gray-500">課題</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {businessInfo.challenges.map((challenge, index) => (
+                  {businessInfo.challenges.map((challenge: string, index: number) => (
                     <Badge key={index} variant="outline">{challenge}</Badge>
                   ))}
                 </div>

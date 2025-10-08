@@ -69,15 +69,15 @@ function SNSSelectContent() {
     console.log('📋 contractSNS:', contractSNS);
     console.log('⚙️ snsAISettings keys:', snsWithSettings);
     console.log('📱 SNS_INFO keys:', Object.keys(SNS_INFO));
-    console.log('✅ contractSNS filtered:', contractSNS.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO]));
-    console.log('✅ snsWithSettings filtered:', snsWithSettings.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO]));
+    console.log('✅ contractSNS filtered:', contractSNS.filter((sns: string) => SNS_INFO[sns as keyof typeof SNS_INFO]));
+    console.log('✅ snsWithSettings filtered:', snsWithSettings.filter((sns: string) => SNS_INFO[sns as keyof typeof SNS_INFO]));
     console.groupEnd();
   }
   
   // 契約SNSまたはAI設定があるSNSを利用可能とする
   const availableSNS = [...new Set([
-    ...contractSNS.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO]),
-    ...snsWithSettings.filter(sns => SNS_INFO[sns as keyof typeof SNS_INFO])
+    ...contractSNS.filter((sns: string) => SNS_INFO[sns as keyof typeof SNS_INFO]),
+    ...snsWithSettings.filter((sns: string) => SNS_INFO[sns as keyof typeof SNS_INFO])
   ])];
 
   return (

@@ -1,51 +1,57 @@
-// ユーザー情報の型定義
-export interface User {
-  id: string; // Firebase Auth UID
-  email: string; // ログイン用メールアドレス（Firebase Auth管理）
-  name: string; // 表示名
-  role: 'user' | 'admin'; // 権限（利用者は'user'）
-  isActive: boolean; // アクティブ状態
-  snsCount: number; // SNS契約数（1-4）
-  usageType: 'team' | 'solo'; // 利用形態
-  contractType: 'annual' | 'trial'; // 契約タイプ
-  contractSNS: string[]; // 契約SNS配列
-  snsAISettings: Record<string, unknown>; // SNS AI設定
-  snsProfiles?: {
-    instagram?: {
-      followers?: number;
-      username?: string;
-      lastUpdated?: string;
-    };
-    tiktok?: {
-      followers?: number;
-      username?: string;
-      lastUpdated?: string;
-    };
-    twitter?: {
-      followers?: number;
-      username?: string;
-      lastUpdated?: string;
-    };
-    youtube?: {
-      subscribers?: number;
-      username?: string;
-      lastUpdated?: string;
-    };
+/**
+ * ユーザー型定義
+ * Admin Panelとの連携仕様に基づく
+ */
+
+export interface BusinessInfo {
+  industry: string;           // 業種
+  companySize: string;        // 会社規模
+  businessType: string;       // ビジネスタイプ
+  description: string;        // 事業内容
+  targetMarket: string;       // ターゲット市場
+  goals: string[];           // 目標
+  challenges: string[];      // 課題
+}
+
+export interface BillingInfo {
+  paymentMethod?: string;    // 支払い方法
+  lastPaymentDate?: string;  // 最終支払日
+  nextBillingDate?: string;  // 次回請求日
+  amount?: number;           // 金額
+}
+
+export interface SNSAISettings {
+  [snsType: string]: {
+    enabled: boolean;
+    tone?: string;
+    features?: string[];
   };
-  businessInfo: {
-    industry: string;
-    companySize: string;
-    businessType: string;
-    description: string;
-    targetMarket: string;
-    goals: string[];
-    challenges: string[];
-  };
-  status: 'active' | 'inactive' | 'suspended';
-  contractStartDate: string; // 契約開始日
-  contractEndDate: string; // 契約終了日
-  billingInfo?: Record<string, unknown>; // 課金情報
-  notes?: string; // 管理者メモ
-  createdAt: string;
-  updatedAt: string;
+}
+
+export interface UserProfile {
+  id: string;                                    // Firebase Auth UID
+  email: string;                                 // ログイン用メールアドレス
+  name: string;                                  // 表示名
+  role: 'user' | 'admin';                       // 権限（利用者は'user'）
+  isActive: boolean;                            // アクティブ状態
+  snsCount: number;                             // SNS契約数（1-4）
+  usageType: 'team' | 'solo';                   // 利用形態
+  contractType: 'annual' | 'trial';             // 契約タイプ
+  contractSNS: string[];                        // 契約SNS配列
+  snsAISettings: SNSAISettings;                 // SNS AI設定
+  businessInfo: BusinessInfo;                   // ビジネス情報
+  status: 'active' | 'inactive' | 'suspended';  // ステータス
+  contractStartDate: string;                    // 契約開始日
+  contractEndDate: string;                      // 契約終了日
+  billingInfo?: BillingInfo;                    // 課金情報
+  notes?: string;                               // 管理者メモ
+  createdAt: string;                            // 作成日時
+  updatedAt: string;                            // 更新日時
+}
+
+// プロフィール更新用の型（一部のフィールドのみ更新可能）
+export interface UserProfileUpdate {
+  name?: string;
+  businessInfo?: Partial<BusinessInfo>;
+  snsAISettings?: SNSAISettings;
 }

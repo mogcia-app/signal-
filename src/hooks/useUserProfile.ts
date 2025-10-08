@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User } from '../types/user';
+import { UserProfile } from '../types/user';
 import { useAuth } from '../contexts/auth-context';
 
 export const useUserProfile = () => {
   const { user, loading: authLoading } = useAuth();
-  const [userProfile, setUserProfile] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -250,7 +250,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">契約SNS</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {contractSNS.map((sns) => (
+              {contractSNS.map((sns: string) => (
                 <button
                   key={sns}
                   onClick={() => router.push(`/${sns}`)}

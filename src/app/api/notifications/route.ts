@@ -134,6 +134,22 @@ export async function GET(request: NextRequest) {
 
     let filteredNotifications = [...firestoreNotifications];
 
+    // targetUsersフィルタリング（Admin Panel連携仕様）
+    // targetUsersが空配列 = 全ユーザー向け
+    // targetUsersにuidが含まれる = 特定ユーザー向け
+    if (userId !== 'current-user') {
+      filteredNotifications = filteredNotifications.filter(n => 
+        !n.targetUsers || 
+        n.targetUsers.length === 0 || 
+        n.targetUsers.includes(userId)
+      );
+      console.log('🎯 targetUsersフィルタリング適用:', {
+        userId,
+        before: firestoreNotifications.length,
+        after: filteredNotifications.length
+      });
+    }
+
     // フィルタリング
     if (filter === 'unread') {
       // 実際の実装では、ユーザーごとの既読状態をチェック

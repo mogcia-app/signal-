@@ -1,0 +1,202 @@
+/**
+ * Firestore Security Rules - 利用者側アプリ対応版
+ * Admin Panelとの連携仕様に基づく
+ * 
+ * 【重要】このファイルをFirebaseコンソールで設定してください
+ * Firebase Console > Firestore Database > ルール
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ヘルパー関数: 認証済みユーザーかチェック
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ヘルパー関数: 管理者かチェック
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.email.matches('.*@signalapp.jp$');
+    }
+    
+    // ヘルパー関数: 自分自身のデータかチェック
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ========================================
+    // Users Collection
+    // ========================================
+    match /users/{userId} {
+      // 読み取り: 自分の情報のみ、または管理者
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // 作成: 管理者のみ（Admin Panelから）
+      allow create: if isAdmin();
+      
+      // 更新: 自分の情報のみ（一部フィールドのみ）、または管理者
+      allow update: if (isOwner(userId) && 
+                       // 利用者が更新できるフィールドを制限
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['name', 'businessInfo', 'snsAISettings', 'updatedAt'])) 
+                    || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // Notifications Collection
+    // ========================================
+    match /notifications/{notificationId} {
+      // 読み取り: 認証済みユーザー全員
+      // targetUsersフィルタリングはアプリケーション層で実施
+      allow read: if isAuthenticated();
+      
+      // 作成・更新・削除: 管理者のみ（Admin Panelから）
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // ========================================
+    // User Notifications Actions Collection
+    // ========================================
+    match /userNotifications/{userNotificationId} {
+      // 読み取り: 自分のアクション情報のみ
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // 作成・更新: 自分のアクション情報のみ
+      allow create, update: if isAuthenticated() && 
+                               request.resource.data.userId == request.auth.uid;
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // X Analytics Collection
+    // ========================================
+    match /xanalytics/{analyticsId} {
+      // 読み取り・作成・更新: 自分のデータのみ、または管理者
+      allow read, create, update: if isAuthenticated() && 
+                                     (request.resource.data.userId == request.auth.uid || 
+                                      resource.data.userId == request.auth.uid) 
+                                  || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // X Posts Collection
+    // ========================================
+    match /x_posts/{postId} {
+      // 読み取り・作成・更新: 自分のデータのみ、または管理者
+      allow read, create, update: if isAuthenticated() && 
+                                     (request.resource.data.userId == request.auth.uid || 
+                                      resource.data.userId == request.auth.uid) 
+                                  || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // X Plans Collection
+    // ========================================
+    match /x_plans/{planId} {
+      // 読み取り・作成・更新: 自分のデータのみ、または管理者
+      allow read, create, update: if isAuthenticated() && 
+                                     (request.resource.data.userId == request.auth.uid || 
+                                      resource.data.userId == request.auth.uid) 
+                                  || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // Instagram Analytics Collection
+    // ========================================
+    match /instagram_analytics/{analyticsId} {
+      // 読み取り・作成・更新: 自分のデータのみ、または管理者
+      allow read, create, update: if isAuthenticated() && 
+                                     (request.resource.data.userId == request.auth.uid || 
+                                      resource.data.userId == request.auth.uid) 
+                                  || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // Instagram Posts Collection
+    // ========================================
+    match /instagram_posts/{postId} {
+      // 読み取り・作成・更新: 自分のデータのみ、または管理者
+      allow read, create, update: if isAuthenticated() && 
+                                     (request.resource.data.userId == request.auth.uid || 
+                                      resource.data.userId == request.auth.uid) 
+                                  || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // Plans Collection（共通）
+    // ========================================
+    match /plans/{planId} {
+      // 読み取り・作成・更新: 自分のデータのみ、または管理者
+      allow read, create, update: if isAuthenticated() && 
+                                     (request.resource.data.userId == request.auth.uid || 
+                                      resource.data.userId == request.auth.uid) 
+                                  || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // デフォルト: すべて拒否
+    // ========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+/**
+ * 【設定手順】
+ * 
+ * 1. Firebase Console にアクセス
+ *    https://console.firebase.google.com/
+ * 
+ * 2. プロジェクトを選択
+ *    signal-v1-fc481
+ * 
+ * 3. Firestore Database > ルール を開く
+ * 
+ * 4. このファイルの内容をコピー＆ペースト
+ * 
+ * 5. 「公開」ボタンをクリック
+ * 
+ * 【テスト方法】
+ * 
+ * 1. ルールタブの「ルールプレイグラウンド」を使用
+ * 
+ * 2. 以下のテストケースを実行:
+ *    - 利用者が自分のusersドキュメントを読み取れるか
+ *    - 利用者が他人のusersドキュメントを読み取れないか
+ *    - 管理者がすべてのusersドキュメントを読み取れるか
+ *    - 利用者がnotificationsを読み取れるか
+ *    - 利用者がnotificationsを作成できないか
+ * 
+ * 【注意事項】
+ * 
+ * - 本番環境に適用する前に、必ずテスト環境で動作確認してください
+ * - 管理者のメールドメイン（@signalapp.jp）は環境に合わせて変更してください
+ * - セキュリティルールの変更は即座に反映されます
+ */
