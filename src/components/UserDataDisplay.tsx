@@ -142,34 +142,7 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
         </CardContent>
       </Card>
 
-      {/* SNSプロフィール情報 */}
-      {userProfile.snsProfiles && Object.keys(userProfile.snsProfiles).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>👥 SNSプロフィール</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(userProfile.snsProfiles).map(([sns, profile]) => (
-                <div key={sns} className="border rounded-lg p-3">
-                  <h4 className="font-semibold capitalize">{sns}</h4>
-                  <div className="space-y-1 mt-2">
-                    <p className="text-sm">
-                      <span className="font-medium">フォロワー:</span> {(profile as { followers?: number; subscribers?: number }).followers || (profile as { followers?: number; subscribers?: number }).subscribers || 0}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-medium">ユーザー名:</span> {(profile as { username?: string }).username || '未設定'}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-medium">最終更新:</span> {(profile as { lastUpdated?: string }).lastUpdated ? new Date((profile as { lastUpdated: string }).lastUpdated).toLocaleDateString('ja-JP') : '未更新'}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* SNSプロフィール情報は契約SNSセクションで表示 */}
 
       {/* AI設定 */}
       {userProfile.snsAISettings && Object.keys(userProfile.snsAISettings).length > 0 && (
@@ -282,22 +255,30 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">プラン</p>
-                <Badge variant="outline">{String(billingInfo.plan || '未設定')}</Badge>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">支払い方法</p>
-                <p className="text-sm">{String(billingInfo.paymentMethod || '未設定')}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">次回請求日</p>
-                <p className="text-sm">{billingInfo.nextBillingDate ? new Date(String(billingInfo.nextBillingDate)).toLocaleDateString('ja-JP') : '未設定'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">金額</p>
-                <p className="text-sm">{String(billingInfo.amount || 0)} {String(billingInfo.currency || 'JPY')}</p>
-              </div>
+              {'paymentMethod' in billingInfo && billingInfo.paymentMethod && (
+                <div>
+                  <p className="text-sm font-medium text-gray-500">支払い方法</p>
+                  <p className="text-sm">{billingInfo.paymentMethod}</p>
+                </div>
+              )}
+              {'nextBillingDate' in billingInfo && billingInfo.nextBillingDate && (
+                <div>
+                  <p className="text-sm font-medium text-gray-500">次回請求日</p>
+                  <p className="text-sm">{new Date(billingInfo.nextBillingDate).toLocaleDateString('ja-JP')}</p>
+                </div>
+              )}
+              {'lastPaymentDate' in billingInfo && billingInfo.lastPaymentDate && (
+                <div>
+                  <p className="text-sm font-medium text-gray-500">最終支払日</p>
+                  <p className="text-sm">{new Date(billingInfo.lastPaymentDate).toLocaleDateString('ja-JP')}</p>
+                </div>
+              )}
+              {'amount' in billingInfo && billingInfo.amount && (
+                <div>
+                  <p className="text-sm font-medium text-gray-500">金額</p>
+                  <p className="text-sm">¥{billingInfo.amount.toLocaleString()}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
