@@ -1,0 +1,38 @@
+/**
+ * Firestore Security Rules - 開発環境用（一時的）
+ * 
+ * 【重要】このルールは開発中のみ使用してください
+ * 認証済みユーザーは全てのデータにアクセス可能です
+ * 
+ * 本番環境では firestore.rules.proposal を使用してください
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 認証済みユーザーは全てアクセス可能
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+
+/**
+ * 【設定手順】
+ * 
+ * 1. Firebase Console にアクセス
+ *    https://console.firebase.google.com/project/signal-v1-fc481
+ * 
+ * 2. Firestore Database > ルール を開く
+ * 
+ * 3. 上記の内容（rules_version から } まで）をコピー＆ペースト
+ * 
+ * 4. 「公開」ボタンをクリック
+ * 
+ * 5. ブラウザをリロードして動作確認
+ * 
+ * 【注意】
+ * - このルールは開発中のみ使用してください
+ * - 本番環境では firestore.rules.proposal を使用してください
+ * - 認証されていないユーザーはアクセスできません（セキュリティは保たれています）
+ */
