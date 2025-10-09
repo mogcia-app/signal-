@@ -7,7 +7,9 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged 
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
+import { UserProfile } from '../types/user';
 
 interface AuthContextType {
   user: User | null;
@@ -22,9 +24,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ユーザードキュメントを作成または更新する関数
+  const ensureUserDocument = async (user: User) => {
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    if (!userDoc.exists()) {
+      // ユーザードキュメントが存在しない場合、デフォルト値で作成
+      const defaultUserProfile: Omit<UserProfile, 'id'> = {
+        email: user.email || '',
+        name: user.displayName || 'ユーザー',
+        role: 'user',
+        isActive: true,
+        snsCount: 1,
+        usageType: 'solo',
+        contractType: 'trial',
+        contractSNS: ['instagram'],
+        snsAISettings: {
+          instagram: {
+            enabled: true,
+            tone: 'フレンドリー',
+            features: ['ハッシュタグ最適化', '投稿時間提案', 'コンテンツ分析']
+          }
+        },
+        businessInfo: {
+          industry: '未設定',
+          companySize: '未設定',
+          businessType: '未設定',
+          description: '未設定',
+          targetMarket: '未設定',
+          goals: [],
+          challenges: []
+        },
+        status: 'active',
+        contractStartDate: new Date().toISOString(),
+        contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        billingInfo: {
+          paymentMethod: 'none',
+          nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          amount: 0
+        },
+        notes: '新規ユーザー',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      await setDoc(userDocRef, defaultUserProfile);
+      console.log('✅ User document created in Firestore:', user.uid);
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      
+      // ユーザーがログインしている場合、Firestoreドキュメントを確認・作成
+      if (user) {
+        try {
+          await ensureUserDocument(user);
+        } catch (error) {
+          console.error('Error ensuring user document:', error);
+        }
+      }
+      
       setLoading(false);
       
       // 開発環境で認証情報をコンソールに表示
