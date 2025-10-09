@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/auth-context';
 import { useXPlanData } from '../../../hooks/useXPlanData';
 import { PlanCard } from '../../../components/PlanCard';
 import { BarChart3 } from 'lucide-react';
+import { authFetch } from '../../../utils/authFetch';
 
 // コンポーネントのインポート
 import { MetricsCards } from './components/MetricsCards';
@@ -106,7 +107,7 @@ export default function XMonthlyReportPage() {
       console.log('X月次レポートデータ取得開始:', { userId: user.uid, period, date });
 
       // X月次レポートAPIを呼び出し
-      const response = await fetch(`/api/x/monthly-report?userId=${user.uid}&period=${period}&date=${date}`);
+      const response = await authFetch(`/api/x/monthly-report?userId=${user.uid}&period=${period}&date=${date}`);
       const data = await response.json();
 
       if (!response.ok) {

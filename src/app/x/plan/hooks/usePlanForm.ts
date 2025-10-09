@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../../contexts/auth-context';
 import { PlanFormData, SimulationResult } from '../types/plan';
+import { authFetch } from '../../../../utils/authFetch';
 
 export const usePlanForm = () => {
   const { user } = useAuth();
@@ -83,11 +84,8 @@ export const usePlanForm = () => {
     setSaveSuccess(false);
 
     try {
-      const response = await fetch('/api/x/plans', {
+      const response = await authFetch('/api/x/plans', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           userId: user.uid,
           formData,

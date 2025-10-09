@@ -10,6 +10,7 @@ import ToolPanel from './components/ToolPanel';
 import PostPredictionAnalysis from './components/PostPredictionAnalysis';
 import PlanDisplay from './components/PlanDisplay';
 import { useXPlanData } from '../../../hooks/useXPlanData';
+import { authFetch } from '../../../utils/authFetch';
 
 export default function XLabPage() {
   const { user } = useAuth();
@@ -37,11 +38,8 @@ export default function XLabPage() {
     }
 
     try {
-      const response = await fetch('/api/x/posts', {
+      const response = await authFetch('/api/x/posts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           ...postData,
           userId: user.uid,

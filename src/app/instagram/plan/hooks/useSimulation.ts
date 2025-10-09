@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SimulationResult, SimulationRequest, DebugInfo } from '../types/plan';
+import { authFetch } from '../../../../utils/authFetch';
 
 export const useSimulation = () => {
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
@@ -42,11 +43,8 @@ export const useSimulation = () => {
       });
 
       // BFF APIを呼び出し
-      const response = await fetch('/api/instagram/simulation', {
+      const response = await authFetch('/api/instagram/simulation', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(requestData)
       });
 
