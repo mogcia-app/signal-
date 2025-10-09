@@ -48,9 +48,10 @@ interface SNSLayoutProps {
   currentSNS: keyof typeof SNS_INFO;
   customTitle?: string;
   customDescription?: string;
+  isOnboarding?: boolean;
 }
 
-export default function SNSLayout({ children, currentSNS, customTitle, customDescription }: SNSLayoutProps) {
+export default function SNSLayout({ children, currentSNS, customTitle, customDescription, isOnboarding = false }: SNSLayoutProps) {
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -146,39 +147,72 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
           <p className="text-sm text-gray-600 mt-1">SNS管理プラットフォーム</p>
         </div>
 
+        {/* 初期設定警告バナー */}
+        {isOnboarding && (
+          <div className="mx-4 mt-4 p-3 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg">
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="text-lg">⚠️</span>
+              <span className="text-sm font-bold text-orange-800">初期設定必須</span>
+            </div>
+            <p className="text-xs text-orange-700 leading-relaxed">
+              初期設定を完了するまで、他のページにアクセスできません
+            </p>
+          </div>
+        )}
+
         {/* 共通メニュー */}
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">共通メニュー</h3>
           <nav className="space-y-1">
             <Link 
-              href="/notifications"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              href={isOnboarding ? "#" : "/notifications"}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => isOnboarding && e.preventDefault()}
             >
               <span>🔔</span>
               <span>お知らせ</span>
-              {unreadCount > 0 && (
+              {!isOnboarding && unreadCount > 0 && (
                 <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                   {unreadCount}
                 </span>
               )}
             </Link>
             <Link 
-              href="/guide"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              href={isOnboarding ? "#" : "/guide"}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => isOnboarding && e.preventDefault()}
             >
               <span>📖</span>
               <span>使い方ガイド</span>
             </Link>
             <Link 
-              href="/dashboard"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              href={isOnboarding ? "#" : "/dashboard"}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => isOnboarding && e.preventDefault()}
             >
               <span>👤</span>
               <span>マイアカウント</span>
             </Link>
             <Link 
-              href="/terms"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              href={isOnboarding ? "#" : "/terms"}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => isOnboarding && e.preventDefault()}
             >
               <span>📄</span>
               <span>利用規約</span>
@@ -212,9 +246,12 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               return (
                 <button
                   key={snsKey}
-                  onClick={() => handleSNSSwitch(snsKey)}
+                  onClick={() => !isOnboarding && handleSNSSwitch(snsKey)}
+                  disabled={isOnboarding}
                   className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-left transition-colors ${
-                    isActive 
+                    isOnboarding
+                      ? 'text-gray-400 cursor-not-allowed opacity-50'
+                      : isActive 
                       ? `${snsInfo.bgColor} ${snsInfo.textColor} font-medium` 
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
@@ -232,30 +269,55 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
           <h3 className="text-sm font-semibold text-gray-700 mb-3">メニュー</h3>
           <nav className="space-y-1">
             <Link 
-              href={`/${currentSNS}/plan`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-              onClick={() => console.log('🔗 運用計画Linkがクリックされました', { currentSNS, href: `/${currentSNS}/plan` })}
+              href={isOnboarding ? "#" : `/${currentSNS}/plan`}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => {
+                if (isOnboarding) {
+                  e.preventDefault();
+                } else {
+                  console.log('🔗 運用計画Linkがクリックされました', { currentSNS, href: `/${currentSNS}/plan` });
+                }
+              }}
             >
               <span>📋</span>
               <span>運用計画</span>
             </Link>
             <Link 
-              href={`/${currentSNS}/lab`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              href={isOnboarding ? "#" : `/${currentSNS}/lab`}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => isOnboarding && e.preventDefault()}
             >
               <span>🧪</span>
               <span>投稿ラボ</span>
             </Link>
             <Link 
-              href={`/${currentSNS}/analytics`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              href={isOnboarding ? "#" : `/${currentSNS}/analytics`}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => isOnboarding && e.preventDefault()}
             >
               <span>📊</span>
               <span>投稿分析</span>
             </Link>
             <Link 
-              href={`/${currentSNS}/monthly-report`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              href={isOnboarding ? "#" : `/${currentSNS}/monthly-report`}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => isOnboarding && e.preventDefault()}
             >
               <span>📈</span>
               <span>月次レポート</span>
@@ -279,8 +341,13 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             </Link>
             */}
             <Link 
-              href={`/${currentSNS}/posts`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              href={isOnboarding ? "#" : `/${currentSNS}/posts`}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                isOnboarding 
+                  ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              onClick={(e) => isOnboarding && e.preventDefault()}
             >
               <span>📚</span>
               <span>投稿一覧</span>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { CheckCircle, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import SNSLayout from '../../components/sns-layout';
 
 export default function OnboardingPage() {
   const { user } = useAuth();
@@ -135,15 +136,24 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* ヘッダー */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-4">
-            <Sparkles className="w-8 h-8 text-white" />
+    <SNSLayout 
+      currentSNS="instagram" 
+      customTitle="初期設定" 
+      customDescription="御社専用AIを構築するための情報を入力してください"
+      isOnboarding={true}
+    >
+      <div className="py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+        {/* 説明バナー */}
+        <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl">
+          <div className="flex items-center space-x-3 mb-2">
+            <Sparkles className="w-6 h-6 text-purple-600" />
+            <h2 className="text-xl font-bold text-gray-900">御社専用AI構築</h2>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">初期設定</h1>
-          <p className="text-lg text-gray-600">あなたのビジネスに最適なAI設定を行います</p>
+          <p className="text-sm text-gray-700 leading-relaxed">
+            入力いただいた情報を元に、あなたのビジネスに最適化されたAIを構築します。<br />
+            所要時間: 約5-7分
+          </p>
         </div>
 
         {/* 進行状況バー */}
@@ -552,8 +562,9 @@ export default function OnboardingPage() {
             )}
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </SNSLayout>
   );
 }
 
