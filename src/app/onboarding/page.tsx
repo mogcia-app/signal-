@@ -10,7 +10,7 @@ import { CheckCircle, ArrowRight, ArrowLeft, Sparkles, User, Mail, Calendar, Edi
 import SNSLayout from '../../components/sns-layout';
 
 export default function OnboardingPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { userProfile, loading: profileLoading } = useUserProfile();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
@@ -65,10 +65,11 @@ export default function OnboardingPage() {
   }, [userProfile]);
 
   useEffect(() => {
-    if (!user) {
+    // loading中はリダイレクトしない（Firebase初期化待ち）
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const totalSteps = 3;
   const progress = (currentStep / totalSteps) * 100;

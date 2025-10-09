@@ -8,7 +8,7 @@ import { UserProfile } from '../../types/user';
 import { auth } from '../../lib/firebase';
 
 export default function MyAccountPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,10 +19,11 @@ export default function MyAccountPage() {
 
   // ユーザー認証チェック
   useEffect(() => {
-    if (!user) {
+    // loading中はリダイレクトしない（Firebase初期化待ち）
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   // プロファイル取得
   useEffect(() => {

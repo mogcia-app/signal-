@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { 
     userProfile, 
     loading: profileLoading, 
@@ -59,7 +59,8 @@ export default function DashboardPage() {
     });
 
     // ユーザーがログインしていない場合はログインページにリダイレクト
-    if (!user) {
+    // loading中はリダイレクトしない（Firebase初期化待ち）
+    if (!loading && !user) {
       console.log('❌ ユーザーがログインしていません。ログインページにリダイレクトします。');
       router.push('/login');
       return;
@@ -80,7 +81,7 @@ export default function DashboardPage() {
       // }
       // 契約SNSが0個の場合は現在のページを表示
     }
-  }, [user, userProfile, profileLoading, router, getContractSNS]);
+  }, [user, loading, userProfile, profileLoading, router, getContractSNS]);
 
   const handleSignOut = async () => {
     try {
