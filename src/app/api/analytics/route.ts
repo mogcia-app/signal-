@@ -92,9 +92,9 @@ export async function GET(request: NextRequest) {
           createdAt: data.createdAt?.toDate?.() || data.createdAt
         };
       })
-      .sort((a: any, b: any) => {
-        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+      .sort((a, b) => {
+        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime();
+        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime();
         return bTime - aTime; // 降順
       });
 
