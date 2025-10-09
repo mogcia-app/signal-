@@ -302,21 +302,24 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           />
         </div>
 
-        {/* 投稿文入力エリア */}
+        {/* 投稿テーマ入力エリア */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-gray-800 mb-3">
-            投稿文
+            投稿テーマ
           </label>
+          <div className="text-xs text-gray-600 mb-2">
+            AIが投稿文を生成するためのテーマやアイデアを入力してください
+          </div>
           <div className="relative">
             <textarea
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
               placeholder={planData 
-                ? `${planData.title}に基づいた${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマを入力してください...`
+                ? `例: 新商品の紹介、日常の出来事、お客様の声など...`
                 : '運用計画を作成してから投稿テーマを入力してください...'
               }
               disabled={!planData}
-              className={`w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm ${!planData ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full h-32 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm ${!planData ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ fontFamily: 'inherit' }}
             />
           </div>
