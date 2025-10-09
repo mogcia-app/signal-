@@ -1041,40 +1041,88 @@ export default function OnboardingPage() {
               <h3 className="text-lg font-bold text-gray-900 mb-4">SNS AI設定</h3>
               <div className="space-y-4">
                 {Object.keys(snsAISettings).length > 0 ? (
-                  Object.entries(snsAISettings).map(([snsType, settings]) => (
-                    <div key={snsType} className="p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xl">
-                            {snsType === 'instagram' ? '📷' : snsType === 'x' ? '🐦' : '📱'}
+                  Object.entries(snsAISettings).map(([snsType, settings]) => {
+                    const extendedSettings = settings as {
+                      enabled: boolean;
+                      tone?: string;
+                      features?: string[];
+                      manner?: string;
+                      cautions?: string;
+                      goals?: string;
+                      motivation?: string;
+                      additionalInfo?: string;
+                    };
+                    
+                    return (
+                      <div key={snsType} className="p-4 border-2 border-[#FF8A15]">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-2xl">
+                              {snsType === 'instagram' ? '📷' : snsType === 'x' ? '🐦' : '📱'}
+                            </span>
+                            <span className="font-bold text-gray-900 text-lg capitalize">{snsType}</span>
+                          </div>
+                          <span className={`px-3 py-1 text-xs font-medium ${
+                            extendedSettings.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {extendedSettings.enabled ? '✓ 有効' : '無効'}
                           </span>
-                          <span className="font-semibold text-gray-900 capitalize">{snsType}</span>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          settings.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {settings.enabled ? '✓ 有効' : '無効'}
-                        </span>
-                      </div>
-                      {settings.enabled && (
-                        <div className="ml-7 space-y-1 text-sm">
-                          <div><span className="text-gray-600">トーン:</span> <span className="text-gray-900">{settings.tone}</span></div>
-                          {settings.features && settings.features.length > 0 && (
-                            <div>
-                              <span className="text-gray-600">機能:</span>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {settings.features.map((feature, idx) => (
-                                  <span key={idx} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
-                                    {feature}
-                                  </span>
-                                ))}
+                        {extendedSettings.enabled && (
+                          <div className="space-y-3 text-sm">
+                            {extendedSettings.tone && (
+                              <div className="pb-2 border-b border-gray-200">
+                                <span className="text-gray-600 font-medium">トーン:</span>
+                                <p className="text-gray-900 mt-1">{extendedSettings.tone}</p>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))
+                            )}
+                            {extendedSettings.manner && (
+                              <div className="pb-2 border-b border-gray-200">
+                                <span className="text-gray-600 font-medium">マナー・ルール:</span>
+                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.manner}</p>
+                              </div>
+                            )}
+                            {extendedSettings.cautions && (
+                              <div className="pb-2 border-b border-gray-200">
+                                <span className="text-gray-600 font-medium">注意事項・NGワード:</span>
+                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.cautions}</p>
+                              </div>
+                            )}
+                            {extendedSettings.goals && (
+                              <div className="pb-2 border-b border-gray-200">
+                                <span className="text-gray-600 font-medium">Instagram運用の目標:</span>
+                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.goals}</p>
+                              </div>
+                            )}
+                            {extendedSettings.motivation && (
+                              <div className="pb-2 border-b border-gray-200">
+                                <span className="text-gray-600 font-medium">運用動機:</span>
+                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.motivation}</p>
+                              </div>
+                            )}
+                            {extendedSettings.additionalInfo && (
+                              <div className="pb-2 border-b border-gray-200">
+                                <span className="text-gray-600 font-medium">その他AI参考情報:</span>
+                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.additionalInfo}</p>
+                              </div>
+                            )}
+                            {extendedSettings.features && extendedSettings.features.length > 0 && (
+                              <div>
+                                <span className="text-gray-600 font-medium">機能:</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {extendedSettings.features.map((feature, idx) => (
+                                    <span key={idx} className="px-2 py-1 border border-[#FF8A15] text-[#FF8A15] text-xs">
+                                      {feature}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 ) : (
                   <p className="text-gray-500">未設定</p>
                 )}
