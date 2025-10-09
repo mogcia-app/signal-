@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { adminDb } from '../../../lib/firebase-admin';
 import { checkAndCreateMonthlyReportNotification } from '../../../lib/monthly-report-notifications';
 
 // 投稿データの型定義
@@ -60,7 +59,7 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('About to save to Firestore:', postData);
-    const docRef = await addDoc(collection(db, 'posts'), postData);
+    const docRef = await adminDb.collection('posts').add(postData);
     
     // デバッグ用ログ
     console.log('Post created successfully:', {
@@ -116,30 +115,38 @@ export async function GET(request: NextRequest) {
     console.log('Firebase API key found, proceeding with database query');
     console.log('Query parameters:', { userId, status, postType, limit });
 
-    let q = query(
-      collection(db, 'posts'),
-      orderBy('createdAt', 'desc')
-    );
+    // Admin SDKでクエリ構築
+    let queryRef: FirebaseFirestore.Query = adminDb.collection('posts');
 
-    // フィルタリング
     if (userId) {
       console.log('Filtering posts by userId:', userId);
-      q = query(q, where('userId', '==', userId));
+      queryRef = queryRef.where('userId', '==', userId);
     }
     if (status) {
       console.log('Filtering posts by status:', status);
-      q = query(q, where('status', '==', status));
+      queryRef = queryRef.where('status', '==', status);
     }
     if (postType) {
       console.log('Filtering posts by postType:', postType);
-      q = query(q, where('postType', '==', postType));
+      queryRef = queryRef.where('postType', '==', postType);
     }
 
-    const snapshot = await getDocs(q);
-    const posts = snapshot.docs.slice(0, limit).map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const snapshot = await queryRef.get();
+    const posts = snapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt
+        };
+      })
+      .sort((a, b) => {
+        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime();
+        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime();
+        return bTime - aTime;
+      })
+      .slice(0, limit);
 
     console.log('Fetched posts from collection:', posts.length, 'records');
     console.log('Posts query result sample:', posts.slice(0, 2));
