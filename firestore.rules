@@ -1,34 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ユーザープロフィール（認証されたユーザーのみ）
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // 投稿データ（認証されたユーザーのみ）
-    match /posts/{postId} {
-      allow read, write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // 分析データ（認証されたユーザーのみ）
-    match /analytics/{analyticsId} {
-      allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         request.resource.data.userId == request.auth.uid);
-    }
-    
-    // 計画データ（認証されたユーザーのみ）
-    match /plans/{planId} {
-      allow read, write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // 通知データ（認証されたユーザーのみ）
-    match /notifications/{notificationId} {
-      allow read, write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

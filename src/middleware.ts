@@ -1,81 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// Edge Runtime 対応の軽量な認証検証
-async function verifyAuthToken(request: NextRequest): Promise<string | null> {
-  try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-
-    const token = authHeader.substring(7);
-    
-    // Firebase ID Token の検証（Edge Runtime 対応）
-    const response = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=AIzaSyCvX4cKWKtn_qnh3CV-d1UC4GEiVpdPB9w`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        idToken: token
-      })
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data.users?.[0]?.localId || null;
-  } catch (error) {
-    console.error('Auth verification error:', error);
-    return null;
-  }
+// ✅ middleware.ts（本番復旧用・安全版）
+// ミドルウェア本体（ここは今後も使う前提で残す）
+export function middleware(req: NextRequest) {
+  // ここでは特にAPIの認証チェックを行わない
+  // 将来的にCookie認証またはauthFetch対応後に再有効化予定
+  return NextResponse.next();
 }
 
-export function middleware(request: NextRequest) {
-  return createAuthMiddleware(request);
-}
-
-async function createAuthMiddleware(request: NextRequest) {
-  // パブリックエンドポイントは除外
-  const publicPaths = ['/api/helloWorld', '/api/test'];
-  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
-  
-  if (isPublicPath) {
-    return NextResponse.next();
-  }
-
-  // 静的ページ（ガイドページなど）は認証不要
-  const staticPages = ['/instagram/guide', '/guide', '/notifications', '/my-account', '/terms', '/login', '/sns-select'];
-  const isStaticPage = staticPages.some(path => request.nextUrl.pathname.startsWith(path));
-  
-  if (isStaticPage) {
-    return NextResponse.next();
-  }
-
-  // 認証が必要なエンドポイント
-  const userId = await verifyAuthToken(request);
-  if (!userId) {
-    // 認証失敗時は通過させる（Firestoreルールで保護）
-    console.warn('⚠️ 認証トークンなし（Firestoreルールで保護）:', request.nextUrl.pathname);
-    return NextResponse.next();
-  }
-
-  // リクエストヘッダーにuserIdを追加
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-user-id', userId);
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-}
-
+// ✅ 本番一時安定版
+// matcherから /api/x と /api/instagram を外すことで既存のAPIをブロックしない
 export const config = {
   matcher: [
-    // middlewareを完全に無効化（認証問題のため）
-    // 必要に応じて後で有効化
+    // 認証が必要なページやルートのみ残す
+    '/admin/:path*',
+    '/my-account',
+    '/settings/:path*',
+    // '/api/x/:path*',        // ← 一時的に無効化（Phase 2で再有効化）
+    // '/api/instagram/:path*', // ← 一時的に無効化（Phase 2で再有効化）
   ],
 };
