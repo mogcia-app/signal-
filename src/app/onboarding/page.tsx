@@ -745,7 +745,7 @@ export default function OnboardingPage() {
           /* 閲覧モード */
           <div className="space-y-6">
             {/* ビジネス情報 */}
-            <div className="bg-white border-l-4 border-[#FF8A15] border-t border-r border-b border-gray-200 p-6">
+            <div className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">ビジネス情報</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -772,7 +772,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* 目標・課題 */}
-            <div className="bg-white border-l-4 border-[#FF8A15] border-t border-r border-b border-gray-200 p-6">
+            <div className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">目標と課題</h3>
               <div className="space-y-4">
                 <div>
@@ -799,7 +799,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* SNS AI設定 */}
-            <div className="bg-white border-l-4 border-[#FF8A15] border-t border-r border-b border-gray-200 p-6">
+            <div className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">SNS AI設定</h3>
               <div className="space-y-4">
                 {Object.keys(snsAISettings).length > 0 ? (
