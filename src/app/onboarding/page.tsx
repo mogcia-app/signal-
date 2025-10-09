@@ -34,7 +34,16 @@ export default function OnboardingPage() {
   const [customChallenge, setCustomChallenge] = useState('');
 
   // ステップ3: SNS AI設定
-  const [snsAISettings, setSnsAISettings] = useState<Record<string, { enabled: boolean; tone?: string; features?: string[] }>>({});
+  const [snsAISettings, setSnsAISettings] = useState<Record<string, { 
+    enabled: boolean; 
+    tone?: string; 
+    features?: string[];
+    manner?: string;
+    cautions?: string;
+    goals?: string;
+    motivation?: string;
+    additionalInfo?: string;
+  }>>({});
   const [customFeature, setCustomFeature] = useState('');
 
   // ユーザープロファイルからデータを読み込む
@@ -207,7 +216,8 @@ export default function OnboardingPage() {
   // 各ステップの検証
   const isStep1Valid = businessInfo.industry && businessInfo.companySize && businessInfo.businessType && businessInfo.targetMarket;
   const isStep2Valid = goals.length > 0 && challenges.length > 0;
-  const isStep3Valid = Object.keys(snsAISettings).length > 0 && Object.values(snsAISettings).some(s => s.enabled);
+  const isStep3Valid = Object.keys(snsAISettings).length > 0 && 
+    Object.values(snsAISettings).some(s => s.enabled && s.tone && s.tone.trim());
 
   if (!user) {
     return (
@@ -463,21 +473,13 @@ export default function OnboardingPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     事業形態 <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {businessTypeOptions.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => setBusinessInfo({ ...businessInfo, businessType: option })}
-                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                          businessInfo.businessType === option
-                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
-                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
+                  <input
+                    type="text"
+                    value={businessInfo.businessType}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, businessType: e.target.value })}
+                    placeholder="例: BtoC、BtoB、BtoB/BtoC両方など"
+                    className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                  />
                 </div>
 
                 {/* ターゲット市場 */}
@@ -657,11 +659,11 @@ export default function OnboardingPage() {
 
               <div className="space-y-6">
                 {/* Instagram設定 */}
-                <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="p-6 bg-white border-2 border-[#FF8A15]">
+                  <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
                       <span className="text-3xl">📷</span>
-                      <h3 className="text-xl font-bold text-gray-900">Instagram</h3>
+                      <h3 className="text-xl font-bold text-gray-900">Instagram AI設定</h3>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -671,49 +673,163 @@ export default function OnboardingPage() {
                           setSnsAISettings({
                             ...snsAISettings,
                             instagram: {
+                              ...snsAISettings.instagram,
                               enabled: e.target.checked,
-                              tone: snsAISettings.instagram?.tone || 'フレンドリー',
-                              features: snsAISettings.instagram?.features || []
+                              tone: snsAISettings.instagram?.tone || '',
+                              features: snsAISettings.instagram?.features || [],
+                              manner: snsAISettings.instagram?.manner || '',
+                              cautions: snsAISettings.instagram?.cautions || '',
+                              goals: snsAISettings.instagram?.goals || '',
+                              motivation: snsAISettings.instagram?.motivation || '',
+                              additionalInfo: snsAISettings.instagram?.additionalInfo || ''
                             }
                           });
                         }}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#FF8A15] peer-focus:ring-opacity-30 peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF8A15]"></div>
                     </label>
                   </div>
 
                   {snsAISettings.instagram?.enabled && (
                     <div className="space-y-4">
-                      {/* トーン選択 */}
+                      {/* トーン入力 */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">トーン</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          {toneOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() => {
-                                setSnsAISettings({
-                                  ...snsAISettings,
-                                  instagram: {
-                                    ...snsAISettings.instagram,
-                                    enabled: true,
-                                    tone: option.value,
-                                    features: snsAISettings.instagram?.features || []
-                                  }
-                                });
-                              }}
-                              className={`p-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                                snsAISettings.instagram?.tone === option.value
-                                  ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                              }`}
-                            >
-                              <span className="text-lg">{option.emoji}</span>
-                              <div className="text-xs mt-1">{option.label}</div>
-                            </button>
-                          ))}
-                        </div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          トーン <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={snsAISettings.instagram?.tone || ''}
+                          onChange={(e) => {
+                            setSnsAISettings({
+                              ...snsAISettings,
+                              instagram: {
+                                ...snsAISettings.instagram,
+                                enabled: true,
+                                tone: e.target.value,
+                                features: snsAISettings.instagram?.features || []
+                              }
+                            });
+                          }}
+                          placeholder="例: フレンドリー、プロフェッショナル、カジュアルなど"
+                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        />
+                      </div>
+
+                      {/* マナー */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          マナー・ルール
+                        </label>
+                        <textarea
+                          value={snsAISettings.instagram?.manner || ''}
+                          onChange={(e) => {
+                            setSnsAISettings({
+                              ...snsAISettings,
+                              instagram: {
+                                ...snsAISettings.instagram,
+                                enabled: true,
+                                manner: e.target.value
+                              }
+                            });
+                          }}
+                          placeholder="例: 絵文字は控えめに、敬語を使う、業界用語は避けるなど"
+                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                          rows={3}
+                        />
+                      </div>
+
+                      {/* 注意事項 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          注意事項・NGワード
+                        </label>
+                        <textarea
+                          value={snsAISettings.instagram?.cautions || ''}
+                          onChange={(e) => {
+                            setSnsAISettings({
+                              ...snsAISettings,
+                              instagram: {
+                                ...snsAISettings.instagram,
+                                enabled: true,
+                                cautions: e.target.value
+                              }
+                            });
+                          }}
+                          placeholder="例: 競合他社名は使わない、特定の表現は避けるなど"
+                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                          rows={3}
+                        />
+                      </div>
+
+                      {/* Instagram目標 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Instagram運用の目標
+                        </label>
+                        <textarea
+                          value={snsAISettings.instagram?.goals || ''}
+                          onChange={(e) => {
+                            setSnsAISettings({
+                              ...snsAISettings,
+                              instagram: {
+                                ...snsAISettings.instagram,
+                                enabled: true,
+                                goals: e.target.value
+                              }
+                            });
+                          }}
+                          placeholder="例: 3ヶ月で1万フォロワー達成、エンゲージメント率5%以上など"
+                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                          rows={3}
+                        />
+                      </div>
+
+                      {/* 運用動機 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Instagramを始めた理由・動機
+                        </label>
+                        <textarea
+                          value={snsAISettings.instagram?.motivation || ''}
+                          onChange={(e) => {
+                            setSnsAISettings({
+                              ...snsAISettings,
+                              instagram: {
+                                ...snsAISettings.instagram,
+                                enabled: true,
+                                motivation: e.target.value
+                              }
+                            });
+                          }}
+                          placeholder="例: ブランド認知度を上げたい、顧客とのコミュニケーションを強化したいなど"
+                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                          rows={3}
+                        />
+                      </div>
+
+                      {/* その他AI参考情報 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          その他AIに伝えたい情報
+                        </label>
+                        <textarea
+                          value={snsAISettings.instagram?.additionalInfo || ''}
+                          onChange={(e) => {
+                            setSnsAISettings({
+                              ...snsAISettings,
+                              instagram: {
+                                ...snsAISettings.instagram,
+                                enabled: true,
+                                additionalInfo: e.target.value
+                              }
+                            });
+                          }}
+                          placeholder="例: 投稿頻度の希望、好きなインフルエンサー、参考にしたいアカウントなど"
+                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                          rows={3}
+                        />
                       </div>
 
                       {/* 機能選択 */}

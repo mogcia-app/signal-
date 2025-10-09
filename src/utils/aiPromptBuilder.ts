@@ -31,13 +31,40 @@ ${businessInfo.challenges && businessInfo.challenges.length > 0
 
   // SNS固有の設定（snsTypeが指定されている場合）
   if (snsType && snsAISettings[snsType]) {
-    const settings = snsAISettings[snsType];
+    const settings = snsAISettings[snsType] as {
+      enabled: boolean;
+      tone?: string;
+      features?: string[];
+      manner?: string;
+      cautions?: string;
+      goals?: string;
+      motivation?: string;
+      additionalInfo?: string;
+    };
+    
     if (settings.enabled) {
       prompt += `
 【${snsType.toUpperCase()} AI設定】
 - トーン: ${settings.tone || 'フレンドリー'}
 - 有効機能: ${settings.features && settings.features.length > 0 ? settings.features.join(', ') : 'なし'}
 `;
+      
+      // 拡張項目
+      if (settings.manner) {
+        prompt += `- マナー・ルール: ${settings.manner}\n`;
+      }
+      if (settings.cautions) {
+        prompt += `- 注意事項・NGワード: ${settings.cautions}\n`;
+      }
+      if (settings.goals) {
+        prompt += `- ${snsType.toUpperCase()}運用の目標: ${settings.goals}\n`;
+      }
+      if (settings.motivation) {
+        prompt += `- 運用動機: ${settings.motivation}\n`;
+      }
+      if (settings.additionalInfo) {
+        prompt += `- その他参考情報: ${settings.additionalInfo}\n`;
+      }
     }
   } else {
     // 全SNSの設定を含める
