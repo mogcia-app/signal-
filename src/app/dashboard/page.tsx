@@ -189,6 +189,52 @@ export default function DashboardPage() {
   const hasActiveContract = isContractActive();
   const daysRemaining = getContractDaysRemaining();
 
+  // 表示用の変換関数
+  const getIndustryLabel = (value: string) => {
+    const map: Record<string, string> = {
+      'it': 'IT・テクノロジー',
+      'retail': '小売・EC',
+      'food': '飲食',
+      'beauty': '美容・健康',
+      'education': '教育',
+      'realestate': '不動産',
+      'other': 'その他'
+    };
+    return map[value] || value;
+  };
+
+  const getCompanySizeLabel = (value: string) => {
+    const map: Record<string, string> = {
+      'individual': '個人',
+      'small': '2-10名',
+      'medium': '11-50名',
+      'large': '51-200名',
+      'enterprise': '201名以上'
+    };
+    return map[value] || value;
+  };
+
+  const getBusinessTypeLabel = (value: string) => {
+    const map: Record<string, string> = {
+      'btoc': 'BtoC',
+      'btob': 'BtoB',
+      'both': 'BtoB/BtoC両方'
+    };
+    return map[value] || value;
+  };
+
+  const getTargetMarketLabel = (value: string) => {
+    const map: Record<string, string> = {
+      'teens': '10代',
+      '20s': '20代',
+      '30s': '30代',
+      '40s': '40代',
+      '50plus': '50代以上',
+      'all': '全年齢'
+    };
+    return map[value] || value;
+  };
+
   return (
     <SNSLayout currentSNS="instagram" customTitle="マイアカウント" customDescription="アカウント設定とプロフィール管理">
 
@@ -283,25 +329,25 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Building2 className="h-4 w-4 inline mr-2" />
-                    業種
-                  </label>
-                  <p className="text-gray-900">{userProfile.businessInfo.industry || '未設定'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
-                  <p className="text-gray-900">{userProfile.businessInfo.companySize || '未設定'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
-                  <p className="text-gray-900">{userProfile.businessInfo.businessType || '未設定'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
-                  <p className="text-gray-900">{userProfile.businessInfo.targetMarket || '未設定'}</p>
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <Building2 className="h-4 w-4 inline mr-2" />
+                      業種
+                    </label>
+                    <p className="text-gray-900">{getIndustryLabel(userProfile.businessInfo.industry) || '未設定'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
+                    <p className="text-gray-900">{getCompanySizeLabel(userProfile.businessInfo.companySize) || '未設定'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
+                    <p className="text-gray-900">{getBusinessTypeLabel(userProfile.businessInfo.businessType) || '未設定'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
+                    <p className="text-gray-900">{getTargetMarketLabel(userProfile.businessInfo.targetMarket) || '未設定'}</p>
+                  </div>
               </div>
               
               <div>
