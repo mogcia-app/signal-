@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
+import { adminDb } from '../../../../lib/firebase-admin';
 import { cache, generateCacheKey } from '../../../../lib/cache';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface AnalyticsData {
   id: string;
@@ -122,18 +121,11 @@ export async function GET(request: NextRequest) {
     console.log('Daily scores API - Fetching data for user:', userId, 'days:', days);
     console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
 
-    // Firebase接続確認
-    if (!db) {
-      throw new Error('Firebase database not initialized');
-    }
-
     // 分析データを取得（orderByを削除してインデックスエラーを回避）
-    const analyticsRef = collection(db, 'analytics');
-    const q = query(
-      analyticsRef,
-      where('userId', '==', userId)
-    );
-    const analyticsSnapshot = await getDocs(q);
+    const analyticsSnapshot = await adminDb
+      .collection('analytics')
+      .where('userId', '==', userId)
+      .get();
 
     const allAnalyticsData = analyticsSnapshot.docs.map(doc => {
       const data = doc.data();
@@ -155,12 +147,10 @@ export async function GET(request: NextRequest) {
     console.log('Filtered analytics data:', analyticsData.length);
 
     // 投稿データを取得（期間フィルタリングはクライアント側で実行）
-    const postsRef = collection(db, 'posts');
-    const postsQuery = query(
-      postsRef,
-      where('userId', '==', userId)
-    );
-    const postsSnapshot = await getDocs(postsQuery);
+    const postsSnapshot = await adminDb
+      .collection('posts')
+      .where('userId', '==', userId)
+      .get();
 
     const allPostsData = postsSnapshot.docs.map(doc => {
       const data = doc.data();

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '../../../../lib/firebase-admin';
 import { cache, generateCacheKey } from '../../../../lib/cache';
 
 interface AnalyticsData {
@@ -116,9 +115,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 分析データを取得
-    const analyticsRef = collection(db, 'analytics');
-    const q = query(analyticsRef, where('userId', '==', userId));
-    const snapshot = await getDocs(q);
+    const snapshot = await adminDb
+      .collection('analytics')
+      .where('userId', '==', userId)
+      .get();
     
     const allAnalyticsData = snapshot.docs.map(doc => {
       const data = doc.data();

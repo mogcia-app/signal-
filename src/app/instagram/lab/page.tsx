@@ -6,7 +6,6 @@ import { AIChatWidget } from '../../../components/ai-chat-widget';
 import PostEditor from './components/PostEditor';
 import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
-import KPIDiagnosis from './components/KPIDiagnosis';
 import PlanDisplay from './components/PlanDisplay';
 import { usePlanData } from '../../../hooks/usePlanData';
 
@@ -86,14 +85,9 @@ export default function InstagramLabPage() {
               />
             </div>
 
-            {/* 右カラム: 計画・診断・ツール */}
+            {/* 右カラム: 計画・ツール */}
             <div className="space-y-6">
               <PlanDisplay planData={planData} />
-              
-              <KPIDiagnosis
-                content={postContent}
-                hashtags={selectedHashtags}
-              />
               
               <ToolPanel
                 onTemplateSelect={(template: string) => {
