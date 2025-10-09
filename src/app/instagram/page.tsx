@@ -151,7 +151,7 @@ function InstagramDashboardContent() {
     
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch('/api/analytics', {
+      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
         headers: {
           'x-user-id': user.uid,
           'Authorization': `Bearer ${idToken}`
