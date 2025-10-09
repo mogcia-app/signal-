@@ -236,22 +236,65 @@ export default function MyAccountPage() {
             {profile.businessInfo && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-6">ビジネス情報</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Building2 className="h-4 w-4 inline mr-2" />
-                      業種
-                    </label>
-                    <p className="text-gray-900">{profile.businessInfo.industry || '未設定'}</p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <Building2 className="h-4 w-4 inline mr-2" />
+                        業種
+                      </label>
+                      <p className="text-gray-900">{profile.businessInfo.industry || '未設定'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
+                      <p className="text-gray-900">{profile.businessInfo.companySize || '未設定'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
+                      <p className="text-gray-900">{profile.businessInfo.businessType || '未設定'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
+                      <p className="text-gray-900">{profile.businessInfo.targetMarket || '未設定'}</p>
+                    </div>
                   </div>
+                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
-                    <p className="text-gray-900">{profile.businessInfo.companySize || '未設定'}</p>
-                  </div>
-                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">事業内容</label>
                     <p className="text-gray-900">{profile.businessInfo.description || '未設定'}</p>
                   </div>
+
+                  {profile.businessInfo.goals && profile.businessInfo.goals.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">目標</label>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.businessInfo.goals.map((goal, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                          >
+                            {goal}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.businessInfo.challenges && profile.businessInfo.challenges.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">課題</label>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.businessInfo.challenges.map((challenge, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm"
+                          >
+                            {challenge}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -276,7 +319,7 @@ export default function MyAccountPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">利用形態</label>
-                  <p className="text-gray-900">{profile.usageType === 'team' ? 'チーム' : '個人'}</p>
+                  <p className="text-gray-900">{profile.usageType === 'team' ? 'チーム' : 'ソロ'}</p>
                 </div>
 
                 <div>
