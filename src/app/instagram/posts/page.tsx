@@ -576,25 +576,25 @@ export default function InstagramPostsPage() {
                           <div className="flex items-center justify-center mb-1">
                             <Heart size={16} className="text-red-500" />
                           </div>
-                          <div className="text-lg font-bold text-gray-900">{analytics.likes.toLocaleString()}</div>
+                          <div className="text-lg font-bold text-gray-900">{(analytics.likes || 0).toLocaleString()}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-1">
                             <MessageCircle size={16} className="text-gray-500" />
                           </div>
-                          <div className="text-lg font-bold text-gray-900">{analytics.comments.toLocaleString()}</div>
+                          <div className="text-lg font-bold text-gray-900">{(analytics.comments || 0).toLocaleString()}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-1">
                             <Share size={16} className="text-gray-500" />
                           </div>
-                          <div className="text-lg font-bold text-gray-900">{analytics.shares.toLocaleString()}</div>
+                          <div className="text-lg font-bold text-gray-900">{(analytics.shares || 0).toLocaleString()}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-1">
                             <EyeIcon size={16} className="text-gray-500" />
                           </div>
-                          <div className="text-lg font-bold text-gray-900">{analytics.reach.toLocaleString()}</div>
+                          <div className="text-lg font-bold text-gray-900">{(analytics.reach || 0).toLocaleString()}</div>
                         </div>
                       </div>
                     </div>

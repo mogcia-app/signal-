@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase-admin';
 
 interface DashboardStats {
   followers: number;
@@ -53,14 +52,12 @@ export async function GET(request: NextRequest) {
 
     // 投稿データを取得
     console.log('🔍 Firebase接続開始');
-    const postsRef = collection(db, 'posts');
-    const postsQuery = query(
-      postsRef,
-      where('userId', '==', userId),
-      where('status', '==', 'published')
-    );
     console.log('🔍 投稿クエリ実行中...');
-    const postsSnapshot = await getDocs(postsQuery);
+    const postsSnapshot = await adminDb
+      .collection('posts')
+      .where('userId', '==', userId)
+      .where('status', '==', 'published')
+      .get();
     console.log('✅ 投稿データ取得完了:', postsSnapshot.docs.length, '件');
     
     // 生データをログ出力（デバッグ用）
@@ -92,12 +89,10 @@ export async function GET(request: NextRequest) {
     }>;
 
     // アナリティクスデータを取得
-    const analyticsRef = collection(db, 'analytics');
-    const analyticsQuery = query(
-      analyticsRef,
-      where('userId', '==', userId)
-    );
-    const analyticsSnapshot = await getDocs(analyticsQuery);
+    const analyticsSnapshot = await adminDb
+      .collection('analytics')
+      .where('userId', '==', userId)
+      .get();
     const analytics = analyticsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),

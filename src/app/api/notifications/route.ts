@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../lib/firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { adminDb } from '../../../lib/firebase-admin';
 
 interface Notification {
   id: string;
@@ -65,35 +64,19 @@ export async function GET(request: NextRequest) {
 
     console.log('📊 リクエストパラメータ:', { userId, filter, search });
 
-    // Firestoreから取得
-    const notificationsRef = collection(db, 'notifications');
-    
+    // Firestoreから取得（Admin SDK使用）
     console.log('🔍 Firestoreクエリを実行中...');
     let snapshot;
     try {
-      // シンプルなクエリを使用（インデックス不要）
-      // orderByとwhereの複合クエリはインデックスが必要なため、まずは基本的なクエリのみ
-      const q = query(
-        notificationsRef,
-        where('status', '==', 'published')
-        // orderBy('createdAt', 'desc') // 一時的にコメントアウト - クライアント側でソート
-      );
+      snapshot = await adminDb
+        .collection('notifications')
+        .where('status', '==', 'published')
+        .get();
       
-      snapshot = await getDocs(q);
       console.log('✅ Firestoreクエリ成功:', { docCount: snapshot.docs.length });
     } catch (firestoreError) {
       console.error('❌ Firestoreクエリエラー:', firestoreError);
-      
-      // フォールバック: statusフィルタなしで全件取得
-      try {
-        console.log('🔄 フォールバック: 全件取得を試行');
-        const fallbackQuery = query(notificationsRef);
-        snapshot = await getDocs(fallbackQuery);
-        console.log('✅ フォールバッククエリ成功:', { docCount: snapshot.docs.length });
-      } catch (fallbackError) {
-        console.error('❌ フォールバッククエリもエラー:', fallbackError);
-        throw new Error(`Firestoreクエリエラー: ${firestoreError instanceof Error ? firestoreError.message : 'Unknown error'}`);
-      }
+      throw new Error(`Firestoreクエリエラー: ${firestoreError instanceof Error ? firestoreError.message : 'Unknown error'}`);
     }
     
     let firestoreNotifications: Notification[] = [];
@@ -114,13 +97,15 @@ export async function GET(request: NextRequest) {
       try {
         // 初期通知データをFirestoreに保存
         for (const notificationData of initialNotifications) {
-          await addDoc(collection(db, 'notifications'), notificationData);
+          await adminDb.collection('notifications').add(notificationData);
         }
         console.log('✅ 初期通知データの作成が完了しました');
         
         // 作成したデータを再取得
-        const refreshQuery = query(notificationsRef, where('status', '==', 'published'));
-        const newSnapshot = await getDocs(refreshQuery);
+        const newSnapshot = await adminDb
+          .collection('notifications')
+          .where('status', '==', 'published')
+          .get();
         firestoreNotifications = newSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -256,8 +241,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Firestoreに保存
-    const notificationsRef = collection(db, 'notifications');
-    const docRef = await addDoc(notificationsRef, newNotification);
+    const docRef = await adminDb.collection('notifications').add(newNotification);
     
     // 作成されたドキュメントのIDを設定
     newNotification.id = docRef.id;

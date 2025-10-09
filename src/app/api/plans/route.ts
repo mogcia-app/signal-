@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../lib/firebase';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { adminDb } from '../../../lib/firebase-admin';
 
 // 計画データの型定義
 interface PlanData {
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date()
     };
 
-    const docRef = await addDoc(collection(db, 'plans'), planData);
+    const docRef = await adminDb.collection('plans').add(planData);
     
     return NextResponse.json({
       id: docRef.id,
@@ -144,20 +143,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-      const q = query(
-      collection(db, 'plans'),
-      where('userId', '==', userId)
-    );
-
-    const snapshot = await getDocs(q);
+    const snapshot = await adminDb
+      .collection('plans')
+      .where('userId', '==', userId)
+      .get();
+    
     const plans = snapshot.docs
       .map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt || Date.now())
+          createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt || Date.now()),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(data.updatedAt || Date.now())
         };
       })
       .sort((a, b) => {

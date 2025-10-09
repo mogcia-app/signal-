@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase-admin';
 
 interface GoalProgress {
   title: string;
@@ -37,13 +36,11 @@ export async function GET(request: NextRequest) {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     // 投稿データを取得
-    const postsRef = collection(db, 'posts');
-    const postsQuery = query(
-      postsRef,
-      where('userId', '==', userId),
-      where('status', '==', 'published')
-    );
-    const postsSnapshot = await getDocs(postsQuery);
+    const postsSnapshot = await adminDb
+      .collection('posts')
+      .where('userId', '==', userId)
+      .where('status', '==', 'published')
+      .get();
     const posts = postsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
@@ -65,12 +62,10 @@ export async function GET(request: NextRequest) {
     }>;
 
     // アナリティクスデータを取得
-    const analyticsRef = collection(db, 'analytics');
-    const analyticsQuery = query(
-      analyticsRef,
-      where('userId', '==', userId)
-    );
-    const analyticsSnapshot = await getDocs(analyticsQuery);
+    const analyticsSnapshot = await adminDb
+      .collection('analytics')
+      .where('userId', '==', userId)
+      .get();
     const analytics = analyticsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),

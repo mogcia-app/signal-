@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { adminDb } from '../../../lib/firebase-admin';
 
 // 分析データの型定義
 interface AnalyticsData {
@@ -78,22 +77,33 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const q = query(
-      collection(db, 'analytics'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
+    const snapshot = await adminDb
+      .collection('analytics')
+      .where('userId', '==', userId)
+      // .orderBy('createdAt', 'desc') // インデックス不要にするためコメントアウト
+      .get();
 
-    const snapshot = await getDocs(q);
-    const analytics = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const analytics = snapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt
+        };
+      })
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+        return bTime - aTime; // 降順
+      });
 
     console.log('Fetched analytics from collection:', analytics.length, 'records');
 
     return NextResponse.json({
-      analytics,
+      success: true,
+      data: analytics,
+      analytics, // 互換性のため残す
       total: snapshot.size
     });
 
@@ -175,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Saving analytics data:', analyticsData);
 
-    const docRef = await addDoc(collection(db, 'analytics'), analyticsData);
+    const docRef = await adminDb.collection('analytics').add(analyticsData);
 
     console.log('Analytics saved successfully:', {
       id: docRef.id,
@@ -186,8 +196,7 @@ export async function POST(request: NextRequest) {
     // 投稿にanalyticsデータをリンク（postIdがある場合）
     if (postId) {
       try {
-        const postDocRef = doc(db, 'posts', postId);
-        await updateDoc(postDocRef, {
+        await adminDb.collection('posts').doc(postId).update({
           analytics: {
             likes: analyticsData.likes,
             comments: analyticsData.comments,

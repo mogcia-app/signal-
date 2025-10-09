@@ -1,25 +1,49 @@
-import { initializeApp, getApps, cert, AppOptions } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+/**
+ * Firebase Admin SDK
+ * サーバーサイド（API Routes）専用
+ * 
+ * Client SDKとは別に初期化
+ * Firestoreのrequest.authを正しく設定するために必要
+ * 
+ * 注意: このファイルはサーバーサイドでのみimportすること
+ */
 
-// Firebase Admin SDKの初期化
-const firebaseAdminConfig: AppOptions = {
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "signal-v1-fc481",
-};
+import * as admin from 'firebase-admin';
 
-// 本番環境ではサービスアカウントキーを使用
-if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-  try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-    firebaseAdminConfig.credential = cert(serviceAccount);
-  } catch (error) {
-    console.error('Failed to parse service account key:', error);
+// Admin SDKの初期化（既に初期化済みの場合はスキップ）
+function initializeAdminApp() {
+  if (admin.apps.length === 0) {
+    const serviceAccount = {
+      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || 'signal-v1-fc481',
+      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    };
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+      projectId: serviceAccount.projectId,
+    });
+    
+    console.log('🔥 Firebase Admin SDK initialized:', serviceAccount.projectId);
   }
+  
+  return admin;
 }
 
-// 既に初期化されている場合は既存のアプリを使用
-const app = getApps().length === 0 ? initializeApp(firebaseAdminConfig) : getApps()[0];
+// Admin SDK のインスタンスをエクスポート
+export function getAdminDb() {
+  const adminApp = initializeAdminApp();
+  return adminApp.firestore();
+}
 
-// Firestore Admin SDKを取得
-export const adminDb = getFirestore(app);
+export function getAdminAuth() {
+  const adminApp = initializeAdminApp();
+  return adminApp.auth();
+}
 
-export default app;
+// 互換性のため
+export const adminDb = getAdminDb();
+export const adminAuth = getAdminAuth();
+
+// Admin SDK は認証済みのコンテキストで実行されるため、
+// Firestoreのrequest.authが正しく設定される
