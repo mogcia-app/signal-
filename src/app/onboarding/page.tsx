@@ -25,13 +25,17 @@ export default function OnboardingPage() {
     description: '',
     targetMarket: ''
   });
+  const [customIndustry, setCustomIndustry] = useState('');
 
   // ステップ2: 目標・課題
   const [goals, setGoals] = useState<string[]>([]);
   const [challenges, setChallenges] = useState<string[]>([]);
+  const [customGoal, setCustomGoal] = useState('');
+  const [customChallenge, setCustomChallenge] = useState('');
 
   // ステップ3: SNS AI設定
   const [snsAISettings, setSnsAISettings] = useState<Record<string, { enabled: boolean; tone?: string; features?: string[] }>>({});
+  const [customFeature, setCustomFeature] = useState('');
 
   // ユーザープロファイルからデータを読み込む
   useEffect(() => {
@@ -167,9 +171,16 @@ export default function OnboardingPage() {
     setIsSubmitting(true);
     try {
       const userDocRef = doc(db, 'users', user.uid);
+      
+      // 業種が「その他」の場合はカスタム業種を使用
+      const finalIndustry = businessInfo.industry === 'その他' && customIndustry.trim() 
+        ? customIndustry.trim() 
+        : businessInfo.industry;
+      
       await updateDoc(userDocRef, {
         businessInfo: {
           ...businessInfo,
+          industry: finalIndustry,
           goals,
           challenges
         },
@@ -403,7 +414,7 @@ export default function OnboardingPage() {
                         onClick={() => setBusinessInfo({ ...businessInfo, industry: option })}
                         className={`p-3 border-2 text-sm font-medium transition-all ${
                           businessInfo.industry === option
-                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -411,6 +422,18 @@ export default function OnboardingPage() {
                       </button>
                     ))}
                   </div>
+                  {/* 「その他」選択時のテキスト入力 */}
+                  {businessInfo.industry === 'その他' && (
+                    <div className="mt-3">
+                      <input
+                        type="text"
+                        value={customIndustry}
+                        onChange={(e) => setCustomIndustry(e.target.value)}
+                        placeholder="業種を入力してください"
+                        className="w-full px-4 py-2 border-2 border-[#FF8A15] focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* 会社規模 */}
@@ -425,7 +448,7 @@ export default function OnboardingPage() {
                         onClick={() => setBusinessInfo({ ...businessInfo, companySize: option })}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           businessInfo.companySize === option
-                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -447,7 +470,7 @@ export default function OnboardingPage() {
                         onClick={() => setBusinessInfo({ ...businessInfo, businessType: option })}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           businessInfo.businessType === option
-                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -469,7 +492,7 @@ export default function OnboardingPage() {
                         onClick={() => setBusinessInfo({ ...businessInfo, targetMarket: option })}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           businessInfo.targetMarket === option
-                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -523,7 +546,7 @@ export default function OnboardingPage() {
                         }}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           goals.includes(option)
-                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -534,6 +557,33 @@ export default function OnboardingPage() {
                   {goals.length > 0 && (
                     <p className="mt-2 text-sm text-gray-600">{goals.length}個選択中</p>
                   )}
+                  {/* カスタム目標追加 */}
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="text"
+                      value={customGoal}
+                      onChange={(e) => setCustomGoal(e.target.value)}
+                      placeholder="カスタム目標を追加"
+                      className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:border-[#FF8A15]"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && customGoal.trim()) {
+                          setGoals([...goals, customGoal.trim()]);
+                          setCustomGoal('');
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        if (customGoal.trim()) {
+                          setGoals([...goals, customGoal.trim()]);
+                          setCustomGoal('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-[#FF8A15] text-white hover:bg-[#E67A0A] transition-colors"
+                    >
+                      追加
+                    </button>
+                  </div>
                 </div>
 
                 {/* 課題 */}
@@ -565,6 +615,33 @@ export default function OnboardingPage() {
                   {challenges.length > 0 && (
                     <p className="mt-2 text-sm text-gray-600">{challenges.length}個選択中</p>
                   )}
+                  {/* カスタム課題追加 */}
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="text"
+                      value={customChallenge}
+                      onChange={(e) => setCustomChallenge(e.target.value)}
+                      placeholder="カスタム課題を追加"
+                      className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:border-[#FF8A15]"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && customChallenge.trim()) {
+                          setChallenges([...challenges, customChallenge.trim()]);
+                          setCustomChallenge('');
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        if (customChallenge.trim()) {
+                          setChallenges([...challenges, customChallenge.trim()]);
+                          setCustomChallenge('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-[#FF8A15] text-white hover:bg-[#E67A0A] transition-colors"
+                    >
+                      追加
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -672,6 +749,51 @@ export default function OnboardingPage() {
                             </button>
                           ))}
                         </div>
+                      </div>
+                      {/* カスタム機能追加 */}
+                      <div className="mt-3 flex gap-2">
+                        <input
+                          type="text"
+                          value={customFeature}
+                          onChange={(e) => setCustomFeature(e.target.value)}
+                          placeholder="カスタム機能を追加"
+                          className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:border-[#FF8A15]"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && customFeature.trim()) {
+                              const currentFeatures = snsAISettings.instagram?.features || [];
+                              setSnsAISettings({
+                                ...snsAISettings,
+                                instagram: {
+                                  ...snsAISettings.instagram,
+                                  enabled: true,
+                                  tone: snsAISettings.instagram?.tone || 'フレンドリー',
+                                  features: [...currentFeatures, customFeature.trim()]
+                                }
+                              });
+                              setCustomFeature('');
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            if (customFeature.trim()) {
+                              const currentFeatures = snsAISettings.instagram?.features || [];
+                              setSnsAISettings({
+                                ...snsAISettings,
+                                instagram: {
+                                  ...snsAISettings.instagram,
+                                  enabled: true,
+                                  tone: snsAISettings.instagram?.tone || 'フレンドリー',
+                                  features: [...currentFeatures, customFeature.trim()]
+                                }
+                              });
+                              setCustomFeature('');
+                            }
+                          }}
+                          className="px-4 py-2 bg-[#FF8A15] text-white hover:bg-[#E67A0A] transition-colors"
+                        >
+                          追加
+                        </button>
                       </div>
                     </div>
                   )}
