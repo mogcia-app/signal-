@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { adminDb } from '../../../../lib/firebase-admin';
 
 // X分析データの型定義
 interface XAnalyticsData {
@@ -89,14 +88,11 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Creating Firebase query...');
-    const q = query(
-      collection(db, 'xanalytics'),
-      where('userId', '==', userId)
-      // orderBy('createdAt', 'desc') - 一時的に削除（インデックスエラーの可能性）
-    );
-
-    console.log('Executing Firebase query...');
-    const snapshot = await getDocs(q);
+    const snapshot = await adminDb
+      .collection('xanalytics')
+      .where('userId', '==', userId)
+      .get();
+    
     console.log('Firebase query completed, snapshot size:', snapshot.size);
     
     const analytics = snapshot.docs.map(doc => ({
@@ -200,7 +196,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Saving X analytics data:', analyticsData);
 
-    const docRef = await addDoc(collection(db, 'xanalytics'), analyticsData);
+    const docRef = await adminDb.collection('xanalytics').add(analyticsData);
 
     console.log('X Analytics saved successfully:', {
       id: docRef.id,
@@ -236,11 +232,11 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date()
       };
 
-      const postDocRef = await addDoc(collection(db, 'x_posts'), postData);
+      const postDocRef = await adminDb.collection('x_posts').add(postData);
       console.log('X Post saved successfully:', postDocRef.id);
 
       // analyticsデータのpostIdを更新
-      await updateDoc(doc(db, 'xanalytics', docRef.id), {
+      await adminDb.collection('xanalytics').doc(docRef.id).update({
         postId: postDocRef.id
       });
 

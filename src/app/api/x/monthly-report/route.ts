@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { db } from '../../../../lib/firebase';
+import { adminDb } from '../../../../lib/firebase-admin';
 
 // 日付範囲のヘルパー関数
 function getDateRange(period: string, date?: string) {
@@ -84,15 +83,11 @@ export async function GET(request: NextRequest) {
     const dateRange = getDateRange(period, date || undefined);
 
     // 今月のX analyticsデータを取得
-    const analyticsRef = collection(db, 'xanalytics');
-    const currentAnalyticsQuery = query(
-      analyticsRef,
-      where('userId', '==', userId),
-      // orderBy('createdAt', 'desc'), // 一時的にコメントアウト
-      limit(100)
-    );
-
-    const analyticsSnapshot = await getDocs(currentAnalyticsQuery);
+    const analyticsSnapshot = await adminDb
+      .collection('xanalytics')
+      .where('userId', '==', userId)
+      .limit(100)
+      .get();
     const allAnalyticsData = analyticsSnapshot.docs
       .map(doc => ({
         id: doc.id,
@@ -130,15 +125,11 @@ export async function GET(request: NextRequest) {
     });
 
     // X postsデータを取得
-    const postsRef = collection(db, 'x_posts');
-    const postsQuery = query(
-      postsRef,
-      where('userId', '==', userId),
-      // orderBy('createdAt', 'desc'), // 一時的にコメントアウト
-      limit(100)
-    );
-
-    const postsSnapshot = await getDocs(postsQuery);
+    const postsSnapshot = await adminDb
+      .collection('x_posts')
+      .where('userId', '==', userId)
+      .limit(100)
+      .get();
     const postsData = postsSnapshot.docs
       .map(doc => ({
         id: doc.id,

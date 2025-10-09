@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase-admin';
 
 
 export async function GET(request: NextRequest) {
@@ -14,13 +13,11 @@ export async function GET(request: NextRequest) {
     console.log('🔍 ハッシュタグ分析API呼び出し:', { userId });
 
     // 投稿データを取得
-    const postsRef = collection(db, 'posts');
-    const postsQuery = query(
-      postsRef,
-      where('userId', '==', userId),
-      where('status', '==', 'published')
-    );
-    const postsSnapshot = await getDocs(postsQuery);
+    const postsSnapshot = await adminDb
+      .collection('posts')
+      .where('userId', '==', userId)
+      .where('status', '==', 'published')
+      .get();
     const posts = postsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
