@@ -223,11 +223,11 @@ export default function OnboardingPage() {
                 <span className={`px-3 py-1 text-xs font-medium ${
                   userProfile.status === 'active' 
                     ? 'bg-green-100 text-green-700' 
-                    : 'bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
+                    : 'bg-[#FF8A15] text-white'
                 }`}>
                   {userProfile.status === 'active' ? '✓ アクティブ' : '初期設定待ち'}
                 </span>
-                <span className="px-3 py-1 bg-[#FF8A15] bg-opacity-10 text-[#FF8A15] text-xs font-medium">
+                <span className="px-3 py-1 border-2 border-[#FF8A15] text-[#FF8A15] text-xs font-medium">
                   {userProfile.contractType === 'annual' ? '年間契約' : 'トライアル'}
                 </span>
               </div>
