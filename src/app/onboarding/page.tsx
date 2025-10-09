@@ -113,7 +113,9 @@ export default function OnboardingPage() {
       });
 
       console.log('✅ Onboarding completed successfully');
-      router.push('/dashboard');
+      alert('✅ 初期設定が完了しました！御社専用AIの構築が完了しました。');
+      // ページをリロードして最新データを反映
+      window.location.reload();
     } catch (error) {
       console.error('Error completing onboarding:', error);
       alert('設定の保存に失敗しました。もう一度お試しください。');
@@ -140,7 +142,6 @@ export default function OnboardingPage() {
       currentSNS="instagram" 
       customTitle="初期設定" 
       customDescription="御社専用AIを構築するための情報を入力してください"
-      isOnboarding={true}
     >
       <div className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
