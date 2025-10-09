@@ -51,7 +51,7 @@ interface SNSLayoutProps {
   isOnboarding?: boolean;
 }
 
-export default function SNSLayout({ children, currentSNS, customTitle, customDescription, isOnboarding = false }: SNSLayoutProps) {
+export default function SNSLayout({ children, currentSNS, customTitle, customDescription }: SNSLayoutProps) {
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
 

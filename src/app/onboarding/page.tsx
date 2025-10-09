@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/auth-context';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { CheckCircle, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { CheckCircle, ArrowRight, ArrowLeft, Sparkles, User, Mail, Calendar, Edit2, Save, X } from 'lucide-react';
 import SNSLayout from '../../components/sns-layout';
 
 export default function OnboardingPage() {
   const { user } = useAuth();
+  const { userProfile, loading: profileLoading } = useUserProfile();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ステップ1: ビジネス情報
@@ -28,7 +31,25 @@ export default function OnboardingPage() {
   const [challenges, setChallenges] = useState<string[]>([]);
 
   // ステップ3: SNS AI設定
-  const [snsAISettings, setSnsAISettings] = useState<Record<string, { enabled: boolean; tone: string; features: string[] }>>({});
+  const [snsAISettings, setSnsAISettings] = useState<Record<string, { enabled: boolean; tone?: string; features?: string[] }>>({});
+
+  // ユーザープロファイルからデータを読み込む
+  useEffect(() => {
+    if (userProfile?.businessInfo) {
+      setBusinessInfo({
+        industry: userProfile.businessInfo.industry || '',
+        companySize: userProfile.businessInfo.companySize || '',
+        businessType: userProfile.businessInfo.businessType || '',
+        description: userProfile.businessInfo.description || '',
+        targetMarket: userProfile.businessInfo.targetMarket || ''
+      });
+      setGoals(userProfile.businessInfo.goals || []);
+      setChallenges(userProfile.businessInfo.challenges || []);
+    }
+    if (userProfile?.snsAISettings) {
+      setSnsAISettings(userProfile.snsAISettings as Record<string, { enabled: boolean; tone?: string; features?: string[] }>);
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     if (!user) {
@@ -113,7 +134,9 @@ export default function OnboardingPage() {
       });
 
       console.log('✅ Onboarding completed successfully');
-      alert('✅ 初期設定が完了しました！御社専用AIの構築が完了しました。');
+      alert('✅ 設定を保存しました！御社専用AIに反映されました。');
+      setIsEditing(false);
+      setCurrentStep(1);
       // ページをリロードして最新データを反映
       window.location.reload();
     } catch (error) {
@@ -145,19 +168,81 @@ export default function OnboardingPage() {
     >
       <div className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
+        {/* ユーザー情報セクション */}
+        {userProfile && (
+          <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">ユーザー情報</h2>
+              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                {userProfile.contractType === 'annual' ? '年間契約' : 'トライアル'}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <User className="h-4 w-4 inline mr-2" />
+                  名前
+                </label>
+                <p className="text-gray-900 font-medium">{userProfile.name}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Mail className="h-4 w-4 inline mr-2" />
+                  メールアドレス
+                </label>
+                <p className="text-gray-900 font-medium">{userProfile.email}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Calendar className="h-4 w-4 inline mr-2" />
+                  契約期間
+                </label>
+                <p className="text-gray-900 font-medium text-sm">
+                  {new Date(userProfile.contractStartDate).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                  {' 〜 '}
+                  {new Date(userProfile.contractEndDate).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 説明バナー */}
         <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl">
-          <div className="flex items-center space-x-3 mb-2">
-            <Sparkles className="w-6 h-6 text-purple-600" />
-            <h2 className="text-xl font-bold text-gray-900">御社専用AI構築</h2>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-3">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              <h2 className="text-xl font-bold text-gray-900">御社専用AI構築</h2>
+            </div>
+            {!isEditing && userProfile?.businessInfo?.industry && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Edit2 className="w-4 h-4" />
+                <span>編集</span>
+              </button>
+            )}
+            {isEditing && (
+              <button
+                onClick={() => setIsEditing(false)}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+                <span>キャンセル</span>
+              </button>
+            )}
           </div>
           <p className="text-sm text-gray-700 leading-relaxed">
-            入力いただいた情報を元に、あなたのビジネスに最適化されたAIを構築します。<br />
-            所要時間: 約5-7分
+            {userProfile?.businessInfo?.industry 
+              ? 'いただいたヒアリングをもとに組み込んでいます。内容を確認し、必要に応じて編集してください。'
+              : '入力いただいた情報を元に、あなたのビジネスに最適化されたAIを構築します。'
+            }
           </p>
         </div>
 
-        {/* 進行状況バー */}
+        {/* 進行状況バー（編集モード時のみ） */}
+        {(isEditing || !userProfile?.businessInfo?.industry) && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">ステップ {currentStep} / {totalSteps}</span>
@@ -201,8 +286,10 @@ export default function OnboardingPage() {
             ))}
           </div>
         </div>
+        )}
 
         {/* メインコンテンツ */}
+        {(isEditing || !userProfile?.businessInfo?.industry) ? (
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* ステップ1: ビジネス情報 */}
           {currentStep === 1 && (
@@ -563,6 +650,109 @@ export default function OnboardingPage() {
             )}
           </div>
         </div>
+        ) : (
+          /* 閲覧モード */
+          <div className="space-y-6">
+            {/* ビジネス情報 */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">ビジネス情報</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">業種</label>
+                  <p className="text-gray-900">{businessInfo.industry || '未設定'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
+                  <p className="text-gray-900">{businessInfo.companySize || '未設定'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
+                  <p className="text-gray-900">{businessInfo.businessType || '未設定'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
+                  <p className="text-gray-900">{businessInfo.targetMarket || '未設定'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">事業内容</label>
+                  <p className="text-gray-900">{businessInfo.description || '未設定'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 目標・課題 */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">目標と課題</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">目標</label>
+                  <div className="flex flex-wrap gap-2">
+                    {goals.length > 0 ? goals.map((goal, index) => (
+                      <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                        {goal}
+                      </span>
+                    )) : <span className="text-gray-500">未設定</span>}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">課題</label>
+                  <div className="flex flex-wrap gap-2">
+                    {challenges.length > 0 ? challenges.map((challenge, index) => (
+                      <span key={index} className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm">
+                        {challenge}
+                      </span>
+                    )) : <span className="text-gray-500">未設定</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SNS AI設定 */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">SNS AI設定</h3>
+              <div className="space-y-4">
+                {Object.keys(snsAISettings).length > 0 ? (
+                  Object.entries(snsAISettings).map(([snsType, settings]) => (
+                    <div key={snsType} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xl">
+                            {snsType === 'instagram' ? '📷' : snsType === 'x' ? '🐦' : '📱'}
+                          </span>
+                          <span className="font-semibold text-gray-900 capitalize">{snsType}</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          settings.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {settings.enabled ? '✓ 有効' : '無効'}
+                        </span>
+                      </div>
+                      {settings.enabled && (
+                        <div className="ml-7 space-y-1 text-sm">
+                          <div><span className="text-gray-600">トーン:</span> <span className="text-gray-900">{settings.tone}</span></div>
+                          {settings.features && settings.features.length > 0 && (
+                            <div>
+                              <span className="text-gray-600">機能:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {settings.features.map((feature, idx) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
+                                    {feature}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">未設定</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </SNSLayout>
