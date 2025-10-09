@@ -65,8 +65,15 @@ export default function DashboardPage() {
       return;
     }
 
-    // プロフィールが読み込まれたら契約SNSに応じてリダイレクト
+    // プロフィールが読み込まれたら初期設定の確認
     if (userProfile && !profileLoading) {
+      // 初期設定が必要な場合はonboardingページにリダイレクト
+      if ((userProfile as unknown as { setupRequired?: boolean }).setupRequired) {
+        console.log('⚙️ 初期設定が必要です。Onboardingページにリダイレクトします。');
+        router.push('/onboarding');
+        return;
+      }
+
       const contractSNS = getContractSNS();
       console.log('🔍 契約SNS:', contractSNS);
       

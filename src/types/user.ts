@@ -40,11 +40,12 @@ export interface UserProfile {
   contractSNS: string[];                        // 契約SNS配列
   snsAISettings: SNSAISettings;                 // SNS AI設定
   businessInfo: BusinessInfo;                   // ビジネス情報
-  status: 'active' | 'inactive' | 'suspended';  // ステータス
+  status: 'active' | 'inactive' | 'suspended' | 'pending_setup';  // ステータス
   contractStartDate: string;                    // 契約開始日
   contractEndDate: string;                      // 契約終了日
   billingInfo?: BillingInfo;                    // 課金情報
   notes?: string;                               // 管理者メモ
+  setupRequired?: boolean;                      // 初期設定が必要かどうか
   createdAt: string;                            // 作成日時
   updatedAt: string;                            // 更新日時
 }

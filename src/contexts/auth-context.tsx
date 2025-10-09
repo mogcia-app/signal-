@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (!userDoc.exists()) {
       // ユーザードキュメントが存在しない場合、デフォルト値で作成
-      const defaultUserProfile: Omit<UserProfile, 'id'> = {
+      const defaultUserProfile: Omit<UserProfile, 'id'> & { setupRequired?: boolean } = {
         email: user.email || '',
         name: user.displayName || 'ユーザー',
         role: 'user',
@@ -40,23 +40,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         usageType: 'solo',
         contractType: 'trial',
         contractSNS: ['instagram'],
-        snsAISettings: {
-          instagram: {
-            enabled: true,
-            tone: 'フレンドリー',
-            features: ['ハッシュタグ最適化', '投稿時間提案', 'コンテンツ分析']
-          }
-        },
+        snsAISettings: {},
         businessInfo: {
-          industry: '未設定',
-          companySize: '未設定',
-          businessType: '未設定',
-          description: '未設定',
-          targetMarket: '未設定',
+          industry: '',
+          companySize: '',
+          businessType: '',
+          description: '',
+          targetMarket: '',
           goals: [],
           challenges: []
         },
-        status: 'active',
+        status: 'pending_setup',
+        setupRequired: true,
         contractStartDate: new Date().toISOString(),
         contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         billingInfo: {
@@ -64,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           amount: 0
         },
-        notes: '新規ユーザー',
+        notes: '新規ユーザー - 初期設定待ち',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
