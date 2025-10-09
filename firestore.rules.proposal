@@ -58,6 +58,20 @@ service cloud.firestore {
     }
     
     // ========================================
+    // Instagram Goal Tracking Collection
+    // ========================================
+    match /instagram_goal_tracking/{goalId} {
+      // 読み取り・作成・更新: 自分のデータのみ、または管理者
+      allow read, create, update: if isAuthenticated() && 
+                                     (request.resource.data.userId == request.auth.uid || 
+                                      resource.data.userId == request.auth.uid) 
+                                  || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
     // Users Collection
     // ========================================
     match /users/{userId} {
@@ -189,14 +203,6 @@ service cloud.firestore {
       // 削除: 管理者のみ
       allow delete: if isAdmin();
     }
-    
-    // ========================================
-    // 開発環境用の一時的なルール（本番前に削除推奨）
-    // ========================================
-    // 注意: 以下のルールは開発中のみ使用し、本番環境では削除してください
-    // match /{document=**} {
-    //   allow read, write: if true;
-    // }
     
     // ========================================
     // デフォルト: 明示的に許可されていないものは拒否
