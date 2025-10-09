@@ -248,8 +248,7 @@ export async function POST(request: NextRequest) {
     // X投稿にanalyticsデータをリンク（postIdがある場合）
     if (postId) {
       try {
-        const postDocRef = doc(db, 'xposts', postId);
-        await updateDoc(postDocRef, {
+        await adminDb.collection('x_posts').doc(postId).update({
           analytics: {
             likes: analyticsData.likes,
             retweets: analyticsData.retweets,
