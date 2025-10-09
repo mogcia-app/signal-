@@ -212,57 +212,55 @@ export default function OnboardingPage() {
       customTitle="初期設定" 
       customDescription="御社専用AIを構築するための情報を入力してください"
     >
-      <div className="py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
+      <div className="py-6">
+        <div className="max-w-full">
         {/* ユーザー情報セクション */}
         {userProfile && (
-          <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border-2 border-blue-200 p-6">
+          <div className="mb-6 bg-white border-l-4 border-[#FF8A15] p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">ユーザー情報</h2>
+              <h2 className="text-xl font-bold text-gray-900">ユーザー情報</h2>
               <div className="flex items-center space-x-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                <span className={`px-3 py-1 text-xs font-medium ${
                   userProfile.status === 'active' 
                     ? 'bg-green-100 text-green-700' 
-                    : 'bg-orange-100 text-orange-700'
+                    : 'bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
                 }`}>
                   {userProfile.status === 'active' ? '✓ アクティブ' : '初期設定待ち'}
                 </span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-[#FF8A15] bg-opacity-10 text-[#FF8A15] text-xs font-medium">
                   {userProfile.contractType === 'annual' ? '年間契約' : 'トライアル'}
                 </span>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* 名前 */}
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                  <User className="h-4 w-4 mr-2 text-blue-600" />
+              <div className="border border-gray-200 p-4">
+                <label className="flex items-center text-xs font-medium text-gray-600 mb-2">
+                  <User className="h-3 w-3 mr-1 text-[#FF8A15]" />
                   名前
                 </label>
-                <p className="text-gray-900 font-semibold text-lg">{userProfile.name}</p>
+                <p className="text-gray-900 font-semibold">{userProfile.name}</p>
               </div>
 
               {/* メールアドレス */}
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="h-4 w-4 mr-2 text-blue-600" />
+              <div className="border border-gray-200 p-4">
+                <label className="flex items-center text-xs font-medium text-gray-600 mb-2">
+                  <Mail className="h-3 w-3 mr-1 text-[#FF8A15]" />
                   メールアドレス
                 </label>
                 <p className="text-gray-900 font-semibold text-sm break-all">{userProfile.email}</p>
               </div>
 
               {/* 契約期間 */}
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="h-4 w-4 mr-2 text-blue-600" />
+              <div className="border border-gray-200 p-4">
+                <label className="flex items-center text-xs font-medium text-gray-600 mb-2">
+                  <Calendar className="h-3 w-3 mr-1 text-[#FF8A15]" />
                   契約期間
                 </label>
                 <p className="text-gray-900 font-semibold text-sm">
                   {new Date(userProfile.contractStartDate).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
-                  <br />
-                  <span className="text-gray-500">〜</span>
-                  <br />
+                  {' 〜 '}
                   {new Date(userProfile.contractEndDate).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                 </p>
               </div>
@@ -270,21 +268,21 @@ export default function OnboardingPage() {
 
             {/* 契約SNS */}
             {userProfile.contractSNS && userProfile.contractSNS.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-blue-200">
-                <label className="block text-sm font-medium text-gray-700 mb-3">契約SNS</label>
-                <div className="flex flex-wrap gap-3">
+              <div className="pt-4 border-t border-gray-200">
+                <label className="block text-xs font-medium text-gray-600 mb-3">契約SNS</label>
+                <div className="flex flex-wrap gap-2">
                   {userProfile.contractSNS.map((sns) => (
                     <div
                       key={sns}
-                      className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm border-2 border-blue-200"
+                      className="flex items-center space-x-2 px-3 py-2 bg-white border border-[#FF8A15]"
                     >
-                      <span className="text-xl">
+                      <span className="text-lg">
                         {sns === 'instagram' ? '📷' : 
                          sns === 'x' ? '🐦' : 
                          sns === 'tiktok' ? '🎵' : 
                          sns === 'youtube' ? '📺' : '📱'}
                       </span>
-                      <span className="font-semibold text-gray-900 capitalize">
+                      <span className="font-semibold text-gray-900 text-sm capitalize">
                         {sns === 'x' ? 'X (Twitter)' : sns}
                       </span>
                     </div>
@@ -296,61 +294,54 @@ export default function OnboardingPage() {
         )}
 
         {/* 説明バナー */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl shadow-lg border-2 border-purple-200 p-6">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">御社専用AI構築</h2>
-                  <p className="text-sm text-gray-600">初期費用 ¥150,000 のうち ¥100,000</p>
-                </div>
+        <div className="mb-6 bg-white border-l-4 border-[#FF8A15] p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Sparkles className="w-6 h-6 text-[#FF8A15]" />
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">御社専用AI設定</h2>
+                <p className="text-sm text-gray-600">
+                  {userProfile?.businessInfo?.industry 
+                    ? 'いただいたヒアリングをもとに組み込んでいます'
+                    : 'ビジネスに最適化されたAIを構築します'
+                  }
+                </p>
               </div>
-              {!isEditing && userProfile?.businessInfo?.industry && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span className="font-medium">編集</span>
-                </button>
-              )}
-              {isEditing && (
-                <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setCurrentStep(1);
-                  }}
-                  className="flex items-center space-x-2 px-5 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all shadow-lg"
-                >
-                  <X className="w-4 h-4" />
-                  <span className="font-medium">キャンセル</span>
-                </button>
-              )}
             </div>
-            <div className="ml-15 pl-3 border-l-4 border-purple-300">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {userProfile?.businessInfo?.industry 
-                  ? '✅ いただいたヒアリングをもとに組み込んでいます。内容を確認し、必要に応じて編集してください。'
-                  : '📝 入力いただいた情報を元に、あなたのビジネスに最適化されたAIを構築します。'
-                }
-              </p>
-            </div>
+            {!isEditing && userProfile?.businessInfo?.industry && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-[#FF8A15] text-white hover:bg-[#E67A0A] transition-colors"
+              >
+                <Edit2 className="w-4 h-4" />
+                <span>編集</span>
+              </button>
+            )}
+            {isEditing && (
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setCurrentStep(1);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+                <span>キャンセル</span>
+              </button>
+            )}
           </div>
         </div>
 
         {/* 進行状況バー（編集モード時のみ） */}
         {(isEditing || !userProfile?.businessInfo?.industry) && (
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">ステップ {currentStep} / {totalSteps}</span>
-            <span className="text-sm font-medium text-gray-700">{Math.round(progress)}%</span>
+            <span className="text-sm font-medium text-[#FF8A15]">{Math.round(progress)}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-gray-200 h-2 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-[#FF8A15] transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -361,18 +352,18 @@ export default function OnboardingPage() {
                 className={`flex items-center ${step < 3 ? 'flex-1' : ''}`}
               >
                 <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
+                  className={`flex items-center justify-center w-8 h-8 border-2 transition-all ${
                     step < currentStep
                       ? 'bg-green-500 border-green-500 text-white'
                       : step === currentStep
-                      ? 'bg-blue-600 border-blue-600 text-white'
+                      ? 'bg-[#FF8A15] border-[#FF8A15] text-white'
                       : 'bg-white border-gray-300 text-gray-400'
                   }`}
                 >
                   {step < currentStep ? (
-                    <CheckCircle className="w-6 h-6" />
+                    <CheckCircle className="w-5 h-5" />
                   ) : (
-                    <span className="font-semibold">{step}</span>
+                    <span className="font-semibold text-sm">{step}</span>
                   )}
                 </div>
                 {step < 3 && (
@@ -390,7 +381,7 @@ export default function OnboardingPage() {
 
         {/* メインコンテンツ */}
         {(isEditing || !userProfile?.businessInfo?.industry) ? (
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white border border-gray-200 p-6">
           {/* ステップ1: ビジネス情報 */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -410,9 +401,9 @@ export default function OnboardingPage() {
                       <button
                         key={option}
                         onClick={() => setBusinessInfo({ ...businessInfo, industry: option })}
-                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                        className={`p-3 border-2 text-sm font-medium transition-all ${
                           businessInfo.industry === option
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -434,7 +425,7 @@ export default function OnboardingPage() {
                         onClick={() => setBusinessInfo({ ...businessInfo, companySize: option })}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           businessInfo.companySize === option
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -456,7 +447,7 @@ export default function OnboardingPage() {
                         onClick={() => setBusinessInfo({ ...businessInfo, businessType: option })}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           businessInfo.businessType === option
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -478,7 +469,7 @@ export default function OnboardingPage() {
                         onClick={() => setBusinessInfo({ ...businessInfo, targetMarket: option })}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           businessInfo.targetMarket === option
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -532,7 +523,7 @@ export default function OnboardingPage() {
                         }}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                           goals.includes(option)
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] bg-opacity-10 text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -719,7 +710,7 @@ export default function OnboardingPage() {
                 className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
                   (currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl'
+                    : 'bg-[#FF8A15] text-white hover:bg-[#E67A0A] shadow-lg hover:shadow-xl'
                 }`}
               >
                 <span>次へ</span>
@@ -754,7 +745,7 @@ export default function OnboardingPage() {
           /* 閲覧モード */
           <div className="space-y-6">
             {/* ビジネス情報 */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white border-l-4 border-[#FF8A15] border-t border-r border-b border-gray-200 p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">ビジネス情報</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -781,7 +772,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* 目標・課題 */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white border-l-4 border-[#FF8A15] border-t border-r border-b border-gray-200 p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">目標と課題</h3>
               <div className="space-y-4">
                 <div>
@@ -808,7 +799,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* SNS AI設定 */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white border-l-4 border-[#FF8A15] border-t border-r border-b border-gray-200 p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">SNS AI設定</h3>
               <div className="space-y-4">
                 {Object.keys(snsAISettings).length > 0 ? (
