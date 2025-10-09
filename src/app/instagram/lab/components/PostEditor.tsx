@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, RefreshCw, CheckCircle, AlertCircle, Upload, X, Eye } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, Upload, X, Eye } from 'lucide-react';
 import { postsApi } from '../../../../lib/api';
 import { useAuth } from '../../../../contexts/auth-context';
 import Image from 'next/image';
@@ -17,6 +17,11 @@ interface PostEditorProps {
   onTitleChange?: (title: string) => void;
   image?: string | null;
   onImageChange?: (image: string | null) => void;
+  scheduledDate?: string;
+  onScheduledDateChange?: (date: string) => void;
+  scheduledTime?: string;
+  onScheduledTimeChange?: (time: string) => void;
+  isAIGenerated?: boolean;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -29,24 +34,41 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   title = '',
   onTitleChange,
   image = null,
-  onImageChange
+  onImageChange,
+  scheduledDate: externalScheduledDate = '',
+  onScheduledDateChange,
+  scheduledTime: externalScheduledTime = '',
+  onScheduledTimeChange,
+  isAIGenerated = false
 }) => {
   const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
+  const [internalScheduledDate, setInternalScheduledDate] = useState('');
+  const [internalScheduledTime, setInternalScheduledTime] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // 外部から渡された日時を優先、なければ内部状態を使用
+  const scheduledDate = externalScheduledDate || internalScheduledDate;
+  const scheduledTime = externalScheduledTime || internalScheduledTime;
   
-  // AI投稿チェック機能の状態
-  const [isChecking, setIsChecking] = useState(false);
-  const [checkResult, setCheckResult] = useState<{
-    score: number;
-    suggestions: string[];
-    hashtagSuggestions: string[];
-    engagementPrediction: number;
-  } | null>(null);
+  const handleScheduledDateChange = (date: string) => {
+    if (onScheduledDateChange) {
+      onScheduledDateChange(date);
+    } else {
+      setInternalScheduledDate(date);
+    }
+  };
+  
+  const handleScheduledTimeChange = (time: string) => {
+    if (onScheduledTimeChange) {
+      onScheduledTimeChange(time);
+    } else {
+      setInternalScheduledTime(time);
+    }
+  };
+  
 
   const characterCount = content.length;
   const maxCharacters = 2200;
@@ -80,6 +102,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         scheduledTime,
         status: 'created' as const, // 'draft' → 'created' に変更
         imageData: image,
+        isAIGenerated, // AI生成フラグを追加
       };
 
       console.log('Saving post data:', postData);
@@ -111,9 +134,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const handleClear = () => {
     onContentChange('');
     onHashtagsChange([]);
-    setScheduledDate('');
-    setScheduledTime('');
-    setCheckResult(null);
+    handleScheduledDateChange('');
+    handleScheduledTimeChange('');
     onImageChange?.(null);
   };
 
@@ -164,39 +186,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const handleHashtagAdd = (hashtag: string) => {
     if (hashtag.trim() && !hashtags.includes(hashtag)) {
       onHashtagsChange([...hashtags, hashtag]);
-    }
-  };
-
-
-  // AI投稿チェック
-  const handleCheckPost = async () => {
-    if (!content.trim()) return;
-    
-    setIsChecking(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬処理
-      
-      const result = {
-        score: Math.floor(Math.random() * 30) + 70,
-        suggestions: [
-          'より具体的な数値や事例を追加すると良いでしょう',
-          '感情に訴える表現を増やしてみてください',
-          '行動を促す呼びかけを追加することをお勧めします'
-        ],
-        hashtagSuggestions: [
-          'トレンド',
-          'バイラル',
-          'フォロー',
-          'いいね'
-        ],
-        engagementPrediction: Math.floor(Math.random() * 20) + 5
-      };
-
-      setCheckResult(result);
-    } catch (error) {
-      console.error('投稿チェックエラー:', error);
-    } finally {
-      setIsChecking(false);
     }
   };
 
@@ -330,7 +319,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <input
                 type="date"
                 value={scheduledDate}
-                onChange={(e) => setScheduledDate(e.target.value)}
+                onChange={(e) => handleScheduledDateChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
             </div>
@@ -339,7 +328,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <input
                 type="time"
                 value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
+                onChange={(e) => handleScheduledTimeChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
             </div>
@@ -588,79 +577,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               </div>
             )}
           </div>
-        </div>
-
-        {/* AI投稿チェック */}
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-            🔍 AI投稿文チェック
-          </h3>
-          <button
-            onClick={handleCheckPost}
-            disabled={!content.trim() || isChecking}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center mb-4"
-          >
-            {isChecking ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                分析中...
-              </>
-            ) : (
-              <>
-                <CheckCircle size={16} className="mr-2" />
-                投稿文をチェック
-              </>
-            )}
-          </button>
-
-          {/* チェック結果 */}
-          {checkResult && (
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className={`p-3 rounded-lg ${checkResult.score >= 90 ? 'bg-green-100' : checkResult.score >= 80 ? 'bg-yellow-100' : 'bg-red-100'}`}>
-                  <div className="text-sm text-gray-600">総合スコア</div>
-                  <div className={`text-2xl font-bold ${checkResult.score >= 90 ? 'text-green-600' : checkResult.score >= 80 ? 'text-yellow-600' : 'text-red-600'}`}>
-                    {checkResult.score}/100
-                  </div>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <div className="text-sm text-gray-600">予測エンゲージメント</div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {checkResult.engagementPrediction}%
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">改善提案</h4>
-                  <ul className="space-y-1">
-                    {checkResult.suggestions.map((suggestion: string, index: number) => (
-                      <li key={index} className="text-sm text-gray-600 flex items-start">
-                        <AlertCircle size={14} className="mr-2 mt-0.5 text-yellow-500 flex-shrink-0" />
-                        {suggestion}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">ハッシュタグ提案</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {checkResult.hashtagSuggestions.map((hashtag: string, index: number) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
-                      >
-                        #{hashtag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 保存された投稿一覧 */}

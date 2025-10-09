@@ -50,6 +50,72 @@ export async function POST(request: NextRequest) {
 
     // 時間提案の場合
     if (action === 'suggestTime') {
+      try {
+        // ユーザーIDを取得（ヘッダーから）
+        const userId = request.headers.get('x-user-id');
+        
+        if (userId) {
+          // 過去の分析データを取得してエンゲージメントが高かった時間帯を分析
+          const { adminDb } = await import('../../../../lib/firebase-admin');
+          const analyticsSnapshot = await adminDb
+            .collection('analytics')
+            .where('userId', '==', userId)
+            .limit(50)
+            .get();
+
+          if (!analyticsSnapshot.empty) {
+            // 時間帯別のエンゲージメント率を計算
+            const timeSlotEngagement: Record<string, { totalEngagement: number; count: number }> = {};
+            
+            analyticsSnapshot.docs.forEach(doc => {
+              const data = doc.data();
+              const publishedTime = data.publishedTime;
+              
+              if (publishedTime && data.reach > 0) {
+                const hour = publishedTime.split(':')[0];
+                const engagement = ((data.likes || 0) + (data.comments || 0) + (data.shares || 0)) / data.reach * 100;
+                
+                if (!timeSlotEngagement[hour]) {
+                  timeSlotEngagement[hour] = { totalEngagement: 0, count: 0 };
+                }
+                
+                timeSlotEngagement[hour].totalEngagement += engagement;
+                timeSlotEngagement[hour].count += 1;
+              }
+            });
+
+            // 平均エンゲージメント率が最も高い時間帯を取得
+            let bestHour = '';
+            let bestEngagement = 0;
+            
+            Object.entries(timeSlotEngagement).forEach(([hour, data]) => {
+              const avgEngagement = data.totalEngagement / data.count;
+              if (avgEngagement > bestEngagement) {
+                bestEngagement = avgEngagement;
+                bestHour = hour;
+              }
+            });
+
+            if (bestHour) {
+              const suggestedTime = `${bestHour}:00`;
+              return NextResponse.json({
+                success: true,
+                data: {
+                  suggestedTime,
+                  postType,
+                  reason: `過去のデータ分析により、${bestHour}時台のエンゲージメント率が最も高いです（平均${bestEngagement.toFixed(2)}%）`,
+                  basedOnData: true
+                }
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('データ分析エラー:', error);
+        // エラー時はデフォルトロジックにフォールバック
+      }
+
+      // デフォルトの最適時間（初回または分析データがない場合）
       const optimalTimes = {
         feed: ['09:00', '12:00', '18:00', '20:00'],
         reel: ['07:00', '12:00', '19:00', '21:00'],
@@ -64,7 +130,8 @@ export async function POST(request: NextRequest) {
         data: {
           suggestedTime,
           postType,
-          reason: `${postType === 'feed' ? 'フィード' : postType === 'reel' ? 'リール' : 'ストーリーズ'}に最適な投稿時間です`
+          reason: `${postType === 'feed' ? 'フィード' : postType === 'reel' ? 'リール' : 'ストーリーズ'}の一般的な最適時間です`,
+          basedOnData: false
         }
       });
     }

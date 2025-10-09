@@ -15,6 +15,9 @@ export default function InstagramLabPage() {
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [postType, setPostType] = useState<'feed' | 'reel' | 'story'>('feed');
   const [postImage, setPostImage] = useState<string | null>(null);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [isAIGenerated, setIsAIGenerated] = useState(false);
   
   // 計画データを取得
   const { planData } = usePlanData();
@@ -46,10 +49,19 @@ export default function InstagramLabPage() {
   // });
 
   // AI生成ハンドラー
-  const handleAIGenerate = (generatedTitle: string, generatedContent: string, generatedHashtags: string[]) => {
+  const handleAIGenerate = (
+    generatedTitle: string, 
+    generatedContent: string, 
+    generatedHashtags: string[], 
+    generatedScheduledDate: string, 
+    generatedScheduledTime: string
+  ) => {
     setPostTitle(generatedTitle);
     setPostContent(generatedContent);
     setSelectedHashtags(generatedHashtags);
+    setScheduledDate(generatedScheduledDate);
+    setScheduledTime(generatedScheduledTime);
+    setIsAIGenerated(true); // AI生成フラグを立てる
   };
 
   return (
@@ -75,6 +87,11 @@ export default function InstagramLabPage() {
                         onTitleChange={setPostTitle}
                         image={postImage}
                         onImageChange={setPostImage}
+                        scheduledDate={scheduledDate}
+                        onScheduledDateChange={setScheduledDate}
+                        scheduledTime={scheduledTime}
+                        onScheduledTimeChange={setScheduledTime}
+                        isAIGenerated={isAIGenerated}
                       />
               
               <AIPostGenerator

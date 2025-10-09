@@ -18,6 +18,7 @@ interface PostData {
   imageData?: string | null;
   createdAt: Date | { toDate(): Date; seconds: number; nanoseconds: number; type?: string } | string;
   updatedAt: Date;
+  isAIGenerated?: boolean;
   analytics?: {
     likes: number;
     comments: number;
@@ -160,6 +161,12 @@ const PostCard: React.FC<PostCardProps> = ({
             <h3 className="text-lg font-semibold text-gray-900 truncate">{post.title || 'タイトルなし'}</h3>
           </div>
           <div className="flex items-center space-x-2">
+            {post.isAIGenerated && (
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 flex items-center">
+                <span className="mr-1">🤖</span>
+                AI生成
+              </span>
+            )}
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
               {getStatusLabel(post.status)}
             </span>

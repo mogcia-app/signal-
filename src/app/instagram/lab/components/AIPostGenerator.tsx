@@ -7,7 +7,7 @@ import { PlanData } from '../../plan/types/plan';
 interface AIPostGeneratorProps {
   postType: 'feed' | 'reel' | 'story';
   onPostTypeChange: (type: 'feed' | 'reel' | 'story') => void;
-  onGeneratePost: (title: string, content: string, hashtags: string[]) => void;
+  onGeneratePost: (title: string, content: string, hashtags: string[], scheduledDate: string, scheduledTime: string) => void;
   planData?: PlanData | null;
 }
 
@@ -125,7 +125,8 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
 
       if (result.success && result.data) {
         const { title, content, hashtags } = result.data;
-        onGeneratePost(title, content, hashtags);
+        // 投稿日時も一緒に渡す
+        onGeneratePost(title, content, hashtags, scheduledDate, scheduledTime);
         setAiPrompt('');
         setAiTitle('');
       } else {

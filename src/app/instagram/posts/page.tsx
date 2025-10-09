@@ -28,6 +28,7 @@ interface PostData {
   imageData?: string | null;
   createdAt: Date | { toDate(): Date; seconds: number; nanoseconds: number; type?: string } | string;
   updatedAt: Date;
+  isAIGenerated?: boolean;
   analytics?: {
     likes: number;
     comments: number;
