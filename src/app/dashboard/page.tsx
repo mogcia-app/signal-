@@ -275,7 +275,12 @@ export default function DashboardPage() {
         {/* ビジネス情報 */}
         {userProfile?.businessInfo && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">ビジネス情報</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">ビジネス情報</h3>
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                🤖 AI活用データ
+              </span>
+            </div>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -335,6 +340,70 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* SNS AI設定 */}
+        {userProfile?.snsAISettings && Object.keys(userProfile.snsAISettings).length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">SNS AI設定</h3>
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                🤖 AI活用データ
+              </span>
+            </div>
+            <div className="space-y-4">
+              {Object.entries(userProfile.snsAISettings).map(([snsType, settings]) => (
+                <div key={snsType} className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">
+                        {snsType === 'instagram' ? '📷' : 
+                         snsType === 'x' ? '🐦' : 
+                         snsType === 'tiktok' ? '🎵' : 
+                         snsType === 'youtube' ? '📺' : '📱'}
+                      </span>
+                      <h4 className="text-lg font-semibold text-gray-900 capitalize">
+                        {snsType === 'x' ? 'X (Twitter)' : snsType}
+                      </h4>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      settings.enabled 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {settings.enabled ? '✓ 有効' : '無効'}
+                    </span>
+                  </div>
+                  
+                  {settings.enabled && (
+                    <div className="space-y-2 ml-11">
+                      {settings.tone && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">トーン: </span>
+                          <span className="text-sm text-gray-900">{settings.tone}</span>
+                        </div>
+                      )}
+                      {settings.features && settings.features.length > 0 && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-700 block mb-1">機能:</span>
+                          <div className="flex flex-wrap gap-2">
+                            {settings.features.map((feature, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs"
+                              >
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
