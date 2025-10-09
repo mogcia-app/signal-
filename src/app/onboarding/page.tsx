@@ -216,75 +216,129 @@ export default function OnboardingPage() {
         <div className="max-w-4xl mx-auto">
         {/* ユーザー情報セクション */}
         {userProfile && (
-          <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">ユーザー情報</h2>
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                {userProfile.contractType === 'annual' ? '年間契約' : 'トライアル'}
-              </span>
+          <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border-2 border-blue-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">ユーザー情報</h2>
+              <div className="flex items-center space-x-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  userProfile.status === 'active' 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-orange-100 text-orange-700'
+                }`}>
+                  {userProfile.status === 'active' ? '✓ アクティブ' : '初期設定待ち'}
+                </span>
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                  {userProfile.contractType === 'annual' ? '年間契約' : 'トライアル'}
+                </span>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <User className="h-4 w-4 inline mr-2" />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* 名前 */}
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <User className="h-4 w-4 mr-2 text-blue-600" />
                   名前
                 </label>
-                <p className="text-gray-900 font-medium">{userProfile.name}</p>
+                <p className="text-gray-900 font-semibold text-lg">{userProfile.name}</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Mail className="h-4 w-4 inline mr-2" />
+
+              {/* メールアドレス */}
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="h-4 w-4 mr-2 text-blue-600" />
                   メールアドレス
                 </label>
-                <p className="text-gray-900 font-medium">{userProfile.email}</p>
+                <p className="text-gray-900 font-semibold text-sm break-all">{userProfile.email}</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Calendar className="h-4 w-4 inline mr-2" />
+
+              {/* 契約期間 */}
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="h-4 w-4 mr-2 text-blue-600" />
                   契約期間
                 </label>
-                <p className="text-gray-900 font-medium text-sm">
+                <p className="text-gray-900 font-semibold text-sm">
                   {new Date(userProfile.contractStartDate).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
-                  {' 〜 '}
+                  <br />
+                  <span className="text-gray-500">〜</span>
+                  <br />
                   {new Date(userProfile.contractEndDate).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                 </p>
               </div>
             </div>
+
+            {/* 契約SNS */}
+            {userProfile.contractSNS && userProfile.contractSNS.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-blue-200">
+                <label className="block text-sm font-medium text-gray-700 mb-3">契約SNS</label>
+                <div className="flex flex-wrap gap-3">
+                  {userProfile.contractSNS.map((sns) => (
+                    <div
+                      key={sns}
+                      className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm border-2 border-blue-200"
+                    >
+                      <span className="text-xl">
+                        {sns === 'instagram' ? '📷' : 
+                         sns === 'x' ? '🐦' : 
+                         sns === 'tiktok' ? '🎵' : 
+                         sns === 'youtube' ? '📺' : '📱'}
+                      </span>
+                      <span className="font-semibold text-gray-900 capitalize">
+                        {sns === 'x' ? 'X (Twitter)' : sns}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* 説明バナー */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-3">
-              <Sparkles className="w-6 h-6 text-purple-600" />
-              <h2 className="text-xl font-bold text-gray-900">御社専用AI構築</h2>
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl shadow-lg border-2 border-purple-200 p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">御社専用AI構築</h2>
+                  <p className="text-sm text-gray-600">初期費用 ¥150,000 のうち ¥100,000</p>
+                </div>
+              </div>
+              {!isEditing && userProfile?.businessInfo?.industry && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span className="font-medium">編集</span>
+                </button>
+              )}
+              {isEditing && (
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setCurrentStep(1);
+                  }}
+                  className="flex items-center space-x-2 px-5 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all shadow-lg"
+                >
+                  <X className="w-4 h-4" />
+                  <span className="font-medium">キャンセル</span>
+                </button>
+              )}
             </div>
-            {!isEditing && userProfile?.businessInfo?.industry && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                <span>編集</span>
-              </button>
-            )}
-            {isEditing && (
-              <button
-                onClick={() => setIsEditing(false)}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                <X className="w-4 h-4" />
-                <span>キャンセル</span>
-              </button>
-            )}
+            <div className="ml-15 pl-3 border-l-4 border-purple-300">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {userProfile?.businessInfo?.industry 
+                  ? '✅ いただいたヒアリングをもとに組み込んでいます。内容を確認し、必要に応じて編集してください。'
+                  : '📝 入力いただいた情報を元に、あなたのビジネスに最適化されたAIを構築します。'
+                }
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-gray-700 leading-relaxed">
-            {userProfile?.businessInfo?.industry 
-              ? 'いただいたヒアリングをもとに組み込んでいます。内容を確認し、必要に応じて編集してください。'
-              : '入力いただいた情報を元に、あなたのビジネスに最適化されたAIを構築します。'
-            }
-          </p>
         </div>
 
         {/* 進行状況バー（編集モード時のみ） */}
