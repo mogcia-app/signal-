@@ -155,3 +155,110 @@ ${analyticsData && analyticsData.length > 0
   return basePrompt + additionalInstructions;
 };
 
+/**
+ * 運用計画AI用のシステムプロンプト（Plan - PDCA の P）
+ * プロンプトビルダーをベースに、運用計画生成に特化した指示を追加
+ */
+export const buildPlanPrompt = (
+  userProfile: UserProfile,
+  snsType: string,
+  formData?: {
+    currentFollowers?: number | string;
+    targetFollowers?: number | string;
+    planPeriod?: string;
+    goalCategory?: string;
+    strategyValues?: string[];
+    postCategories?: string[];
+    brandConcept?: string;
+    colorVisual?: string;
+    tone?: string;
+  },
+  simulationResult?: {
+    monthlyTarget?: number | string;
+    feasibilityLevel?: string;
+    postsPerWeek?: { feed?: number; reel?: number };
+  }
+): string => {
+  const basePrompt = buildSystemPrompt(userProfile, snsType);
+
+  // 計画データの整形
+  const currentFollowers = formData?.currentFollowers || '未設定';
+  const targetFollowers = formData?.targetFollowers || '未設定';
+  const planPeriod = formData?.planPeriod || '未設定';
+  const strategies = Array.isArray(formData?.strategyValues) && formData.strategyValues.length > 0
+    ? formData.strategyValues.join(', ')
+    : '未設定';
+  const categories = Array.isArray(formData?.postCategories) && formData.postCategories.length > 0
+    ? formData.postCategories.join(', ')
+    : '未設定';
+  
+  // シミュレーション結果の整形
+  const monthlyTarget = simulationResult?.monthlyTarget || 'N/A';
+  const feasibility = simulationResult?.feasibilityLevel || 'N/A';
+  const feedPosts = simulationResult?.postsPerWeek?.feed || 0;
+  const reelPosts = simulationResult?.postsPerWeek?.reel || 0;
+
+  const planInstructions = `
+【運用計画生成の指示】
+このクライアントのために、実行可能で効果的な${snsType.toUpperCase()}運用計画を作成してください。
+
+## 計画データ
+- 現在のフォロワー数: ${currentFollowers}
+- 目標フォロワー数: ${targetFollowers}
+- 達成期間: ${planPeriod}
+- ブランドコンセプト: ${formData?.brandConcept || '未設定'}
+- メインカラー: ${formData?.colorVisual || '未設定'}
+- 文章トーン: ${formData?.tone || '未設定'}
+- 選択戦略: ${strategies}
+- 投稿カテゴリ: ${categories}
+
+## シミュレーション結果
+- 月間目標: ${monthlyTarget}
+- 実現可能性: ${feasibility}
+- 週間投稿数: フィード${feedPosts}回、リール${reelPosts}回
+
+## 生成する内容（8つのセクション）
+以下の8つのセクションで、具体的で実行可能な戦略を提案してください：
+
+① **全体の投稿戦略**
+   - クライアントの目標（${userProfile.businessInfo.goals.join(', ')}）を達成するための全体戦略
+   - ターゲット市場（${userProfile.businessInfo.targetMarket}）に響くアプローチ
+
+② **投稿構成の方向性**
+   - フィード、リール、ストーリーのバランス
+   - 投稿カテゴリ（${categories}）の活用方法
+
+③ **カスタマージャーニー別の投稿役割**
+   - 認知→興味→検討→行動の各段階での投稿の役割
+   - ターゲットを惹きつけるコンテンツ戦略
+
+④ **注意点・成功のコツ**
+   - 課題（${userProfile.businessInfo.challenges.join(', ')}）を克服する方法
+   - 実行時の注意点とベストプラクティス
+
+⑤ **世界観診断**
+   - ブランドコンセプト「${formData?.brandConcept || '未設定'}」を活かした世界観
+   - ビジュアル・トーンの統一方法
+
+⑥ **フィード投稿提案**
+   - 具体的な投稿テーマ例（3-5個）
+   - 投稿頻度と時間帯の推奨
+
+⑦ **リール投稿提案**
+   - 具体的なリールのアイデア例（3-5個）
+   - トレンドを活かした戦略
+
+⑧ **ストーリー投稿提案**
+   - ストーリーの活用方法
+   - エンゲージメントを高める施策
+
+## 重要事項
+- 全てクライアントのビジネス情報と目標に基づいて提案すること
+- 実行可能で具体的なアドバイスにすること
+- 業種（${userProfile.businessInfo.industry}）の特性を考慮すること
+- 選択された戦略（${strategies}）を活かすこと
+`;
+
+  return basePrompt + planInstructions;
+};
+

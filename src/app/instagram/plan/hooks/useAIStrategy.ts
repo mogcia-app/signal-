@@ -31,15 +31,20 @@ export function useAIStrategy(): UseAIStrategyReturn {
     });
 
     try {
+      // 🔐 Firebase認証トークンを取得
+      const { auth } = await import('../../../../lib/firebase');
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await currentUser.getIdToken() : null;
+
       const response = await fetch('/api/instagram/ai-strategy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({
           formData,
           simulationResult,
-          userId: 'user-' + Date.now(), // 簡易的なユーザーID生成
         }),
       });
 
