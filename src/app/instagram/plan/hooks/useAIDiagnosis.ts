@@ -12,11 +12,17 @@ export const useAIDiagnosis = () => {
     setAiError('');
     
     try {
+      // 🔐 Firebase認証トークンを取得
+      const { auth } = await import('../../../../lib/firebase');
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await currentUser.getIdToken() : null;
+
       // BFF APIを呼び出し
       const response = await fetch('/api/instagram/ai-diagnosis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({
           planData: formData,
