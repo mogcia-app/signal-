@@ -262,3 +262,95 @@ export const buildPlanPrompt = (
   return basePrompt + planInstructions;
 };
 
+/**
+ * 月次レポートAI用のシステムプロンプト（Act - PDCA の Act）
+ * プロンプトビルダーをベースに、月次レポートと来月のアクションプラン生成に特化
+ */
+export const buildReportPrompt = (
+  userProfile: UserProfile,
+  snsType: string,
+  monthlyData?: {
+    currentScore?: number;
+    previousScore?: number;
+    performanceRating?: string;
+    totalPosts?: number;
+    totalEngagement?: number;
+    avgEngagementRate?: number;
+  },
+  planSummary?: string,
+  recentPosts?: Array<{ title: string; engagement?: number }>,
+  improvements?: string[]
+): string => {
+  const basePrompt = buildSystemPrompt(userProfile, snsType);
+
+  const currentScore = monthlyData?.currentScore || 0;
+  const previousScore = monthlyData?.previousScore || 0;
+  const scoreDiff = currentScore - previousScore;
+  const rating = monthlyData?.performanceRating || 'C';
+
+  const reportInstructions = `
+【月次レポート生成の指示（PDCA - Act）】
+このクライアントのために、今月の振り返りと来月のアクションプランを作成してください。
+
+## 今月のパフォーマンス
+- アカウントスコア: ${currentScore}点（前月: ${previousScore}点、変動: ${scoreDiff > 0 ? '+' : ''}${scoreDiff}点）
+- パフォーマンス評価: ${rating}
+- 総投稿数: ${monthlyData?.totalPosts || 0}件
+- 総エンゲージメント: ${monthlyData?.totalEngagement || 0}
+- 平均エンゲージメント率: ${monthlyData?.avgEngagementRate || 0}%
+
+## 運用計画の参照（PDCA - Plan）
+${planSummary || '運用計画データなし'}
+
+## 最近の投稿（PDCA - Do）
+${recentPosts && recentPosts.length > 0 
+  ? recentPosts.slice(0, 5).map((p, i) => `${i + 1}. ${p.title}${p.engagement ? ` (エンゲージメント: ${p.engagement})` : ''}`).join('\n')
+  : '投稿データなし'}
+
+## 改善提案（PDCA - Check）
+${improvements && improvements.length > 0
+  ? improvements.map((imp, i) => `${i + 1}. ${imp}`).join('\n')
+  : '改善提案データなし'}
+
+## 生成する内容
+
+以下の形式で月次レポートと来月のアクションプランを作成してください：
+
+### 📊 今月の総括
+- 運用計画の達成度
+- スコア変動の要因分析
+- 良かった点（3つ）
+- 改善が必要な点（2つ）
+
+### 🎯 来月のアクションプラン
+1. **優先度：高（必須）**
+   - 具体的なアクション（2-3個）
+   - 期待される効果
+
+2. **優先度：中（推奨）**
+   - 具体的なアクション（2-3個）
+   - 期待される効果
+
+3. **優先度：低（余裕があれば）**
+   - 具体的なアクション（1-2個）
+   - 期待される効果
+
+### 💡 具体的な投稿テーマ提案
+- 来月の推奨投稿テーマ（5つ）
+- 各テーマの投稿タイミングと期待効果
+
+### 📈 目標設定
+- 来月のスコア目標
+- エンゲージメント目標
+- 達成のための重点施策
+
+## 重要事項
+- クライアントの目標（${userProfile.businessInfo.goals.join(', ')}）を意識する
+- 課題（${userProfile.businessInfo.challenges.join(', ')}）の解決を含める
+- 実行可能で具体的な提案にする
+- 前向きで励ましのトーンを維持する
+`;
+
+  return basePrompt + reportInstructions;
+};
+

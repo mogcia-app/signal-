@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 import { cache, generateCacheKey } from '../../../../lib/cache';
+import { buildReportPrompt } from '../../../../utils/aiPromptBuilder';
+import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
+import { UserProfile } from '../../../../types/user';
+
+// OpenAI APIの初期化
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+}) : null;
 
 // 月次レビューメッセージ生成関数
 function generateMonthlyReview(currentScore: number, previousScore: number, performanceRating: string) {
@@ -207,31 +216,168 @@ function generateMonthlyReview(currentScore: number, previousScore: number, perf
 
 export async function GET(request: NextRequest) {
   try {
+    // 🔐 Firebase認証トークンからユーザーIDを取得
+    let userId = 'anonymous';
+    const authHeader = request.headers.get('authorization');
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        userId = decodedToken.uid;
+        console.log('✅ Authenticated user:', userId);
+      } catch (authError) {
+        console.warn('⚠️ Firebase認証エラー（匿名ユーザーとして処理）:', authError);
+      }
+    }
+
     const { searchParams } = new URL(request.url);
     const currentScore = parseInt(searchParams.get('currentScore') || '0');
     const previousScore = parseInt(searchParams.get('previousScore') || '0');
     const performanceRating = searchParams.get('performanceRating') || 'C';
 
-    // キャッシュキー生成
-    const cacheKey = generateCacheKey('monthly-review', { currentScore, previousScore, performanceRating });
+    // キャッシュキー生成（ユーザーIDを含める）
+    const cacheKey = generateCacheKey('monthly-review-ai', { userId, currentScore, previousScore, performanceRating });
     const cached = cache.get(cacheKey);
     if (cached) {
+      console.log('📦 キャッシュから返却');
       return NextResponse.json(cached);
     }
 
-    // 月次レビューメッセージを生成
-    const review = generateMonthlyReview(currentScore, previousScore, performanceRating);
+    // OpenAI APIキーのチェック
+    if (!openai) {
+      // フォールバック: 旧ロジックを使用
+      console.warn('⚠️ OpenAI APIキーなし - フォールバックを使用');
+      const review = generateMonthlyReview(currentScore, previousScore, performanceRating);
+      return NextResponse.json({
+        title: review.title,
+        message: review.message,
+        currentScore,
+        previousScore,
+        scoreDiff: currentScore - previousScore,
+        performanceRating,
+        isAIGenerated: false
+      });
+    }
+
+    // ✅ ユーザープロファイルを取得
+    let userProfile: UserProfile | null = null;
+    try {
+      const userDoc = await adminDb.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        userProfile = userDoc.data() as UserProfile;
+        console.log('✅ ユーザープロファイル取得成功');
+      }
+    } catch (error) {
+      console.warn('⚠️ ユーザープロファイル取得エラー:', error);
+    }
+
+    if (!userProfile) {
+      // フォールバック
+      const review = generateMonthlyReview(currentScore, previousScore, performanceRating);
+      return NextResponse.json({
+        title: review.title,
+        message: review.message,
+        currentScore,
+        previousScore,
+        scoreDiff: currentScore - previousScore,
+        performanceRating,
+        isAIGenerated: false
+      });
+    }
+
+    // ✅ 運用計画を取得（PDCA - Plan）
+    let planSummary = '';
+    try {
+      const plansSnapshot = await adminDb
+        .collection('plans')
+        .where('userId', '==', userId)
+        .where('snsType', '==', 'instagram')
+        .where('status', '==', 'active')
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get();
+
+      if (!plansSnapshot.empty) {
+        const plan = plansSnapshot.docs[0].data();
+        planSummary = (plan.generatedStrategy as string)?.substring(0, 500) || '';
+        console.log('✅ 運用計画取得成功');
+      }
+    } catch (error) {
+      console.warn('⚠️ 運用計画取得エラー:', error);
+    }
+
+    // ✅ 投稿データを取得（PDCA - Do）
+    const recentPosts: Array<{ title: string; engagement?: number }> = [];
+    try {
+      const postsSnapshot = await adminDb
+        .collection('posts')
+        .where('userId', '==', userId)
+        .where('platform', '==', 'instagram')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get();
+
+      postsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        recentPosts.push({
+          title: data.title || '',
+          engagement: undefined // TODO: 分析データと紐付け
+        });
+      });
+      console.log(`✅ 投稿データ取得成功: ${recentPosts.length}件`);
+    } catch (error) {
+      console.warn('⚠️ 投稿データ取得エラー:', error);
+    }
+
+    // ✅ 分析データを取得（PDCA - Check）
+    let totalEngagement = 0;
+    let totalReach = 0;
+    try {
+      const analyticsSnapshot = await adminDb
+        .collection('analytics')
+        .where('userId', '==', userId)
+        .orderBy('createdAt', 'desc')
+        .limit(30)
+        .get();
+
+      analyticsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        totalReach += data.reach || 0;
+        totalEngagement += (data.likes || 0) + (data.comments || 0) + (data.shares || 0);
+      });
+      console.log('✅ 分析データ取得成功');
+    } catch (error) {
+      console.warn('⚠️ 分析データ取得エラー:', error);
+    }
+
+    const avgEngagementRate = totalReach > 0 ? (totalEngagement / totalReach * 100) : 0;
+
+    // AI月次レポート生成
+    const aiReport = await generateAIMonthlyReview(
+      userProfile,
+      {
+        currentScore,
+        previousScore,
+        performanceRating,
+        totalPosts: recentPosts.length,
+        totalEngagement,
+        avgEngagementRate
+      },
+      planSummary,
+      recentPosts
+    );
 
     const result = {
-      title: review.title,
-      message: review.message,
+      ...aiReport,
       currentScore,
       previousScore,
       scoreDiff: currentScore - previousScore,
-      performanceRating
+      performanceRating,
+      isAIGenerated: true
     };
 
-    // キャッシュに保存（24時間 - 月の間は同じメッセージ）
+    // キャッシュに保存（24時間）
     cache.set(cacheKey, result, 24 * 60 * 60 * 1000);
 
     return NextResponse.json(result);
@@ -243,4 +389,64 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// AI月次レポート生成（PDCA - Act）
+async function generateAIMonthlyReview(
+  userProfile: UserProfile,
+  monthlyData: {
+    currentScore: number;
+    previousScore: number;
+    performanceRating: string;
+    totalPosts: number;
+    totalEngagement: number;
+    avgEngagementRate: number;
+  },
+  planSummary: string,
+  recentPosts: Array<{ title: string; engagement?: number }>
+) {
+  if (!openai) {
+    throw new Error('OpenAI API not initialized');
+  }
+
+  // ✅ プロンプトビルダーを使用（PDCA - Act）
+  const systemPrompt = buildReportPrompt(
+    userProfile,
+    'instagram',
+    monthlyData,
+    planSummary,
+    recentPosts
+  );
+
+  const userPrompt = `
+上記のクライアント情報と月次データを基に、今月の総括と来月のアクションプランを生成してください。
+
+前向きで励ましのトーンを使い、具体的で実行可能な提案を行ってください。`;
+
+  const chatCompletion = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ],
+    temperature: 0.7,
+    max_tokens: 2000,
+  });
+
+  const aiResponse = chatCompletion.choices[0].message.content || '';
+
+  // タイトルとメッセージを分割
+  const lines = aiResponse.split('\n');
+  const title = lines[0]?.replace(/^#+\s*/, '').trim() || '📊 今月の振り返り';
+  const message = aiResponse;
+
+  return {
+    title,
+    message,
+    metadata: {
+      generatedAt: new Date().toISOString(),
+      basedOnPlan: planSummary ? true : false,
+      postsAnalyzed: recentPosts.length
+    }
+  };
 }
