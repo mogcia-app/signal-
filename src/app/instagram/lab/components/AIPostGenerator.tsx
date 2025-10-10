@@ -34,11 +34,17 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
 
     setIsSuggestingTime(true);
     try {
+      // 🔐 Firebase認証トークンを取得
+      const { auth } = await import('../../../../lib/firebase');
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await currentUser.getIdToken() : null;
+
       // AI APIを呼び出して最適な投稿時間を提案
       const response = await fetch('/api/ai/post-generation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({
           prompt: '最適な投稿時間を提案してください',
@@ -94,24 +100,25 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
       alert('投稿のテーマを入力してください');
       return;
     }
-
-    if (!planData) {
-      alert('運用計画を先に作成してください');
-      return;
-    }
     
     setIsGenerating(true);
     try {
+      // 🔐 Firebase認証トークンを取得
+      const { auth } = await import('../../../../lib/firebase');
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await currentUser.getIdToken() : null;
+
       // AI APIを呼び出して投稿文を生成
       const response = await fetch('/api/ai/post-generation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({
           prompt: aiPrompt,
           postType,
-          planData,
+          planData, // フォールバック用（ユーザープロファイルがない場合）
           scheduledDate,
           scheduledTime
         }),
