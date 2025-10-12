@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { PlanFormData, SimulationResult } from '../types/plan';
 import { useAIStrategy } from '../hooks/useAIStrategy';
 
@@ -20,6 +21,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   simulationResult
 }) => {
   const { strategyState, generateStrategy } = useAIStrategy();
+  const [expandedSections, setExpandedSections] = useState<number[]>([0]); // デフォルトで①を展開
 
   const handleStartDiagnosis = async () => {
     try {
@@ -28,6 +30,53 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
     } catch (error) {
       console.error('Strategy generation failed:', error);
     }
+  };
+
+  // セクションの展開/折りたたみ
+  const toggleSection = (index: number) => {
+    setExpandedSections(prev =>
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  // AI戦略をセクション別に分割
+  const parseStrategyIntoSections = (strategy: string) => {
+    const sections = [
+      { id: 0, title: '① 全体の投稿戦略', icon: '🎯', color: 'blue' },
+      { id: 1, title: '② 投稿構成の方向性', icon: '📅', color: 'purple' },
+      { id: 2, title: '③ カスタマージャーニー別の投稿役割', icon: '🚀', color: 'green' },
+      { id: 3, title: '④ 注意点・成功のコツ', icon: '💡', color: 'yellow' },
+      { id: 4, title: '⑤ 世界観診断', icon: '🎨', color: 'pink' },
+      { id: 5, title: '⑥ フィード投稿提案', icon: '📸', color: 'indigo' },
+      { id: 6, title: '⑦ リール投稿提案', icon: '🎬', color: 'red' },
+      { id: 7, title: '⑧ ストーリー投稿提案', icon: '📱', color: 'cyan' }
+    ];
+
+    const parsedSections = sections.map((section, index) => {
+      // セクション番号で分割（①、②、...）
+      const sectionPattern = new RegExp(`[①②③④⑤⑥⑦⑧].*?(?=[①②③④⑤⑥⑦⑧]|$)`, 'gs');
+      const matches = strategy.match(sectionPattern);
+      
+      if (matches && matches[index]) {
+        return {
+          ...section,
+          content: matches[index].trim()
+        };
+      }
+      
+      // フォールバック: ### で分割
+      const headerPattern = new RegExp(`###?\\s*${section.title.replace(/[①②③④⑤⑥⑦⑧]/g, '')}[\\s\\S]*?(?=###|$)`, 'i');
+      const match = strategy.match(headerPattern);
+      
+      return {
+        ...section,
+        content: match ? match[0].trim() : ''
+      };
+    });
+
+    return parsedSections.filter(s => s.content);
   };
   return (
     <section className="p-6">
@@ -69,57 +118,67 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
           </div>
           
           {strategyState.strategy ? (
-            <div className="space-y-4">
-              {/* AI生成内容を表示 */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="prose prose-sm max-w-none">
-                  <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
-                    {strategyState.strategy}
-                  </div>
-                </div>
-              </div>
+            <div className="space-y-3">
+              {/* セクション別にアコーディオン表示 */}
+              {parseStrategyIntoSections(strategyState.strategy).map((section) => {
+                const isExpanded = expandedSections.includes(section.id);
+                const colorClasses = {
+                  blue: 'bg-blue-50 border-blue-200 text-blue-800',
+                  purple: 'bg-purple-50 border-purple-200 text-purple-800',
+                  green: 'bg-green-50 border-green-200 text-green-800',
+                  yellow: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                  pink: 'bg-pink-50 border-pink-200 text-pink-800',
+                  indigo: 'bg-indigo-50 border-indigo-200 text-indigo-800',
+                  red: 'bg-red-50 border-red-200 text-red-800',
+                  cyan: 'bg-cyan-50 border-cyan-200 text-cyan-800'
+                };
+                const colorClass = colorClasses[section.color as keyof typeof colorClasses] || colorClasses.blue;
 
-              {/* フォームデータに基づく世界観情報 */}
-              {formData && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h5 className="font-medium mb-3 text-gray-800 border-b border-blue-100 pb-2">
-                    📊 入力された世界観情報
-                  </h5>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <strong className="text-sm text-gray-700">ブランドコンセプト：</strong>
-                        <span className="text-sm text-gray-600 ml-2">
-                          {formData.brandConcept || '未設定'}
-                        </span>
+                return (
+                  <div key={section.id} className={`border rounded-lg ${colorClass}`}>
+                    {/* セクションヘッダー（クリックで展開/折りたたみ） */}
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className="w-full px-4 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                    >
+                      <div className="flex items-center">
+                        <span className="text-xl mr-2">{section.icon}</span>
+                        <span className="font-semibold text-sm">{section.title}</span>
                       </div>
-                      <div>
-                        <strong className="text-sm text-gray-700">メインカラー：</strong>
-                        <span className="text-sm text-gray-600 ml-2">
-                          {formData.colorVisual || '未設定'}
-                        </span>
-                        {formData.colorVisual && (
-                          <span className="inline-block w-4 h-4 ml-2 border border-gray-400 rounded align-middle bg-[#ff8a15]"></span>
-                        )}
-                      </div>
-                      <div>
-                        <strong className="text-sm text-gray-700">文章トーン：</strong>
-                        <span className="text-sm text-gray-600 ml-2">
-                          {formData.tone || '未設定'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong className="text-sm text-gray-700">サブカラー：</strong>
-                        <span className="text-sm text-gray-600 ml-2">白・グレー</span>
-                        <div className="inline-flex space-x-1 ml-2 align-middle">
-                          <span className="w-3 h-3 bg-white border border-gray-400 rounded"></span>
-                          <span className="w-3 h-3 bg-gray-400 rounded"></span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5" />
+                      )}
+                    </button>
+
+                    {/* セクションコンテンツ */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 border-t border-gray-200">
+                        <div className="pt-3 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                          {section.content.replace(/^[①②③④⑤⑥⑦⑧]\s*\*\*.*?\*\*\s*/g, '')}
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })}
+
+              {/* 全て展開/折りたたみボタン */}
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setExpandedSections([0, 1, 2, 3, 4, 5, 6, 7])}
+                  className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md transition-colors"
+                >
+                  📖 全て展開
+                </button>
+                <button
+                  onClick={() => setExpandedSections([])}
+                  className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md transition-colors"
+                >
+                  📕 全て折りたたむ
+                </button>
+              </div>
             </div>
           ) : (
             <div className="text-center py-8">
