@@ -50,25 +50,41 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       { id: 3, title: '④ 注意点・成功のコツ', icon: '💡', color: 'yellow' }
     ];
 
-    const parsedSections = sections.map((section, index) => {
-      // セクション番号で分割（①、②、③、④）
-      const sectionPattern = new RegExp(`[①②③④].*?(?=[①②③④]|$)`, 'gs');
-      const matches = strategy.match(sectionPattern);
+    // セクション区切りを検出（①、②、③、④ または ### ）
+    const sectionMarkers = [
+      { pattern: /①.*?全体の投稿戦略/i, id: 0 },
+      { pattern: /②.*?投稿構成の方向性/i, id: 1 },
+      { pattern: /③.*?カスタマージャーニー/i, id: 2 },
+      { pattern: /④.*?注意点.*?成功.*?コツ/i, id: 3 }
+    ];
+
+    const parsedSections = sections.map((section) => {
+      const marker = sectionMarkers.find(m => m.id === section.id);
+      if (!marker) return { ...section, content: '' };
+
+      // セクションの開始位置を検索
+      const startMatch = strategy.match(marker.pattern);
+      if (!startMatch) return { ...section, content: '' };
       
-      if (matches && matches[index]) {
-        return {
-          ...section,
-          content: matches[index].trim()
-        };
+      const startIndex = startMatch.index || 0;
+      
+      // 次のセクションの開始位置を検索
+      const nextMarker = sectionMarkers.find(m => m.id === section.id + 1);
+      let endIndex = strategy.length;
+      
+      if (nextMarker) {
+        const endMatch = strategy.slice(startIndex + 1).match(nextMarker.pattern);
+        if (endMatch && endMatch.index !== undefined) {
+          endIndex = startIndex + 1 + endMatch.index;
+        }
       }
       
-      // フォールバック: ### で分割
-      const headerPattern = new RegExp(`###?\\s*${section.title.replace(/[①②③④⑤⑥⑦⑧]/g, '')}[\\s\\S]*?(?=###|$)`, 'i');
-      const match = strategy.match(headerPattern);
+      // セクション内容を抽出
+      const content = strategy.slice(startIndex, endIndex).trim();
       
       return {
         ...section,
-        content: match ? match[0].trim() : ''
+        content
       };
     });
 
@@ -106,13 +122,29 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       </p>
 
 
-      <button
-        onClick={handleStartDiagnosis}
-        disabled={isLoading || strategyState.isLoading}
-        className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4"
-      >
-        {isLoading || strategyState.isLoading ? 'AI戦略生成中...' : '▶ 診断を開始する'}
-      </button>
+      {/* 診断ボタン（戦略生成済みなら非表示） */}
+      {!strategyState.strategy && (
+        <button
+          onClick={handleStartDiagnosis}
+          disabled={isLoading || strategyState.isLoading}
+          className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4 relative overflow-hidden group"
+        >
+          {isLoading || strategyState.isLoading ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              AI戦略生成中...
+            </span>
+          ) : (
+            <>
+              <span className="relative z-10">▶ 診断を開始する</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+            </>
+          )}
+        </button>
+      )}
 
       {/* エラー表示 */}
       {strategyState.error && (
@@ -123,8 +155,22 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
         </div>
       )}
 
+      {/* ローディング表示 */}
+      {(isLoading || strategyState.isLoading) && (
+        <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-[#ff8a15] rounded-lg p-8 text-center animate-pulse">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <svg className="animate-spin h-12 w-12 text-[#ff8a15]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="text-lg font-semibold text-[#ff8a15]">🤖 AI戦略を生成中...</p>
+            <p className="text-sm text-gray-600">あなたのビジネスに最適な戦略を分析しています</p>
+          </div>
+        </div>
+      )}
+
       {/* 診断出力エリア */}
-      {showAdvice && (
+      {showAdvice && !isLoading && !strategyState.isLoading && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-lg">提案内容</h4>
