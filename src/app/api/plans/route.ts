@@ -133,6 +133,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const snsType = searchParams.get('snsType'); // instagram, x, tiktok
+    const status = searchParams.get('status'); // active, archived, expired
     const limit = parseInt(searchParams.get('limit') || '10');
 
     // userIdが指定されていない場合はエラー
@@ -143,10 +145,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const snapshot = await adminDb
+    // クエリを構築
+    let query = adminDb
       .collection('plans')
-      .where('userId', '==', userId)
-      .get();
+      .where('userId', '==', userId);
+    
+    // SNSタイプでフィルタ
+    if (snsType) {
+      query = query.where('snsType', '==', snsType);
+    }
+    
+    // ステータスでフィルタ
+    if (status) {
+      query = query.where('status', '==', status);
+    }
+
+    const snapshot = await query.get();
     
     const plans = snapshot.docs
       .map(doc => {
@@ -167,7 +181,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: plans,
+      plans: plans,
       total: snapshot.size
     });
 

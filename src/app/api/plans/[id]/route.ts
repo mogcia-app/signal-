@@ -1,83 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
 
-// 特定の計画取得
-export async function GET(
+// 計画更新（ステータス変更など）
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await params;
-    const planId = resolvedParams.id;
-    const docRef = doc(db, 'plans', planId);
-    const docSnap = await getDoc(docRef);
+    // 🔐 Firebase認証トークンからユーザーIDを取得
+    let userId = '';
+    const authHeader = request.headers.get('authorization');
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        userId = decodedToken.uid;
+      } catch (authError) {
+        return NextResponse.json(
+          { error: '認証に失敗しました' },
+          { status: 401 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { error: '認証トークンが必要です' },
+        { status: 401 }
+      );
+    }
 
-    if (!docSnap.exists()) {
+    const { id } = await params;
+    const body = await request.json();
+
+    // 計画の存在確認と所有権チェック
+    const planDoc = await adminDb.collection('plans').doc(id).get();
+    
+    if (!planDoc.exists) {
       return NextResponse.json(
         { error: '計画が見つかりません' },
         { status: 404 }
       );
     }
 
-    const planData = {
-      id: docSnap.id,
-      ...docSnap.data()
-    };
+    const planData = planDoc.data();
+    if (planData?.userId !== userId) {
+      return NextResponse.json(
+        { error: 'この計画を更新する権限がありません' },
+        { status: 403 }
+      );
+    }
 
-    return NextResponse.json({ plan: planData });
-
-  } catch (error) {
-    console.error('計画取得エラー:', error);
-    return NextResponse.json(
-      { error: '計画の取得に失敗しました' },
-      { status: 500 }
-    );
-  }
-}
-
-// 計画更新
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const resolvedParams = await params;
-    const planId = resolvedParams.id;
-    const body = await request.json();
-    const {
-      title,
-      targetFollowers,
-      currentFollowers,
-      planPeriod,
-      targetAudience,
-      category,
-      strategies,
-      simulation,
-      aiPersona
-    } = body;
-
-    const updateData: Record<string, unknown> = {
+    // 更新データ
+    const updateData = {
+      ...body,
       updatedAt: new Date()
     };
 
-    // 更新するフィールドのみ追加
-    if (title !== undefined) updateData.title = title;
-    if (targetFollowers !== undefined) updateData.targetFollowers = parseInt(targetFollowers);
-    if (currentFollowers !== undefined) updateData.currentFollowers = parseInt(currentFollowers);
-    if (planPeriod !== undefined) updateData.planPeriod = planPeriod;
-    if (targetAudience !== undefined) updateData.targetAudience = targetAudience;
-    if (category !== undefined) updateData.category = category;
-    if (strategies !== undefined) updateData.strategies = strategies;
-    if (simulation !== undefined) updateData.simulation = simulation;
-    if (aiPersona !== undefined) updateData.aiPersona = aiPersona;
-
-    const docRef = doc(db, 'plans', planId);
-    await updateDoc(docRef, updateData);
+    await adminDb.collection('plans').doc(id).update(updateData);
 
     return NextResponse.json({
+      success: true,
       message: '計画が更新されました',
-      id: planId
+      id
     });
 
   } catch (error) {
@@ -95,14 +79,53 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await params;
-    const planId = resolvedParams.id;
-    const docRef = doc(db, 'plans', planId);
-    await deleteDoc(docRef);
+    // 🔐 Firebase認証トークンからユーザーIDを取得
+    let userId = '';
+    const authHeader = request.headers.get('authorization');
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        userId = decodedToken.uid;
+      } catch (authError) {
+        return NextResponse.json(
+          { error: '認証に失敗しました' },
+          { status: 401 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { error: '認証トークンが必要です' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+
+    // 計画の存在確認と所有権チェック
+    const planDoc = await adminDb.collection('plans').doc(id).get();
+    
+    if (!planDoc.exists) {
+      return NextResponse.json(
+        { error: '計画が見つかりません' },
+        { status: 404 }
+      );
+    }
+
+    const planData = planDoc.data();
+    if (planData?.userId !== userId) {
+      return NextResponse.json(
+        { error: 'この計画を削除する権限がありません' },
+        { status: 403 }
+      );
+    }
+
+    await adminDb.collection('plans').doc(id).delete();
 
     return NextResponse.json({
-      message: '計画が削除されました',
-      id: planId
+      success: true,
+      message: '計画が削除されました'
     });
 
   } catch (error) {

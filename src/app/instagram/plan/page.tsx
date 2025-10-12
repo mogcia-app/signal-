@@ -25,12 +25,17 @@ export default function InstagramPlanPage() {
     isSaving,
     saveError,
     saveSuccess,
-    // simulationResult: planFormSimulationResult, // 未使用変数の警告を回避
+    isLoadingPlan,
+    loadedPlanId,
+    planStartDate,
+    planEndDate,
+    isPlanExpired,
     handleInputChange, 
     handleStrategyToggle, 
     handleCategoryToggle,
     savePlan,
-    setSimulationResultData
+    setSimulationResultData,
+    resetPlan
   } = usePlanForm()
 
   const { 
@@ -106,6 +111,70 @@ export default function InstagramPlanPage() {
       customDescription="強みを活かす、実行可能なSNS計画を立てましょう"
     >
       <div className="max-w-7xl mx-auto">
+        {/* 計画期間切れアラート */}
+        {isPlanExpired && planEndDate && (
+          <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <span className="text-2xl">⏰</span>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-lg font-semibold text-yellow-800">
+                  計画期間が終了しました
+                </h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  計画終了日: {planEndDate.toLocaleDateString('ja-JP')}
+                </p>
+                <p className="text-sm text-yellow-700 mt-2">
+                  新しい運用計画を立てて、さらなる成長を目指しませんか？
+                </p>
+                <button
+                  onClick={resetPlan}
+                  className="mt-3 bg-[#FF8A15] hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                >
+                  🆕 新しい計画を立てる
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 計画読み込み中 */}
+        {isLoadingPlan && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
+            <p className="text-blue-700">📂 保存された計画を読み込んでいます...</p>
+          </div>
+        )}
+
+        {/* 既存の計画がある場合の情報表示 */}
+        {loadedPlanId && !isPlanExpired && planStartDate && planEndDate && (
+          <div className="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <span className="text-2xl">📋</span>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-semibold text-green-800">
+                    運用計画実行中
+                  </h3>
+                  <p className="text-sm text-green-700 mt-1">
+                    期間: {planStartDate.toLocaleDateString('ja-JP')} 〜 {planEndDate.toLocaleDateString('ja-JP')}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    残り {Math.ceil((planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 日
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={resetPlan}
+                className="text-sm bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-medium py-2 px-3 rounded-md transition-colors"
+              >
+                🔄 計画を再設定
+              </button>
+            </div>
+          </div>
+        )}
 
         <main className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 左カラム：計画作成フォーム */}

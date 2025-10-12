@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../../../contexts/auth-context';
 import { PlanFormData, SimulationResult } from '../types/plan';
 
 export const usePlanForm = () => {
   const { user } = useAuth();
+  
+  // 計画の読み込み状態
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+  const [loadedPlanId, setLoadedPlanId] = useState<string | null>(null);
+  const [planStartDate, setPlanStartDate] = useState<Date | null>(null);
+  const [planEndDate, setPlanEndDate] = useState<Date | null>(null);
+  const [isPlanExpired, setIsPlanExpired] = useState(false);
   
   // フォーム状態管理
   const [formData, setFormData] = useState<PlanFormData>({
@@ -226,6 +233,125 @@ export const usePlanForm = () => {
     setSimulationResult(result);
   };
 
+  // ✅ 保存された計画を読み込む
+  const loadSavedPlan = async () => {
+    if (!user?.uid) return;
+
+    setIsLoadingPlan(true);
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`/api/plans?userId=${user.uid}&snsType=instagram&status=active`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.plans && data.plans.length > 0) {
+          const latestPlan = data.plans[0]; // 最新の計画
+          
+          // フォームデータを復元
+          if (latestPlan.formData) {
+            setFormData(latestPlan.formData as PlanFormData);
+          }
+          
+          // 戦略とカテゴリを復元
+          if (latestPlan.formData?.strategyValues) {
+            setSelectedStrategies(latestPlan.formData.strategyValues as string[]);
+          }
+          if (latestPlan.formData?.postCategories) {
+            setSelectedCategories(latestPlan.formData.postCategories as string[]);
+          }
+          
+          // シミュレーション結果を復元
+          if (latestPlan.simulationResult) {
+            setSimulationResult(latestPlan.simulationResult as SimulationResult);
+          }
+          
+          // 計画ID、開始日、終了日を設定
+          setLoadedPlanId(latestPlan.id);
+          
+          // 計画期間から開始日・終了日を計算
+          const createdAt = latestPlan.createdAt?.toDate?.() || new Date(latestPlan.createdAt);
+          setPlanStartDate(createdAt);
+          
+          const endDate = calculateEndDate(createdAt, latestPlan.formData?.planPeriod || '1ヶ月');
+          setPlanEndDate(endDate);
+          
+          // 期間切れチェック
+          const isExpired = endDate < new Date();
+          setIsPlanExpired(isExpired);
+          
+          console.log('✅ 保存された計画を読み込みました', { isExpired });
+        }
+      }
+    } catch (error) {
+      console.error('計画読み込みエラー:', error);
+    } finally {
+      setIsLoadingPlan(false);
+    }
+  };
+
+  // 計画期間から終了日を計算
+  const calculateEndDate = (startDate: Date, period: string): Date => {
+    const endDate = new Date(startDate);
+    
+    switch (period) {
+      case '1ヶ月':
+        endDate.setMonth(endDate.getMonth() + 1);
+        break;
+      case '3ヶ月':
+        endDate.setMonth(endDate.getMonth() + 3);
+        break;
+      case '6ヶ月':
+        endDate.setMonth(endDate.getMonth() + 6);
+        break;
+      case '1年':
+        endDate.setFullYear(endDate.getFullYear() + 1);
+        break;
+      default:
+        endDate.setMonth(endDate.getMonth() + 1);
+    }
+    
+    return endDate;
+  };
+
+  // 計画をリセット（新しい計画を立てる）
+  const resetPlan = async () => {
+    // 既存の計画をアーカイブ
+    if (loadedPlanId && user?.uid) {
+      try {
+        const idToken = await user.getIdToken();
+        await fetch(`/api/plans/${loadedPlanId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: JSON.stringify({ status: 'archived' })
+        });
+      } catch (error) {
+        console.error('計画アーカイブエラー:', error);
+      }
+    }
+    
+    // フォームをリセット
+    resetForm();
+    setSimulationResult(null);
+    setLoadedPlanId(null);
+    setPlanStartDate(null);
+    setPlanEndDate(null);
+    setIsPlanExpired(false);
+  };
+
+  // ✅ 初回マウント時に保存された計画を読み込む
+  useEffect(() => {
+    if (user?.uid) {
+      loadSavedPlan();
+    }
+  }, [user?.uid]);
+
   return {
     formData,
     selectedStrategies,
@@ -234,12 +360,19 @@ export const usePlanForm = () => {
     saveError,
     saveSuccess,
     simulationResult,
+    isLoadingPlan,
+    loadedPlanId,
+    planStartDate,
+    planEndDate,
+    isPlanExpired,
     handleInputChange,
     handleStrategyToggle,
     handleCategoryToggle,
     resetForm,
     validateForm,
     savePlan,
-    setSimulationResultData
+    setSimulationResultData,
+    loadSavedPlan,
+    resetPlan
   };
 };
