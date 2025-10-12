@@ -15,6 +15,7 @@ export interface BusinessInfo {
   businessType: string;       // ビジネスタイプ
   description: string;        // 事業内容
   targetMarket: string;       // ターゲット市場
+  catchphrase?: string;       // キャッチコピー
   goals: string[];           // 目標
   challenges: string[];      // 課題
   productsOrServices?: ProductOrService[]; // 商品・サービス・政策情報

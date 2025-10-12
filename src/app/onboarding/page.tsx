@@ -23,7 +23,8 @@ export default function OnboardingPage() {
     companySize: '',
     businessType: '',
     description: '',
-    targetMarket: ''
+    targetMarket: '',
+    catchphrase: ''
   });
   const [customIndustry, setCustomIndustry] = useState('');
 
@@ -60,7 +61,8 @@ export default function OnboardingPage() {
         companySize: userProfile.businessInfo.companySize || '',
         businessType: userProfile.businessInfo.businessType || '',
         description: userProfile.businessInfo.description || '',
-        targetMarket: userProfile.businessInfo.targetMarket || ''
+        targetMarket: userProfile.businessInfo.targetMarket || '',
+        catchphrase: userProfile.businessInfo.catchphrase || ''
       });
       setGoals(userProfile.businessInfo.goals || []);
       setChallenges(userProfile.businessInfo.challenges || []);
@@ -560,6 +562,24 @@ export default function OnboardingPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* キャッチコピー */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    💬 キャッチコピー
+                    <span className="ml-2 text-xs text-gray-500">（AIが参照します）</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={businessInfo.catchphrase || ''}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, catchphrase: e.target.value })}
+                    placeholder="例: あなたの美しさを最大限に引き出す、プロの技術"
+                    className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 ブランドの核心を表す一文を入力してください
+                  </p>
                 </div>
 
                 {/* 事業内容 */}
@@ -1165,6 +1185,10 @@ export default function OnboardingPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
                   <p className="text-gray-900">{getTargetMarketLabel(businessInfo.targetMarket) || '未設定'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">💬 キャッチコピー</label>
+                  <p className="text-gray-900 font-medium">{businessInfo.catchphrase || '未設定'}</p>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">事業内容</label>

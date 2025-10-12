@@ -16,6 +16,7 @@ export const buildSystemPrompt = (userProfile: UserProfile, snsType?: string): s
 - 会社規模: ${businessInfo.companySize || '未設定'}
 - 事業形態: ${businessInfo.businessType || '未設定'}
 - ターゲット市場: ${businessInfo.targetMarket || '未設定'}
+${businessInfo.catchphrase ? `- キャッチコピー: 「${businessInfo.catchphrase}」` : ''}
 - 事業内容: ${businessInfo.description || '未設定'}
 
 【商品・サービス・政策】
