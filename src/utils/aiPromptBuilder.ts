@@ -173,11 +173,24 @@ export const buildPlanPrompt = (
     targetFollowers?: number | string;
     planPeriod?: string;
     goalCategory?: string;
+    targetAudience?: string;
     strategyValues?: string[];
     postCategories?: string[];
     brandConcept?: string;
     colorVisual?: string;
     tone?: string;
+    aiHelpRequest?: string;
+    pastLearnings?: string;
+    feedFreq?: number | string;
+    reelFreq?: number | string;
+    storyFreq?: number | string;
+    saveGoal?: number | string;
+    likeGoal?: number | string;
+    reachGoal?: number | string;
+    referenceAccounts?: string;
+    hashtagStrategy?: string;
+    constraints?: string;
+    freeMemo?: string;
   },
   simulationResult?: {
     monthlyTarget?: number | string;
@@ -223,7 +236,7 @@ export const buildPlanPrompt = (
 - ビジネス目標: ${userProfile.businessInfo.goals.join(', ')}
 - 課題: ${userProfile.businessInfo.challenges.join(', ')}
 ${userProfile.businessInfo.catchphrase ? `- キャッチコピー: ${userProfile.businessInfo.catchphrase}` : ''}
-${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.productsOrServices.length > 0 ? `- 商品・サービス: ${userProfile.businessInfo.productsOrServices.map(p => `${p.name}（${p.description}）`).join('、')}` : ''}
+${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.productsOrServices.length > 0 ? `- 商品・サービス: ${userProfile.businessInfo.productsOrServices.map(p => `${p.name}${p.details ? `（${p.details}）` : ''}`).join('、')}` : ''}
 
 ## ⚠️ AI設定の制約条件（絶対遵守）
 ${userProfile.snsAISettings[snsType] ? (() => {
