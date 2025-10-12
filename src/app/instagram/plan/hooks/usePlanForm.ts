@@ -50,6 +50,7 @@ export const usePlanForm = () => {
   
   // シミュレーション結果の状態管理
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [generatedStrategy, setGeneratedStrategy] = useState<string | null>(null); // ★ AI戦略を保持
 
   // フォーム入力ハンドラー
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -166,6 +167,8 @@ export const usePlanForm = () => {
       // 計画データの構築
       const planData = {
         userId: user.uid,
+        snsType: 'instagram', // ★ 追加
+        status: 'active', // ★ 追加
         title: formData.goalName || 'Instagram成長計画',
         targetFollowers: parseInt(formData.currentFollowers, 10) + parseInt(formData.followerGain, 10),
         currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
@@ -173,6 +176,7 @@ export const usePlanForm = () => {
         targetAudience: formData.targetAudience || '未設定',
         category: formData.goalCategory || '未設定',
         strategies: selectedStrategies,
+        postCategories: selectedCategories, // ★ 追加（投稿カテゴリ）
         simulation: {
           postTypes: {
             reel: { weeklyCount: parseInt(formData.reelFreq, 10) || 0, followerEffect: 5 },
@@ -199,6 +203,19 @@ export const usePlanForm = () => {
           mainAdvice: simulationResult.mainAdvice,
           improvementTips: simulationResult.improvementTips
         } : null,
+        // ★ 追加フィールド（フォームの全データを保存）
+        formData: {
+          aiHelpRequest: formData.aiHelpRequest,
+          pastLearnings: formData.pastLearnings,
+          referenceAccounts: formData.referenceAccounts,
+          hashtagStrategy: formData.hashtagStrategy,
+          constraints: formData.constraints,
+          freeMemo: formData.freeMemo,
+          saveGoal: formData.saveGoal,
+          likeGoal: formData.likeGoal,
+          reachGoal: formData.reachGoal
+        },
+        generatedStrategy, // ★ AI戦略を保存
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -267,6 +284,11 @@ export const usePlanForm = () => {
           // シミュレーション結果を復元
           if (latestPlan.simulationResult) {
             setSimulationResult(latestPlan.simulationResult as SimulationResult);
+          }
+          
+          // ★ AI戦略を復元
+          if (latestPlan.generatedStrategy) {
+            setGeneratedStrategy(latestPlan.generatedStrategy as string);
           }
           
           // 計画ID、開始日、終了日を設定
@@ -360,6 +382,8 @@ export const usePlanForm = () => {
     saveError,
     saveSuccess,
     simulationResult,
+    generatedStrategy, // ★ 追加
+    setGeneratedStrategy, // ★ 追加
     isLoadingPlan,
     loadedPlanId,
     planStartDate,

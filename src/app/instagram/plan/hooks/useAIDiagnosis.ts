@@ -47,9 +47,9 @@ export const useAIDiagnosis = () => {
 
   // AI戦略を保存
   const handleSaveAdviceAndContinue = () => {
-    console.log('AI戦略を保存');
-    // TODO: AI戦略の保存処理
-    setShowAiAdvice(false);
+    console.log('AI戦略を保存（計画保存時にgeneratedStrategyも保存される）');
+    // generatedStrategyはusePlanForm内で管理され、savePlan()時に一緒に保存される
+    // setShowAiAdvice(false); ← 削除：保存後も表示し続ける
   };
 
   // AI診断結果をクリア

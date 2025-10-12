@@ -86,7 +86,7 @@ export const usePlanData = () => {
       setLoading(true);
       setError(null);
       const idToken = await user.getIdToken();
-      const response = await fetch(`/api/plans?userId=${user.uid}`, {
+      const response = await fetch(`/api/plans?userId=${user.uid}&snsType=instagram&status=active`, {
         headers: {
           'Authorization': `Bearer ${idToken}`
         }
@@ -100,9 +100,12 @@ export const usePlanData = () => {
       
       const result = await response.json();
       
-      if (result.success && result.data && result.data.length > 0) {
+      // plansまたはdataのどちらかに対応
+      const plansArray = result.plans || result.data || [];
+      
+      if (plansArray.length > 0) {
         // 最新の計画を取得し、型を変換
-        const latestPlan = result.data[0];
+        const latestPlan = plansArray[0];
         const convertedPlan: PlanData = {
           id: latestPlan.id,
           title: latestPlan.title || 'Instagram成長計画',

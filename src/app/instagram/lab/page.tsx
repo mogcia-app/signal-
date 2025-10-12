@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import PostEditor from './components/PostEditor';
@@ -18,9 +18,15 @@ export default function InstagramLabPage() {
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [isAIGenerated, setIsAIGenerated] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
   // 計画データを取得
   const { planData } = usePlanData();
+  
+  // クライアントサイドでのみレンダリング
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // 計画がある場合のサンプルデータ（テスト用）
   // const [planData] = useState<PlanData>({
@@ -104,7 +110,7 @@ export default function InstagramLabPage() {
 
             {/* 右カラム: 計画・ツール */}
             <div className="space-y-6">
-              <PlanDisplay planData={planData} />
+              {isMounted && <PlanDisplay planData={planData} />}
               
               <ToolPanel
                 onTemplateSelect={(template: string) => {

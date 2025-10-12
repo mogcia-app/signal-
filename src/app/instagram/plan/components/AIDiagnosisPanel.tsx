@@ -10,6 +10,8 @@ interface AIDiagnosisPanelProps {
   onSaveAdvice: () => void;
   formData: PlanFormData;
   simulationResult?: SimulationResult | null;
+  generatedStrategy: string | null;
+  setGeneratedStrategy: (strategy: string | null) => void;
 }
 
 export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
@@ -18,7 +20,9 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   onStartDiagnosis,
   onSaveAdvice,
   formData,
-  simulationResult
+  simulationResult,
+  generatedStrategy,
+  setGeneratedStrategy
 }) => {
   const { strategyState, generateStrategy } = useAIStrategy();
   const [expandedSections, setExpandedSections] = useState<number[]>([0]); // デフォルトで①を展開
@@ -31,6 +35,13 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       console.error('Strategy generation failed:', error);
     }
   };
+
+  // ★ 戦略生成完了時に保存
+  React.useEffect(() => {
+    if (strategyState.strategy) {
+      setGeneratedStrategy(strategyState.strategy);
+    }
+  }, [strategyState.strategy, setGeneratedStrategy]);
 
   // セクションの展開/折りたたみ
   const toggleSection = (index: number) => {
@@ -123,7 +134,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
 
 
       {/* 診断ボタン（戦略生成済みなら非表示） */}
-      {!strategyState.strategy && (
+      {!generatedStrategy && (
         <button
           onClick={handleStartDiagnosis}
           disabled={isLoading || strategyState.isLoading}
@@ -174,17 +185,17 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-lg">提案内容</h4>
-            {strategyState.strategy && (
+            {generatedStrategy && (
               <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                 AI生成済み
               </span>
             )}
           </div>
           
-          {strategyState.strategy ? (
+          {generatedStrategy ? (
             <div className="space-y-3">
               {/* セクション別にアコーディオン表示 */}
-              {parseStrategyIntoSections(strategyState.strategy).map((section) => {
+              {parseStrategyIntoSections(generatedStrategy).map((section) => {
                 const isExpanded = expandedSections.includes(section.id);
                 const colorClasses = {
                   blue: 'bg-blue-50 border-blue-200 text-blue-800',
@@ -257,7 +268,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
             </div>
           )}
 
-          {strategyState.strategy && (
+          {generatedStrategy && (
             <div className="pt-4">
               <button
                 className="w-full bg-[#ff8a15] hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-md transition-colors"

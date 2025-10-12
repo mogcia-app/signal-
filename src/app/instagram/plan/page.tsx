@@ -30,6 +30,8 @@ export default function InstagramPlanPage() {
     planStartDate,
     planEndDate,
     isPlanExpired,
+    generatedStrategy,
+    setGeneratedStrategy,
     handleInputChange, 
     handleStrategyToggle, 
     handleCategoryToggle,
@@ -257,6 +259,8 @@ export default function InstagramPlanPage() {
                     onSaveAdvice={handleSaveAdviceAndContinue}
                     formData={formData}
                     simulationResult={simulationResult}
+                    generatedStrategy={generatedStrategy}
+                    setGeneratedStrategy={setGeneratedStrategy}
                   />
                 )}
               </div>
