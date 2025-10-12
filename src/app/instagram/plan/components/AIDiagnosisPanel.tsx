@@ -41,22 +41,18 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
     );
   };
 
-  // AI戦略をセクション別に分割
+  // AI戦略をセクション別に分割（4セクション）
   const parseStrategyIntoSections = (strategy: string) => {
     const sections = [
       { id: 0, title: '① 全体の投稿戦略', icon: '🎯', color: 'blue' },
       { id: 1, title: '② 投稿構成の方向性', icon: '📅', color: 'purple' },
-      { id: 2, title: '③ カスタマージャーニー別の投稿役割', icon: '🚀', color: 'green' },
-      { id: 3, title: '④ 注意点・成功のコツ', icon: '💡', color: 'yellow' },
-      { id: 4, title: '⑤ 世界観診断', icon: '🎨', color: 'pink' },
-      { id: 5, title: '⑥ フィード投稿提案', icon: '📸', color: 'indigo' },
-      { id: 6, title: '⑦ リール投稿提案', icon: '🎬', color: 'red' },
-      { id: 7, title: '⑧ ストーリー投稿提案', icon: '📱', color: 'cyan' }
+      { id: 2, title: '③ カスタマージャーニー', icon: '🚀', color: 'green' },
+      { id: 3, title: '④ 注意点・成功のコツ', icon: '💡', color: 'yellow' }
     ];
 
     const parsedSections = sections.map((section, index) => {
-      // セクション番号で分割（①、②、...）
-      const sectionPattern = new RegExp(`[①②③④⑤⑥⑦⑧].*?(?=[①②③④⑤⑥⑦⑧]|$)`, 'gs');
+      // セクション番号で分割（①、②、③、④）
+      const sectionPattern = new RegExp(`[①②③④].*?(?=[①②③④]|$)`, 'gs');
       const matches = strategy.match(sectionPattern);
       
       if (matches && matches[index]) {
@@ -82,8 +78,8 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   // Markdownをクリーンアップ（**, ##, -, などを削除）
   const cleanMarkdown = (text: string): string => {
     return text
-      // セクション番号とタイトルを削除
-      .replace(/^[①②③④⑤⑥⑦⑧]\s*\*\*.*?\*\*\s*/g, '')
+      // セクション番号とタイトルを削除（4セクション）
+      .replace(/^[①②③④]\s*\*\*.*?\*\*\s*/g, '')
       // ## ヘッダーを削除
       .replace(/^##\s*/gm, '')
       // ### ヘッダーを削除
@@ -189,7 +185,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
               {/* 全て展開/折りたたみボタン */}
               <div className="flex gap-2 pt-2">
                 <button
-                  onClick={() => setExpandedSections([0, 1, 2, 3, 4, 5, 6, 7])}
+                  onClick={() => setExpandedSections([0, 1, 2, 3])}
                   className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md transition-colors"
                 >
                   📖 全て展開
