@@ -207,85 +207,91 @@ export const buildPlanPrompt = (
   const planInstructions = `
 【運用計画生成の指示】
 あなたは${userProfile.businessInfo.industry}業界に精通したInstagram戦略コンサルタントです。
-このクライアントのために、**他社と差別化された、実践的で即実行可能な**運用計画を作成してください。
+このクライアントのために、**簡潔で分かりやすく、すぐ実行できる**運用計画を作成してください。
 
-## 📊 クライアントの現状
-- 業種: ${userProfile.businessInfo.industry}（競合が多い市場）
+## ⚠️ 絶対守る執筆ルール
+1. **横文字を使わない**（エンゲージメント→保存/いいね、メッセージング→届け方）
+2. **1セクション150文字以内**（長文禁止）
+3. **箇条書き中心**（読みやすく）
+4. **動詞で締める**（〜できる、〜が分かる、〜を目指す）
+5. **抽象的な表現を避ける**（具体的に）
+
+## 📊 /onboarding で登録済みの基本情報（常に参照）
+- 業種: ${userProfile.businessInfo.industry}
 - 会社規模: ${userProfile.businessInfo.companySize}
 - ターゲット市場: ${userProfile.businessInfo.targetMarket}
-- 現在のフォロワー数: ${currentFollowers} → 目標: ${targetFollowers}（達成期間: ${planPeriod}）
-- **目標**: ${userProfile.businessInfo.goals.join(', ')}
-- **課題**: ${userProfile.businessInfo.challenges.join(', ')}
+- ビジネス目標: ${userProfile.businessInfo.goals.join(', ')}
+- 課題: ${userProfile.businessInfo.challenges.join(', ')}
+${userProfile.businessInfo.catchphrase ? `- キャッチコピー: ${userProfile.businessInfo.catchphrase}` : ''}
+${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.productsOrServices.length > 0 ? `- 商品・サービス: ${userProfile.businessInfo.productsOrServices.map(p => `${p.name}（${p.description}）`).join('、')}` : ''}
 
-## 🎯 計画パラメータ
-- ブランドコンセプト: ${formData?.brandConcept || '未設定'}
-- メインカラー: ${formData?.colorVisual || '未設定'}
-- 文章トーン: ${formData?.tone || '未設定'}
-- 選択戦略: ${strategies}
-- 投稿カテゴリ: ${categories}
-- 週間投稿数: フィード${feedPosts}回、リール${reelPosts}回
-
-## ⚠️ 重要な制約条件
+## ⚠️ AI設定の制約条件（絶対遵守）
 ${userProfile.snsAISettings[snsType] ? (() => {
   const settings = userProfile.snsAISettings[snsType] as { enabled: boolean; tone?: string; features?: string[]; manner?: string; cautions?: string; goals?: string; motivation?: string; additionalInfo?: string };
-  return (settings.cautions ? `- NGワード/注意事項: ${settings.cautions}\n` : '') + (settings.manner ? `- マナー/ルール: ${settings.manner}` : '');
+  return (settings.cautions ? `- ❌ NGワード/注意事項: ${settings.cautions}\n` : '') + (settings.manner ? `- ✅ マナー/ルール: ${settings.manner}\n` : '') + (settings.tone ? `- 💬 トーン: ${settings.tone}` : '');
 })() : ''}
+
+## 🌟 今回の運用計画（ユーザーが星マークで指定した必須項目）
+- 期間: ${planPeriod}
+- 現在のフォロワー: ${currentFollowers} → 目標: ${targetFollowers}
+- KPIカテゴリ: ${formData?.goalCategory || '未設定'}
+- ターゲット層: ${formData?.targetAudience || '未設定'}
+- 選択した施策: ${strategies}
+- 投稿カテゴリ: ${categories}
+${formData?.aiHelpRequest ? `- ❓ AIに相談したいこと: ${formData.aiHelpRequest}` : ''}
+${formData?.pastLearnings ? `- 📝 前回の振り返り: ${formData.pastLearnings}` : ''}
+
+## 📌 任意項目（記入されている場合のみ参照）
+${formData?.feedFreq || formData?.reelFreq || formData?.storyFreq ? `- 投稿頻度: フィード${formData.feedFreq || 0}回、リール${formData.reelFreq || 0}回、ストーリー${formData.storyFreq || 0}回/週` : ''}
+${formData?.saveGoal || formData?.likeGoal || formData?.reachGoal ? `- 目標数値: 保存${formData.saveGoal || 0}、いいね${formData.likeGoal || 0}、リーチ${formData.reachGoal || 0}` : ''}
+${formData?.referenceAccounts ? `- 参考アカウント: ${formData.referenceAccounts}` : ''}
+${formData?.hashtagStrategy ? `- ハッシュタグ戦略: ${formData.hashtagStrategy}` : ''}
+${formData?.constraints ? `- 制約条件: ${formData.constraints}` : ''}
+${formData?.freeMemo ? `- 補足メモ: ${formData.freeMemo}` : ''}
 
 ## 📋 生成する内容（4つのセクション）
 
-### ① **全体の投稿戦略**
-**【差別化ポイント】**を明確にし、${userProfile.businessInfo.industry}業界で他社と差をつける独自の切り口を提示してください。
-- なぜこのクライアントをフォローすべきか？の明確な価値提案
-- ${userProfile.businessInfo.targetMarket}に刺さる具体的なメッセージング
-- 課題「${userProfile.businessInfo.challenges[0] || 'なし'}」を逆手に取った戦略
-${userProfile.businessInfo.catchphrase ? `- キャッチコピー「${userProfile.businessInfo.catchphrase}」をどう活かすか` : ''}
+### ① **全体の投稿戦略**（150文字以内）
+**【差別化ポイント】**を簡潔に提示してください：
+- フォローする理由（1行で）
+- 届けたい層への届け方（3行以内、年齢層別に）
+- 投稿の基本方針（週〇回、保存率〇%を目指すなど）
+${userProfile.businessInfo.catchphrase ? `- 「${userProfile.businessInfo.catchphrase}」の活かし方` : ''}
+※横文字不可、簡潔に、動詞で締める
 
-### ② **投稿構成の方向性**
-**フィード、リール、ストーリーのバランスと役割**を提案してください：
-- **フィード投稿**: 何を中心に発信するか（例: 情報提供7割、プロモーション3割）
-  - どんな種類の投稿を作るか（Before/After、お客様の声、豆知識など）
-  - 推奨する雰囲気やトーン
-  
-- **リール投稿**: どんな目的で活用するか（例: 認知拡大、トレンド参加）
-  - どんなタイプのリールを作るか（ハウツー、ビフォーアフター、トレンド活用など）
-  - フックの作り方の方向性（最初の3秒で何を見せるか）
-  
-- **ストーリー投稿**: どう使い分けるか（例: 日常発信、限定情報）
-  - ストーリーで発信すべき内容の種類
-  - エンゲージメント施策の方向性（質問、アンケート、クイズ）
+### ② **投稿構成の方向性**（150文字以内）
+**3つの投稿タイプの役割と割合**を提案：
+- **フィード**: 何を発信するか（情報7割、宣伝3割など）
+- **リール**: 何を狙うか（認知拡大、フォロワー獲得など）
+- **ストーリー**: どう使うか（日常、質問箱、アンケートなど）
+- カテゴリ（${categories}）の配分
+※簡潔に、箇条書きで
 
-- 投稿カテゴリ（${categories}）の効果的な配分方法
+### ③ **カスタマージャーニー（タイムライン形式）**（150文字以内）
+**4段階の投稿戦略**を1行ずつ簡潔に：
 
-### ③ **カスタマージャーニー（タイムライン形式）**
-**以下の形式で、各段階での投稿戦略を提示してください：**
+① 認知段階 → [何で注意を引くか？投稿タイプも]
+② 興味段階 → [何で関心を深めるか？投稿タイプも]
+③ 検討段階 → [何で信頼を作るか？投稿タイプも]
+④ 行動段階 → [どう行動に繋げるか？投稿タイプも]
 
-① 認知段階
- ↓ [どんな投稿で注意を引くか]
- 
-② 興味段階
- ↓ [どんな情報で関心を深めるか]
- 
-③ 検討段階
- ↓ [どんな投稿で信頼を構築するか]
- 
-④ 行動段階
- ↓ [どう行動（予約、購入、フォロー）に繋げるか]
+※各1行、投稿タイプ（フィード/リール/ストーリー）を明記
 
-各段階で使うべき投稿タイプ（フィード/リール/ストーリー）も明記してください。
-
-### ④ **注意点・成功のコツ**
-**失敗パターン**と**成功のための具体的な数値目標**を含めてください：
-- ❌ よくある失敗: [業種特有の失敗パターン]
-- ✅ 成功のKPI: エンゲージメント率〇%、保存率〇%、シェア率〇%
-- 💡 ${userProfile.businessInfo.industry}業界の成功事例から学ぶべきポイント
+### ④ **注意点・成功のコツ**（100文字以内）
+**失敗と成功を簡潔に**：
+- ❌ よくある失敗（1行）
+- ✅ 目指す数値（保存率〇%、いいね率〇%など）
+- 💡 成功のコツ（1行）
+※横文字不可、箇条書きで
 
 ## 🎯 成果物の要件
-1. **戦略的な方向性を明確に**（具体的なタイトル案は不要）
-2. **数値目標を含める**（エンゲージメント率、保存数など）
-3. **${userProfile.businessInfo.industry}業界の特性を最大限活用**
-4. **競合との差別化を意識した独自性**
-5. **クライアントの課題「${userProfile.businessInfo.challenges.join(', ')}」の解決策を織り込む**
-6. **投稿ラボでの具体的な投稿生成の指針となる内容**
+1. **簡潔に書く**: 各セクションは読みやすい長さに（1セクション150文字以内を目安）
+2. **横文字を使わない**: 「エンゲージメント率」→「保存率・いいね率」、「メッセージング」→「届け方」など
+3. **動詞で締める**: 「〜できる」「〜が分かる」「〜を目指す」など、行動が見える表現に
+4. **箇条書きを活用**: 読みやすく、要点が一目で分かるように
+5. **具体的な数値目標**: 保存率3%、いいね率5%など、分かりやすい指標で
+6. **${userProfile.businessInfo.industry}業界の特性を活かす**: 競合との差別化を意識
+7. **課題解決**: 「${userProfile.businessInfo.challenges.join(', ')}」をどう克服するか明示
 `;
 
 
