@@ -177,6 +177,13 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               <span>📖</span>
               <span>使い方ガイド</span>
             </Link>
+            <Link 
+              href="/terms"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              <span>📄</span>
+              <span>利用規約</span>
+            </Link>
           </nav>
         </div>
 
@@ -278,13 +285,6 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             >
               <span>📚</span>
               <span>投稿一覧</span>
-            </Link>
-            <Link 
-              href="/terms"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
-              <span>📄</span>
-              <span>利用規約</span>
             </Link>
           </nav>
         </div>
