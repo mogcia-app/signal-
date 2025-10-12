@@ -33,7 +33,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   };
   if (!result) {
     return (
-      <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      <section className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <span className="mr-2">📊</span>目標達成シミュレーション
         </h3>
@@ -68,7 +68,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   }
 
   return (
-    <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <section className="p-6">
       <h3 className="text-lg font-semibold mb-4 flex items-center">
         <span className="mr-2">📊</span>目標達成シミュレーション
       </h3>

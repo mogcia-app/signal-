@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../../../contexts/auth-context'
 import SNSLayout from '../../../components/sns-layout'
 import { AIChatWidget } from '../../../components/ai-chat-widget'
@@ -15,6 +15,7 @@ import { SimulationRequest } from './types/plan'
 
 export default function InstagramPlanPage() {
   const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState<'goal' | 'simulation' | 'ai'>('goal')
   
   // カスタムフックの使用
   const { 
@@ -36,7 +37,6 @@ export default function InstagramPlanPage() {
     simulationResult, 
     isSimulating, 
     simulationError, 
-    debugInfo, 
     runSimulation 
   } = useSimulation()
 
@@ -116,40 +116,82 @@ export default function InstagramPlanPage() {
             onInputChange={handleInputChange}
             onStrategyToggle={handleStrategyToggle}
             onCategoryToggle={handleCategoryToggle}
-            debugInfo={debugInfo}
           />
 
-          {/* 右カラム：KPI・AIアドバイス */}
+          {/* 右カラム：タブ式UI */}
           <div className="space-y-4">
-            <CurrentGoalPanel
-              formData={formData}
-              selectedStrategies={selectedStrategies}
-              onEditPlan={handleEditCurrentPlan}
-              onDeletePlan={handleDeleteCurrentPlan}
-              onSavePlan={handleSavePlan}
-              isSaving={isSaving}
-              saveError={saveError}
-              saveSuccess={saveSuccess}
-            />
+            {/* タブヘッダー */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="flex border-b border-gray-200">
+                <button
+                  onClick={() => setActiveTab('goal')}
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                    activeTab === 'goal'
+                      ? 'bg-[#FF8A15] text-white'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  📋 現在の目標
+                </button>
+                <button
+                  onClick={() => setActiveTab('simulation')}
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-l border-gray-200 ${
+                    activeTab === 'simulation'
+                      ? 'bg-[#FF8A15] text-white'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  📊 シミュレーション
+                </button>
+                <button
+                  onClick={() => setActiveTab('ai')}
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-l border-gray-200 ${
+                    activeTab === 'ai'
+                      ? 'bg-[#FF8A15] text-white'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  🤖 AI戦略
+                </button>
+              </div>
 
-            <SimulationPanel
-              result={simulationResult}
-              formData={formData}
-              onRunSimulation={handleRunSimulation}
-              isSimulating={isSimulating}
-              simulationError={simulationError}
-            />
+              {/* タブコンテンツ */}
+              <div className="p-0">
+                {activeTab === 'goal' && (
+                  <CurrentGoalPanel
+                    formData={formData}
+                    selectedStrategies={selectedStrategies}
+                    onEditPlan={handleEditCurrentPlan}
+                    onDeletePlan={handleDeleteCurrentPlan}
+                    onSavePlan={handleSavePlan}
+                    isSaving={isSaving}
+                    saveError={saveError}
+                    saveSuccess={saveSuccess}
+                  />
+                )}
 
+                {activeTab === 'simulation' && (
+                  <SimulationPanel
+                    result={simulationResult}
+                    formData={formData}
+                    onRunSimulation={handleRunSimulation}
+                    isSimulating={isSimulating}
+                    simulationError={simulationError}
+                  />
+                )}
 
-            <AIDiagnosisPanel
-              showAdvice={showAiAdvice}
-              isLoading={isAiLoading}
-              onStartDiagnosis={() => handleStartAiDiagnosis(formData)}
-              onSaveAdvice={handleSaveAdviceAndContinue}
-              formData={formData}
-              simulationResult={simulationResult}
-            />
-          
+                {activeTab === 'ai' && (
+                  <AIDiagnosisPanel
+                    showAdvice={showAiAdvice}
+                    isLoading={isAiLoading}
+                    onStartDiagnosis={() => handleStartAiDiagnosis(formData)}
+                    onSaveAdvice={handleSaveAdviceAndContinue}
+                    formData={formData}
+                    simulationResult={simulationResult}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </main>
 

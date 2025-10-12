@@ -23,7 +23,7 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
   saveSuccess = false
 }) => {
   return (
-    <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <section className="p-6">
       <h3 className="text-lg font-semibold mb-4 flex items-center">
         <span className="mr-2">🎯</span>進行中の目標
       </h3>

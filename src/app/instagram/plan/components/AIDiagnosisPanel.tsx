@@ -30,7 +30,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
     }
   };
   return (
-    <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <section className="p-6">
       <h3 className="text-lg font-semibold mb-2 flex items-center">
         <span className="mr-2">🤖</span>AIによる投稿戦略アドバイス
       </h3>

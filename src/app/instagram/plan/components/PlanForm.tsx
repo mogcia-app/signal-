@@ -8,16 +8,6 @@ interface PlanFormProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   onStrategyToggle: (strategy: string) => void;
   onCategoryToggle: (category: string) => void;
-  debugInfo: {
-    step: string;
-    requestData?: Record<string, unknown>;
-    timestamp: string;
-    status?: number;
-    error?: string;
-    details?: Record<string, unknown>;
-    improvementTipsCount?: number;
-    improvementTips?: string[];
-  } | null;
 }
 
 export const PlanForm: React.FC<PlanFormProps> = ({
@@ -26,8 +16,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   selectedCategories,
   onInputChange,
   onStrategyToggle,
-  onCategoryToggle,
-  debugInfo
+  onCategoryToggle
 }) => {
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
@@ -379,48 +368,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         </div>
 
         {/* デバッグ情報表示 */}
-        {debugInfo && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <h4 className="text-blue-800 font-medium mb-2">🔍 デバッグ情報</h4>
-            <div className="text-sm text-blue-700 space-y-2">
-              <p><strong>ステップ:</strong> {debugInfo.step}</p>
-              <p><strong>時刻:</strong> {debugInfo.timestamp}</p>
-              
-              {debugInfo.requestData && (
-                <div>
-                  <strong>送信データ:</strong>
-                  <pre className="mt-1 p-2 bg-blue-100 rounded text-xs overflow-x-auto">
-                    {JSON.stringify(debugInfo.requestData, null, 2)}
-                  </pre>
-                </div>
-              )}
-              
-              {debugInfo.status && (
-                <p><strong>レスポンス状態:</strong> {debugInfo.status}</p>
-              )}
-              
-              {debugInfo.error && (
-                <p className="text-red-600"><strong>エラー:</strong> {debugInfo.error}</p>
-              )}
-              
-              {debugInfo.improvementTipsCount !== undefined && (
-                <div>
-                  <p><strong>改善提案数:</strong> {debugInfo.improvementTipsCount}</p>
-                  {debugInfo.improvementTips && debugInfo.improvementTips.length > 0 && (
-                    <div>
-                      <strong>改善提案:</strong>
-                      <ul className="mt-1 list-disc list-inside">
-                        {debugInfo.improvementTips.map((tip: string, index: number) => (
-                          <li key={index} className="text-xs">{tip}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
