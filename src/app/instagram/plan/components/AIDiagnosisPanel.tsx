@@ -78,6 +78,28 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
 
     return parsedSections.filter(s => s.content);
   };
+
+  // Markdownをクリーンアップ（**, ##, -, などを削除）
+  const cleanMarkdown = (text: string): string => {
+    return text
+      // セクション番号とタイトルを削除
+      .replace(/^[①②③④⑤⑥⑦⑧]\s*\*\*.*?\*\*\s*/g, '')
+      // ## ヘッダーを削除
+      .replace(/^##\s*/gm, '')
+      // ### ヘッダーを削除
+      .replace(/^###\s*/gm, '')
+      // **太字**を削除（太字記号のみ）
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      // __太字__を削除
+      .replace(/__(.*?)__/g, '$1')
+      // リストマーカー「- 」を「• 」に変更
+      .replace(/^- /gm, '• ')
+      // 連続する空行を1つに
+      .replace(/\n\n\n+/g, '\n\n')
+      // 先頭と末尾の空白を削除
+      .trim();
+  };
+
   return (
     <section className="p-6">
       <h3 className="text-lg font-semibold mb-2 flex items-center">
@@ -156,7 +178,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
                     {isExpanded && (
                       <div className="px-4 pb-4 border-t border-gray-200">
                         <div className="pt-3 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                          {section.content.replace(/^[①②③④⑤⑥⑦⑧]\s*\*\*.*?\*\*\s*/g, '')}
+                          {cleanMarkdown(section.content)}
                         </div>
                       </div>
                     )}

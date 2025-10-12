@@ -148,27 +148,27 @@ export default function InstagramPlanPage() {
 
         {/* 既存の計画がある場合の情報表示 */}
         {loadedPlanId && !isPlanExpired && planStartDate && planEndDate && (
-          <div className="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
+          <div className="mb-6 bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
                   <span className="text-2xl">📋</span>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-lg font-semibold text-green-800">
+                  <h3 className="text-lg font-semibold text-gray-900">
                     運用計画実行中
                   </h3>
-                  <p className="text-sm text-green-700 mt-1">
+                  <p className="text-sm text-gray-700 mt-1">
                     期間: {planStartDate.toLocaleDateString('ja-JP')} 〜 {planEndDate.toLocaleDateString('ja-JP')}
                   </p>
-                  <p className="text-xs text-green-600 mt-1">
+                  <p className="text-xs text-[#FF8A15] font-medium mt-1">
                     残り {Math.ceil((planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 日
                   </p>
                 </div>
               </div>
               <button
                 onClick={resetPlan}
-                className="text-sm bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-medium py-2 px-3 rounded-md transition-colors"
+                className="text-sm bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-medium py-2 px-3 transition-colors"
               >
                 🔄 計画を再設定
               </button>
