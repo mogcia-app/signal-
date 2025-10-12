@@ -200,64 +200,99 @@ export const buildPlanPrompt = (
 
   const planInstructions = `
 【運用計画生成の指示】
-このクライアントのために、実行可能で効果的な${snsType.toUpperCase()}運用計画を作成してください。
+あなたは${userProfile.businessInfo.industry}業界に精通したInstagram戦略コンサルタントです。
+このクライアントのために、**他社と差別化された、実践的で即実行可能な**運用計画を作成してください。
 
-## 計画データ
-- 現在のフォロワー数: ${currentFollowers}
-- 目標フォロワー数: ${targetFollowers}
-- 達成期間: ${planPeriod}
+## 📊 クライアントの現状
+- 業種: ${userProfile.businessInfo.industry}（競合が多い市場）
+- 会社規模: ${userProfile.businessInfo.companySize}
+- ターゲット市場: ${userProfile.businessInfo.targetMarket}
+- 現在のフォロワー数: ${currentFollowers} → 目標: ${targetFollowers}（達成期間: ${planPeriod}）
+- **目標**: ${userProfile.businessInfo.goals.join(', ')}
+- **課題**: ${userProfile.businessInfo.challenges.join(', ')}
+
+## 🎯 計画パラメータ
 - ブランドコンセプト: ${formData?.brandConcept || '未設定'}
 - メインカラー: ${formData?.colorVisual || '未設定'}
 - 文章トーン: ${formData?.tone || '未設定'}
 - 選択戦略: ${strategies}
 - 投稿カテゴリ: ${categories}
-
-## シミュレーション結果
-- 月間目標: ${monthlyTarget}
-- 実現可能性: ${feasibility}
 - 週間投稿数: フィード${feedPosts}回、リール${reelPosts}回
 
-## 生成する内容（8つのセクション）
-以下の8つのセクションで、具体的で実行可能な戦略を提案してください：
+## ⚠️ 重要な制約条件
+${userProfile.snsAISettings[snsType] ? (() => {
+  const settings = userProfile.snsAISettings[snsType] as { enabled: boolean; tone?: string; features?: string[]; manner?: string; cautions?: string; goals?: string; motivation?: string; additionalInfo?: string };
+  return (settings.cautions ? `- NGワード/注意事項: ${settings.cautions}\n` : '') + (settings.manner ? `- マナー/ルール: ${settings.manner}` : '');
+})() : ''}
 
-① **全体の投稿戦略**
-   - クライアントの目標（${userProfile.businessInfo.goals.join(', ')}）を達成するための全体戦略
-   - ターゲット市場（${userProfile.businessInfo.targetMarket}）に響くアプローチ
+## 📋 生成する内容（8つのセクション）
 
-② **投稿構成の方向性**
-   - フィード、リール、ストーリーのバランス
-   - 投稿カテゴリ（${categories}）の活用方法
+### ① **全体の投稿戦略**
+**【差別化ポイント】**を明確にし、${userProfile.businessInfo.industry}業界で他社と差をつける独自の切り口を提示してください。
+- なぜこのクライアントをフォローすべきか？の明確な価値提案
+- ${userProfile.businessInfo.targetMarket}に刺さる具体的なメッセージング
+- 課題「${userProfile.businessInfo.challenges[0] || 'なし'}」を逆手に取った戦略
 
-③ **カスタマージャーニー別の投稿役割**
-   - 認知→興味→検討→行動の各段階での投稿の役割
-   - ターゲットを惹きつけるコンテンツ戦略
+### ② **投稿構成の方向性**
+**週次の具体的な投稿スケジュール**を提案してください：
+- 月曜: [投稿タイプ] - [目的] - [具体的テーマ例]
+- 水曜: [投稿タイプ] - [目的] - [具体的テーマ例]
+- 金曜: [投稿タイプ] - [目的] - [具体的テーマ例]
+※投稿カテゴリ（${categories}）を効果的に配分
 
-④ **注意点・成功のコツ**
-   - 課題（${userProfile.businessInfo.challenges.join(', ')}）を克服する方法
-   - 実行時の注意点とベストプラクティス
+### ③ **カスタマージャーニー別の投稿役割**
+各段階で**具体的な投稿例のタイトル**を含めてください：
+- 【認知】例: "〇〇〇〇" ← 実際のタイトル案
+- 【興味】例: "〇〇〇〇" ← 実際のタイトル案
+- 【検討】例: "〇〇〇〇" ← 実際のタイトル案
+- 【行動】例: "〇〇〇〇" ← 実際のタイトル案
 
-⑤ **世界観診断**
-   - ブランドコンセプト「${formData?.brandConcept || '未設定'}」を活かした世界観
-   - ビジュアル・トーンの統一方法
+### ④ **注意点・成功のコツ**
+**失敗パターン**と**成功のための具体的な数値目標**を含めてください：
+- ❌ よくある失敗: [業種特有の失敗パターン]
+- ✅ 成功のKPI: エンゲージメント率〇%、保存率〇%、シェア率〇%
+- 💡 ${userProfile.businessInfo.industry}業界の成功事例から学ぶべきポイント
 
-⑥ **フィード投稿提案**
-   - 具体的な投稿テーマ例（3-5個）
-   - 投稿頻度と時間帯の推奨
+### ⑤ **世界観診断**
+**ビジュアルの具体例**を含めてください：
+- 推奨カラーパレット: [メイン] + [サブ2色]
+- フォント推奨: [タイトル用] [本文用]
+- 写真のトーン: [明るさ、彩度、雰囲気]
+- 禁止事項: [このクライアントに合わないビジュアル]
 
-⑦ **リール投稿提案**
-   - 具体的なリールのアイデア例（3-5個）
-   - トレンドを活かした戦略
+### ⑥ **フィード投稿提案**
+**コピペで使える具体的なタイトル案**を5個提示してください：
+1. "[具体的なタイトル]" - 狙い: [エンゲージメント/保存/シェア]
+2. "[具体的なタイトル]" - 狙い: [エンゲージメント/保存/シェア]
+3. "[具体的なタイトル]" - 狙い: [エンゲージメント/保存/シェア]
+4. "[具体的なタイトル]" - 狙い: [エンゲージメント/保存/シェア]
+5. "[具体的なタイトル]" - 狙い: [エンゲージメント/保存/シェア]
+※各投稿の推奨ハッシュタグ5個も併記
 
-⑧ **ストーリー投稿提案**
-   - ストーリーの活用方法
-   - エンゲージメントを高める施策
+### ⑦ **リール投稿提案**
+**2025年のInstagramトレンド**を踏まえた、バズる可能性の高いリールアイデアを5個：
+1. "[タイトル]" - フック: [最初の3秒の内容] - 長さ: [秒]
+2. "[タイトル]" - フック: [最初の3秒の内容] - 長さ: [秒]
+3. "[タイトル]" - フック: [最初の3秒の内容] - 長さ: [秒]
+4. "[タイトル]" - フック: [最初の3秒の内容] - 長さ: [秒]
+5. "[タイトル]" - フック: [最初の3秒の内容] - 長さ: [秒]
+※トレンド音源、エフェクト、テンプレート活用方法も記載
 
-## 重要事項
-- 全てクライアントのビジネス情報と目標に基づいて提案すること
-- 実行可能で具体的なアドバイスにすること
-- 業種（${userProfile.businessInfo.industry}）の特性を考慮すること
-- 選択された戦略（${strategies}）を活かすこと
+### ⑧ **ストーリー投稿提案**
+**エンゲージメントを高める具体的な施策**：
+- 質問スタンプ: [具体的な質問例3つ]
+- アンケート: [具体的なアンケート例3つ]
+- クイズ: [${userProfile.businessInfo.industry}関連のクイズ例2つ]
+- リンクステッカー活用: [どのタイミングで何に誘導するか]
+
+## 🎯 成果物の要件
+1. **抽象的な表現を避け、明日から実行できる具体性**
+2. **数値目標を含める**（エンゲージメント率、保存数など）
+3. **${userProfile.businessInfo.industry}業界の特性を最大限活用**
+4. **競合との差別化を意識した独自性**
+5. **クライアントの課題「${userProfile.businessInfo.challenges.join(', ')}」の解決策を織り込む**
 `;
+
 
   return basePrompt + planInstructions;
 };

@@ -157,7 +157,20 @@ async function generateAIStrategy(
     ? `\n\n【過去の分析からの学習】\n${learningInsights}`
     : '';
 
-  const userPrompt = `上記のクライアント情報と計画データを基に、8つのセクションで具体的な戦略を提案してください。${knowledgeContext}${learningContext}`;
+  const userPrompt = `
+【重要】以下の点を必ず守って戦略を提案してください：
+
+1. **抽象的な表現は禁止** - "エンゲージメントを高める"ではなく、"質問スタンプで1投稿あたり50件のリプライを獲得する"のように具体的に
+
+2. **実例を必ず含める** - 投稿タイトル、リールのフック、ストーリーの質問など、コピペで使える実例を提示
+
+3. **数値目標を明記** - "週3回投稿"、"エンゲージメント率5%"、"保存率3%"など具体的な数値
+
+4. **業種の特性を活かす** - ${userProfile ? userProfile.businessInfo.industry : ''}業界ならではの強みや切り口を提示
+
+5. **差別化ポイントを明確に** - 競合と何が違うのか、なぜフォローすべきかを明確に
+
+上記を踏まえて、8つのセクションで**即実行可能で具体的な**戦略を提案してください。${knowledgeContext}${learningContext}`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -172,8 +185,8 @@ async function generateAIStrategy(
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 2000,
-        temperature: 0.7,
+        max_tokens: 4000, // より詳細な戦略のために増量
+        temperature: 0.8, // 創造性を高める
       }),
     });
 
