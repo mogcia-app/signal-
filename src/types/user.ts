@@ -3,6 +3,12 @@
  * Admin Panelとの連携仕様に基づく
  */
 
+export interface ProductOrService {
+  id: string;                 // 一意のID
+  name: string;               // 商品名/サービス名/政策名
+  details: string;            // 詳細（価格、内容など）
+}
+
 export interface BusinessInfo {
   industry: string;           // 業種
   companySize: string;        // 会社規模
@@ -11,6 +17,7 @@ export interface BusinessInfo {
   targetMarket: string;       // ターゲット市場
   goals: string[];           // 目標
   challenges: string[];      // 課題
+  productsOrServices?: ProductOrService[]; // 商品・サービス・政策情報
 }
 
 export interface BillingInfo {

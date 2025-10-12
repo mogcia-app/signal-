@@ -33,6 +33,12 @@ export default function OnboardingPage() {
   const [customGoal, setCustomGoal] = useState('');
   const [customChallenge, setCustomChallenge] = useState('');
 
+  // 商品・サービス情報
+  const [productsOrServices, setProductsOrServices] = useState<Array<{ id: string; name: string; details: string }>>([]);
+  const [productName, setProductName] = useState('');
+  const [productDetails, setProductDetails] = useState('');
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+
   // ステップ3: SNS AI設定
   const [snsAISettings, setSnsAISettings] = useState<Record<string, { 
     enabled: boolean; 
@@ -58,6 +64,7 @@ export default function OnboardingPage() {
       });
       setGoals(userProfile.businessInfo.goals || []);
       setChallenges(userProfile.businessInfo.challenges || []);
+      setProductsOrServices(userProfile.businessInfo.productsOrServices || []);
     }
     if (userProfile?.snsAISettings) {
       setSnsAISettings(userProfile.snsAISettings as Record<string, { enabled: boolean; tone?: string; features?: string[] }>);
@@ -174,6 +181,55 @@ export default function OnboardingPage() {
     }
   };
 
+  // 商品・サービスの追加
+  const addProduct = () => {
+    if (!productName.trim()) {
+      alert('項目名を入力してください');
+      return;
+    }
+
+    const newProduct = {
+      id: Date.now().toString(),
+      name: productName.trim(),
+      details: productDetails.trim()
+    };
+
+    setProductsOrServices([...productsOrServices, newProduct]);
+    setProductName('');
+    setProductDetails('');
+  };
+
+  // 商品・サービスの編集
+  const startEditProduct = (product: { id: string; name: string; details: string }) => {
+    setEditingProductId(product.id);
+    setProductName(product.name);
+    setProductDetails(product.details);
+  };
+
+  const saveEditProduct = () => {
+    if (!editingProductId || !productName.trim()) return;
+
+    setProductsOrServices(productsOrServices.map(p => 
+      p.id === editingProductId 
+        ? { ...p, name: productName.trim(), details: productDetails.trim() }
+        : p
+    ));
+    setEditingProductId(null);
+    setProductName('');
+    setProductDetails('');
+  };
+
+  const cancelEditProduct = () => {
+    setEditingProductId(null);
+    setProductName('');
+    setProductDetails('');
+  };
+
+  // 商品・サービスの削除
+  const removeProduct = (id: string) => {
+    setProductsOrServices(productsOrServices.filter(p => p.id !== id));
+  };
+
   // 完了処理
   const handleComplete = async () => {
     if (!user) return;
@@ -192,7 +248,8 @@ export default function OnboardingPage() {
           ...businessInfo,
           industry: finalIndustry,
           goals,
-          challenges
+          challenges,
+          productsOrServices
         },
         snsAISettings,
         setupRequired: false,
@@ -517,6 +574,112 @@ export default function OnboardingPage() {
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     rows={3}
                   />
+                </div>
+
+                {/* 商品・サービス・政策情報 */}
+                <div className="border-t-2 border-gray-200 pt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    📦 商品・サービス・政策情報
+                    <span className="ml-2 text-xs text-gray-500">（AIが参照します）</span>
+                  </label>
+                  
+                  {/* 入力フォーム */}
+                  <div className="space-y-3 mb-4">
+                    <div>
+                      <input
+                        type="text"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        placeholder={
+                          businessInfo.industry === '美容・健康' ? '例: カット' :
+                          businessInfo.industry === '飲食' ? '例: ランチセット' :
+                          businessInfo.industry === '教育' ? '例: 英会話コース' :
+                          '例: 商品名、サービス名、政策名'
+                        }
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={productDetails}
+                        onChange={(e) => setProductDetails(e.target.value)}
+                        placeholder={
+                          businessInfo.industry === '美容・健康' ? '例: ¥4,000 - 丁寧なカット施術' :
+                          businessInfo.industry === '飲食' ? '例: ¥980 - 日替わりメイン+サラダ+ドリンク' :
+                          businessInfo.industry === '教育' ? '例: 月額¥15,000 - マンツーマンレッスン' :
+                          '例: 価格や詳細を入力'
+                        }
+                        className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                      />
+                      {editingProductId ? (
+                        <>
+                          <button
+                            onClick={saveEditProduct}
+                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 transition-colors flex items-center gap-1"
+                          >
+                            <Save className="w-4 h-4" />
+                            保存
+                          </button>
+                          <button
+                            onClick={cancelEditProduct}
+                            className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={addProduct}
+                          className="bg-[#FF8A15] hover:bg-orange-600 text-white px-6 py-2 transition-colors font-medium"
+                        >
+                          追加
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 追加された商品・サービス一覧 */}
+                  {productsOrServices.length > 0 && (
+                    <div className="space-y-2">
+                      {productsOrServices.map((item) => (
+                        <div
+                          key={item.id}
+                          className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-3 flex items-start justify-between group hover:shadow-sm transition-shadow"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">🏷️</span>
+                              <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                            </div>
+                            {item.details && (
+                              <p className="text-sm text-gray-600 mt-1 ml-7">{item.details}</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => startEditProduct(item)}
+                              className="text-blue-600 hover:text-blue-700 text-sm px-2 py-1"
+                            >
+                              編集
+                            </button>
+                            <button
+                              onClick={() => removeProduct(item.id)}
+                              className="text-red-600 hover:text-red-700 text-sm px-2 py-1"
+                            >
+                              削除
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {productsOrServices.length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg">
+                      商品、サービス、または政策を追加してください
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1008,6 +1171,31 @@ export default function OnboardingPage() {
                   <p className="text-gray-900">{businessInfo.description || '未設定'}</p>
                 </div>
               </div>
+
+              {/* 商品・サービス・政策情報 */}
+              {productsOrServices.length > 0 && (
+                <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    📦 商品・サービス・政策情報
+                  </label>
+                  <div className="space-y-2">
+                    {productsOrServices.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🏷️</span>
+                          <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                        </div>
+                        {item.details && (
+                          <p className="text-sm text-gray-600 mt-1 ml-7">{item.details}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 目標・課題 */}

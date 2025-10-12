@@ -18,6 +18,11 @@ export const buildSystemPrompt = (userProfile: UserProfile, snsType?: string): s
 - ターゲット市場: ${businessInfo.targetMarket || '未設定'}
 - 事業内容: ${businessInfo.description || '未設定'}
 
+【商品・サービス・政策】
+${businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0
+  ? businessInfo.productsOrServices.map(p => `- ${p.name}${p.details ? `: ${p.details}` : ''}`).join('\n')
+  : '- 未設定'}
+
 【目標】
 ${businessInfo.goals && businessInfo.goals.length > 0 
   ? businessInfo.goals.map(g => `- ${g}`).join('\n')
