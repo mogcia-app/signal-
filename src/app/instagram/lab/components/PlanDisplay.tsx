@@ -37,6 +37,9 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   }
 
   const progressPercentage = Math.min((planData.currentFollowers / planData.targetFollowers) * 100, 100);
+  
+  // シミュレーション結果があるか確認
+  const hasSimulation = planData.simulationResult && typeof planData.simulationResult === 'object';
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -118,50 +121,32 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
           </div>
         </div>
 
-        {/* 目標達成シミュレーション */}
-        <div className="mb-4">
-          <div className="text-sm font-medium text-gray-700 mb-2">目標達成シミュレーション</div>
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="font-medium text-gray-600">投稿タイプ</div>
-              <div className="font-medium text-gray-600">週間必要数</div>
-              <div className="font-medium text-gray-600">フォロワー効果</div>
-              
-              <div className="text-gray-800">リール</div>
-              <div className="text-gray-800">{planData.simulation.postTypes.reel.weeklyCount}回</div>
-              <div className="text-gray-800">+{planData.simulation.postTypes.reel.followerEffect}人/投稿</div>
-              
-              <div className="text-gray-800">フィード</div>
-              <div className="text-gray-800">{planData.simulation.postTypes.feed.weeklyCount}回</div>
-              <div className="text-gray-800">+{planData.simulation.postTypes.feed.followerEffect}人/投稿</div>
-              
-              <div className="text-gray-800">ストーリー</div>
-              <div className="text-gray-800">{planData.simulation.postTypes.story.weeklyCount}回</div>
-              <div className="text-gray-800">+{planData.simulation.postTypes.story.followerEffect}人/投稿</div>
-            </div>
-          </div>
-        </div>
-
-        {/* AI世界観 */}
-        <div className="mb-4">
-          <div className="text-sm font-medium text-gray-700 mb-2">AI出力の世界観</div>
-          <div className="bg-purple-50 p-3 rounded-lg">
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <span className="font-medium text-purple-700">トーン:</span>
-                <span className="ml-1 text-purple-600">{planData.aiPersona.tone}</span>
-              </div>
-              <div>
-                <span className="font-medium text-purple-700">スタイル:</span>
-                <span className="ml-1 text-purple-600">{planData.aiPersona.style}</span>
-              </div>
-              <div className="col-span-2">
-                <span className="font-medium text-purple-700">パーソナリティ:</span>
-                <span className="ml-1 text-purple-600">{planData.aiPersona.personality}</span>
+        {/* シミュレーション結果 */}
+        {hasSimulation && (
+          <div className="mb-4">
+            <div className="text-sm font-medium text-gray-700 mb-2">シミュレーション結果</div>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-200">
+              <div className="text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">月間目標:</span>
+                  <span className="font-medium text-gray-900">
+                    {(planData.simulationResult as Record<string, unknown>).monthlyTarget || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">達成可能性:</span>
+                  <span className={`font-medium ${
+                    (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'high' ? 'text-green-600' :
+                    (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'medium' ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    {(planData.simulationResult as Record<string, unknown>).feasibilityBadge || 'N/A'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* アクションボタン */}
         <div className="flex space-x-2">

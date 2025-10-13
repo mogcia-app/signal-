@@ -167,8 +167,8 @@ export const usePlanForm = () => {
       // 計画データの構築
       const planData = {
         userId: user.uid,
-        snsType: 'instagram', // ★ 追加
-        status: 'active', // ★ 追加
+        snsType: 'instagram',
+        status: 'active',
         title: formData.goalName || 'Instagram成長計画',
         targetFollowers: parseInt(formData.currentFollowers, 10) + parseInt(formData.followerGain, 10),
         currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
@@ -176,46 +176,21 @@ export const usePlanForm = () => {
         targetAudience: formData.targetAudience || '未設定',
         category: formData.goalCategory || '未設定',
         strategies: selectedStrategies,
-        postCategories: selectedCategories, // ★ 追加（投稿カテゴリ）
-        simulation: {
-          postTypes: {
-            reel: { weeklyCount: parseInt(formData.reelFreq, 10) || 0, followerEffect: 5 },
-            feed: { weeklyCount: parseInt(formData.feedFreq, 10) || 0, followerEffect: 3 },
-            story: { weeklyCount: parseInt(formData.storyFreq, 10) || 0, followerEffect: 2 }
-          }
-        },
-        aiPersona: {
-          tone: formData.tone || '親しみやすい',
-          style: formData.colorVisual || 'モダン',
-          personality: formData.brandConcept || 'フレンドリー',
-          interests: selectedCategories
-        },
-        // シミュレーション結果を含める（現在の型に合わせて簡略化）
-        simulationResult: simulationResult ? {
-          targetDate: simulationResult.targetDate,
-          monthlyTarget: simulationResult.monthlyTarget,
-          weeklyTarget: simulationResult.weeklyTarget,
-          feasibilityLevel: simulationResult.feasibilityLevel,
-          feasibilityBadge: simulationResult.feasibilityBadge,
-          postsPerWeek: simulationResult.postsPerWeek,
-          monthlyPostCount: simulationResult.monthlyPostCount,
-          workloadMessage: simulationResult.workloadMessage,
-          mainAdvice: simulationResult.mainAdvice,
-          improvementTips: simulationResult.improvementTips
-        } : null,
-        // ★ 追加フィールド（フォームの全データを保存）
+        postCategories: selectedCategories,
+        
+        // ★ シミュレーション結果（APIから返された完全なデータ）
+        simulationResult: simulationResult || null,
+        
+        // ★ フォームデータ全体を保存
         formData: {
-          aiHelpRequest: formData.aiHelpRequest,
-          pastLearnings: formData.pastLearnings,
-          referenceAccounts: formData.referenceAccounts,
-          hashtagStrategy: formData.hashtagStrategy,
-          constraints: formData.constraints,
-          freeMemo: formData.freeMemo,
-          saveGoal: formData.saveGoal,
-          likeGoal: formData.likeGoal,
-          reachGoal: formData.reachGoal
+          ...formData,
+          strategyValues: selectedStrategies,
+          postCategories: selectedCategories
         },
-        generatedStrategy, // ★ AI戦略を保存
+        
+        // ★ AI戦略
+        generatedStrategy,
+        
         createdAt: new Date(),
         updatedAt: new Date()
       };
