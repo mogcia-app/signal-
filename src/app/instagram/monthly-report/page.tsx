@@ -5,7 +5,7 @@ import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { useAuth } from '../../../contexts/auth-context';
 import { usePlanData } from '../../../hooks/usePlanData';
-import { PlanCard } from '../../../components/PlanCard';
+import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
 import { checkUserDataCount } from '../../../lib/monthly-report-notifications';
 import { BarChart3 } from 'lucide-react';
 
@@ -656,11 +656,9 @@ export default function InstagramMonthlyReportPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 運用計画連携 */}
-          <PlanCard 
+          <CurrentPlanCard 
             planData={planData}
-            variant="progress"
-            showProgress={true}
-            showStrategies={true}
+            snsType="instagram"
           />
 
           {/* 期間の成果 */}

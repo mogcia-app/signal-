@@ -6,7 +6,7 @@ import { AIChatWidget } from '../../../components/ai-chat-widget';
 import PostEditor from './components/PostEditor';
 import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
-import PlanDisplay from './components/PlanDisplay';
+import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
 import { usePlanData } from '../../../hooks/usePlanData';
 
 export default function InstagramLabPage() {
@@ -110,7 +110,7 @@ export default function InstagramLabPage() {
 
             {/* 右カラム: 計画・ツール */}
             <div className="space-y-6">
-              {isMounted && <PlanDisplay planData={planData} />}
+              {isMounted && <CurrentPlanCard planData={planData} snsType="instagram" />}
               
               <ToolPanel
                 onTemplateSelect={(template: string) => {

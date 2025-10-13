@@ -10,7 +10,7 @@ import { postsApi } from '../../lib/api';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
-import { PlanCard } from '../../components/PlanCard';
+import { CurrentPlanCard } from '../../components/CurrentPlanCard';
 import { } from 'lucide-react';
 // import StatsCards from './components/StatsCards'; // クイックアクションに置き換え
 
@@ -536,11 +536,9 @@ function InstagramDashboardContent() {
         <div className="max-w-7xl mx-auto">
           {/* 計画内容の連携表示 */}
           <div className="mb-8">
-            <PlanCard 
+            <CurrentPlanCard 
               planData={planData}
-              variant="compact"
-              showStrategies={true}
-              className="mb-8"
+              snsType="instagram"
             />
           </div>
 

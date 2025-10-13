@@ -8,7 +8,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
 import { usePlanData } from '../../../hooks/usePlanData';
-import { PlanCard } from '../../../components/PlanCard';
+import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
 // import PostSelector from '../components/PostSelector'; // 削除済み
 import PostPreview from '../components/PostPreview';
 // import AudienceAnalysisForm from '../components/AudienceAnalysisForm'; // 統合済み
@@ -481,10 +481,9 @@ function InstagramAnalyticsContent() {
               />
 
               {/* 運用計画セクション */}
-              <PlanCard 
+              <CurrentPlanCard 
                 planData={planData}
-                variant="compact"
-                showStrategies={true}
+                snsType="instagram"
               />
 
               {/* 統計表示コンポーネント */}

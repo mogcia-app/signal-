@@ -34,6 +34,7 @@ export default function DashboardPage() {
     isContractActive,
     getContractDaysRemaining
   } = useUserProfile();
+  const { planData } = usePlanData(); // ★ 追加
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   
