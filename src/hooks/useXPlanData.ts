@@ -40,6 +40,9 @@ export const useXPlanData = () => {
           // X版のプランデータをPlanData形式に変換
           const xPlanData: PlanData = {
             id: doc.id,
+            userId: user.uid,
+            snsType: 'x',
+            status: data.status || 'active',
             title: data.goalName || 'X成長計画',
             targetFollowers: data.targetFollowers || 1000,
             currentFollowers: data.currentFollowers || 0,
@@ -47,59 +50,18 @@ export const useXPlanData = () => {
             targetAudience: data.targetAudience || '20-30代',
             category: data.goalCategory || 'フォロワー増加',
             strategies: data.strategies || [],
+            postCategories: data.postCategories || [],
             createdAt: data.createdAt?.toDate().toISOString() || new Date().toISOString(),
-            simulation: {
-              postTypes: {
-                feed: {
-                  weeklyCount: data.tweetFreq || 5,
-                  followerEffect: 0.8
-                },
-                reel: {
-                  weeklyCount: data.threadFreq || 2,
-                  followerEffect: 1.2
-                },
-                story: {
-                  weeklyCount: data.replyFreq || 10,
-                  followerEffect: 0.6
-                }
-              }
-            },
-            aiPersona: {
-              tone: data.tone || '親しみやすい',
-              style: data.style || 'カジュアル',
-              personality: data.personality || '明るく前向き',
-              interests: data.interests || ['テクノロジー', 'ビジネス', 'ライフスタイル']
-            }
+            updatedAt: data.updatedAt?.toDate().toISOString() || new Date().toISOString(),
+            simulationResult: data.simulationResult || null,
+            formData: data.formData || {},
+            generatedStrategy: data.generatedStrategy || null
           };
 
           setPlanData(xPlanData);
         } else {
-          // プランデータがない場合はデフォルト値を設定
-          const defaultPlanData: PlanData = {
-            id: 'default',
-            title: 'X成長計画',
-            targetFollowers: 1000,
-            currentFollowers: 0,
-            planPeriod: '3ヶ月',
-            targetAudience: '20-30代',
-            category: 'フォロワー増加',
-            strategies: ['エンゲージメント向上', 'コンテンツ多様化'],
-            createdAt: new Date().toISOString(),
-            simulation: {
-              postTypes: {
-                feed: { weeklyCount: 5, followerEffect: 0.8 },
-                reel: { weeklyCount: 2, followerEffect: 1.2 },
-                story: { weeklyCount: 10, followerEffect: 0.6 }
-              }
-            },
-            aiPersona: {
-              tone: '親しみやすい',
-              style: 'カジュアル',
-              personality: '明るく前向き',
-              interests: ['テクノロジー', 'ビジネス', 'ライフスタイル']
-            }
-          };
-          setPlanData(defaultPlanData);
+          // プランデータがない場合はnullを設定
+          setPlanData(null);
         }
       } catch (err) {
         console.error('X版プランデータの取得エラー:', err);
