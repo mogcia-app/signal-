@@ -71,9 +71,9 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
         </div>
 
         <div>
-          <div className="text-sm text-gray-600 mb-2">AIペルソナ</div>
+          <div className="text-sm text-gray-600 mb-2">ターゲット層</div>
           <div className="text-sm text-gray-900">
-            {planData.aiPersona.personality}で{planData.aiPersona.style}な{planData.aiPersona.tone}トーン
+            {planData.targetAudience}
           </div>
         </div>
       </div>
