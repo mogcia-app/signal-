@@ -3,6 +3,9 @@ import { Target, Calendar, Users, Tag, TrendingUp } from 'lucide-react';
 
 interface PlanData {
   id: string;
+  userId: string;
+  snsType: string;
+  status: string;
   title: string;
   targetFollowers: number;
   currentFollowers: number;
@@ -10,19 +13,18 @@ interface PlanData {
   targetAudience: string;
   category: string;
   strategies: string[];
-  simulation: {
-    postTypes: {
-      reel: { weeklyCount: number; followerEffect: number };
-      feed: { weeklyCount: number; followerEffect: number };
-      story: { weeklyCount: number; followerEffect: number };
-    };
-  };
-  aiPersona: {
-    tone: string;
-    style: string;
-    personality: string;
-    interests: string[];
-  };
+  postCategories: string[];
+  createdAt: string | { toDate?: () => Date };
+  updatedAt: string | { toDate?: () => Date };
+  
+  // シミュレーション結果
+  simulationResult?: Record<string, unknown> | null;
+  
+  // フォームデータ全体
+  formData?: Record<string, unknown>;
+  
+  // AI戦略
+  generatedStrategy?: string | null;
 }
 
 interface PlanCardProps {
@@ -168,25 +170,28 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           </div>
         )}
 
-        {/* シミュレーション表示 */}
-        {showSimulation && variant === 'detailed' && (
+        {/* シミュレーション結果表示 */}
+        {showSimulation && variant === 'detailed' && planData.simulationResult && (
           <div className="border-t border-gray-200 pt-4">
-            <div className="text-sm font-medium text-gray-700 mb-3">投稿シミュレーション</div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-purple-50 rounded-lg p-3">
-                <div className="text-xs text-purple-600 mb-1">リール</div>
-                <div className="font-semibold text-purple-800">{planData.simulation.postTypes.reel.weeklyCount}回/週</div>
-                <div className="text-xs text-purple-600">+{planData.simulation.postTypes.reel.followerEffect}人/投稿</div>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-3">
-                <div className="text-xs text-blue-600 mb-1">フィード</div>
-                <div className="font-semibold text-blue-800">{planData.simulation.postTypes.feed.weeklyCount}回/週</div>
-                <div className="text-xs text-blue-600">+{planData.simulation.postTypes.feed.followerEffect}人/投稿</div>
-              </div>
-              <div className="bg-pink-50 rounded-lg p-3">
-                <div className="text-xs text-pink-600 mb-1">ストーリー</div>
-                <div className="font-semibold text-pink-800">{planData.simulation.postTypes.story.weeklyCount}回/週</div>
-                <div className="text-xs text-pink-600">+{planData.simulation.postTypes.story.followerEffect}人/投稿</div>
+            <div className="text-sm font-medium text-gray-700 mb-3">シミュレーション結果</div>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">月間目標:</span>
+                  <span className="ml-2 font-semibold text-gray-900">
+                    {(planData.simulationResult as Record<string, unknown>).monthlyTarget || 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-600">達成可能性:</span>
+                  <span className={`ml-2 font-semibold ${
+                    (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'high' ? 'text-green-600' :
+                    (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'medium' ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    {(planData.simulationResult as Record<string, unknown>).feasibilityBadge || 'N/A'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
