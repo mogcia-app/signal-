@@ -170,16 +170,14 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
         </div>
       )}
 
-      {/* 診断出力エリア */}
-      {showAdvice && !isLoading && !strategyState.isLoading && (
+      {/* 診断出力エリア（generatedStrategyがあれば常に表示） */}
+      {generatedStrategy && !isLoading && !strategyState.isLoading && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-lg">提案内容</h4>
-            {generatedStrategy && (
-              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                AI生成済み
-              </span>
-            )}
+            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+              AI生成済み
+            </span>
           </div>
           
           {generatedStrategy ? (
