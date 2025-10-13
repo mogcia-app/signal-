@@ -64,8 +64,11 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     );
   }
 
-  const progressPercentage = Math.min((planData.currentFollowers / planData.targetFollowers) * 100, 100);
-  const remainingFollowers = Math.max(0, planData.targetFollowers - planData.currentFollowers);
+  // 安全にアクセス
+  const currentFollowers = planData.currentFollowers || 0;
+  const targetFollowers = planData.targetFollowers || 0;
+  const progressPercentage = targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
+  const remainingFollowers = Math.max(0, targetFollowers - currentFollowers);
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
@@ -98,7 +101,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
               <Users size={16} className="text-blue-600 mr-1" />
               <span className="text-sm text-gray-600">目標フォロワー数</span>
             </div>
-            <div className="font-semibold text-gray-900">{planData.targetFollowers.toLocaleString()}人</div>
+            <div className="font-semibold text-gray-900">{targetFollowers.toLocaleString()}人</div>
           </div>
           
           <div className="text-center">
@@ -132,7 +135,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">フォロワー目標進捗</span>
               <span className="text-sm text-gray-600">
-                {planData.currentFollowers.toLocaleString()} / {planData.targetFollowers.toLocaleString()}
+                {currentFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">

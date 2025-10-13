@@ -36,7 +36,10 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
     );
   }
 
-  const progressPercentage = Math.min((planData.currentFollowers / planData.targetFollowers) * 100, 100);
+  // 安全にアクセス
+  const currentFollowers = planData.currentFollowers || 0;
+  const targetFollowers = planData.targetFollowers || 0;
+  const progressPercentage = targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
   
   // シミュレーション結果があるか確認
   const hasSimulation = planData.simulationResult && typeof planData.simulationResult === 'object';
@@ -54,7 +57,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">フォロワー目標</span>
             <span className="text-sm text-gray-600">
-              {planData.currentFollowers.toLocaleString()} / {planData.targetFollowers.toLocaleString()}
+              {currentFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
@@ -65,7 +68,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
           </div>
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>{progressPercentage.toFixed(1)}% 達成</span>
-            <span>残り {Math.max(0, planData.targetFollowers - planData.currentFollowers).toLocaleString()}人</span>
+            <span>残り {Math.max(0, targetFollowers - currentFollowers).toLocaleString()}人</span>
           </div>
         </div>
 
