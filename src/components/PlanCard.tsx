@@ -67,6 +67,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   // 安全にアクセス
   const currentFollowers = planData.currentFollowers || 0;
   const targetFollowers = planData.targetFollowers || 0;
+  const strategies = planData.strategies || [];
   const progressPercentage = targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
   const remainingFollowers = Math.max(0, targetFollowers - currentFollowers);
 
@@ -152,11 +153,11 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         )}
 
         {/* 戦略表示 */}
-        {showStrategies && planData.strategies.length > 0 && (
+        {showStrategies && strategies.length > 0 && (
           <div className="mb-6">
             <div className="text-sm font-medium text-gray-700 mb-3">採用戦略</div>
             <div className="flex flex-wrap gap-2">
-              {planData.strategies.slice(0, variant === 'detailed' ? 6 : 3).map((strategy, index) => (
+              {strategies.slice(0, variant === 'detailed' ? 6 : 3).map((strategy, index) => (
                 <span
                   key={index}
                   className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium"
@@ -164,9 +165,9 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                   {strategy}
                 </span>
               ))}
-              {planData.strategies.length > (variant === 'detailed' ? 6 : 3) && (
+              {strategies.length > (variant === 'detailed' ? 6 : 3) && (
                 <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                  +{planData.strategies.length - (variant === 'detailed' ? 6 : 3)}個
+                  +{strategies.length - (variant === 'detailed' ? 6 : 3)}個
                 </span>
               )}
             </div>

@@ -39,6 +39,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   // 安全にアクセス
   const currentFollowers = planData.currentFollowers || 0;
   const targetFollowers = planData.targetFollowers || 0;
+  const strategies = planData.strategies || [];
   const progressPercentage = targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
   
   // シミュレーション結果があるか確認
@@ -85,7 +86,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
             <TrendingUp className="w-4 h-4 text-gray-400" />
             <div>
               <div className="text-xs text-gray-500">戦略数</div>
-              <div className="text-sm font-medium text-gray-900">{planData.strategies.length}個</div>
+              <div className="text-sm font-medium text-gray-900">{strategies.length}個</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -108,7 +109,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
         <div className="mb-4">
           <div className="text-sm font-medium text-gray-700 mb-2">採用戦略</div>
           <div className="flex flex-wrap gap-2">
-            {planData.strategies.slice(0, 3).map((strategy, index) => (
+            {strategies.slice(0, 3).map((strategy, index) => (
               <span
                 key={index}
                 className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md"
@@ -116,9 +117,9 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
                 {strategy}
               </span>
             ))}
-            {planData.strategies.length > 3 && (
+            {strategies.length > 3 && (
               <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-                +{planData.strategies.length - 3}個
+                +{strategies.length - 3}個
               </span>
             )}
           </div>
