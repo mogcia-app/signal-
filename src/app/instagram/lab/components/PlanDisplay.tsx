@@ -130,7 +130,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">月間目標:</span>
                   <span className="font-medium text-gray-900">
-                    {(planData.simulationResult as Record<string, unknown>).monthlyTarget || 'N/A'}
+                    {String((planData.simulationResult as Record<string, unknown>).monthlyTarget || 'N/A')}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -140,7 +140,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
                     (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'medium' ? 'text-yellow-600' :
                     'text-red-600'
                   }`}>
-                    {(planData.simulationResult as Record<string, unknown>).feasibilityBadge || 'N/A'}
+                    {String((planData.simulationResult as Record<string, unknown>).feasibilityBadge || 'N/A')}
                   </span>
                 </div>
               </div>

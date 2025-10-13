@@ -342,8 +342,8 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               <div className="space-y-1 text-xs">
                 <div>• 計画: {planData.title}</div>
                 <div>• 目標: {planData.targetFollowers.toLocaleString()}フォロワー</div>
-                <div>• 戦略: {planData.strategies.join(', ')}</div>
-                <div>• ペルソナ: {planData.aiPersona.personality}で{planData.aiPersona.style}</div>
+                <div>• ターゲット: {planData.targetAudience}</div>
+                <div>• 戦略: {planData.strategies.slice(0, 3).join(', ')}{planData.strategies.length > 3 ? '...' : ''}</div>
               </div>
             </div>
           </div>
