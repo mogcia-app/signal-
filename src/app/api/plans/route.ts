@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '../../../lib/firebase-admin';
 
-// 計画データの型定義
+// 計画データの型定義（統一版）
 interface PlanData {
   id?: string;
   userId: string;
+  snsType: string;
+  status: string;
   title: string;
   targetFollowers: number;
   currentFollowers: number;
@@ -12,73 +14,27 @@ interface PlanData {
   targetAudience: string;
   category: string;
   strategies: string[];
+  postCategories: string[];
   createdAt: Date;
   updatedAt: Date;
   
-  simulation: {
-    postTypes: {
-      reel: { weeklyCount: number; followerEffect: number };
-      feed: { weeklyCount: number; followerEffect: number };
-      story: { weeklyCount: number; followerEffect: number };
-    };
-  };
+  // シミュレーション結果
+  simulationResult?: Record<string, unknown> | null;
   
-  aiPersona: {
-    tone: string;
-    style: string;
-    personality: string;
-    interests: string[];
-  };
+  // フォームデータ全体
+  formData?: Record<string, unknown>;
   
-  // シミュレーション結果（オプショナル）
-  simulationResult?: {
-    estimatedFollowers: number;
-    estimatedLikes: number;
-    estimatedComments: number;
-    estimatedShares: number;
-    estimatedReach: number;
-    successProbability: number;
-    improvementTips: string[];
-    weeklyBreakdown: {
-      week: number;
-      followers: number;
-      likes: number;
-      comments: number;
-      shares: number;
-      reach: number;
-    }[];
-    monthlyBreakdown: {
-      month: number;
-      followers: number;
-      likes: number;
-      comments: number;
-      shares: number;
-      reach: number;
-    }[];
-    riskFactors: string[];
-    recommendedActions: string[];
-  } | null;
+  // AI戦略
+  generatedStrategy?: string | null;
 }
 
 // 計画作成
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      userId,
-      title,
-      targetFollowers,
-      currentFollowers,
-      planPeriod,
-      targetAudience,
-      category,
-      strategies,
-      simulation,
-      aiPersona
-    } = body;
 
     // バリデーション
-    if (!userId || !title || !targetFollowers || !currentFollowers) {
+    if (!body.userId || !body.targetFollowers || !body.currentFollowers) {
       return NextResponse.json(
         { error: '必須フィールドが不足しています' },
         { status: 400 }
@@ -86,27 +42,20 @@ export async function POST(request: NextRequest) {
     }
 
     const planData: Omit<PlanData, 'id'> = {
-      userId,
-      title,
-      targetFollowers: parseInt(targetFollowers),
-      currentFollowers: parseInt(currentFollowers),
-      planPeriod: planPeriod || '6ヶ月',
-      targetAudience: targetAudience || '未設定',
-      category: category || '未設定',
-      strategies: strategies || [],
-      simulation: simulation || {
-        postTypes: {
-          reel: { weeklyCount: 1, followerEffect: 3 },
-          feed: { weeklyCount: 2, followerEffect: 2 },
-          story: { weeklyCount: 3, followerEffect: 1 }
-        }
-      },
-      aiPersona: aiPersona || {
-        tone: '親しみやすい',
-        style: 'カジュアル',
-        personality: '明るく前向き',
-        interests: ['成長', 'コミュニティ', 'エンゲージメント', 'クリエイティブ']
-      },
+      userId: body.userId,
+      snsType: body.snsType || 'instagram',
+      status: body.status || 'active',
+      title: body.title || 'Instagram成長計画',
+      targetFollowers: parseInt(body.targetFollowers),
+      currentFollowers: parseInt(body.currentFollowers),
+      planPeriod: body.planPeriod || '6ヶ月',
+      targetAudience: body.targetAudience || '未設定',
+      category: body.category || '未設定',
+      strategies: body.strategies || [],
+      postCategories: body.postCategories || [],
+      simulationResult: body.simulationResult || null,
+      formData: body.formData || {},
+      generatedStrategy: body.generatedStrategy || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
