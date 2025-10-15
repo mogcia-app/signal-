@@ -9,12 +9,12 @@ import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
 import { usePlanData } from '../../../hooks/usePlanData';
 import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
-// import PostSelector from '../components/PostSelector'; // 削除済み
 import PostPreview from '../components/PostPreview';
 // import AudienceAnalysisForm from '../components/AudienceAnalysisForm'; // 統合済み
 // import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm'; // 統合済み
 import AnalyticsForm from '../components/AnalyticsForm';
 import AnalyticsStats from '../components/AnalyticsStats';
+import PostSelector from '../components/PostSelector';
 import { } from 'lucide-react';
 
 // オーディエンス分析データの型定義
@@ -144,6 +144,28 @@ function InstagramAnalyticsContent() {
   });
   const [selectedPostId, setSelectedPostId] = useState<string>('');
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
+
+  // 投稿選択ハンドラー
+  const handlePostSelect = (post: PostData | null) => {
+    setSelectedPost(post);
+    if (post) {
+      // 投稿データを自動入力
+      setInputData(prev => ({
+        ...prev,
+        title: post.title || '',
+        content: post.content || '',
+        hashtags: post.hashtags?.join(', ') || '',
+        thumbnail: post.thumbnail || post.imageUrl || '',
+        category: post.category || post.type || 'feed',
+        publishedAt: post.publishedAt ? post.publishedAt.toISOString().split('T')[0] : (post.createdAt ? post.createdAt.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+        publishedTime: post.publishedAt ? post.publishedAt.toTimeString().slice(0, 5) : (post.createdAt ? post.createdAt.toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5))
+      }));
+    }
+  };
+
+  const handlePostIdSelect = (postId: string) => {
+    setSelectedPostId(postId);
+  };
   // currentPlanは削除し、planDataを使用
 
   // 分析データを取得（BFF経由）
@@ -451,9 +473,20 @@ function InstagramAnalyticsContent() {
         customTitle="投稿分析"
         customDescription="投稿の分析データを入力・管理します"
       >
-        <div className="max-w-6xl mx-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 左カラム: 入力フォーム */}
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 左カラム: 投稿選択 */}
+            <div className="space-y-6">
+              <PostSelector
+                posts={posts}
+                selectedPostId={selectedPostId}
+                onPostSelect={handlePostSelect}
+                onPostIdSelect={handlePostIdSelect}
+                isLoading={isLoading}
+              />
+            </div>
+
+            {/* 中央カラム: 入力フォーム */}
             <div className="space-y-6">
               {/* 統合された分析データ入力フォーム */}
               <AnalyticsForm

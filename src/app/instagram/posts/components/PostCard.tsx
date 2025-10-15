@@ -314,8 +314,8 @@ const PostCard: React.FC<PostCardProps> = ({
                 <Edit size={14} />
               </a>
               <a
-                href="/instagram/analytics"
-                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                href={`/instagram/analytics?postId=${post.id}`}
+                className="p-2 text-gray-400 hover:text-[#ff8a15] hover:bg-orange-50 rounded-md transition-colors"
                 title="分析ページで投稿データを入力"
               >
                 📊
