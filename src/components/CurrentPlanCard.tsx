@@ -126,6 +126,21 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               <span className="font-medium text-gray-900">{planData.category}</span>
             </div>
           </div>
+          {hasSimulation && (
+            <div className="flex items-center space-x-2">
+              <Target className="w-4 h-4 text-gray-400" />
+              <div className="text-sm">
+                <span className="text-gray-600">達成度: </span>
+                <span className={`font-semibold ${
+                  simulationResult.feasibilityLevel === 'high' ? 'text-green-600' :
+                  simulationResult.feasibilityLevel === 'medium' ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {String(simulationResult.feasibilityBadge || 'N/A')}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 施策タグ */}
@@ -150,24 +165,6 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           </div>
         )}
 
-        {/* シミュレーション結果 */}
-        {hasSimulation && (
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs text-blue-700 font-medium mb-2">📊 シミュレーション結果</p>
-            <div className="text-center">
-              <div>
-                <span className="text-gray-600 text-xs">達成度: </span>
-                <span className={`font-semibold ${
-                  simulationResult.feasibilityLevel === 'high' ? 'text-green-600' :
-                  simulationResult.feasibilityLevel === 'medium' ? 'text-yellow-600' :
-                  'text-red-600'
-                }`}>
-                  {String(simulationResult.feasibilityBadge || 'N/A')}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* AI戦略サマリー（variant = 'full'の場合のみ） */}
         {variant === 'full' && planData.generatedStrategy && (
