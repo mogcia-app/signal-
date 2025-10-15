@@ -223,7 +223,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     </button>
             <button
               onClick={handleClear}
-              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
             >
               <RefreshCw size={14} />
               <span>クリア</span>
@@ -271,7 +271,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'feed'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -284,7 +284,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'reel'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -297,7 +297,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'story'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
               }`}
             >
               <div className="text-center">

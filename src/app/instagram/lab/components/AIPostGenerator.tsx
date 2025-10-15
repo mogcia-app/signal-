@@ -185,7 +185,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'feed'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -198,7 +198,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'reel'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -211,7 +211,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'story'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -246,11 +246,11 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                 <button
                   onClick={handleSuggestTime}
                   disabled={!scheduledDate || isSuggestingTime}
-                  className="text-xs text-purple-600 hover:text-purple-800 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center"
+                  className="text-xs text-orange-600 hover:text-orange-800 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center"
                 >
                   {isSuggestingTime ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b border-purple-600 mr-1"></div>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b border-orange-600 mr-1"></div>
                       AI分析中...
                     </>
                   ) : (
@@ -346,7 +346,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
         <button
           onClick={handleGeneratePost}
           disabled={!aiPrompt.trim() || isGenerating || !planData}
-          className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-medium"
+          className="w-full px-6 py-3 bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-medium"
         >
           {isGenerating ? (
             <>

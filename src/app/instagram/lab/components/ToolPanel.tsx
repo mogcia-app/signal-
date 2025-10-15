@@ -109,7 +109,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                 value={newTemplate}
                 onChange={(e) => setNewTemplate(e.target.value)}
                 placeholder="新しい文言を追加..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddTemplate()}
               />
               <button
@@ -192,7 +192,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                 value={newHashtag}
                 onChange={(e) => setNewHashtag(e.target.value)}
                 placeholder="新しいハッシュタグを追加..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddHashtag()}
               />
               <button
