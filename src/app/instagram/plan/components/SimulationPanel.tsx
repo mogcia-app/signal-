@@ -9,6 +9,7 @@ interface SimulationPanelProps {
   onRunSimulation?: () => void;
   isSimulating?: boolean;
   simulationError?: string;
+  hasActivePlan?: boolean; // 保存された計画があるかどうか
 }
 
 
@@ -17,7 +18,8 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   formData,
   onRunSimulation,
   isSimulating = false,
-  simulationError
+  simulationError,
+  hasActivePlan = false
 }) => {
   
   const currentFollowers = parseInt(formData.currentFollowers, 10) || 0;
@@ -31,7 +33,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
     isRealistic: true,
     growthRateComparison: { realistic: 0, userTarget: 0 }
   };
-  if (!result) {
+  if (!result || !hasActivePlan) {
     return (
       <section className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">

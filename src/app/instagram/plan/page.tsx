@@ -248,6 +248,7 @@ export default function InstagramPlanPage() {
                     onRunSimulation={handleRunSimulation}
                     isSimulating={isSimulating}
                     simulationError={simulationError}
+                    hasActivePlan={!!loadedPlanId}
                   />
                 )}
 
