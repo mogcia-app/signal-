@@ -123,7 +123,19 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
             <Tag className="w-4 h-4 text-gray-400" />
             <div className="text-sm">
               <span className="text-gray-600">KPI: </span>
-              <span className="font-medium text-gray-900">{planData.category}</span>
+              <span className="font-medium text-gray-900">
+                {(() => {
+                  const categoryMap: Record<string, string> = {
+                    'follower': 'フォロワー',
+                    'engagement': 'エンゲージメント',
+                    'reach': 'リーチ',
+                    'impression': 'インプレッション',
+                    'click': 'クリック',
+                    'conversion': 'コンバージョン'
+                  };
+                  return categoryMap[planData.category] || planData.category;
+                })()}
+              </span>
             </div>
           </div>
           {hasSimulation && (
@@ -151,7 +163,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               {strategies.slice(0, 3).map((strategy, index) => (
                 <span
                   key={index}
-                  className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs rounded-md font-medium"
+                  className="px-2.5 py-1 bg-orange-50 text-orange-700 text-xs rounded-md font-medium"
                 >
                   {strategy}
                 </span>
