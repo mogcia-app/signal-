@@ -94,11 +94,18 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
             </div>
           </div>
 
-          {/* 達成度表示 */}
-          <div className="flex justify-center">
+          {/* サブKPI（2つ並び） */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="text-center p-4 bg-white rounded-md">
+              <div className="text-xl font-bold text-gray-900 mb-1">
+                {result.monthlyTarget}人/月
+              </div>
+              <div className="text-sm text-gray-600">月間目標</div>
+            </div>
             <div className="text-center p-4 bg-white rounded-md">
               <div className="text-xl font-bold text-gray-900 flex items-center justify-center space-x-2 mb-1">
-                <span className={`px-3 py-1 text-sm rounded-full ${
+                <span>{result.weeklyTarget}人/週</span>
+                <span className={`px-2 py-1 text-xs rounded-full ${
                   result.feasibilityLevel === 'very_realistic' 
                     ? 'bg-blue-100 text-blue-800'
                     : result.feasibilityLevel === 'realistic'
@@ -112,7 +119,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                   {result.feasibilityBadge}
                 </span>
               </div>
-              <div className="text-sm text-gray-600">達成度</div>
+              <div className="text-sm text-gray-600">週間目標</div>
             </div>
           </div>
 

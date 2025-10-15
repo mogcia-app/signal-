@@ -104,7 +104,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
         </div>
 
         {/* グリッド情報 */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-gray-400" />
             <div className="text-sm">
@@ -113,20 +113,13 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <TrendingUp className="w-4 h-4 text-gray-400" />
-            <div className="text-sm">
-              <span className="text-gray-600">施策: </span>
-              <span className="font-medium text-gray-900">{strategies.length}個</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2 col-span-2">
             <Users className="w-4 h-4 text-gray-400" />
             <div className="text-sm">
               <span className="text-gray-600">ターゲット: </span>
               <span className="font-medium text-gray-900">{planData.targetAudience}</span>
             </div>
           </div>
-          <div className="flex items-center space-x-2 col-span-2">
+          <div className="flex items-center space-x-2">
             <Tag className="w-4 h-4 text-gray-400" />
             <div className="text-sm">
               <span className="text-gray-600">KPI: </span>
@@ -138,7 +131,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
         {/* 施策タグ */}
         {strategies.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 mb-2">採用施策</p>
+            <p className="text-xs text-gray-500 mb-2">施策</p>
             <div className="flex flex-wrap gap-2">
               {strategies.slice(0, 3).map((strategy, index) => (
                 <span
@@ -161,15 +154,9 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
         {hasSimulation && (
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3">
             <p className="text-xs text-blue-700 font-medium mb-2">📊 シミュレーション結果</p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="text-center">
               <div>
-                <span className="text-gray-600">月間目標: </span>
-                <span className="font-semibold text-gray-900">
-                  {String(simulationResult.monthlyTarget || 'N/A')}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">達成度: </span>
+                <span className="text-gray-600 text-xs">達成度: </span>
                 <span className={`font-semibold ${
                   simulationResult.feasibilityLevel === 'high' ? 'text-green-600' :
                   simulationResult.feasibilityLevel === 'medium' ? 'text-yellow-600' :
