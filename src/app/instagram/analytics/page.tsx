@@ -15,7 +15,6 @@ import PostPreview from '../components/PostPreview';
 // import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm'; // 統合済み
 import AnalyticsForm from '../components/AnalyticsForm';
 import AnalyticsStats from '../components/AnalyticsStats';
-import BulkPostInput from '../components/BulkPostInput';
 import { } from 'lucide-react';
 
 // オーディエンス分析データの型定義
@@ -269,78 +268,6 @@ function InstagramAnalyticsContent() {
 
 
 
-  // 一括インポート処理
-  const handleBulkImport = async (posts: Array<{
-    title: string;
-    content: string;
-    hashtags: string;
-    category: 'feed' | 'reel' | 'story';
-    publishedAt: string;
-    publishedTime: string;
-    likes: string;
-    comments: string;
-    shares: string;
-    reach: string;
-  }>) => {
-    if (!user?.uid) {
-      alert('ログインが必要です');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // 各投稿を順次保存
-      for (const post of posts) {
-        const response = await fetch('/api/analytics', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user.uid,
-            postId: null, // 手動入力の場合はnull
-            likes: parseInt(post.likes) || 0,
-            comments: parseInt(post.comments) || 0,
-            shares: parseInt(post.shares) || 0,
-            reach: parseInt(post.reach) || 0,
-            impressions: parseInt(post.reach) || 0, // リーチをインプレッションとして使用
-            saves: 0, // デフォルト値
-            title: post.title,
-            content: post.content,
-            hashtags: post.hashtags,
-            category: post.category,
-            publishedAt: new Date(`${post.publishedAt}T${post.publishedTime}`).toISOString(),
-            publishedTime: post.publishedTime,
-            audience: {
-              gender: { male: 50, female: 50, other: 0 },
-              age: { '13-17': 10, '18-24': 30, '25-34': 35, '35-44': 20, '45-54': 4, '55-64': 1, '65+': 0 }
-            },
-            reachSource: {
-              sources: { posts: 60, profile: 20, explore: 15, search: 4, other: 1 },
-              followers: { followers: 80, nonFollowers: 20 }
-            }
-          }),
-        });
-
-        if (!response.ok) {
-          console.error(`投稿 "${post.title}" の保存に失敗しました`);
-        }
-      }
-
-      alert(`${posts.length}件の投稿データを一括保存しました！`);
-      
-      // データを再取得
-      await fetchAnalytics();
-      await fetchPosts();
-
-    } catch (error) {
-      console.error('一括インポートエラー:', error);
-      alert('一括インポート中にエラーが発生しました');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // 投稿分析データを保存（BFF経由）
   const handleSaveAnalytics = async (sentimentData?: { sentiment: 'satisfied' | 'dissatisfied' | null; memo: string }) => {
     if (!user?.uid) {
@@ -528,12 +455,6 @@ function InstagramAnalyticsContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 左カラム: 入力フォーム */}
             <div className="space-y-6">
-              {/* 一括入力機能 */}
-              <BulkPostInput
-                onImport={handleBulkImport}
-                isLoading={isLoading}
-              />
-              
               {/* 統合された分析データ入力フォーム */}
               <AnalyticsForm
                 data={inputData}

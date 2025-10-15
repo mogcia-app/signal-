@@ -86,6 +86,76 @@ async function generateAIStrategy(
     console.warn('ユーザープロファイル取得エラー（デフォルト値を使用）:', error);
   }
 
+  // 分析データを取得（PDCA - Check）
+  let analyticsData: Array<{
+    reach: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    engagementRate: number;
+    publishedTime?: string;
+    category?: string;
+  }> = [];
+  try {
+    const analyticsSnapshot = await adminDb
+      .collection('analytics')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .limit(30)
+      .get();
+
+    analyticsData = analyticsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      const reach = data.reach || 0;
+      const totalEngagement = (data.likes || 0) + (data.comments || 0) + (data.shares || 0);
+      const engagementRate = reach > 0 ? (totalEngagement / reach * 100) : 0;
+      
+      return {
+        reach,
+        likes: data.likes || 0,
+        comments: data.comments || 0,
+        shares: data.shares || 0,
+        engagementRate,
+        publishedTime: data.publishedTime || '',
+        category: data.category || 'feed'
+      };
+    });
+    console.log(`✅ 分析データ取得成功: ${analyticsData.length}件`);
+  } catch (error) {
+    console.warn('⚠️ 分析データ取得エラー:', error);
+  }
+
+  // 月次レポートデータを取得（PDCA - Act）
+  let monthlyReportData: {
+    currentScore?: number;
+    previousScore?: number;
+    performanceRating?: string;
+    improvements?: string[];
+    actionPlan?: string;
+  } | null = null;
+  try {
+    const reportSnapshot = await adminDb
+      .collection('monthlyReports')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get();
+
+    if (!reportSnapshot.empty) {
+      const reportData = reportSnapshot.docs[0].data();
+      monthlyReportData = {
+        currentScore: reportData.currentScore || 0,
+        previousScore: reportData.previousScore || 0,
+        performanceRating: reportData.performanceRating || 'C',
+        improvements: reportData.improvements || [],
+        actionPlan: reportData.actionPlan || ''
+      };
+      console.log('✅ 月次レポートデータ取得成功');
+    }
+  } catch (error) {
+    console.warn('⚠️ 月次レポートデータ取得エラー:', error);
+  }
+
   // プロンプトビルダーを使用してシステムプロンプトを構築
   let systemPrompt: string;
   
@@ -111,6 +181,42 @@ async function generateAIStrategy(
         postsPerWeek?: { feed?: number; reel?: number };
       }
     );
+
+    // 分析データの参照（PDCA - Check）
+    if (analyticsData.length > 0) {
+      const totalReach = analyticsData.reduce((sum, a) => sum + a.reach, 0);
+      const totalEngagement = analyticsData.reduce((sum, a) => sum + a.likes + a.comments + a.shares, 0);
+      const avgEngagementRate = analyticsData.reduce((sum, a) => sum + a.engagementRate, 0) / analyticsData.length;
+      const bestPerformingCategory = analyticsData.reduce((best, current) => 
+        current.engagementRate > best.engagementRate ? current : best
+      );
+      
+      systemPrompt += `
+
+【過去の分析データ参照（PDCA - Check）】
+- データ期間: 過去${analyticsData.length}件の投稿
+- 総リーチ: ${totalReach.toLocaleString()}
+- 総エンゲージメント: ${totalEngagement.toLocaleString()}
+- 平均エンゲージメント率: ${avgEngagementRate.toFixed(2)}%
+- 最も効果的だった投稿タイプ: ${bestPerformingCategory.category} (${bestPerformingCategory.engagementRate.toFixed(2)}%)
+
+これらの実績データを基に、より効果的な戦略を提案してください。`;
+    }
+
+    // 月次レポートデータの参照（PDCA - Act）
+    if (monthlyReportData) {
+      const scoreDiff = (monthlyReportData.currentScore || 0) - (monthlyReportData.previousScore || 0);
+      systemPrompt += `
+
+【月次レポート結果参照（PDCA - Act）】
+- 現在のスコア: ${monthlyReportData.currentScore || 0}点
+- 前月比: ${scoreDiff > 0 ? '+' : ''}${scoreDiff}点
+- パフォーマンス評価: ${monthlyReportData.performanceRating || 'C'}
+- 改善点: ${monthlyReportData.improvements?.join(', ') || 'なし'}
+- アクションプラン: ${monthlyReportData.actionPlan?.substring(0, 200) || 'なし'}
+
+前月の振り返り結果を踏まえ、継続すべき点と改善すべき点を明確にして戦略を提案してください。`;
+    }
   } else {
     // フォールバック: ユーザープロファイルがない場合（旧ロジック）
     systemPrompt = `あなたはInstagram運用の専門家です。ユーザーの計画データとシミュレーション結果を基に、具体的で実用的な投稿戦略アドバイスを生成してください。
@@ -142,6 +248,23 @@ async function generateAIStrategy(
 - 月間目標: ${simulationResult?.monthlyTarget || 'N/A'}
 - 実現可能性: ${simulationResult?.feasibilityLevel || 'N/A'}
 - 週間投稿数: フィード${(simulationResult?.postsPerWeek as Record<string, unknown>)?.feed || 0}回、リール${(simulationResult?.postsPerWeek as Record<string, unknown>)?.reel || 0}回`;
+
+    // フォールバックでも分析データを参照
+    if (analyticsData.length > 0) {
+      const totalReach = analyticsData.reduce((sum, a) => sum + a.reach, 0);
+      const totalEngagement = analyticsData.reduce((sum, a) => sum + a.likes + a.comments + a.shares, 0);
+      const avgEngagementRate = analyticsData.reduce((sum, a) => sum + a.engagementRate, 0) / analyticsData.length;
+      
+      systemPrompt += `
+
+過去の実績データ:
+- データ期間: 過去${analyticsData.length}件の投稿
+- 総リーチ: ${totalReach.toLocaleString()}
+- 総エンゲージメント: ${totalEngagement.toLocaleString()}
+- 平均エンゲージメント率: ${avgEngagementRate.toFixed(2)}%
+
+これらの実績を踏まえて戦略を提案してください。`;
+    }
   }
 
   // RAG: 関連知識を検索（既存の学習機能を維持）
