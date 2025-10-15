@@ -412,7 +412,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   input.value = '';
                 }
               }}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="px-6 py-3 bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               追加
             </button>
@@ -473,7 +473,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 ) : (
                   <>
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                      <Upload className="w-6 h-6 text-gray-400" />
+                      <Upload className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
                       <p className="text-gray-600 font-medium">画像をアップロード</p>
