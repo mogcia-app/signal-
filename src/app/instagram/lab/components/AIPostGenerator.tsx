@@ -184,7 +184,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               onClick={() => onPostTypeChange('feed')}
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'feed'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -197,7 +197,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               onClick={() => onPostTypeChange('reel')}
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'reel'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -210,7 +210,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               onClick={() => onPostTypeChange('story')}
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'story'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -235,7 +235,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                 type="date"
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
               />
             </div>
             
@@ -267,12 +267,12 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                   type="time"
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
                 />
                 {suggestedTime && (
                   <button
                     onClick={() => setScheduledTime(suggestedTime)}
-                    className="px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-xs font-medium"
+                    className="px-3 py-2 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors text-xs font-medium"
                   >
                     採用
                   </button>
@@ -305,7 +305,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             value={aiTitle}
             onChange={(e) => setAiTitle(e.target.value)}
             placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のタイトルを入力してください...`}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
           />
         </div>
 
@@ -326,7 +326,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                 : '運用計画を作成してから投稿テーマを入力してください...'
               }
               disabled={!planData}
-              className={`w-full h-32 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm ${!planData ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full h-32 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm ${!planData ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ fontFamily: 'inherit' }}
             />
           </div>
@@ -363,8 +363,8 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
 
         {/* 計画情報表示 */}
         {planData && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-            <div className="text-sm text-blue-800">
+          <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+            <div className="text-sm text-orange-800">
               <div className="font-medium mb-2">📋 現在の運用計画</div>
               <div className="space-y-1 text-xs">
                 <div>• 計画: {planData.title}</div>

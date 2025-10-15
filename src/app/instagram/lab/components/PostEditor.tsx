@@ -207,7 +207,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     <button
                       onClick={handleSave}
                       disabled={!content.trim() || isSaving}
-                      className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     >
                       {isSaving ? (
                         <>
@@ -234,21 +234,21 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
       {/* 成功メッセージ */}
       {showSuccessMessage && (
-        <div className="mx-6 mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div className="mx-6 mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
           <div className="flex items-center">
-            <CheckCircle size={20} className="text-green-600 mr-3" />
+            <CheckCircle size={20} className="text-orange-600 mr-3" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-green-800">
+              <p className="text-sm font-medium text-orange-800">
                 投稿が保存されました！
               </p>
-              <p className="text-xs text-green-600 mt-1">
+              <p className="text-xs text-orange-600 mt-1">
                 投稿一覧ページで確認できます。
               </p>
             </div>
             <div className="flex space-x-2">
               <a
                 href="/instagram/posts"
-                className="inline-flex items-center px-3 py-1 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                className="inline-flex items-center px-3 py-1 text-xs bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 transition-colors"
               >
                 <Eye size={12} className="mr-1" />
                 投稿一覧を見る
@@ -270,7 +270,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               onClick={() => onPostTypeChange?.('feed')}
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'feed'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -283,7 +283,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               onClick={() => onPostTypeChange?.('reel')}
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'reel'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -296,7 +296,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               onClick={() => onPostTypeChange?.('story')}
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'story'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -320,7 +320,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 type="date"
                 value={scheduledDate}
                 onChange={(e) => handleScheduledDateChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
               />
             </div>
             <div>
@@ -329,7 +329,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 type="time"
                 value={scheduledTime}
                 onChange={(e) => handleScheduledTimeChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
               />
             </div>
           </div>
@@ -345,7 +345,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             value={title}
             onChange={(e) => onTitleChange?.(e.target.value)}
             placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のタイトルを入力してください...`}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
           />
         </div>
 
@@ -359,7 +359,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               value={content}
               onChange={(e) => onContentChange(e.target.value)}
               placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}の投稿文を入力してください...`}
-              className="w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+              className="w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm"
               style={{ fontFamily: 'inherit' }}
             />
           </div>
@@ -375,13 +375,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             {hashtags.map((hashtag, index) => (
               <span
                 key={index}
-                className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 text-sm rounded-full border border-blue-200"
+                className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 text-sm rounded-full border border-orange-200"
               >
-                <span className="text-blue-600 mr-1">#</span>
+                <span className="text-orange-600 mr-1">#</span>
                 {hashtag}
                 <button
                   onClick={() => handleHashtagRemove(index)}
-                  className="ml-2 text-blue-600 hover:text-blue-800 hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors"
+                  className="ml-2 text-orange-600 hover:text-orange-800 hover:bg-orange-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors"
                 >
                   ×
                 </button>
@@ -392,7 +392,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             <input
               type="text"
               placeholder="ハッシュタグを入力..."
-              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80"
+              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   const hashtag = e.currentTarget.value.trim().replace('#', '');
@@ -445,7 +445,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <div className="mt-2 text-center">
                 <button
                   onClick={() => document.getElementById('image-upload')?.click()}
-                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                  className="text-sm text-orange-600 hover:text-orange-800 transition-colors"
                 >
                   別の画像を選択
                 </button>
@@ -467,7 +467,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               >
                 {isUploading ? (
                   <>
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff8a15]"></div>
                     <span className="text-gray-600">アップロード中...</span>
                   </>
                 ) : (
@@ -543,7 +543,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     )}
             {hashtags.length > 0 && (
               <div className="mt-4 pt-3 border-t border-gray-200">
-                <div className="text-sm text-blue-600 flex flex-wrap gap-1">
+                <div className="text-sm text-orange-600 flex flex-wrap gap-1">
                   {hashtags.map(hashtag => `#${hashtag}`).join(' ')}
                 </div>
               </div>
@@ -594,7 +594,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   </span>
                   <button
                     onClick={() => handleLoad(savedContent)}
-                    className="ml-2 px-2 py-1 text-blue-600 hover:text-blue-800"
+                    className="ml-2 px-2 py-1 text-orange-600 hover:text-orange-800"
                   >
                     読み込み
                   </button>

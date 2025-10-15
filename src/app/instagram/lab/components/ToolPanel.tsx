@@ -114,7 +114,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
               />
               <button
                 onClick={handleAddTemplate}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                className="px-4 py-2 bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 flex items-center"
               >
                 <Plus size={16} />
               </button>
@@ -147,7 +147,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => onTemplateSelect(template)}
-                    className="p-1 text-blue-600 hover:text-blue-800"
+                    className="p-1 text-orange-600 hover:text-orange-800"
                     title="投稿に追加"
                   >
                     <Copy size={14} />
@@ -197,7 +197,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
               />
               <button
                 onClick={handleAddHashtag}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                className="px-4 py-2 bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 flex items-center"
               >
                 <Plus size={16} />
               </button>
@@ -225,12 +225,12 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                     autoFocus
                   />
                 ) : (
-                  <span className="flex-1 text-sm text-blue-600">#{hashtag}</span>
+                  <span className="flex-1 text-sm text-orange-600">#{hashtag}</span>
                 )}
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => onHashtagSelect(hashtag)}
-                    className="p-1 text-blue-600 hover:text-blue-800"
+                    className="p-1 text-orange-600 hover:text-orange-800"
                     title="投稿に追加"
                   >
                     <Copy size={14} />
