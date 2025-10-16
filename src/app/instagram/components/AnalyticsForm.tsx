@@ -108,10 +108,10 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               <input
                 type="text"
                 placeholder="タイトル、内容、ハッシュタグで検索..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               />
             </div>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+            <button className="px-4 py-2 bg-[#ff8a15] text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center">
               <span>検索</span>
             </button>
           </div>
@@ -129,7 +129,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 type="text"
                 value={data.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                 placeholder="投稿のタイトルを入力"
               />
             </div>
@@ -140,7 +140,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               <textarea
                 value={data.content}
                 onChange={(e) => handleInputChange('content', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                 rows={3}
                 placeholder="投稿の内容を入力"
               />
@@ -153,7 +153,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 type="text"
                 value={data.hashtags}
                 onChange={(e) => handleInputChange('hashtags', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                 placeholder="#hashtag1 #hashtag2"
               />
             </div>
@@ -164,7 +164,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               <select
                 value={data.category}
                 onChange={(e) => handleInputChange('category', e.target.value as 'reel' | 'feed' | 'story')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               >
                 <option value="feed">フィード</option>
                 <option value="reel">リール</option>
@@ -224,7 +224,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                       img.src = URL.createObjectURL(file);
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                 />
                 {data.thumbnail && (
                   <div className="mt-2">
@@ -254,7 +254,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 type="date"
                 value={data.publishedAt}
                 onChange={(e) => handleInputChange('publishedAt', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               />
             </div>
             <div>
@@ -265,7 +265,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 type="time"
                 value={data.publishedTime}
                 onChange={(e) => handleInputChange('publishedTime', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               />
             </div>
           </div>
@@ -283,7 +283,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               min="0"
               value={data.likes}
               onChange={(e) => handleInputChange('likes', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               placeholder="0"
             />
           </div>
@@ -297,7 +297,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               min="0"
               value={data.comments}
               onChange={(e) => handleInputChange('comments', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               placeholder="0"
             />
           </div>
@@ -311,7 +311,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               min="0"
               value={data.shares}
               onChange={(e) => handleInputChange('shares', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               placeholder="0"
             />
           </div>
@@ -325,7 +325,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               min="0"
               value={data.reach}
               onChange={(e) => handleInputChange('reach', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               placeholder="0"
             />
           </div>
@@ -339,7 +339,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               min="0"
               value={data.saves}
               onChange={(e) => handleInputChange('saves', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               placeholder="0"
             />
           </div>
@@ -352,7 +352,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               type="number"
               value={data.followerIncrease}
               onChange={(e) => handleInputChange('followerIncrease', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               placeholder="0"
             />
           </div>
@@ -361,7 +361,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
         {/* オーディエンス分析 */}
         <div className="p-4 bg-white rounded-lg border border-gray-200">
           <div className="flex items-center mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -385,7 +385,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.gender.male}
                   onChange={(e) => handleGenderChange('male', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -400,7 +400,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.gender.female}
                   onChange={(e) => handleGenderChange('female', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -415,7 +415,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.gender.other}
                   onChange={(e) => handleGenderChange('other', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -437,7 +437,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.age['13-17']}
                   onChange={(e) => handleAgeChange('13-17', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -452,7 +452,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.age['18-24']}
                   onChange={(e) => handleAgeChange('18-24', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -467,7 +467,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.age['25-34']}
                   onChange={(e) => handleAgeChange('25-34', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -482,7 +482,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.age['35-44']}
                   onChange={(e) => handleAgeChange('35-44', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -497,7 +497,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.age['45-54']}
                   onChange={(e) => handleAgeChange('45-54', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -512,7 +512,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.age['55-64']}
                   onChange={(e) => handleAgeChange('55-64', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -527,7 +527,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.audience.age['65+']}
                   onChange={(e) => handleAgeChange('65+', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -684,8 +684,8 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                     onClick={() => handleSentimentClick('satisfied')}
                     className={`flex items-center px-4 py-2 rounded-lg border-2 transition-all ${
                       sentiment === 'satisfied'
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-gray-200 hover:border-green-300 hover:bg-green-50'
+                        ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
+                        : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50'
                     }`}
                   >
                     <ThumbsUp className="h-4 w-4 mr-2" />
@@ -738,7 +738,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                       </button>
                       <button
                         onClick={handleSaveMemo}
-                        className="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                        className="flex items-center px-3 py-1 text-sm bg-[#ff8a15] text-white rounded hover:bg-orange-600"
                       >
                         <Save className="h-3 w-3 mr-1" />
                         保存
@@ -771,7 +771,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
           <button
             onClick={() => onSave({ sentiment, memo })}
             disabled={isLoading}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2"
+            className="w-full px-6 py-3 bg-[#ff8a15] text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2"
           >
             {isLoading ? (
               <>

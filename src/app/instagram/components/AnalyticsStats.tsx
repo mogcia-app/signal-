@@ -17,7 +17,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff8a15]"></div>
           <span className="ml-2 text-gray-600">統計を計算中...</span>
         </div>
       </div>
@@ -87,7 +87,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
       {/* 基本統計 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center mb-6">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+          <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
             <BarChart3 className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -146,7 +146,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
       {avgAudienceStats && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -199,7 +199,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
       {avgReachSourceStats && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-teal-600 rounded-lg flex items-center justify-center mr-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
               <Target className="w-5 h-5 text-white" />
             </div>
             <div>

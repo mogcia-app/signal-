@@ -57,7 +57,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-4">
-        <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-teal-600 rounded-lg flex items-center justify-center mr-3">
+        <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
           <FileText className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -103,7 +103,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
                 <h3 className="text-lg font-semibold text-gray-900 truncate">
                   {displayData.title || '無題の投稿'}
                 </h3>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                   {getCategoryLabel(displayData.category)}
                 </span>
               </div>
@@ -119,7 +119,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
                   <Hash className="w-3 h-3 text-gray-400" />
                   <div className="flex flex-wrap gap-1">
                     {displayData.hashtags.slice(0, 5).map((tag, index) => (
-                      <span key={index} className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      <span key={index} className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
                         #{tag}
                       </span>
                     ))}
