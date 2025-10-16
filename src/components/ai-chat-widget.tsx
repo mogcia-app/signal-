@@ -22,9 +22,74 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [usageInfo, setUsageInfo] = useState({
+    usageCount: 0,
+    maxUsage: 5,
+    remainingUsage: 5,
+    canUse: true
+  });
+  const [isCheckingUsage, setIsCheckingUsage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { userProfile } = useUserProfile();
   const { user } = useAuth();
+
+  // 使用回数を取得
+  const fetchUsageInfo = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      setIsCheckingUsage(true);
+      const idToken = await user.getIdToken();
+      
+      const response = await fetch('/api/ai-chat/usage', {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUsageInfo(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch usage info:', error);
+    } finally {
+      setIsCheckingUsage(false);
+    }
+  };
+
+  // 使用回数を記録
+  const recordUsage = async () => {
+    if (!user?.uid) return false;
+    
+    try {
+      const idToken = await user.getIdToken();
+      
+      const response = await fetch('/api/ai-chat/usage', {
+        method: 'POST',
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUsageInfo(data);
+        return true;
+      } else if (response.status === 429) {
+        const data = await response.json();
+        setUsageInfo(data);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to record usage:', error);
+      return false;
+    }
+    
+    return false;
+  };
 
   // デバッグ用ログ（削除）
   // console.log('AIChatWidget rendered, isOpen:', isOpen, 'contextData:', contextData);
@@ -63,6 +128,40 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     }
   ];
 
+  // Instagram全体アドバイザーテンプレート
+  const instagramTemplates = [
+    {
+      id: 'strategy-overview',
+      title: '戦略全体の確認',
+      message: '現在のInstagram戦略全体について分析し、改善点を教えてください。'
+    },
+    {
+      id: 'content-advice',
+      title: 'コンテンツアドバイス',
+      message: 'より効果的なコンテンツ作成のアドバイスをください。'
+    },
+    {
+      id: 'engagement-tips',
+      title: 'エンゲージメント向上',
+      message: 'フォロワーとのエンゲージメントを向上させる方法を教えてください。'
+    },
+    {
+      id: 'posting-schedule',
+      title: '投稿スケジュール',
+      message: '最適な投稿タイミングと頻度についてアドバイスをください。'
+    },
+    {
+      id: 'hashtag-strategy',
+      title: 'ハッシュタグ戦略',
+      message: '効果的なハッシュタグの選び方と使い方を教えてください。'
+    },
+    {
+      id: 'analytics-insight',
+      title: '分析データ活用',
+      message: '分析データを活用した改善策を提案してください。'
+    }
+  ];
+
   // メッセージの自動スクロール
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,6 +187,19 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
+
+    // 使用制限をチェック
+    if (!usageInfo.canUse) {
+      alert('今月の使用回数が上限に達しています。来月までお待ちください。');
+      return;
+    }
+
+    // 使用回数を記録
+    const canUse = await recordUsage();
+    if (!canUse) {
+      alert('今月の使用回数が上限に達しています。来月までお待ちください。');
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -174,7 +286,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     }
   };
 
-  const handleTemplateClick = (template: typeof planTemplates[0]) => {
+  const handleTemplateClick = (template: typeof planTemplates[0] | typeof instagramTemplates[0]) => {
     setInputMessage(template.message);
     setShowTemplates(false);
   };
@@ -202,12 +314,25 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
           
           {/* チャットボタン */}
           <button
-            onClick={() => setIsOpen(true)}
-            className="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+            onClick={() => {
+              setIsOpen(true);
+              fetchUsageInfo();
+            }}
+            className="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
             aria-label="AIチャットを開く"
           >
             <Bot size={24} className="group-hover:scale-110 transition-transform duration-200" />
+            {usageInfo.remainingUsage < 3 && usageInfo.remainingUsage > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                {usageInfo.remainingUsage}
+              </span>
+            )}
           </button>
+          {isCheckingUsage && (
+            <div className="absolute -top-12 right-0 bg-gray-800 text-white text-xs px-2 py-1 rounded">
+              確認中...
+            </div>
+          )}
         </div>
       )}
 
@@ -218,7 +343,12 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg">
             <div className="flex items-center space-x-2">
               <Bot size={20} className="text-orange-600" />
-              <h3 className="font-semibold text-gray-800">AI運用アドバイザー</h3>
+              <div>
+                <h3 className="font-semibold text-gray-800">AI運用アドバイザー</h3>
+                <p className="text-xs text-gray-600">
+                  残り使用回数: {usageInfo.remainingUsage}/{usageInfo.maxUsage}回
+                </p>
+              </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -290,7 +420,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {planTemplates.map((template) => (
+                {instagramTemplates.map((template) => (
                   <button
                     key={template.id}
                     onClick={() => handleTemplateClick(template)}
@@ -333,10 +463,15 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white rounded-lg transition-colors flex items-center justify-center"
+                disabled={!inputMessage.trim() || isLoading || !usageInfo.canUse}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white rounded-lg transition-colors flex items-center justify-center relative"
               >
                 <Send size={16} />
+                {!usageInfo.canUse && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    !
+                  </span>
+                )}
               </button>
             </div>
           </div>
