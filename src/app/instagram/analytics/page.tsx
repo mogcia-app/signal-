@@ -473,9 +473,9 @@ function InstagramAnalyticsContent() {
         customTitle="投稿分析"
         customDescription="投稿の分析データを入力・管理します"
       >
-        <div className="max-w-7xl mx-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 左カラム: 投稿選択 */}
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 左カラム: 投稿選択 + 入力フォーム */}
             <div className="space-y-6">
               <PostSelector
                 posts={posts}
@@ -484,10 +484,7 @@ function InstagramAnalyticsContent() {
                 onPostIdSelect={handlePostIdSelect}
                 isLoading={isLoading}
               />
-            </div>
-
-            {/* 中央カラム: 入力フォーム */}
-            <div className="space-y-6">
+              
               {/* 統合された分析データ入力フォーム */}
               <AnalyticsForm
                 data={inputData}
