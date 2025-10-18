@@ -1,6 +1,102 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '../../../lib/firebase-admin';
 
+// 目標達成度チェック関数
+async function checkGoalAchievement(userId: string, analyticsData: any) {
+  try {
+    // 目標設定を取得
+    const goalDoc = await adminDb.collection('goalSettings').doc(userId).get();
+    if (!goalDoc.exists) {
+      console.log('No goal settings found for user:', userId);
+      return;
+    }
+
+    const goalSettings = goalDoc.data();
+    const now = new Date();
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // 今週の投稿数を取得
+    const weeklyPostsQuery = await adminDb
+      .collection('posts')
+      .where('userId', '==', userId)
+      .where('createdAt', '>=', startOfWeek)
+      .get();
+
+    const weeklyPostCount = weeklyPostsQuery.size;
+
+    // 今月の投稿数を取得
+    const monthlyPostsQuery = await adminDb
+      .collection('posts')
+      .where('userId', '==', userId)
+      .where('createdAt', '>=', startOfMonth)
+      .get();
+
+    const monthlyPostCount = monthlyPostsQuery.size;
+
+    // 今月のフォロワー増加数を取得
+    const analyticsQuery = await adminDb
+      .collection('analytics')
+      .where('userId', '==', userId)
+      .where('publishedAt', '>=', startOfMonth)
+      .get();
+
+    let totalFollowerIncrease = 0;
+    analyticsQuery.forEach(doc => {
+      const data = doc.data();
+      if (data.followerIncrease) {
+        totalFollowerIncrease += parseInt(data.followerIncrease) || 0;
+      }
+    });
+
+    // 目標達成通知を保存
+    const achievements = [];
+
+    if (weeklyPostCount >= goalSettings.weeklyPostGoal) {
+      achievements.push({
+        type: 'weekly_posts',
+        title: '週間投稿目標',
+        message: `🎉 週間投稿目標達成！${weeklyPostCount}/${goalSettings.weeklyPostGoal}件`,
+        achievedAt: new Date()
+      });
+    }
+
+    if (totalFollowerIncrease >= goalSettings.followerGoal) {
+      achievements.push({
+        type: 'follower_increase',
+        title: 'フォロワー増加目標',
+        message: `🎉 フォロワー増加目標達成！${totalFollowerIncrease}/${goalSettings.followerGoal}人`,
+        achievedAt: new Date()
+      });
+    }
+
+    if (monthlyPostCount >= goalSettings.monthlyPostGoal) {
+      achievements.push({
+        type: 'monthly_posts',
+        title: '月間投稿目標',
+        message: `🎉 月間投稿目標達成！${monthlyPostCount}/${goalSettings.monthlyPostGoal}件`,
+        achievedAt: new Date()
+      });
+    }
+
+    // 達成通知を保存
+    if (achievements.length > 0) {
+      for (const achievement of achievements) {
+        await adminDb.collection('goalAchievements').add({
+          userId,
+          ...achievement,
+          createdAt: new Date()
+        });
+      }
+      console.log('Goal achievements saved:', achievements.length);
+    }
+
+  } catch (error) {
+    console.error('Goal achievement check error:', error);
+    throw error;
+  }
+}
+
 // 分析データの型定義
 interface AnalyticsData {
   id?: string;
@@ -192,6 +288,14 @@ export async function POST(request: NextRequest) {
       userId: analyticsData.userId,
       engagementRate: analyticsData.engagementRate
     });
+
+    // 目標達成度をチェック
+    try {
+      await checkGoalAchievement(userId, analyticsData);
+    } catch (error) {
+      console.error('Goal achievement check error:', error);
+      // 目標チェックに失敗してもanalytics保存は成功しているので続行
+    }
 
     // 投稿にanalyticsデータをリンク（postIdがある場合）
     if (postId) {

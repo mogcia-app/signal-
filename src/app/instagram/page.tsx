@@ -118,8 +118,79 @@ function InstagramDashboardContent() {
     status: string;
   }[]>([]);
 
+  // 目標設定の状態
+  const [showGoalSettings, setShowGoalSettings] = useState(false);
+  const [goalSettings, setGoalSettings] = useState({
+    weeklyPostGoal: 5,
+    followerGoal: 10,
+    monthlyPostGoal: 20
+  });
+  const [isSavingGoals, setIsSavingGoals] = useState(false);
+
   const instagramSettings = getSNSSettings('instagram');
 
+  // 目標設定を保存
+  const saveGoalSettings = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      setIsSavingGoals(true);
+      const idToken = await user.getIdToken();
+      
+      const response = await fetch('/api/instagram/goal-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify(goalSettings)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setShowGoalSettings(false);
+          // 目標達成追跡を再取得
+          await fetchGoalTracking();
+          alert('目標設定を保存しました！');
+        }
+      }
+    } catch (error) {
+      console.error('目標設定保存エラー:', error);
+      alert('目標設定の保存に失敗しました');
+    } finally {
+      setIsSavingGoals(false);
+    }
+  };
+
+  // 目標設定を読み込み
+  const fetchGoalSettings = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/instagram/goal-settings', {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setGoalSettings({
+            weeklyPostGoal: result.data.weeklyPostGoal || 5,
+            followerGoal: result.data.followerGoal || 10,
+            monthlyPostGoal: result.data.monthlyPostGoal || 20
+          });
+        }
+      }
+    } catch (error) {
+      console.error('目標設定取得エラー:', error);
+    }
+  }, [user]);
 
   // 目標達成追跡を取得
   const fetchGoalTracking = useCallback(async () => {
@@ -478,6 +549,7 @@ function InstagramDashboardContent() {
     if (user?.uid) {
       console.log('User authenticated, fetching data for:', user.uid);
       fetchPostsAndCalculateStats();
+      fetchGoalSettings(); // 目標設定を読み込み
       
       // ポーリングは一時的に無効化
       // const interval = setInterval(() => {
@@ -488,7 +560,7 @@ function InstagramDashboardContent() {
     } else {
       console.log('User not authenticated, skipping data fetch');
     }
-  }, [user?.uid, fetchPostsAndCalculateStats]);
+  }, [user?.uid, fetchPostsAndCalculateStats, fetchGoalSettings]);
 
   // ローディング状態
   if (profileLoading) {
@@ -558,12 +630,82 @@ function InstagramDashboardContent() {
             />
           </div>
 
-          {/* 目標達成通知 */}
+          {/* 目標設定・達成通知 */}
           <div className="bg-white p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="text-2xl mr-2">🎯</span>
-              目標達成通知
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                <span className="text-2xl mr-2">🎯</span>
+                目標設定・達成状況
+              </h2>
+              <button
+                onClick={() => setShowGoalSettings(!showGoalSettings)}
+                className="px-4 py-2 bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+              >
+                {showGoalSettings ? 'キャンセル' : '目標設定'}
+              </button>
+            </div>
+
+            {/* 目標設定フォーム */}
+            {showGoalSettings && (
+              <div className="bg-orange-50 border border-orange-200 p-4 mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">目標を設定してください</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">週間投稿目標</label>
+                    <input
+                      type="number"
+                      value={goalSettings.weeklyPostGoal}
+                      onChange={(e) => setGoalSettings(prev => ({ ...prev, weeklyPostGoal: parseInt(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      min="1"
+                      max="50"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">週に何回投稿するか</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">フォロワー増加目標</label>
+                    <input
+                      type="number"
+                      value={goalSettings.followerGoal}
+                      onChange={(e) => setGoalSettings(prev => ({ ...prev, followerGoal: parseInt(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      min="1"
+                      max="1000"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">月に何人増やすか</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">月間投稿目標</label>
+                    <input
+                      type="number"
+                      value={goalSettings.monthlyPostGoal}
+                      onChange={(e) => setGoalSettings(prev => ({ ...prev, monthlyPostGoal: parseInt(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      min="1"
+                      max="200"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">月に何回投稿するか</p>
+                  </div>
+                </div>
+                <div className="flex justify-end mt-4 space-x-3">
+                  <button
+                    onClick={() => setShowGoalSettings(false)}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={saveGoalSettings}
+                    disabled={isSavingGoals}
+                    className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                  >
+                    {isSavingGoals ? '保存中...' : '目標を保存'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 目標達成状況表示 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {loading ? (
                 <div className="col-span-3 text-center py-8">
@@ -573,23 +715,29 @@ function InstagramDashboardContent() {
               ) : goalNotifications.length === 0 ? (
                 <div className="col-span-3 text-center py-8">
                   <div className="text-gray-400 text-4xl mb-2">🎯</div>
-                  <p className="text-gray-600">目標データがありません</p>
+                  <p className="text-gray-600">目標を設定してください</p>
+                  <button
+                    onClick={() => setShowGoalSettings(true)}
+                    className="mt-2 px-4 py-2 bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    目標を設定する
+                  </button>
                 </div>
               ) : (
                 goalNotifications.map((goal, index) => (
                   <div key={index} className="bg-white p-4 border border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">{goal.title}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
+                      <span className={`text-xs px-2 py-1 ${
                         goal.status === 'achieved' 
                           ? 'text-green-600 bg-green-100' 
-                          : 'text-yellow-600 bg-yellow-100'
+                          : 'text-orange-600 bg-orange-100'
                       }`}>
-                        {goal.status === 'achieved' ? '達成済み' : '進行中'}
+                        {goal.status === 'achieved' ? '🎉 達成済み' : '進行中'}
                       </span>
                     </div>
                     <div className={`text-2xl font-bold ${
-                      goal.status === 'achieved' ? 'text-green-600' : 'text-yellow-600'
+                      goal.status === 'achieved' ? 'text-green-600' : 'text-orange-600'
                     }`}>
                       {goal.unit === '件' ? `${goal.current}/${goal.target}` : `${goal.current}${goal.unit}`}
                     </div>
