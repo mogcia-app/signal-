@@ -127,6 +127,19 @@ function InstagramDashboardContent() {
   });
   const [isSavingGoals, setIsSavingGoals] = useState(false);
 
+  // 次のアクションの状態
+  const [nextActions, setNextActions] = useState<Array<{
+    id: string;
+    type: string;
+    priority: 'high' | 'medium' | 'low';
+    title: string;
+    description: string;
+    actionText: string;
+    actionUrl: string;
+    icon: string;
+    color: string;
+  }>>([]);
+
   const instagramSettings = getSNSSettings('instagram');
 
   // 目標設定を保存
@@ -189,6 +202,30 @@ function InstagramDashboardContent() {
       }
     } catch (error) {
       console.error('目標設定取得エラー:', error);
+    }
+  }, [user]);
+
+  // 次のアクションを取得
+  const fetchNextActions = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/instagram/next-actions', {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setNextActions(result.data.actions || []);
+        }
+      }
+    } catch (error) {
+      console.error('Next actions fetch error:', error);
     }
   }, [user]);
 
@@ -537,12 +574,15 @@ function InstagramDashboardContent() {
       // 目標達成通知をAPIから取得
       await fetchGoalTracking();
 
+      // 次のアクションを取得
+      await fetchNextActions();
+
     } catch (error) {
       console.error('データ取得エラー:', error);
     } finally {
       setLoading(false);
     }
-  }, [user, fetchAnalyticsData, fetchDashboardStats, fetchGoalTracking]);
+  }, [user, fetchAnalyticsData, fetchDashboardStats, fetchGoalTracking, fetchNextActions]);
 
   useEffect(() => {
     // 認証状態が確定してからデータを取得
@@ -628,6 +668,52 @@ function InstagramDashboardContent() {
               planData={planData}
               snsType="instagram"
             />
+          </div>
+
+          {/* 次のアクション */}
+          <div className="bg-white p-6 mb-8">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+              <span className="text-2xl mr-2">🎯</span>
+              次のアクション
+            </h2>
+            <div className="space-y-3">
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">読み込み中...</p>
+                </div>
+              ) : nextActions.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">✅</div>
+                  <p className="text-gray-600">すべて完了しています！</p>
+                  <p className="text-sm text-gray-500 mt-1">素晴らしい運用を続けましょう</p>
+                </div>
+              ) : (
+                nextActions.map((action, index) => (
+                  <div key={action.id} className={`p-4 border-l-4 ${
+                    action.priority === 'high' ? 'border-red-500 bg-red-50' :
+                    action.priority === 'medium' ? 'border-orange-500 bg-orange-50' :
+                    'border-blue-500 bg-blue-50'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">{action.icon}</span>
+                        <div>
+                          <h3 className="font-semibold text-gray-800">{action.title}</h3>
+                          <p className="text-sm text-gray-600">{action.description}</p>
+                        </div>
+                      </div>
+                      <a
+                        href={action.actionUrl}
+                        className="px-4 py-2 bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+                      >
+                        {action.actionText}
+                      </a>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           {/* 目標設定・達成通知 */}

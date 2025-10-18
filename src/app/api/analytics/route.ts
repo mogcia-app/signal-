@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '../../../lib/firebase-admin';
 
 // 目標達成度チェック関数
-async function checkGoalAchievement(userId: string, analyticsData: any) {
+async function checkGoalAchievement(userId: string, analyticsData: {
+  followerIncrease?: number;
+  publishedAt?: string | Date;
+  [key: string]: unknown;
+}) {
   try {
     // 目標設定を取得
     const goalDoc = await adminDb.collection('goalSettings').doc(userId).get();
@@ -12,6 +16,11 @@ async function checkGoalAchievement(userId: string, analyticsData: any) {
     }
 
     const goalSettings = goalDoc.data();
+    if (!goalSettings) {
+      console.log('No goal settings data found for user:', userId);
+      return;
+    }
+
     const now = new Date();
     const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

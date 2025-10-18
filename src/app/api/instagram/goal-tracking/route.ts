@@ -19,6 +19,10 @@ export async function GET(request: NextRequest) {
     }
 
     const goalSettings = goalDoc.data();
+    if (!goalSettings) {
+      return NextResponse.json({ success: true, data: { goals: [] }, message: 'No goal settings data found' });
+    }
+
     const now = new Date();
     const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
