@@ -34,19 +34,35 @@ export async function GET(request: NextRequest) {
     const weeklyPostsQuery = await adminDb
       .collection('posts')
       .where('userId', '==', userId)
-      .where('createdAt', '>=', startOfWeek)
       .get();
 
-    const weeklyPostCount = weeklyPostsQuery.size;
+    const weeklyPostCount = weeklyPostsQuery.docs.filter(doc => {
+      const data = doc.data();
+      let createdAt = data.createdAt;
+      if (createdAt && createdAt.toDate) {
+        createdAt = createdAt.toDate();
+      } else if (createdAt && typeof createdAt === 'string') {
+        createdAt = new Date(createdAt);
+      }
+      return createdAt && createdAt >= startOfWeek;
+    }).length;
 
     // 今月の投稿数を取得
     const monthlyPostsQuery = await adminDb
       .collection('posts')
       .where('userId', '==', userId)
-      .where('createdAt', '>=', startOfMonth)
       .get();
 
-    const monthlyPostCount = monthlyPostsQuery.size;
+    const monthlyPostCount = monthlyPostsQuery.docs.filter(doc => {
+      const data = doc.data();
+      let createdAt = data.createdAt;
+      if (createdAt && createdAt.toDate) {
+        createdAt = createdAt.toDate();
+      } else if (createdAt && typeof createdAt === 'string') {
+        createdAt = new Date(createdAt);
+      }
+      return createdAt && createdAt >= startOfMonth;
+    }).length;
 
     // 今月のフォロワー増加数を取得
     const analyticsQuery = await adminDb
@@ -77,26 +93,26 @@ export async function GET(request: NextRequest) {
       {
         title: '週間投稿目標',
         current: weeklyPostCount,
-        target: goalSettings.weeklyPostGoal,
+        target: goalSettings.weeklyPostGoal || 0,
         unit: '件',
-        status: weeklyPostCount >= goalSettings.weeklyPostGoal ? 'achieved' : 'in_progress',
-        percentage: Math.round((weeklyPostCount / goalSettings.weeklyPostGoal) * 100)
+        status: weeklyPostCount >= (goalSettings.weeklyPostGoal || 0) ? 'achieved' : 'in_progress',
+        percentage: goalSettings.weeklyPostGoal ? Math.round((weeklyPostCount / goalSettings.weeklyPostGoal) * 100) : 0
       },
       {
         title: 'フォロワー増加',
         current: totalFollowerIncrease,
-        target: goalSettings.followerGoal,
+        target: goalSettings.followerGoal || 0,
         unit: '人',
-        status: totalFollowerIncrease >= goalSettings.followerGoal ? 'achieved' : 'in_progress',
-        percentage: Math.round((totalFollowerIncrease / goalSettings.followerGoal) * 100)
+        status: totalFollowerIncrease >= (goalSettings.followerGoal || 0) ? 'achieved' : 'in_progress',
+        percentage: goalSettings.followerGoal ? Math.round((totalFollowerIncrease / goalSettings.followerGoal) * 100) : 0
       },
       {
         title: '月間投稿目標',
         current: monthlyPostCount,
-        target: goalSettings.monthlyPostGoal,
+        target: goalSettings.monthlyPostGoal || 0,
         unit: '件',
-        status: monthlyPostCount >= goalSettings.monthlyPostGoal ? 'achieved' : 'in_progress',
-        percentage: Math.round((monthlyPostCount / goalSettings.monthlyPostGoal) * 100)
+        status: monthlyPostCount >= (goalSettings.monthlyPostGoal || 0) ? 'achieved' : 'in_progress',
+        percentage: goalSettings.monthlyPostGoal ? Math.round((monthlyPostCount / goalSettings.monthlyPostGoal) * 100) : 0
       }
     ];
 

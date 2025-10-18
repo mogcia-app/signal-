@@ -32,19 +32,35 @@ async function checkGoalAchievement(userId: string, analyticsData: {
     const weeklyPostsQuery = await adminDb
       .collection('posts')
       .where('userId', '==', userId)
-      .where('createdAt', '>=', startOfWeek)
       .get();
 
-    const weeklyPostCount = weeklyPostsQuery.size;
+    const weeklyPostCount = weeklyPostsQuery.docs.filter(doc => {
+      const data = doc.data();
+      let createdAt = data.createdAt;
+      if (createdAt && createdAt.toDate) {
+        createdAt = createdAt.toDate();
+      } else if (createdAt && typeof createdAt === 'string') {
+        createdAt = new Date(createdAt);
+      }
+      return createdAt && createdAt >= startOfWeek;
+    }).length;
 
     // 今月の投稿数を取得
     const monthlyPostsQuery = await adminDb
       .collection('posts')
       .where('userId', '==', userId)
-      .where('createdAt', '>=', startOfMonth)
       .get();
 
-    const monthlyPostCount = monthlyPostsQuery.size;
+    const monthlyPostCount = monthlyPostsQuery.docs.filter(doc => {
+      const data = doc.data();
+      let createdAt = data.createdAt;
+      if (createdAt && createdAt.toDate) {
+        createdAt = createdAt.toDate();
+      } else if (createdAt && typeof createdAt === 'string') {
+        createdAt = new Date(createdAt);
+      }
+      return createdAt && createdAt >= startOfMonth;
+    }).length;
 
     // 今月のフォロワー増加数を取得
     const analyticsQuery = await adminDb

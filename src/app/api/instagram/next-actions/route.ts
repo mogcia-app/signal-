@@ -68,10 +68,18 @@ export async function GET(request: NextRequest) {
         const weeklyPostsQuery = await adminDb
           .collection('posts')
           .where('userId', '==', userId)
-          .where('createdAt', '>=', startOfWeek)
           .get();
 
-        const weeklyPostCount = weeklyPostsQuery.size;
+        const weeklyPostCount = weeklyPostsQuery.docs.filter(doc => {
+          const data = doc.data();
+          let createdAt = data.createdAt;
+          if (createdAt && createdAt.toDate) {
+            createdAt = createdAt.toDate();
+          } else if (createdAt && typeof createdAt === 'string') {
+            createdAt = new Date(createdAt);
+          }
+          return createdAt && createdAt >= startOfWeek;
+        }).length;
         const weeklyRemaining = goalSettings.weeklyPostGoal - weeklyPostCount;
 
         if (weeklyRemaining > 0) {
