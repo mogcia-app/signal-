@@ -731,9 +731,9 @@ function InstagramDashboardContent() {
               </button>
             </div>
 
-            {/* 目標設定フォーム */}
-            {showGoalSettings && (
-              <div className="bg-orange-50 border border-orange-200 p-4 mb-6">
+                  {/* 目標設定フォーム */}
+                  {showGoalSettings && (
+                    <div className="bg-white border border-gray-200 p-4 mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">目標を設定してください</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>

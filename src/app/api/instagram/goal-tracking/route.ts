@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
     }
 
     const now = new Date();
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // 今週の投稿数を取得
@@ -49,14 +52,23 @@ export async function GET(request: NextRequest) {
     const analyticsQuery = await adminDb
       .collection('analytics')
       .where('userId', '==', userId)
-      .where('publishedAt', '>=', startOfMonth)
       .get();
 
     let totalFollowerIncrease = 0;
     analyticsQuery.forEach(doc => {
       const data = doc.data();
       if (data.followerIncrease) {
-        totalFollowerIncrease += parseInt(data.followerIncrease) || 0;
+        // publishedAtが今月以降かチェック
+        let publishedAt = data.publishedAt;
+        if (publishedAt && publishedAt.toDate) {
+          publishedAt = publishedAt.toDate();
+        } else if (publishedAt && typeof publishedAt === 'string') {
+          publishedAt = new Date(publishedAt);
+        }
+        
+        if (publishedAt && publishedAt >= startOfMonth) {
+          totalFollowerIncrease += parseInt(data.followerIncrease) || 0;
+        }
       }
     });
 
@@ -97,7 +109,8 @@ export async function GET(request: NextRequest) {
     console.error('Goal tracking fetch error:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to fetch goal tracking data' 
+      error: 'Failed to fetch goal tracking data',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }
