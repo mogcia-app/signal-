@@ -122,7 +122,12 @@ function XDashboardContent() {
               </div>
               <div className="p-6 space-y-3">
                 <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-                  <div className="font-medium text-blue-900">🐦 ツイート投稿</div>
+                  <div className="font-medium text-blue-900 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    ツイート投稿
+                  </div>
                   <div className="text-sm text-blue-700">新しいツイートを投稿</div>
                 </button>
                 <button className="w-full text-left px-4 py-3 bg-cyan-50 hover:bg-cyan-100 rounded-lg transition-colors">
