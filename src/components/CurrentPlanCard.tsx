@@ -9,13 +9,15 @@ interface CurrentPlanCardProps {
   variant?: 'compact' | 'full';
   showEditButton?: boolean;
   snsType?: 'instagram' | 'x' | 'tiktok';
+  actualFollowers?: number; // 分析データから取得した実際のフォロワー数
 }
 
 export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   planData,
   variant = 'compact',
   showEditButton = true,
-  snsType = 'instagram'
+  snsType = 'instagram',
+  actualFollowers
 }) => {
   // 計画が存在しない場合
   if (!planData) {
@@ -48,10 +50,14 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   const targetFollowers = planData.targetFollowers || 0;
   const strategies = planData.strategies || [];
   const postCategories = planData.postCategories || [];
+  
+  // 新しい達成度計算: 現在のフォロワー数 = 0%, 目標フォロワー数 = 100%
+  // actualFollowersが提供されている場合はそれを使用、そうでなければ計画の現在フォロワー数を使用
+  const displayFollowers = actualFollowers !== undefined ? actualFollowers : currentFollowers;
   const progressPercentage = targetFollowers > 0 
-    ? Math.min((currentFollowers / targetFollowers) * 100, 100) 
+    ? Math.min((displayFollowers / targetFollowers) * 100, 100) 
     : 0;
-  const remainingFollowers = Math.max(0, targetFollowers - currentFollowers);
+  const remainingFollowers = Math.max(0, targetFollowers - displayFollowers);
 
   // シミュレーション結果
   const simulationResult = planData.simulationResult as Record<string, unknown> | null;
@@ -88,7 +94,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-600">フォロワー目標</span>
             <span className="font-medium text-gray-900">
-              {currentFollowers.toLocaleString()} → {targetFollowers.toLocaleString()}
+              {displayFollowers.toLocaleString()} → {targetFollowers.toLocaleString()}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5">

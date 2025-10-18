@@ -73,6 +73,8 @@ interface AnalyticsData {
   hashtags?: string[];
   category?: string;
   thumbnail?: string;
+  sentiment?: 'satisfied' | 'dissatisfied' | null;
+  memo?: string;
   audience?: {
     gender: {
       male: number;
@@ -151,8 +153,32 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  // 満足度表示の色とアイコン
+  const getSentimentDisplay = (sentiment: 'satisfied' | 'dissatisfied' | null | undefined) => {
+    if (!sentiment) return null;
+    
+    switch (sentiment) {
+      case 'satisfied':
+        return {
+          icon: '😊',
+          text: '満足',
+          bgColor: 'bg-green-100',
+          textColor: 'text-green-800'
+        };
+      case 'dissatisfied':
+        return {
+          icon: '😞',
+          text: '不満',
+          bgColor: 'bg-red-100',
+          textColor: 'text-red-800'
+        };
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-white shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       {/* カードヘッダー */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between mb-2">
@@ -162,18 +188,28 @@ const PostCard: React.FC<PostCardProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             {post.isAIGenerated && (
-              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 flex items-center">
+              <span className="px-2 py-1  text-xs font-medium bg-purple-100 text-purple-800 flex items-center">
                 <span className="mr-1">🤖</span>
                 AI生成
               </span>
             )}
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
+            <span className={`px-2 py-1  text-xs font-medium ${getStatusColor(post.status)}`}>
               {getStatusLabel(post.status)}
             </span>
             {hasAnalytics && (
-              <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">
+              <span className="px-2 py-1 text-xs  bg-green-100 text-green-800 font-medium">
                 📊 分析済み
               </span>
+            )}
+            {hasAnalytics && postAnalytics?.sentiment && (
+              (() => {
+                const sentimentDisplay = getSentimentDisplay(postAnalytics.sentiment);
+                return sentimentDisplay ? (
+                  <span className={`px-2 py-1 text-xs font-medium ${sentimentDisplay.bgColor} ${sentimentDisplay.textColor}`}>
+                    {sentimentDisplay.icon} {sentimentDisplay.text}
+                  </span>
+                ) : null;
+              })()
             )}
           </div>
         </div>
@@ -239,13 +275,13 @@ const PostCard: React.FC<PostCardProps> = ({
               {post.hashtags.slice(0, 3).map((hashtag, index) => (
                 <span
                   key={index}
-                  className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md"
+                  className="px-2 py-1 bg-blue-100 text-blue-800 text-xs "
                 >
                   #{hashtag}
                 </span>
               ))}
               {post.hashtags.length > 3 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs ">
                   +{post.hashtags.length - 3}
                 </span>
               )}
@@ -292,7 +328,7 @@ const PostCard: React.FC<PostCardProps> = ({
           {hasAnalytics ? (
             <button
               onClick={() => onShowDetail(post, postAnalytics)}
-              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50  transition-colors"
               title="詳細を見る"
             >
               →
@@ -301,28 +337,28 @@ const PostCard: React.FC<PostCardProps> = ({
             <>
               <button
                 onClick={() => alert('投稿詳細を表示')}
-                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50  transition-colors"
                 title="詳細表示"
               >
                 <Eye size={14} />
               </button>
               <a
                 href={`/instagram/lab?edit=${post.id}`}
-                className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50  transition-colors"
                 title="投稿ラボで編集"
               >
                 <Edit size={14} />
               </a>
               <a
                 href={`/instagram/analytics?postId=${post.id}`}
-                className="p-2 text-gray-400 hover:text-[#ff8a15] hover:bg-orange-50 rounded-md transition-colors"
+                className="p-2 text-gray-400 hover:text-[#ff8a15] hover:bg-orange-50  transition-colors"
                 title="分析ページで投稿データを入力"
               >
                 📊
               </a>
               <button
                 onClick={() => onDeletePost(post.id)}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50  transition-colors"
                 title="削除"
               >
                 <Trash2 size={14} />

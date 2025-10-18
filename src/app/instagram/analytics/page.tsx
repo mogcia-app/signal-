@@ -4,13 +4,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { AuthGuard } from '../../../components/auth-guard';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/auth-context';
 import { usePlanData } from '../../../hooks/usePlanData';
 import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
 // import AudienceAnalysisForm from '../components/AudienceAnalysisForm'; // 統合済み
 // import ReachSourceAnalysisForm from '../components/ReachSourceAnalysisForm'; // 統合済み
+import PostPreview from '../components/PostPreview';
 import AnalyticsForm from '../components/AnalyticsForm';
 import AnalyticsStats from '../components/AnalyticsStats';
+import PostSelector from '../components/PostSelector';
 import { } from 'lucide-react';
 
 // オーディエンス分析データの型定義
@@ -74,11 +78,29 @@ interface AnalyticsData {
 }
 
 
+// 投稿データの型定義
+interface PostData {
+  id: string;
+  title: string;
+  content: string;
+  hashtags: string[];
+  thumbnail: string;
+  imageUrl?: string;
+  category: string;
+  type?: 'reel' | 'feed' | 'story';
+  publishedAt: Date;
+  createdAt?: Date;
+  status?: string;
+}
+
 function InstagramAnalyticsContent() {
   const { user } = useAuth();
   const { planData } = usePlanData();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [posts, setPosts] = useState<PostData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string>('');
+  const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [inputData, setInputData] = useState({
     likes: '',
     comments: '',
@@ -123,7 +145,61 @@ function InstagramAnalyticsContent() {
       }
     }
   });
-  // currentPlanは削除し、planDataを使用
+
+  // 投稿選択ハンドラー
+  const handlePostSelect = (post: PostData | null) => {
+    setSelectedPost(post);
+    if (post) {
+      // 投稿データを自動入力
+      setInputData(prev => ({
+        ...prev,
+        title: post.title || '',
+        content: post.content || '',
+        hashtags: post.hashtags?.join(', ') || '',
+        thumbnail: post.thumbnail || post.imageUrl || '',
+        category: (post.category || post.type || 'feed') as 'reel' | 'feed' | 'story',
+        publishedAt: post.publishedAt ? post.publishedAt.toISOString().split('T')[0] : (post.createdAt ? post.createdAt.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+        publishedTime: post.publishedAt ? post.publishedAt.toTimeString().slice(0, 5) : (post.createdAt ? post.createdAt.toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5))
+      }));
+    }
+  };
+
+  const handlePostIdSelect = (postId: string) => {
+    setSelectedPostId(postId);
+  };
+
+  // 投稿データを取得
+  const fetchPosts = useCallback(async () => {
+    if (!user?.uid) return;
+
+    try {
+      const postsRef = collection(db, 'posts');
+      const q = query(postsRef, where('userId', '==', user.uid), where('snsType', '==', 'instagram'));
+      const querySnapshot = await getDocs(q);
+      
+      const postsData: PostData[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        postsData.push({
+          id: doc.id,
+          title: data.title || '',
+          content: data.content || '',
+          hashtags: data.hashtags || [],
+          thumbnail: data.thumbnail || data.imageUrl || '',
+          imageUrl: data.imageUrl || '',
+          category: data.category || data.type || 'feed',
+          type: data.type || data.category || 'feed',
+          publishedAt: data.publishedAt?.toDate() || data.createdAt?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate(),
+          status: data.status || 'draft'
+        });
+      });
+      
+      setPosts(postsData);
+    } catch (error) {
+      console.error('投稿データの取得に失敗しました:', error);
+    }
+  }, [user?.uid]);
 
   // 分析データを取得（BFF経由）
   const fetchAnalytics = useCallback(async () => {
@@ -175,9 +251,24 @@ function InstagramAnalyticsContent() {
   // 計画データはusePlanDataフックで取得済み
 
 
+  // コンポーネントマウント時にデータを取得
   useEffect(() => {
     fetchAnalytics();
-  }, [fetchAnalytics]);
+    fetchPosts();
+  }, [fetchAnalytics, fetchPosts]);
+
+  // URLパラメータからpostIdを取得して投稿を選択
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('postId');
+    if (postId && posts.length > 0) {
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        handlePostSelect(post);
+        setSelectedPostId(postId);
+      }
+    }
+  }, [posts]);
 
 
 
@@ -215,7 +306,7 @@ function InstagramAnalyticsContent() {
         },
         body: JSON.stringify({
           userId: user.uid,
-          postId: null, // 投稿とのリンク（手動入力の場合はnull）
+          postId: selectedPostId || null, // 投稿とのリンク
           likes: inputData.likes,
           comments: inputData.comments,
           shares: inputData.shares,
@@ -249,6 +340,20 @@ function InstagramAnalyticsContent() {
       
       // データを再取得
       await fetchAnalytics();
+
+      // 投稿ステータスを更新
+      if (selectedPostId) {
+        try {
+          const { doc, updateDoc } = await import('firebase/firestore');
+          const postRef = doc(db, 'posts', selectedPostId);
+          await updateDoc(postRef, {
+            status: 'analyzed',
+            analyzedAt: new Date()
+          });
+        } catch (error) {
+          console.error('投稿ステータスの更新に失敗しました:', error);
+        }
+      }
 
       // 入力データをリセット
       setInputData({
@@ -296,6 +401,10 @@ function InstagramAnalyticsContent() {
         }
       });
 
+      // 投稿選択をクリア
+      setSelectedPost(null);
+      setSelectedPostId('');
+
     } catch (error) {
       console.error('保存エラー:', error);
       alert(`保存に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -316,6 +425,9 @@ function InstagramAnalyticsContent() {
     ? analyticsData.reduce((sum, data) => sum + (Number(data.engagementRate) || 0), 0) / analyticsData.length 
     : 0;
 
+  // 実際のフォロワー数計算（計画の現在フォロワー数 + フォロワー増加数の合計）
+  const actualFollowers = planData ? (planData.currentFollowers || 0) + totalFollowerIncrease : 0;
+
   
   // デバッグログ
   console.log('Statistics calculation debug:', {
@@ -327,7 +439,9 @@ function InstagramAnalyticsContent() {
     totalReach: totalReach,
     totalSaves: totalSaves,
     totalFollowerIncrease: totalFollowerIncrease,
-    avgEngagementRate: avgEngagementRate
+    avgEngagementRate: avgEngagementRate,
+    actualFollowers: actualFollowers,
+    planCurrentFollowers: planData?.currentFollowers || 0
   });
 
   return (
@@ -339,8 +453,16 @@ function InstagramAnalyticsContent() {
       >
         <div className="max-w-6xl mx-auto p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 左カラム: 分析データ入力フォーム */}
+            {/* 左カラム: 投稿検索・分析データ入力フォーム */}
             <div className="space-y-6">
+              {/* 投稿検索セクション */}
+              <PostSelector
+                posts={posts}
+                selectedPostId={selectedPostId}
+                onPostSelect={handlePostSelect}
+                onPostIdSelect={handlePostIdSelect}
+              />
+
               {/* 統合された分析データ入力フォーム */}
               <AnalyticsForm
                 data={inputData}
@@ -350,12 +472,27 @@ function InstagramAnalyticsContent() {
               />
             </div>
 
-            {/* 右カラム: 反映・表示 */}
+            {/* 右カラム: 投稿プレビュー・反映・表示 */}
             <div className="space-y-6">
+              {/* 投稿プレビューセクション */}
+              <PostPreview
+                selectedPost={selectedPost}
+                inputData={{
+                  title: inputData.title,
+                  content: inputData.content,
+                  hashtags: inputData.hashtags,
+                  category: inputData.category,
+                  thumbnail: inputData.thumbnail,
+                  publishedAt: inputData.publishedAt,
+                  publishedTime: inputData.publishedTime
+                }}
+              />
+
               {/* 運用計画セクション */}
               <CurrentPlanCard 
                 planData={planData}
                 snsType="instagram"
+                actualFollowers={actualFollowers}
               />
 
               {/* 統計表示コンポーネント */}

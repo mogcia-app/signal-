@@ -21,6 +21,8 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
   const [sentiment, setSentiment] = useState<'satisfied' | 'dissatisfied' | null>(null);
   const [memo, setMemo] = useState('');
   const [isEditingMemo, setIsEditingMemo] = useState(false);
+  const [showAudienceAnalysis, setShowAudienceAnalysis] = useState(false);
+  const [showReachSourceAnalysis, setShowReachSourceAnalysis] = useState(false);
   const handleInputChange = (field: keyof InputData, value: string) => {
     onChange({
       ...data,
@@ -93,36 +95,19 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="mb-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="mb-3 pb-3 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">分析データ入力</h2>
         <p className="text-sm text-gray-600">投稿のパフォーマンスデータを入力してください</p>
       </div>
 
-      <div className="space-y-6">
-        {/* 投稿検索 */}
-        <div className="p-4 bg-white rounded-lg border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿検索</h3>
-          <div className="flex space-x-2">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="タイトル、内容、ハッシュタグで検索..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-              />
-            </div>
-            <button className="px-4 py-2 bg-[#ff8a15] text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center">
-              <span>検索</span>
-            </button>
-          </div>
-        </div>
-
+      <div className="space-y-4">
         {/* 投稿情報手動入力 */}
-        <div className="p-4 bg-white rounded-lg border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿情報（手動入力）</h3>
-          <div className="space-y-4">
+        <div className="p-4 bg-white rounded-lg space-y-4">
+          
+          <div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 タイトル
               </label>
               <input
@@ -133,8 +118,8 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 placeholder="投稿のタイトルを入力"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 内容
               </label>
               <textarea
@@ -145,8 +130,8 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 placeholder="投稿の内容を入力"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 ハッシュタグ
               </label>
               <input
@@ -157,8 +142,8 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 placeholder="#hashtag1 #hashtag2"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 カテゴリ
               </label>
               <select
@@ -171,8 +156,8 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 <option value="story">ストーリー</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 サムネイル画像
               </label>
               <div className="relative">
@@ -243,11 +228,11 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
         </div>
 
         {/* 投稿日時情報 */}
-        <div className="p-4 bg-white rounded-lg border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">投稿日時</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">投稿日時</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 投稿日
               </label>
               <input
@@ -258,7 +243,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 投稿時間
               </label>
               <input
@@ -272,9 +257,11 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
         </div>
 
         {/* 基本メトリクス */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="p-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">基本分析</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
+            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
               <Heart className="w-4 h-4 mr-2 text-red-500" />
               いいね数
             </label>
@@ -288,7 +275,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             />
           </div>
           <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
+            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
               <MessageCircle className="w-4 h-4 mr-2 text-blue-500" />
               コメント数
             </label>
@@ -302,7 +289,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             />
           </div>
           <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
+            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
               <Share className="w-4 h-4 mr-2 text-green-500" />
               シェア数
             </label>
@@ -316,7 +303,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             />
           </div>
           <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
+            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
               <Eye className="w-4 h-4 mr-2 text-purple-500" />
               閲覧数
             </label>
@@ -330,7 +317,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             />
           </div>
           <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
+            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
               <Save className="w-4 h-4 mr-2 text-yellow-500" />
               保存数
             </label>
@@ -344,7 +331,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             />
           </div>
           <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-2 items-center">
+            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
               <UserPlus className="w-4 h-4 mr-2 text-indigo-500" />
               フォロワー増加数
             </label>
@@ -357,25 +344,36 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             />
           </div>
         </div>
+      </div>
 
         {/* オーディエンス分析 */}
-        <div className="p-4 bg-white rounded-lg border border-gray-200">
-          <div className="flex items-center mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
-              <Users className="w-5 h-5 text-white" />
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800">オーディエンス分析</h3>
+                <p className="text-xs text-gray-600">フォロワーの性別・年齢分布を入力してください</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800">オーディエンス分析</h3>
-              <p className="text-xs text-gray-600">フォロワーの性別・年齢分布を入力してください</p>
-            </div>
+            <button
+              onClick={() => setShowAudienceAnalysis(!showAudienceAnalysis)}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              {showAudienceAnalysis ? '−' : '+'}
+            </button>
           </div>
 
-          {/* 性別分析 */}
-          <div className="mb-4">
-            <h4 className="text-xs font-semibold text-gray-700 mb-2">性別分析</h4>
-            <div className="grid grid-cols-3 gap-3">
+          {showAudienceAnalysis && (
+            <div>
+              {/* 性別分析 */}
+              <div className="mb-3">
+                <h4 className="text-xs font-semibold text-gray-700 mb-2">性別分析</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   👨 男性 (%)
                 </label>
                 <input
@@ -390,7 +388,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   👩 女性 (%)
                 </label>
                 <input
@@ -405,7 +403,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   🏳️‍🌈 その他 (%)
                 </label>
                 <input
@@ -425,9 +423,9 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
           {/* 年齢層分析 */}
           <div>
             <h4 className="text-xs font-semibold text-gray-700 mb-2">年齢層分析</h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   13-17歳 (%)
                 </label>
                 <input
@@ -442,7 +440,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   18-24歳 (%)
                 </label>
                 <input
@@ -457,7 +455,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   25-34歳 (%)
                 </label>
                 <input
@@ -472,7 +470,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   35-44歳 (%)
                 </label>
                 <input
@@ -487,7 +485,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   45-54歳 (%)
                 </label>
                 <input
@@ -502,7 +500,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   55-64歳 (%)
                 </label>
                 <input
@@ -516,8 +514,8 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   placeholder="0"
                 />
               </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+              <div className="sm:col-span-2 lg:col-span-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   65歳以上 (%)
                 </label>
                 <input
@@ -534,25 +532,38 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+        </div>
 
         {/* 閲覧数ソース分析 */}
-        <div className="p-4 bg-white rounded-lg border border-gray-200">
-          <div className="flex items-center mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-teal-600 rounded-lg flex items-center justify-center mr-3">
-              <Target className="w-5 h-5 text-white" />
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800">閲覧数ソース分析</h3>
+                <p className="text-xs text-gray-600">閲覧数の流入元とフォロワー構成を入力してください</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800">閲覧数ソース分析</h3>
-              <p className="text-xs text-gray-600">閲覧数の流入元とフォロワー構成を入力してください</p>
-            </div>
+            <button
+              onClick={() => setShowReachSourceAnalysis(!showReachSourceAnalysis)}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              {showReachSourceAnalysis ? '−' : '+'}
+            </button>
           </div>
 
-          {/* 閲覧数ソース */}
-          <div className="mb-4">
-            <h4 className="text-xs font-semibold text-gray-700 mb-2">閲覧数ソース</h4>
-            <div className="grid grid-cols-2 gap-3">
+          {showReachSourceAnalysis && (
+            <div>
+              {/* 閲覧数ソース */}
+              <div className="mb-3">
+                <h4 className="text-xs font-semibold text-gray-700 mb-2">閲覧数ソース</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   📱 投稿 (%)
                 </label>
                 <input
@@ -562,12 +573,12 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.reachSource.sources.posts}
                   onChange={(e) => handleSourcesChange('posts', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   👤 プロフィール (%)
                 </label>
                 <input
@@ -577,12 +588,12 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.reachSource.sources.profile}
                   onChange={(e) => handleSourcesChange('profile', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   🔍 検索 (%)
                 </label>
                 <input
@@ -592,12 +603,12 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.reachSource.sources.search}
                   onChange={(e) => handleSourcesChange('search', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   🌟 探索 (%)
                 </label>
                 <input
@@ -607,12 +618,12 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.reachSource.sources.explore}
                   onChange={(e) => handleSourcesChange('explore', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+              <div className="sm:col-span-2 lg:col-span-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   🔗 その他 (%)
                 </label>
                 <input
@@ -622,7 +633,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.reachSource.sources.other}
                   onChange={(e) => handleSourcesChange('other', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
@@ -632,9 +643,9 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
           {/* フォロワー構成 */}
           <div>
             <h4 className="text-xs font-semibold text-gray-700 mb-2">フォロワー構成</h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   👥 フォロワー内 (%)
                 </label>
                 <input
@@ -644,12 +655,12 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.reachSource.followers.followers}
                   onChange={(e) => handleFollowersChange('followers', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
                   🌐 フォロワー外 (%)
                 </label>
                 <input
@@ -659,18 +670,21 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   step="0.1"
                   value={data.reachSource.followers.nonFollowers}
                   onChange={(e) => handleFollowersChange('nonFollowers', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                   placeholder="0"
                 />
               </div>
             </div>
           </div>
         </div>
+      )}
+
+        </div>
 
         {/* 感情分析セクション */}
-        <div className="pt-4 border-t border-gray-200">
-          <div className="mb-4">
-            <div className="flex items-center mb-3">
+        <div className="p-4 border-t border-gray-200">
+          <div className="mb-3">
+            <div className="flex items-center mb-2">
               <Heart className="h-5 w-5 text-pink-600 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">分析結果の感想</h3>
             </div>
@@ -678,7 +692,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
             <div className="space-y-4">
               {/* 感情選択 */}
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-3">この分析結果に満足していますか？</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">この分析結果に満足していますか？</p>
                 <div className="flex space-x-4">
                   <button
                     onClick={() => handleSentimentClick('satisfied')}
@@ -708,7 +722,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
 
               {/* メモ入力 */}
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1">
                   <p className="text-sm font-medium text-gray-700">改善点や気づき</p>
                   {!isEditingMemo && memo && (
                     <button
@@ -767,7 +781,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
         </div>
 
         {/* 保存ボタン */}
-        <div className="pt-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={() => onSave({ sentiment, memo })}
             disabled={isLoading}

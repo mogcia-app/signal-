@@ -83,6 +83,8 @@ interface AnalyticsData {
   hashtags?: string[];
   category?: string;
   thumbnail?: string;
+  sentiment?: 'satisfied' | 'dissatisfied' | null;
+  memo?: string;
   audience?: {
     gender: {
       male: number;
@@ -456,7 +458,7 @@ export default function InstagramPostsPage() {
           {/* 投稿一覧 */}
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              <div className="animate-spin  h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
               <p className="text-gray-600 mt-2">読み込み中...</p>
             </div>
           ) : (filteredPosts.length === 0 && manualAnalyticsData.length === 0) ? (
@@ -471,7 +473,7 @@ export default function InstagramPostsPage() {
               <div className="flex space-x-3">
                 <button
                   onClick={() => window.location.href = '/instagram/lab'}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-orange-500 text-white  hover:bg-orange-600 transition-colors"
                 >
                   投稿を作成する
                 </button>
@@ -481,7 +483,7 @@ export default function InstagramPostsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* 手動入力の分析データを表示 */}
               {manualAnalyticsData.map((analytics, index) => (
-                <div key={`manual-${index}`} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div key={`manual-${index}`} className="bg-white shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                   {/* カードヘッダー */}
                   <div className="p-4 border-b border-gray-100">
                     <div className="flex items-center justify-between mb-2">
@@ -490,12 +492,21 @@ export default function InstagramPostsPage() {
                         <h3 className="text-lg font-semibold text-gray-900 truncate">{analytics.title || '手動入力データ'}</h3>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="px-2 py-1  text-xs font-medium bg-blue-100 text-blue-800">
                           手動入力
                         </span>
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">
+                        <span className="px-2 py-1 text-xs  bg-green-100 text-green-800 font-medium">
                           📊 分析済み
                         </span>
+                        {analytics.sentiment && (
+                          <span className={`px-2 py-1 text-xs font-medium ${
+                            analytics.sentiment === 'satisfied' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {analytics.sentiment === 'satisfied' ? '😊 満足' : '😞 不満'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -556,13 +567,13 @@ export default function InstagramPostsPage() {
                           {analytics.hashtags.slice(0, 3).map((hashtag, index) => (
                             <span
                               key={index}
-                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md"
+                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs "
                             >
                               #{hashtag}
                             </span>
                           ))}
                           {analytics.hashtags.length > 3 && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs ">
                               +{analytics.hashtags.length - 3}
                             </span>
                           )}
@@ -606,7 +617,7 @@ export default function InstagramPostsPage() {
                     <div className="flex items-center justify-end space-x-2">
                       <button
                         onClick={() => handleShowDetail(null, analytics)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50  transition-colors"
                         title="詳細を見る"
                       >
                         →

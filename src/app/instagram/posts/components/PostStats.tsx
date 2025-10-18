@@ -33,13 +33,13 @@ const PostStats: React.FC<PostStatsProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       {/* 今週の投稿予定 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800 flex items-center">
             <span className="text-2xl mr-2">📅</span>
             今週の投稿予定
           </h2>
-          <a href="/instagram/plan" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+          <a href="/instagram/plan" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
             投稿管理 →
           </a>
         </div>
@@ -51,7 +51,7 @@ const PostStats: React.FC<PostStatsProps> = ({
             </div>
           ) : (
             scheduledPosts.map((post, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg">
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center flex-1">
                   <div className="text-center mr-4 min-w-[50px]">
                     <div className="text-xs text-gray-500">{post.day}</div>
@@ -59,7 +59,7 @@ const PostStats: React.FC<PostStatsProps> = ({
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center mb-1">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2 ${
+                      <span className={`inline-flex items-center px-2 py-1  text-xs font-medium mr-2 ${
                         post.type === 'reel' ? 'bg-purple-100 text-purple-800' :
                         post.type === 'feed' ? 'bg-blue-100 text-blue-800' :
                         'bg-pink-100 text-pink-800'
@@ -67,7 +67,7 @@ const PostStats: React.FC<PostStatsProps> = ({
                         {post.type === 'reel' ? '🎬' : post.type === 'feed' ? '📸' : '📱'}
                         {post.type}
                       </span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      <span className="inline-flex items-center px-2 py-1  text-xs font-medium bg-yellow-100 text-yellow-800">
                         ⏳ {post.status}
                       </span>
                     </div>
@@ -86,13 +86,13 @@ const PostStats: React.FC<PostStatsProps> = ({
       </div>
 
       {/* 分析待ちの投稿 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800 flex items-center">
             <span className="text-2xl mr-2">📊</span>
             分析待ちの投稿
           </h2>
-          <a href="/instagram/analytics" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+          <a href="/instagram/analytics" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
             分析する →
           </a>
         </div>
@@ -105,7 +105,7 @@ const PostStats: React.FC<PostStatsProps> = ({
             </div>
           ) : (
             unanalyzedPosts.map((post, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 hover:bg-yellow-100 transition-colors rounded-lg border border-yellow-200">
+              <div key={index} className="flex items-center justify-between p-3 bg-orange-50 hover:bg-orange-100 transition-colors border border-orange-200">
                 <div className="flex items-center flex-1">
                   <div className="w-12 h-12 mr-3 flex-shrink-0">
                     {post.imageUrl ? (
@@ -114,17 +114,17 @@ const PostStats: React.FC<PostStatsProps> = ({
                         alt={post.title}
                         width={48}
                         height={48}
-                        className="w-full h-full object-cover rounded-lg"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                         <span className="text-gray-400 text-xs">📷</span>
                       </div>
                     )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center mb-1">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2 ${
+                      <span className={`inline-flex items-center px-2 py-1  text-xs font-medium mr-2 ${
                         post.type === 'reel' ? 'bg-purple-100 text-purple-800' :
                         post.type === 'feed' ? 'bg-blue-100 text-blue-800' :
                         'bg-pink-100 text-pink-800'
@@ -132,7 +132,7 @@ const PostStats: React.FC<PostStatsProps> = ({
                         {post.type === 'reel' ? '🎬' : post.type === 'feed' ? '📸' : '📱'}
                         {post.type}
                       </span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      <span className="inline-flex items-center px-2 py-1  text-xs font-medium bg-orange-100 text-orange-800">
                         ⏳ 分析未設定
                       </span>
                     </div>
@@ -147,7 +147,7 @@ const PostStats: React.FC<PostStatsProps> = ({
                 <div className="ml-3">
                   <a 
                     href={`/instagram/analytics?postId=${post.id}`}
-                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors"
+                    className="inline-flex items-center px-3 py-1.5 bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 transition-colors"
                   >
                     分析する
                   </a>
