@@ -54,8 +54,12 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   // 新しい達成度計算: 現在のフォロワー数 = 0%, 目標フォロワー数 = 100%
   // actualFollowersが提供されている場合はそれを使用、そうでなければ計画の現在フォロワー数を使用
   const displayFollowers = actualFollowers !== undefined ? actualFollowers : currentFollowers;
-  const progressPercentage = targetFollowers > 0 
-    ? Math.min((displayFollowers / targetFollowers) * 100, 100) 
+  
+  // フォロワー増加数を基準に達成度を計算
+  const followerIncrease = displayFollowers - currentFollowers;
+  const targetIncrease = targetFollowers - currentFollowers;
+  const progressPercentage = targetIncrease > 0 
+    ? Math.min((followerIncrease / targetIncrease) * 100, 100) 
     : 0;
   const remainingFollowers = Math.max(0, targetFollowers - displayFollowers);
 
