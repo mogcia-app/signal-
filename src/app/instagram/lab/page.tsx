@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import PostEditor from './components/PostEditor';
-import AIPostGenerator from './components/AIPostGenerator';
 import ToolPanel from './components/ToolPanel';
 import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
 import { usePlanData } from '../../../hooks/usePlanData';
@@ -17,7 +16,7 @@ export default function InstagramLabPage() {
   const [postImage, setPostImage] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
-  const [isAIGenerated, setIsAIGenerated] = useState(false);
+  const [isAIGenerated] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
   // 計画データを取得
@@ -54,21 +53,6 @@ export default function InstagramLabPage() {
   //   }
   // });
 
-  // AI生成ハンドラー
-  const handleAIGenerate = (
-    generatedTitle: string, 
-    generatedContent: string, 
-    generatedHashtags: string[], 
-    generatedScheduledDate: string, 
-    generatedScheduledTime: string
-  ) => {
-    setPostTitle(generatedTitle);
-    setPostContent(generatedContent);
-    setSelectedHashtags(generatedHashtags);
-    setScheduledDate(generatedScheduledDate);
-    setScheduledTime(generatedScheduledTime);
-    setIsAIGenerated(true); // AI生成フラグを立てる
-  };
 
   return (
     <>
@@ -98,14 +82,8 @@ export default function InstagramLabPage() {
                         scheduledTime={scheduledTime}
                         onScheduledTimeChange={setScheduledTime}
                         isAIGenerated={isAIGenerated}
+                        planData={planData}
                       />
-              
-              <AIPostGenerator
-                postType={postType}
-                onPostTypeChange={setPostType}
-                onGeneratePost={handleAIGenerate}
-                planData={planData}
-              />
             </div>
 
             {/* 右カラム: 計画・ツール */}

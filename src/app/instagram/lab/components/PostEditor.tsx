@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Save, RefreshCw, CheckCircle, Upload, X, Eye } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles } from 'lucide-react';
 import { postsApi } from '../../../../lib/api';
 import { useAuth } from '../../../../contexts/auth-context';
 import Image from 'next/image';
@@ -22,6 +22,8 @@ interface PostEditorProps {
   scheduledTime?: string;
   onScheduledTimeChange?: (time: string) => void;
   isAIGenerated?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  planData?: any; // AI投稿文生成用
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -39,7 +41,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   onScheduledDateChange,
   scheduledTime: externalScheduledTime = '',
   onScheduledTimeChange,
-  isAIGenerated = false
+  isAIGenerated = false,
+  planData
 }) => {
   const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
@@ -48,6 +51,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  
+  // AI投稿文生成用のstate
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
 
   // 外部から渡された日時を優先、なければ内部状態を使用
   const scheduledDate = externalScheduledDate || internalScheduledDate;
@@ -186,6 +194,117 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const handleHashtagAdd = (hashtag: string) => {
     if (hashtag.trim() && !hashtags.includes(hashtag)) {
       onHashtagsChange([...hashtags, hashtag]);
+    }
+  };
+
+  // AI自動生成（テーマも自動選択）
+  const handleAutoGenerate = async () => {
+    if (!planData) {
+      alert('運用計画が設定されていません');
+      return;
+    }
+    
+    setIsAutoGenerating(true);
+    try {
+      // 🔐 Firebase認証トークンを取得
+      const { auth } = await import('../../../../lib/firebase');
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await currentUser.getIdToken() : null;
+
+      // AI APIを呼び出して完全自動生成
+      const response = await fetch('/api/ai/post-generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          prompt: 'auto', // 自動生成を示す
+          postType: postType || 'feed',
+          planData,
+          scheduledDate,
+          scheduledTime,
+          autoGenerate: true // 自動生成フラグ
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '自動生成に失敗しました');
+      }
+
+      if (result.success && result.data) {
+        const { title, content, hashtags: generatedHashtags } = result.data;
+        if (title) onTitleChange?.(title);
+        onContentChange(content);
+        if (generatedHashtags && generatedHashtags.length > 0) {
+          onHashtagsChange(generatedHashtags);
+        }
+      } else {
+        throw new Error('自動生成に失敗しました');
+      }
+    } catch (error) {
+      console.error('自動生成エラー:', error);
+      alert(`自動生成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsAutoGenerating(false);
+    }
+  };
+
+  // AI投稿文生成（テーマ指定）
+  const handleAIGenerate = async () => {
+    if (!aiPrompt.trim()) {
+      alert('投稿のテーマを入力してください');
+      return;
+    }
+    
+    setIsGenerating(true);
+    try {
+      // 🔐 Firebase認証トークンを取得
+      const { auth } = await import('../../../../lib/firebase');
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await currentUser.getIdToken() : null;
+
+      // AI APIを呼び出して投稿文生成
+      const response = await fetch('/api/ai/post-generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          postType: postType || 'feed',
+          planData,
+          scheduledDate,
+          scheduledTime,
+          action: 'generatePost'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '投稿文生成に失敗しました');
+      }
+
+      if (result.success && result.data) {
+        const { title, content, hashtags: generatedHashtags } = result.data;
+        if (title) onTitleChange?.(title);
+        onContentChange(content);
+        if (generatedHashtags && generatedHashtags.length > 0) {
+          onHashtagsChange(generatedHashtags);
+        }
+        setAiPrompt(''); // テーマをクリア
+      } else {
+        throw new Error('投稿文生成に失敗しました');
+      }
+    } catch (error) {
+      console.error('投稿文生成エラー:', error);
+      alert(`投稿文生成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -415,6 +534,85 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className="px-6 py-3 bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               追加
+            </button>
+          </div>
+        </div>
+
+        {/* AI投稿文生成 */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <Sparkles className="mr-2 text-orange-600" size={20} />
+            AI投稿文生成
+          </h3>
+          
+          {/* テーマ入力 */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              投稿テーマ（オプション）
+            </label>
+            <input
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="例: 新商品の紹介、日常の出来事、お客様の声など..."
+              disabled={!planData}
+              className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 ${
+                !planData ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            />
+            {!planData && (
+              <p className="text-sm text-orange-600 mt-2">
+                運用計画を作成してからAI投稿文を生成できます
+              </p>
+            )}
+          </div>
+
+          {/* 生成ボタン */}
+          <div className="space-y-3">
+            {/* 自動生成ボタン */}
+            <button
+              onClick={handleAutoGenerate}
+              disabled={isAutoGenerating || !planData}
+              className={`w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+                isAutoGenerating || !planData
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transform hover:scale-105'
+              }`}
+            >
+              {isAutoGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  自動生成中...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2" size={20} />
+                  🤖 自動生成（テーマも自動選択）
+                </>
+              )}
+            </button>
+
+            {/* テーマ指定生成ボタン */}
+            <button
+              onClick={handleAIGenerate}
+              disabled={isGenerating || !planData || !aiPrompt.trim()}
+              className={`w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+                isGenerating || !planData || !aiPrompt.trim()
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white hover:from-orange-600 hover:to-[#ff8a15] shadow-lg hover:shadow-xl transform hover:scale-105'
+              }`}
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  生成中...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2" size={20} />
+                  ✍️ テーマ指定生成
+                </>
+              )}
             </button>
           </div>
         </div>
