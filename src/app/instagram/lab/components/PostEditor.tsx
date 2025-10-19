@@ -573,10 +573,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             <button
               onClick={handleAutoGenerate}
               disabled={isAutoGenerating || !planData}
-              className={`w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+              className={`w-full py-3 px-6 font-semibold text-lg transition-all duration-200 flex items-center justify-center border-2 ${
                 isAutoGenerating || !planData
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transform hover:scale-105'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+                  : 'bg-gradient-to-r from-orange-400 to-orange-500 text-white border-orange-500 hover:from-orange-500 hover:to-orange-600 hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105'
               }`}
             >
               {isAutoGenerating ? (
@@ -596,10 +596,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             <button
               onClick={handleAIGenerate}
               disabled={isGenerating || !planData || !aiPrompt.trim()}
-              className={`w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+              className={`w-full py-3 px-6 font-semibold text-lg transition-all duration-200 flex items-center justify-center border-2 ${
                 isGenerating || !planData || !aiPrompt.trim()
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white hover:from-orange-600 hover:to-[#ff8a15] shadow-lg hover:shadow-xl transform hover:scale-105'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+                  : 'bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white border-[#ff8a15] hover:from-orange-600 hover:to-[#ff8a15] hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105'
               }`}
             >
               {isGenerating ? (
