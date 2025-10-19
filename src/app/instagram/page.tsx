@@ -385,7 +385,7 @@ function InstagramDashboardContent() {
                   return '日付不明';
                 }
               })(),
-              thumbnail: analyticsFromData?.thumbnail || post.imageData || post.imageUrl || null
+              imageUrl: analyticsFromData?.thumbnail || post.imageData || post.imageUrl || null
             };
           }),
         // 手動入力データ（postIdがnullのもの）
@@ -412,7 +412,7 @@ function InstagramDashboardContent() {
                 return '日付不明';
               }
             })(),
-            thumbnail: analytics.thumbnail || null
+            imageUrl: analytics.thumbnail || null
           }))
       ];
 
