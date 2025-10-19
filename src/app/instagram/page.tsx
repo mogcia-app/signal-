@@ -354,78 +354,69 @@ function InstagramDashboardContent() {
         });
       });
       
-      const recentPostsData = allPosts
-        .slice(0, 4)
-        .map((post: PostData) => {
-          // アナリティクスデータを取得（投稿一覧ページと同じロジック）
-          const analyticsFromData = analyticsData.find((a: { postId: string | null }) => a.postId === post.id);
-          const postAnalytics = analyticsFromData ? {
-            likes: analyticsFromData.likes,
-            comments: analyticsFromData.comments,
-            shares: analyticsFromData.shares,
-            reach: analyticsFromData.reach,
-            engagementRate: analyticsFromData.engagementRate,
-            publishedAt: analyticsFromData.publishedAt,
-            thumbnail: analyticsFromData.thumbnail
-          } : post.analytics ? {
-            likes: post.analytics.likes,
-            comments: post.analytics.comments,
-            shares: post.analytics.shares,
-            reach: post.analytics.reach,
-            engagementRate: post.analytics.engagementRate,
-            publishedAt: post.analytics.publishedAt,
-            thumbnail: undefined
-          } : null;
-
-          return {
-            id: post.id,
-            title: post.title || 'タイトルなし',
-            type: post.postType || 'feed',
-            likes: postAnalytics?.likes || 0,
-            comments: postAnalytics?.comments || 0,
-            saves: postAnalytics?.shares || 0, // sharesをsavesとして表示
-            reach: postAnalytics?.reach || 0,
-            engagementRate: postAnalytics?.engagementRate || 0,
-            postedAt: (() => {
-              try {
-                // publishedAtを優先し、なければcreatedAtを使用
-                const dateToUse = postAnalytics?.publishedAt || post.createdAt;
-                
-                
-                // Firestore Timestampオブジェクトの場合
-                if (dateToUse && typeof dateToUse === 'object' && 'toDate' in dateToUse) {
-                  const convertedDate = dateToUse.toDate();
-                  return convertedDate.toLocaleDateString('ja-JP');
-                }
-                // Firestore Timestampのシリアライズされた形式の場合
-                else if (dateToUse && typeof dateToUse === 'object' && 'type' in dateToUse && dateToUse.type === 'firestore/timestamp/1.0') {
-                  const convertedDate = new Date(dateToUse.seconds * 1000 + Math.floor(dateToUse.nanoseconds / 1000000));
-                  return convertedDate.toLocaleDateString('ja-JP');
-                }
-                // 通常のDateオブジェクトまたは文字列の場合
-                else if (dateToUse && dateToUse !== null && dateToUse !== undefined) {
-                  // 空のオブジェクト{}の場合はスキップ
-                  if (typeof dateToUse === 'object' && Object.keys(dateToUse).length === 0) {
-                    return '日付不明';
+      // 投稿データと手動入力データを組み合わせて表示
+      const combinedData = [
+        // 投稿データ（analyticsDataとマッチするもの）
+        ...allPosts
+          .filter((post: PostData) => analyticsData.some((a: { postId: string | null }) => a.postId === post.id))
+          .slice(0, 4)
+          .map((post: PostData) => {
+            const analyticsFromData = analyticsData.find((a: { postId: string | null }) => a.postId === post.id);
+            return {
+              id: post.id,
+              title: post.title || 'タイトルなし',
+              type: post.postType || 'feed',
+              likes: analyticsFromData?.likes || 0,
+              comments: analyticsFromData?.comments || 0,
+              saves: analyticsFromData?.shares || 0,
+              reach: analyticsFromData?.reach || 0,
+              engagementRate: analyticsFromData?.engagementRate || 0,
+              postedAt: (() => {
+                try {
+                  const dateToUse = analyticsFromData?.publishedAt || post.createdAt;
+                  if (dateToUse && typeof dateToUse === 'object' && 'toDate' in dateToUse) {
+                    return dateToUse.toDate().toLocaleDateString('ja-JP');
+                  } else if (dateToUse) {
+                    return new Date(dateToUse).toLocaleDateString('ja-JP');
                   }
-                  
-                  const date = dateToUse instanceof Date ? dateToUse : new Date(dateToUse);
-                  if (isNaN(date.getTime())) {
-                    return '日付不明';
-                  }
-                  return date.toLocaleDateString('ja-JP');
-                } else {
+                  return '日付不明';
+                } catch (error) {
+                  console.error('日付変換エラー:', error, post);
                   return '日付不明';
                 }
+              })(),
+              thumbnail: analyticsFromData?.thumbnail || post.imageData || post.imageUrl || null
+            };
+          }),
+        // 手動入力データ（postIdがnullのもの）
+        ...analyticsData
+          .filter((a: { postId: string | null }) => a.postId === null)
+          .slice(0, 4 - allPosts.filter((post: PostData) => analyticsData.some((a: { postId: string | null }) => a.postId === post.id)).length)
+          .map((analytics: any, index: number) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+            id: `manual-${index}`,
+            title: analytics.title || '手動入力データ',
+            type: 'feed',
+            likes: analytics.likes || 0,
+            comments: analytics.comments || 0,
+            saves: analytics.shares || 0,
+            reach: analytics.reach || 0,
+            engagementRate: analytics.engagementRate || 0,
+            postedAt: (() => {
+              try {
+                if (analytics.publishedAt) {
+                  return new Date(analytics.publishedAt).toLocaleDateString('ja-JP');
+                }
+                return '日付不明';
               } catch (error) {
+                console.error('手動入力データの日付変換エラー:', error, analytics);
                 return '日付不明';
               }
             })(),
-            imageUrl: postAnalytics?.thumbnail || post.imageUrl || null,
-            caption: post.content || '',
-            hashtags: post.hashtags || []
-          };
-        });
+            thumbnail: analytics.thumbnail || null
+          }))
+      ];
+
+      const recentPostsData = combinedData.slice(0, 4);
       setRecentPosts(recentPostsData);
 
       // 今週の投稿予定を生成
