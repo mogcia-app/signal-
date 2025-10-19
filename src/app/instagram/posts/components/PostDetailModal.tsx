@@ -171,8 +171,9 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                     <Image 
                       src={selectedPost?.imageData || selectedAnalytics?.thumbnail || ''} 
                       alt="投稿画像" 
-                      width={300}
-                      height={300}
+                      width={500}
+                      height={500}
+                      quality={95}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -191,11 +192,14 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
             </div>
 
             {/* ハッシュタグ */}
-            {((selectedPost?.hashtags && selectedPost.hashtags.length > 0) || (selectedAnalytics?.hashtags && selectedAnalytics.hashtags.length > 0)) && (
+            {((selectedPost?.hashtags && Array.isArray(selectedPost.hashtags) && selectedPost.hashtags.length > 0) || (selectedAnalytics?.hashtags && Array.isArray(selectedAnalytics.hashtags) && selectedAnalytics.hashtags.length > 0)) && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">ハッシュタグ</h4>
                 <div className="flex flex-wrap gap-2">
-                  {(selectedPost?.hashtags || selectedAnalytics?.hashtags || []).map((hashtag: string, index: number) => (
+                  {(() => {
+                    const hashtags = selectedPost?.hashtags || selectedAnalytics?.hashtags || [];
+                    return Array.isArray(hashtags) ? hashtags : [];
+                  })().map((hashtag: string, index: number) => (
                     <span
                       key={index}
                       className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"

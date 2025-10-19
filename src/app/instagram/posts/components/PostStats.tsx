@@ -112,8 +112,9 @@ const PostStats: React.FC<PostStatsProps> = ({
                       <Image 
                         src={post.imageUrl} 
                         alt={post.title}
-                        width={48}
-                        height={48}
+                        width={64}
+                        height={64}
+                        quality={85}
                         className="w-full h-full object-cover"
                       />
                     ) : (

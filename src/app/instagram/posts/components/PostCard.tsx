@@ -241,8 +241,9 @@ const PostCard: React.FC<PostCardProps> = ({
                 <Image 
                   src={post.imageData} 
                   alt="投稿画像" 
-                  width={300}
-                  height={300}
+                  width={400}
+                  height={400}
+                  quality={90}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -269,22 +270,40 @@ const PostCard: React.FC<PostCardProps> = ({
         </div>
 
         {/* ハッシュタグ */}
-        {post.hashtags && Array.isArray(post.hashtags) && post.hashtags.length > 0 && (
+        {(() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const hashtags = Array.isArray(post.hashtags) ? post.hashtags : 
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []);
+          return hashtags.length > 0;
+        })() && (
           <div className="mb-3">
             <div className="flex flex-wrap gap-1">
-              {post.hashtags.slice(0, 3).map((hashtag, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 bg-blue-100 text-blue-800 text-xs "
-                >
-                  #{hashtag}
-                </span>
-              ))}
-              {post.hashtags.length > 3 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs ">
-                  +{post.hashtags.length - 3}
-                </span>
-              )}
+              {(() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const hashtags = Array.isArray(post.hashtags) ? post.hashtags : 
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []);
+                return hashtags.slice(0, 3).map((hashtag: string, index: number) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-blue-100 text-blue-800 text-xs "
+                  >
+                    #{hashtag}
+                  </span>
+                ));
+              })()}
+              {(() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const hashtags = Array.isArray(post.hashtags) ? post.hashtags : 
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []);
+                return hashtags.length > 3 && (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs ">
+                    +{hashtags.length - 3}
+                  </span>
+                );
+              })()}
             </div>
           </div>
         )}

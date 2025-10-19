@@ -536,8 +536,9 @@ export default function InstagramPostsPage() {
                           <Image 
                             src={analytics.thumbnail} 
                             alt="投稿画像" 
-                            width={300}
-                            height={300}
+                            width={400}
+                            height={400}
+                            quality={90}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -658,7 +659,8 @@ export default function InstagramPostsPage() {
                   publishedAt: post.analytics.publishedAt,
                   title: post.title,
                   content: post.content,
-                  hashtags: post.hashtags,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  hashtags: Array.isArray(post.hashtags) ? post.hashtags : (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []),
                   category: undefined,
                   thumbnail: undefined,
                   audience: post.analytics.audience,
