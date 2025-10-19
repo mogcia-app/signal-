@@ -987,7 +987,7 @@ function InstagramDashboardContent() {
                           )}
                         
                         {/* KPI表示 */}
-                          <div className="grid grid-cols-4 gap-2 text-sm mb-4">
+                          <div className="grid grid-cols-3 gap-2 text-sm mb-4">
                           <div className="text-center bg-gray-50 rounded-lg p-2">
                             <div className="text-gray-500 text-xs">いいね</div>
                             <div className="font-semibold text-gray-900">{post.likes}</div>
@@ -1000,10 +1000,6 @@ function InstagramDashboardContent() {
                             <div className="text-gray-500 text-xs">保存</div>
                             <div className="font-semibold text-gray-900">{post.saves}</div>
                           </div>
-                          <div className="text-center bg-gray-50 rounded-lg p-2">
-                              <div className="text-gray-500 text-xs">エンゲージ</div>
-                            <div className="font-semibold text-pink-600">{post.engagementRate}%</div>
-                            </div>
                           </div>
                           
                           {/* AIに聞くボタン */}
