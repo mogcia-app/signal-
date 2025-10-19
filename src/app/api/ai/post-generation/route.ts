@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body: PostGenerationRequest = await request.json();
-    const { prompt, postType, planData, scheduledDate, scheduledTime, action = 'generatePost' } = body;
+    let { prompt } = body;
+    const { postType, planData, scheduledDate, scheduledTime, action = 'generatePost' } = body;
 
     // ✅ ユーザープロファイルを取得
     let userProfile: UserProfile | null = null;
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 自動生成の場合、テーマを自動選択
-    if (requestBody.autoGenerate && requestBody.prompt === 'auto') {
+    if (body.autoGenerate && body.prompt === 'auto') {
       const autoThemes = [
         '今日の一枚📸',
         'おはようございます！今日も素敵な一日をお過ごしください✨',
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
       ];
       
       // ランダムでテーマを選択
-      requestBody.prompt = autoThemes[Math.floor(Math.random() * autoThemes.length)];
+      prompt = autoThemes[Math.floor(Math.random() * autoThemes.length)];
     }
 
     // ✅ プロンプトビルダーを使用（PDCA - Do）
