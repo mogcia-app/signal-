@@ -145,7 +145,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
             <div className="relative">
               <img
                 src={generatedImage}
-                alt="Generated thumbnail"
+                alt="AI生成されたサムネ画像"
                 className="w-full h-48 object-cover rounded-md border border-gray-200"
               />
               <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1">

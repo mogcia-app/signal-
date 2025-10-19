@@ -39,6 +39,13 @@ export async function POST(request: NextRequest) {
       style: "natural"
     });
 
+    if (!response.data || response.data.length === 0) {
+      return NextResponse.json(
+        { error: '画像生成に失敗しました' },
+        { status: 500 }
+      );
+    }
+
     const imageUrl = response.data[0]?.url;
 
     if (!imageUrl) {
