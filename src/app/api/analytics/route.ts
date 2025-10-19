@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
       reach: Number(reach),
       saves: Number(saves),
       followerIncrease: Number(followerIncrease),
-      publishedAt,
+      publishedAt: `${publishedAt}T${publishedTime}`,
       publishedTime,
       title: title || '',
       content: content || '',
@@ -344,7 +344,7 @@ export async function POST(request: NextRequest) {
             shares: analyticsData.shares,
             reach: analyticsData.reach,
             engagementRate: analyticsData.engagementRate,
-            publishedAt: new Date(analyticsData.publishedAt)
+            publishedAt: analyticsData.publishedAt
           },
           status: 'published',
           updatedAt: new Date()
