@@ -561,7 +561,7 @@ export default function InstagramPostsPage() {
                     </div>
 
                     {/* ハッシュタグ */}
-                    {analytics.hashtags && analytics.hashtags.length > 0 && (
+                    {analytics.hashtags && Array.isArray(analytics.hashtags) && analytics.hashtags.length > 0 && (
                       <div className="mb-3">
                         <div className="flex flex-wrap gap-1">
                           {analytics.hashtags.slice(0, 3).map((hashtag, index) => (

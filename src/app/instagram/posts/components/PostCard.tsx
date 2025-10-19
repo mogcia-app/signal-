@@ -269,7 +269,7 @@ const PostCard: React.FC<PostCardProps> = ({
         </div>
 
         {/* ハッシュタグ */}
-        {post.hashtags.length > 0 && (
+        {post.hashtags && Array.isArray(post.hashtags) && post.hashtags.length > 0 && (
           <div className="mb-3">
             <div className="flex flex-wrap gap-1">
               {post.hashtags.slice(0, 3).map((hashtag, index) => (

@@ -299,7 +299,7 @@ export async function POST(request: NextRequest) {
       publishedTime,
       title: title || '',
       content: content || '',
-      hashtags: hashtags || '',
+      hashtags: hashtags ? hashtags.split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : [],
       thumbnail: thumbnail || '',
       category: category || 'feed',
       engagementRate,
