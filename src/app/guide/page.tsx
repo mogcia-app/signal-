@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import CommonLayout from '../../components/common-layout';
+import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
 import { 
   BookOpen, 
@@ -326,7 +326,8 @@ export default function GuidePage() {
   };
 
   return (
-    <CommonLayout 
+    <SNSLayout 
+      currentSNS="instagram"
       customTitle="使い方ガイド"
       customDescription="Signalの機能と使い方を詳しく解説"
     >
@@ -484,6 +485,6 @@ export default function GuidePage() {
           activeSection: activeSection
         }}
       />
-    </CommonLayout>
+    </SNSLayout>
   );
 }

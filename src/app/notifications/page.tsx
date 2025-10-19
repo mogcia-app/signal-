@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import CommonLayout from '../../components/common-layout';
+import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
 import { 
   Bell, 
@@ -548,7 +548,8 @@ export default function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <CommonLayout 
+      <SNSLayout 
+        currentSNS="instagram"
         customTitle="お知らせ"
         customDescription="システムのお知らせと通知"
       >
@@ -559,12 +560,13 @@ export default function NotificationsPage() {
             <p className="text-gray-600">通知データを取得しています</p>
           </div>
         </div>
-      </CommonLayout>
+      </SNSLayout>
     );
   }
 
   return (
-    <CommonLayout 
+    <SNSLayout 
+      currentSNS="instagram"
       customTitle="お知らせ"
       customDescription="システムのお知らせと通知"
     >
@@ -917,6 +919,6 @@ export default function NotificationsPage() {
             selectedFilter: selectedFilter
           }}
         />
-    </CommonLayout>
+    </SNSLayout>
   );
 }
