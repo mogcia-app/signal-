@@ -16,42 +16,7 @@ interface Notification {
   createdBy: string;
 }
 
-// 初期通知データ（Firestoreに保存する用）
-const initialNotifications: Omit<Notification, 'id'>[] = [
-  {
-    title: '新機能リリースのお知らせ',
-    message: 'AIチャット機能とAI学習進捗ページがリリースされました。より詳細な分析とパーソナライズされたAIアシスタントをご利用いただけます。',
-    type: 'success',
-    priority: 'high',
-    targetUsers: [],
-    status: 'published',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdBy: 'system'
-  },
-  {
-    title: '月次レポート機能の改善',
-    message: '月次レポートページに新しい分析機能が追加されました。AI予測機能、トレンド分析、データエクスポート機能をご利用いただけます。',
-    type: 'info',
-    priority: 'medium',
-    targetUsers: [],
-    status: 'published',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdBy: 'system'
-  },
-  {
-    title: 'AI学習機能の活用方法',
-    message: 'AIチャットを積極的にご利用いただくことで、よりパーソナライズされたAIアシスタントに成長します。質問や相談をどんどんお寄せください。',
-    type: 'info',
-    priority: 'low',
-    targetUsers: [],
-    status: 'published',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdBy: 'system'
-  }
-];
+// ダミーデータを完全に削除
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,30 +56,13 @@ export async function GET(request: NextRequest) {
       throw new Error(`データ変換エラー: ${mappingError instanceof Error ? mappingError.message : 'Unknown error'}`);
     }
 
-    // Firestoreにデータがない場合は初期データを作成
+    // 管理者側から通知が作成されるまで空の配列を返す
     if (firestoreNotifications.length === 0) {
-      console.log('📝 Firestoreに通知データがないため、初期データを作成します');
-      try {
-        // 初期通知データをFirestoreに保存
-        for (const notificationData of initialNotifications) {
-          await adminDb.collection('notifications').add(notificationData);
-        }
-        console.log('✅ 初期通知データの作成が完了しました');
-        
-        // 作成したデータを再取得
-        const newSnapshot = await adminDb
-          .collection('notifications')
-          .where('status', '==', 'published')
-          .get();
-        firestoreNotifications = newSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Notification));
-      } catch (initError) {
-        console.error('❌ 初期データ作成エラー:', initError);
-        // エラーの場合は空配列を返す
-        firestoreNotifications = [];
-      }
+      console.log('📝 Firestoreに通知データがありません。管理者側から通知を作成してください。');
+      return NextResponse.json({ 
+        success: true, 
+        data: [] 
+      });
     }
 
     let filteredNotifications = [...firestoreNotifications];
