@@ -573,7 +573,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             <button
               onClick={handleAutoGenerate}
               disabled={isAutoGenerating || !planData}
-              className={`w-full py-3 px-6 font-semibold text-lg transition-all duration-200 flex items-center justify-center border-2 ${
+              className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
                 isAutoGenerating || !planData
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
                   : 'bg-gradient-to-r from-orange-400 to-orange-500 text-white border-orange-500 hover:from-orange-500 hover:to-orange-600 hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105'
@@ -581,14 +581,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             >
               {isAutoGenerating ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   自動生成中...
                 </>
               ) : (
-                <>
-                  <Sparkles className="mr-2" size={20} />
-                  🤖 自動生成（テーマも自動選択）
-                </>
+                '自動生成（テーマも自動選択）'
               )}
             </button>
 
@@ -596,7 +593,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             <button
               onClick={handleAIGenerate}
               disabled={isGenerating || !planData || !aiPrompt.trim()}
-              className={`w-full py-3 px-6 font-semibold text-lg transition-all duration-200 flex items-center justify-center border-2 ${
+              className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
                 isGenerating || !planData || !aiPrompt.trim()
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
                   : 'bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white border-[#ff8a15] hover:from-orange-600 hover:to-[#ff8a15] hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105'
@@ -604,14 +601,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             >
               {isGenerating ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   生成中...
                 </>
               ) : (
-                <>
-                  <Sparkles className="mr-2" size={20} />
-                  ✍️ テーマ指定生成
-                </>
+                'テーマ指定生成'
               )}
             </button>
           </div>
