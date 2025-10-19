@@ -2,15 +2,20 @@
 
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Copy, Tag } from 'lucide-react';
+import ThumbnailGenerator from './ThumbnailGenerator';
 
 interface ToolPanelProps {
   onTemplateSelect: (template: string) => void;
   onHashtagSelect: (hashtag: string) => void;
+  postContent: string;
+  onImageGenerated: (imageUrl: string) => void;
 }
 
 export const ToolPanel: React.FC<ToolPanelProps> = ({
   onTemplateSelect,
-  onHashtagSelect
+  onHashtagSelect,
+  postContent,
+  onImageGenerated
 }) => {
   const [templates, setTemplates] = useState([
     'おはようございます！今日も素敵な一日をお過ごしください✨',
@@ -255,6 +260,12 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
           </div>
         </div>
       </div>
+
+      {/* AIサムネ画像生成 */}
+      <ThumbnailGenerator
+        postContent={postContent}
+        onImageGenerated={onImageGenerated}
+      />
     </div>
   );
 };

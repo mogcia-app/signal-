@@ -119,6 +119,10 @@ export default function InstagramLabPage() {
                 onHashtagSelect={(hashtag: string) => {
                   setSelectedHashtags(prev => [...prev, hashtag]);
                 }}
+                postContent={postContent}
+                onImageGenerated={(imageUrl: string) => {
+                  setPostImage(imageUrl);
+                }}
               />
             </div>
           </div>
