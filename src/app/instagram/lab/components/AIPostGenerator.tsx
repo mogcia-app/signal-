@@ -20,6 +20,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiTitle, setAiTitle] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [isSuggestingTime, setIsSuggestingTime] = useState(false);
@@ -95,6 +96,57 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
     }
   };
 
+  // AI自動生成（テーマも自動選択）
+  const handleAutoGenerate = async () => {
+    if (!planData) {
+      alert('運用計画が設定されていません');
+      return;
+    }
+    
+    setIsAutoGenerating(true);
+    try {
+      // 🔐 Firebase認証トークンを取得
+      const { auth } = await import('../../../../lib/firebase');
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await currentUser.getIdToken() : null;
+
+      // AI APIを呼び出して完全自動生成
+      const response = await fetch('/api/ai/post-generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          prompt: 'auto', // 自動生成を示す
+          postType,
+          planData,
+          scheduledDate,
+          scheduledTime,
+          autoGenerate: true // 自動生成フラグ
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '自動生成に失敗しました');
+      }
+
+      if (result.success && result.data) {
+        const { title, content, hashtags } = result.data;
+        onGeneratePost(title, content, hashtags, scheduledDate, scheduledTime);
+      } else {
+        throw new Error('自動生成に失敗しました');
+      }
+    } catch (error) {
+      console.error('自動生成エラー:', error);
+      alert(`自動生成に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsAutoGenerating(false);
+    }
+  };
+
   const handleGeneratePost = async () => {
     if (!aiPrompt.trim()) {
       alert('投稿のテーマを入力してください');
@@ -160,14 +212,11 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               <h3 className="text-lg font-semibold text-gray-900">AI投稿文生成</h3>
               <p className="text-sm text-orange-600 font-medium">
                 {planData 
-                  ? `${planData.title}に基づいてAIが投稿文を自動生成します`
+                  ? `運用計画に基づいてAIが投稿文を自動生成します`
                   : '運用計画を作成してからAI投稿文を生成できます'
                 }
               </p>
             </div>
-          </div>
-          <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
-            🤖 AI Powered
           </div>
         </div>
       </div>
@@ -343,38 +392,54 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
         </div>
         
         {/* 生成ボタン */}
-        <button
-          onClick={handleGeneratePost}
-          disabled={!aiPrompt.trim() || isGenerating || !planData}
-          className="w-full px-6 py-3 bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center font-medium"
-        >
-          {isGenerating ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-              AI生成中...
-            </>
-          ) : (
-            <>
-              <Sparkles size={18} className="mr-2" />
-              AI投稿文を生成
-            </>
-          )}
-        </button>
+        <div className="space-y-3">
+          {/* 自動生成ボタン */}
+          <button
+            onClick={handleAutoGenerate}
+            disabled={isAutoGenerating || !planData}
+            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+              isAutoGenerating || !planData
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transform hover:scale-105'
+            }`}
+          >
+            {isAutoGenerating ? (
+              <>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                自動生成中...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-3" size={24} />
+                🤖 自動生成（テーマも自動選択）
+              </>
+            )}
+          </button>
 
-        {/* 計画情報表示 */}
-        {planData && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
-            <div className="text-sm text-orange-800">
-              <div className="font-medium mb-2">📋 現在の運用計画</div>
-              <div className="space-y-1 text-xs">
-                <div>• 計画: {planData.title}</div>
-                <div>• 目標: {(planData.targetFollowers || 0).toLocaleString()}フォロワー</div>
-                <div>• ターゲット: {planData.targetAudience}</div>
-                <div>• 戦略: {planData.strategies?.slice(0, 3).join(', ')}{(planData.strategies?.length || 0) > 3 ? '...' : ''}</div>
-              </div>
-            </div>
-          </div>
-        )}
+          {/* テーマ指定生成ボタン */}
+          <button
+            onClick={handleGeneratePost}
+            disabled={isGenerating || !planData || !aiPrompt.trim()}
+            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+              isGenerating || !planData || !aiPrompt.trim()
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white hover:from-orange-600 hover:to-[#ff8a15] shadow-lg hover:shadow-xl transform hover:scale-105'
+            }`}
+          >
+            {isGenerating ? (
+              <>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                生成中...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-3" size={24} />
+                ✍️ テーマ指定生成
+              </>
+            )}
+          </button>
+        </div>
+
       </div>
     </div>
   );

@@ -37,6 +37,7 @@ interface PostGenerationRequest {
   scheduledDate?: string;
   scheduledTime?: string;
   action?: 'suggestTime' | 'generatePost';
+  autoGenerate?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -187,6 +188,26 @@ export async function POST(request: NextRequest) {
         { error: 'OpenAI APIキーが設定されていません' },
         { status: 500 }
       );
+    }
+
+    // 自動生成の場合、テーマを自動選択
+    if (requestBody.autoGenerate && requestBody.prompt === 'auto') {
+      const autoThemes = [
+        '今日の一枚📸',
+        'おはようございます！今日も素敵な一日をお過ごしください✨',
+        'ありがとうございます🙏',
+        'フォローありがとうございます！',
+        'いいねありがとうございます💕',
+        'コメントありがとうございます！',
+        'お疲れ様でした！',
+        '素敵な週末をお過ごしください🌅',
+        '新商品のご紹介✨',
+        'お客様の声をご紹介します💬',
+        'スタッフの日常をご紹介📷'
+      ];
+      
+      // ランダムでテーマを選択
+      requestBody.prompt = autoThemes[Math.floor(Math.random() * autoThemes.length)];
     }
 
     // ✅ プロンプトビルダーを使用（PDCA - Do）
