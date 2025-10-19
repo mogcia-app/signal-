@@ -486,8 +486,8 @@ export default function InstagramPostsPage() {
                 <div key={`manual-${index}`} className="bg-white shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                   {/* カードヘッダー */}
                   <div className="p-4 border-b border-gray-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-3">
+                    <div className="mb-2">
+                      <div className="flex items-center space-x-3 mb-2">
                         <span className="text-2xl">📊</span>
                         <h3 className="text-lg font-semibold text-gray-900 truncate">{analytics.title || '手動入力データ'}</h3>
                       </div>
