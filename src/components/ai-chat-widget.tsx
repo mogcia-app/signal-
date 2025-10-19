@@ -24,8 +24,8 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [usageInfo, setUsageInfo] = useState({
     usageCount: 0,
-    maxUsage: 5,
-    remainingUsage: 5,
+    maxUsage: 20,
+    remainingUsage: 20,
     canUse: true
   });
   const [isCheckingUsage, setIsCheckingUsage] = useState(false);
@@ -213,35 +213,20 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     setIsLoading(true);
 
     try {
-      // まずテストAPIを呼び出して環境を確認
-      const testResponse = await fetch('/api/test-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: inputMessage.trim()
-        })
-      });
-
-      if (!testResponse.ok) {
-        throw new Error(`Test API failed: ${testResponse.status}`);
-      }
-
-      const testData = await testResponse.json();
-      console.log('Test API response:', testData);
-
       // 実際のAI APIを呼び出し
+      const idToken = user ? await user.getIdToken() : null;
+      
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(idToken && { 'Authorization': `Bearer ${idToken}` })
         },
         body: JSON.stringify({
           message: inputMessage.trim(),
           context: contextData,
-          userId: user?.uid || 'demo-user-123', // 認証されたユーザーIDまたはデモユーザーID
-          pageType: 'ai-learning' // AI学習ページからのチャット
+          userId: user?.uid,
+          pageType: 'instagram' // Instagramページからのチャット
         })
       });
 
@@ -250,15 +235,19 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
       }
 
       const data = await response.json();
+      console.log('AI API response:', data);
       
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.response,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+      if (data.success && data.response) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.response,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } else {
+        throw new Error(data.error || 'Failed to get AI response');
+      }
 
       // テンプレート返答の場合はログ出力
       if (data.isTemplateResponse) {
