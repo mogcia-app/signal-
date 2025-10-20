@@ -196,6 +196,13 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     scrollToBottom();
   }, [messages]);
 
+  // 使用制限を取得
+  useEffect(() => {
+    if (user?.uid) {
+      fetchUsageInfo();
+    }
+  }, [user?.uid]);
+
   // 初期メッセージ
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -328,6 +335,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
           
           {/* チャットボタン */}
           <button
+            data-ai-chat-button
             onClick={() => {
               setIsOpen(true);
               fetchUsageInfo();
@@ -352,7 +360,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
       {/* チャットウィンドウ */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-[9999]">
+        <div data-ai-chat-widget className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-[9999]">
           {/* ヘッダー */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg">
             <div className="flex items-center space-x-2">
@@ -485,6 +493,16 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
           {/* 入力エリア */}
           <div className="p-4 border-t border-gray-200">
+            {/* 使用制限表示 */}
+            {!isCheckingUsage && (
+              <div className="mb-2 text-xs text-gray-600">
+                今月の使用回数: {usageInfo.usageCount}/{usageInfo.maxUsage}
+                {!usageInfo.canUse && (
+                  <span className="ml-2 text-red-500 font-medium">（上限に達しています）</span>
+                )}
+              </div>
+            )}
+            
             {/* テンプレートボタン */}
             <div className="mb-2">
               <button
@@ -509,7 +527,18 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isLoading || !usageInfo.canUse}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white rounded-lg transition-colors flex items-center justify-center relative"
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center relative ${
+                  !inputMessage.trim() || isLoading || !usageInfo.canUse
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-orange-500 hover:bg-orange-600 text-white'
+                }`}
+                title={
+                  !usageInfo.canUse 
+                    ? '今月の使用回数が上限に達しています' 
+                    : !inputMessage.trim() 
+                    ? 'メッセージを入力してください' 
+                    : '送信'
+                }
               >
                 <Send size={16} />
                 {!usageInfo.canUse && (

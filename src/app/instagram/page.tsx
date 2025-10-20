@@ -1041,14 +1041,48 @@ function InstagramDashboardContent() {
                           {/* AIに聞くボタン */}
                           <div className="text-center">
                             <button 
-                              onClick={() => {
-                                // AIにこの投稿について聞く処理
-                                const chatWidget = document.querySelector('[data-ai-chat-widget]');
-                                if (chatWidget) {
-                                  chatWidget.scrollIntoView({ behavior: 'smooth' });
+                              onClick={async () => {
+                                try {
+                                  // AIチャットウィジェットを開く
+                                  const chatButton = document.querySelector('[data-ai-chat-button]') as HTMLButtonElement;
+                                  if (chatButton) {
+                                    chatButton.click();
+                                    
+                                    // 少し待ってから投稿データを含む質問を送信
+                                    setTimeout(async () => {
+                                      const question = `この投稿のパフォーマンスについて分析してください：
+                                      
+📊 投稿データ：
+- いいね数: ${post.likes}
+- コメント数: ${post.comments}
+- リーチ数: ${post.reach}
+- 保存数: ${post.saves}
+- エンゲージメント率: ${post.engagementRate}%
+
+📝 投稿内容：
+- タイトル: ${post.title}
+- キャプション: ${post.caption || 'なし'}
+- ハッシュタグ: ${post.hashtags?.join(' ') || 'なし'}
+- 投稿タイプ: ${post.type}
+
+この投稿のパフォーマンスを分析し、改善点や成功要因を教えてください。`;
+
+                                      // AIチャットウィジェットの入力欄に質問を設定
+                                      const textarea = document.querySelector('[data-ai-chat-widget] textarea') as HTMLTextAreaElement;
+                                      const sendButton = document.querySelector('[data-ai-chat-widget] button[type="button"]') as HTMLButtonElement;
+                                      
+                                      if (textarea && sendButton) {
+                                        textarea.value = question;
+                                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                                        sendButton.click();
+                                      }
+                                    }, 500);
+                                  }
+                                } catch (error) {
+                                  console.error('AIチャット起動エラー:', error);
                                 }
                               }}
-                              className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 text-sm font-medium"
+                              className="inline-flex items-center px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 text-sm font-medium"
                             >
                               <span className="mr-2">🤖</span>
                               この投稿についてAIに聞く
