@@ -19,7 +19,10 @@ export default function InstagramLabPage() {
   const [scheduledTime, setScheduledTime] = useState('');
   const [isAIGenerated] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<Array<{
+    followerIncrease?: number;
+    [key: string]: unknown;
+  }>>([]);
   
   // 計画データを取得
   const { planData } = usePlanData();

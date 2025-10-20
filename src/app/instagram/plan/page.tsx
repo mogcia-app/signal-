@@ -16,7 +16,10 @@ import { SimulationRequest } from './types/plan'
 export default function InstagramPlanPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'goal' | 'simulation' | 'ai'>('goal')
-  const [analyticsData, setAnalyticsData] = useState<any[]>([])
+  const [analyticsData, setAnalyticsData] = useState<Array<{
+    followerIncrease?: number;
+    [key: string]: unknown;
+  }>>([])
   
   // カスタムフックの使用
   const { 
