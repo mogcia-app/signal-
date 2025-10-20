@@ -125,40 +125,75 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
       id: 'improvement-tips',
       title: '改善のヒント',
       message: '計画を改善するための具体的なヒントを教えてください。'
+    },
+    {
+      id: 'goal-adjustment',
+      title: '目標の調整',
+      message: '現在の目標を調整する必要がありますか？新しい目標を提案してください。'
+    },
+    {
+      id: 'progress-tracking',
+      title: '進捗の確認',
+      message: '現在の進捗状況と目標達成までの道のりを教えてください。'
     }
   ];
 
   // Instagram全体アドバイザーテンプレート
   const instagramTemplates = [
     {
-      id: 'strategy-overview',
-      title: '戦略全体の確認',
-      message: '現在のInstagram戦略全体について分析し、改善点を教えてください。'
+      id: 'daily-posting',
+      title: '今日の投稿内容',
+      message: '今日投稿すべきコンテンツのアイデアと具体的な内容を教えてください。'
     },
     {
-      id: 'content-advice',
-      title: 'コンテンツアドバイス',
-      message: 'より効果的なコンテンツ作成のアドバイスをください。'
-    },
-    {
-      id: 'engagement-tips',
+      id: 'engagement-boost',
       title: 'エンゲージメント向上',
-      message: 'フォロワーとのエンゲージメントを向上させる方法を教えてください。'
+      message: '投稿のエンゲージメントを上げるための具体的な方法を教えてください。'
     },
     {
-      id: 'posting-schedule',
-      title: '投稿スケジュール',
-      message: '最適な投稿タイミングと頻度についてアドバイスをください。'
+      id: 'hashtag-optimization',
+      title: 'ハッシュタグ最適化',
+      message: '現在の投稿に最適なハッシュタグを選んでください。'
     },
     {
-      id: 'hashtag-strategy',
-      title: 'ハッシュタグ戦略',
-      message: '効果的なハッシュタグの選び方と使い方を教えてください。'
+      id: 'story-ideas',
+      title: 'ストーリーアイデア',
+      message: '今日のストーリー投稿のアイデアを教えてください。'
     },
     {
-      id: 'analytics-insight',
-      title: '分析データ活用',
-      message: '分析データを活用した改善策を提案してください。'
+      id: 'reel-trends',
+      title: 'リールトレンド',
+      message: '今バズっているリールのトレンドと活用方法を教えてください。'
+    },
+    {
+      id: 'analytics-review',
+      title: '分析データの見方',
+      message: '最近の投稿の分析データを確認して、改善点を教えてください。'
+    },
+    {
+      id: 'follower-growth',
+      title: 'フォロワー増加',
+      message: 'フォロワーを増やすための今すぐできる具体的なアクションを教えてください。'
+    },
+    {
+      id: 'content-calendar',
+      title: 'コンテンツカレンダー',
+      message: '今週の投稿スケジュールとコンテンツプランを立ててください。'
+    },
+    {
+      id: 'competitor-insight',
+      title: '競合分析',
+      message: '競合他社の成功している投稿を分析して、参考になる点を教えてください。'
+    },
+    {
+      id: 'brand-voice',
+      title: 'ブランドボイス',
+      message: '投稿のトーンや文体を統一するためのアドバイスをください。'
+    },
+    {
+      id: 'crisis-management',
+      title: 'トラブル対応',
+      message: 'ネガティブなコメントや炎上した時の対応方法を教えてください。'
     }
   ];
 
@@ -408,21 +443,47 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                   <X size={14} />
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {instagramTemplates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => handleTemplateClick(template)}
-                    className="p-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-200 transition-colors"
-                  >
-                    <div className="text-xs font-medium text-gray-800 mb-1">
-                      {template.title}
-                    </div>
-                    <div className="text-xs text-black line-clamp-2">
-                      {template.message}
-                    </div>
-                  </button>
-                ))}
+              
+              {/* 計画系テンプレート */}
+              <div className="mb-4">
+                <h4 className="text-xs font-medium text-gray-600 mb-2">📋 計画・目標について</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {planTemplates.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleTemplateClick(template)}
+                      className="p-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-200 transition-colors"
+                    >
+                      <div className="text-xs font-medium text-gray-800 mb-1">
+                        {template.title}
+                      </div>
+                      <div className="text-xs text-black line-clamp-2">
+                        {template.message}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Instagram運用テンプレート */}
+              <div>
+                <h4 className="text-xs font-medium text-gray-600 mb-2">📱 Instagram運用について</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {instagramTemplates.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleTemplateClick(template)}
+                      className="p-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-200 transition-colors"
+                    >
+                      <div className="text-xs font-medium text-gray-800 mb-1">
+                        {template.title}
+                      </div>
+                      <div className="text-xs text-black line-clamp-2">
+                        {template.message}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
