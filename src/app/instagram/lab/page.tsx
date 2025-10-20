@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import PostEditor from './components/PostEditor';
 import ToolPanel from './components/ToolPanel';
 import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
 import { usePlanData } from '../../../hooks/usePlanData';
+import { useAuth } from '../../../contexts/auth-context';
 
 export default function InstagramLabPage() {
   const [postContent, setPostContent] = useState('');
@@ -18,14 +19,39 @@ export default function InstagramLabPage() {
   const [scheduledTime, setScheduledTime] = useState('');
   const [isAIGenerated] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
   
   // 計画データを取得
   const { planData } = usePlanData();
+  const { user } = useAuth();
   
+  // 分析データを取得
+  const fetchAnalytics = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'x-user-id': user.uid,
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setAnalyticsData(result.analytics || []);
+      }
+    } catch (error) {
+      console.error('Analytics fetch error:', error);
+    }
+  }, [user]);
+
   // クライアントサイドでのみレンダリング
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    fetchAnalytics();
+  }, [fetchAnalytics]);
   
   // 計画がある場合のサンプルデータ（テスト用）
   // const [planData] = useState<PlanData>({
@@ -88,7 +114,19 @@ export default function InstagramLabPage() {
 
             {/* 右カラム: 計画・ツール */}
             <div className="space-y-4 sm:space-y-6">
-              {isMounted && <CurrentPlanCard planData={planData} snsType="instagram" />}
+              {isMounted && (() => {
+                // フォロワー増加数を計算
+                const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
+                const actualFollowers = planData ? (planData.currentFollowers || 0) + totalFollowerIncrease : 0;
+                
+                return (
+                  <CurrentPlanCard 
+                    planData={planData} 
+                    snsType="instagram" 
+                    actualFollowers={actualFollowers}
+                  />
+                );
+              })()}
               
               <ToolPanel
                 onTemplateSelect={(template: string) => {

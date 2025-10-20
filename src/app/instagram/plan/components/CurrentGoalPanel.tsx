@@ -10,6 +10,7 @@ interface CurrentGoalPanelProps {
   isSaving?: boolean;
   saveError?: string | null;
   saveSuccess?: boolean;
+  actualFollowers?: number;
 }
 
 export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
@@ -20,7 +21,8 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
   onSavePlan,
   isSaving = false,
   saveError = null,
-  saveSuccess = false
+  saveSuccess = false,
+  actualFollowers
 }) => {
   return (
     <section className="p-6">
@@ -36,8 +38,16 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
           
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="text-black">目標フォロワー増加</span>
-              <div className="font-medium">+{formData.followerGain}人</div>
+              <span className="text-black">現在のフォロワー数</span>
+              <div className="font-medium">
+                {actualFollowers !== undefined ? actualFollowers.toLocaleString() : formData.currentFollowers}人
+              </div>
+            </div>
+            <div>
+              <span className="text-black">目標フォロワー数</span>
+              <div className="font-medium">
+                {parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人
+              </div>
             </div>
             <div>
               <span className="text-black">期間</span>
@@ -46,10 +56,6 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
             <div>
               <span className="text-black">ターゲット</span>
               <div className="font-medium">{formData.targetAudience || '未設定'}</div>
-            </div>
-            <div>
-              <span className="text-black">カテゴリ</span>
-              <div className="font-medium">{formData.goalCategory || '未設定'}</div>
             </div>
           </div>
           

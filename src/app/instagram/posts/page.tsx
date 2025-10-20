@@ -6,6 +6,7 @@ import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { postsApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/auth-context';
+import { usePlanData } from '../../../hooks/usePlanData';
 import { Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon, Calendar, Clock } from 'lucide-react';
 
 // コンポーネントのインポート
@@ -13,6 +14,7 @@ import PostCard from './components/PostCard';
 import PostDetailModal from './components/PostDetailModal';
 import PostFilters from './components/PostFilters';
 import PostStats from './components/PostStats';
+import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
 
 interface PostData {
   id: string;
@@ -118,6 +120,7 @@ interface AnalyticsData {
 
 export default function InstagramPostsPage() {
   const { user } = useAuth();
+  const { planData } = usePlanData();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
@@ -454,6 +457,21 @@ export default function InstagramPostsPage() {
             scheduledPosts={scheduledPosts}
             unanalyzedPosts={unanalyzedPosts}
           />
+
+          {/* 運用計画カード */}
+          {(() => {
+            // フォロワー増加数を計算
+            const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
+            const actualFollowers = planData ? (planData.currentFollowers || 0) + totalFollowerIncrease : 0;
+            
+            return (
+              <CurrentPlanCard 
+                planData={planData} 
+                snsType="instagram" 
+                actualFollowers={actualFollowers}
+              />
+            );
+          })()}
 
           {/* 投稿一覧 */}
           {loading ? (

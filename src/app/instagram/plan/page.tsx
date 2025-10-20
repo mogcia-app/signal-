@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../../contexts/auth-context'
 import SNSLayout from '../../../components/sns-layout'
 import { AIChatWidget } from '../../../components/ai-chat-widget'
@@ -16,6 +16,7 @@ import { SimulationRequest } from './types/plan'
 export default function InstagramPlanPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'goal' | 'simulation' | 'ai'>('goal')
+  const [analyticsData, setAnalyticsData] = useState<any[]>([])
   
   // カスタムフックの使用
   const { 
@@ -53,6 +54,33 @@ export default function InstagramPlanPage() {
     handleStartAiDiagnosis, 
     handleSaveAdviceAndContinue 
   } = useAIDiagnosis()
+
+  // 分析データを取得
+  const fetchAnalytics = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'x-user-id': user.uid,
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setAnalyticsData(result.analytics || []);
+      }
+    } catch (error) {
+      console.error('Analytics fetch error:', error);
+    }
+  }, [user]);
+
+  // コンポーネントマウント時にanalyticsデータを取得
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
 
   // シミュレーション実行ハンドラー
@@ -228,18 +256,25 @@ export default function InstagramPlanPage() {
 
               {/* タブコンテンツ */}
               <div className="p-0">
-                {activeTab === 'goal' && (
-                  <CurrentGoalPanel
-                    formData={formData}
-                    selectedStrategies={selectedStrategies}
-                    onEditPlan={handleEditCurrentPlan}
-                    onDeletePlan={handleDeleteCurrentPlan}
-                    onSavePlan={handleSavePlan}
-                    isSaving={isSaving}
-                    saveError={saveError}
-                    saveSuccess={saveSuccess}
-                  />
-                )}
+                {activeTab === 'goal' && (() => {
+                  // フォロワー増加数を計算
+                  const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
+                  const actualFollowers = (formData.currentFollowers || 0) + totalFollowerIncrease;
+                  
+                  return (
+                    <CurrentGoalPanel
+                      formData={formData}
+                      selectedStrategies={selectedStrategies}
+                      onEditPlan={handleEditCurrentPlan}
+                      onDeletePlan={handleDeleteCurrentPlan}
+                      onSavePlan={handleSavePlan}
+                      isSaving={isSaving}
+                      saveError={saveError}
+                      saveSuccess={saveSuccess}
+                      actualFollowers={actualFollowers}
+                    />
+                  );
+                })()}
 
                 {activeTab === 'simulation' && (
                   <SimulationPanel
