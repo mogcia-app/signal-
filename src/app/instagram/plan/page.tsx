@@ -262,7 +262,7 @@ export default function InstagramPlanPage() {
                 {activeTab === 'goal' && (() => {
                   // フォロワー増加数を計算
                   const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
-                  const actualFollowers = (formData.currentFollowers || 0) + totalFollowerIncrease;
+                  const actualFollowers = Number(formData.currentFollowers || 0) + totalFollowerIncrease;
                   
                   return (
                     <CurrentGoalPanel

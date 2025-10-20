@@ -87,6 +87,7 @@ interface AnalyticsData {
   thumbnail?: string;
   sentiment?: 'satisfied' | 'dissatisfied' | null;
   memo?: string;
+  followerIncrease?: number;
   audience?: {
     gender: {
       male: number;
@@ -462,7 +463,7 @@ export default function InstagramPostsPage() {
           {(() => {
             // フォロワー増加数を計算
             const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
-            const actualFollowers = planData ? (planData.currentFollowers || 0) + totalFollowerIncrease : 0;
+            const actualFollowers = planData ? Number(planData.currentFollowers || 0) + totalFollowerIncrease : 0;
             
             return (
               <CurrentPlanCard 
