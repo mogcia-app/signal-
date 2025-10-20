@@ -75,6 +75,10 @@ function InstagramDashboardContent() {
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { getSNSSettings } = useSNSSettings();
   const { planData } = usePlanData();
+  const [analyticsData, setAnalyticsData] = useState<Array<{
+    followerIncrease?: number;
+    [key: string]: unknown;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     followers: 0,
@@ -117,6 +121,28 @@ function InstagramDashboardContent() {
     unit: string;
     status: string;
   }[]>([]);
+
+  // 分析データを取得
+  const fetchAnalytics = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'x-user-id': user.uid,
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setAnalyticsData(result.analytics || []);
+      }
+    } catch (error) {
+      console.error('Analytics fetch error:', error);
+    }
+  }, [user]);
 
   // 目標設定の状態
   const [showGoalSettings, setShowGoalSettings] = useState(false);
@@ -581,6 +607,7 @@ function InstagramDashboardContent() {
       console.log('User authenticated, fetching data for:', user.uid);
       fetchPostsAndCalculateStats();
       fetchGoalSettings(); // 目標設定を読み込み
+      fetchAnalytics(); // analyticsデータを取得
       
       // ポーリングは一時的に無効化
       // const interval = setInterval(() => {
@@ -591,7 +618,7 @@ function InstagramDashboardContent() {
     } else {
       console.log('User not authenticated, skipping data fetch');
     }
-  }, [user?.uid, fetchPostsAndCalculateStats, fetchGoalSettings]);
+  }, [user?.uid, fetchPostsAndCalculateStats, fetchGoalSettings, fetchAnalytics]);
 
   // ローディング状態
   if (profileLoading) {
@@ -655,10 +682,19 @@ function InstagramDashboardContent() {
         <div className="max-w-7xl mx-auto">
           {/* 計画内容の連携表示 */}
           <div className="mb-8">
-            <CurrentPlanCard 
-              planData={planData}
-              snsType="instagram"
-            />
+            {(() => {
+              // フォロワー増加数を計算
+              const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
+              const actualFollowers = planData ? Number(planData.currentFollowers || 0) + totalFollowerIncrease : 0;
+              
+              return (
+                <CurrentPlanCard 
+                  planData={planData}
+                  snsType="instagram"
+                  actualFollowers={actualFollowers}
+                />
+              );
+            })()}
           </div>
 
           {/* 次のアクション */}
