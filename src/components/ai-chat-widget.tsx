@@ -24,8 +24,8 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [usageInfo, setUsageInfo] = useState({
     usageCount: 0,
-    maxUsage: 20,
-    remainingUsage: 20,
+    maxUsage: 50,
+    remainingUsage: 50,
     canUse: true
   });
   const [isCheckingUsage, setIsCheckingUsage] = useState(false);

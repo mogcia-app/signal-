@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
     const currentUsage = usageDoc.exists ? usageDoc.data() : null;
     const usageCount = currentUsage?.count || 0;
     
-    // 使用制限を調整（月20回に増加）
-    const maxUsage = 20;
+    // 使用制限を調整（月50回に増加）
+    const maxUsage = 50;
     const remainingUsage = Math.max(0, maxUsage - usageCount);
     const canUse = remainingUsage > 0;
 
