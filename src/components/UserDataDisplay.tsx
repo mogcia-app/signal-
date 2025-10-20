@@ -67,27 +67,27 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">ID</p>
+              <p className="text-sm font-medium text-black">ID</p>
               <p className="text-sm">{userProfile.id}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">メール</p>
+              <p className="text-sm font-medium text-black">メール</p>
               <p className="text-sm">{userProfile.email}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">表示名</p>
+              <p className="text-sm font-medium text-black">表示名</p>
               <p className="text-sm">{userProfile.name}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">権限</p>
+              <p className="text-sm font-medium text-black">権限</p>
               <Badge variant="outline">{userProfile.role}</Badge>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">利用形態</p>
+              <p className="text-sm font-medium text-black">利用形態</p>
               <p className="text-sm">{userProfile.usageType}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">ステータス</p>
+              <p className="text-sm font-medium text-black">ステータス</p>
               <Badge variant={userProfile.status === 'active' ? "default" : "secondary"}>
                 {userProfile.status}
               </Badge>
@@ -112,25 +112,25 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">契約タイプ</p>
+              <p className="text-sm font-medium text-black">契約タイプ</p>
               <Badge variant="outline">{userProfile.contractType}</Badge>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">SNS契約数</p>
+              <p className="text-sm font-medium text-black">SNS契約数</p>
               <p className="text-sm">{userProfile.contractSNS.length}個</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">契約開始日</p>
+              <p className="text-sm font-medium text-black">契約開始日</p>
               <p className="text-sm">{new Date(userProfile.contractStartDate).toLocaleDateString('ja-JP')}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">契約終了日</p>
+              <p className="text-sm font-medium text-black">契約終了日</p>
               <p className="text-sm">{new Date(userProfile.contractEndDate).toLocaleDateString('ja-JP')}</p>
             </div>
           </div>
           
           <div>
-            <p className="text-sm font-medium text-gray-500 mb-2">契約SNS</p>
+            <p className="text-sm font-medium text-black mb-2">契約SNS</p>
             <div className="flex flex-wrap gap-2">
               {contractSNS.map((sns: string) => (
                 <Badge key={sns} variant="secondary">
@@ -203,29 +203,29 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-500">業界</p>
+                <p className="text-sm font-medium text-black">業界</p>
                 <p className="text-sm">{businessInfo.industry}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">会社規模</p>
+                <p className="text-sm font-medium text-black">会社規模</p>
                 <p className="text-sm">{businessInfo.companySize}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">ビジネスタイプ</p>
+                <p className="text-sm font-medium text-black">ビジネスタイプ</p>
                 <p className="text-sm">{businessInfo.businessType}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">ターゲット市場</p>
+                <p className="text-sm font-medium text-black">ターゲット市場</p>
                 <p className="text-sm">{businessInfo.targetMarket}</p>
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">説明</p>
+              <p className="text-sm font-medium text-black">説明</p>
               <p className="text-sm">{businessInfo.description}</p>
             </div>
             {businessInfo.goals.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-gray-500">目標</p>
+                <p className="text-sm font-medium text-black">目標</p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {businessInfo.goals.map((goal: string, index: number) => (
                     <Badge key={index} variant="outline">{goal}</Badge>
@@ -235,7 +235,7 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
             )}
             {businessInfo.challenges.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-gray-500">課題</p>
+                <p className="text-sm font-medium text-black">課題</p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {businessInfo.challenges.map((challenge: string, index: number) => (
                     <Badge key={index} variant="outline">{challenge}</Badge>
@@ -257,25 +257,25 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
             <div className="grid grid-cols-2 gap-4">
               {'paymentMethod' in billingInfo && billingInfo.paymentMethod && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500">支払い方法</p>
+                  <p className="text-sm font-medium text-black">支払い方法</p>
                   <p className="text-sm">{billingInfo.paymentMethod}</p>
                 </div>
               )}
               {'nextBillingDate' in billingInfo && billingInfo.nextBillingDate && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500">次回請求日</p>
+                  <p className="text-sm font-medium text-black">次回請求日</p>
                   <p className="text-sm">{new Date(billingInfo.nextBillingDate).toLocaleDateString('ja-JP')}</p>
                 </div>
               )}
               {'lastPaymentDate' in billingInfo && billingInfo.lastPaymentDate && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500">最終支払日</p>
+                  <p className="text-sm font-medium text-black">最終支払日</p>
                   <p className="text-sm">{new Date(billingInfo.lastPaymentDate).toLocaleDateString('ja-JP')}</p>
                 </div>
               )}
               {'amount' in billingInfo && billingInfo.amount && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500">金額</p>
+                  <p className="text-sm font-medium text-black">金額</p>
                   <p className="text-sm">¥{billingInfo.amount.toLocaleString()}</p>
                 </div>
               )}
@@ -293,17 +293,17 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-500">作成日時</p>
+                <p className="text-sm font-medium text-black">作成日時</p>
                 <p className="text-sm">{new Date(userProfile.createdAt).toLocaleString('ja-JP')}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">更新日時</p>
+                <p className="text-sm font-medium text-black">更新日時</p>
                 <p className="text-sm">{new Date(userProfile.updatedAt).toLocaleString('ja-JP')}</p>
               </div>
             </div>
             {userProfile.notes && (
               <div>
-                <p className="text-sm font-medium text-gray-500">管理者メモ</p>
+                <p className="text-sm font-medium text-black">管理者メモ</p>
                 <p className="text-sm">{userProfile.notes}</p>
               </div>
             )}

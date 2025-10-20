@@ -25,12 +25,12 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <div className="p-8 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Target className="w-8 h-8 text-gray-400" />
+            <Target className="w-8 h-8 text-black" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-black mb-2">
             運用計画が設定されていません
           </h3>
-          <p className="text-gray-600 text-sm mb-4">
+          <p className="text-black text-sm mb-4">
             {snsType === 'instagram' ? 'Instagram' : snsType === 'x' ? 'X (Twitter)' : 'TikTok'}の成長を加速させるために、まず運用計画を立てましょう
           </p>
           <a
@@ -71,7 +71,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
       {/* ヘッダー */}
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="font-semibold text-gray-900 flex items-center">
+        <h3 className="font-semibold text-black flex items-center">
           <span className="mr-2">📋</span>
           現在の運用計画
         </h3>
@@ -89,15 +89,15 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
       <div className="p-6 space-y-4">
         {/* 計画タイトル */}
         <div>
-          <p className="text-xs text-gray-500 mb-1">計画名</p>
-          <p className="font-medium text-gray-900">{planData.title}</p>
+          <p className="text-xs text-black mb-1">計画名</p>
+          <p className="font-medium text-black">{planData.title}</p>
         </div>
 
         {/* フォロワー目標進捗 */}
         <div>
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600">フォロワー目標</span>
-            <span className="font-medium text-gray-900">
+            <span className="text-black">フォロワー目標</span>
+            <span className="font-medium text-black">
               {displayFollowers.toLocaleString()} → {targetFollowers.toLocaleString()}
             </span>
           </div>
@@ -107,7 +107,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-black mt-1">
             <span>{progressPercentage.toFixed(1)}% 達成</span>
             <span>残り {remainingFollowers.toLocaleString()}人</span>
           </div>
@@ -116,24 +116,24 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
         {/* グリッド情報 */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
+            <Calendar className="w-4 h-4 text-black" />
             <div className="text-sm">
-              <span className="text-gray-600">期間: </span>
-              <span className="font-medium text-gray-900">{planData.planPeriod}</span>
+              <span className="text-black">期間: </span>
+              <span className="font-medium text-black">{planData.planPeriod}</span>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Users className="w-4 h-4 text-gray-400" />
+            <Users className="w-4 h-4 text-black" />
             <div className="text-sm">
-              <span className="text-gray-600">ターゲット: </span>
-              <span className="font-medium text-gray-900">{planData.targetAudience}</span>
+              <span className="text-black">ターゲット: </span>
+              <span className="font-medium text-black">{planData.targetAudience}</span>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Tag className="w-4 h-4 text-gray-400" />
+            <Tag className="w-4 h-4 text-black" />
             <div className="text-sm">
-              <span className="text-gray-600">KPI: </span>
-              <span className="font-medium text-gray-900">
+              <span className="text-black">KPI: </span>
+              <span className="font-medium text-black">
                 {(() => {
                   const categoryMap: Record<string, string> = {
                     'follower': 'フォロワー',
@@ -150,9 +150,9 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           </div>
           {hasSimulation && (
             <div className="flex items-center space-x-2">
-              <Target className="w-4 h-4 text-gray-400" />
+              <Target className="w-4 h-4 text-black" />
               <div className="text-sm">
-                <span className="text-gray-600">達成度: </span>
+                <span className="text-black">達成度: </span>
                 <span className={`font-semibold ${
                   simulationResult.feasibilityLevel === 'high' ? 'text-green-600' :
                   simulationResult.feasibilityLevel === 'medium' ? 'text-yellow-600' :
@@ -168,7 +168,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
         {/* 施策タグ */}
         {strategies.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 mb-2">施策</p>
+            <p className="text-xs text-black mb-2">施策</p>
             <div className="flex flex-wrap gap-2">
               {strategies.slice(0, 3).map((strategy, index) => (
                 <span
@@ -179,7 +179,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
                 </span>
               ))}
               {strategies.length > 3 && (
-                <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                <span className="px-2.5 py-1 bg-gray-100 text-black text-xs rounded-md">
                   +{strategies.length - 3}個
                 </span>
               )}
@@ -192,7 +192,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
         {variant === 'full' && planData.generatedStrategy && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
             <p className="text-xs text-orange-700 font-medium mb-2">🤖 AI戦略が生成済み</p>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-black">
               計画ページで詳細を確認できます
             </p>
           </div>

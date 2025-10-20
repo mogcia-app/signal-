@@ -62,8 +62,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <span className="text-white text-lg">✏️</span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">投稿エディター</h3>
-              <p className="text-sm text-gray-600">X投稿文を作成・編集します</p>
+              <h3 className="text-lg font-semibold text-black">投稿エディター</h3>
+              <p className="text-sm text-black">X投稿文を作成・編集します</p>
             </div>
           </div>
           <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
@@ -94,7 +94,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             <label className="block text-sm font-medium text-gray-700">
               投稿文
             </label>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-black">
               {content.length}/140
             </div>
           </div>
@@ -185,12 +185,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-semibold text-gray-900">あなた</span>
-                    <span className="text-gray-500 text-sm">@username</span>
-                    <span className="text-gray-500 text-sm">·</span>
-                    <span className="text-gray-500 text-sm">今</span>
+                    <span className="font-semibold text-black">あなた</span>
+                    <span className="text-black text-sm">@username</span>
+                    <span className="text-black text-sm">·</span>
+                    <span className="text-black text-sm">今</span>
                   </div>
-                  <div className="text-gray-900 whitespace-pre-wrap">
+                  <div className="text-black whitespace-pre-wrap">
                     {content}
                   </div>
                   {hashtags.length > 0 && (

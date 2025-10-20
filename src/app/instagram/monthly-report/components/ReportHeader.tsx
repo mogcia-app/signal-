@@ -27,10 +27,10 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
   return (
     <div className="flex items-center justify-between mb-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-black">
           {activeTab === 'weekly' ? '週次' : '月次'}レポート
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-black mt-1">
           {activeTab === 'weekly' ? getWeekDisplayName(selectedWeek) : getMonthDisplayName(selectedMonth)}の分析結果
         </p>
       </div>
@@ -42,7 +42,7 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
             className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
               activeTab === 'weekly'
                 ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-black hover:text-black'
             }`}
           >
             週次
@@ -52,7 +52,7 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
             className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
               activeTab === 'monthly'
                 ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-black hover:text-black'
             }`}
           >
             月次

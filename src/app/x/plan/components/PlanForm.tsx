@@ -33,7 +33,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
       <div className="mb-6">
         <h3 className="text-xl font-semibold mb-2">📋 計画を立てる</h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-black">
           <span className="text-blue-500">★</span>はAIが参照するための必須項目です。具体的に記入するほど、精度の高いアドバイスが得られます。
         </p>
       </div>
@@ -69,7 +69,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             <option value="6ヶ月">6ヶ月</option>
             <option value="1年">1年</option>
           </select>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-black mt-1">
             この計画は <span className="font-medium">{formData.planPeriod}</span> 単位で運用されます
           </p>
         </div>
@@ -221,7 +221,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           <label className="block text-sm font-medium mb-2">投稿頻度（週あたり）</label>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label htmlFor="tweetFreq" className="block text-xs text-gray-600 mb-1">ツイート</label>
+              <label htmlFor="tweetFreq" className="block text-xs text-black mb-1">ツイート</label>
               <input
                 type="number"
                 id="tweetFreq"
@@ -233,7 +233,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               />
             </div>
             <div>
-              <label htmlFor="threadFreq" className="block text-xs text-gray-600 mb-1">スレッド</label>
+              <label htmlFor="threadFreq" className="block text-xs text-black mb-1">スレッド</label>
               <input
                 type="number"
                 id="threadFreq"
@@ -245,7 +245,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               />
             </div>
             <div>
-              <label htmlFor="replyFreq" className="block text-xs text-gray-600 mb-1">リプライ</label>
+              <label htmlFor="replyFreq" className="block text-xs text-black mb-1">リプライ</label>
               <input
                 type="number"
                 id="replyFreq"

@@ -18,7 +18,7 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff8a15]"></div>
-          <span className="ml-2 text-gray-600">統計を計算中...</span>
+          <span className="ml-2 text-black">統計を計算中...</span>
         </div>
       </div>
     );
@@ -27,10 +27,10 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
   if (analyticsData.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">統計データ</h3>
+        <h3 className="text-lg font-semibold text-black mb-4">統計データ</h3>
         <div className="text-center py-8">
-          <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">データを入力すると統計が表示されます</p>
+          <BarChart3 className="w-12 h-12 text-black mx-auto mb-4" />
+          <p className="text-black">データを入力すると統計が表示されます</p>
         </div>
       </div>
     );
@@ -91,8 +91,8 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
             <BarChart3 className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">投稿分析統計</h2>
-            <p className="text-sm text-gray-600">全投稿の合計・平均データ</p>
+            <h2 className="text-lg font-semibold text-black">投稿分析統計</h2>
+            <p className="text-sm text-black">全投稿の合計・平均データ</p>
           </div>
         </div>
 
@@ -102,42 +102,42 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <Heart className="w-5 h-5 text-red-500" />
               <span className="text-2xl font-bold text-gray-700">{isNaN(totalLikes) ? '0' : totalLikes.toLocaleString()}</span>
             </div>
-            <p className="text-sm text-gray-600">総いいね数</p>
+            <p className="text-sm text-black">総いいね数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <MessageCircle className="w-5 h-5 text-blue-500" />
               <span className="text-2xl font-bold text-gray-700">{isNaN(totalComments) ? '0' : totalComments.toLocaleString()}</span>
             </div>
-            <p className="text-sm text-gray-600">総コメント数</p>
+            <p className="text-sm text-black">総コメント数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <Share className="w-5 h-5 text-green-500" />
               <span className="text-2xl font-bold text-gray-700">{isNaN(totalShares) ? '0' : totalShares.toLocaleString()}</span>
             </div>
-            <p className="text-sm text-gray-600">総シェア数</p>
+            <p className="text-sm text-black">総シェア数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <Eye className="w-5 h-5 text-purple-500" />
               <span className="text-2xl font-bold text-gray-700">{isNaN(totalReach) ? '0' : totalReach.toLocaleString()}</span>
             </div>
-            <p className="text-sm text-gray-600">総閲覧数</p>
+            <p className="text-sm text-black">総閲覧数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <Save className="w-5 h-5 text-yellow-500" />
               <span className="text-2xl font-bold text-gray-700">{isNaN(totalSaves) ? '0' : totalSaves.toLocaleString()}</span>
             </div>
-            <p className="text-sm text-gray-600">総保存数</p>
+            <p className="text-sm text-black">総保存数</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <UserPlus className="w-5 h-5 text-indigo-500" />
               <span className="text-2xl font-bold text-gray-700">{isNaN(totalFollowerIncrease) ? '0' : totalFollowerIncrease.toLocaleString()}</span>
             </div>
-            <p className="text-sm text-gray-600">総フォロワー増加数</p>
+            <p className="text-sm text-black">総フォロワー増加数</p>
           </div>
         </div>
       </div>
@@ -150,8 +150,8 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">オーディエンス分析統計</h2>
-              <p className="text-sm text-gray-600">平均的なフォロワー構成</p>
+              <h2 className="text-lg font-semibold text-black">オーディエンス分析統計</h2>
+              <p className="text-sm text-black">平均的なフォロワー構成</p>
             </div>
           </div>
 
@@ -160,15 +160,15 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <h3 className="text-sm font-semibold text-gray-800 mb-3">性別分析</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">👨 男性</span>
+                  <span className="text-sm text-black">👨 男性</span>
                   <span className="font-medium">{isNaN(avgAudienceStats.gender.male) ? '0.0' : avgAudienceStats.gender.male.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">👩 女性</span>
+                  <span className="text-sm text-black">👩 女性</span>
                   <span className="font-medium">{isNaN(avgAudienceStats.gender.female) ? '0.0' : avgAudienceStats.gender.female.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">🏳️‍🌈 その他</span>
+                  <span className="text-sm text-black">🏳️‍🌈 その他</span>
                   <span className="font-medium">{isNaN(avgAudienceStats.gender.other) ? '0.0' : avgAudienceStats.gender.other.toFixed(1)}%</span>
                 </div>
               </div>
@@ -178,15 +178,15 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <h3 className="text-sm font-semibold text-gray-800 mb-3">年齢層分析</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">18-24歳</span>
+                  <span className="text-sm text-black">18-24歳</span>
                   <span className="font-medium">{isNaN(avgAudienceStats.age['18-24']) ? '0.0' : avgAudienceStats.age['18-24'].toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">25-34歳</span>
+                  <span className="text-sm text-black">25-34歳</span>
                   <span className="font-medium">{isNaN(avgAudienceStats.age['25-34']) ? '0.0' : avgAudienceStats.age['25-34'].toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">35-44歳</span>
+                  <span className="text-sm text-black">35-44歳</span>
                   <span className="font-medium">{isNaN(avgAudienceStats.age['35-44']) ? '0.0' : avgAudienceStats.age['35-44'].toFixed(1)}%</span>
                 </div>
               </div>
@@ -203,8 +203,8 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <Target className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">閲覧数ソース分析統計</h2>
-              <p className="text-sm text-gray-600">平均的な閲覧数流入元</p>
+              <h2 className="text-lg font-semibold text-black">閲覧数ソース分析統計</h2>
+              <p className="text-sm text-black">平均的な閲覧数流入元</p>
             </div>
           </div>
 
@@ -213,19 +213,19 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <h3 className="text-sm font-semibold text-gray-800 mb-3">閲覧数ソース</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">📱 投稿</span>
+                  <span className="text-sm text-black">📱 投稿</span>
                   <span className="font-medium">{avgReachSourceStats.sources.posts.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">👤 プロフィール</span>
+                  <span className="text-sm text-black">👤 プロフィール</span>
                   <span className="font-medium">{avgReachSourceStats.sources.profile.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">🔍 検索</span>
+                  <span className="text-sm text-black">🔍 検索</span>
                   <span className="font-medium">{avgReachSourceStats.sources.search.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">🌟 探索</span>
+                  <span className="text-sm text-black">🌟 探索</span>
                   <span className="font-medium">{avgReachSourceStats.sources.explore.toFixed(1)}%</span>
                 </div>
               </div>
@@ -235,11 +235,11 @@ const AnalyticsStats: React.FC<AnalyticsStatsProps> = ({
               <h3 className="text-sm font-semibold text-gray-800 mb-3">フォロワー構成</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">👥 フォロワー内</span>
+                  <span className="text-sm text-black">👥 フォロワー内</span>
                   <span className="font-medium">{avgReachSourceStats.followers.followers.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">🌐 フォロワー外</span>
+                  <span className="text-sm text-black">🌐 フォロワー外</span>
                   <span className="font-medium">{avgReachSourceStats.followers.nonFollowers.toFixed(1)}%</span>
                 </div>
               </div>

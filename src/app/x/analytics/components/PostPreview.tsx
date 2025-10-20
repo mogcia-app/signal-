@@ -81,10 +81,10 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* ヘッダー */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">投稿詳細分析</h2>
+          <h2 className="text-xl font-semibold text-black">投稿詳細分析</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-black hover:text-black transition-colors"
           >
             <X className="h-6 w-6" />
           </button>
@@ -98,10 +98,10 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
             </div>
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-1">
-                <span className="font-semibold text-gray-900">あなた</span>
-                <span className="text-gray-500">@yourusername</span>
+                <span className="font-semibold text-black">あなた</span>
+                <span className="text-black">@yourusername</span>
               </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <div className="flex items-center space-x-2 text-sm text-black">
                 <Calendar className="h-4 w-4" />
                 <span>{formatDate(post.timestamp)}</span>
               </div>
@@ -129,7 +129,7 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
 
         {/* メトリクス */}
         <div className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">パフォーマンス指標</h3>
+          <h3 className="text-lg font-semibold text-black mb-4">パフォーマンス指標</h3>
           
           {/* 主要指標 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -172,9 +172,9 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <Heart className="h-5 w-5 text-red-600" />
-                  <span className="font-medium text-gray-900">いいね</span>
+                  <span className="font-medium text-black">いいね</span>
                 </div>
-                <span className="text-sm text-gray-500">{getLikeRate()}%</span>
+                <span className="text-sm text-black">{getLikeRate()}%</span>
               </div>
               <div className="text-xl font-bold text-red-600">
                 {formatNumber(post.metrics.likes)}
@@ -185,9 +185,9 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <Repeat2 className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-gray-900">リツイート</span>
+                  <span className="font-medium text-black">リツイート</span>
                 </div>
-                <span className="text-sm text-gray-500">{getRetweetRate()}%</span>
+                <span className="text-sm text-black">{getRetweetRate()}%</span>
               </div>
               <div className="text-xl font-bold text-green-600">
                 {formatNumber(post.metrics.retweets)}
@@ -198,9 +198,9 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <MessageCircle className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-gray-900">返信</span>
+                  <span className="font-medium text-black">返信</span>
                 </div>
-                <span className="text-sm text-gray-500">{getReplyRate()}%</span>
+                <span className="text-sm text-black">{getReplyRate()}%</span>
               </div>
               <div className="text-xl font-bold text-blue-600">
                 {formatNumber(post.metrics.replies)}
@@ -210,23 +210,23 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
 
           {/* パフォーマンス指標 */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-3">パフォーマンス指標</h4>
+            <h4 className="font-medium text-black mb-3">パフォーマンス指標</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">エンゲージメント率</span>
-                <span className="font-semibold text-gray-900">{getEngagementRate()}%</span>
+                <span className="text-sm text-black">エンゲージメント率</span>
+                <span className="font-semibold text-black">{getEngagementRate()}%</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">クリック率</span>
-                <span className="font-semibold text-gray-900">{getClickThroughRate()}%</span>
+                <span className="text-sm text-black">クリック率</span>
+                <span className="font-semibold text-black">{getClickThroughRate()}%</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">リツイート率</span>
-                <span className="font-semibold text-gray-900">{getRetweetRate()}%</span>
+                <span className="text-sm text-black">リツイート率</span>
+                <span className="font-semibold text-black">{getRetweetRate()}%</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">いいね率</span>
-                <span className="font-semibold text-gray-900">{getLikeRate()}%</span>
+                <span className="text-sm text-black">いいね率</span>
+                <span className="font-semibold text-black">{getLikeRate()}%</span>
               </div>
             </div>
           </div>
@@ -235,7 +235,7 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
           {post.metrics.linkClicks > 0 && (
             <div className="mt-4 bg-blue-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">リンククリック</span>
+                <span className="text-sm text-black">リンククリック</span>
                 <span className="font-semibold text-blue-600">
                   {formatNumber(post.metrics.linkClicks)}
                 </span>
@@ -247,7 +247,7 @@ export default function PostPreview({ post, onClose }: PostPreviewProps) {
         {/* フッター */}
         <div className="p-6 border-t bg-gray-50">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-black">
               最終更新: {formatDate(post.timestamp)}
             </div>
             <button

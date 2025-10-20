@@ -117,10 +117,10 @@ export default function YouTubePostsPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">投稿一覧</h1>
-              <p className="text-gray-600 mt-1">作成した投稿を管理しましょう</p>
+              <h1 className="text-2xl font-bold text-black">投稿一覧</h1>
+              <p className="text-black mt-1">作成した投稿を管理しましょう</p>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-black">
               {filteredPosts.length}件の投稿
             </div>
           </div>
@@ -187,13 +187,13 @@ export default function YouTubePostsPage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="text-gray-600 mt-2">読み込み中...</p>
+            <p className="text-black mt-2">読み込み中...</p>
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📝</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">投稿がありません</h3>
-            <p className="text-gray-600 mb-4">まだ投稿を作成していません。</p>
+            <div className="text-black text-6xl mb-4">📝</div>
+            <h3 className="text-lg font-medium text-black mb-2">投稿がありません</h3>
+            <p className="text-black mb-4">まだ投稿を作成していません。</p>
             <button
               onClick={() => window.location.href = '/youtube/lab'}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -211,8 +211,8 @@ export default function YouTubePostsPage() {
                     <div className="flex items-center space-x-3 mb-3">
                       <span className="text-2xl">{getPostTypeIcon(post.postType)}</span>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{post.title || 'タイトルなし'}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <h3 className="text-lg font-semibold text-black">{post.title || 'タイトルなし'}</h3>
+                        <div className="flex items-center space-x-4 text-sm text-black">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
                             {getStatusLabel(post.status)}
                           </span>
@@ -238,12 +238,12 @@ export default function YouTubePostsPage() {
                     {/* 画像プレビュー */}
                     {(post.imageData || post.imageUrl) && (
                       <div className="mb-4">
-                        <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <div className="flex items-center text-sm text-black mb-2">
                           <ImageIcon size={16} className="mr-1" />
                           画像付き投稿
                         </div>
                         <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <ImageIcon size={24} className="text-gray-400" />
+                          <ImageIcon size={24} className="text-black" />
                         </div>
                       </div>
                     )}
@@ -261,7 +261,7 @@ export default function YouTubePostsPage() {
                             </span>
                           ))}
                           {post.hashtags.length > 5 && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                            <span className="px-2 py-1 bg-gray-100 text-black text-xs rounded-md">
                               +{post.hashtags.length - 5}
                             </span>
                           )}
@@ -270,7 +270,7 @@ export default function YouTubePostsPage() {
                     )}
 
                     {/* 作成日時 */}
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-black">
                       作成日: {new Date(post.createdAt).toLocaleString('ja-JP')}
                     </div>
                   </div>
@@ -279,21 +279,21 @@ export default function YouTubePostsPage() {
                   <div className="flex items-center space-x-2 ml-4">
                     <button
                       onClick={() => alert('投稿詳細を表示')}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      className="p-2 text-black hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                       title="詳細表示"
                     >
                       <Eye size={16} />
                     </button>
                     <button
                       onClick={() => alert('投稿を編集')}
-                      className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                      className="p-2 text-black hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
                       title="編集"
                     >
                       <Edit size={16} />
                     </button>
                     <button
                       onClick={() => handleDeletePost(post.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      className="p-2 text-black hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                       title="削除"
                     >
                       <Trash2 size={16} />

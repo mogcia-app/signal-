@@ -45,8 +45,8 @@ export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
             <PieChart className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">投稿タイプ別分析</h2>
-            <p className="text-sm text-gray-600">コンテンツタイプのパフォーマンス</p>
+            <h2 className="text-lg font-semibold text-black">投稿タイプ別分析</h2>
+            <p className="text-sm text-black">コンテンツタイプのパフォーマンス</p>
           </div>
         </div>
 
@@ -56,7 +56,7 @@ export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
             <div key={type} className={`p-4 bg-gradient-to-r ${bg} rounded-lg`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">{label}</span>
-                <span className="text-lg font-bold text-gray-900">{count}件</span>
+                <span className="text-lg font-bold text-black">{count}件</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -65,7 +65,7 @@ export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                <span className="text-sm font-bold text-gray-600">{percentage.toFixed(1)}%</span>
+                <span className="text-sm font-bold text-black">{percentage.toFixed(1)}%</span>
               </div>
             </div>
           ))}

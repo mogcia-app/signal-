@@ -5,10 +5,10 @@ export default function SimpleInstagramPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 text-center">
+          <h1 className="text-3xl font-bold text-black text-center">
             📷 Instagram Dashboard
           </h1>
-          <p className="mt-2 text-sm text-gray-600 text-center">
+          <p className="mt-2 text-sm text-black text-center">
             シンプルバージョン - エラーハンドリングテスト
           </p>
         </div>

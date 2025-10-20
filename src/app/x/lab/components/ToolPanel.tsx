@@ -152,8 +152,8 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({ onTemplateSelect, onHashta
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">ツールパネル</h3>
-        <p className="text-sm text-gray-500 mt-1">テンプレートとハッシュタグをカスタマイズできます</p>
+        <h3 className="text-lg font-semibold text-black">ツールパネル</h3>
+        <p className="text-sm text-black mt-1">テンプレートとハッシュタグをカスタマイズできます</p>
       </div>
       <div className="p-6 space-y-6">
         {/* テンプレート */}
@@ -215,13 +215,13 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({ onTemplateSelect, onHashta
                     <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => startEditTemplate(template.id, template.text)}
-                        className="p-1 text-gray-500 hover:text-blue-600 rounded"
+                        className="p-1 text-black hover:text-blue-600 rounded"
                       >
                         <Edit2 size={10} />
                       </button>
                       <button
                         onClick={() => deleteTemplate(template.id)}
-                        className="p-1 text-gray-500 hover:text-red-600 rounded"
+                        className="p-1 text-black hover:text-red-600 rounded"
                       >
                         <Trash2 size={10} />
                       </button>

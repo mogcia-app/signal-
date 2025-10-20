@@ -54,8 +54,8 @@ const ReachSourceAnalysisForm: React.FC<ReachSourceAnalysisFormProps> = ({
           <Target className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">閲覧数ソース分析</h2>
-          <p className="text-sm text-gray-600">閲覧数の流入元とフォロワー構成を入力してください</p>
+          <h2 className="text-lg font-semibold text-black">閲覧数ソース分析</h2>
+          <p className="text-sm text-black">閲覧数の流入元とフォロワー構成を入力してください</p>
         </div>
       </div>
 

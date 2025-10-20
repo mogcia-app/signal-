@@ -94,7 +94,7 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({ content, hashtags, p
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">エンゲージメント診断</h3>
+        <h3 className="text-lg font-semibold text-black">エンゲージメント診断</h3>
       </div>
       <div className="p-6 space-y-4">
         {/* スコア表示 */}
@@ -110,7 +110,7 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({ content, hashtags, p
         {/* 詳細分析 */}
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">文字数 ({postType})</span>
+            <span className="text-sm text-black">文字数 ({postType})</span>
             <span className={`text-sm font-medium ${
               content.length >= (postType === 'reply' ? 10 : 20) && 
               content.length <= (postType === 'thread' ? 2800 : 140) ? 'text-green-600' : 'text-red-600'
@@ -120,21 +120,21 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({ content, hashtags, p
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">ハッシュタグ数</span>
+            <span className="text-sm text-black">ハッシュタグ数</span>
             <span className={`text-sm font-medium ${hashtags.length >= 1 && hashtags.length <= 2 ? 'text-green-600' : 'text-yellow-600'}`}>
               {hashtags.length}個
             </span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">エンゲージメント要素</span>
+            <span className="text-sm text-black">エンゲージメント要素</span>
             <span className="text-sm font-medium text-green-600">
               {content.includes('?') || content.includes('！') || content.includes('みなさん') || content.includes('RT') ? 'あり' : 'なし'}
             </span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">感情表現</span>
+            <span className="text-sm text-black">感情表現</span>
             <span className="text-sm font-medium text-green-600">
               {content.includes('😊') || content.includes('嬉しい') || content.includes('楽しい') ? 'あり' : 'なし'}
             </span>
@@ -142,7 +142,7 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({ content, hashtags, p
           
           {postType === 'reply' && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">リプライ要素</span>
+              <span className="text-sm text-black">リプライ要素</span>
               <span className="text-sm font-medium text-green-600">
                 {content.includes('@') || content.includes('ありがとう') || content.includes('同感') ? 'あり' : 'なし'}
               </span>
@@ -151,7 +151,7 @@ export const KPIDiagnosis: React.FC<KPIDiagnosisProps> = ({ content, hashtags, p
           
           {postType === 'thread' && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">スレッド要素</span>
+              <span className="text-sm text-black">スレッド要素</span>
               <span className="text-sm font-medium text-green-600">
                 {content.includes('続く') || content.includes('1/') || content.includes('スレッド') ? 'あり' : 'なし'}
               </span>

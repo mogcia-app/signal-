@@ -57,8 +57,8 @@ const AudienceAnalysisForm: React.FC<AudienceAnalysisFormProps> = ({
           <Users className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">オーディエンス分析</h2>
-          <p className="text-sm text-gray-600">フォロワーの性別・年齢分布を入力してください</p>
+          <h2 className="text-lg font-semibold text-black">オーディエンス分析</h2>
+          <p className="text-sm text-black">フォロワーの性別・年齢分布を入力してください</p>
         </div>
       </div>
 

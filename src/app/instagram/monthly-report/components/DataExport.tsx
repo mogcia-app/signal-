@@ -20,8 +20,8 @@ export const DataExport: React.FC<DataExportProps> = ({
             <Download className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">データエクスポート</h2>
-            <p className="text-sm text-gray-600">分析データの出力・共有</p>
+            <h2 className="text-lg font-semibold text-black">データエクスポート</h2>
+            <p className="text-sm text-black">分析データの出力・共有</p>
           </div>
         </div>
       </div>
@@ -70,8 +70,8 @@ export const DataExport: React.FC<DataExportProps> = ({
       </div>
 
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h4 className="font-medium text-gray-900 mb-2">出力内容</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+        <h4 className="font-medium text-black mb-2">出力内容</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-black">
           <div>
             <h5 className="font-medium text-gray-700 mb-1">CSV出力</h5>
             <ul className="space-y-1">

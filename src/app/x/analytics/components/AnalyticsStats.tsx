@@ -47,7 +47,7 @@ export default function AnalyticsStats({ title, data, type }: AnalyticsStatsProp
     } else if (value < threshold) {
       return <TrendingDown className="h-4 w-4 text-red-500" />;
     }
-    return <TrendingUp className="h-4 w-4 text-gray-400" />;
+    return <TrendingUp className="h-4 w-4 text-black" />;
   };
 
   const getStatIcon = (key: string) => {
@@ -61,7 +61,7 @@ export default function AnalyticsStats({ title, data, type }: AnalyticsStatsProp
       case 'followers':
         return <UserPlus className="h-5 w-5 text-indigo-600" />;
       case 'following':
-        return <Users className="h-5 w-5 text-gray-600" />;
+        return <Users className="h-5 w-5 text-black" />;
       case 'tweets':
         return <MessageCircle className="h-5 w-5 text-orange-600" />;
       case 'engagementRate':
@@ -77,7 +77,7 @@ export default function AnalyticsStats({ title, data, type }: AnalyticsStatsProp
       case 'clickRate':
         return <MousePointer className="h-5 w-5 text-purple-600" />;
       default:
-        return <TrendingUp className="h-5 w-5 text-gray-600" />;
+        return <TrendingUp className="h-5 w-5 text-black" />;
     }
   };
 
@@ -125,7 +125,7 @@ export default function AnalyticsStats({ title, data, type }: AnalyticsStatsProp
       profileViews: 'text-green-600',
       mentions: 'text-purple-600',
       followers: 'text-indigo-600',
-      following: 'text-gray-600',
+      following: 'text-black',
       tweets: 'text-orange-600',
       engagementRate: value > 3 ? 'text-green-600' : value > 1 ? 'text-yellow-600' : 'text-red-600',
       avgEngagementRate: value > 3 ? 'text-green-600' : value > 1 ? 'text-yellow-600' : 'text-red-600',
@@ -134,13 +134,13 @@ export default function AnalyticsStats({ title, data, type }: AnalyticsStatsProp
       replyRate: value > 2 ? 'text-green-600' : value > 1 ? 'text-yellow-600' : 'text-red-600',
       clickRate: value > 3 ? 'text-green-600' : value > 1 ? 'text-yellow-600' : 'text-red-600',
     };
-    return colors[key as keyof typeof colors] || 'text-gray-600';
+    return colors[key as keyof typeof colors] || 'text-black';
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border">
       <div className="p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-6">{title}</h3>
+        <h3 className="text-xl font-semibold text-black mb-6">{title}</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(data).map(([key, value]) => (
@@ -162,7 +162,7 @@ export default function AnalyticsStats({ title, data, type }: AnalyticsStatsProp
                 
                 {type === 'engagement' && (
                   <div className="text-right">
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-black">
                       {key === 'engagementRate' && '全体平均'}
                       {key === 'avgEngagementRate' && '投稿平均'}
                       {key === 'retweetRate' && 'リツイート/インプレッション'}
@@ -175,7 +175,7 @@ export default function AnalyticsStats({ title, data, type }: AnalyticsStatsProp
               </div>
               
               {type === 'overview' && (
-                <div className="mt-2 text-xs text-gray-500">
+                <div className="mt-2 text-xs text-black">
                   {key === 'impressions' && '投稿の表示回数'}
                   {key === 'profileViews' && 'プロフィールページの閲覧数'}
                   {key === 'mentions' && 'アカウントが言及された回数'}

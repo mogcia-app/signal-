@@ -120,7 +120,7 @@ export function ActionPlan({ currentData: _currentData, previousData: _previousD
       case 'high': return 'text-red-600';
       case 'medium': return 'text-yellow-600';
       case 'low': return 'text-green-600';
-      default: return 'text-gray-600';
+      default: return 'text-black';
     }
   };
 
@@ -170,7 +170,7 @@ export function ActionPlan({ currentData: _currentData, previousData: _previousD
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2">
           <Target className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">アクションプラン</h3>
+          <h3 className="text-lg font-semibold text-black">アクションプラン</h3>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
@@ -186,11 +186,11 @@ export function ActionPlan({ currentData: _currentData, previousData: _previousD
         <div className="flex items-center justify-between">
           <div>
             <h4 className="text-sm font-medium text-gray-700">進捗状況</h4>
-            <p className="text-2xl font-bold text-gray-900">{completedCount}/{actionItems.length}</p>
+            <p className="text-2xl font-bold text-black">{completedCount}/{actionItems.length}</p>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-blue-600">{completionRate}%</div>
-            <div className="text-sm text-gray-500">完了率</div>
+            <div className="text-sm text-black">完了率</div>
           </div>
           <div className="w-16 h-16">
             <div className="relative w-16 h-16">
@@ -301,14 +301,14 @@ export function ActionPlan({ currentData: _currentData, previousData: _previousD
             <div className="flex items-start space-x-3">
               <button
                 onClick={() => toggleActionStatus(item.id)}
-                className={`mt-1 ${item.status === 'completed' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+                className={`mt-1 ${item.status === 'completed' ? 'text-green-600' : 'text-black hover:text-green-600'}`}
               >
                 {item.status === 'completed' ? <CheckCircle size={20} /> : <Circle size={20} />}
               </button>
               
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
-                  <h4 className={`font-medium ${item.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                  <h4 className={`font-medium ${item.status === 'completed' ? 'line-through text-black' : 'text-black'}`}>
                     {item.title}
                   </h4>
                   <span className={`px-2 py-1 text-xs rounded-full border ${getCategoryColor(item.category)}`}>
@@ -322,11 +322,11 @@ export function ActionPlan({ currentData: _currentData, previousData: _previousD
                   </span>
                 </div>
                 
-                <p className={`text-sm mb-3 ${item.status === 'completed' ? 'text-gray-500' : 'text-gray-600'}`}>
+                <p className={`text-sm mb-3 ${item.status === 'completed' ? 'text-black' : 'text-black'}`}>
                   {item.description}
                 </p>
                 
-                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                <div className="flex items-center space-x-4 text-xs text-black">
                   {item.dueDate && (
                     <div className="flex items-center space-x-1">
                       <Calendar size={12} />

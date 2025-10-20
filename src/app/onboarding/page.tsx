@@ -299,7 +299,7 @@ export default function OnboardingPage() {
         {userProfile && (
           <div className="mb-6 bg-white border-l-4 border-[#FF8A15] p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">ユーザー情報</h2>
+              <h2 className="text-xl font-bold text-black">ユーザー情報</h2>
               <div className="flex items-center space-x-2">
                 <span className={`px-3 py-1 text-xs font-medium ${
                   userProfile.status === 'active' 
@@ -317,29 +317,29 @@ export default function OnboardingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* 名前 */}
               <div className="border border-gray-200 p-4">
-                <label className="flex items-center text-xs font-medium text-gray-600 mb-2">
+                <label className="flex items-center text-xs font-medium text-black mb-2">
                   <User className="h-3 w-3 mr-1 text-[#FF8A15]" />
                   名前
                 </label>
-                <p className="text-gray-900 font-semibold">{userProfile.name}</p>
+                <p className="text-black font-semibold">{userProfile.name}</p>
               </div>
 
               {/* メールアドレス */}
               <div className="border border-gray-200 p-4">
-                <label className="flex items-center text-xs font-medium text-gray-600 mb-2">
+                <label className="flex items-center text-xs font-medium text-black mb-2">
                   <Mail className="h-3 w-3 mr-1 text-[#FF8A15]" />
                   メールアドレス
                 </label>
-                <p className="text-gray-900 font-semibold text-sm break-all">{userProfile.email}</p>
+                <p className="text-black font-semibold text-sm break-all">{userProfile.email}</p>
               </div>
 
               {/* 契約期間 */}
               <div className="border border-gray-200 p-4">
-                <label className="flex items-center text-xs font-medium text-gray-600 mb-2">
+                <label className="flex items-center text-xs font-medium text-black mb-2">
                   <Calendar className="h-3 w-3 mr-1 text-[#FF8A15]" />
                   契約期間
                 </label>
-                <p className="text-gray-900 font-semibold text-sm">
+                <p className="text-black font-semibold text-sm">
                   {new Date(userProfile.contractStartDate).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                   {' 〜 '}
                   {new Date(userProfile.contractEndDate).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
@@ -350,7 +350,7 @@ export default function OnboardingPage() {
             {/* 契約SNS */}
             {userProfile.contractSNS && userProfile.contractSNS.length > 0 && (
               <div className="pt-4 border-t border-gray-200">
-                <label className="block text-xs font-medium text-gray-600 mb-3">契約SNS</label>
+                <label className="block text-xs font-medium text-black mb-3">契約SNS</label>
                 <div className="flex flex-wrap gap-2">
                   {userProfile.contractSNS.map((sns) => (
                     <div
@@ -363,7 +363,7 @@ export default function OnboardingPage() {
                          sns === 'tiktok' ? '🎵' : 
                          sns === 'youtube' ? '📺' : '📱'}
                       </span>
-                      <span className="font-semibold text-gray-900 text-sm capitalize">
+                      <span className="font-semibold text-black text-sm capitalize">
                         {sns === 'x' ? 'X (Twitter)' : sns}
                       </span>
                     </div>
@@ -380,8 +380,8 @@ export default function OnboardingPage() {
             <div className="flex items-center space-x-3">
               <Sparkles className="w-6 h-6 text-[#FF8A15]" />
               <div>
-                <h2 className="text-xl font-bold text-gray-900">御社専用AI設定</h2>
-                <p className="text-sm text-gray-600">
+                <h2 className="text-xl font-bold text-black">御社専用AI設定</h2>
+                <p className="text-sm text-black">
                   {userProfile?.businessInfo?.industry 
                     ? 'いただいたヒアリングをもとに組み込んでいます'
                     : 'ビジネスに最適化されたAIを構築します'
@@ -438,7 +438,7 @@ export default function OnboardingPage() {
                       ? 'bg-green-500 border-green-500 text-white'
                       : step === currentStep
                       ? 'bg-[#FF8A15] border-[#FF8A15] text-white'
-                      : 'bg-white border-gray-300 text-gray-400'
+                      : 'bg-white border-gray-300 text-black'
                   }`}
                 >
                   {step < currentStep ? (
@@ -467,8 +467,8 @@ export default function OnboardingPage() {
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">ビジネス情報</h2>
-                <p className="text-gray-600">あなたのビジネスについて教えてください</p>
+                <h2 className="text-2xl font-bold text-black mb-2">ビジネス情報</h2>
+                <p className="text-black">あなたのビジネスについて教えてください</p>
               </div>
 
               <div className="space-y-4">
@@ -568,7 +568,7 @@ export default function OnboardingPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     💬 キャッチコピー
-                    <span className="ml-2 text-xs text-gray-500">（AIが参照します）</span>
+                    <span className="ml-2 text-xs text-black">（AIが参照します）</span>
                   </label>
                   <input
                     type="text"
@@ -577,7 +577,7 @@ export default function OnboardingPage() {
                     placeholder="例: あなたの美しさを最大限に引き出す、プロの技術"
                     className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-black mt-1">
                     💡 ブランドの核心を表す一文を入力してください
                   </p>
                 </div>
@@ -600,7 +600,7 @@ export default function OnboardingPage() {
                 <div className="border-t-2 border-gray-200 pt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     📦 商品・サービス・政策情報
-                    <span className="ml-2 text-xs text-gray-500">（AIが参照します）</span>
+                    <span className="ml-2 text-xs text-black">（AIが参照します）</span>
                   </label>
                   
                   {/* 入力フォーム */}
@@ -670,10 +670,10 @@ export default function OnboardingPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="text-lg">🏷️</span>
-                              <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                              <h4 className="font-semibold text-black">{item.name}</h4>
                             </div>
                             {item.details && (
-                              <p className="text-sm text-gray-600 mt-1 ml-7">{item.details}</p>
+                              <p className="text-sm text-black mt-1 ml-7">{item.details}</p>
                             )}
                           </div>
                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -696,7 +696,7 @@ export default function OnboardingPage() {
                   )}
 
                   {productsOrServices.length === 0 && (
-                    <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-black text-center py-4 bg-gray-50 rounded-lg">
                       商品、サービス、または政策を追加してください
                     </p>
                   )}
@@ -709,8 +709,8 @@ export default function OnboardingPage() {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">目標と課題</h2>
-                <p className="text-gray-600">SNS運用の目標と課題を選択してください</p>
+                <h2 className="text-2xl font-bold text-black mb-2">目標と課題</h2>
+                <p className="text-black">SNS運用の目標と課題を選択してください</p>
               </div>
 
               <div className="space-y-6">
@@ -741,7 +741,7 @@ export default function OnboardingPage() {
                     ))}
                   </div>
                   {goals.length > 0 && (
-                    <p className="mt-2 text-sm text-gray-600">{goals.length}個選択中</p>
+                    <p className="mt-2 text-sm text-black">{goals.length}個選択中</p>
                   )}
                   {/* カスタム目標追加 */}
                   <div className="mt-3 flex gap-2">
@@ -799,7 +799,7 @@ export default function OnboardingPage() {
                     ))}
                   </div>
                   {challenges.length > 0 && (
-                    <p className="mt-2 text-sm text-gray-600">{challenges.length}個選択中</p>
+                    <p className="mt-2 text-sm text-black">{challenges.length}個選択中</p>
                   )}
                   {/* カスタム課題追加 */}
                   <div className="mt-3 flex gap-2">
@@ -837,8 +837,8 @@ export default function OnboardingPage() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">SNS AI設定</h2>
-                <p className="text-gray-600">各SNSのAI設定を行ってください</p>
+                <h2 className="text-2xl font-bold text-black mb-2">SNS AI設定</h2>
+                <p className="text-black">各SNSのAI設定を行ってください</p>
               </div>
 
               <div className="space-y-6">
@@ -847,7 +847,7 @@ export default function OnboardingPage() {
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
                       <span className="text-3xl">📷</span>
-                      <h3 className="text-xl font-bold text-gray-900">Instagram AI設定</h3>
+                      <h3 className="text-xl font-bold text-black">Instagram AI設定</h3>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -1100,7 +1100,7 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* 他のSNSも同様に追加可能 */}
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-sm text-black text-center">
                   ※ 他のSNS設定は後からダッシュボードで追加できます
                 </p>
               </div>
@@ -1114,7 +1114,7 @@ export default function OnboardingPage() {
               disabled={currentStep === 1}
               className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
                 currentStep === 1
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  ? 'bg-gray-100 text-black cursor-not-allowed'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -1131,7 +1131,7 @@ export default function OnboardingPage() {
                 }
                 className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
                   (currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? 'bg-gray-300 text-black cursor-not-allowed'
                     : 'bg-[#FF8A15] text-white hover:bg-[#E67A0A] shadow-lg hover:shadow-xl'
                 }`}
               >
@@ -1144,7 +1144,7 @@ export default function OnboardingPage() {
                 disabled={!isStep3Valid || isSubmitting}
                 className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
                   !isStep3Valid || isSubmitting
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? 'bg-gray-300 text-black cursor-not-allowed'
                     : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl'
                 }`}
               >
@@ -1168,31 +1168,31 @@ export default function OnboardingPage() {
           <div className="space-y-6">
             {/* ビジネス情報 */}
             <div className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">ビジネス情報</h3>
+              <h3 className="text-lg font-bold text-black mb-4">ビジネス情報</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">業種</label>
-                  <p className="text-gray-900">{getIndustryLabel(businessInfo.industry) || '未設定'}</p>
+                  <p className="text-black">{getIndustryLabel(businessInfo.industry) || '未設定'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
-                  <p className="text-gray-900">{getCompanySizeLabel(businessInfo.companySize) || '未設定'}</p>
+                  <p className="text-black">{getCompanySizeLabel(businessInfo.companySize) || '未設定'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
-                  <p className="text-gray-900">{getBusinessTypeLabel(businessInfo.businessType) || '未設定'}</p>
+                  <p className="text-black">{getBusinessTypeLabel(businessInfo.businessType) || '未設定'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
-                  <p className="text-gray-900">{getTargetMarketLabel(businessInfo.targetMarket) || '未設定'}</p>
+                  <p className="text-black">{getTargetMarketLabel(businessInfo.targetMarket) || '未設定'}</p>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">💬 キャッチコピー</label>
-                  <p className="text-gray-900 font-medium">{businessInfo.catchphrase || '未設定'}</p>
+                  <p className="text-black font-medium">{businessInfo.catchphrase || '未設定'}</p>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">事業内容</label>
-                  <p className="text-gray-900">{businessInfo.description || '未設定'}</p>
+                  <p className="text-black">{businessInfo.description || '未設定'}</p>
                 </div>
               </div>
 
@@ -1210,10 +1210,10 @@ export default function OnboardingPage() {
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-lg">🏷️</span>
-                          <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                          <h4 className="font-semibold text-black">{item.name}</h4>
                         </div>
                         {item.details && (
-                          <p className="text-sm text-gray-600 mt-1 ml-7">{item.details}</p>
+                          <p className="text-sm text-black mt-1 ml-7">{item.details}</p>
                         )}
                       </div>
                     ))}
@@ -1224,7 +1224,7 @@ export default function OnboardingPage() {
 
             {/* 目標・課題 */}
             <div className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">目標と課題</h3>
+              <h3 className="text-lg font-bold text-black mb-4">目標と課題</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">目標</label>
@@ -1233,7 +1233,7 @@ export default function OnboardingPage() {
                       <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
                         {goal}
                       </span>
-                    )) : <span className="text-gray-500">未設定</span>}
+                    )) : <span className="text-black">未設定</span>}
                   </div>
                 </div>
                 <div>
@@ -1243,7 +1243,7 @@ export default function OnboardingPage() {
                       <span key={index} className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm">
                         {challenge}
                       </span>
-                    )) : <span className="text-gray-500">未設定</span>}
+                    )) : <span className="text-black">未設定</span>}
                   </div>
                 </div>
               </div>
@@ -1251,7 +1251,7 @@ export default function OnboardingPage() {
 
             {/* SNS AI設定 */}
             <div className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">SNS AI設定</h3>
+              <h3 className="text-lg font-bold text-black mb-4">SNS AI設定</h3>
               <div className="space-y-4">
                 {Object.keys(snsAISettings).length > 0 ? (
                   Object.entries(snsAISettings).map(([snsType, settings]) => {
@@ -1273,7 +1273,7 @@ export default function OnboardingPage() {
                             <span className="text-2xl">
                               {snsType === 'instagram' ? '📷' : snsType === 'x' ? '🐦' : '📱'}
                             </span>
-                            <span className="font-bold text-gray-900 text-lg capitalize">{snsType}</span>
+                            <span className="font-bold text-black text-lg capitalize">{snsType}</span>
                           </div>
                           <span className={`px-3 py-1 text-xs font-medium ${
                             extendedSettings.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
@@ -1285,43 +1285,43 @@ export default function OnboardingPage() {
                           <div className="space-y-3 text-sm">
                             {extendedSettings.tone && (
                               <div className="pb-2 border-b border-gray-200">
-                                <span className="text-gray-600 font-medium">トーン:</span>
-                                <p className="text-gray-900 mt-1">{extendedSettings.tone}</p>
+                                <span className="text-black font-medium">トーン:</span>
+                                <p className="text-black mt-1">{extendedSettings.tone}</p>
                               </div>
                             )}
                             {extendedSettings.manner && (
                               <div className="pb-2 border-b border-gray-200">
-                                <span className="text-gray-600 font-medium">マナー・ルール:</span>
-                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.manner}</p>
+                                <span className="text-black font-medium">マナー・ルール:</span>
+                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.manner}</p>
                               </div>
                             )}
                             {extendedSettings.cautions && (
                               <div className="pb-2 border-b border-gray-200">
-                                <span className="text-gray-600 font-medium">注意事項・NGワード:</span>
-                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.cautions}</p>
+                                <span className="text-black font-medium">注意事項・NGワード:</span>
+                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.cautions}</p>
                               </div>
                             )}
                             {extendedSettings.goals && (
                               <div className="pb-2 border-b border-gray-200">
-                                <span className="text-gray-600 font-medium">Instagram運用の目標:</span>
-                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.goals}</p>
+                                <span className="text-black font-medium">Instagram運用の目標:</span>
+                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.goals}</p>
                               </div>
                             )}
                             {extendedSettings.motivation && (
                               <div className="pb-2 border-b border-gray-200">
-                                <span className="text-gray-600 font-medium">運用動機:</span>
-                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.motivation}</p>
+                                <span className="text-black font-medium">運用動機:</span>
+                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.motivation}</p>
                               </div>
                             )}
                             {extendedSettings.additionalInfo && (
                               <div className="pb-2 border-b border-gray-200">
-                                <span className="text-gray-600 font-medium">その他AI参考情報:</span>
-                                <p className="text-gray-900 mt-1 whitespace-pre-wrap">{extendedSettings.additionalInfo}</p>
+                                <span className="text-black font-medium">その他AI参考情報:</span>
+                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.additionalInfo}</p>
                               </div>
                             )}
                             {extendedSettings.features && extendedSettings.features.length > 0 && (
                               <div>
-                                <span className="text-gray-600 font-medium">機能:</span>
+                                <span className="text-black font-medium">機能:</span>
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {extendedSettings.features.map((feature, idx) => (
                                     <span key={idx} className="px-2 py-1 border border-[#FF8A15] text-[#FF8A15] text-xs">
@@ -1337,7 +1337,7 @@ export default function OnboardingPage() {
                     );
                   })
                 ) : (
-                  <p className="text-gray-500">未設定</p>
+                  <p className="text-black">未設定</p>
                 )}
               </div>
             </div>

@@ -40,7 +40,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
           <span className="mr-2">📊</span>目標達成シミュレーション
         </h3>
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-black mb-4">
             左側で目標を入力し、シミュレーションを実行してください
           </p>
           {onRunSimulation && (
@@ -97,13 +97,13 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
           {/* サブKPI（2つ並び） */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="text-center p-4 bg-white rounded-md">
-              <div className="text-xl font-bold text-gray-900 mb-1">
+              <div className="text-xl font-bold text-black mb-1">
                 {result.monthlyTarget}人/月
               </div>
-              <div className="text-sm text-gray-600">月間目標</div>
+              <div className="text-sm text-black">月間目標</div>
             </div>
             <div className="text-center p-4 bg-white rounded-md">
-              <div className="text-xl font-bold text-gray-900 flex items-center justify-center space-x-2 mb-1">
+              <div className="text-xl font-bold text-black flex items-center justify-center space-x-2 mb-1">
                 <span>{result.weeklyTarget}人/週</span>
                 <span className={`px-2 py-1 text-xs rounded-full ${
                   result.feasibilityLevel === 'very_realistic' 
@@ -119,7 +119,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                   {result.feasibilityBadge}
                 </span>
               </div>
-              <div className="text-sm text-gray-600">週間目標</div>
+              <div className="text-sm text-black">週間目標</div>
             </div>
           </div>
 
@@ -155,10 +155,10 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
 
           {/* 投稿負荷情報 */}
           <div className="bg-gray-100 p-4 rounded-md text-center">
-            <div className="text-lg font-bold text-gray-900 mb-1">
+            <div className="text-lg font-bold text-black mb-1">
               {result.monthlyPostCount}投稿/月
             </div>
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-black">
               📊 {result.workloadMessage}
             </div>
           </div>
@@ -176,8 +176,8 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">📈 フォロワー増加推移予測</h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <h3 className="text-xl font-bold text-black">📈 フォロワー増加推移予測</h3>
+              <p className="text-sm text-black mt-1">
                 現実的な成長曲線と目標の比較分析
               </p>
             </div>
@@ -189,11 +189,11 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
             {/* 現在の設定表示 */}
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">現在の設定</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-sm text-black mb-1">現在の設定</p>
+                <p className="text-lg font-semibold text-black">
                   現在: {currentFollowers.toLocaleString()}人 → 目標: {targetFollowers.toLocaleString()}人
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-black mt-1">
                   左カラムの計画フォームで設定を変更できます
                 </p>
               </div>
@@ -338,7 +338,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
 
             {/* ポイントアドバイス */}
             <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 rounded-xl border border-orange-100">
-              <h4 className="font-bold text-gray-900 mb-4 flex items-center">
+              <h4 className="font-bold text-black mb-4 flex items-center">
                 <span className="mr-2">💡</span>
                 ポイントアドバイス
               </h4>

@@ -46,16 +46,16 @@ const PostStats: React.FC<PostStatsProps> = ({
         <div className="p-6 space-y-3">
           {scheduledPosts.length === 0 ? (
             <div className="text-center py-8">
-              <div className="text-gray-400 text-4xl mb-2">📅</div>
-              <p className="text-gray-600">今週の投稿予定はありません</p>
+              <div className="text-black text-4xl mb-2">📅</div>
+              <p className="text-black">今週の投稿予定はありません</p>
             </div>
           ) : (
             scheduledPosts.map((post, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center flex-1">
                   <div className="text-center mr-4 min-w-[50px]">
-                    <div className="text-xs text-gray-500">{post.day}</div>
-                    <div className="text-sm font-semibold text-gray-900">{post.date}</div>
+                    <div className="text-xs text-black">{post.day}</div>
+                    <div className="text-sm font-semibold text-black">{post.date}</div>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center mb-1">
@@ -71,10 +71,10 @@ const PostStats: React.FC<PostStatsProps> = ({
                         ⏳ {post.status}
                       </span>
                     </div>
-                    <div className="text-sm font-medium text-gray-900 line-clamp-1">{post.title}</div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-sm font-medium text-black line-clamp-1">{post.title}</div>
+                    <div className="text-xs text-black mt-1">
                       <span className="mr-2">⏰ {post.time}</span>
-                      <span className="text-gray-400">|</span>
+                      <span className="text-black">|</span>
                       <span className="ml-2">📅 投稿予定</span>
                     </div>
                   </div>
@@ -99,9 +99,9 @@ const PostStats: React.FC<PostStatsProps> = ({
         <div className="p-6 space-y-3">
           {unanalyzedPosts.length === 0 ? (
             <div className="text-center py-8">
-              <div className="text-gray-400 text-4xl mb-2">✅</div>
-              <p className="text-gray-600">分析待ちの投稿はありません</p>
-              <p className="text-sm text-gray-500 mt-1">すべての投稿が分析済みです</p>
+              <div className="text-black text-4xl mb-2">✅</div>
+              <p className="text-black">分析待ちの投稿はありません</p>
+              <p className="text-sm text-black mt-1">すべての投稿が分析済みです</p>
             </div>
           ) : (
             unanalyzedPosts.map((post, index) => (
@@ -119,7 +119,7 @@ const PostStats: React.FC<PostStatsProps> = ({
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">📷</span>
+                        <span className="text-black text-xs">📷</span>
                       </div>
                     )}
                   </div>
@@ -137,10 +137,10 @@ const PostStats: React.FC<PostStatsProps> = ({
                         ⏳ 分析未設定
                       </span>
                     </div>
-                    <div className="text-sm font-medium text-gray-900 line-clamp-1">{post.title}</div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-sm font-medium text-black line-clamp-1">{post.title}</div>
+                    <div className="text-xs text-black mt-1">
                       <span className="mr-2">📅 {post.createdAt}</span>
-                      <span className="text-gray-400">|</span>
+                      <span className="text-black">|</span>
                       <span className="ml-2">📊 分析データなし</span>
                     </div>
                   </div>

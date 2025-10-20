@@ -209,7 +209,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">AI投稿文生成</h3>
+              <h3 className="text-lg font-semibold text-black">AI投稿文生成</h3>
               <p className="text-sm text-orange-600 font-medium">
                 {planData 
                   ? `運用計画に基づいてAIが投稿文を自動生成します`
@@ -234,7 +234,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'feed'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
+                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -247,7 +247,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'reel'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
+                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -260,7 +260,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'story'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
+                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -279,7 +279,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <div className="space-y-4">
             {/* 投稿日 */}
             <div>
-              <label className="block text-xs text-gray-600 mb-1">投稿日</label>
+              <label className="block text-xs text-black mb-1">投稿日</label>
               <input
                 type="date"
                 value={scheduledDate}
@@ -291,11 +291,11 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             {/* 投稿時間 */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs text-gray-600">投稿時間</label>
+                <label className="block text-xs text-black">投稿時間</label>
                 <button
                   onClick={handleSuggestTime}
                   disabled={!scheduledDate || isSuggestingTime}
-                  className="text-xs text-orange-600 hover:text-orange-800 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center"
+                  className="text-xs text-orange-600 hover:text-orange-800 disabled:text-black disabled:cursor-not-allowed flex items-center"
                 >
                   {isSuggestingTime ? (
                     <>
@@ -363,7 +363,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <label className="block text-sm font-semibold text-gray-800 mb-3">
             投稿テーマ
           </label>
-          <div className="text-xs text-gray-600 mb-2">
+          <div className="text-xs text-black mb-2">
             AIが投稿文を生成するためのテーマやアイデアを入力してください
           </div>
           <div className="relative">
@@ -386,7 +386,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <label className="block text-sm font-semibold text-gray-800 mb-3">
             ハッシュタグ
           </label>
-          <div className="text-sm text-gray-600 italic">
+          <div className="text-sm text-black italic">
             投稿文生成時に自動でハッシュタグが追加されます
           </div>
         </div>
@@ -399,7 +399,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             disabled={isAutoGenerating || !planData}
             className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
               isAutoGenerating || !planData
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-gray-300 text-black cursor-not-allowed'
                 : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transform hover:scale-105'
             }`}
           >
@@ -422,7 +422,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             disabled={isGenerating || !planData || !aiPrompt.trim()}
             className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
               isGenerating || !planData || !aiPrompt.trim()
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-gray-300 text-black cursor-not-allowed'
                 : 'bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white hover:from-orange-600 hover:to-[#ff8a15] shadow-lg hover:shadow-xl transform hover:scale-105'
             }`}
           >

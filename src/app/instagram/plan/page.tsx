@@ -157,10 +157,10 @@ export default function InstagramPlanPage() {
                   <span className="text-2xl">📋</span>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-black">
                     運用計画実行中
                   </h3>
-                  <p className="text-sm text-gray-700 mt-1">
+                  <p className="text-sm text-black mt-1">
                     期間: {planStartDate.toLocaleDateString('ja-JP')} 〜 {planEndDate.toLocaleDateString('ja-JP')}
                   </p>
                   <p className="text-xs text-[#FF8A15] font-medium mt-1">
@@ -170,7 +170,7 @@ export default function InstagramPlanPage() {
               </div>
               <button
                 onClick={resetPlan}
-                className="text-sm bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-medium py-2 px-3 transition-colors"
+                className="text-sm bg-white hover:bg-gray-50 text-black border border-gray-300 font-medium py-2 px-3 transition-colors"
               >
                 🔄 計画を再設定
               </button>
@@ -199,7 +199,7 @@ export default function InstagramPlanPage() {
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                     activeTab === 'goal'
                       ? 'bg-[#FF8A15] text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      : 'text-black hover:bg-gray-50'
                   }`}
                 >
                   📋 現在の目標
@@ -209,7 +209,7 @@ export default function InstagramPlanPage() {
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-l border-gray-200 ${
                     activeTab === 'simulation'
                       ? 'bg-[#FF8A15] text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      : 'text-black hover:bg-gray-50'
                   }`}
                 >
                   📊 シミュレーション
@@ -219,7 +219,7 @@ export default function InstagramPlanPage() {
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-l border-gray-200 ${
                     activeTab === 'ai'
                       ? 'bg-[#FF8A15] text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      : 'text-black hover:bg-gray-50'
                   }`}
                 >
                   🤖 AI戦略

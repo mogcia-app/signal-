@@ -556,8 +556,8 @@ export default function NotificationsPage() {
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">お知らせを読み込み中...</h2>
-            <p className="text-gray-600">通知データを取得しています</p>
+            <h2 className="text-xl font-semibold text-black mb-2">お知らせを読み込み中...</h2>
+            <p className="text-black">通知データを取得しています</p>
           </div>
         </div>
       </SNSLayout>
@@ -576,8 +576,8 @@ export default function NotificationsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">未読</p>
-                  <p className="text-2xl font-bold text-gray-900">{unreadCount}</p>
+                  <p className="text-sm text-black">未読</p>
+                  <p className="text-2xl font-bold text-black">{unreadCount}</p>
                 </div>
                 <Bell className="w-8 h-8 text-blue-600" />
               </div>
@@ -585,8 +585,8 @@ export default function NotificationsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">お気に入り</p>
-                  <p className="text-2xl font-bold text-gray-900">{starredCount}</p>
+                  <p className="text-sm text-black">お気に入り</p>
+                  <p className="text-2xl font-bold text-black">{starredCount}</p>
                 </div>
                 <Star className="w-8 h-8 text-yellow-600" />
               </div>
@@ -594,10 +594,10 @@ export default function NotificationsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">総数</p>
-                  <p className="text-2xl font-bold text-gray-900">{filteredNotifications.length}</p>
+                  <p className="text-sm text-black">総数</p>
+                  <p className="text-2xl font-bold text-black">{filteredNotifications.length}</p>
                 </div>
-                <Info className="w-8 h-8 text-gray-600" />
+                <Info className="w-8 h-8 text-black" />
               </div>
             </div>
           </div>
@@ -618,12 +618,12 @@ export default function NotificationsPage() {
                   className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-colors ${
                     selectedFilter === filter.id
                       ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      : 'text-black hover:text-black'
                   }`}
                 >
                   <span>{filter.label}</span>
                   {filter.count > 0 && (
-                    <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
+                    <span className="bg-gray-200 text-black px-2 py-1 rounded-full text-xs">
                       {filter.count}
                     </span>
                   )}
@@ -633,7 +633,7 @@ export default function NotificationsPage() {
 
             {/* 検索 */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-black" />
               <input
                 type="text"
                 placeholder="お知らせを検索..."
@@ -650,8 +650,8 @@ export default function NotificationsPage() {
             {filteredNotifications.length === 0 ? (
               <div className="text-center py-12">
                 <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">お知らせがありません</h3>
-                <p className="text-gray-600">
+                <h3 className="text-lg font-medium text-black mb-2">お知らせがありません</h3>
+                <p className="text-black">
                   {selectedFilter === 'unread' && '未読のお知らせはありません'}
                   {selectedFilter === 'starred' && 'お気に入りのお知らせはありません'}
                   {selectedFilter === 'archived' && 'アーカイブされたお知らせはありません'}
@@ -679,7 +679,7 @@ export default function NotificationsPage() {
                           {/* 通知内容 */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-3 mb-3">
-                              <h3 className={`text-xl font-semibold ${notification.read ? 'text-gray-700' : 'text-gray-900'}`}>
+                              <h3 className={`text-xl font-semibold ${notification.read ? 'text-gray-700' : 'text-black'}`}>
                                 {notification.title}
                               </h3>
                               {!notification.read && (
@@ -697,7 +697,7 @@ export default function NotificationsPage() {
                               )}
                             </div>
 
-                            <p className={`text-gray-600 mb-4 text-lg ${notification.read ? 'text-gray-500' : 'text-gray-700'}`}>
+                            <p className={`text-black mb-4 text-lg ${notification.read ? 'text-black' : 'text-gray-700'}`}>
                               {notification.message}
                             </p>
 
@@ -718,7 +718,7 @@ export default function NotificationsPage() {
                             )}
 
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-6 text-sm text-gray-500">
+                              <div className="flex items-center space-x-6 text-sm text-black">
                                 <div className="flex items-center space-x-1">
                                   <Clock className="w-4 h-4" />
                                   <span>{formatDate(notification.createdAt)}</span>
@@ -751,7 +751,7 @@ export default function NotificationsPage() {
                           {!notification.read && (
                             <button
                               onClick={() => markAsRead(notification.id)}
-                              className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                              className="p-2 text-black hover:text-blue-600 transition-colors"
                               title="既読にする"
                             >
                               <Eye className="w-5 h-5" />
@@ -763,7 +763,7 @@ export default function NotificationsPage() {
                             className={`p-2 transition-colors ${
                               notification.starred 
                                 ? 'text-yellow-500 hover:text-yellow-600' 
-                                : 'text-gray-400 hover:text-yellow-500'
+                                : 'text-black hover:text-yellow-500'
                             }`}
                             title={notification.starred ? 'お気に入りを解除' : 'お気に入りに追加'}
                           >
@@ -773,7 +773,7 @@ export default function NotificationsPage() {
                           {notification.status === 'published' && (
                             <button
                               onClick={() => archiveNotification(notification.id)}
-                              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                              className="p-2 text-black hover:text-black transition-colors"
                               title="アーカイブ"
                             >
                               <Archive className="w-5 h-5" />
@@ -797,7 +797,7 @@ export default function NotificationsPage() {
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
                     {getNotificationIcon(selectedNotification.type)}
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedNotification.title}</h2>
+                    <h2 className="text-2xl font-bold text-black">{selectedNotification.title}</h2>
                     <span className={`px-3 py-1 text-sm font-medium rounded-full ${getPriorityColor(selectedNotification.priority)}`}>
                       {selectedNotification.priority === 'high' && '高優先度'}
                       {selectedNotification.priority === 'medium' && '中優先度'}
@@ -806,7 +806,7 @@ export default function NotificationsPage() {
                   </div>
                   <button
                     onClick={closeNotificationDetail}
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="p-2 text-black hover:text-black transition-colors"
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -816,24 +816,24 @@ export default function NotificationsPage() {
                 <div className="space-y-6">
                   {/* 基本情報 */}
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-3">基本情報</h3>
+                    <h3 className="font-semibold text-black mb-3">基本情報</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600">作成日:</span>
+                        <Calendar className="w-4 h-4 text-black" />
+                        <span className="text-black">作成日:</span>
                         <span className="font-medium">{formatDate(selectedNotification.createdAt)}</span>
                       </div>
                       {selectedNotification.expiresAt && (
                         <div className="flex items-center space-x-2">
-                          <AlertCircle className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-600">期限:</span>
+                          <AlertCircle className="w-4 h-4 text-black" />
+                          <span className="text-black">期限:</span>
                           <span className="font-medium">{formatDate(selectedNotification.expiresAt)}</span>
                         </div>
                       )}
                       {selectedNotification.category && (
                         <div className="flex items-center space-x-2">
-                          <Tag className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-600">カテゴリ:</span>
+                          <Tag className="w-4 h-4 text-black" />
+                          <span className="text-black">カテゴリ:</span>
                           <span className="font-medium">{selectedNotification.category}</span>
                         </div>
                       )}
@@ -842,14 +842,14 @@ export default function NotificationsPage() {
 
                   {/* メッセージ */}
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">メッセージ</h3>
+                    <h3 className="font-semibold text-black mb-3">メッセージ</h3>
                     <p className="text-gray-700 text-lg leading-relaxed">{selectedNotification.message}</p>
                   </div>
 
                   {/* 詳細内容 */}
                   {selectedNotification.content && (
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">詳細内容</h3>
+                      <h3 className="font-semibold text-black mb-3">詳細内容</h3>
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                           {selectedNotification.content}
@@ -861,7 +861,7 @@ export default function NotificationsPage() {
                   {/* タグ */}
                   {selectedNotification.tags && selectedNotification.tags.length > 0 && (
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">タグ</h3>
+                      <h3 className="font-semibold text-black mb-3">タグ</h3>
                       <div className="flex flex-wrap gap-2">
                         {selectedNotification.tags.map((tag, index) => (
                           <span

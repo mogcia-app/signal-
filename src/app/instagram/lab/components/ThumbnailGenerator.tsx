@@ -83,7 +83,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <h3 className="text-lg font-semibold text-black flex items-center">
             <Sparkles size={18} className="mr-2" />
             AIサムネ画像生成
           </h3>
@@ -96,12 +96,12 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
         </div>
 
         <div className="mb-4">
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-black mb-3">
             投稿文をもとにAIが白黒のサムネ画像を生成します。
             <span className="block text-xs text-orange-600 mt-1">
               ⚠️ 1日1回まで利用可能
             </span>
-            <span className="block text-xs text-gray-500 mt-1">
+            <span className="block text-xs text-black mt-1">
               🎨 ミニマルでモダンな白黒デザイン
             </span>
           </p>
@@ -114,7 +114,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
             disabled={isGenerating || !postContent.trim() || !canGenerateToday}
             className={`w-full py-3 px-4 rounded-md font-medium transition-colors flex items-center justify-center ${
               isGenerating || !postContent.trim() || !canGenerateToday
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-gray-300 text-black cursor-not-allowed'
                 : 'bg-gradient-to-r from-gray-800 to-gray-600 text-white hover:from-gray-900 hover:to-gray-700'
             }`}
           >
@@ -149,7 +149,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
                 className="w-full h-48 object-cover rounded-md border border-gray-200"
               />
               <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1">
-                <Image size={16} className="text-gray-600" />
+                <Image size={16} className="text-black" />
               </div>
             </div>
             
@@ -177,7 +177,7 @@ export const ThumbnailGenerator: React.FC<ThumbnailGeneratorProps> = ({
 
         {/* 利用状況 */}
         <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-black">
             <span>今日の利用状況</span>
             <span className={canGenerateToday ? 'text-green-600' : 'text-orange-600'}>
               {canGenerateToday ? '利用可能' : '利用済み'}

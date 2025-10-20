@@ -49,9 +49,9 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>
         <div className="text-center py-8">
           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Target size={24} className="text-gray-400" />
+            <Target size={24} className="text-black" />
           </div>
-          <p className="text-gray-600 text-sm mb-3">運用計画が設定されていません</p>
+          <p className="text-black text-sm mb-3">運用計画が設定されていません</p>
           <a 
             href="/instagram/plan" 
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
@@ -81,8 +81,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
               <Target size={18} className="text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">運用計画</h3>
-              <p className="text-sm text-gray-600">{planData.title}</p>
+              <h3 className="text-lg font-semibold text-black">運用計画</h3>
+              <p className="text-sm text-black">{planData.title}</p>
             </div>
           </div>
           <a 
@@ -100,33 +100,33 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <Users size={16} className="text-blue-600 mr-1" />
-              <span className="text-sm text-gray-600">目標フォロワー数</span>
+              <span className="text-sm text-black">目標フォロワー数</span>
             </div>
-            <div className="font-semibold text-gray-900">{targetFollowers.toLocaleString()}人</div>
+            <div className="font-semibold text-black">{targetFollowers.toLocaleString()}人</div>
           </div>
           
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <Calendar size={16} className="text-green-600 mr-1" />
-              <span className="text-sm text-gray-600">期間</span>
+              <span className="text-sm text-black">期間</span>
             </div>
-            <div className="font-semibold text-gray-900">{planData.planPeriod}</div>
+            <div className="font-semibold text-black">{planData.planPeriod}</div>
           </div>
           
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <Tag size={16} className="text-purple-600 mr-1" />
-              <span className="text-sm text-gray-600">カテゴリ</span>
+              <span className="text-sm text-black">カテゴリ</span>
             </div>
-            <div className="font-semibold text-gray-900">{planData.category}</div>
+            <div className="font-semibold text-black">{planData.category}</div>
           </div>
           
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <TrendingUp size={16} className="text-orange-600 mr-1" />
-              <span className="text-sm text-gray-600">ターゲット</span>
+              <span className="text-sm text-black">ターゲット</span>
             </div>
-            <div className="font-semibold text-gray-900">{planData.targetAudience}</div>
+            <div className="font-semibold text-black">{planData.targetAudience}</div>
           </div>
         </div>
 
@@ -135,7 +135,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">フォロワー目標進捗</span>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-black">
                 {currentFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
               </span>
             </div>
@@ -145,7 +145,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                 style={{ width: `${Math.min(progressPercentage, 100)}%` }}
               ></div>
             </div>
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-black mt-1">
               <span>{progressPercentage.toFixed(1)}% 達成</span>
               <span>残り {remainingFollowers.toLocaleString()}人</span>
             </div>
@@ -166,7 +166,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                 </span>
               ))}
               {strategies.length > (variant === 'detailed' ? 6 : 3) && (
-                <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                <span className="px-3 py-1 bg-gray-100 text-black text-xs rounded-full">
                   +{strategies.length - (variant === 'detailed' ? 6 : 3)}個
                 </span>
               )}
@@ -181,13 +181,13 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-gray-600">月間目標:</span>
-                  <span className="ml-2 font-semibold text-gray-900">
+                  <span className="text-black">月間目標:</span>
+                  <span className="ml-2 font-semibold text-black">
                     {String((planData.simulationResult as Record<string, unknown>).monthlyTarget || 'N/A')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600">達成可能性:</span>
+                  <span className="text-black">達成可能性:</span>
                   <span className={`ml-2 font-semibold ${
                     (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'high' ? 'text-green-600' :
                     (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'medium' ? 'text-yellow-600' :

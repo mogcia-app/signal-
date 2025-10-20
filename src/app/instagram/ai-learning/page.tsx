@@ -15,10 +15,10 @@ export default function AILearningPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="mb-4">
-            <Brain size={64} className="mx-auto text-gray-400" />
+            <Brain size={64} className="mx-auto text-black" />
           </div>
           <h2 className="text-2xl font-bold text-gray-700 mb-2">AI学習機能</h2>
-          <p className="text-gray-500 mb-4">現在開発中です</p>
+          <p className="text-black mb-4">現在開発中です</p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
             <p className="text-sm text-blue-800">
               AI学習機能は現在開発中です。<br />

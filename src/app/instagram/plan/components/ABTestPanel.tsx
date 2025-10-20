@@ -19,7 +19,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
       case 'low': return 'text-green-600 bg-green-100';
       case 'medium': return 'text-yellow-600 bg-yellow-100';
       case 'high': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      default: return 'text-black bg-gray-100';
     }
   };
 
@@ -34,7 +34,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
       <h3 className="text-lg font-semibold mb-4 flex items-center">
         <span className="mr-2">🧪</span>戦略A/Bテスト
       </h3>
-      <p className="text-sm text-gray-600 mb-4">
+      <p className="text-sm text-black mb-4">
         複数の戦略を比較して、あなたに最適なアプローチを見つけます。
       </p>
 
@@ -74,7 +74,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
 
           {/* シナリオ比較表 */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-900">📊 戦略比較</h4>
+            <h4 className="font-semibold text-black">📊 戦略比較</h4>
             
             {result.scenarios.map((scenario, index) => (
               <div 
@@ -88,7 +88,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-black">
                         #{index + 1} {scenario.name}
                       </span>
                       {scenario.id === result.winner && (
@@ -97,7 +97,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{scenario.description}</p>
+                    <p className="text-sm text-black mb-2">{scenario.description}</p>
                   </div>
                   <div className="text-right">
                     <div className={`text-lg font-bold ${getScoreColor(scenario.score || 0)}`}>
@@ -145,7 +145,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
 
           {/* 実行タイムライン */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-900 mb-3">📅 実行タイムライン</h4>
+            <h4 className="font-semibold text-black mb-3">📅 実行タイムライン</h4>
             <div className="space-y-3">
               {result.timeline.map((phase, index) => (
                 <div key={index} className="flex items-start space-x-3">
@@ -154,7 +154,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900">{phase.phase}</span>
+                      <span className="font-medium text-black">{phase.phase}</span>
                       <span className="text-sm text-gray-600">{phase.duration}</span>
                     </div>
                     <p className="text-sm text-gray-600 mt-1">{phase.expectedResult}</p>

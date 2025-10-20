@@ -336,8 +336,8 @@ export default function GuidePage() {
             <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <BookOpen className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Signal 使い方ガイド</h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <h1 className="text-3xl font-bold text-black mb-4">Signal 使い方ガイド</h1>
+            <p className="text-lg text-black max-w-2xl mx-auto">
               AIを活用したSNS運用を効率化するSignalの全機能を詳しく解説します。
               初心者の方でも簡単に始められるよう、ステップバイステップでご案内します。
             </p>
@@ -346,7 +346,7 @@ export default function GuidePage() {
           {/* 検索バー */}
           <div className="mb-8">
             <div className="relative max-w-md mx-auto">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
               <input
                 type="text"
                 placeholder="ガイドを検索..."
@@ -362,7 +362,7 @@ export default function GuidePage() {
             {/* サイドバー */}
             <div className="lg:w-1/4">
               <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">目次</h3>
+                <h3 className="text-lg font-semibold text-black mb-4">目次</h3>
                 <nav className="space-y-2">
                   {guideSections.map((section) => (
                     <button
@@ -371,7 +371,7 @@ export default function GuidePage() {
                       className={`w-full text-left flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                         activeSection === section.id
                           ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-600 hover:bg-gray-50'
+                          : 'text-black hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex-shrink-0">
@@ -389,8 +389,8 @@ export default function GuidePage() {
               {filteredSections.length === 0 ? (
                 <div className="text-center py-12">
                   <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">検索結果が見つかりません</h3>
-                  <p className="text-gray-600">別のキーワードで検索してみてください</p>
+                  <h3 className="text-lg font-medium text-black mb-2">検索結果が見つかりません</h3>
+                  <p className="text-black">別のキーワードで検索してみてください</p>
                 </div>
               ) : (
                 filteredSections.map((section) => (
@@ -406,8 +406,8 @@ export default function GuidePage() {
                         {section.icon}
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">{section.title}</h2>
-                        <p className="text-gray-600">{section.description}</p>
+                        <h2 className="text-2xl font-bold text-black">{section.title}</h2>
+                        <p className="text-black">{section.description}</p>
                       </div>
                     </div>
 
@@ -421,9 +421,9 @@ export default function GuidePage() {
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
                               {getStepIcon(step)}
-                              <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
+                              <h3 className="text-lg font-semibold text-black">{step.title}</h3>
                             </div>
-                            <p className="text-gray-600 mb-3">{step.description}</p>
+                            <p className="text-black mb-3">{step.description}</p>
                             {step.action && (
                               <button className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium">
                                 <span>{step.action}</span>
@@ -460,8 +460,8 @@ export default function GuidePage() {
 
           {/* サポート情報 */}
           <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 text-center">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">まだ質問がありますか？</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-xl font-bold text-black mb-4">まだ質問がありますか？</h3>
+            <p className="text-black mb-6">
               AIチャット機能を使って、いつでも質問や相談ができます。
               画面右下のチャットアイコンをクリックしてお気軽にお声がけください。
             </p>

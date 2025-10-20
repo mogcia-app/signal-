@@ -290,7 +290,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
             <div className="bg-white rounded-full shadow-lg border border-gray-200 px-4 py-2">
               <div className="flex items-center space-x-2">
                 <Bot size={16} className="text-orange-600" />
-                <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                <p className="text-sm font-medium text-black whitespace-nowrap">
                   {userProfile?.name ? `${userProfile.name}さん、Instagram運用を相談しよう！` : 'Instagram運用を相談しよう！'}
                 </p>
               </div>
@@ -334,7 +334,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
               <Bot size={20} className="text-orange-600" />
               <div>
                 <h3 className="font-semibold text-gray-800">AI運用アドバイザー</h3>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-black">
                   残り使用回数: {usageInfo.remainingUsage}/{usageInfo.maxUsage}回
                 </p>
               </div>
@@ -403,7 +403,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                 </div>
                 <button
                   onClick={() => setShowTemplates(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-black hover:text-black"
                 >
                   <X size={14} />
                 </button>
@@ -418,7 +418,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                     <div className="text-xs font-medium text-gray-800 mb-1">
                       {template.title}
                     </div>
-                    <div className="text-xs text-gray-600 line-clamp-2">
+                    <div className="text-xs text-black line-clamp-2">
                       {template.message}
                     </div>
                   </button>

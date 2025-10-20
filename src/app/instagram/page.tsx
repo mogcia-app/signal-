@@ -671,13 +671,13 @@ function InstagramDashboardContent() {
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">読み込み中...</p>
+                  <p className="text-black mt-2">読み込み中...</p>
                 </div>
               ) : nextActions.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-gray-400 text-4xl mb-2">✅</div>
-                  <p className="text-gray-600">すべて完了しています！</p>
-                  <p className="text-sm text-gray-500 mt-1">素晴らしい運用を続けましょう</p>
+                  <div className="text-black text-4xl mb-2">✅</div>
+                  <p className="text-black">すべて完了しています！</p>
+                  <p className="text-sm text-black mt-1">素晴らしい運用を続けましょう</p>
                 </div>
               ) : (
                 nextActions.map((action, index) => (
@@ -691,7 +691,7 @@ function InstagramDashboardContent() {
                         <span className="text-2xl mr-3">{action.icon}</span>
                         <div>
                           <h3 className="font-semibold text-gray-800">{action.title}</h3>
-                          <p className="text-sm text-gray-600">{action.description}</p>
+                          <p className="text-sm text-black">{action.description}</p>
                         </div>
                       </div>
                       <a
@@ -737,7 +737,7 @@ function InstagramDashboardContent() {
                       min="1"
                       max="50"
                     />
-                    <p className="text-xs text-gray-500 mt-1">週に何回投稿するか</p>
+                    <p className="text-xs text-black mt-1">週に何回投稿するか</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">フォロワー増加目標</label>
@@ -749,7 +749,7 @@ function InstagramDashboardContent() {
                       min="1"
                       max="1000"
                     />
-                    <p className="text-xs text-gray-500 mt-1">月に何人増やすか</p>
+                    <p className="text-xs text-black mt-1">月に何人増やすか</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">月間投稿目標</label>
@@ -761,13 +761,13 @@ function InstagramDashboardContent() {
                       min="1"
                       max="200"
                     />
-                    <p className="text-xs text-gray-500 mt-1">月に何回投稿するか</p>
+                    <p className="text-xs text-black mt-1">月に何回投稿するか</p>
                   </div>
                 </div>
                 <div className="flex justify-end mt-4 space-x-3">
                   <button
                     onClick={() => setShowGoalSettings(false)}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2 text-black border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                   >
                     キャンセル
                   </button>
@@ -787,12 +787,12 @@ function InstagramDashboardContent() {
               {loading ? (
                 <div className="col-span-3 text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">読み込み中...</p>
+                  <p className="text-black mt-2">読み込み中...</p>
                 </div>
               ) : goalNotifications.length === 0 ? (
                 <div className="col-span-3 text-center py-8">
-                  <div className="text-gray-400 text-4xl mb-2">🎯</div>
-                  <p className="text-gray-600">目標を設定してください</p>
+                  <div className="text-black text-4xl mb-2">🎯</div>
+                  <p className="text-black">目標を設定してください</p>
                   <button
                     onClick={() => setShowGoalSettings(true)}
                     className="mt-2 px-4 py-2 bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
@@ -818,7 +818,7 @@ function InstagramDashboardContent() {
                     }`}>
                       {goal.unit === '件' ? `${goal.current}/${goal.target}` : `${goal.current}${goal.unit}`}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-black">
                       {goal.unit === '件' ? `${Math.round((goal.current / goal.target) * 100)}% 達成` : `目標: ${goal.target}${goal.unit}`}
                     </div>
                   </div>
@@ -855,7 +855,7 @@ function InstagramDashboardContent() {
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                          <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                           </svg>
                         </div>
@@ -875,10 +875,10 @@ function InstagramDashboardContent() {
                           ⏳ 分析待ち
                         </span>
                       </div>
-                      <div className="text-sm font-medium text-gray-900 line-clamp-1">{post.title}</div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-sm font-medium text-black line-clamp-1">{post.title}</div>
+                      <div className="text-xs text-black mt-1">
                         <span className="mr-2">📅 {post.createdAt}</span>
-                        <span className="text-gray-400">|</span>
+                        <span className="text-black">|</span>
                         <span className="ml-2">📊 分析データなし</span>
                       </div>
                     </div>
@@ -919,12 +919,12 @@ function InstagramDashboardContent() {
                     {loading ? (
                       <div className="col-span-2 text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto"></div>
-                        <p className="text-gray-600 mt-2">読み込み中...</p>
+                        <p className="text-black mt-2">読み込み中...</p>
                       </div>
                     ) : recentPosts.length === 0 ? (
                       <div className="col-span-2 text-center py-8">
-                        <div className="text-gray-400 text-4xl mb-2">📊</div>
-                        <p className="text-gray-600">投稿データがありません</p>
+                        <div className="text-black text-4xl mb-2">📊</div>
+                        <p className="text-black">投稿データがありません</p>
                       </div>
                     ) : (
                       recentPosts.map((post) => (
@@ -941,8 +941,8 @@ function InstagramDashboardContent() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="text-center text-gray-500">
-                                <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                              <div className="text-center text-black">
+                                <svg className="w-12 h-12 mx-auto mb-2 text-black" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                                 </svg>
                                 <div className="text-sm">サムネがありません</div>
@@ -955,14 +955,14 @@ function InstagramDashboardContent() {
                           </span>
                           </div>
                           <div className="absolute top-2 right-2">
-                            <span className="text-xs text-gray-500 bg-white bg-opacity-80 px-2 py-1 rounded">{post.postedAt}</span>
+                            <span className="text-xs text-black bg-white bg-opacity-80 px-2 py-1 rounded">{post.postedAt}</span>
                           </div>
                         </div>
                         
                         <div className="p-4">
                           {/* タイトル */}
                           <div className="mb-2">
-                            <h3 className="font-semibold text-gray-900 line-clamp-2">{post.title}</h3>
+                            <h3 className="font-semibold text-black line-clamp-2">{post.title}</h3>
                           </div>
                           
                           {/* 投稿文（キャプション） */}
@@ -980,7 +980,7 @@ function InstagramDashboardContent() {
                                   </span>
                                 ))}
                                 {post.hashtags.length > 5 && (
-                                  <span className="text-xs text-gray-500">+{post.hashtags.length - 5}個</span>
+                                  <span className="text-xs text-black">+{post.hashtags.length - 5}個</span>
                                 )}
                               </div>
                             </div>
@@ -989,16 +989,16 @@ function InstagramDashboardContent() {
                         {/* KPI表示 */}
                           <div className="grid grid-cols-3 gap-2 text-sm mb-4">
                           <div className="text-center bg-gray-50 rounded-lg p-2">
-                            <div className="text-gray-500 text-xs">いいね</div>
-                            <div className="font-semibold text-gray-900">{post.likes}</div>
+                            <div className="text-black text-xs">いいね</div>
+                            <div className="font-semibold text-black">{post.likes}</div>
                           </div>
                           <div className="text-center bg-gray-50 rounded-lg p-2">
-                            <div className="text-gray-500 text-xs">コメント</div>
-                            <div className="font-semibold text-gray-900">{post.comments}</div>
+                            <div className="text-black text-xs">コメント</div>
+                            <div className="font-semibold text-black">{post.comments}</div>
                           </div>
                           <div className="text-center bg-gray-50 rounded-lg p-2">
-                            <div className="text-gray-500 text-xs">保存</div>
-                            <div className="font-semibold text-gray-900">{post.saves}</div>
+                            <div className="text-black text-xs">保存</div>
+                            <div className="font-semibold text-black">{post.saves}</div>
                           </div>
                           </div>
                           
@@ -1044,20 +1044,20 @@ function InstagramDashboardContent() {
                   {loading ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                      <p className="text-gray-600 mt-2">読み込み中...</p>
+                      <p className="text-black mt-2">読み込み中...</p>
                     </div>
                   ) : scheduledPosts.length === 0 ? (
                     <div className="text-center py-8">
-                      <div className="text-gray-400 text-4xl mb-2">📅</div>
-                      <p className="text-gray-600">今週の投稿予定はありません</p>
+                      <div className="text-black text-4xl mb-2">📅</div>
+                      <p className="text-black">今週の投稿予定はありません</p>
                     </div>
                   ) : (
                     scheduledPosts.map((post, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg">
                       <div className="flex items-center flex-1">
                         <div className="text-center mr-4 min-w-[50px]">
-                          <div className="text-xs text-gray-500">{post.day}</div>
-                          <div className="text-sm font-semibold text-gray-900">{post.date}</div>
+                          <div className="text-xs text-black">{post.day}</div>
+                          <div className="text-sm font-semibold text-black">{post.date}</div>
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center mb-1">
@@ -1075,10 +1075,10 @@ function InstagramDashboardContent() {
                               {post.status === 'scheduled' ? '予定済み' : '下書き'}
                             </span>
                           </div>
-                          <div className="text-sm font-medium text-gray-900 line-clamp-1">{post.title}</div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-sm font-medium text-black line-clamp-1">{post.title}</div>
+                          <div className="text-xs text-black mt-1">
                             <span className="mr-2">⏰ {post.time}</span>
-                            <span className="text-gray-400">|</span>
+                            <span className="text-black">|</span>
                             <span className="ml-2">📅 投稿予定</span>
                           </div>
                         </div>

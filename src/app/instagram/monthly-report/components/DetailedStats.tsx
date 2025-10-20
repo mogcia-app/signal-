@@ -80,8 +80,8 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
           <BarChart3 className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">詳細統計</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-lg font-semibold text-black">詳細統計</h2>
+          <p className="text-sm text-black">
             {activeTab === 'weekly' 
               ? `${getWeekDisplayName(selectedWeek)}の詳細データ`
               : `${getMonthDisplayName(selectedMonth)}の詳細データ`
@@ -97,8 +97,8 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
             <div className="text-3xl font-bold text-orange-600">
               {typeof accountScore?.score === 'number' ? accountScore.score : 0}点
             </div>
-            <div className="text-sm text-gray-600">アカウントスコア</div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-sm text-black">アカウントスコア</div>
+            <div className="text-xs text-black mt-1">
               {String(performanceRating.label)}
             </div>
             
@@ -106,7 +106,7 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
             {previousPeriodData && (
               <div className="mt-3 pt-3 border-t border-orange-200">
                 <div className="flex items-center justify-center space-x-2">
-                  <span className="text-xs text-gray-500">前期間:</span>
+                  <span className="text-xs text-black">前期間:</span>
                   <span className="text-sm font-medium text-gray-700">
                     {typeof previousPeriodData.score === 'number' ? previousPeriodData.score : 0}点
                   </span>
@@ -116,7 +116,7 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
                         ? 'text-green-600' 
                         : (typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score)
                           ? 'text-red-600' 
-                          : 'text-gray-600'
+                          : 'text-black'
                     }`}>
                       {(typeof accountScore.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? (
                         <ArrowUp className="w-3 h-3" />
@@ -141,20 +141,20 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
           <h4 className="text-sm font-medium text-gray-700 mb-3">投稿タイプ別統計</h4>
           <div className="space-y-2">
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm text-gray-600">📸 フィード</span>
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm text-black">📸 フィード</span>
+              <span className="text-sm font-medium text-black">
                 {reportSummary?.postTypeStats?.find(p => p.type === 'feed')?.count || 0}件
               </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm text-gray-600">🎬 リール</span>
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm text-black">🎬 リール</span>
+              <span className="text-sm font-medium text-black">
                 {reportSummary?.postTypeStats?.find(p => p.type === 'reel')?.count || 0}件
               </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm text-gray-600">📱 ストーリーズ</span>
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm text-black">📱 ストーリーズ</span>
+              <span className="text-sm font-medium text-black">
                 {reportSummary?.postTypeStats?.find(p => p.type === 'story')?.count || 0}件
               </span>
             </div>
@@ -164,8 +164,8 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
               <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center">
                 <span className="text-xl">📊</span>
               </div>
-              <p className="text-gray-600 font-medium mb-1">投稿を分析してみよう！</p>
-              <p className="text-sm text-gray-500">投稿分析データを入力すると<br />タイプ別統計が表示されます</p>
+              <p className="text-black font-medium mb-1">投稿を分析してみよう！</p>
+              <p className="text-sm text-black">投稿分析データを入力すると<br />タイプ別統計が表示されます</p>
             </div>
           )}
         </div>

@@ -48,7 +48,7 @@ export default function LoginPage() {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-3">
               ログイン成功！
             </h2>
-            <p className="text-gray-600 text-lg">
+            <p className="text-black text-lg">
               ダッシュボードに移動しています...
             </p>
             <div className="mt-8">
@@ -74,10 +74,10 @@ export default function LoginPage() {
           <div className="mx-auto w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-xl">
             <img src="/favicon.png" alt="Signal Logo" className="w-14 h-14" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-black mb-2">
             Signal<span className="text-[#ff8a15]">.</span>
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-black text-lg">
             アカウントにログイン
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-white/50"
+                  className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-white/50"
                   placeholder="your@email.com"
                 />
               </div>
@@ -125,13 +125,13 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-white/50"
+                  className="block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-white/50"
                   placeholder="パスワードを入力"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-orange-500 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-black hover:text-orange-500 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -166,7 +166,7 @@ export default function LoginPage() {
 
             {/* 注意事項 */}
             <div className="text-center">
-              <p className="text-sm text-gray-500 bg-orange-50 rounded-lg p-3 border border-orange-100">
+              <p className="text-sm text-black bg-orange-50 rounded-lg p-3 border border-orange-100">
                 <span className="font-medium text-orange-700">※</span> 管理者によって登録されたメールアドレスでのみログイン可能です
               </p>
             </div>

@@ -38,7 +38,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
           <span className="mr-2">📊</span>目標達成シミュレーション
         </h3>
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-black mb-4">
             左側で目標を入力し、シミュレーションを実行してください
           </p>
           {onRunSimulation && (
@@ -82,15 +82,15 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{result.monthlyTarget}</div>
-            <div className="text-sm text-gray-600">月間目標</div>
+            <div className="text-sm text-black">月間目標</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">{result.weeklyTarget}</div>
-            <div className="text-sm text-gray-600">週間目標</div>
+            <div className="text-sm text-black">週間目標</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">{result.monthlyPostCount}</div>
-            <div className="text-sm text-gray-600">月間投稿数</div>
+            <div className="text-sm text-black">月間投稿数</div>
           </div>
         </div>
         

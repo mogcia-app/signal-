@@ -109,7 +109,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <h2 className="text-lg font-semibold text-black mb-4 flex items-center">
           <Sparkles className="mr-2 text-purple-600" size={20} />
           AI アシスタント
         </h2>
@@ -157,13 +157,13 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
             
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className={`p-3 rounded-lg ${getScoreBg(checkResult.score)}`}>
-                <div className="text-sm text-gray-600">総合スコア</div>
+                <div className="text-sm text-black">総合スコア</div>
                 <div className={`text-2xl font-bold ${getScoreColor(checkResult.score)}`}>
                   {checkResult.score}/100
                 </div>
               </div>
               <div className="p-3 bg-blue-50 rounded-lg">
-                <div className="text-sm text-gray-600">予測エンゲージメント</div>
+                <div className="text-sm text-black">予測エンゲージメント</div>
                 <div className="text-2xl font-bold text-blue-600">
                   {checkResult.engagementPrediction}%
                 </div>
@@ -175,7 +175,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
                 <h4 className="text-sm font-medium text-gray-700 mb-2">改善提案</h4>
                 <ul className="space-y-1">
                   {checkResult.suggestions.map((suggestion, index) => (
-                    <li key={index} className="text-sm text-gray-600 flex items-start">
+                    <li key={index} className="text-sm text-black flex items-start">
                       <AlertCircle size={14} className="mr-2 mt-0.5 text-yellow-500 flex-shrink-0" />
                       {suggestion}
                     </li>
@@ -205,7 +205,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
           <h3 className="text-md font-medium text-gray-800 mb-3">
             🔍 投稿文チェック
           </h3>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-black mb-3">
             作成した投稿文をAIが分析し、エンゲージメント向上のための提案を行います。
           </p>
           <button

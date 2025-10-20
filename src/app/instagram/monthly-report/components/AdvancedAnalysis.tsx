@@ -39,8 +39,8 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
             <Hash className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">ハッシュタグ分析</h2>
-            <p className="text-sm text-gray-600">効果的なハッシュタグの分析</p>
+            <h2 className="text-lg font-semibold text-black">ハッシュタグ分析</h2>
+            <p className="text-sm text-black">効果的なハッシュタグの分析</p>
           </div>
         </div>
 
@@ -53,15 +53,15 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
                 </span>
                 <span className="text-sm font-medium text-gray-700">#{item.hashtag}</span>
               </div>
-              <span className="text-sm font-bold text-gray-900">{item.count}回</span>
+              <span className="text-sm font-bold text-black">{item.count}回</span>
             </div>
           )) : (
             <div className="text-center py-8">
               <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
                 <Hash className="w-6 h-6 text-blue-600" />
               </div>
-              <p className="text-gray-600 font-medium mb-1">ハッシュタグを追加してみよう！</p>
-              <p className="text-sm text-gray-500">投稿にハッシュタグを付けると<br />人気ハッシュタグ分析が表示されます</p>
+              <p className="text-black font-medium mb-1">ハッシュタグを追加してみよう！</p>
+              <p className="text-sm text-black">投稿にハッシュタグを付けると<br />人気ハッシュタグ分析が表示されます</p>
             </div>
           )}
         </div>
@@ -75,14 +75,14 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
               <Clock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">投稿時間分析</h2>
-              <p className="text-sm text-gray-600">
+              <h2 className="text-lg font-semibold text-black">投稿時間分析</h2>
+              <p className="text-sm text-black">
                 投稿分析ページで入力した実際の投稿時間ベースの分析
               </p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-black">
                総投稿数: {hashtagStats.length}件
             </div>
           </div>
@@ -111,7 +111,7 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">{label}</span>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-bold text-gray-900">{postsInRange}件</span>
+                  <span className="text-sm font-bold text-black">{postsInRange}件</span>
                   {postsInRange > 0 && (
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       avgEngagement > bestTimeSlot.avgEngagement * 0.8 
@@ -135,14 +135,14 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
                         style={{ width: `${Math.min(100, postsInRange * 20)}%` }}
                       />
                     </div>
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-black">
                       平均 {Math.round(avgEngagement)} エンゲージ
                     </span>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-2">
-                  <div className="text-xs text-gray-400 italic">
+                  <div className="text-xs text-black italic">
                     📅 この時間帯はまだ投稿なし
                   </div>
                 </div>

@@ -202,15 +202,15 @@ export default function XPostsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <h3 className="text-lg font-semibold text-gray-900">フィルター・検索</h3>
-              <div className="text-sm text-gray-500">
+              <h3 className="text-lg font-semibold text-black">フィルター・検索</h3>
+              <div className="text-sm text-black">
                 {filteredPosts.length}件の投稿
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center px-3 py-2 text-sm text-black hover:text-black transition-colors"
               >
                 <Filter size={16} className="mr-1" />
                 {showFilters ? 'フィルターを閉じる' : 'フィルターを開く'}
@@ -231,7 +231,7 @@ export default function XPostsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">検索</label>
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black" />
                   <input
                     type="text"
                     placeholder="タイトル、内容、ハッシュタグで検索..."
@@ -317,7 +317,7 @@ export default function XPostsPage() {
           )}
           
           <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-black">
               {filteredPosts.length}件の投稿が表示されています
             </div>
             <button
@@ -333,12 +333,12 @@ export default function XPostsPage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="text-gray-600 mt-2">読み込み中...</p>
+            <p className="text-black mt-2">読み込み中...</p>
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">投稿がありません</h3>
-            <p className="text-gray-600 mb-4">まだX投稿を作成していません。</p>
+            <h3 className="text-lg font-medium text-black mb-2">投稿がありません</h3>
+            <p className="text-black mb-4">まだX投稿を作成していません。</p>
             <div className="flex items-center justify-center space-x-4">
               <button
                 onClick={() => window.location.href = '/x/lab'}
@@ -391,7 +391,7 @@ export default function XPostsPage() {
                     <div className="flex items-center space-x-1">
                       <button
                         onClick={() => alert('投稿詳細を表示')}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        className="p-1.5 text-black hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                         title="詳細表示"
                       >
                         <Eye size={14} />
@@ -401,7 +401,7 @@ export default function XPostsPage() {
                           onClick={() => {
                             window.location.href = `/x/lab?edit=${post.id}`;
                           }}
-                          className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                          className="p-1.5 text-black hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
                           title="編集"
                         >
                           <Edit size={14} />
@@ -412,7 +412,7 @@ export default function XPostsPage() {
                           onClick={() => {
                             window.location.href = '/x/analytics';
                           }}
-                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                          className="p-1.5 text-black hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                           title="分析データを確認"
                         >
                           <BarChart3 size={14} />
@@ -421,7 +421,7 @@ export default function XPostsPage() {
                       {post.source === 'lab' && (
                         <button
                           onClick={() => handleDeletePost(post.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          className="p-1.5 text-black hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                           title="削除"
                         >
                           <Trash2 size={14} />
@@ -430,7 +430,7 @@ export default function XPostsPage() {
                     </div>
                   </div>
                   
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 overflow-hidden" style={{
+                  <h3 className="text-lg font-semibold text-black mb-2 overflow-hidden" style={{
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical'
@@ -451,7 +451,7 @@ export default function XPostsPage() {
                         分析済み
                       </span>
                     ) : (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-medium">
+                      <span className="px-2 py-1 bg-gray-100 text-black rounded-full font-medium">
                         未分析
                       </span>
                     )}
@@ -486,7 +486,7 @@ export default function XPostsPage() {
                           </span>
                         ))}
                         {post.hashtags.length > 5 && (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+                          <span className="px-2 py-1 bg-gray-100 text-black text-xs rounded-md">
                             +{post.hashtags.length - 5}
                           </span>
                         )}
@@ -498,7 +498,7 @@ export default function XPostsPage() {
                   {(post.imageData || post.imageUrl) && (
                     <div className="mb-4">
                       <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <ImageIcon size={24} className="text-gray-400" />
+                        <ImageIcon size={24} className="text-black" />
                       </div>
                     </div>
                   )}
@@ -513,25 +513,25 @@ export default function XPostsPage() {
                       <div className="grid grid-cols-3 gap-2">
                         <div className="text-center">
                           <div className="text-sm font-bold text-red-600">{(post.analyticsData.likes || 0).toLocaleString()}</div>
-                          <div className="text-xs text-gray-600">いいね</div>
+                          <div className="text-xs text-black">いいね</div>
                         </div>
                         <div className="text-center">
                           <div className="text-sm font-bold text-blue-600">{(post.analyticsData.retweets || 0).toLocaleString()}</div>
-                          <div className="text-xs text-gray-600">RT</div>
+                          <div className="text-xs text-black">RT</div>
                         </div>
                         <div className="text-center">
                           <div className="text-sm font-bold text-green-600">{(post.analyticsData.comments || 0).toLocaleString()}</div>
-                          <div className="text-xs text-gray-600">コメント</div>
+                          <div className="text-xs text-black">コメント</div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         <div className="text-center">
                           <div className="text-sm font-bold text-purple-600">{(post.analyticsData.saves || 0).toLocaleString()}</div>
-                          <div className="text-xs text-gray-600">保存</div>
+                          <div className="text-xs text-black">保存</div>
                         </div>
                         <div className="text-center">
                           <div className="text-sm font-bold text-orange-600">{(post.analyticsData.impressions || 0).toLocaleString()}</div>
-                          <div className="text-xs text-gray-600">インプレ</div>
+                          <div className="text-xs text-black">インプレ</div>
                         </div>
                       </div>
                     </div>
@@ -540,7 +540,7 @@ export default function XPostsPage() {
 
                 {/* カードフッター */}
                 <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center justify-between text-xs text-black">
                     <div className="flex items-center space-x-3">
                       <span className="flex items-center">
                         <Calendar size={12} className="mr-1" />

@@ -64,8 +64,8 @@ function SNSSelectContent() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">エラー</h1>
-          <p className="text-gray-600">ユーザー情報の取得に失敗しました</p>
+          <h1 className="text-2xl font-bold text-black mb-4">エラー</h1>
+          <p className="text-black">ユーザー情報の取得に失敗しました</p>
         </div>
       </div>
     );
@@ -97,10 +97,10 @@ function SNSSelectContent() {
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         {/* ヘッダー */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-black mb-4">
             SNS選択
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-black">
             管理したいSNSを選択してください
           </p>
           <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
@@ -108,21 +108,21 @@ function SNSSelectContent() {
               <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-medium bg-green-100 text-green-800 mr-2">
                 利用可能
               </span>
-              <span className="text-gray-600">{availableSNS.length}個</span>
+              <span className="text-black">{availableSNS.length}個</span>
             </div>
             <div className="flex items-center">
               <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-medium bg-blue-100 text-blue-800 mr-2">
                 AI設定済み
               </span>
-              <span className="text-gray-600">{snsWithSettings.length}個</span>
+              <span className="text-black">{snsWithSettings.length}個</span>
             </div>
             <div className="flex items-center">
               <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-medium bg-gray-100 text-gray-800 mr-2">
                 アップデート必要
               </span>
-              <span className="text-gray-600">{Object.keys(SNS_INFO).length - availableSNS.length}個</span>
+              <span className="text-black">{Object.keys(SNS_INFO).length - availableSNS.length}個</span>
             </div>
-            <div className="text-gray-500">
+            <div className="text-black">
               利用形態: {userProfile.usageType === 'team' ? 'チーム利用' : '個人利用'}
             </div>
           </div>
@@ -153,12 +153,12 @@ function SNSSelectContent() {
                   </div>
                   
                   {/* SNS名 */}
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  <h3 className="text-xl font-bold text-black mb-3">
                     {snsInfo.name}
                   </h3>
                   
                   {/* 説明 */}
-                  <p className="text-base text-gray-600 mb-6">
+                  <p className="text-base text-black mb-6">
                     {snsInfo.description}
                   </p>
                   
@@ -173,12 +173,12 @@ function SNSSelectContent() {
                   ) : (
                     <div className="space-y-2">
                       <div className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-none text-gray-700 bg-gray-100">
-                        <svg className="w-4 h-4 mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 mr-1 text-black" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
                         アップデートが必要
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-black">
                         管理者に契約追加を依頼
                       </p>
                     </div>
@@ -204,11 +204,11 @@ function SNSSelectContent() {
         {/* 契約SNSが0個の場合 */}
         {availableSNS.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📱</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <div className="text-black text-6xl mb-4">📱</div>
+            <h3 className="text-lg font-medium text-black mb-2">
               契約SNSがありません
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-black mb-6">
               管理者にSNS契約の設定を依頼してください
             </p>
             <button

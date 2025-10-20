@@ -41,7 +41,7 @@ const PostFilters: React.FC<PostFiltersProps> = ({
         {/* 検索バー */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -55,7 +55,7 @@ const PostFilters: React.FC<PostFiltersProps> = ({
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-black hover:text-black"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -134,7 +134,7 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                           selectedStatus === option.value 
                             ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                            : 'bg-white text-black border border-gray-200 hover:bg-gray-50'
                         }`}
                       >
                         {option.label}
@@ -159,7 +159,7 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
                           selectedPostType === option.value 
                             ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                            : 'bg-white text-black border border-gray-200 hover:bg-gray-50'
                         }`}
                       >
                         <span>{option.icon}</span>
@@ -181,7 +181,7 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                     className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="開始日"
                   />
-                  <span className="text-gray-400">〜</span>
+                  <span className="text-black">〜</span>
                   <input
                     type="date"
                     value={dateTo}
@@ -195,7 +195,7 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                         setDateFrom('');
                         setDateTo('');
                       }}
-                      className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                      className="px-3 py-2 text-sm text-black hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                     >
                       ✕ クリア
                     </button>
@@ -208,7 +208,7 @@ const PostFilters: React.FC<PostFiltersProps> = ({
 
         {/* 検索結果表示 */}
         {searchTerm && (
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-black">
             「{searchTerm}」の検索結果: {filteredPostsCount}件
           </div>
         )}

@@ -190,8 +190,8 @@ function InstagramAnalyticsContent() {
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">投稿分析データ入力</h2>
-                  <p className="text-sm text-gray-600">投稿の分析データを入力してください</p>
+                  <h2 className="text-lg font-semibold text-black">投稿分析データ入力</h2>
+                  <p className="text-sm text-black">投稿の分析データを入力してください</p>
                 </div>
               </div>
 
@@ -297,23 +297,23 @@ function InstagramAnalyticsContent() {
 
             {/* 右カラム: 統計表示 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">投稿分析統計</h3>
+              <h3 className="text-lg font-semibold text-black mb-4">投稿分析統計</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-red-50 rounded-lg">
                   <div className="text-2xl font-bold text-red-600">{totalLikes.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">総いいね数</div>
+                  <div className="text-sm text-black">総いいね数</div>
                 </div>
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">{totalComments.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">総コメント数</div>
+                  <div className="text-sm text-black">総コメント数</div>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">{totalShares.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">総シェア数</div>
+                  <div className="text-sm text-black">総シェア数</div>
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">{totalReach.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">総リーチ数</div>
+                  <div className="text-sm text-black">総リーチ数</div>
                 </div>
               </div>
             </div>
@@ -321,9 +321,9 @@ function InstagramAnalyticsContent() {
 
           {/* 最近の記録 - 全幅 */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">最近の記録</h3>
+            <h3 className="text-lg font-semibold text-black mb-4">最近の記録</h3>
             {analyticsData.length === 0 ? (
-              <p className="text-gray-600 text-center">まだ記録がありません。</p>
+              <p className="text-black text-center">まだ記録がありません。</p>
             ) : (
               <div className="space-y-3">
                 {analyticsData.slice(0, 5).map((data) => (
@@ -336,19 +336,19 @@ function InstagramAnalyticsContent() {
                     <div className="grid grid-cols-4 gap-2 text-sm">
                       <div className="text-center">
                         <div className="text-red-600 font-semibold">{data.likes || 0}</div>
-                        <div className="text-gray-500">いいね</div>
+                        <div className="text-black">いいね</div>
                       </div>
                       <div className="text-center">
                         <div className="text-blue-600 font-semibold">{data.comments || 0}</div>
-                        <div className="text-gray-500">コメント</div>
+                        <div className="text-black">コメント</div>
                       </div>
                       <div className="text-center">
                         <div className="text-green-600 font-semibold">{data.shares || 0}</div>
-                        <div className="text-gray-500">シェア</div>
+                        <div className="text-black">シェア</div>
                       </div>
                       <div className="text-center">
                         <div className="text-purple-600 font-semibold">{data.reach || 0}</div>
-                        <div className="text-gray-500">リーチ</div>
+                        <div className="text-black">リーチ</div>
                       </div>
                     </div>
                   </div>

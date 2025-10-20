@@ -27,8 +27,8 @@ const RechartsAreaChart: React.FC<RechartsAreaChartProps> = ({
           <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center">
             <span className="text-2xl">📈</span>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">データを蓄積中...</h3>
-          <p className="text-gray-600 mb-4">
+          <h3 className="text-lg font-semibold text-black mb-2">データを蓄積中...</h3>
+          <p className="text-black mb-4">
             分析データを入力すると、<br />
             美しいスコア推移グラフが表示されます
           </p>
@@ -63,8 +63,8 @@ const RechartsAreaChart: React.FC<RechartsAreaChartProps> = ({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       {/* ヘッダー */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+        <h3 className="text-lg font-semibold text-black">{title}</h3>
+        {subtitle && <p className="text-sm text-black mt-1">{subtitle}</p>}
       </div>
 
       {/* Recharts AreaChart */}
@@ -130,11 +130,11 @@ const RechartsAreaChart: React.FC<RechartsAreaChartProps> = ({
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
-            <span className="text-sm text-gray-600">アカウントスコア推移</span>
+            <span className="text-sm text-black">アカウントスコア推移</span>
           </div>
         </div>
         
-        <div className="text-xs text-gray-500 space-x-4">
+        <div className="text-xs text-black space-x-4">
           <span>最高: <span className="font-medium text-orange-600">{maxScore}点</span></span>
           <span>最低: <span className="font-medium text-orange-600">{minScore}点</span></span>
           <span>平均: <span className="font-medium text-orange-600">{avgScore}点</span></span>

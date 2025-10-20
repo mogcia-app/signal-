@@ -158,8 +158,8 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                 <Brain className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">AI予測分析</h2>
-                <p className="text-sm text-gray-600">
+                <h2 className="text-lg font-semibold text-black">AI予測分析</h2>
+                <p className="text-sm text-black">
                   {hasRunAnalysis ? 
                     (analysisResult?.masterContext?.isOptimized ? 
                       '最適化されたAI分析' : 
@@ -204,7 +204,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
               ) : (
                 <button
                   onClick={handleCloseAnalysis}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 text-black hover:text-black hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <span>閉じる</span>
                 </button>
@@ -219,7 +219,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-purple-600 mr-2" />
-                <span className="text-gray-600">AI分析を実行中...</span>
+                <span className="text-black">AI分析を実行中...</span>
               </div>
             ) : error ? (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -246,18 +246,18 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">来週の予測</span>
+                        <span className="text-sm text-black">来週の予測</span>
                         <span className="text-sm font-bold text-green-600">
                           +{analysisResult.predictions.followerGrowth.weekly}人
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">来月の予測</span>
+                        <span className="text-sm text-black">来月の予測</span>
                         <span className="text-sm font-bold text-green-600">
                           +{analysisResult.predictions.followerGrowth.monthly}人
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-2">
+                      <div className="text-xs text-black mt-2">
                         {analysisResult.masterContext?.isOptimized ? 
                           '学習済みパターンによる高精度予測' :
                           '現在の投稿ペースとエンゲージメント率を基に予測'
@@ -274,18 +274,18 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">予測エンゲージメント率</span>
+                        <span className="text-sm text-black">予測エンゲージメント率</span>
                         <span className="text-sm font-bold text-green-600">
                           {analysisResult.predictions.engagementRate}%
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">最適投稿時間</span>
+                        <span className="text-sm text-black">最適投稿時間</span>
                         <span className="text-sm font-bold text-green-600">
                           {analysisResult.predictions.optimalPostingTime}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-2">
+                      <div className="text-xs text-black mt-2">
                         {analysisResult.masterContext?.isOptimized ? 
                           '過去の成功パターンを基に最適化された予測' :
                           '過去のパフォーマンスパターンを基に予測'
@@ -312,7 +312,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                           • {analysisResult.recommendations[0]}
                         </div>
                       )}
-                      <div className="text-xs text-gray-500 mt-2">
+                      <div className="text-xs text-black mt-2">
                         {analysisResult.masterContext?.isOptimized ? 
                           '学習済みパターンによる最適化提案' :
                           'AI分析による改善提案'
@@ -332,7 +332,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                         {analysisResult.insights}
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-2">
+                    <div className="text-xs text-black mt-2">
                       {analysisResult.masterContext?.isOptimized ? 
                         '学習済みパターンによる詳細分析' :
                         'AIによる包括的分析'
@@ -349,8 +349,8 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                         <BarChart3 className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">先月のまとめ</h3>
-                        <p className="text-sm text-gray-600">前期間との比較と成果サマリー</p>
+                        <h3 className="text-lg font-semibold text-black">先月のまとめ</h3>
+                        <p className="text-sm text-black">前期間との比較と成果サマリー</p>
                       </div>
                     </div>
 
@@ -362,27 +362,27 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">アカウントスコア</span>
+                          <span className="text-sm text-black">アカウントスコア</span>
                           {previousPeriodData ? (
                             <span className={`text-sm font-bold ${
                               (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? 'text-green-600' : 
-                              (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? 'text-red-600' : 'text-gray-600'
+                              (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? 'text-red-600' : 'text-black'
                             }`}>
                               {(typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? '📈 向上' : 
                                (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? '📉 低下' : '📊 維持'}
                               ({typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' ? Math.abs(accountScore.score - previousPeriodData.score) : 0}点差)
                             </span>
                           ) : (
-                            <span className="text-sm font-bold text-gray-500">📊 初回データ</span>
+                            <span className="text-sm font-bold text-black">📊 初回データ</span>
                           )}
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">投稿数</span>
+                          <span className="text-sm text-black">投稿数</span>
                           <span className="text-sm font-bold text-blue-600">
                             {currentTotals.totalPosts}件
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500 mt-2">
+                        <div className="text-xs text-black mt-2">
                           {activeTab === 'weekly' ? '今週' : '今月'} vs {activeTab === 'weekly' ? '先週' : '先月'}
                         </div>
                       </div>
@@ -396,18 +396,18 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">総いいね数</span>
+                          <span className="text-sm text-black">総いいね数</span>
                           <span className="text-sm font-bold text-green-600">
                             {currentTotals.totalLikes.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">総投稿数</span>
+                          <span className="text-sm text-black">総投稿数</span>
                           <span className="text-sm font-bold text-green-600">
                             {currentTotals.totalPosts}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500 mt-2">
+                        <div className="text-xs text-black mt-2">
                           {activeTab === 'weekly' ? '今週' : '今月'}の累計成果
                         </div>
                       </div>
@@ -442,8 +442,8 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Brain className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <div className="text-center py-8 text-black">
+                <Brain className="w-16 h-16 mx-auto mb-4 text-black" />
                 <p className="text-lg">AI分析を開始してください</p>
                 <p className="text-sm mt-2">「AI分析を実行」ボタンをクリックして分析を開始します</p>
               </div>

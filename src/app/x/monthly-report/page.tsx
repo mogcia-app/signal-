@@ -165,7 +165,7 @@ export default function XMonthlyReportPage() {
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'monthly'
                 ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-black hover:text-black'
             }`}
           >
             月次
@@ -175,7 +175,7 @@ export default function XMonthlyReportPage() {
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'weekly'
                 ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-black hover:text-black'
             }`}
           >
             週次
@@ -214,10 +214,10 @@ export default function XMonthlyReportPage() {
         {!loading && !error && !reportData && (
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
             <div className="p-3 bg-gray-100 rounded-lg w-fit mx-auto mb-4">
-              <BarChart3 className="h-8 w-8 text-gray-600" />
+              <BarChart3 className="h-8 w-8 text-black" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">データがありません</h3>
-            <p className="text-gray-600 mb-4">
+            <h3 className="text-lg font-semibold text-black mb-2">データがありません</h3>
+            <p className="text-black mb-4">
               {activeTab === 'monthly' ? '今月の' : '今週の'}分析データが見つかりませんでした。
               <br />
               まずはX analyticsページでデータを入力してください。
@@ -234,7 +234,7 @@ export default function XMonthlyReportPage() {
         {/* 運用計画 */}
         {planData && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">X成長計画</h2>
+            <h2 className="text-lg font-semibold text-black mb-4">X成長計画</h2>
             <PlanCard planData={planData} />
           </div>
         )}

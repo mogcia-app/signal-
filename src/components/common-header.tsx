@@ -33,7 +33,7 @@ export default function CommonHeader({ unreadCount = 0 }: CommonHeaderProps) {
           {/* ロゴ */}
           <div className="flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-3">
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-black">
                 Signal<span className="text-orange-500">.</span>
               </div>
             </Link>

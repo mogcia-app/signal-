@@ -22,7 +22,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
       <div className="mb-6">
         <h3 className="text-xl font-semibold mb-2">📋 計画を立てる</h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-black">
           <span className="text-yellow-500">★</span>はAIが参照するための必須項目です。具体的に記入するほど、精度の高いアドバイスが得られます。
         </p>
       </div>
@@ -58,7 +58,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             <option value="6ヶ月">6ヶ月</option>
             <option value="1年">1年</option>
           </select>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-black mt-1">
             この計画は <span className="font-medium">{formData.planPeriod}</span> 単位で運用されます
           </p>
         </div>
@@ -146,7 +146,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
                 className={`px-3 py-2 rounded-md cursor-pointer transition-colors ${
                   selectedStrategies.includes(strategy)
                     ? 'bg-[#ff8a15] text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-200 text-black hover:bg-gray-300'
                 }`}
                 onClick={() => onStrategyToggle(strategy)}
               >
@@ -172,7 +172,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
                 className={`px-3 py-2 rounded-md cursor-pointer transition-colors ${
                   selectedCategories.includes(category)
                     ? 'bg-[#ff8a15] text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-200 text-black hover:bg-gray-300'
                 }`}
                 onClick={() => onCategoryToggle(category)}
               >

@@ -40,8 +40,8 @@ function XDashboardContent() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">X (Twitter) AI設定</h2>
-                <p className="text-sm text-gray-600">自動投稿・ハッシュタグ・エンゲージメント設定</p>
+                <h2 className="text-lg font-semibold text-black">X (Twitter) AI設定</h2>
+                <p className="text-sm text-black">自動投稿・ハッシュタグ・エンゲージメント設定</p>
               </div>
               <div className="p-6">
                 {Object.keys(xSettings).length > 0 ? (
@@ -49,10 +49,10 @@ function XDashboardContent() {
                     {Object.entries(xSettings).map(([key, value]) => (
                       <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div>
-                          <h3 className="font-medium text-gray-900 capitalize">
+                          <h3 className="font-medium text-black capitalize">
                             {key.replace(/([A-Z])/g, ' $1').trim()}
                           </h3>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-black">
                             {typeof value === 'boolean' 
                               ? (value ? '有効' : '無効')
                               : String(value)
@@ -67,7 +67,7 @@ function XDashboardContent() {
                               {value ? 'ON' : 'OFF'}
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-500">{String(value)}</span>
+                            <span className="text-sm text-black">{String(value)}</span>
                           )}
                         </div>
                       </div>
@@ -75,11 +75,11 @@ function XDashboardContent() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="text-gray-400 text-4xl mb-4">⚙️</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <div className="text-black text-4xl mb-4">⚙️</div>
+                    <h3 className="text-lg font-medium text-black mb-2">
                       AI設定が未設定です
                     </h3>
-                    <p className="text-gray-600">
+                    <p className="text-black">
                       管理者にX用のAI設定を依頼してください
                     </p>
                   </div>
@@ -93,22 +93,22 @@ function XDashboardContent() {
             {/* 契約情報 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">契約情報</h3>
+                <h3 className="text-lg font-semibold text-black">契約情報</h3>
               </div>
               <div className="p-6 space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">契約状態</span>
+                  <span className="text-sm text-black">契約状態</span>
                   <span className="text-sm font-medium text-green-600">アクティブ</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">契約タイプ</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm text-black">契約タイプ</span>
+                  <span className="text-sm font-medium text-black">
                     {userProfile?.contractType === 'annual' ? '年間契約' : 'トライアル'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">利用形態</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm text-black">利用形態</span>
+                  <span className="text-sm font-medium text-black">
                     {userProfile?.usageType === 'team' ? 'チーム利用' : '個人利用'}
                   </span>
                 </div>
@@ -118,7 +118,7 @@ function XDashboardContent() {
             {/* クイックアクション */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">クイックアクション</h3>
+                <h3 className="text-lg font-semibold text-black">クイックアクション</h3>
               </div>
               <div className="p-6 space-y-3">
                 <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">

@@ -149,8 +149,8 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">認証が必要です</h1>
-          <p className="text-gray-600 mb-6">ダッシュボードにアクセスするにはログインしてください</p>
+          <h1 className="text-2xl font-bold text-black mb-4">認証が必要です</h1>
+          <p className="text-black mb-6">ダッシュボードにアクセスするにはログインしてください</p>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         </div>
       </div>
@@ -161,8 +161,8 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">ダッシュボード</h1>
-          <p className="text-gray-600 mb-6">プロフィールを読み込み中...</p>
+          <h1 className="text-2xl font-bold text-black mb-4">ダッシュボード</h1>
+          <p className="text-black mb-6">プロフィールを読み込み中...</p>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         </div>
       </div>
@@ -173,7 +173,7 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">エラーが発生しました</h1>
+          <h1 className="text-2xl font-bold text-black mb-4">エラーが発生しました</h1>
           <p className="text-red-600 mb-6">{profileError}</p>
           <button 
             onClick={() => window.location.reload()} 
@@ -248,10 +248,10 @@ export default function DashboardPage() {
               <User className="w-10 h-10 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              <h2 className="text-3xl font-bold text-black mb-2">
                 {userProfile?.name || user.displayName || 'ユーザー'}
               </h2>
-              <p className="text-gray-600 flex items-center space-x-2 text-lg">
+              <p className="text-black flex items-center space-x-2 text-lg">
                 <Mail className="w-5 h-5" />
                 <span>{user.email}</span>
               </p>
@@ -261,7 +261,7 @@ export default function DashboardPage() {
 
         {/* 契約情報 */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">契約情報</h3>
+          <h3 className="text-2xl font-bold text-black mb-6">契約情報</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
               <div className="flex items-center space-x-3 mb-3">
@@ -296,7 +296,7 @@ export default function DashboardPage() {
         {/* 契約SNS一覧 */}
         {contractSNS && contractSNS.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">契約SNS</h3>
+            <h3 className="text-2xl font-bold text-black mb-6">契約SNS</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {contractSNS.map((sns: string) => (
                 <button
@@ -310,7 +310,7 @@ export default function DashboardPage() {
                      sns === 'tiktok' ? '🎵' : 
                      sns === 'youtube' ? '📺' : '📱'}
                   </div>
-                  <div className="text-sm font-bold text-gray-900 capitalize group-hover:text-blue-600 transition-colors">
+                  <div className="text-sm font-bold text-black capitalize group-hover:text-blue-600 transition-colors">
                     {sns === 'x' ? 'X (Twitter)' : sns}
                   </div>
                 </button>
@@ -323,7 +323,7 @@ export default function DashboardPage() {
         {userProfile?.businessInfo && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">ビジネス情報</h3>
+              <h3 className="text-2xl font-bold text-black">ビジネス情報</h3>
               <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
                 🤖 AI活用データ
               </span>
@@ -335,25 +335,25 @@ export default function DashboardPage() {
                       <Building2 className="h-4 w-4 inline mr-2" />
                       業種
                     </label>
-                    <p className="text-gray-900">{getIndustryLabel(userProfile.businessInfo.industry) || '未設定'}</p>
+                    <p className="text-black">{getIndustryLabel(userProfile.businessInfo.industry) || '未設定'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
-                    <p className="text-gray-900">{getCompanySizeLabel(userProfile.businessInfo.companySize) || '未設定'}</p>
+                    <p className="text-black">{getCompanySizeLabel(userProfile.businessInfo.companySize) || '未設定'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
-                    <p className="text-gray-900">{getBusinessTypeLabel(userProfile.businessInfo.businessType) || '未設定'}</p>
+                    <p className="text-black">{getBusinessTypeLabel(userProfile.businessInfo.businessType) || '未設定'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
-                    <p className="text-gray-900">{getTargetMarketLabel(userProfile.businessInfo.targetMarket) || '未設定'}</p>
+                    <p className="text-black">{getTargetMarketLabel(userProfile.businessInfo.targetMarket) || '未設定'}</p>
                   </div>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">事業内容</label>
-                <p className="text-gray-900">{userProfile.businessInfo.description || '未設定'}</p>
+                <p className="text-black">{userProfile.businessInfo.description || '未設定'}</p>
               </div>
 
               {userProfile.businessInfo.goals && userProfile.businessInfo.goals.length > 0 && (
@@ -395,7 +395,7 @@ export default function DashboardPage() {
         {userProfile?.snsAISettings && Object.keys(userProfile.snsAISettings).length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">SNS AI設定</h3>
+              <h3 className="text-2xl font-bold text-black">SNS AI設定</h3>
               <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
                 🤖 AI活用データ
               </span>
@@ -411,7 +411,7 @@ export default function DashboardPage() {
                          snsType === 'tiktok' ? '🎵' : 
                          snsType === 'youtube' ? '📺' : '📱'}
                       </span>
-                      <h4 className="text-lg font-semibold text-gray-900 capitalize">
+                      <h4 className="text-lg font-semibold text-black capitalize">
                         {snsType === 'x' ? 'X (Twitter)' : snsType}
                       </h4>
                     </div>
@@ -429,7 +429,7 @@ export default function DashboardPage() {
                       {settings.tone && (
                         <div>
                           <span className="text-sm font-medium text-gray-700">トーン: </span>
-                          <span className="text-sm text-gray-900">{settings.tone}</span>
+                          <span className="text-sm text-black">{settings.tone}</span>
                         </div>
                       )}
                       {settings.features && settings.features.length > 0 && (
@@ -457,7 +457,7 @@ export default function DashboardPage() {
 
         {/* アカウント管理 */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">アカウント管理</h3>
+          <h3 className="text-2xl font-bold text-black mb-6">アカウント管理</h3>
           <div className="space-y-4">
             <button
               onClick={() => setShowPasswordChange(!showPasswordChange)}
@@ -467,15 +467,15 @@ export default function DashboardPage() {
                 <Key className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
-                <span className="text-gray-900 font-bold text-lg">パスワード変更</span>
-                <p className="text-gray-600">アカウントのパスワードを変更します</p>
+                <span className="text-black font-bold text-lg">パスワード変更</span>
+                <p className="text-black">アカウントのパスワードを変更します</p>
               </div>
-              <ArrowRight className="w-5 h-5 text-gray-400" />
+              <ArrowRight className="w-5 h-5 text-black" />
             </button>
 
             {showPasswordChange && (
               <div className="mt-6 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
-                <h4 className="text-xl font-bold text-gray-900 mb-6">パスワード変更</h4>
+                <h4 className="text-xl font-bold text-black mb-6">パスワード変更</h4>
                   
                   {passwordMessage && (
                     <div className={`mb-4 p-3 rounded-lg flex items-center space-x-2 ${
@@ -508,7 +508,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-2.5 text-black hover:text-black"
                         >
                           {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -530,7 +530,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-2.5 text-black hover:text-black"
                         >
                           {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -552,7 +552,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-2.5 text-black hover:text-black"
                         >
                           {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>

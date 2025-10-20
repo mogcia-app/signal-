@@ -48,13 +48,13 @@ export function GrowthTrendAnalysis({ currentData, previousData, weeklyTrend }: 
   const getGrowthIcon = (rate: number) => {
     if (rate > 0) return <TrendingUp className="w-4 h-4 text-green-600" />;
     if (rate < 0) return <TrendingDown className="w-4 h-4 text-red-600" />;
-    return <BarChart3 className="w-4 h-4 text-gray-500" />;
+    return <BarChart3 className="w-4 h-4 text-black" />;
   };
 
   const getGrowthColor = (rate: number) => {
     if (rate > 0) return 'text-green-600 bg-green-50 border-green-200';
     if (rate < 0) return 'text-red-600 bg-red-50 border-red-200';
-    return 'text-gray-600 bg-gray-50 border-gray-200';
+    return 'text-black bg-gray-50 border-gray-200';
   };
 
   const formatGrowthRate = (rate: number) => {
@@ -66,7 +66,7 @@ export function GrowthTrendAnalysis({ currentData, previousData, weeklyTrend }: 
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center space-x-2 mb-6">
         <TrendingUp className="w-5 h-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">成長トレンド分析</h3>
+        <h3 className="text-lg font-semibold text-black">成長トレンド分析</h3>
       </div>
 
       {/* 前月比成長率 */}
@@ -79,7 +79,7 @@ export function GrowthTrendAnalysis({ currentData, previousData, weeklyTrend }: 
               {getGrowthIcon(growthRates.likes)}
             </div>
             <div className="text-2xl font-bold">{formatGrowthRate(growthRates.likes)}</div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-black mt-1">
               {currentData.totalLikes.toLocaleString()} / {previousData?.totalLikes.toLocaleString() || 0}
             </div>
           </div>
@@ -90,7 +90,7 @@ export function GrowthTrendAnalysis({ currentData, previousData, weeklyTrend }: 
               {getGrowthIcon(growthRates.retweets)}
             </div>
             <div className="text-2xl font-bold">{formatGrowthRate(growthRates.retweets)}</div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-black mt-1">
               {currentData.totalRetweets.toLocaleString()} / {previousData?.totalRetweets.toLocaleString() || 0}
             </div>
           </div>
@@ -101,7 +101,7 @@ export function GrowthTrendAnalysis({ currentData, previousData, weeklyTrend }: 
               {getGrowthIcon(growthRates.comments)}
             </div>
             <div className="text-2xl font-bold">{formatGrowthRate(growthRates.comments)}</div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-black mt-1">
               {currentData.totalComments.toLocaleString()} / {previousData?.totalComments.toLocaleString() || 0}
             </div>
           </div>
@@ -112,7 +112,7 @@ export function GrowthTrendAnalysis({ currentData, previousData, weeklyTrend }: 
               {getGrowthIcon(growthRates.impressions)}
             </div>
             <div className="text-2xl font-bold">{formatGrowthRate(growthRates.impressions)}</div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-black mt-1">
               {currentData.totalImpressions.toLocaleString()} / {previousData?.totalImpressions.toLocaleString() || 0}
             </div>
           </div>
@@ -123,7 +123,7 @@ export function GrowthTrendAnalysis({ currentData, previousData, weeklyTrend }: 
               {getGrowthIcon(growthRates.followers)}
             </div>
             <div className="text-2xl font-bold">{formatGrowthRate(growthRates.followers)}</div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-black mt-1">
               {currentData.totalFollowers.toLocaleString()} / {previousData?.totalFollowers.toLocaleString() || 0}
             </div>
           </div>

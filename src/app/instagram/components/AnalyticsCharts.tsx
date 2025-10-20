@@ -152,11 +152,11 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
       {/* フォロワー数グラフ */}
       <div className="bg-white border border-[#ff8a15] p-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+          <h4 className="text-sm font-semibold text-black flex items-center">
             <Users className="w-4 h-4 mr-1 text-[#f97316]" />
             フォロワー数
           </h4>
-          <span className="text-xs text-gray-500">過去1週間</span>
+          <span className="text-xs text-black">過去1週間</span>
         </div>
         <div className="h-32">
           <Line data={followersChartData} options={chartOptions} />
@@ -165,18 +165,18 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
           <span className="text-lg font-bold text-[#f97316]">
             {loading ? 'ー' : stats.followers.toLocaleString()}
           </span>
-          <span className="text-xs text-gray-500 ml-1">現在</span>
+          <span className="text-xs text-black ml-1">現在</span>
         </div>
       </div>
 
       {/* いいね数グラフ */}
       <div className="bg-white border border-[#ff8a15] p-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+          <h4 className="text-sm font-semibold text-black flex items-center">
             <Heart className="w-4 h-4 mr-1 text-[#ff8a15]" />
             いいね数
           </h4>
-          <span className="text-xs text-gray-500">過去1週間</span>
+          <span className="text-xs text-black">過去1週間</span>
         </div>
         <div className="h-32">
           <Line data={likesChartData} options={chartOptions} />
@@ -185,18 +185,18 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
           <span className="text-lg font-bold text-[#ff8a15]">
             {loading ? 'ー' : stats.likes.toLocaleString()}
           </span>
-          <span className="text-xs text-gray-500 ml-1">合計</span>
+          <span className="text-xs text-black ml-1">合計</span>
         </div>
       </div>
 
       {/* 保存数グラフ */}
       <div className="bg-white border border-[#ff8a15] p-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+          <h4 className="text-sm font-semibold text-black flex items-center">
             <Bookmark className="w-4 h-4 mr-1 text-[#ea580c]" />
             保存数
           </h4>
-          <span className="text-xs text-gray-500">過去1週間</span>
+          <span className="text-xs text-black">過去1週間</span>
         </div>
         <div className="h-32">
           <Line data={savesChartData} options={chartOptions} />
@@ -205,18 +205,18 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
           <span className="text-lg font-bold text-[#ea580c]">
             {loading ? 'ー' : stats.saves.toLocaleString()}
           </span>
-          <span className="text-xs text-gray-500 ml-1">合計</span>
+          <span className="text-xs text-black ml-1">合計</span>
         </div>
       </div>
 
       {/* リーチ数グラフ */}
       <div className="bg-white border border-[#ff8a15] p-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+          <h4 className="text-sm font-semibold text-black flex items-center">
             <Eye className="w-4 h-4 mr-1 text-[#dc2626]" />
             リーチ数
           </h4>
-          <span className="text-xs text-gray-500">過去1週間</span>
+          <span className="text-xs text-black">過去1週間</span>
         </div>
         <div className="h-32">
           <Line data={reachChartData} options={chartOptions} />
@@ -225,7 +225,7 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
           <span className="text-lg font-bold text-[#dc2626]">
             {loading ? 'ー' : stats.reach.toLocaleString()}
           </span>
-          <span className="text-xs text-gray-500 ml-1">合計</span>
+          <span className="text-xs text-black ml-1">合計</span>
         </div>
       </div>
     </div>

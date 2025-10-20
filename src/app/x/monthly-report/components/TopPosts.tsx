@@ -51,10 +51,10 @@ export function TopPosts({ topPosts }: TopPostsProps) {
           <div className="p-2 bg-yellow-100 rounded-lg">
             <Trophy className="h-6 w-6 text-yellow-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">トップ投稿</h3>
+          <h3 className="text-lg font-semibold text-black">トップ投稿</h3>
         </div>
         <div className="text-center py-8">
-          <p className="text-gray-500">投稿データがありません</p>
+          <p className="text-black">投稿データがありません</p>
         </div>
       </div>
     );
@@ -66,8 +66,8 @@ export function TopPosts({ topPosts }: TopPostsProps) {
         <div className="p-2 bg-yellow-100 rounded-lg">
           <Trophy className="h-6 w-6 text-yellow-600" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900">トップ投稿</h3>
-        <span className="text-sm text-gray-500">（エンゲージメント順）</span>
+        <h3 className="text-lg font-semibold text-black">トップ投稿</h3>
+        <span className="text-sm text-black">（エンゲージメント順）</span>
       </div>
 
       <div className="space-y-4">
@@ -87,13 +87,13 @@ export function TopPosts({ topPosts }: TopPostsProps) {
                   {post.title || '投稿'}
                 </span>
               </div>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-black">
                 {formatDate(post.createdAt)}
               </span>
             </div>
 
             {post.content && (
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-black mb-3">
                 {truncateText(post.content, 100)}
               </p>
             )}

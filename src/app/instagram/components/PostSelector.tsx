@@ -80,10 +80,10 @@ const PostSelector: React.FC<PostSelectorProps> = ({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">投稿を選択</h3>
+          <h3 className="text-lg font-semibold text-black">投稿を選択</h3>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
+            className="flex items-center space-x-2 px-3 py-1.5 text-sm text-black hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
           >
             <Filter size={16} />
             <span>フィルター</span>
@@ -93,7 +93,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
         {/* 検索バー */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
+            <Search className="h-4 w-4 text-black" />
           </div>
           <input
             type="text"
@@ -105,7 +105,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-black hover:text-black"
             >
               <span className="text-lg">×</span>
             </button>
@@ -151,12 +151,12 @@ const PostSelector: React.FC<PostSelectorProps> = ({
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff8a15] mx-auto"></div>
-            <p className="text-gray-600 mt-2 text-sm">読み込み中...</p>
+            <p className="text-black mt-2 text-sm">読み込み中...</p>
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="text-gray-400 text-4xl mb-2">📝</div>
-            <p className="text-gray-600 text-sm">投稿が見つかりません</p>
+            <div className="text-black text-4xl mb-2">📝</div>
+            <p className="text-black text-sm">投稿が見つかりません</p>
           </div>
         ) : (
           <div className="space-y-2 p-2">
@@ -187,7 +187,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                        <div className="text-gray-400 text-lg">
+                        <div className="text-black text-lg">
                           {(post.postType || post.type || post.category) === 'reel' ? '🎬' : (post.postType || post.type || post.category) === 'story' ? '📸' : '📷'}
                         </div>
                         )}
@@ -197,7 +197,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                     {/* 投稿情報 */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                        <h4 className="text-sm font-medium text-black truncate">
                           {post.title || 'タイトルなし'}
                         </h4>
                         <div className="flex items-center space-x-1">
@@ -212,12 +212,12 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                         </div>
                       </div>
                       
-                      <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                      <p className="text-xs text-black line-clamp-2 mb-2">
                         {post.content || '内容なし'}
                       </p>
                       
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 text-xs text-gray-500">
+                        <div className="flex items-center space-x-3 text-xs text-black">
                           <span className="flex items-center">
                             <span className="mr-1">{getPostTypeLabel(post)}</span>
                           </span>
@@ -240,7 +240,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                         </div>
                         
                         {hasAnalytics && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
+                          <div className="flex items-center space-x-2 text-xs text-black">
                             <span className="flex items-center">
                               <Eye size={12} className="mr-1" />
                               {post.analytics?.views?.toLocaleString() || 0}
@@ -258,7 +258,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                             </span>
                           ))}
                           {post.hashtags.length > 3 && (
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-black">
                               +{post.hashtags.length - 3}
                             </span>
                           )}
@@ -281,7 +281,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
               onPostSelect(null);
               onPostIdSelect('');
             }}
-            className="w-full px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
+            className="w-full px-4 py-2 text-sm text-black hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
           >
             選択を解除
           </button>

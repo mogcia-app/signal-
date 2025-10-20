@@ -154,8 +154,8 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">AI投稿文生成</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="text-lg font-semibold text-black">AI投稿文生成</h3>
+              <p className="text-sm text-black">
                 {planData 
                   ? `${planData.title}に基づいてAIがX投稿文を自動生成します`
                   : '運用計画を作成してからAI投稿文を生成できます'
@@ -190,7 +190,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <div className="space-y-4">
             {/* 投稿日 */}
             <div>
-              <label className="block text-xs text-gray-600 mb-1">投稿日</label>
+              <label className="block text-xs text-black mb-1">投稿日</label>
               <input
                 type="date"
                 value={scheduledDate}
@@ -202,11 +202,11 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             {/* 投稿時間 */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs text-gray-600">投稿時間</label>
+                <label className="block text-xs text-black">投稿時間</label>
                 <button
                   onClick={handleSuggestTime}
                   disabled={!scheduledDate || isSuggestingTime}
-                  className="text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center"
+                  className="text-xs text-blue-600 hover:text-blue-800 disabled:text-black disabled:cursor-not-allowed flex items-center"
                 >
                   {isSuggestingTime ? (
                     <>
@@ -287,7 +287,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               style={{ fontFamily: 'inherit' }}
             />
             {/* 文字数カウンター */}
-            <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white px-2 py-1 rounded">
+            <div className="absolute bottom-2 right-2 text-xs text-black bg-white px-2 py-1 rounded">
               {aiPrompt.length}/140
             </div>
           </div>
@@ -298,7 +298,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <label className="block text-sm font-semibold text-gray-800 mb-3">
             ハッシュタグ
           </label>
-          <div className="text-sm text-gray-600 italic">
+          <div className="text-sm text-black italic">
             140文字以内でツイート生成時に自動でハッシュタグが追加されます（1-2個）
           </div>
         </div>

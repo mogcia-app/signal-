@@ -156,11 +156,11 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
         {/* ロゴ・ブランディング */}
         <div className="px-6 py-3 border-b border-gray-200">
           <div className="flex items-center">
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-black">
               Signal<span style={{ color: '#FF8A15' }}>.</span>
             </div>
           </div>
-          <p className="text-sm text-gray-600 mt-1">SNS管理プラットフォーム</p>
+          <p className="text-sm text-black mt-1">SNS管理プラットフォーム</p>
         </div>
 
         {/* 共通メニュー */}
@@ -169,14 +169,14 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
           <nav className="space-y-1">
             <Link 
               href="/onboarding"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>👤</span>
               <span>マイアカウント</span>
             </Link>
             <Link 
               href="/notifications"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>🔔</span>
               <span>お知らせ</span>
@@ -188,14 +188,14 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             </Link>
             <Link 
               href="/guide"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>📖</span>
               <span>使い方ガイド</span>
             </Link>
             <Link 
               href="/terms"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>📄</span>
               <span>利用規約</span>
@@ -210,8 +210,8 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               {currentSNSInfo.icon}
             </div>
             <div>
-              <div className="font-semibold text-gray-900">{currentSNSInfo.name}</div>
-              <div className="text-xs text-gray-500">{currentSNSInfo.description}</div>
+              <div className="font-semibold text-black">{currentSNSInfo.name}</div>
+              <div className="text-xs text-black">{currentSNSInfo.description}</div>
             </div>
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
                   className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-left transition-colors ${
                     isActive 
                       ? `${snsInfo.bgColor} ${snsInfo.textColor} font-medium` 
-                      : 'text-gray-600 hover:bg-gray-100'
+                      : 'text-black hover:bg-gray-100'
                   }`}
                 >
                   <span className="text-lg">{snsInfo.icon}</span>
@@ -250,7 +250,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
           <nav className="space-y-1">
             <Link 
               href={`/${currentSNS}/plan`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
               onClick={() => console.log('🔗 運用計画Linkがクリックされました', { currentSNS, href: `/${currentSNS}/plan` })}
             >
               <span>📋</span>
@@ -258,21 +258,21 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             </Link>
             <Link 
               href={`/${currentSNS}/lab`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>🧪</span>
               <span>投稿ラボ</span>
             </Link>
             <Link 
               href={`/${currentSNS}/analytics`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>📊</span>
               <span>投稿分析</span>
             </Link>
             <Link 
               href={`/${currentSNS}/monthly-report`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>📈</span>
               <span>月次レポート</span>
@@ -280,7 +280,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             {/* AIチャット（右下ウィジェットで代替）
             <Link 
               href={`/${currentSNS}/ai-chat`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>🤖</span>
               <span>AIチャット</span>
@@ -289,7 +289,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             {/* AI学習進捗（一時的に無効化）
             <Link 
               href={`/${currentSNS}/ai-learning`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>🧠</span>
               <span>AI学習進捗</span>
@@ -297,7 +297,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
             */}
             <Link 
               href={`/${currentSNS}/posts`}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
               <span>📚</span>
               <span>投稿一覧</span>
@@ -309,22 +309,22 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
         <div className="p-4 mt-auto">
           <div className="flex items-center space-x-3 mb-3">
             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-black">
                 {user?.email?.charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate">
+              <div className="text-sm font-medium text-black truncate">
                 {userProfile?.name || user?.email}
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-black">
                 {userProfile?.usageType === 'team' ? 'チーム利用' : '個人利用'}
               </div>
             </div>
           </div>
           <button
             onClick={handleSignOut}
-            className="w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg flex items-center space-x-2"
+            className="w-full px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg flex items-center space-x-2"
           >
             <span>🚪</span>
             <span>ログアウト</span>
@@ -341,10 +341,10 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
               {currentSNSInfo.icon}
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-xl font-semibold text-black">
                 {customTitle || `${currentSNSInfo.name} Dashboard`}
               </h1>
-              <p className="text-sm text-gray-600">{customDescription || currentSNSInfo.description}</p>
+              <p className="text-sm text-black">{customDescription || currentSNSInfo.description}</p>
             </div>
           </div>
         </div>

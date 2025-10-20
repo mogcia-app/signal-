@@ -31,7 +31,7 @@ export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalys
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-4">
         <Heart className="h-5 w-5 text-pink-600 mr-2" />
-        <h3 className="text-lg font-semibold text-gray-900">分析結果の感想</h3>
+        <h3 className="text-lg font-semibold text-black">分析結果の感想</h3>
       </div>
       
       <div className="space-y-4">
@@ -91,7 +91,7 @@ export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalys
               <div className="flex justify-end space-x-2">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                  className="px-3 py-1 text-sm text-black hover:text-gray-800"
                 >
                   キャンセル
                 </button>
@@ -116,7 +116,7 @@ export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalys
               {memo ? (
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{memo}</p>
               ) : (
-                <p className="text-sm text-gray-500">改善点や気づいたことをメモしてください...</p>
+                <p className="text-sm text-black">改善点や気づいたことをメモしてください...</p>
               )}
             </div>
           )}
@@ -125,7 +125,7 @@ export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalys
         {/* 統計表示 */}
         {sentiment && (
           <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-black">
               <MessageSquare className="h-4 w-4 mr-2" />
               <span>
                 {sentiment === 'satisfied' ? '満足' : '不満'}として記録されました

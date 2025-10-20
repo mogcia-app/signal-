@@ -44,8 +44,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <Users className="h-6 w-6 text-pink-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">フォロワー数</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-black">フォロワー数</p>
+              <p className="text-2xl font-bold text-black">
                 {loading ? 'ー' : stats.followers === 0 ? '0' : stats.followers.toLocaleString()}
               </p>
               <p className="text-xs text-green-600 flex items-center">
@@ -62,8 +62,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <Heart className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">総シェア数</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.engagement}</p>
+              <p className="text-sm font-medium text-black">総シェア数</p>
+              <p className="text-2xl font-bold text-black">{stats.engagement}</p>
             </div>
           </div>
         </div>
@@ -74,8 +74,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <Eye className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">閲覧数</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.reach.toLocaleString()}</p>
+              <p className="text-sm font-medium text-black">閲覧数</p>
+              <p className="text-2xl font-bold text-black">{stats.reach.toLocaleString()}</p>
               <p className="text-xs text-green-600">今週</p>
             </div>
           </div>
@@ -87,8 +87,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <Bookmark className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">保存数</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.saves}</p>
+              <p className="text-sm font-medium text-black">保存数</p>
+              <p className="text-2xl font-bold text-black">{stats.saves}</p>
               <p className="text-xs text-purple-600">今週</p>
             </div>
           </div>
@@ -103,8 +103,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <ThumbsUp className="h-6 w-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">いいね数</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.likes.toLocaleString()}</p>
+              <p className="text-sm font-medium text-black">いいね数</p>
+              <p className="text-2xl font-bold text-black">{stats.likes.toLocaleString()}</p>
               <p className="text-xs text-red-600">今週</p>
             </div>
           </div>
@@ -116,8 +116,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <Camera className="h-6 w-6 text-yellow-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">ストーリーズ投稿</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.monthlyStoryPosts}</p>
+              <p className="text-sm font-medium text-black">ストーリーズ投稿</p>
+              <p className="text-2xl font-bold text-black">{stats.monthlyStoryPosts}</p>
               <p className="text-xs text-yellow-600">今月</p>
             </div>
           </div>
@@ -129,8 +129,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <ImageIcon className="h-6 w-6 text-indigo-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">フィード投稿</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.monthlyFeedPosts}</p>
+              <p className="text-sm font-medium text-black">フィード投稿</p>
+              <p className="text-2xl font-bold text-black">{stats.monthlyFeedPosts}</p>
               <p className="text-xs text-indigo-600">今月</p>
             </div>
           </div>
@@ -142,8 +142,8 @@ export default function StatsCards({ stats, loading }: StatsCardsProps) {
               <Play className="h-6 w-6 text-orange-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">リール投稿</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.monthlyReelPosts}</p>
+              <p className="text-sm font-medium text-black">リール投稿</p>
+              <p className="text-2xl font-bold text-black">{stats.monthlyReelPosts}</p>
               <p className="text-xs text-orange-600">今月</p>
             </div>
           </div>

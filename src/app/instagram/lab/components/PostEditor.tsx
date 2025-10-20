@@ -318,8 +318,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <span className="text-white font-bold text-sm">📝</span>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">投稿文エディター</h2>
-              <p className="text-sm text-gray-600">投稿文を作成・編集しましょう</p>
+              <h2 className="text-lg font-semibold text-black">投稿文エディター</h2>
+              <p className="text-sm text-black">投稿文を作成・編集しましょう</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -390,7 +390,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'feed'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
+                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -403,7 +403,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'reel'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
+                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -416,7 +416,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               className={`p-3 rounded-lg border-2 transition-colors ${
                 postType === 'story'
                   ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
+                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
               }`}
             >
               <div className="text-center">
@@ -434,7 +434,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </label>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">投稿日</label>
+              <label className="block text-xs text-black mb-1">投稿日</label>
               <input
                 type="date"
                 value={scheduledDate}
@@ -443,7 +443,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1">投稿時間</label>
+              <label className="block text-xs text-black mb-1">投稿時間</label>
               <input
                 type="time"
                 value={scheduledTime}
@@ -575,7 +575,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               disabled={isAutoGenerating || !planData}
               className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
                 isAutoGenerating || !planData
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+                  ? 'bg-gray-100 text-black cursor-not-allowed border-gray-200'
                   : 'bg-gradient-to-r from-orange-400 to-orange-500 text-white border-orange-500 hover:from-orange-500 hover:to-orange-600 hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105'
               }`}
             >
@@ -595,7 +595,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               disabled={isGenerating || !planData || !aiPrompt.trim()}
               className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
                 isGenerating || !planData || !aiPrompt.trim()
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+                  ? 'bg-gray-100 text-black cursor-not-allowed border-gray-200'
                   : 'bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white border-[#ff8a15] hover:from-orange-600 hover:to-[#ff8a15] hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105'
               }`}
             >
@@ -660,7 +660,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 {isUploading ? (
                   <>
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff8a15]"></div>
-                    <span className="text-gray-600">アップロード中...</span>
+                    <span className="text-black">アップロード中...</span>
                   </>
                 ) : (
                   <>
@@ -668,8 +668,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                       <Upload className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
-                      <p className="text-gray-600 font-medium">画像をアップロード</p>
-                      <p className="text-sm text-gray-500">クリックしてファイルを選択（5MB以下）</p>
+                      <p className="text-black font-medium">画像をアップロード</p>
+                      <p className="text-sm text-black">クリックしてファイルを選択（5MB以下）</p>
                     </div>
                   </>
                 )}
@@ -687,18 +687,18 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl border-2 border-gray-100 shadow-sm">
             {/* 投稿情報ヘッダー */}
             <div className="mb-4 pb-3 border-b border-gray-200">
-              <div className="flex items-center justify-between text-xs text-gray-600">
+              <div className="flex items-center justify-between text-xs text-black">
                 <div className="flex items-center space-x-3">
                   <span className="font-medium">
                     {postType === 'feed' ? '📸 フィード' : postType === 'reel' ? '🎬 リール' : '📱 ストーリーズ'}
                   </span>
                   {scheduledDate && scheduledTime && (
-                    <span className="text-gray-500">
+                    <span className="text-black">
                       📅 {new Date(scheduledDate).toLocaleDateString('ja-JP')} {scheduledTime}
                     </span>
                   )}
                 </div>
-                <div className="text-gray-500">
+                <div className="text-black">
                   {scheduledDate ? new Date(scheduledDate).toLocaleDateString('ja-JP') : new Date().toLocaleDateString('ja-JP')}
                 </div>
               </div>
@@ -706,7 +706,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
                     {/* 投稿内容 */}
                     {title && (
-                      <div className="text-lg font-semibold text-gray-900 mb-3">
+                      <div className="text-lg font-semibold text-black mb-3">
                         {title}
                       </div>
                     )}
@@ -729,7 +729,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                         {content}
                       </div>
                     ) : (
-                      <div className="text-gray-400 italic text-center py-4">
+                      <div className="text-black italic text-center py-4">
                         📝 投稿文を入力するとプレビューが表示されます
                       </div>
                     )}

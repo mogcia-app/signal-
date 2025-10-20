@@ -35,7 +35,7 @@ export default function TermsPage() {
           {/* サイドバー */}
           <div className="w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">目次</h3>
+              <h3 className="text-lg font-semibold text-black mb-4">目次</h3>
               <nav className="space-y-2">
                 {pages.map((page) => (
                   <button
@@ -55,7 +55,7 @@ export default function TermsPage() {
               {/* ページナビゲーション */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-black">
                     {currentPage} / {totalPages}
                   </span>
                 </div>
@@ -89,7 +89,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第1条 総則</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第1条 総則</h2>
                     
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                       <p className="text-blue-800 text-sm">
@@ -97,7 +97,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（規約の適用）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（規約の適用）</h3>
                     <p className="text-gray-700 mb-4">
                       本規約は、当社が本サービスを提供する上で、利用者が本サービスの提供を受けるにあたっての諸条件を定めたものです。
                     </p>
@@ -123,7 +123,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第2条 利用登録</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第2条 利用登録</h2>
                     
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                       <p className="text-yellow-800 text-sm">
@@ -131,7 +131,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（利用登録）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（利用登録）</h3>
                     <p className="text-gray-700 mb-4">
                       利用者は、当社が定める方法により必要事項を登録いただくことで、利用登録を行うことができます。
                     </p>
@@ -159,7 +159,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第3条 ID及びパスワードの管理</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第3条 ID及びパスワードの管理</h2>
                     
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                       <p className="text-red-800 text-sm">
@@ -167,7 +167,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（ID及びパスワードの管理）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（ID及びパスワードの管理）</h3>
                     <p className="text-gray-700 mb-4">
                       利用者が利用登録を行った場合、当社はID及びパスワードを発行します。
                     </p>
@@ -195,7 +195,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第4条 商品等の購入又は利用</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第4条 商品等の購入又は利用</h2>
                     
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                       <p className="text-blue-800 text-sm">
@@ -203,7 +203,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（商品等の購入又は利用）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（商品等の購入又は利用）</h3>
                     <p className="text-gray-700 mb-4">
                       利用者は、本サービスにより提供される商品、デジタルコンテンツ又は役務（以下「商品等」といいます。）を購入又は利用しようとする場合、当社が指定する方法に従って、商品等の購入又は利用の申込みを行うものとします。
                     </p>
@@ -227,7 +227,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第5条 支払方法</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第5条 支払方法</h2>
                     
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                       <p className="text-green-800 text-sm">
@@ -235,7 +235,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（支払方法）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（支払方法）</h3>
                     <p className="text-gray-700 mb-4">
                       利用者は、前条の商品等の購入手続において表示される商品等の代金を支払うものとします。
                     </p>
@@ -259,7 +259,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第6条 商品等に関する免責</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第6条 商品等に関する免責</h2>
                     
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                       <p className="text-red-800 text-sm">
@@ -267,7 +267,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（商品等に関する免責）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（商品等に関する免責）</h3>
                     <p className="text-gray-700 mb-4">
                       本サービスを通じて販売される商品等の品質、機能、性能、他の物品との適合性その他の欠陥に関する当社の責任は、当社の故意又は重過失による場合を除いて、前条に定めるものに限られるものとします。
                     </p>
@@ -287,7 +287,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第7条 定期購入</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第7条 定期購入</h2>
                     
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                       <p className="text-blue-800 text-sm">
@@ -295,7 +295,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（定期購入）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（定期購入）</h3>
                     <p className="text-gray-700 mb-4">
                       定期購入（サブスクリプション）のプランは、月次で請求されます。各定期購入期間の前に、継続して請求がなされます。
                     </p>
@@ -337,7 +337,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第8条 フリートライアル</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第8条 フリートライアル</h2>
                     
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                       <p className="text-green-800 text-sm">
@@ -345,7 +345,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（フリートライアル）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（フリートライアル）</h3>
                     <p className="text-gray-700 mb-4">
                       当社は、その裁量で、定期購入に期間限定でフリートライアルを提供することがあります。
                     </p>
@@ -369,7 +369,7 @@ export default function TermsPage() {
               <div>
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">第9条 知的財産権及びコンテンツ</h2>
+                    <h2 className="text-2xl font-bold text-black mb-6">第9条 知的財産権及びコンテンツ</h2>
                     
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
                       <p className="text-orange-800 text-sm">
@@ -377,7 +377,7 @@ export default function TermsPage() {
                       </p>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">（知的財産権及びコンテンツ）</h3>
+                    <h3 className="text-lg font-semibold text-black mb-3">（知的財産権及びコンテンツ）</h3>
                     <p className="text-gray-700 mb-4">
                       本サービスを構成する全ての素材に関する著作権を含む知的財産権その他の一切の権利は、当社又は当該権利を有する第三者に帰属しています。
                     </p>
@@ -401,10 +401,10 @@ export default function TermsPage() {
 
         {/* フッター */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-black">
             本利用規約は、日本法に準拠し、東京地方裁判所を専属的合意管轄とします。
           </p>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-black mt-2">
             最終更新日: 2024年1月20日 | 効力発生日: 2024年1月20日
           </p>
         </div>

@@ -83,13 +83,13 @@ export const PostPredictionAnalysis: React.FC<PostPredictionAnalysisProps> = ({
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">投稿後の予想診断</h3>
-              <p className="text-sm text-gray-600">投稿のパフォーマンスを予測します</p>
+              <h3 className="text-lg font-semibold text-black">投稿後の予想診断</h3>
+              <p className="text-sm text-black">投稿のパフォーマンスを予測します</p>
             </div>
           </div>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 text-black hover:text-black transition-colors"
           >
             {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
@@ -105,8 +105,8 @@ export const PostPredictionAnalysis: React.FC<PostPredictionAnalysisProps> = ({
                 <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <TrendingUp className="w-8 h-8 text-purple-600" />
                 </div>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">予想診断を開始</h4>
-                <p className="text-sm text-gray-600 mb-4">
+                <h4 className="text-lg font-medium text-black mb-2">予想診断を開始</h4>
+                <p className="text-sm text-black mb-4">
                   投稿内容を分析して、エンゲージメントやリーチを予測します
                 </p>
               </div>
@@ -136,7 +136,7 @@ export const PostPredictionAnalysis: React.FC<PostPredictionAnalysisProps> = ({
                 <div className={`text-lg font-medium ${getScoreColor(analysisResult.engagementScore)}`}>
                   {getScoreLabel(analysisResult.engagementScore)}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">エンゲージメント予想スコア</div>
+                <div className="text-sm text-black mt-1">エンゲージメント予想スコア</div>
               </div>
 
               {/* 予想数値 */}
@@ -184,7 +184,7 @@ export const PostPredictionAnalysis: React.FC<PostPredictionAnalysisProps> = ({
 
               {/* インサイト */}
               <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-3">📊 分析インサイト</h4>
+                <h4 className="text-lg font-semibold text-black mb-3">📊 分析インサイト</h4>
                 <ul className="space-y-2">
                   {analysisResult.insights.map((insight, index) => (
                     <li key={index} className="flex items-start">
@@ -197,7 +197,7 @@ export const PostPredictionAnalysis: React.FC<PostPredictionAnalysisProps> = ({
 
               {/* 推奨事項 */}
               <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-3">💡 改善推奨事項</h4>
+                <h4 className="text-lg font-semibold text-black mb-3">💡 改善推奨事項</h4>
                 <ul className="space-y-2">
                   {analysisResult.recommendations.map((recommendation, index) => (
                     <li key={index} className="flex items-start">

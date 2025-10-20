@@ -199,7 +199,7 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
               className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
                 inputMode === 'search'
                   ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-black hover:text-gray-700'
               }`}
             >
               既存投稿を選択
@@ -209,7 +209,7 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
               className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
                 inputMode === 'manual'
                   ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-black hover:text-gray-700'
               }`}
             >
               新規投稿を入力
@@ -251,9 +251,9 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium text-gray-900">{post.title}</div>
-                          <div className="text-sm text-gray-500 truncate">{post.content}</div>
-                          <div className="text-xs text-gray-400 mt-1">
+                          <div className="font-medium text-black">{post.title}</div>
+                          <div className="text-sm text-black truncate">{post.content}</div>
+                          <div className="text-xs text-black mt-1">
                             {post.postType === 'reel' ? 'リール' : post.postType === 'feed' ? 'フィード' : 'ストーリー'} • 
                             {new Date(post.createdAt).toLocaleDateString('ja-JP')}
                           </div>
@@ -381,7 +381,7 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
 
           {/* 共通のKPI入力フィールド */}
           <div className="md:col-span-2 lg:col-span-3">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">分析結果のKPI</h3>
+            <h3 className="text-lg font-medium text-black mb-4">分析結果のKPI</h3>
           </div>
 
           <div>

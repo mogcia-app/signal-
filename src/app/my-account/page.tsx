@@ -103,7 +103,7 @@ export default function MyAccountPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">プロファイルを読み込み中...</p>
+          <p className="text-black">プロファイルを読み込み中...</p>
         </div>
       </div>
     );
@@ -138,13 +138,13 @@ export default function MyAccountPage() {
                 <User className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">マイアカウント</h1>
-                <p className="text-sm text-gray-600">プロファイル情報と契約内容</p>
+                <h1 className="text-2xl font-bold text-black">マイアカウント</h1>
+                <p className="text-sm text-black">プロファイル情報と契約内容</p>
               </div>
             </div>
             <button
               onClick={() => router.push('/dashboard')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-black hover:text-black hover:bg-gray-100 rounded-lg transition-colors"
             >
               ダッシュボードに戻る
             </button>
@@ -160,7 +160,7 @@ export default function MyAccountPage() {
             {/* プロファイル情報 */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">プロファイル情報</h2>
+                <h2 className="text-lg font-semibold text-black">プロファイル情報</h2>
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
@@ -184,7 +184,7 @@ export default function MyAccountPage() {
                         setIsEditing(false);
                         setEditedName(profile.name);
                       }}
-                      className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="flex items-center space-x-2 px-3 py-2 text-black hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <X className="h-4 w-4" />
                       <span>キャンセル</span>
@@ -208,7 +208,7 @@ export default function MyAccountPage() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   ) : (
-                    <p className="text-gray-900">{profile.name}</p>
+                    <p className="text-black">{profile.name}</p>
                   )}
                 </div>
 
@@ -218,8 +218,8 @@ export default function MyAccountPage() {
                     <Mail className="h-4 w-4 inline mr-2" />
                     メールアドレス
                   </label>
-                  <p className="text-gray-900">{profile.email}</p>
-                  <p className="text-xs text-gray-500 mt-1">※メールアドレスは変更できません</p>
+                  <p className="text-black">{profile.email}</p>
+                  <p className="text-xs text-black mt-1">※メールアドレスは変更できません</p>
                 </div>
 
                 {/* ユーザーID */}
@@ -228,7 +228,7 @@ export default function MyAccountPage() {
                     <Shield className="h-4 w-4 inline mr-2" />
                     ユーザーID
                   </label>
-                  <p className="text-gray-600 text-sm font-mono bg-gray-50 p-2 rounded">{profile.id}</p>
+                  <p className="text-black text-sm font-mono bg-gray-50 p-2 rounded">{profile.id}</p>
                 </div>
               </div>
             </div>
@@ -236,7 +236,7 @@ export default function MyAccountPage() {
             {/* ビジネス情報 */}
             {profile.businessInfo && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">ビジネス情報</h2>
+                <h2 className="text-lg font-semibold text-black mb-6">ビジネス情報</h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -244,25 +244,25 @@ export default function MyAccountPage() {
                         <Building2 className="h-4 w-4 inline mr-2" />
                         業種
                       </label>
-                      <p className="text-gray-900">{profile.businessInfo.industry || '未設定'}</p>
+                      <p className="text-black">{profile.businessInfo.industry || '未設定'}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
-                      <p className="text-gray-900">{profile.businessInfo.companySize || '未設定'}</p>
+                      <p className="text-black">{profile.businessInfo.companySize || '未設定'}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
-                      <p className="text-gray-900">{profile.businessInfo.businessType || '未設定'}</p>
+                      <p className="text-black">{profile.businessInfo.businessType || '未設定'}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
-                      <p className="text-gray-900">{profile.businessInfo.targetMarket || '未設定'}</p>
+                      <p className="text-black">{profile.businessInfo.targetMarket || '未設定'}</p>
                     </div>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">事業内容</label>
-                    <p className="text-gray-900">{profile.businessInfo.description || '未設定'}</p>
+                    <p className="text-black">{profile.businessInfo.description || '未設定'}</p>
                   </div>
 
                   {profile.businessInfo.goals && profile.businessInfo.goals.length > 0 && (
@@ -305,7 +305,7 @@ export default function MyAccountPage() {
           <div className="space-y-6">
             {/* 契約情報 */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">契約情報</h2>
+              <h2 className="text-lg font-semibold text-black mb-4">契約情報</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">契約タイプ</label>
@@ -320,12 +320,12 @@ export default function MyAccountPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">利用形態</label>
-                  <p className="text-gray-900">{profile.usageType === 'team' ? 'チーム' : 'ソロ'}</p>
+                  <p className="text-black">{profile.usageType === 'team' ? 'チーム' : 'ソロ'}</p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">SNS契約数</label>
-                  <p className="text-gray-900">{profile.snsCount} 件</p>
+                  <p className="text-black">{profile.snsCount} 件</p>
                 </div>
 
                 <div>
@@ -347,7 +347,7 @@ export default function MyAccountPage() {
                     <Calendar className="h-4 w-4 inline mr-2" />
                     契約期間
                   </label>
-                  <p className="text-gray-900 text-sm">
+                  <p className="text-black text-sm">
                     {new Date(profile.contractStartDate).toLocaleDateString('ja-JP')} 〜 {new Date(profile.contractEndDate).toLocaleDateString('ja-JP')}
                   </p>
                 </div>
@@ -369,15 +369,15 @@ export default function MyAccountPage() {
 
             {/* アカウント情報 */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">アカウント情報</h2>
+              <h2 className="text-lg font-semibold text-black mb-4">アカウント情報</h2>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">作成日</span>
-                  <span className="text-gray-900">{new Date(profile.createdAt).toLocaleDateString('ja-JP')}</span>
+                  <span className="text-black">作成日</span>
+                  <span className="text-black">{new Date(profile.createdAt).toLocaleDateString('ja-JP')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">最終更新</span>
-                  <span className="text-gray-900">{new Date(profile.updatedAt).toLocaleDateString('ja-JP')}</span>
+                  <span className="text-black">最終更新</span>
+                  <span className="text-black">{new Date(profile.updatedAt).toLocaleDateString('ja-JP')}</span>
                 </div>
               </div>
             </div>

@@ -51,7 +51,7 @@ export function MetricsCards({ totals, engagement, changes }: MetricsCardsProps)
   const getChangeColor = (change: number) => {
     if (change > 0) return 'text-green-600';
     if (change < 0) return 'text-red-600';
-    return 'text-gray-600';
+    return 'text-black';
   };
 
   return (
@@ -63,8 +63,8 @@ export function MetricsCards({ totals, engagement, changes }: MetricsCardsProps)
             <MessageCircle className="h-5 w-5 text-blue-600" />
           </div>
           <div className="flex-1">
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(totals.totalPosts)}</p>
-            <p className="text-sm text-gray-600">投稿数</p>
+            <p className="text-2xl font-bold text-black">{formatNumber(totals.totalPosts)}</p>
+            <p className="text-sm text-black">投稿数</p>
             {changes && (
               <div className="flex items-center space-x-1 mt-1">
                 {getChangeIcon(changes.postsChange)}
@@ -84,8 +84,8 @@ export function MetricsCards({ totals, engagement, changes }: MetricsCardsProps)
             <Users className="h-5 w-5 text-green-600" />
           </div>
           <div className="flex-1">
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(totals.totalFollowers)}</p>
-            <p className="text-sm text-gray-600">フォロワー</p>
+            <p className="text-2xl font-bold text-black">{formatNumber(totals.totalFollowers)}</p>
+            <p className="text-sm text-black">フォロワー</p>
             {changes && (
               <div className="flex items-center space-x-1 mt-1">
                 {getChangeIcon(changes.followerChange)}
@@ -105,8 +105,8 @@ export function MetricsCards({ totals, engagement, changes }: MetricsCardsProps)
             <Eye className="h-5 w-5 text-purple-600" />
           </div>
           <div className="flex-1">
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(totals.totalImpressions)}</p>
-            <p className="text-sm text-gray-600">インプレッション</p>
+            <p className="text-2xl font-bold text-black">{formatNumber(totals.totalImpressions)}</p>
+            <p className="text-sm text-black">インプレッション</p>
             {changes && (
               <div className="flex items-center space-x-1 mt-1">
                 {getChangeIcon(changes.impressionsChange)}
@@ -126,9 +126,9 @@ export function MetricsCards({ totals, engagement, changes }: MetricsCardsProps)
             <Heart className="h-5 w-5 text-red-600" />
           </div>
           <div className="flex-1">
-            <p className="text-2xl font-bold text-gray-900">{formatPercentage(engagement.likeRate)}%</p>
-            <p className="text-sm text-gray-600">いいね率</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-2xl font-bold text-black">{formatPercentage(engagement.likeRate)}%</p>
+            <p className="text-sm text-black">いいね率</p>
+            <p className="text-xs text-black mt-1">
               {formatNumber(totals.totalLikes)} いいね
             </p>
           </div>
@@ -142,9 +142,9 @@ export function MetricsCards({ totals, engagement, changes }: MetricsCardsProps)
             <Repeat2 className="h-5 w-5 text-orange-600" />
           </div>
           <div className="flex-1">
-            <p className="text-2xl font-bold text-gray-900">{formatPercentage(engagement.retweetRate)}%</p>
-            <p className="text-sm text-gray-600">リツイート率</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-2xl font-bold text-black">{formatPercentage(engagement.retweetRate)}%</p>
+            <p className="text-sm text-black">リツイート率</p>
+            <p className="text-xs text-black mt-1">
               {formatNumber(totals.totalRetweets)} リツイート
             </p>
           </div>
@@ -158,9 +158,9 @@ export function MetricsCards({ totals, engagement, changes }: MetricsCardsProps)
             <MousePointer className="h-5 w-5 text-indigo-600" />
           </div>
           <div className="flex-1">
-            <p className="text-2xl font-bold text-gray-900">{formatPercentage(engagement.engagementRate)}%</p>
-            <p className="text-sm text-gray-600">エンゲージメント率</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-2xl font-bold text-black">{formatPercentage(engagement.engagementRate)}%</p>
+            <p className="text-sm text-black">エンゲージメント率</p>
+            <p className="text-xs text-black mt-1">
               {formatNumber(totals.totalEngagements)} エンゲージメント
             </p>
           </div>

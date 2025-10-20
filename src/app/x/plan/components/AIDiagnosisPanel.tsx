@@ -21,7 +21,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       <h3 className="text-lg font-semibold mb-2 flex items-center">
         <span className="mr-2">🤖</span>AIによる投稿戦略アドバイス
       </h3>
-      <p className="text-sm text-gray-600 mb-4">
+      <p className="text-sm text-black mb-4">
         目標や施策をもとに、AIが最適な方向性を提案します。
       </p>
 
@@ -36,8 +36,8 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       {/* エラー表示 */}
       {!isLoading && !showAdvice && (
         <div className="text-center py-8">
-          <div className="text-gray-400 text-4xl mb-4">🤖</div>
-          <p className="text-gray-600">
+          <div className="text-black text-4xl mb-4">🤖</div>
+          <p className="text-black">
             左側で計画を入力し、シミュレーションを実行してから<br />
             AI診断を開始してください
           </p>
@@ -48,7 +48,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       {isLoading && (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">AIが戦略を生成中...</p>
+          <p className="text-black">AIが戦略を生成中...</p>
         </div>
       )}
 
@@ -105,22 +105,22 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
 
           {/* ブランド世界観 */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-gray-900 mb-2">🎨 ブランド世界観</h4>
+            <h4 className="font-semibold text-black mb-2">🎨 ブランド世界観</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-600">コンセプト:</span>
+                <span className="text-black">コンセプト:</span>
                 <div className="font-medium">親しみやすく信頼できる</div>
               </div>
               <div>
-                <span className="text-gray-600">メインカラー:</span>
+                <span className="text-black">メインカラー:</span>
                 <div className="font-medium">ブルー系</div>
               </div>
               <div>
-                <span className="text-gray-600">サブカラー:</span>
+                <span className="text-black">サブカラー:</span>
                 <div className="font-medium">グレー系</div>
               </div>
               <div>
-                <span className="text-gray-600">トーン:</span>
+                <span className="text-black">トーン:</span>
                 <div className="font-medium">親しみやすい</div>
               </div>
             </div>
@@ -128,7 +128,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
 
           {/* 推奨投稿内容 */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-900">📱 推奨投稿内容</h4>
+            <h4 className="font-semibold text-black">📱 推奨投稿内容</h4>
             
             <div className="bg-blue-50 p-3 rounded-lg">
               <h5 className="font-medium text-blue-900 mb-2">ツイート</h5>

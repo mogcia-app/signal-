@@ -517,8 +517,8 @@ export default function InstagramMonthlyReportPage() {
                 <div className="w-full h-full border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">データを読み込み中...</h2>
-            <p className="text-gray-600 mb-6">魅力的な分析レポートを準備しています</p>
+            <h2 className="text-2xl font-bold text-black mb-3">データを読み込み中...</h2>
+            <p className="text-black mb-6">魅力的な分析レポートを準備しています</p>
           </div>
         </div>
       </SNSLayout>
@@ -544,7 +544,7 @@ export default function InstagramMonthlyReportPage() {
               </div>
             </div>
             
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl font-bold text-black mb-4">
               データを集め中...
             </h2>
             
@@ -560,21 +560,21 @@ export default function InstagramMonthlyReportPage() {
 
             {dataCount && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h3 className="font-medium text-gray-900 mb-3">収集済みデータ</h3>
+                <h3 className="font-medium text-black mb-3">収集済みデータ</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">{dataCount.analyticsCount}</div>
-                    <div className="text-gray-600">アナリティクス</div>
+                    <div className="text-black">アナリティクス</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">{dataCount.postsCount}</div>
-                    <div className="text-gray-600">投稿データ</div>
+                    <div className="text-black">投稿データ</div>
                   </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700">合計</span>
-                    <span className="text-lg font-bold text-gray-900">{dataCount.totalCount}件</span>
+                    <span className="text-lg font-bold text-black">{dataCount.totalCount}件</span>
                   </div>
                   <div className="mt-2">
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -583,7 +583,7 @@ export default function InstagramMonthlyReportPage() {
                         style={{ width: `${Math.min((dataCount.totalCount / 15) * 100, 100)}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-black mt-1">
                       {15 - dataCount.totalCount > 0 ? `あと${15 - dataCount.totalCount}件でレポート生成` : 'レポート生成可能'}
                     </p>
                   </div>
@@ -606,7 +606,7 @@ export default function InstagramMonthlyReportPage() {
               </a>
             </div>
 
-            <p className="text-sm text-gray-500 mt-6">
+            <p className="text-sm text-black mt-6">
               データが15件に達すると、自動的に月次レポートが生成されます
             </p>
           </div>
@@ -663,14 +663,14 @@ export default function InstagramMonthlyReportPage() {
 
           {/* 期間の成果 */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">期間の成果</h3>
+            <h3 className="text-lg font-semibold text-black mb-4">期間の成果</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-green-50 rounded-lg">
                 <div className="text-lg font-bold text-green-600">
                   {currentTotals.totalFollowerChange > 0 ? '+' : ''}
                   {currentTotals.totalFollowerChange}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-black">
                   {activeTab === 'weekly' ? '今週のフォロワー増加' : '今月のフォロワー増加'}
                 </div>
               </div>
@@ -678,7 +678,7 @@ export default function InstagramMonthlyReportPage() {
                 <div className="text-lg font-bold text-blue-600">
                   {currentTotals.totalPosts}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-black">
                   {activeTab === 'weekly' ? '今週の投稿数' : '今月の投稿数'}
                 </div>
               </div>

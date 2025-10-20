@@ -44,7 +44,7 @@ export function DetailedStats({ totals, previousTotals }: DetailedStatsProps) {
   const getChangeColor = (change: number) => {
     if (change > 0) return 'text-green-600';
     if (change < 0) return 'text-red-600';
-    return 'text-gray-600';
+    return 'text-black';
   };
 
   const stats = [
@@ -98,7 +98,7 @@ export function DetailedStats({ totals, previousTotals }: DetailedStatsProps) {
         <div className="p-2 bg-blue-100 rounded-lg">
           <BarChart3 className="h-6 w-6 text-blue-600" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900">詳細統計</h3>
+        <h3 className="text-lg font-semibold text-black">詳細統計</h3>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6">

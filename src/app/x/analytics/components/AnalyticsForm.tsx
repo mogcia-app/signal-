@@ -82,13 +82,13 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
   return (
     <div className="bg-white ">
       <div className="p-6 ">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿分析</h3>
+        <h3 className="text-xl font-semibold text-black mb-4">投稿分析</h3>
         
         {/* 検索とフィルター */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black h-4 w-4" />
               <input
                 type="text"
                 placeholder="投稿を検索..."
@@ -129,7 +129,7 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
           <div className="bg-blue-50 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">総投稿数</p>
+                <p className="text-sm text-black">総投稿数</p>
                 <p className="text-xl font-semibold text-blue-600">{posts.length}</p>
               </div>
               <MessageCircle className="h-8 w-8 text-blue-600" />
@@ -139,7 +139,7 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
           <div className="bg-green-50 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">平均エンゲージメント率</p>
+                <p className="text-sm text-black">平均エンゲージメント率</p>
                 <p className="text-xl font-semibold text-green-600">
                   {posts.length > 0 
                     ? (posts.reduce((sum, post) => sum + parseFloat(getEngagementRate(post)), 0) / posts.length).toFixed(1)
@@ -154,7 +154,7 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
           <div className="bg-purple-50 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">総インプレッション</p>
+                <p className="text-sm text-black">総インプレッション</p>
                 <p className="text-xl font-semibold text-purple-600">
                   {formatNumber(posts.reduce((sum, post) => sum + post.metrics.impressions, 0))}
                 </p>
@@ -166,7 +166,7 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
           <div className="bg-red-50 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">総いいね数</p>
+                <p className="text-sm text-black">総いいね数</p>
                 <p className="text-xl font-semibold text-red-600">
                   {formatNumber(posts.reduce((sum, post) => sum + post.metrics.likes, 0))}
                 </p>
@@ -180,8 +180,8 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
       {/* 投稿一覧 */}
       <div className="divide-y">
         {filteredPosts.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <div className="p-8 text-center text-black">
+            <MessageCircle className="h-12 w-12 mx-auto mb-4 text-black" />
             <p>投稿が見つかりません</p>
             {searchTerm && (
               <p className="text-sm mt-2">「{searchTerm}」で検索した結果がありません</p>
@@ -199,7 +199,7 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <p className="text-gray-700 line-clamp-2 mb-2">{post.content}</p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex items-center space-x-4 text-sm text-black">
                     <span>{new Date(post.timestamp).toLocaleDateString('ja-JP')}</span>
                     <span>エンゲージメント率: {getEngagementRate(post)}%</span>
                   </div>
@@ -208,24 +208,24 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
               
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-3">
                 <div className="flex items-center space-x-1">
-                  <Eye className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{formatNumber(post.metrics.impressions)}</span>
+                  <Eye className="h-4 w-4 text-black" />
+                  <span className="text-sm text-black">{formatNumber(post.metrics.impressions)}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Heart className="h-4 w-4 text-red-400" />
-                  <span className="text-sm text-gray-600">{formatNumber(post.metrics.likes)}</span>
+                  <span className="text-sm text-black">{formatNumber(post.metrics.likes)}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Repeat2 className="h-4 w-4 text-green-400" />
-                  <span className="text-sm text-gray-600">{formatNumber(post.metrics.retweets)}</span>
+                  <span className="text-sm text-black">{formatNumber(post.metrics.retweets)}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <MessageCircle className="h-4 w-4 text-blue-400" />
-                  <span className="text-sm text-gray-600">{formatNumber(post.metrics.replies)}</span>
+                  <span className="text-sm text-black">{formatNumber(post.metrics.replies)}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <TrendingUp className="h-4 w-4 text-purple-400" />
-                  <span className="text-sm text-gray-600">{formatNumber(post.metrics.engagements)}</span>
+                  <span className="text-sm text-black">{formatNumber(post.metrics.engagements)}</span>
                 </div>
               </div>
             </div>
@@ -234,7 +234,7 @@ export default function AnalyticsForm({ onPostAnalysis, selectedPost, posts }: A
       </div>
       
       {filteredPosts.length > 0 && (
-        <div className="p-4 bg-gray-50 text-center text-sm text-gray-600">
+        <div className="p-4 bg-gray-50 text-center text-sm text-black">
           {filteredPosts.length}件中 {filteredPosts.length}件を表示
         </div>
       )}

@@ -61,8 +61,8 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
           <FileText className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">投稿プレビュー</h2>
-          <p className="text-sm text-gray-600">選択された投稿または入力された投稿情報</p>
+          <h2 className="text-lg font-semibold text-black">投稿プレビュー</h2>
+          <p className="text-sm text-black">選択された投稿または入力された投稿情報</p>
         </div>
       </div>
 
@@ -100,7 +100,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
             {/* 投稿情報 */}
             <div className="flex-grow min-w-0">
               <div className="flex items-center space-x-2 mb-2">
-                <h3 className="text-lg font-semibold text-gray-900 truncate">
+                <h3 className="text-lg font-semibold text-black truncate">
                   {displayData.title || '無題の投稿'}
                 </h3>
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
@@ -109,14 +109,14 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
               </div>
 
               {displayData.content && (
-                <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+                <p className="text-sm text-black mb-3 line-clamp-3">
                   {displayData.content}
                 </p>
               )}
 
               {displayData.hashtags && displayData.hashtags.length > 0 && (
                 <div className="flex items-center space-x-2 mb-3">
-                  <Hash className="w-3 h-3 text-gray-400" />
+                  <Hash className="w-3 h-3 text-black" />
                   <div className="flex flex-wrap gap-1">
                     {displayData.hashtags.slice(0, 5).map((tag, index) => (
                       <span key={index} className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
@@ -124,14 +124,14 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
                       </span>
                     ))}
                     {displayData.hashtags.length > 5 && (
-                      <span className="text-xs text-gray-500">+{displayData.hashtags.length - 5}</span>
+                      <span className="text-xs text-black">+{displayData.hashtags.length - 5}</span>
                     )}
                   </div>
                 </div>
               )}
 
               {displayData.publishedAt && (
-                <div className="flex items-center space-x-1 text-xs text-gray-500">
+                <div className="flex items-center space-x-1 text-xs text-black">
                   <Calendar className="w-3 h-3" />
                   <span>
                     {displayData.publishedAt.toLocaleDateString('ja-JP')}
@@ -143,9 +143,9 @@ const PostPreview: React.FC<PostPreviewProps> = ({ selectedPost, inputData }) =>
         </div>
       ) : (
         <div className="text-center py-8">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">投稿を選択するか手動で入力してください</p>
-          <p className="text-sm text-gray-500">左側の検索バーから投稿を検索するか、手動入力フォームに記入してください</p>
+          <FileText className="w-12 h-12 text-black mx-auto mb-4" />
+          <p className="text-black">投稿を選択するか手動で入力してください</p>
+          <p className="text-sm text-black">左側の検索バーから投稿を検索するか、手動入力フォームに記入してください</p>
         </div>
       )}
     </div>

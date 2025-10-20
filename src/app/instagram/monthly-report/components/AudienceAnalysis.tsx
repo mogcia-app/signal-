@@ -52,8 +52,8 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
             <Users className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">オーディエンス分析</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-lg font-semibold text-black">オーディエンス分析</h2>
+            <p className="text-sm text-black">
               {activeTab === 'weekly' 
                 ? `${getWeekDisplayName(selectedWeek)}のオーディエンス構成`
                 : `${getMonthDisplayName(selectedMonth)}のオーディエンス構成`
@@ -71,19 +71,19 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
                 <div className="text-sm font-bold text-gray-700">
                   👨 {audienceData.gender.male.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">男性</div>
+                <div className="text-xs text-black">男性</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-sm font-bold text-gray-700">
                   👩 {audienceData.gender.female.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">女性</div>
+                <div className="text-xs text-black">女性</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-sm font-bold text-gray-700">
                   🏳️‍🌈 {audienceData.gender.other.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">その他</div>
+                <div className="text-xs text-black">その他</div>
               </div>
             </div>
           </div>
@@ -96,25 +96,25 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
                 <div className="text-xs font-bold text-gray-700">
                   {audienceData.age['18-24'].toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">18-24歳</div>
+                <div className="text-xs text-black">18-24歳</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-xs font-bold text-gray-700">
                   {audienceData.age['25-34'].toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">25-34歳</div>
+                <div className="text-xs text-black">25-34歳</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-xs font-bold text-gray-700">
                   {audienceData.age['35-44'].toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">35-44歳</div>
+                <div className="text-xs text-black">35-44歳</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-xs font-bold text-gray-700">
                   {audienceData.age['45-54'].toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">45-54歳</div>
+                <div className="text-xs text-black">45-54歳</div>
               </div>
             </div>
           </div>
@@ -128,8 +128,8 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
             <Target className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">閲覧数ソース分析</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-lg font-semibold text-black">閲覧数ソース分析</h2>
+            <p className="text-sm text-black">
               {activeTab === 'weekly' 
                 ? `${getWeekDisplayName(selectedWeek)}の閲覧ソース構成`
                 : `${getMonthDisplayName(selectedMonth)}の閲覧ソース構成`
@@ -147,25 +147,25 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
                 <div className="text-sm font-bold text-gray-700">
                   📱 {reachSourceData.sources.posts.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">投稿</div>
+                <div className="text-xs text-black">投稿</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-sm font-bold text-gray-700">
                   👤 {reachSourceData.sources.profile.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">プロフィール</div>
+                <div className="text-xs text-black">プロフィール</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-sm font-bold text-gray-700">
                   🔍 {reachSourceData.sources.explore.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">発見</div>
+                <div className="text-xs text-black">発見</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-sm font-bold text-gray-700">
                   🔎 {reachSourceData.sources.search.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">検索</div>
+                <div className="text-xs text-black">検索</div>
               </div>
             </div>
           </div>
@@ -178,13 +178,13 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
                 <div className="text-sm font-bold text-gray-700">
                   👥 {reachSourceData.followers.followers.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">フォロワー内</div>
+                <div className="text-xs text-black">フォロワー内</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-sm font-bold text-gray-700">
                   🌐 {reachSourceData.followers.nonFollowers.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-600">フォロワー外</div>
+                <div className="text-xs text-black">フォロワー外</div>
               </div>
             </div>
           </div>

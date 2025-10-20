@@ -341,7 +341,7 @@ export default function XAnalyticsPage() {
           <div className="flex items-center justify-center min-h-screen">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">アナリティクスデータを読み込み中...</p>
+              <p className="mt-4 text-black">アナリティクスデータを読み込み中...</p>
             </div>
           </div>
         </SNSLayout>
@@ -356,7 +356,7 @@ export default function XAnalyticsPage() {
           <div className="flex items-center justify-center min-h-screen">
             <div className="text-center">
               <div className="text-red-600 text-xl mb-4">エラーが発生しました</div>
-              <p className="text-gray-600 mb-4">{error}</p>
+              <p className="text-black mb-4">{error}</p>
               <button
                 onClick={fetchAnalyticsData}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -387,8 +387,8 @@ export default function XAnalyticsPage() {
             {/* 左側: 分析データ入力フォーム */}
             <div className="space-y-6">
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900">分析データ入力</h2>
-              <p className="text-sm text-gray-600 mb-2">投稿のパフォーマンスデータを入力してください</p>
+              <h2 className="text-lg font-semibold text-black">分析データ入力</h2>
+              <p className="text-sm text-black mb-2">投稿のパフォーマンスデータを入力してください</p>
 
               <div className="space-y-6">
         {/* 投稿検索 */}
@@ -598,7 +598,7 @@ export default function XAnalyticsPage() {
               {/* 1. 投稿プレビュー（一番上） */}
               {selectedPost ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿プレビュー</h3>
+                  <h3 className="text-xl font-semibold text-black mb-4">投稿プレビュー</h3>
                   <PostPreview
                     post={selectedPost}
                     onClose={() => setSelectedPost(null)}
@@ -606,8 +606,8 @@ export default function XAnalyticsPage() {
                 </div>
               ) : (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">投稿プレビュー</h3>
-                  <div className="text-center py-8 text-gray-500">
+                  <h3 className="text-xl font-semibold text-black mb-4">投稿プレビュー</h3>
+                  <div className="text-center py-8 text-black">
                     <p>投稿を選択すると詳細が表示されます</p>
                   </div>
                 </div>
@@ -623,7 +623,7 @@ export default function XAnalyticsPage() {
               {/* 3. 分析の統計データ（下） */}
               {analyticsData && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">分析統計データ</h3>
+                  <h3 className="text-xl font-semibold text-black mb-4">分析統計データ</h3>
                   
                   {/* 基本統計 */}
                   <div className="mb-6">
@@ -631,19 +631,19 @@ export default function XAnalyticsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 bg-red-50 rounded-lg">
                         <div className="text-2xl font-bold text-red-600">{Number(analyticsData.overview.impressions) || 0}</div>
-                        <div className="text-sm text-gray-600">いいね数</div>
+                        <div className="text-sm text-black">いいね数</div>
                       </div>
                       <div className="text-center p-4 bg-blue-50 rounded-lg">
                         <div className="text-2xl font-bold text-blue-600">{Number(analyticsData.overview.profileViews) || 0}</div>
-                        <div className="text-sm text-gray-600">リツイート数</div>
+                        <div className="text-sm text-black">リツイート数</div>
                       </div>
                       <div className="text-center p-4 bg-green-50 rounded-lg">
                         <div className="text-2xl font-bold text-green-600">{Number(analyticsData.overview.mentions) || 0}</div>
-                        <div className="text-sm text-gray-600">コメント数</div>
+                        <div className="text-sm text-black">コメント数</div>
                       </div>
                       <div className="text-center p-4 bg-purple-50 rounded-lg">
                         <div className="text-2xl font-bold text-purple-600">{Number(analyticsData.overview.followers) || 0}</div>
-                        <div className="text-sm text-gray-600">保存数</div>
+                        <div className="text-sm text-black">保存数</div>
                       </div>
                     </div>
                   </div>
@@ -655,19 +655,19 @@ export default function XAnalyticsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 bg-pink-50 rounded-lg">
                         <div className="text-2xl font-bold text-pink-600">{Number(latestAnalytics?.impressions as number) || 0}</div>
-                        <div className="text-sm text-gray-600">インプレッション数</div>
+                        <div className="text-sm text-black">インプレッション数</div>
                       </div>
                       <div className="text-center p-4 bg-indigo-50 rounded-lg">
                         <div className="text-2xl font-bold text-indigo-600">{Number(latestAnalytics?.profileClicks as number) || 0}</div>
-                        <div className="text-sm text-gray-600">プロフィールアクセス数</div>
+                        <div className="text-sm text-black">プロフィールアクセス数</div>
                       </div>
                       <div className="text-center p-4 bg-teal-50 rounded-lg">
                         <div className="text-2xl font-bold text-teal-600">{Number(latestAnalytics?.detailClicks as number) || 0}</div>
-                        <div className="text-sm text-gray-600">詳細クリック数</div>
+                        <div className="text-sm text-black">詳細クリック数</div>
                       </div>
                       <div className="text-center p-4 bg-yellow-50 rounded-lg">
                         <div className="text-2xl font-bold text-yellow-600">{Number(latestAnalytics?.engagements as number) || 0}</div>
-                        <div className="text-sm text-gray-600">エンゲージメント数</div>
+                        <div className="text-sm text-black">エンゲージメント数</div>
                       </div>
                     </div>
                   </div>

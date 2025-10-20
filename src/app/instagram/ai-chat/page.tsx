@@ -184,8 +184,8 @@ export default function InstagramAIChatPage() {
               <Bot className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Instagram分析AI</h1>
-              <p className="text-sm text-gray-500">
+              <h1 className="text-xl font-semibold text-black">Instagram分析AI</h1>
+              <p className="text-sm text-black">
                 {isTyping ? '入力中...' : 'オンライン'}
               </p>
             </div>
@@ -193,7 +193,7 @@ export default function InstagramAIChatPage() {
           
           <button
             onClick={handleClearChat}
-            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-black hover:text-black hover:bg-gray-100 rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             <span>履歴クリア</span>
@@ -226,13 +226,13 @@ export default function InstagramAIChatPage() {
                   <div className={`rounded-2xl px-4 py-3 shadow-sm ${
                     message.type === 'user'
                       ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                      : 'bg-white text-gray-900 border border-gray-200 shadow-md'
+                      : 'bg-white text-black border border-gray-200 shadow-md'
                   }`}>
                     <div className="whitespace-pre-wrap">{message.content}</div>
                     
                     {/* タイムスタンプ */}
                     <div className={`text-xs mt-2 ${
-                      message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                      message.type === 'user' ? 'text-blue-100' : 'text-black'
                     }`}>
                       {message.timestamp.toLocaleTimeString('ja-JP', { 
                         hour: '2-digit', 
@@ -256,7 +256,7 @@ export default function InstagramAIChatPage() {
                 {/* 提案メッセージ */}
                 {message.suggestions && message.type === 'ai' && (
                   <div className="mt-3 ml-11 space-y-2">
-                    <p className="text-xs text-gray-500">提案メッセージ:</p>
+                    <p className="text-xs text-black">提案メッセージ:</p>
                     <div className="flex flex-wrap gap-2">
                       {message.suggestions.map((suggestion, index) => (
                         <button
@@ -301,7 +301,7 @@ export default function InstagramAIChatPage() {
         <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
           {/* クイックアクション */}
           <div className="mb-3">
-            <p className="text-xs text-gray-500 mb-2">クイックアクション:</p>
+            <p className="text-xs text-black mb-2">クイックアクション:</p>
             <div className="flex flex-wrap gap-2">
               {AI_SUGGESTIONS.slice(0, 4).map((suggestion, index) => (
                 <button

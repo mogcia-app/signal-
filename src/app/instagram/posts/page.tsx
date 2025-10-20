@@ -459,15 +459,15 @@ export default function InstagramPostsPage() {
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin  h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-gray-600 mt-2">読み込み中...</p>
+              <p className="text-black mt-2">読み込み中...</p>
             </div>
           ) : (filteredPosts.length === 0 && manualAnalyticsData.length === 0) ? (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📝</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <div className="text-black text-6xl mb-4">📝</div>
+              <h3 className="text-lg font-medium text-black mb-2">
                 投稿がありません
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-black mb-4">
                 まだ投稿を保存していません。投稿ラボで投稿を作成しましょう。
               </p>
               <div className="flex space-x-3">
@@ -489,7 +489,7 @@ export default function InstagramPostsPage() {
                     <div className="mb-2">
                       <div className="flex items-center space-x-3 mb-2">
                         <span className="text-2xl">📊</span>
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">{analytics.title || '手動入力データ'}</h3>
+                        <h3 className="text-lg font-semibold text-black truncate">{analytics.title || '手動入力データ'}</h3>
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className="px-2 py-1  text-xs font-medium bg-blue-100 text-blue-800">
@@ -509,7 +509,7 @@ export default function InstagramPostsPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <div className="flex items-center space-x-4 text-sm text-black">
                       <span className="flex items-center">
                         <Calendar size={14} className="mr-1" />
                         {analytics.publishedAt ? new Date(analytics.publishedAt).toLocaleDateString('ja-JP') : '日付未設定'}
@@ -542,8 +542,8 @@ export default function InstagramPostsPage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="text-center text-gray-500">
-                            <ImageIcon size={24} className="mx-auto mb-1 text-gray-400" />
+                          <div className="text-center text-black">
+                            <ImageIcon size={24} className="mx-auto mb-1 text-black" />
                             <div className="text-xs">サムネがありません</div>
                           </div>
                         )}
@@ -574,7 +574,7 @@ export default function InstagramPostsPage() {
                             </span>
                           ))}
                           {analytics.hashtags.length > 3 && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs ">
+                            <span className="px-2 py-1 bg-gray-100 text-black text-xs ">
                               +{analytics.hashtags.length - 3}
                             </span>
                           )}
@@ -589,25 +589,25 @@ export default function InstagramPostsPage() {
                           <div className="flex items-center justify-center mb-1">
                             <Heart size={16} className="text-red-500" />
                           </div>
-                          <div className="text-lg font-bold text-gray-900">{(analytics.likes || 0).toLocaleString()}</div>
+                          <div className="text-lg font-bold text-black">{(analytics.likes || 0).toLocaleString()}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-1">
-                            <MessageCircle size={16} className="text-gray-500" />
+                            <MessageCircle size={16} className="text-black" />
                           </div>
-                          <div className="text-lg font-bold text-gray-900">{(analytics.comments || 0).toLocaleString()}</div>
+                          <div className="text-lg font-bold text-black">{(analytics.comments || 0).toLocaleString()}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-1">
-                            <Share size={16} className="text-gray-500" />
+                            <Share size={16} className="text-black" />
                           </div>
-                          <div className="text-lg font-bold text-gray-900">{(analytics.shares || 0).toLocaleString()}</div>
+                          <div className="text-lg font-bold text-black">{(analytics.shares || 0).toLocaleString()}</div>
                         </div>
                         <div>
                           <div className="flex items-center justify-center mb-1">
-                            <EyeIcon size={16} className="text-gray-500" />
+                            <EyeIcon size={16} className="text-black" />
                           </div>
-                          <div className="text-lg font-bold text-gray-900">{(analytics.reach || 0).toLocaleString()}</div>
+                          <div className="text-lg font-bold text-black">{(analytics.reach || 0).toLocaleString()}</div>
                         </div>
                       </div>
                     </div>
@@ -618,7 +618,7 @@ export default function InstagramPostsPage() {
                     <div className="flex items-center justify-end space-x-2">
                       <button
                         onClick={() => handleShowDetail(null, analytics)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50  transition-colors"
+                        className="p-2 text-black hover:text-blue-600 hover:bg-blue-50  transition-colors"
                         title="詳細を見る"
                       >
                         →

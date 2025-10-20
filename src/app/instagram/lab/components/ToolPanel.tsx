@@ -99,11 +99,11 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <h3 className="text-lg font-semibold text-black flex items-center">
               <Edit size={18} className="mr-2" />
               よく使う文言
             </h3>
-            <span className="text-sm text-gray-500">{templates.length}件</span>
+            <span className="text-sm text-black">{templates.length}件</span>
           </div>
 
           {/* 新規追加 */}
@@ -159,7 +159,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                   </button>
                   <button
                     onClick={() => setEditingTemplate(index)}
-                    className="p-1 text-gray-600 hover:text-gray-800"
+                    className="p-1 text-black hover:text-gray-800"
                     title="編集"
                   >
                     <Edit size={14} />
@@ -182,11 +182,11 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <h3 className="text-lg font-semibold text-black flex items-center">
               <Tag size={18} className="mr-2" />
               ハッシュタグ
             </h3>
-            <span className="text-sm text-gray-500">{hashtags.length}件</span>
+            <span className="text-sm text-black">{hashtags.length}件</span>
           </div>
 
           {/* 新規追加 */}
@@ -242,7 +242,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                   </button>
                   <button
                     onClick={() => setEditingHashtag(index)}
-                    className="p-1 text-gray-600 hover:text-gray-800"
+                    className="p-1 text-black hover:text-gray-800"
                     title="編集"
                   >
                     <Edit size={14} />

@@ -15,12 +15,12 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
         <div className="p-6">
           <div className="text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Target className="w-8 h-8 text-gray-400" />
+              <Target className="w-8 h-8 text-black" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-black mb-2">
               運用計画が設定されていません
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-black mb-4">
               Instagramの成長を加速させるために、まず運用計画を立てましょう
             </p>
             <a
@@ -48,8 +48,8 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">現在の運用計画</h3>
-        <p className="text-sm text-gray-600 mt-1">{planData.title}</p>
+        <h3 className="text-lg font-semibold text-black">現在の運用計画</h3>
+        <p className="text-sm text-black mt-1">{planData.title}</p>
       </div>
       
       <div className="p-6">
@@ -57,7 +57,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">フォロワー目標</span>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-black">
               {currentFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
             </span>
           </div>
@@ -67,7 +67,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-black mt-1">
             <span>{progressPercentage.toFixed(1)}% 達成</span>
             <span>残り {Math.max(0, targetFollowers - currentFollowers).toLocaleString()}人</span>
           </div>
@@ -76,31 +76,31 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
         {/* 計画詳細 */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
+            <Calendar className="w-4 h-4 text-black" />
             <div>
-              <div className="text-xs text-gray-500">期間</div>
-              <div className="text-sm font-medium text-gray-900">{planData.planPeriod}</div>
+              <div className="text-xs text-black">期間</div>
+              <div className="text-sm font-medium text-black">{planData.planPeriod}</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <TrendingUp className="w-4 h-4 text-gray-400" />
+            <TrendingUp className="w-4 h-4 text-black" />
             <div>
-              <div className="text-xs text-gray-500">戦略数</div>
-              <div className="text-sm font-medium text-gray-900">{strategies.length}個</div>
+              <div className="text-xs text-black">戦略数</div>
+              <div className="text-sm font-medium text-black">{strategies.length}個</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <User className="w-4 h-4 text-gray-400" />
+            <User className="w-4 h-4 text-black" />
             <div>
-              <div className="text-xs text-gray-500">ターゲット</div>
-              <div className="text-sm font-medium text-gray-900">{planData.targetAudience}</div>
+              <div className="text-xs text-black">ターゲット</div>
+              <div className="text-sm font-medium text-black">{planData.targetAudience}</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Tag className="w-4 h-4 text-gray-400" />
+            <Tag className="w-4 h-4 text-black" />
             <div>
-              <div className="text-xs text-gray-500">カテゴリ</div>
-              <div className="text-sm font-medium text-gray-900">{planData.category}</div>
+              <div className="text-xs text-black">カテゴリ</div>
+              <div className="text-sm font-medium text-black">{planData.category}</div>
             </div>
           </div>
         </div>
@@ -118,7 +118,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
               </span>
             ))}
             {strategies.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
+              <span className="px-2 py-1 bg-gray-100 text-black text-xs rounded-md">
                 +{strategies.length - 3}個
               </span>
             )}
@@ -132,13 +132,13 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-200">
               <div className="text-xs space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">月間目標:</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-black">月間目標:</span>
+                  <span className="font-medium text-black">
                     {String((planData.simulationResult as Record<string, unknown>).monthlyTarget || 'N/A')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">達成可能性:</span>
+                  <span className="text-black">達成可能性:</span>
                   <span className={`font-medium ${
                     (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'high' ? 'text-green-600' :
                     (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'medium' ? 'text-yellow-600' :
