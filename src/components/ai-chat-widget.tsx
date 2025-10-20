@@ -146,11 +146,6 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
       message: '今日投稿すべきコンテンツのアイデアと具体的な内容を教えてください。'
     },
     {
-      id: 'engagement-boost',
-      title: 'エンゲージメント向上',
-      message: '投稿のエンゲージメントを上げるための具体的な方法を教えてください。'
-    },
-    {
       id: 'hashtag-optimization',
       title: 'ハッシュタグ最適化',
       message: '現在の投稿に最適なハッシュタグを選んでください。'
@@ -181,11 +176,6 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
       message: '今週の投稿スケジュールとコンテンツプランを立ててください。'
     },
     {
-      id: 'competitor-insight',
-      title: '競合分析',
-      message: '競合他社の成功している投稿を分析して、参考になる点を教えてください。'
-    },
-    {
       id: 'brand-voice',
       title: 'ブランドボイス',
       message: '投稿のトーンや文体を統一するためのアドバイスをください。'
@@ -213,7 +203,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
       const welcomeMessage: Message = {
         id: '1',
         role: 'assistant',
-        content: `${displayName}さん、こんにちは！Instagram運用について何でもお聞きください。現在の計画内容を把握しているので、具体的なアドバイスをお伝えできます。`,
+        content: `${displayName}さん、こんにちは！Instagram運用について何でもお聞きください。`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
@@ -430,59 +420,64 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
           {/* テンプレートエリア */}
           {showTemplates && (
-            <div className="p-4 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <Lightbulb size={16} className="text-orange-600" />
-                  <span className="text-sm font-medium text-gray-700">よく使われる質問</span>
+            <div className="border-t border-gray-200 bg-gray-50">
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Lightbulb size={16} className="text-orange-600" />
+                    <span className="text-sm font-medium text-gray-700">よく使われる質問</span>
+                  </div>
+                  <button
+                    onClick={() => setShowTemplates(false)}
+                    className="text-black hover:text-black"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowTemplates(false)}
-                  className="text-black hover:text-black"
-                >
-                  <X size={14} />
-                </button>
               </div>
               
-              {/* 計画系テンプレート */}
-              <div className="mb-4">
-                <h4 className="text-xs font-medium text-gray-600 mb-2">📋 計画・目標について</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {planTemplates.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => handleTemplateClick(template)}
-                      className="p-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-200 transition-colors"
-                    >
-                      <div className="text-xs font-medium text-gray-800 mb-1">
-                        {template.title}
-                      </div>
-                      <div className="text-xs text-black line-clamp-2">
-                        {template.message}
-                      </div>
-                    </button>
-                  ))}
+              {/* スクロール可能なテンプレートエリア */}
+              <div className="max-h-64 overflow-y-auto p-4">
+                {/* 計画系テンプレート */}
+                <div className="mb-4">
+                  <h4 className="text-xs font-medium text-gray-600 mb-2">📋 計画・目標について</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {planTemplates.map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => handleTemplateClick(template)}
+                        className="p-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-200 transition-colors"
+                      >
+                        <div className="text-xs font-medium text-gray-800 mb-1">
+                          {template.title}
+                        </div>
+                        <div className="text-xs text-black line-clamp-2">
+                          {template.message}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Instagram運用テンプレート */}
-              <div>
-                <h4 className="text-xs font-medium text-gray-600 mb-2">📱 Instagram運用について</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {instagramTemplates.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => handleTemplateClick(template)}
-                      className="p-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-200 transition-colors"
-                    >
-                      <div className="text-xs font-medium text-gray-800 mb-1">
-                        {template.title}
-                      </div>
-                      <div className="text-xs text-black line-clamp-2">
-                        {template.message}
-                      </div>
-                    </button>
-                  ))}
+                {/* Instagram運用テンプレート */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-600 mb-2">📱 Instagram運用について</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {instagramTemplates.map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => handleTemplateClick(template)}
+                        className="p-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-200 transition-colors"
+                      >
+                        <div className="text-xs font-medium text-gray-800 mb-1">
+                          {template.title}
+                        </div>
+                        <div className="text-xs text-black line-clamp-2">
+                          {template.message}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

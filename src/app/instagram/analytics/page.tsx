@@ -335,8 +335,7 @@ function InstagramAnalyticsContent() {
       const result = await response.json();
       console.log('Analytics saved via BFF:', result);
 
-
-      alert(`投稿分析データを保存しました！（エンゲージメント率: ${result.engagementRate}%）`);
+      alert('投稿分析データを保存しました！');
       
       // データを再取得
       await fetchAnalytics();
