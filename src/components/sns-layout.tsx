@@ -150,11 +150,11 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
       {/* サイドバー */}
-      <div className="w-64 bg-white shadow-lg">
+      <div className="w-full lg:w-64 bg-white shadow-lg flex-shrink-0">
         {/* ロゴ・ブランディング */}
-        <div className="px-6 py-3 border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
           <div className="flex items-center">
             <div className="text-2xl font-bold text-black">
               Signal<span style={{ color: '#FF8A15' }}>.</span>
@@ -164,7 +164,7 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
         </div>
 
         {/* 共通メニュー */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-3 sm:p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">共通メニュー</h3>
           <nav className="space-y-1">
             <Link 
@@ -335,22 +335,22 @@ export default function SNSLayout({ children, currentSNS, customTitle, customDes
       {/* メインコンテンツエリア */}
       <div className="flex-1">
         {/* タイトルセクション */}
-        <div className="bg-white border-b border-gray-200 px-6 py-3">
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
           <div className="flex items-center space-x-3">
             <div className={`w-8 h-8 rounded-full ${currentSNSInfo.color} flex items-center justify-center text-white`}>
               {currentSNSInfo.icon}
             </div>
-            <div>
-              <h1 className="text-xl font-semibold text-black">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl font-semibold text-black truncate">
                 {customTitle || `${currentSNSInfo.name} Dashboard`}
               </h1>
-              <p className="text-sm text-black">{customDescription || currentSNSInfo.description}</p>
+              <p className="text-xs sm:text-sm text-black truncate">{customDescription || currentSNSInfo.description}</p>
             </div>
           </div>
         </div>
         
         {/* メインコンテンツ */}
-        <main className="p-6">
+        <main className="p-4 sm:p-6">
           {children}
         </main>
       </div>

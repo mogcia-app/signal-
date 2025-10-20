@@ -430,7 +430,7 @@ export default function InstagramPostsPage() {
         customTitle="投稿一覧"
         customDescription="作成した投稿の管理・編集・削除を行えます"
       >
-        <div className="max-w-7xl mx-auto p-6">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6">
           {/* フィルター・検索 */}
           <PostFilters
             searchTerm={searchTerm}
@@ -480,7 +480,7 @@ export default function InstagramPostsPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* 手動入力の分析データを表示 */}
               {manualAnalyticsData.map((analytics, index) => (
                 <div key={`manual-${index}`} className="bg-white shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">

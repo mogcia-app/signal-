@@ -242,7 +242,7 @@ export default function DashboardPage() {
       {/* メインコンテンツ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* プロフィールセクション */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-lg backdrop-blur-sm p-8">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-lg backdrop-blur-sm p-4 sm:p-8">
           <div className="flex items-center space-x-6">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
               <User className="w-10 h-10 text-white" />
@@ -260,9 +260,9 @@ export default function DashboardPage() {
         </div>
 
         {/* 契約情報 */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
           <h3 className="text-2xl font-bold text-black mb-6">契約情報</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
               <div className="flex items-center space-x-3 mb-3">
                 <Shield className="w-6 h-6" />
@@ -295,9 +295,9 @@ export default function DashboardPage() {
 
         {/* 契約SNS一覧 */}
         {contractSNS && contractSNS.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
             <h3 className="text-2xl font-bold text-black mb-6">契約SNS</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {contractSNS.map((sns: string) => (
                 <button
                   key={sns}
@@ -321,7 +321,7 @@ export default function DashboardPage() {
 
         {/* ビジネス情報 */}
         {userProfile?.businessInfo && (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-black">ビジネス情報</h3>
               <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
@@ -393,7 +393,7 @@ export default function DashboardPage() {
 
         {/* SNS AI設定 */}
         {userProfile?.snsAISettings && Object.keys(userProfile.snsAISettings).length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-black">SNS AI設定</h3>
               <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
@@ -456,7 +456,7 @@ export default function DashboardPage() {
         )}
 
         {/* アカウント管理 */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
           <h3 className="text-2xl font-bold text-black mb-6">アカウント管理</h3>
           <div className="space-y-4">
             <button

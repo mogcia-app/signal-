@@ -112,7 +112,7 @@ export default function InstagramPlanPage() {
       customTitle="Instagram 運用計画"
       customDescription="強みを活かす、実行可能なSNS計画を立てましょう"
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 計画期間切れアラート */}
         {isPlanExpired && planEndDate && (
           <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
@@ -178,7 +178,7 @@ export default function InstagramPlanPage() {
           </div>
         )}
 
-        <main className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <main className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* 左カラム：計画作成フォーム */}
           <PlanForm
             formData={formData}
@@ -193,7 +193,7 @@ export default function InstagramPlanPage() {
           <div className="space-y-4">
             {/* タブヘッダー */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="flex border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row border-b border-gray-200">
                 <button
                   onClick={() => setActiveTab('goal')}
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
@@ -206,7 +206,7 @@ export default function InstagramPlanPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('simulation')}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-l border-gray-200 ${
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-t sm:border-t-0 sm:border-l border-gray-200 ${
                     activeTab === 'simulation'
                       ? 'bg-[#FF8A15] text-white'
                       : 'text-black hover:bg-gray-50'
@@ -216,7 +216,7 @@ export default function InstagramPlanPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('ai')}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-l border-gray-200 ${
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-t sm:border-t-0 sm:border-l border-gray-200 ${
                     activeTab === 'ai'
                       ? 'bg-[#FF8A15] text-white'
                       : 'text-black hover:bg-gray-50'
