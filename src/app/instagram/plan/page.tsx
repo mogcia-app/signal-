@@ -139,7 +139,6 @@ export default function InstagramPlanPage() {
 
   return (
     <SNSLayout 
-      currentSNS="instagram"
       customTitle="Instagram 運用計画"
       customDescription="強みを活かす、実行可能なSNS計画を立てましょう"
     >

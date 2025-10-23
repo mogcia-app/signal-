@@ -42,7 +42,7 @@ function getWeekRange(weekString: string): { start: Date; end: Date } {
 
 export default function InstagramMonthlyReportPage() {
   const { user } = useAuth();
-  const { planData } = usePlanData();
+  const { planData } = usePlanData('instagram');
   const [activeTab, setActiveTab] = useState<'weekly' | 'monthly'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7) // YYYY-MM形式
@@ -503,7 +503,6 @@ export default function InstagramMonthlyReportPage() {
   if (isLoading) {
     return (
       <SNSLayout 
-        currentSNS="instagram"
         customTitle="月次レポート"
         customDescription="月次のパフォーマンス分析とレポート"
       >
@@ -529,7 +528,6 @@ export default function InstagramMonthlyReportPage() {
   if (!hasAccess) {
     return (
       <SNSLayout 
-        currentSNS="instagram"
         customTitle="月次レポート"
         customDescription="月次のパフォーマンス分析とレポート"
       >
@@ -617,7 +615,6 @@ export default function InstagramMonthlyReportPage() {
 
   return (
     <SNSLayout 
-      currentSNS="instagram"
       customTitle="月次レポート"
       customDescription="月次のパフォーマンス分析とレポート"
     >

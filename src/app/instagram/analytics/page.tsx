@@ -95,7 +95,7 @@ interface PostData {
 
 function InstagramAnalyticsContent() {
   const { user } = useAuth();
-  const { planData } = usePlanData();
+  const { planData } = usePlanData('instagram');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [posts, setPosts] = useState<PostData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -446,7 +446,6 @@ function InstagramAnalyticsContent() {
   return (
     <>
       <SNSLayout 
-        currentSNS="instagram"
         customTitle="投稿分析"
         customDescription="投稿の分析データを入力・管理します"
       >

@@ -8,7 +8,7 @@ interface CurrentPlanCardProps {
   planData: PlanData | null;
   variant?: 'compact' | 'full';
   showEditButton?: boolean;
-  snsType?: 'instagram' | 'x' | 'tiktok';
+  snsType?: 'instagram' | 'x' | 'tiktok' | 'youtube';
   actualFollowers?: number; // 分析データから取得した実際のフォロワー数
 }
 
@@ -31,7 +31,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
             運用計画が設定されていません
           </h3>
           <p className="text-black text-sm mb-4">
-            {snsType === 'instagram' ? 'Instagram' : snsType === 'x' ? 'X (Twitter)' : 'TikTok'}の成長を加速させるために、まず運用計画を立てましょう
+            {snsType === 'instagram' ? 'Instagram' : snsType === 'x' ? 'X (Twitter)' : snsType === 'tiktok' ? 'TikTok' : 'YouTube'}の成長を加速させるために、まず運用計画を立てましょう
           </p>
           <a
             href={`/${snsType}/plan`}

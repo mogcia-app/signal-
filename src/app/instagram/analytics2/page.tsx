@@ -177,7 +177,6 @@ function InstagramAnalyticsContent() {
   return (
     <>
       <SNSLayout 
-        currentSNS="instagram"
         customTitle="投稿分析"
         customDescription="投稿の分析データを入力・管理します"
       >

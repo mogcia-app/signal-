@@ -172,7 +172,6 @@ export default function InstagramAIChatPage() {
 
   return (
     <SNSLayout 
-      currentSNS="instagram"
       customTitle="AIチャット"
       customDescription="Instagram分析AIアシスタント"
     >

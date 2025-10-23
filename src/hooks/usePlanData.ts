@@ -28,7 +28,7 @@ interface PlanData {
   generatedStrategy?: string | null;
 }
 
-export const usePlanData = () => {
+export const usePlanData = (snsType: 'instagram' | 'x' | 'tiktok' | 'youtube' = 'instagram') => {
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export const usePlanData = () => {
       setLoading(true);
       setError(null);
       const idToken = await user.getIdToken();
-      const response = await fetch(`/api/plans?userId=${user.uid}&snsType=instagram&status=active`, {
+      const response = await fetch(`/api/plans?userId=${user.uid}&snsType=${snsType}&status=active`, {
         headers: {
           'Authorization': `Bearer ${idToken}`
         }
@@ -75,11 +75,11 @@ export const usePlanData = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, snsType]);
 
   useEffect(() => {
     fetchPlanData();
-  }, [user?.uid, fetchPlanData]);
+  }, [user?.uid, fetchPlanData, snsType]);
 
   // 手動でデータを再取得する関数
   const refetchPlanData = () => {

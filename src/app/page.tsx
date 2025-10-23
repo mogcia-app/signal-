@@ -11,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push('/sns-select');
+        router.push('/instagram');
       } else {
         router.push('/login');
       }

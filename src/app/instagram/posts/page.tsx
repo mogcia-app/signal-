@@ -6,15 +6,11 @@ import SNSLayout from '../../../components/sns-layout';
 import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { postsApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/auth-context';
-import { usePlanData } from '../../../hooks/usePlanData';
 import { Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon, Calendar, Clock } from 'lucide-react';
 
 // コンポーネントのインポート
 import PostCard from './components/PostCard';
-import PostDetailModal from './components/PostDetailModal';
-import PostFilters from './components/PostFilters';
 import PostStats from './components/PostStats';
-import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
 
 interface PostData {
   id: string;
@@ -121,18 +117,8 @@ interface AnalyticsData {
 
 export default function InstagramPostsPage() {
   const { user } = useAuth();
-  const { planData } = usePlanData();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [selectedPostType, setSelectedPostType] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
-  const [selectedAnalytics, setSelectedAnalytics] = useState<AnalyticsData | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   
   const [scheduledPosts, setScheduledPosts] = useState<Array<{
@@ -170,9 +156,6 @@ export default function InstagramPostsPage() {
         userId: user.uid
       };
       
-      if (selectedStatus) params.status = selectedStatus;
-      if (selectedPostType) params.postType = selectedPostType;
-      
       const searchParams = new URLSearchParams(params);
       const response = await fetch(`/api/posts?${searchParams.toString()}`, {
         headers: {
@@ -193,7 +176,7 @@ export default function InstagramPostsPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.uid, selectedStatus, selectedPostType]);
+  }, [user?.uid]);
 
   // 分析データを取得
   const fetchAnalytics = useCallback(async () => {
@@ -370,57 +353,7 @@ export default function InstagramPostsPage() {
     }
   };
 
-  // 詳細表示
-  const handleShowDetail = (post: PostData | null, analytics: AnalyticsData | null) => {
-    setSelectedPost(post);
-    setSelectedAnalytics(analytics);
-    setShowDetailModal(true);
-  };
 
-  // モーダルを閉じる
-  const handleCloseModal = () => {
-    setShowDetailModal(false);
-    setSelectedPost(null);
-    setSelectedAnalytics(null);
-  };
-
-  // フィルタリング
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = !searchTerm || 
-      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.hashtags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = !selectedStatus || (() => {
-      if (selectedStatus === 'analyzed') {
-        return analyticsData.some(a => a.postId === post.id) || post.analytics;
-      } else if (selectedStatus === 'created') {
-        return post.status === 'created' || post.status === 'draft';
-      }
-      return true;
-    })();
-    
-    const matchesDate = (() => {
-      if (!dateFrom && !dateTo) return true;
-      
-      const postDate = post.createdAt instanceof Date ? post.createdAt : 
-        (post.createdAt && typeof post.createdAt === 'object' && 'toDate' in post.createdAt) ? 
-          post.createdAt.toDate() : new Date(post.createdAt);
-      const fromDate = dateFrom ? new Date(dateFrom) : null;
-      const toDate = dateTo ? new Date(dateTo) : null;
-      
-      if (fromDate && toDate) {
-        return postDate >= fromDate && postDate <= toDate;
-      } else if (fromDate) {
-        return postDate >= fromDate;
-      } else if (toDate) {
-        return postDate <= toDate;
-      }
-      return true;
-    })();
-    
-    return matchesSearch && matchesStatus && matchesDate;
-  });
 
   // 手動入力の分析データ
   const manualAnalyticsData = analyticsData.filter(a => 
@@ -430,49 +363,15 @@ export default function InstagramPostsPage() {
   return (
     <>
       <SNSLayout 
-        currentSNS="instagram"
         customTitle="投稿一覧"
         customDescription="作成した投稿の管理・編集・削除を行えます"
       >
         <div className="max-w-7xl mx-auto p-4 sm:p-6">
-          {/* フィルター・検索 */}
-          <PostFilters
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedStatus={selectedStatus}
-            setSelectedStatus={setSelectedStatus}
-            selectedPostType={selectedPostType}
-            setSelectedPostType={setSelectedPostType}
-            dateFrom={dateFrom}
-            setDateFrom={setDateFrom}
-            dateTo={dateTo}
-            setDateTo={setDateTo}
-            showFilters={showFilters}
-            setShowFilters={setShowFilters}
-            onRefresh={fetchPosts}
-            filteredPostsCount={filteredPosts.length}
-          />
-
           {/* 統計表示 */}
           <PostStats
             scheduledPosts={scheduledPosts}
             unanalyzedPosts={unanalyzedPosts}
           />
-
-          {/* 運用計画カード */}
-          {(() => {
-            // フォロワー増加数を計算
-            const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
-            const actualFollowers = planData ? Number(planData.currentFollowers || 0) + totalFollowerIncrease : 0;
-            
-            return (
-              <CurrentPlanCard 
-                planData={planData} 
-                snsType="instagram" 
-                actualFollowers={actualFollowers}
-              />
-            );
-          })()}
 
           {/* 投稿一覧 */}
           {loading ? (
@@ -480,7 +379,7 @@ export default function InstagramPostsPage() {
               <div className="animate-spin  h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
               <p className="text-black mt-2">読み込み中...</p>
             </div>
-          ) : (filteredPosts.length === 0 && manualAnalyticsData.length === 0) ? (
+          ) : (posts.length === 0 && manualAnalyticsData.length === 0) ? (
             <div className="text-center py-12">
               <div className="text-black text-6xl mb-4">📝</div>
               <h3 className="text-lg font-medium text-black mb-2">
@@ -636,9 +535,9 @@ export default function InstagramPostsPage() {
                   <div className="px-4 pb-4">
                     <div className="flex items-center justify-end space-x-2">
                       <button
-                        onClick={() => handleShowDetail(null, analytics)}
+                        onClick={() => alert('投稿詳細を表示')}
                         className="p-2 text-black hover:text-blue-600 hover:bg-blue-50  transition-colors"
-                        title="詳細を見る"
+                        title="詳細表示"
                       >
                         →
                       </button>
@@ -648,7 +547,7 @@ export default function InstagramPostsPage() {
               ))}
 
               {/* 通常の投稿一覧 */}
-              {filteredPosts.map((post) => {
+              {posts.map((post) => {
                 const hasAnalytics = analyticsData.some(a => a.postId === post.id) || !!post.analytics;
                 const analyticsFromData = analyticsData.find(a => a.postId === post.id);
                 const postAnalytics = analyticsFromData ? {
@@ -692,7 +591,6 @@ export default function InstagramPostsPage() {
                     post={post}
                     hasAnalytics={hasAnalytics}
                     postAnalytics={postAnalytics}
-                    onShowDetail={handleShowDetail}
                     onDeletePost={handleDeletePost}
                   />
                 );
@@ -702,21 +600,11 @@ export default function InstagramPostsPage() {
         </div>
       </SNSLayout>
 
-      {/* 詳細モーダル */}
-      <PostDetailModal
-        isOpen={showDetailModal}
-        selectedPost={selectedPost}
-        selectedAnalytics={selectedAnalytics}
-        onClose={handleCloseModal}
-      />
 
       {/* AIチャットウィジェット */}
       <AIChatWidget 
         contextData={{
-          posts: posts,
-          selectedStatus: selectedStatus,
-          selectedPostType: selectedPostType,
-          searchTerm: searchTerm
+          posts: posts
         }}
       />
     </>

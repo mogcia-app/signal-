@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useUserProfile } from '../../hooks/useUserProfile';
-import { useSNSSettings } from '../../hooks/useSNSSettings';
 import { usePlanData } from '../../hooks/usePlanData';
 import { useAuth } from '../../contexts/auth-context';
 import { postsApi } from '../../lib/api';
@@ -73,8 +72,7 @@ interface RecentPost {
 function InstagramDashboardContent() {
   const { user } = useAuth();
   const { loading: profileLoading, error: profileError } = useUserProfile();
-  const { getSNSSettings } = useSNSSettings();
-  const { planData } = usePlanData();
+  const { planData } = usePlanData('instagram');
   const [analyticsData, setAnalyticsData] = useState<Array<{
     followerIncrease?: number;
     [key: string]: unknown;
@@ -166,7 +164,7 @@ function InstagramDashboardContent() {
     color: string;
   }>>([]);
 
-  const instagramSettings = getSNSSettings('instagram');
+  const instagramSettings = {}; // SNS設定は不要になったため空オブジェクト
 
   // 目標設定を保存
   const saveGoalSettings = async () => {
@@ -675,7 +673,6 @@ function InstagramDashboardContent() {
   return (
     <>
       <SNSLayout 
-        currentSNS="instagram"
         customTitle="Instagram Dashboard"
         customDescription="あなたのInstagramアカウントの総合管理画面"
       >

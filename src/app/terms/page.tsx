@@ -26,7 +26,6 @@ export default function TermsPage() {
 
   return (
     <SNSLayout 
-      currentSNS="instagram" 
       customTitle="利用規約" 
       customDescription="Signal. - SNSマーケティング支援ツール"
     >

@@ -110,7 +110,6 @@ interface PostCardProps {
   post: PostData;
   hasAnalytics: boolean;
   postAnalytics: AnalyticsData | null;
-  onShowDetail: (post: PostData | null, analytics: AnalyticsData | null) => void;
   onDeletePost: (postId: string) => void;
 }
 
@@ -118,7 +117,6 @@ const PostCard: React.FC<PostCardProps> = ({
   post,
   hasAnalytics,
   postAnalytics,
-  onShowDetail,
   onDeletePost
 }) => {
   // ステータス表示の色分け
@@ -344,15 +342,7 @@ const PostCard: React.FC<PostCardProps> = ({
       {/* アクションボタン */}
       <div className="px-4 pb-4">
         <div className="flex items-center justify-end space-x-2">
-          {hasAnalytics ? (
-            <button
-              onClick={() => onShowDetail(post, postAnalytics)}
-              className="p-2 text-black hover:text-blue-600 hover:bg-blue-50  transition-colors"
-              title="詳細を見る"
-            >
-              →
-            </button>
-          ) : (
+          {!hasAnalytics && (
             <>
               <button
                 onClick={() => alert('投稿詳細を表示')}

@@ -327,7 +327,6 @@ export default function GuidePage() {
 
   return (
     <SNSLayout 
-      currentSNS="instagram"
       customTitle="使い方ガイド"
       customDescription="Signalの機能と使い方を詳しく解説"
     >

@@ -289,7 +289,6 @@ export default function OnboardingPage() {
 
   return (
     <SNSLayout 
-      currentSNS="instagram" 
       customTitle="初期設定" 
       customDescription="御社専用AIを構築するための情報を入力してください"
     >

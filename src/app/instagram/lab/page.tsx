@@ -25,7 +25,7 @@ export default function InstagramLabPage() {
   }>>([]);
   
   // 計画データを取得
-  const { planData } = usePlanData();
+  const { planData } = usePlanData('instagram');
   const { user } = useAuth();
   
   // 分析データを取得
@@ -86,7 +86,6 @@ export default function InstagramLabPage() {
   return (
     <>
       <SNSLayout 
-        currentSNS="instagram"
         customTitle="投稿ラボ"
         customDescription="Instagram投稿文を作成・編集し、効果的な投稿を制作しましょう"
       >

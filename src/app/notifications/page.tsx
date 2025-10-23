@@ -549,7 +549,6 @@ export default function NotificationsPage() {
   if (isLoading) {
     return (
       <SNSLayout 
-        currentSNS="instagram"
         customTitle="お知らせ"
         customDescription="システムのお知らせと通知"
       >
@@ -566,7 +565,6 @@ export default function NotificationsPage() {
 
   return (
     <SNSLayout 
-      currentSNS="instagram"
       customTitle="お知らせ"
       customDescription="システムのお知らせと通知"
     >

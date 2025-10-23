@@ -39,7 +39,7 @@ const PostStats: React.FC<PostStatsProps> = ({
             <span className="text-2xl mr-2">📅</span>
             今週の投稿予定
           </h2>
-          <a href="/instagram/plan" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+          <a href="/instagram/lab" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
             投稿管理 →
           </a>
         </div>

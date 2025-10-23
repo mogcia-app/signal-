@@ -8,7 +8,6 @@ export default function AILearningPage() {
   // AI学習機能は一時的に無効化
   return (
     <SNSLayout 
-      currentSNS="instagram"
       customTitle="AI学習進捗"
       customDescription="あなたのInstagram運用パターンを学習し、より良いAIサポートを提供します"
     >
