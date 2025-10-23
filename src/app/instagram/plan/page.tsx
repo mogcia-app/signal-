@@ -15,7 +15,7 @@ import { SimulationRequest } from './types/plan'
 
 export default function InstagramPlanPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'goal' | 'simulation' | 'ai'>('goal')
+  const [activeTab, setActiveTab] = useState<'simulation' | 'ai'>('simulation')
   const [analyticsData, setAnalyticsData] = useState<Array<{
     followerIncrease?: number;
     [key: string]: unknown;
@@ -202,7 +202,7 @@ export default function InstagramPlanPage() {
           </div>
         )}
 
-        {/* 既存の計画がある場合の情報表示 */}
+        {/* 運用計画実行中 */}
         {loadedPlanId && !isPlanExpired && planStartDate && planEndDate && (
           <div className="mb-6 bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-4">
             <div className="flex items-start justify-between">
@@ -222,7 +222,14 @@ export default function InstagramPlanPage() {
                   </p>
                   
                   {/* 計画の詳細表示 */}
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 space-y-3">
+                    {/* 期間 */}
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">期間:</span>
+                      <span className="ml-2 text-black">{formData.planPeriod}</span>
+                    </div>
+                    
+                    {/* 目標 */}
                     <div className="text-sm">
                       <span className="font-medium text-gray-700">目標:</span>
                       <span className="ml-2 text-black">
@@ -233,41 +240,57 @@ export default function InstagramPlanPage() {
                       </span>
                     </div>
                     
+                    {/* 重視する指標 */}
                     {formData.goalCategory && (
                       <div className="text-sm">
-                        <span className="font-medium text-gray-700">重視する指標:</span>
+                        <span className="font-medium text-gray-700">KPI:</span>
                         <span className="ml-2 text-black">
-                          {formData.goalCategory === 'followers' ? 'フォロワー増加' :
-                           formData.goalCategory === 'engagement' ? 'エンゲージメント向上' :
+                          {formData.goalCategory === 'follower' ? 'フォロワー獲得' :
+                           formData.goalCategory === 'engagement' ? 'エンゲージ促進' :
+                           formData.goalCategory === 'like' ? 'いいねを増やす' :
                            formData.goalCategory === 'save' ? '保存率向上' :
                            formData.goalCategory === 'reach' ? 'リーチを増やす' :
                            formData.goalCategory === 'impressions' ? 'インプレッションを増やす' :
                            formData.goalCategory === 'branding' ? 'ブランド認知を広める' :
                            formData.goalCategory === 'profile' ? 'プロフィール誘導' :
+                           formData.goalCategory === 'other' ? formData.otherGoal || 'その他' :
                            formData.goalCategory}
                         </span>
                       </div>
                     )}
                     
+                    {/* 取り組みたいこと */}
                     {selectedStrategies.length > 0 && (
                       <div className="text-sm">
-                        <span className="font-medium text-gray-700">取り組み:</span>
+                        <span className="font-medium text-gray-700">取り組みたいこと:</span>
                         <div className="ml-2 mt-1 flex flex-wrap gap-1">
-                          {selectedStrategies.slice(0, 3).map((strategy, index) => (
+                          {selectedStrategies.map((strategy, index) => (
                             <span key={index} className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
                               {strategy}
                             </span>
                           ))}
-                          {selectedStrategies.length > 3 && (
-                            <span className="text-xs text-gray-500">+{selectedStrategies.length - 3}個</span>
-                          )}
                         </div>
                       </div>
                     )}
                     
+                    {/* 投稿したい内容 */}
+                    {selectedCategories.length > 0 && (
+                      <div className="text-sm">
+                        <span className="font-medium text-gray-700">投稿したい内容:</span>
+                        <div className="ml-2 mt-1 flex flex-wrap gap-1">
+                          {selectedCategories.map((category, index) => (
+                            <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                              {category}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* ターゲット層 */}
                     {formData.targetAudience && (
                       <div className="text-sm">
-                        <span className="font-medium text-gray-700">ターゲット:</span>
+                        <span className="font-medium text-gray-700">ターゲット層:</span>
                         <span className="ml-2 text-black">{formData.targetAudience}</span>
                       </div>
                     )}
@@ -301,18 +324,8 @@ export default function InstagramPlanPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="flex flex-col sm:flex-row border-b border-gray-200">
                 <button
-                  onClick={() => setActiveTab('goal')}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                    activeTab === 'goal'
-                      ? 'bg-[#FF8A15] text-white'
-                      : 'text-black hover:bg-gray-50'
-                  }`}
-                >
-                  📋 現在の目標
-                </button>
-                <button
                   onClick={() => setActiveTab('simulation')}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-t sm:border-t-0 sm:border-l border-gray-200 ${
+                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                     activeTab === 'simulation'
                       ? 'bg-[#FF8A15] text-white'
                       : 'text-black hover:bg-gray-50'
@@ -334,26 +347,6 @@ export default function InstagramPlanPage() {
 
               {/* タブコンテンツ */}
               <div className="p-0">
-                {activeTab === 'goal' && (() => {
-                  // フォロワー増加数を計算
-                  const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
-                  const actualFollowers = Number(formData.currentFollowers || 0) + totalFollowerIncrease;
-                  
-                  return (
-                    <CurrentGoalPanel
-                      formData={formData}
-                      selectedStrategies={selectedStrategies}
-                      onEditPlan={handleEditCurrentPlan}
-                      onDeletePlan={handleDeleteCurrentPlan}
-                      onSavePlan={handleSavePlan}
-                      isSaving={isSaving}
-                      saveError={saveError}
-                      saveSuccess={saveSuccess}
-                      actualFollowers={actualFollowers}
-                    />
-                  );
-                })()}
-
                 {activeTab === 'simulation' && (
                   <SimulationPanel
                     result={simulationResult}
