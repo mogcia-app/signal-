@@ -139,13 +139,45 @@ export default function InstagramPlanPage() {
   // 現在の計画編集
   const handleEditCurrentPlan = () => {
     console.log('現在の計画を編集')
-    // TODO: 編集モードの切り替え
+    // フォームを編集可能な状態にする
+    // 現在は保存された計画をフォームに反映するだけ
+    alert('編集機能は開発中です。現在は計画を再設定して新しく作成してください。')
   }
 
   // 現在の計画削除
-  const handleDeleteCurrentPlan = () => {
+  const handleDeleteCurrentPlan = async () => {
     console.log('現在の計画を削除')
-    // TODO: 削除確認と実行
+    
+    // 削除確認
+    const confirmed = window.confirm('この計画を削除しますか？この操作は取り消せません。')
+    if (!confirmed) return
+    
+    try {
+      if (!user) {
+        alert('ログインが必要です')
+        return
+      }
+      
+      const idToken = await user.getIdToken()
+      const response = await fetch(`/api/plans/${loadedPlanId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (response.ok) {
+        alert('計画が削除されました')
+        // ページをリロードして削除を反映
+        window.location.reload()
+      } else {
+        alert('削除に失敗しました')
+      }
+    } catch (error) {
+      console.error('削除エラー:', error)
+      alert('削除中にエラーが発生しました')
+    }
   }
 
 
@@ -203,7 +235,7 @@ export default function InstagramPlanPage() {
         )}
 
         {/* 運用計画実行中 */}
-        {loadedPlanId && !isPlanExpired && planStartDate && planEndDate && (
+        {(loadedPlanId || (formData.planPeriod && formData.currentFollowers && formData.followerGain)) && (
           <div className="mb-6 bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-start">
@@ -212,14 +244,19 @@ export default function InstagramPlanPage() {
                 </div>
                 <div className="ml-3 flex-1">
                   <h3 className="text-lg font-semibold text-black">
-                    運用計画実行中
+                    {loadedPlanId ? '運用計画実行中' : 'Instagram運用計画'}
                   </h3>
                   <p className="text-sm text-black mt-1">
-                    期間: {planStartDate.toLocaleDateString('ja-JP')} 〜 {planEndDate.toLocaleDateString('ja-JP')}
+                    {planStartDate && planEndDate 
+                      ? `期間: ${planStartDate.toLocaleDateString('ja-JP')} 〜 ${planEndDate.toLocaleDateString('ja-JP')}`
+                      : `期間: ${formData.planPeriod}`
+                    }
                   </p>
-                  <p className="text-xs text-[#FF8A15] font-medium mt-1">
-                    残り {Math.ceil((planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 日
-                  </p>
+                  {planStartDate && planEndDate && (
+                    <p className="text-xs text-[#FF8A15] font-medium mt-1">
+                      残り {Math.ceil((planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 日
+                    </p>
+                  )}
                   
                   {/* 計画の詳細表示 */}
                   <div className="mt-3 space-y-3">
@@ -297,12 +334,33 @@ export default function InstagramPlanPage() {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={resetPlan}
-                className="text-sm bg-white hover:bg-gray-50 text-black border border-gray-300 font-medium py-2 px-3 transition-colors"
-              >
-                🔄 計画を再設定
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={handleEditCurrentPlan}
+                  className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 transition-colors"
+                >
+                  ✏️ 編集
+                </button>
+                <button
+                  onClick={handleDeleteCurrentPlan}
+                  className="text-sm bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 transition-colors"
+                >
+                  🗑️ 削除
+                </button>
+                <button
+                  onClick={handleSavePlan}
+                  disabled={isSaving}
+                  className="text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-3 transition-colors"
+                >
+                  {isSaving ? '💾 保存中...' : '💾 保存'}
+                </button>
+                <button
+                  onClick={resetPlan}
+                  className="text-sm bg-white hover:bg-gray-50 text-black border border-gray-300 font-medium py-2 px-3 transition-colors"
+                >
+                  🔄 再設定
+                </button>
+              </div>
             </div>
           </div>
         )}
