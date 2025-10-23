@@ -229,8 +229,8 @@ export default function InstagramPlanPage() {
 
         {/* 計画読み込み中 */}
         {isLoadingPlan && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
-            <p className="text-blue-700">📂 保存された計画を読み込んでいます...</p>
+          <div className="mb-6 bg-orange-50 border border-orange-200 p-4 rounded-lg text-center">
+            <p className="text-orange-700">📂 保存された計画を読み込んでいます...</p>
           </div>
         )}
 
@@ -260,12 +260,6 @@ export default function InstagramPlanPage() {
                   
                   {/* 計画の詳細表示 */}
                   <div className="mt-3 space-y-3">
-                    {/* 期間 */}
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">期間:</span>
-                      <span className="ml-2 text-black">{formData.planPeriod}</span>
-                    </div>
-                    
                     {/* 目標 */}
                     <div className="text-sm">
                       <span className="font-medium text-gray-700">目標:</span>
@@ -296,6 +290,14 @@ export default function InstagramPlanPage() {
                       </div>
                     )}
                     
+                    {/* ターゲット層 */}
+                    {formData.targetAudience && (
+                      <div className="text-sm">
+                        <span className="font-medium text-gray-700">ターゲット層:</span>
+                        <span className="ml-2 text-black">{formData.targetAudience}</span>
+                      </div>
+                    )}
+                    
                     {/* 取り組みたいこと */}
                     {selectedStrategies.length > 0 && (
                       <div className="text-sm">
@@ -316,19 +318,11 @@ export default function InstagramPlanPage() {
                         <span className="font-medium text-gray-700">投稿したい内容:</span>
                         <div className="ml-2 mt-1 flex flex-wrap gap-1">
                           {selectedCategories.map((category, index) => (
-                            <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            <span key={index} className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
                               {category}
                             </span>
                           ))}
                         </div>
-                      </div>
-                    )}
-                    
-                    {/* ターゲット層 */}
-                    {formData.targetAudience && (
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-700">ターゲット層:</span>
-                        <span className="ml-2 text-black">{formData.targetAudience}</span>
                       </div>
                     )}
                   </div>
