@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { ReactNode, useState, useEffect, useCallback } from 'react';
@@ -15,6 +15,7 @@ interface SNSLayoutProps {
 
 export default function SNSLayout({ children, customTitle, customDescription }: SNSLayoutProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { user, signOut } = useAuth();
@@ -144,7 +145,6 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
             </div>
             <div>
               <div className="font-semibold text-black">Instagram</div>
-              <div className="text-xs text-black">写真・動画投稿プラットフォーム</div>
             </div>
           </div>
         </div>
@@ -154,40 +154,72 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
           <h3 className="text-sm font-semibold text-gray-700 mb-3">メニュー</h3>
           <nav className="space-y-1">
             <Link 
+              href="/instagram"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname === '/instagram' 
+                  ? 'bg-orange-100 text-orange-800 font-medium' 
+                  : 'text-black hover:bg-gray-100'
+              }`}
+            >
+              <span>🏠</span>
+              <span>ダッシュボード</span>
+            </Link>
+            <Link 
               href="/instagram/plan"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname === '/instagram/plan' 
+                  ? 'bg-orange-100 text-orange-800 font-medium' 
+                  : 'text-black hover:bg-gray-100'
+              }`}
             >
               <span>📋</span>
               <span>運用計画</span>
             </Link>
             <Link 
               href="/instagram/lab"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname === '/instagram/lab' 
+                  ? 'bg-orange-100 text-orange-800 font-medium' 
+                  : 'text-black hover:bg-gray-100'
+              }`}
             >
               <span>🧪</span>
               <span>投稿ラボ</span>
             </Link>
             <Link 
               href="/instagram/analytics"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname === '/instagram/analytics' 
+                  ? 'bg-orange-100 text-orange-800 font-medium' 
+                  : 'text-black hover:bg-gray-100'
+              }`}
             >
               <span>📊</span>
               <span>投稿分析</span>
             </Link>
             <Link 
-              href="/instagram/monthly-report"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
-            >
-              <span>📈</span>
-              <span>月次レポート</span>
-            </Link>
-            <Link 
               href="/instagram/posts"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname === '/instagram/posts' 
+                  ? 'bg-orange-100 text-orange-800 font-medium' 
+                  : 'text-black hover:bg-gray-100'
+              }`}
             >
               <span>📚</span>
               <span>投稿一覧</span>
             </Link>
+            <Link 
+              href="/instagram/monthly-report"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname === '/instagram/monthly-report' 
+                  ? 'bg-orange-100 text-orange-800 font-medium' 
+                  : 'text-black hover:bg-gray-100'
+              }`}
+            >
+              <span>📈</span>
+              <span>月次レポート</span>
+            </Link>
+          
           </nav>
         </div>
 

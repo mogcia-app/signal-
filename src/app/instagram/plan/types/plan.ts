@@ -1,6 +1,5 @@
 // フォームデータの型定義
 export interface PlanFormData {
-  goalName: string;
   planPeriod: string;
   currentFollowers: string;
   followerGain: string;

@@ -531,18 +531,7 @@ export default function InstagramPostsPage() {
                     </div>
                   </div>
 
-                  {/* アクションボタン */}
-                  <div className="px-4 pb-4">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => alert('投稿詳細を表示')}
-                        className="p-2 text-black hover:text-blue-600 hover:bg-blue-50  transition-colors"
-                        title="詳細表示"
-                      >
-                        →
-                      </button>
-                    </div>
-                  </div>
+                
                 </div>
               ))}
 

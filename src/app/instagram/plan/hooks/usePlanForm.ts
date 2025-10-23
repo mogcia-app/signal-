@@ -14,7 +14,6 @@ export const usePlanForm = () => {
   
   // フォーム状態管理
   const [formData, setFormData] = useState<PlanFormData>({
-    goalName: '',
     planPeriod: '1ヶ月',
     currentFollowers: '',
     followerGain: '',
@@ -55,10 +54,15 @@ export const usePlanForm = () => {
   // フォーム入力ハンドラー
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    console.log('フォーム入力変更:', { name, value });
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: value
+      };
+      console.log('新しいフォームデータ:', newData);
+      return newData;
+    });
   };
 
   // 戦略選択ハンドラー
@@ -82,7 +86,6 @@ export const usePlanForm = () => {
   // フォームリセット
   const resetForm = () => {
     setFormData({
-      goalName: '',
       planPeriod: '1ヶ月',
       currentFollowers: '',
       followerGain: '',
@@ -169,7 +172,7 @@ export const usePlanForm = () => {
         userId: user.uid,
         snsType: 'instagram',
         status: 'active',
-        title: formData.goalName || 'Instagram成長計画',
+        title: 'Instagram成長計画',
         targetFollowers: parseInt(formData.currentFollowers, 10) + parseInt(formData.followerGain, 10),
         currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
         planPeriod: formData.planPeriod,

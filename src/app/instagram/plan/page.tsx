@@ -48,6 +48,7 @@ export default function InstagramPlanPage() {
     simulationResult, 
     isSimulating, 
     simulationError, 
+    setSimulationError,
     runSimulation 
   } = useSimulation()
 
@@ -93,6 +94,26 @@ export default function InstagramPlanPage() {
       return
     }
 
+    console.log('=== シミュレーション実行デバッグ ===')
+    console.log('formData:', formData)
+    console.log('selectedStrategies:', selectedStrategies)
+    console.log('selectedCategories:', selectedCategories)
+    console.log('followerGain:', formData.followerGain, 'type:', typeof formData.followerGain)
+    console.log('currentFollowers:', formData.currentFollowers, 'type:', typeof formData.currentFollowers)
+    console.log('planPeriod:', formData.planPeriod, 'type:', typeof formData.planPeriod)
+
+    // バリデーションチェック
+    if (!formData.followerGain || !formData.currentFollowers || !formData.planPeriod) {
+      console.error('必須項目が未入力です:', {
+        followerGain: formData.followerGain,
+        currentFollowers: formData.currentFollowers,
+        planPeriod: formData.planPeriod
+      });
+      // エラーメッセージを表示
+      setSimulationError('必須項目（現在のフォロワー数、フォロワー増加目標、期間）を入力してください');
+      return;
+    }
+
     const requestData: SimulationRequest = {
       followerGain: parseInt(formData.followerGain, 10),
       currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
@@ -104,6 +125,7 @@ export default function InstagramPlanPage() {
       referenceAccounts: formData.brandConcept
     }
 
+    console.log('requestData:', requestData)
     await runSimulation(requestData)
   }
 
@@ -131,8 +153,10 @@ export default function InstagramPlanPage() {
   const handleSavePlan = async (): Promise<boolean> => {
     const success = await savePlan()
     if (success) {
-      // 保存成功時の処理（必要に応じてページ遷移など）
+      // 保存成功時の処理
       console.log('計画が正常に保存されました')
+      // ページをリロードして保存された計画を表示
+      window.location.reload()
     }
     return success
   }
@@ -186,7 +210,7 @@ export default function InstagramPlanPage() {
                 <div className="flex-shrink-0">
                   <span className="text-2xl">📋</span>
                 </div>
-                <div className="ml-3">
+                <div className="ml-3 flex-1">
                   <h3 className="text-lg font-semibold text-black">
                     運用計画実行中
                   </h3>
@@ -196,6 +220,58 @@ export default function InstagramPlanPage() {
                   <p className="text-xs text-[#FF8A15] font-medium mt-1">
                     残り {Math.ceil((planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 日
                   </p>
+                  
+                  {/* 計画の詳細表示 */}
+                  <div className="mt-3 space-y-2">
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">目標:</span>
+                      <span className="ml-2 text-black">
+                        {formData.currentFollowers && formData.followerGain 
+                          ? `現在${formData.currentFollowers}人 → ${parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人`
+                          : '未設定'
+                        }
+                      </span>
+                    </div>
+                    
+                    {formData.goalCategory && (
+                      <div className="text-sm">
+                        <span className="font-medium text-gray-700">重視する指標:</span>
+                        <span className="ml-2 text-black">
+                          {formData.goalCategory === 'followers' ? 'フォロワー増加' :
+                           formData.goalCategory === 'engagement' ? 'エンゲージメント向上' :
+                           formData.goalCategory === 'save' ? '保存率向上' :
+                           formData.goalCategory === 'reach' ? 'リーチを増やす' :
+                           formData.goalCategory === 'impressions' ? 'インプレッションを増やす' :
+                           formData.goalCategory === 'branding' ? 'ブランド認知を広める' :
+                           formData.goalCategory === 'profile' ? 'プロフィール誘導' :
+                           formData.goalCategory}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {selectedStrategies.length > 0 && (
+                      <div className="text-sm">
+                        <span className="font-medium text-gray-700">取り組み:</span>
+                        <div className="ml-2 mt-1 flex flex-wrap gap-1">
+                          {selectedStrategies.slice(0, 3).map((strategy, index) => (
+                            <span key={index} className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
+                              {strategy}
+                            </span>
+                          ))}
+                          {selectedStrategies.length > 3 && (
+                            <span className="text-xs text-gray-500">+{selectedStrategies.length - 3}個</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {formData.targetAudience && (
+                      <div className="text-sm">
+                        <span className="font-medium text-gray-700">ターゲット:</span>
+                        <span className="ml-2 text-black">{formData.targetAudience}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <button

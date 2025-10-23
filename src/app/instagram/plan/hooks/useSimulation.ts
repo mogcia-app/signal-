@@ -99,6 +99,7 @@ export const useSimulation = () => {
     simulationResult,
     isSimulating,
     simulationError,
+    setSimulationError,
     debugInfo,
     runSimulation,
     clearSimulation,

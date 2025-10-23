@@ -33,7 +33,7 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
       <div className="bg-gray-50 p-4 rounded-lg mb-4">
         <div className="space-y-3">
           <h4 className="font-semibold text-black">
-            {formData.goalName || 'Instagram成長計画'}
+            Instagram成長計画
           </h4>
           
           <div className="grid grid-cols-2 gap-3 text-sm">
