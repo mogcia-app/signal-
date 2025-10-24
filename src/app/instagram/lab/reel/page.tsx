@@ -73,47 +73,52 @@ export default function ReelLabPage() {
           />
         )}
 
-        {/* リール投稿エディター */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-6">
-            <span className="text-2xl mr-3">🎬</span>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">リール動画作成</h2>
-              <p className="text-sm text-gray-600">Instagramリール用の動画投稿を作成・編集します</p>
+        {/* 2カラムレイアウト */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 左カラム: リール投稿エディター */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center mb-6">
+              <span className="text-2xl mr-3">🎬</span>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">リール動画作成</h2>
+                <p className="text-sm text-gray-600">Instagramリール用の動画投稿を作成・編集します</p>
+              </div>
             </div>
+            
+            <PostEditor
+              content={postContent}
+              onContentChange={setPostContent}
+              title={postTitle}
+              onTitleChange={setPostTitle}
+              hashtags={selectedHashtags}
+              onHashtagsChange={setSelectedHashtags}
+              postType={postType}
+              onPostTypeChange={setPostType}
+              image={postImage}
+              onImageChange={setPostImage}
+              scheduledDate={scheduledDate}
+              onScheduledDateChange={setScheduledDate}
+              scheduledTime={scheduledTime}
+              onScheduledTimeChange={setScheduledTime}
+              isAIGenerated={isAIGenerated}
+              planData={planData}
+            />
           </div>
-          
-          <PostEditor
-            content={postContent}
-            onContentChange={setPostContent}
-            title={postTitle}
-            onTitleChange={setPostTitle}
-            hashtags={selectedHashtags}
-            onHashtagsChange={setSelectedHashtags}
-            postType={postType}
-            onPostTypeChange={setPostType}
-            image={postImage}
-            onImageChange={setPostImage}
-            scheduledDate={scheduledDate}
-            onScheduledDateChange={setScheduledDate}
-            scheduledTime={scheduledTime}
-            onScheduledTimeChange={setScheduledTime}
-            isAIGenerated={isAIGenerated}
-            planData={planData}
-          />
-        </div>
 
-        {/* ツールパネル */}
-        <ToolPanel
-          onTemplateSelect={(template) => setPostContent(template)}
-          onHashtagSelect={(hashtag) => {
-            if (!selectedHashtags.includes(hashtag)) {
-              setSelectedHashtags([...selectedHashtags, hashtag]);
-            }
-          }}
-          postContent={postContent}
-          onImageGenerated={setPostImage}
-        />
+          {/* 右カラム: ツールパネル */}
+          <div>
+            <ToolPanel
+              onTemplateSelect={(template) => setPostContent(template)}
+              onHashtagSelect={(hashtag) => {
+                if (!selectedHashtags.includes(hashtag)) {
+                  setSelectedHashtags([...selectedHashtags, hashtag]);
+                }
+              }}
+              postContent={postContent}
+              onImageGenerated={setPostImage}
+            />
+          </div>
+        </div>
 
         {/* AIチャットウィジェット */}
         <AIChatWidget
