@@ -35,17 +35,37 @@ export async function POST(request: NextRequest) {
 
 function buildBusinessContext(businessInfo: {
   companySize?: string;
+  businessType?: string;
+  description?: string;
+  catchphrase?: string;
   targetMarket?: string[] | string;
   goals?: string[];
   challenges?: string[];
   features?: string[];
   industry?: string;
+  productsOrServices?: Array<{ name: string; details: string }>;
   snsAISettings?: Record<string, unknown>;
 }) {
   const context = [];
   
+  if (businessInfo.industry) {
+    context.push(`業種: ${businessInfo.industry}`);
+  }
+  
   if (businessInfo.companySize) {
     context.push(`会社規模: ${businessInfo.companySize}`);
+  }
+  
+  if (businessInfo.businessType) {
+    context.push(`事業形態: ${businessInfo.businessType}`);
+  }
+  
+  if (businessInfo.description) {
+    context.push(`事業内容: ${businessInfo.description}`);
+  }
+  
+  if (businessInfo.catchphrase) {
+    context.push(`キャッチコピー: ${businessInfo.catchphrase}`);
   }
   
   if (businessInfo.targetMarket && businessInfo.targetMarket.length > 0) {
@@ -64,8 +84,31 @@ function buildBusinessContext(businessInfo: {
     context.push(`機能: ${businessInfo.features.join(', ')}`);
   }
   
-  if (businessInfo.industry) {
-    context.push(`業種: ${businessInfo.industry}`);
+  if (businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0) {
+    context.push(`商品・サービス:`);
+    businessInfo.productsOrServices.forEach((item, index) => {
+      context.push(`  ${index + 1}. ${item.name}${item.details ? ` - ${item.details}` : ''}`);
+    });
+  }
+  
+  // Instagram AI設定の情報を追加
+  if (businessInfo.snsAISettings && businessInfo.snsAISettings.instagram) {
+    const instagramSettings = businessInfo.snsAISettings.instagram as any;
+    if (instagramSettings.tone) {
+      context.push(`Instagramトーン: ${instagramSettings.tone}`);
+    }
+    if (instagramSettings.manner) {
+      context.push(`Instagramマナー: ${instagramSettings.manner}`);
+    }
+    if (instagramSettings.goals) {
+      context.push(`Instagram目標: ${instagramSettings.goals}`);
+    }
+    if (instagramSettings.motivation) {
+      context.push(`Instagram運用動機: ${instagramSettings.motivation}`);
+    }
+    if (instagramSettings.cautions) {
+      context.push(`Instagram注意事項: ${instagramSettings.cautions}`);
+    }
   }
 
   return context.join('\n');
@@ -166,132 +209,105 @@ async function generateScheduleWithAI(prompt: string) {
 }
 
 function getDefaultSchedule() {
-  return [
-    {
-      day: "月",
-      dayName: "Monday",
-      posts: [
-        {
+  // デフォルトは週2回（月8回）のスケジュール
+  const weeklyPosts = 2;
+  
+  // 投稿する曜日を決定（週の投稿回数に基づく）
+  const postingDays = [];
+  
+  if (weeklyPosts === 1) {
+    postingDays.push("水"); // 週1回は水曜日
+  } else if (weeklyPosts === 2) {
+    postingDays.push("月", "木"); // 週2回は月・木
+  } else if (weeklyPosts === 3) {
+    postingDays.push("月", "水", "金"); // 週3回は月・水・金
+  } else if (weeklyPosts === 4) {
+    postingDays.push("月", "火", "木", "金"); // 週4回は月・火・木・金
+  } else if (weeklyPosts === 5) {
+    postingDays.push("月", "火", "水", "木", "金"); // 週5回は平日
+  } else if (weeklyPosts === 6) {
+    postingDays.push("月", "火", "水", "木", "金", "土"); // 週6回は土曜日まで
+  } else if (weeklyPosts === 7) {
+    postingDays.push("月", "火", "水", "木", "金", "土", "日"); // 毎日
+  }
+  
+  const dayNames = ["月", "火", "水", "木", "金", "土", "日"];
+  
+  return dayNames.map(day => {
+    const isPostingDay = postingDays.includes(day);
+    
+    let posts = [];
+    if (isPostingDay) {
+      // 投稿する曜日に応じて内容を決定
+      if (day === "月") {
+        posts = [{
           title: "商品紹介リール",
           description: "新商品やおすすめ商品を魅力的に紹介",
           emoji: "📱",
           category: "商品紹介"
-        },
-        {
-          title: "使い方チュートリアル",
-          description: "商品の使い方を分かりやすく説明",
-          emoji: "🎬",
-          category: "チュートリアル"
-        }
-      ]
-    },
-    {
-      day: "火",
-      dayName: "Tuesday",
-      posts: [
-        {
+        }];
+      } else if (day === "火") {
+        posts = [{
           title: "おすすめポイント",
           description: "商品の特徴やメリットを強調",
           emoji: "💡",
           category: "おすすめ"
-        },
-        {
-          title: "バックステージ",
-          description: "制作過程や会社の様子を紹介",
-          emoji: "🎭",
-          category: "バックステージ"
-        }
-      ]
-    },
-    {
-      day: "水",
-      dayName: "Wednesday",
-      posts: [
-        {
+        }];
+      } else if (day === "水") {
+        posts = [{
           title: "成功事例紹介",
           description: "お客様の成功事例や体験談",
           emoji: "🏆",
           category: "成功事例"
-        },
-        {
-          title: "データ分析",
-          description: "業界データやトレンド分析",
-          emoji: "📊",
-          category: "データ"
-        }
-      ]
-    },
-    {
-      day: "木",
-      dayName: "Thursday",
-      posts: [
-        {
+        }];
+      } else if (day === "木") {
+        posts = [{
           title: "新商品発表",
           description: "新商品の発表や予告",
           emoji: "🌱",
           category: "新商品"
-        },
-        {
-          title: "クリエイティブ",
-          description: "アートやデザイン関連のコンテンツ",
-          emoji: "🎨",
-          category: "クリエイティブ"
-        }
-      ]
-    },
-    {
-      day: "金",
-      dayName: "Friday",
-      posts: [
-        {
+        }];
+      } else if (day === "金") {
+        posts = [{
           title: "週末特集",
           description: "週末の過ごし方やおすすめスポット",
           emoji: "🎉",
           category: "週末特集"
-        },
-        {
-          title: "お買い物ガイド",
-          description: "お買い物のコツやお得情報",
-          emoji: "🛍️",
-          category: "お買い物"
-        }
-      ]
-    },
-    {
-      day: "土",
-      dayName: "Saturday",
-      posts: [
-        {
+        }];
+      } else if (day === "土") {
+        posts = [{
           title: "エンターテイメント",
           description: "楽しい動画やエンターテイメント",
           emoji: "🎪",
           category: "エンターテイメント"
-        },
-        {
-          title: "トレンド動画",
-          description: "最新のトレンドや話題の動画",
-          emoji: "🎵",
-          category: "トレンド"
-        }
-      ]
-    },
-    {
-      day: "日",
-      dayName: "Sunday",
-      posts: [
-        {
+        }];
+      } else if (day === "日") {
+        posts = [{
           title: "週末の過ごし方",
           description: "リラックスした週末の様子",
           emoji: "🌅",
           category: "ライフスタイル"
-        },
-        {
-          title: "振り返り動画",
-          description: "今週の振り返りや来週の予告",
-          emoji: "💭",
-          category: "振り返り"
-        }
-      ]
+        }];
+      }
     }
-  ];
+    
+    return {
+      day: day,
+      dayName: getDayName(day),
+      posts: posts
+    };
+  });
+}
+
+function getDayName(day: string): string {
+  const dayMap: { [key: string]: string } = {
+    "月": "Monday",
+    "火": "Tuesday", 
+    "水": "Wednesday",
+    "木": "Thursday",
+    "金": "Friday",
+    "土": "Saturday",
+    "日": "Sunday"
+  };
+  return dayMap[day] || day;
 }

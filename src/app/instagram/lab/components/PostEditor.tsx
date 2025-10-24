@@ -35,6 +35,8 @@ interface PostEditorProps {
     conclusion: string;
   }; // 動画構成データ
   videoFlow?: string; // 動画構成の流れ
+  imageVideoSuggestions?: string; // AIヒントの文章
+  onImageVideoSuggestionsGenerate?: (content: string) => void; // AIヒント生成のコールバック
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -59,7 +61,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   showActionButtons = false,
   onVideoStructureGenerate,
   videoStructure,
-  videoFlow
+  videoFlow,
+  imageVideoSuggestions,
+  onImageVideoSuggestionsGenerate
 }) => {
   const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
@@ -319,6 +323,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         if (postType === 'reel' && onVideoStructureGenerate) {
           onVideoStructureGenerate(aiPrompt);
         }
+        
+        // ストーリー・フィードの場合はAIヒントも生成
+        if ((postType === 'story' || postType === 'feed') && onImageVideoSuggestionsGenerate) {
+          onImageVideoSuggestionsGenerate(content);
+        }
       } else {
         throw new Error('投稿文生成に失敗しました');
       }
@@ -344,32 +353,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <p className="text-sm text-black">投稿文を作成・編集しましょう</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-                    <button
-                      onClick={handleSave}
-                      disabled={!content.trim() || isSaving}
-                      className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isSaving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          <span>保存中...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save size={14} />
-                          <span>保存</span>
-                        </>
-                      )}
-                    </button>
-            <button
-              onClick={handleClear}
-              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
-            >
-              <RefreshCw size={14} />
-              <span>クリア</span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -389,7 +372,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             <div className="flex space-x-2">
               <a
                 href="/instagram/posts"
-                className="inline-flex items-center px-3 py-1 text-xs bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 transition-colors"
+                className="inline-flex items-center px-3 py-1 text-xs bg-[#ff8a15] text-white hover:bg-orange-600 transition-colors"
               >
                 <Eye size={12} className="mr-1" />
                 投稿一覧を見る
@@ -478,7 +461,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   }
                 }}
                 disabled={!content.trim() || !onVideoStructureGenerate}
-                className="px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-lg hover:from-orange-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+                className="px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white hover:from-orange-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
               >
                 <Sparkles size={16} />
                 <span>AIで動画構成生成</span>
@@ -515,6 +498,30 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 <div className="text-sm text-gray-700">
                   {videoFlow || 'AI投稿文生成で自動生成されます'}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AIヒントセクション（ストーリー・フィード） */}
+        {(postType === 'story' || postType === 'feed') && (
+          <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200 p-4">
+            <div className="flex items-center mb-4">
+              <span className="text-2xl mr-3">💡</span>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">AIヒント</h3>
+                <p className="text-sm text-gray-600">
+                  {postType === 'story' 
+                    ? '投稿文に合う画像・動画のアイデアとストーリーのヒント'
+                    : '投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒント'
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg border border-orange-100">
+              <div className="text-sm text-gray-700">
+                {imageVideoSuggestions || 'AI投稿文生成で自動提案されます'}
               </div>
             </div>
           </div>
@@ -566,7 +573,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   input.value = '';
                 }
               }}
-              className="px-6 py-3 bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="px-4 py-2 bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               追加
             </button>
@@ -832,22 +839,32 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         )}
 
         {/* アクションボタン */}
-        {showActionButtons && (
-          <div className="flex space-x-3 mt-6">
-            <button
-              onClick={onSave}
-              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
-            >
-              保存
-            </button>
-            <button
-              onClick={onClear}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              クリア
-            </button>
-          </div>
-        )}
+        <div className="flex space-x-3 mt-6">
+          <button
+            onClick={handleSave}
+            disabled={!content.trim() || isSaving}
+            className="flex items-center space-x-2 px-4 py-2 bg-[#ff8a15] text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>保存中...</span>
+              </>
+            ) : (
+              <>
+                <Save size={14} />
+                <span>保存</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleClear}
+            className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw size={14} />
+            <span>クリア</span>
+          </button>
+        </div>
       </div>
     </div>
   );

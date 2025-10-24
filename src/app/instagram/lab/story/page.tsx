@@ -37,6 +37,11 @@ export default function StoryLabPage() {
   }>>([]);
   const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
   const [scheduleError, setScheduleError] = useState('');
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  // AIヒント関連の状態
+  const [imageVideoSuggestions, setImageVideoSuggestions] = useState('');
   
   // 計画データを取得
   const { planData } = usePlanData('instagram');
@@ -115,11 +120,142 @@ export default function StoryLabPage() {
       setIsGeneratingSchedule(false);
     }
   }, [user, monthlyPosts, dailyPosts]);
+
+  // スケジュール保存関数
+  const saveSchedule = useCallback(async () => {
+    if (!user?.uid || generatedSchedule.length === 0) {
+      setSaveMessage('スケジュールが生成されていません');
+      return;
+    }
+    
+    setIsSavingSchedule(true);
+    setSaveMessage('');
+    
+    try {
+      // ビジネス情報を取得
+      const idToken = await user.getIdToken();
+      const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'x-user-id': user.uid,
+        },
+      });
+      
+      if (!businessResponse.ok) {
+        throw new Error('ビジネス情報の取得に失敗しました');
+      }
+      
+      const businessData = await businessResponse.json();
+      
+      // スケジュール保存APIを呼び出し
+      const saveResponse = await fetch('/api/instagram/schedule-save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          scheduleType: 'story',
+          scheduleData: generatedSchedule,
+          monthlyPosts,
+          dailyPosts,
+          businessInfo: businessData.businessInfo
+        }),
+      });
+      
+      if (!saveResponse.ok) {
+        throw new Error('スケジュール保存に失敗しました');
+      }
+      
+      const saveData = await saveResponse.json();
+      setSaveMessage('✅ スケジュールが保存されました！');
+      
+    } catch (error) {
+      console.error('スケジュール保存エラー:', error);
+      setSaveMessage('❌ スケジュール保存に失敗しました');
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  }, [user, generatedSchedule, monthlyPosts, dailyPosts]);
+
+  // 保存されたスケジュールを読み込む関数
+  const loadSavedSchedule = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`/api/instagram/schedule-save?userId=${user.uid}&scheduleType=story`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'x-user-id': user.uid,
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.schedule) {
+          setGeneratedSchedule(result.schedule.schedule || []);
+          setMonthlyPosts(result.schedule.monthlyPosts || 8);
+          setDailyPosts(result.schedule.dailyPosts || 1);
+          setSaveMessage('✅ 保存されたスケジュールを読み込みました');
+        }
+      }
+    } catch (error) {
+      console.error('スケジュール読み込みエラー:', error);
+    }
+  }, [user]);
+  
+  // AIヒント生成関数
+  const generateImageVideoSuggestions = useCallback(async (content: string) => {
+    if (!user?.uid) return;
+    
+    try {
+      // ビジネス情報を取得
+      const idToken = await user.getIdToken();
+      const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'x-user-id': user.uid,
+        },
+      });
+      
+      if (!businessResponse.ok) {
+        throw new Error('ビジネス情報の取得に失敗しました');
+      }
+      
+      const businessData = await businessResponse.json();
+      
+      // AIヒントを生成
+      const suggestionsResponse = await fetch('/api/instagram/story-suggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          content,
+          businessInfo: businessData.businessInfo
+        }),
+      });
+      
+      if (!suggestionsResponse.ok) {
+        throw new Error('AIヒントの生成に失敗しました');
+      }
+      
+      const suggestionsData = await suggestionsResponse.json();
+      setImageVideoSuggestions(suggestionsData.suggestions);
+      
+    } catch (error) {
+      console.error('AIヒント生成エラー:', error);
+    }
+  }, [user]);
   
   useEffect(() => {
     setIsMounted(true);
     fetchAnalytics();
-  }, [fetchAnalytics]);
+    loadSavedSchedule(); // 保存されたスケジュールを読み込み
+  }, [fetchAnalytics, loadSavedSchedule]);
 
   if (!isMounted) {
     return null;
@@ -154,7 +290,6 @@ export default function StoryLabPage() {
               <div className="text-sm text-orange-700">
                 <p>• 週の投稿回数: <span className="font-semibold">{Math.round(monthlyPosts / 4)}回</span>（月{monthlyPosts}回）</p>
                 <p>• 1日の投稿回数: <span className="font-semibold">{dailyPosts}回</span></p>
-                <p>• 投稿する曜日数: <span className="font-semibold">{Math.round(monthlyPosts / 4)}日/週</span></p>
               </div>
             </div>
             
@@ -246,44 +381,57 @@ export default function StoryLabPage() {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-2">📅</div>
-                <p>「AIでスケジュールを生成」ボタンを押して、あなたに最適な投稿スケジュールを作成しましょう</p>
-              </div>
-            )}
-          </div>
-
-          {/* スケジュール生成ボタン */}
-          <div className="mb-6">
-            <button 
-              onClick={generateSchedule}
-              disabled={isGeneratingSchedule}
-              className="px-6 py-3 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isGeneratingSchedule ? '🔄 生成中...' : '🤖 AIでスケジュールを生成'}
-            </button>
-            {scheduleError && (
-              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-                {scheduleError}
+                <button 
+                  onClick={generateSchedule}
+                  disabled={isGeneratingSchedule}
+                  className="px-6 py-3 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4"
+                >
+                  {isGeneratingSchedule ? '生成中...' : 'AIでスケジュールを生成'}
+                </button>
+                <p>あなたに最適な投稿スケジュールを作成しましょう</p>
+                {scheduleError && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                    {scheduleError}
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* アクションボタン */}
           <div className="flex space-x-3">
-            <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
-              📅 スケジュールを保存
+            <button 
+              onClick={saveSchedule}
+              disabled={isSavingSchedule || generatedSchedule.length === 0}
+              className="px-4 py-2 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSavingSchedule ? '💾 保存中...' : '📅 スケジュールを保存'}
             </button>
             <button 
               onClick={generateSchedule}
               disabled={isGeneratingSchedule}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
             >
               🔄 再生成
             </button>
-            <button className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-              ✏️ カスタマイズ
+            <button 
+              onClick={loadSavedSchedule}
+              className="px-4 py-2 text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              📂 保存済みを読み込み
             </button>
           </div>
+          
+          {/* 保存メッセージ */}
+          {saveMessage && (
+            <div className={`mt-3 p-3 rounded-md text-sm ${
+              saveMessage.includes('✅') 
+                ? 'bg-green-50 border border-green-200 text-green-700' 
+                : 'bg-red-50 border border-red-200 text-red-700'
+            }`}>
+              {saveMessage}
+            </div>
+          )}
         </div>
 
         {/* ストーリー投稿エディター */}
@@ -320,6 +468,8 @@ export default function StoryLabPage() {
                 setScheduledTime('');
               }}
               showActionButtons={true}
+              imageVideoSuggestions={imageVideoSuggestions}
+              onImageVideoSuggestionsGenerate={generateImageVideoSuggestions}
             />
           </div>
 

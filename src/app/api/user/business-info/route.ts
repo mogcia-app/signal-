@@ -24,12 +24,16 @@ export async function GET(request: NextRequest) {
       success: true,
       businessInfo: {
         companySize: businessInfo.companySize || '',
+        businessType: businessInfo.businessType || '',
+        description: businessInfo.description || '',
+        catchphrase: businessInfo.catchphrase || '',
         targetMarket: businessInfo.targetMarket || [],
         goals: businessInfo.goals || [],
         challenges: businessInfo.challenges || [],
         features: businessInfo.features || [],
         industry: businessInfo.industry || '',
-        snsAISettings: businessInfo.snsAISettings || {}
+        productsOrServices: businessInfo.productsOrServices || [],
+        snsAISettings: userData?.snsAISettings || {}
       }
     });
 

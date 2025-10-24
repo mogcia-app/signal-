@@ -34,19 +34,37 @@ export async function POST(request: NextRequest) {
 
 function buildBusinessContext(businessInfo: {
   companySize?: string;
+  businessType?: string;
+  description?: string;
+  catchphrase?: string;
   targetMarket?: string[];
   goals?: string[];
   challenges?: string[];
   features?: string[];
   industry?: string;
-  businessType?: string;
-  tone?: string;
-  targetAudience?: string;
+  productsOrServices?: Array<{ name: string; details: string }>;
+  snsAISettings?: Record<string, unknown>;
 }) {
   let context = '';
   
+  if (businessInfo.industry) {
+    context += `業種: ${businessInfo.industry}\n`;
+  }
+  
   if (businessInfo.companySize) {
     context += `会社規模: ${businessInfo.companySize}\n`;
+  }
+  
+  if (businessInfo.businessType) {
+    context += `事業形態: ${businessInfo.businessType}\n`;
+  }
+  
+  if (businessInfo.description) {
+    context += `事業内容: ${businessInfo.description}\n`;
+  }
+  
+  if (businessInfo.catchphrase) {
+    context += `キャッチコピー: ${businessInfo.catchphrase}\n`;
   }
   
   if (businessInfo.targetMarket && businessInfo.targetMarket.length > 0) {
@@ -65,20 +83,35 @@ function buildBusinessContext(businessInfo: {
     context += `機能: ${businessInfo.features.join(', ')}\n`;
   }
   
-  if (businessInfo.industry) {
-    context += `業種: ${businessInfo.industry}\n`;
+  if (businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0) {
+    context += `商品・サービス:\n`;
+    businessInfo.productsOrServices.forEach((item, index) => {
+      context += `  ${index + 1}. ${item.name}`;
+      if (item.details) {
+        context += ` - ${item.details}`;
+      }
+      context += '\n';
+    });
   }
   
-  if (businessInfo.businessType) {
-    context += `ビジネスタイプ: ${businessInfo.businessType}\n`;
-  }
-  
-  if (businessInfo.tone) {
-    context += `トーン: ${businessInfo.tone}\n`;
-  }
-  
-  if (businessInfo.targetAudience) {
-    context += `ターゲット層: ${businessInfo.targetAudience}\n`;
+  // Instagram AI設定の情報を追加
+  if (businessInfo.snsAISettings && businessInfo.snsAISettings.instagram) {
+    const instagramSettings = businessInfo.snsAISettings.instagram as any;
+    if (instagramSettings.tone) {
+      context += `Instagramトーン: ${instagramSettings.tone}\n`;
+    }
+    if (instagramSettings.manner) {
+      context += `Instagramマナー: ${instagramSettings.manner}\n`;
+    }
+    if (instagramSettings.goals) {
+      context += `Instagram目標: ${instagramSettings.goals}\n`;
+    }
+    if (instagramSettings.motivation) {
+      context += `Instagram運用動機: ${instagramSettings.motivation}\n`;
+    }
+    if (instagramSettings.cautions) {
+      context += `Instagram注意事項: ${instagramSettings.cautions}\n`;
+    }
   }
   
   return context;
@@ -140,78 +173,107 @@ ${context}
 async function generateScheduleWithAI(prompt: string) {
   // OpenAI APIの実装（実際のAPIキーが必要）
   // 現在はモックデータを返す
-  const mockSchedule = [
-    {
-      day: "月",
-      dayName: "Monday",
-      posts: [
-        {
+  // プロンプトから投稿頻度を抽出（簡易的な実装）
+  const weeklyPostsMatch = prompt.match(/週の投稿回数: (\d+)回/);
+  const weeklyPosts = weeklyPostsMatch ? parseInt(weeklyPostsMatch[1]) : 2;
+  
+  // 投稿する曜日を決定（週の投稿回数に基づく）
+  const postingDays = [];
+  const dayNames = ["月", "火", "水", "木", "金", "土", "日"];
+  
+  if (weeklyPosts === 1) {
+    postingDays.push("水"); // 週1回は水曜日
+  } else if (weeklyPosts === 2) {
+    postingDays.push("月", "木"); // 週2回は月・木
+  } else if (weeklyPosts === 3) {
+    postingDays.push("月", "水", "金"); // 週3回は月・水・金
+  } else if (weeklyPosts === 4) {
+    postingDays.push("月", "火", "木", "金"); // 週4回は月・火・木・金
+  } else if (weeklyPosts === 5) {
+    postingDays.push("月", "火", "水", "木", "金"); // 週5回は平日
+  } else if (weeklyPosts === 6) {
+    postingDays.push("月", "火", "水", "木", "金", "土"); // 週6回は土曜日まで
+  } else if (weeklyPosts === 7) {
+    postingDays.push("月", "火", "水", "木", "金", "土", "日"); // 毎日
+  }
+  
+  const mockSchedule = dayNames.map(day => {
+    const isPostingDay = postingDays.includes(day);
+    
+    let posts = [];
+    if (isPostingDay) {
+      // 投稿する曜日に応じて内容を決定
+      if (day === "月") {
+        posts = [{
           title: "週の始まりのモチベーション投稿",
           description: "新しい週のスタートを切るためのインスピレーション投稿",
           emoji: "🌅",
           category: "モチベーション"
-        }
-      ]
-    },
-    {
-      day: "火",
-      dayName: "Tuesday",
-      posts: [
-        {
+        }];
+      } else if (day === "火") {
+        posts = [{
           title: "商品・サービス紹介",
           description: "メイン商品やサービスの詳細紹介",
           emoji: "📦",
           category: "商品紹介"
-        }
-      ]
-    },
-    {
-      day: "水",
-      dayName: "Wednesday",
-      posts: [
-        {
+        }];
+      } else if (day === "水") {
+        posts = [{
           title: "お客様の声・レビュー",
           description: "実際のお客様からのフィードバックやレビュー",
           emoji: "💬",
           category: "お客様の声"
-        }
-      ]
-    },
-    {
-      day: "木",
-      dayName: "Thursday",
-      posts: [
-        {
+        }];
+      } else if (day === "木") {
+        posts = [{
           title: "会社の取り組み・ストーリー",
           description: "会社の理念や取り組みについてのストーリー",
           emoji: "🏢",
           category: "会社紹介"
-        }
-      ]
-    },
-    {
-      day: "金",
-      dayName: "Friday",
-      posts: [
-        {
+        }];
+      } else if (day === "金") {
+        posts = [{
           title: "週末に向けたエンターテイメント",
           description: "週末を楽しみにするような楽しいコンテンツ",
           emoji: "🎉",
           category: "エンターテイメント"
-        }
-      ]
-    },
-    {
-      day: "土",
-      dayName: "Saturday",
-      posts: []
-    },
-    {
-      day: "日",
-      dayName: "Sunday",
-      posts: []
+        }];
+      } else if (day === "土") {
+        posts = [{
+          title: "週末の過ごし方",
+          description: "リラックスした週末の様子",
+          emoji: "🌅",
+          category: "ライフスタイル"
+        }];
+      } else if (day === "日") {
+        posts = [{
+          title: "週の振り返り",
+          description: "今週の振り返りや来週の予告",
+          emoji: "💭",
+          category: "振り返り"
+        }];
+      }
     }
-  ];
+    
+    return {
+      day: day,
+      dayName: getDayName(day),
+      posts: posts
+    };
+  });
 
   return mockSchedule;
+}
+
+function getDayName(day: string): string {
+  const dayMap: { [key: string]: string } = {
+    "月": "Monday",
+    "火": "Tuesday", 
+    "水": "Wednesday",
+    "木": "Thursday",
+    "金": "Friday",
+    "土": "Saturday",
+    "日": "Sunday"
+  };
+  return dayMap[day] || day;
 }
