@@ -26,6 +26,8 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
     if (!user?.uid) return;
     
     try {
+      console.log('🔍 サイドバー: 未読通知数取得開始');
+      
       // Firebase認証トークンを取得
       const { auth } = await import('../lib/firebase');
       const token = await auth.currentUser?.getIdToken();
@@ -40,7 +42,9 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
       const result = await response.json();
       
       if (result.success) {
-        setUnreadCount(result.data?.length || 0);
+        const count = result.data?.length || 0;
+        console.log('📊 サイドバー: 未読通知数取得成功:', count);
+        setUnreadCount(count);
       } else {
         // エラーの詳細をログに出力（開発時のみ）
         if (process.env.NODE_ENV === 'development') {
@@ -71,6 +75,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
     
     // 通知が既読になったときのイベントリスナー
     const handleNotificationRead = () => {
+      console.log('📡 サイドバー: notificationReadイベント受信');
       fetchUnreadCount();
     };
     

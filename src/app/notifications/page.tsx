@@ -324,6 +324,8 @@ export default function NotificationsPage() {
 
   const markAsRead = async (notificationId: string) => {
     try {
+      console.log('🔍 markAsRead開始:', { notificationId, userId: user?.uid });
+      
       const response = await fetch(`/api/notifications/${notificationId}/actions`, {
         method: 'POST',
         headers: {
@@ -336,6 +338,7 @@ export default function NotificationsPage() {
       });
 
       const result = await response.json();
+      console.log('📊 markAsRead結果:', result);
 
       if (result.success) {
         setNotifications(prev => 
@@ -347,6 +350,7 @@ export default function NotificationsPage() {
         );
         
         // サイドバーの通知数を更新するためのカスタムイベントを発火
+        console.log('📡 カスタムイベント発火: notificationRead');
         window.dispatchEvent(new CustomEvent('notificationRead', { 
           detail: { notificationId } 
         }));
@@ -391,7 +395,7 @@ export default function NotificationsPage() {
   return (
     <SNSLayout 
       customTitle="お知らせ"
-      customDescription="システムのお知らせと通知"
+      customDescription="システムのお知らせ"
     >
         <div className="max-w-7xl mx-auto p-6">
           {/* 統計情報 */}
@@ -446,7 +450,7 @@ export default function NotificationsPage() {
                 return (
                   <div
                     key={notification.id}
-                    className={`bg-white rounded-lg border-2 transition-all hover:shadow-lg ${
+                    className={`bg-white border-2 transition-all hover:shadow-lg ${
                       notification.read ? '' : 'border-l-4 border-l-[#FF8A15]'
                     } bg-orange-50 border-orange-200`}
                   >
