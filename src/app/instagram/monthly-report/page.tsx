@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
-import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { useAuth } from '../../../contexts/auth-context';
 import { usePlanData } from '../../../hooks/usePlanData';
 import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
@@ -738,20 +737,6 @@ export default function InstagramMonthlyReportPage() {
           onExportPDF={exportToPDF}
         />
 
-        {/* AIチャットウィジェット */}
-        <AIChatWidget 
-          contextData={{
-            planData: planData as unknown as Record<string, unknown>,
-            monthlyStats: {
-              totalPosts: currentTotals.totalPosts,
-              totalLikes: currentTotals.totalLikes,
-              totalComments: currentTotals.totalComments,
-              totalShares: currentTotals.totalShares,
-              avgEngagement: accountScore?.score || 0
-            },
-            reportSummary: reportSummary
-          }}
-        />
       </div>
     </SNSLayout>
   );

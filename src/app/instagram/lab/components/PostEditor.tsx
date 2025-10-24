@@ -12,7 +12,6 @@ interface PostEditorProps {
   hashtags: string[];
   onHashtagsChange: (hashtags: string[]) => void;
   postType?: 'feed' | 'reel' | 'story';
-  onPostTypeChange?: (type: 'feed' | 'reel' | 'story') => void;
   title?: string;
   onTitleChange?: (title: string) => void;
   image?: string | null;
@@ -25,6 +24,17 @@ interface PostEditorProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   planData?: any; // AI投稿文生成用
   aiPromptPlaceholder?: string; // AIプロンプトのプレースホルダー
+  onSave?: () => void; // 保存ボタンのコールバック
+  onClear?: () => void; // クリアボタンのコールバック
+  showActionButtons?: boolean; // アクションボタンを表示するかどうか
+  onVideoStructureGenerate?: (prompt: string) => void; // 動画構成生成のコールバック
+  videoStructure?: {
+    introduction: string;
+    development: string;
+    twist: string;
+    conclusion: string;
+  }; // 動画構成データ
+  videoFlow?: string; // 動画構成の流れ
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -33,7 +43,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   hashtags,
   onHashtagsChange,
   postType = 'feed',
-  onPostTypeChange,
   title = '',
   onTitleChange,
   image = null,
@@ -44,7 +53,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   onScheduledTimeChange,
   isAIGenerated = false,
   planData,
-  aiPromptPlaceholder = "例: 新商品の紹介、日常の出来事、お客様の声など..."
+  aiPromptPlaceholder = "例: 新商品の紹介、日常の出来事、お客様の声など...",
+  onSave,
+  onClear,
+  showActionButtons = false,
+  onVideoStructureGenerate,
+  videoStructure,
+  videoFlow
 }) => {
   const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
@@ -299,6 +314,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           onHashtagsChange(generatedHashtags);
         }
         setAiPrompt(''); // テーマをクリア
+        
+        // リールの場合は動画構成も生成
+        if (postType === 'reel' && onVideoStructureGenerate) {
+          onVideoStructureGenerate(aiPrompt);
+        }
       } else {
         throw new Error('投稿文生成に失敗しました');
       }
@@ -381,54 +401,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
       <div className="p-6">
 
-        {/* 投稿タイプ選択 */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            投稿タイプ
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => onPostTypeChange?.('feed')}
-              className={`p-3 rounded-lg border-2 transition-colors ${
-                postType === 'feed'
-                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-lg mb-1">📸</div>
-                <div className="text-sm font-medium">フィード</div>
-              </div>
-            </button>
-            <button
-              onClick={() => onPostTypeChange?.('reel')}
-              className={`p-3 rounded-lg border-2 transition-colors ${
-                postType === 'reel'
-                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-lg mb-1">🎬</div>
-                <div className="text-sm font-medium">リール</div>
-              </div>
-            </button>
-            <button
-              onClick={() => onPostTypeChange?.('story')}
-              className={`p-3 rounded-lg border-2 transition-colors ${
-                postType === 'story'
-                  ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                  : 'border-gray-200 bg-white text-black hover:border-orange-300'
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-lg mb-1">📱</div>
-                <div className="text-sm font-medium">ストーリーズ</div>
-              </div>
-            </button>
-          </div>
-        </div>
-
         {/* 投稿設定 */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -480,12 +452,73 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               value={content}
               onChange={(e) => onContentChange(e.target.value)}
               placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}の投稿文を入力してください...`}
-              className="w-full h-64 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm"
+              className="w-full h-32 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm"
               style={{ fontFamily: 'inherit' }}
             />
           </div>
         </div>
 
+        {/* 動画構成セクション（リールのみ） */}
+        {postType === 'reel' && (
+          <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <span className="text-2xl mr-3">🎬</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">動画構成</h3>
+                  <p className="text-sm text-gray-600">リール動画の起承転結と構成の流れ</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (onVideoStructureGenerate && content.trim()) {
+                    onVideoStructureGenerate(content);
+                  } else {
+                    alert('投稿文を入力してから動画構成を生成してください');
+                  }
+                }}
+                disabled={!content.trim() || !onVideoStructureGenerate}
+                className="px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-lg hover:from-orange-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+              >
+                <Sparkles size={16} />
+                <span>AIで動画構成生成</span>
+              </button>
+            </div>
+
+            {/* 起承転結 */}
+            <div className="mb-6">
+              <h4 className="text-md font-medium text-gray-700 mb-3">起承転結</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-orange-800 mb-1">起（導入）</div>
+                  <div className="text-sm text-orange-700">{videoStructure?.introduction || 'AI投稿文生成で自動生成されます'}</div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-blue-800 mb-1">承（展開）</div>
+                  <div className="text-sm text-blue-700">{videoStructure?.development || 'AI投稿文生成で自動生成されます'}</div>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-green-800 mb-1">転（転換）</div>
+                  <div className="text-sm text-green-700">{videoStructure?.twist || 'AI投稿文生成で自動生成されます'}</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-purple-800 mb-1">結（結論）</div>
+                  <div className="text-sm text-purple-700">{videoStructure?.conclusion || 'AI投稿文生成で自動生成されます'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* 動画構成の流れ */}
+            <div>
+              <h4 className="text-md font-medium text-gray-700 mb-3">動画構成の流れ</h4>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-700">
+                  {videoFlow || 'AI投稿文生成で自動生成されます'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ハッシュタグ表示・編集 */}
         <div className="mb-6">
@@ -795,6 +828,24 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* アクションボタン */}
+        {showActionButtons && (
+          <div className="flex space-x-3 mt-6">
+            <button
+              onClick={onSave}
+              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+            >
+              保存
+            </button>
+            <button
+              onClick={onClear}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              クリア
+            </button>
           </div>
         )}
       </div>

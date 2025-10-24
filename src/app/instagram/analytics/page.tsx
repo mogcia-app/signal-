@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import SNSLayout from '../../../components/sns-layout';
-import { AIChatWidget } from '../../../components/ai-chat-widget';
 import { AuthGuard } from '../../../components/auth-guard';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
@@ -504,18 +503,6 @@ function InstagramAnalyticsContent() {
         </div>
       </SNSLayout>
 
-      <AIChatWidget 
-        contextData={{
-          totalLikes: totalLikes,
-          totalComments: totalComments,
-          totalShares: totalShares,
-          totalReach: totalReach,
-          totalSaves: totalSaves,
-          totalFollowerIncrease: totalFollowerIncrease,
-          avgEngagementRate: avgEngagementRate,
-          recordedPosts: analyticsData?.length || 0
-        }}
-      />
 
     </>
   );

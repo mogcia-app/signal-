@@ -2,20 +2,17 @@
 
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Copy, Tag } from 'lucide-react';
-import ThumbnailGenerator from './ThumbnailGenerator';
 
 interface ToolPanelProps {
   onTemplateSelect: (template: string) => void;
   onHashtagSelect: (hashtag: string) => void;
   postContent: string;
-  onImageGenerated: (imageUrl: string) => void;
 }
 
 export const ToolPanel: React.FC<ToolPanelProps> = ({
   onTemplateSelect,
   onHashtagSelect,
-  postContent,
-  onImageGenerated
+  postContent
 }) => {
   const [templates, setTemplates] = useState([
     'おはようございます！今日も素敵な一日をお過ごしください✨',
@@ -28,23 +25,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
     '素敵な週末をお過ごしください🌅'
   ]);
 
-  const [hashtags, setHashtags] = useState([
-    'インスタ映え',
-    'フォロー',
-    'いいね',
-    'コメント',
-    'リポスト',
-    'インスタグラム',
-    'instagood',
-    'photooftheday',
-    'beautiful',
-    'happy',
-    'love',
-    'cute',
-    'followme',
-    'like4like',
-    'instadaily'
-  ]);
+  const [hashtags, setHashtags] = useState<string[]>([]);
 
   const [newTemplate, setNewTemplate] = useState('');
   const [newHashtag, setNewHashtag] = useState('');
@@ -94,10 +75,10 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
   // };
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col">
       {/* よく使う文言 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 mb-6">
+        <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-black flex items-center">
               <Edit size={18} className="mr-2" />
@@ -127,7 +108,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
           </div>
 
           {/* 文言一覧 */}
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-2 flex-1 overflow-y-auto">
             {templates.map((template, index) => (
               <div
                 key={index}
@@ -179,8 +160,8 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
       </div>
 
       {/* ハッシュタグ管理 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1">
+        <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-black flex items-center">
               <Tag size={18} className="mr-2" />
@@ -210,62 +191,65 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
           </div>
 
           {/* ハッシュタグ一覧 */}
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {hashtags.map((hashtag, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-md group"
-              >
-                {editingHashtag === index ? (
-                  <input
-                    type="text"
-                    defaultValue={hashtag}
-                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                    onBlur={(e) => handleEditHashtag(index, e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleEditHashtag(index, e.currentTarget.value);
-                      }
-                    }}
-                    autoFocus
-                  />
-                ) : (
-                  <span className="flex-1 text-sm text-orange-600">#{hashtag}</span>
-                )}
-                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => onHashtagSelect(hashtag)}
-                    className="p-1 text-orange-600 hover:text-orange-800"
-                    title="投稿に追加"
-                  >
-                    <Copy size={14} />
-                  </button>
-                  <button
-                    onClick={() => setEditingHashtag(index)}
-                    className="p-1 text-black hover:text-gray-800"
-                    title="編集"
-                  >
-                    <Edit size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteHashtag(index)}
-                    className="p-1 text-red-600 hover:text-red-800"
-                    title="削除"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+          <div className="space-y-2 flex-1 overflow-y-auto">
+            {hashtags.length > 0 ? (
+              hashtags.map((hashtag, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-md group"
+                >
+                  {editingHashtag === index ? (
+                    <input
+                      type="text"
+                      defaultValue={hashtag}
+                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                      onBlur={(e) => handleEditHashtag(index, e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleEditHashtag(index, e.currentTarget.value);
+                        }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="flex-1 text-sm text-orange-600">#{hashtag}</span>
+                  )}
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => onHashtagSelect(hashtag)}
+                      className="p-1 text-orange-600 hover:text-orange-800"
+                      title="投稿に追加"
+                    >
+                      <Copy size={14} />
+                    </button>
+                    <button
+                      onClick={() => setEditingHashtag(index)}
+                      className="p-1 text-black hover:text-gray-800"
+                      title="編集"
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteHashtag(index)}
+                      className="p-1 text-red-600 hover:text-red-800"
+                      title="削除"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-4xl mb-2">🏷️</div>
+                <p className="text-sm">ハッシュタグを追加しよう！</p>
+                <p className="text-xs mt-1">上の入力欄から追加できます</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
 
-      {/* AIサムネ画像生成 */}
-      <ThumbnailGenerator
-        postContent={postContent}
-        onImageGenerated={onImageGenerated}
-      />
     </div>
   );
 };

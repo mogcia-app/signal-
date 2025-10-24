@@ -6,7 +6,6 @@ import { usePlanData } from '../../hooks/usePlanData';
 import { useAuth } from '../../contexts/auth-context';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
-import { AIChatWidget } from '../../components/ai-chat-widget';
 import { CurrentPlanCard } from '../../components/CurrentPlanCard';
 import PostPreview from './components/PostPreview';
 import AnalyticsForm from './components/AnalyticsForm';
@@ -831,14 +830,6 @@ function InstagramDashboardContent() {
         </div>
       </SNSLayout>
 
-      {/* AIチャットウィジェット */}
-      <AIChatWidget
-        contextData={{
-          stats: stats,
-          instagramSettings: instagramSettings,
-          analyticsData: analyticsData
-        }}
-      />
     </>
   );
 }

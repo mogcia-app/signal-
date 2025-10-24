@@ -198,7 +198,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
                 </div>
               )}
             </div>
-            {/* <Link 
+             <Link 
               href="/instagram/analytics"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
                 pathname === '/instagram/analytics' 
@@ -208,7 +208,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
             >
               <span>📊</span>
               <span>投稿分析</span>
-            </Link> */}
+            </Link> 
             <Link 
               href="/instagram/posts"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${

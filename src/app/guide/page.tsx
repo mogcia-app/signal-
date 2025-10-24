@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import SNSLayout from '../../components/sns-layout';
-import { AIChatWidget } from '../../components/ai-chat-widget';
 import { 
   BookOpen, 
   Play, 
@@ -476,14 +475,6 @@ export default function GuidePage() {
             </div>
           </div>
 
-      {/* AIチャットウィジェット */}
-      <AIChatWidget 
-        contextData={{
-          currentPage: 'guide',
-          guideSections: guideSections,
-          activeSection: activeSection
-        }}
-      />
     </SNSLayout>
   );
 }
