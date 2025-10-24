@@ -304,7 +304,7 @@ export default function OnboardingPage() {
         <div className="max-w-full">
         {/* ユーザー情報セクション */}
         {userProfile && (
-          <div className="mb-6 bg-white border-l-4 border-[#FF8A15] p-6">
+          <div className="mb-6 bg-white border-l-4 border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-black">ユーザー情報</h2>
               <div className="flex items-center space-x-2">
@@ -315,7 +315,7 @@ export default function OnboardingPage() {
                 }`}>
                   {userProfile.status === 'active' ? '✓ アクティブ' : '初期設定待ち'}
                 </span>
-                <span className="px-3 py-1 border-2 border-[#FF8A15] text-[#FF8A15] text-xs font-medium">
+                <span className="px-3 py-1 border-2 border-gray-200 text-gray-600 text-xs font-medium">
                   {userProfile.contractType === 'annual' ? '年間契約' : 'トライアル'}
                 </span>
               </div>
@@ -362,7 +362,7 @@ export default function OnboardingPage() {
                   {userProfile.contractSNS.map((sns) => (
                     <div
                       key={sns}
-                      className="flex items-center space-x-2 px-3 py-2 bg-white border border-[#FF8A15]"
+                      className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-200"
                     >
                       <span className="text-lg">
                         {sns === 'instagram' ? '📷' : 
@@ -491,7 +491,7 @@ export default function OnboardingPage() {
                         onClick={() => setBusinessInfo({ ...businessInfo, industry: option })}
                         className={`p-3 border-2 text-sm font-medium transition-all ${
                           businessInfo.industry === option
-                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] text-white'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -507,7 +507,7 @@ export default function OnboardingPage() {
                         value={customIndustry}
                         onChange={(e) => setCustomIndustry(e.target.value)}
                         placeholder="業種を入力してください"
-                        className="w-full px-4 py-2 border-2 border-[#FF8A15] focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
                       />
                     </div>
                   )}
@@ -523,9 +523,9 @@ export default function OnboardingPage() {
                       <button
                         key={option}
                         onClick={() => setBusinessInfo({ ...businessInfo, companySize: option })}
-                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                        className={`p-3 border-2 text-sm font-medium transition-all ${
                           businessInfo.companySize === option
-                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] text-white'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -571,9 +571,9 @@ export default function OnboardingPage() {
                             });
                           }
                         }}
-                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                        className={`p-3 border-2 text-sm font-medium transition-all ${
                           businessInfo.targetMarket.includes(option)
-                            ? 'border-[#FF8A15] bg-orange-50 text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] text-white'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -638,7 +638,7 @@ export default function OnboardingPage() {
                           businessInfo.industry === '教育' ? '例: 英会話コース' :
                           '例: 商品名、サービス名、政策名'
                         }
-                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                       />
                     </div>
                     <div className="flex gap-2">
@@ -658,7 +658,7 @@ export default function OnboardingPage() {
                         <>
                           <button
                             onClick={saveEditProduct}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 transition-colors flex items-center gap-1"
+                            className="bg-[#FF8A15] hover:bg-[#E67A0A] text-white px-4 py-2 transition-colors flex items-center gap-1"
                           >
                             <Save className="w-4 h-4" />
                             保存
@@ -752,9 +752,9 @@ export default function OnboardingPage() {
                             setGoals([...goals, option]);
                           }
                         }}
-                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                        className={`p-3 border-2 text-sm font-medium transition-all ${
                           goals.includes(option)
-                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] text-white'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -810,9 +810,9 @@ export default function OnboardingPage() {
                             setChallenges([...challenges, option]);
                           }
                         }}
-                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                        className={`p-3 border-2 text-sm font-medium transition-all ${
                           challenges.includes(option)
-                            ? 'border-orange-500 bg-orange-50 text-orange-700'
+                            ? 'border-[#FF8A15] bg-[#FF8A15] text-white'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -865,14 +865,7 @@ export default function OnboardingPage() {
 
               <div className="space-y-6">
                 {/* Instagram設定 */}
-                <div className="p-6 bg-white border-2 border-[#FF8A15]">
-                  <div className="flex items-center mb-6">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-3xl">📷</span>
-                      <h3 className="text-xl font-bold text-black">Instagram AI設定</h3>
-                    </div>
-                  </div>
-
+                <div className="p-6 bg-white border border-gray-200">
                   <div className="space-y-4">
                     {/* Instagram設定を常に有効にする */}
                     {(() => {
@@ -894,6 +887,11 @@ export default function OnboardingPage() {
                       }
                       return null;
                     })()}
+
+
+
+
+
                     {/* トーン入力 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -914,7 +912,7 @@ export default function OnboardingPage() {
                           });
                         }}
                         placeholder="例: フレンドリー、プロフェッショナル、カジュアルなど"
-                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        className="w-full px-4 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                       />
                     </div>
 
@@ -936,7 +934,7 @@ export default function OnboardingPage() {
                           });
                         }}
                         placeholder="例: 絵文字は控えめに、敬語を使う、業界用語は避けるなど"
-                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        className="w-full px-4 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                         rows={3}
                       />
                     </div>
@@ -958,16 +956,16 @@ export default function OnboardingPage() {
                             }
                           });
                         }}
-                        placeholder="例: 競合他社名は使わない、特定の表現は避けるなど"
-                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        placeholder="例: 競合他社の名前、不適切な表現、個人情報など"
+                        className="w-full px-4 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                         rows={3}
                       />
                     </div>
 
-                    {/* Instagram目標 */}
+                    {/* 目標・目的 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Instagram運用の目標
+                        目標・目的
                       </label>
                       <textarea
                         value={snsAISettings.instagram?.goals || ''}
@@ -981,16 +979,16 @@ export default function OnboardingPage() {
                             }
                           });
                         }}
-                        placeholder="例: 3ヶ月で1万フォロワー達成、エンゲージメント率5%以上など"
-                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        placeholder="例: ブランド認知度向上、顧客獲得、エンゲージメント向上など"
+                        className="w-full px-4 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                         rows={3}
                       />
                     </div>
 
-                    {/* 運用動機 */}
+                    {/* モチベーション */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Instagramを始めた理由・動機
+                        モチベーション・想い
                       </label>
                       <textarea
                         value={snsAISettings.instagram?.motivation || ''}
@@ -1004,31 +1002,8 @@ export default function OnboardingPage() {
                             }
                           });
                         }}
-                        placeholder="例: ブランド認知度を上げたい、顧客とのコミュニケーションを強化したいなど"
-                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
-                        rows={3}
-                      />
-                    </div>
-
-                    {/* その他AI参考情報 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        その他AIに伝えたい情報
-                      </label>
-                      <textarea
-                        value={snsAISettings.instagram?.additionalInfo || ''}
-                        onChange={(e) => {
-                          setSnsAISettings({
-                            ...snsAISettings,
-                            instagram: {
-                              ...snsAISettings.instagram,
-                              enabled: true,
-                              additionalInfo: e.target.value
-                            }
-                          });
-                        }}
-                        placeholder="例: 投稿頻度の希望、好きなインフルエンサー、参考にしたいアカウントなど"
-                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        placeholder="例: お客様に喜んでもらいたい、業界をリードしたい、社会貢献したいなど"
+                        className="w-full px-4 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                         rows={3}
                       />
                     </div>
@@ -1056,9 +1031,9 @@ export default function OnboardingPage() {
                                 }
                               });
                             }}
-                            className={`p-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                            className={`p-2 border-2 text-sm font-medium transition-all ${
                               snsAISettings.instagram?.features?.includes(option)
-                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                ? 'border-[#FF8A15] bg-[#FF8A15] text-white'
                                 : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                             }`}
                           >
@@ -1074,7 +1049,7 @@ export default function OnboardingPage() {
                         value={customFeature}
                         onChange={(e) => setCustomFeature(e.target.value)}
                         placeholder="カスタム機能を追加"
-                        className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:border-[#FF8A15]"
+                        className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:border-gray-400"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter' && customFeature.trim()) {
                             const currentFeatures = snsAISettings.instagram?.features || [];
@@ -1112,13 +1087,30 @@ export default function OnboardingPage() {
                         追加
                       </button>
                     </div>
+                    {/* 追加情報 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        追加情報・その他
+                      </label>
+                      <textarea
+                        value={snsAISettings.instagram?.additionalInfo || ''}
+                        onChange={(e) => {
+                          setSnsAISettings({
+                            ...snsAISettings,
+                            instagram: {
+                              ...snsAISettings.instagram,
+                              enabled: true,
+                              additionalInfo: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="その他、AIに伝えておきたい情報があれば入力してください"
+                        className="w-full px-4 py-2 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                        rows={3}
+                      />
+                    </div>
                   </div>
                 </div>
-
-                {/* 他のSNSも同様に追加可能 */}
-                <p className="text-sm text-black text-center">
-                  ※ 他のSNS設定は後からダッシュボードで追加できます
-                </p>
               </div>
             </div>
           )}
@@ -1128,7 +1120,7 @@ export default function OnboardingPage() {
             <button
               onClick={handleBack}
               disabled={currentStep === 1}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
                 currentStep === 1
                   ? 'bg-gray-100 text-black cursor-not-allowed'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -1145,7 +1137,7 @@ export default function OnboardingPage() {
                   (currentStep === 1 && !isStep1Valid) ||
                   (currentStep === 2 && !isStep2Valid)
                 }
-                className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
                   (currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)
                     ? 'bg-gray-300 text-black cursor-not-allowed'
                     : 'bg-[#FF8A15] text-white hover:bg-[#E67A0A] shadow-lg hover:shadow-xl'
@@ -1158,10 +1150,10 @@ export default function OnboardingPage() {
               <button
                 onClick={handleComplete}
                 disabled={!isStep3Valid || isSubmitting}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
                   !isStep3Valid || isSubmitting
                     ? 'bg-gray-300 text-black cursor-not-allowed'
-                    : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl'
+                    : 'bg-[#FF8A15] text-white hover:bg-[#E67A0A] shadow-lg hover:shadow-xl'
                 }`}
               >
                 {isSubmitting ? (
@@ -1276,7 +1268,7 @@ export default function OnboardingPage() {
               <h3 className="text-lg font-bold text-black mb-4">Instagram AI設定</h3>
               <div className="space-y-4">
                 {snsAISettings.instagram ? (
-                  <div className="p-4 border-2 border-[#FF8A15]">
+                  <div className="p-4 border-2 border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2">
                         <span className="text-2xl">📷</span>
@@ -1328,7 +1320,7 @@ export default function OnboardingPage() {
                           <span className="text-black font-medium">機能:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {snsAISettings.instagram.features.map((feature, idx) => (
-                              <span key={idx} className="px-2 py-1 border border-[#FF8A15] text-[#FF8A15] text-xs">
+                              <span key={idx} className="px-2 py-1 border border-gray-200 text-gray-600 text-xs">
                                 {feature}
                               </span>
                             ))}

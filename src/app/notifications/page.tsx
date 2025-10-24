@@ -554,7 +554,7 @@ export default function NotificationsPage() {
       >
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-16 h-16 border-4 border-[#FF8A15] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <h2 className="text-xl font-semibold text-black mb-2">お知らせを読み込み中...</h2>
             <p className="text-black">通知データを取得しています</p>
           </div>

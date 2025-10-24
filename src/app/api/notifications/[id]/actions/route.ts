@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../../lib/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { getAdminDb } from '../../../../../lib/firebase-admin';
 
 interface UserNotificationAction {
   id: string;
@@ -46,13 +45,14 @@ export async function POST(
       );
     }
 
-    // FirestoreのuserNotificationsコレクションを使用
-    const userNotificationRef = doc(db, 'userNotifications', `${userId}_${notificationId}`);
-    const userNotificationSnap = await getDoc(userNotificationRef);
+    // FirestoreのuserNotificationsコレクションを使用（Admin SDK）
+    const db = getAdminDb();
+    const userNotificationRef = db.collection('userNotifications').doc(`${userId}_${notificationId}`);
+    const userNotificationSnap = await userNotificationRef.get();
 
     let userNotification: UserNotificationAction;
 
-    if (userNotificationSnap.exists()) {
+    if (userNotificationSnap.exists) {
       userNotification = userNotificationSnap.data() as UserNotificationAction;
     } else {
       // 新しいユーザー通知レコードを作成
@@ -83,8 +83,8 @@ export async function POST(
 
     userNotification.updatedAt = new Date().toISOString();
 
-    // Firestoreに保存
-    await setDoc(userNotificationRef, userNotification, { merge: true });
+    // Firestoreに保存（Admin SDK）
+    await userNotificationRef.set(userNotification, { merge: true });
 
     return NextResponse.json({
       success: true,
@@ -113,11 +113,12 @@ export async function GET(
     const { id: notificationId } = await params;
     const userId = request.nextUrl.searchParams.get('userId') || 'current-user';
 
-    // Firestoreから取得
-    const userNotificationRef = doc(db, 'userNotifications', `${userId}_${notificationId}`);
-    const userNotificationSnap = await getDoc(userNotificationRef);
+    // Firestoreから取得（Admin SDK）
+    const db = getAdminDb();
+    const userNotificationRef = db.collection('userNotifications').doc(`${userId}_${notificationId}`);
+    const userNotificationSnap = await userNotificationRef.get();
 
-    if (!userNotificationSnap.exists()) {
+    if (!userNotificationSnap.exists) {
       // デフォルトの状態を返す
       return NextResponse.json({
         success: true,
