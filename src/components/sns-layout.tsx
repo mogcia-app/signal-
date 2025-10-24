@@ -69,7 +69,17 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
     // 30秒ごとに未読通知数を更新
     const interval = setInterval(fetchUnreadCount, 30000);
     
-    return () => clearInterval(interval);
+    // 通知が既読になったときのイベントリスナー
+    const handleNotificationRead = () => {
+      fetchUnreadCount();
+    };
+    
+    window.addEventListener('notificationRead', handleNotificationRead);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notificationRead', handleNotificationRead);
+    };
   }, [user?.uid, fetchUnreadCount]);
 
   const handleSignOut = async () => {

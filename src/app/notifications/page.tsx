@@ -459,6 +459,11 @@ export default function NotificationsPage() {
               : notification
           )
         );
+        
+        // サイドバーの通知数を更新するためのカスタムイベントを発火
+        window.dispatchEvent(new CustomEvent('notificationRead', { 
+          detail: { notificationId } 
+        }));
       } else {
         console.error('既読更新エラー:', result.error);
       }
@@ -570,7 +575,7 @@ export default function NotificationsPage() {
     >
         <div className="max-w-7xl mx-auto p-6">
           {/* 統計情報 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -598,7 +603,7 @@ export default function NotificationsPage() {
                 <Info className="w-8 h-8 text-black" />
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* フィルターと検索 */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -650,10 +655,10 @@ export default function NotificationsPage() {
                 <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-black mb-2">お知らせがありません</h3>
                 <p className="text-black">
-                  {selectedFilter === 'unread' && '未読のお知らせはありません'}
-                  {selectedFilter === 'starred' && 'お気に入りのお知らせはありません'}
-                  {selectedFilter === 'archived' && 'アーカイブされたお知らせはありません'}
-                  {selectedFilter === 'all' && '現在表示できるお知らせはありません'}
+                  {/* {selectedFilter === 'unread' && '未読のお知らせはありません'} */}
+                  {/* {selectedFilter === 'starred' && 'お気に入りのお知らせはありません'} */}
+                  {/* {selectedFilter === 'archived' && 'アーカイブされたお知らせはありません'} */}
+                  {/* {selectedFilter === 'all' && '現在表示できるお知らせはありません'} */}
                 </p>
               </div>
             ) : (
@@ -669,11 +674,6 @@ export default function NotificationsPage() {
                     <div className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-4 flex-1">
-                          {/* 通知アイコン */}
-                          <div className="flex-shrink-0 mt-1">
-                            {getNotificationIcon(notification.type)}
-                          </div>
-
                           {/* 通知内容 */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-3 mb-3">
@@ -794,7 +794,6 @@ export default function NotificationsPage() {
                 {/* モーダルヘッダー */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
-                    {getNotificationIcon(selectedNotification.type)}
                     <h2 className="text-2xl font-bold text-black">{selectedNotification.title}</h2>
                     <span className={`px-3 py-1 text-sm font-medium rounded-full ${getPriorityColor(selectedNotification.priority)}`}>
                       {selectedNotification.priority === 'high' && '高優先度'}
@@ -812,67 +811,10 @@ export default function NotificationsPage() {
 
                 {/* モーダル内容 */}
                 <div className="space-y-6">
-                  {/* 基本情報 */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-black mb-3">基本情報</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4 text-black" />
-                        <span className="text-black">作成日:</span>
-                        <span className="font-medium">{formatDate(selectedNotification.createdAt)}</span>
-                      </div>
-                      {selectedNotification.expiresAt && (
-                        <div className="flex items-center space-x-2">
-                          <AlertCircle className="w-4 h-4 text-black" />
-                          <span className="text-black">期限:</span>
-                          <span className="font-medium">{formatDate(selectedNotification.expiresAt)}</span>
-                        </div>
-                      )}
-                      {selectedNotification.category && (
-                        <div className="flex items-center space-x-2">
-                          <Tag className="w-4 h-4 text-black" />
-                          <span className="text-black">カテゴリ:</span>
-                          <span className="font-medium">{selectedNotification.category}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   {/* メッセージ */}
                   <div>
-                    <h3 className="font-semibold text-black mb-3">メッセージ</h3>
                     <p className="text-gray-700 text-lg leading-relaxed">{selectedNotification.message}</p>
                   </div>
-
-                  {/* 詳細内容 */}
-                  {selectedNotification.content && (
-                    <div>
-                      <h3 className="font-semibold text-black mb-3">詳細内容</h3>
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {selectedNotification.content}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* タグ */}
-                  {selectedNotification.tags && selectedNotification.tags.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-black mb-3">タグ</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedNotification.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full"
-                          >
-                            <Tag className="w-4 h-4 mr-1" />
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* アクションボタン */}
                   <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
@@ -882,27 +824,11 @@ export default function NotificationsPage() {
                           markAsRead(selectedNotification.id);
                           closeNotificationDetail();
                         }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 bg-[#FF8A15] text-white hover:bg-[#E67A0A] transition-colors"
                       >
                         既読にする
                       </button>
                     )}
-                    <button
-                      onClick={() => toggleStar(selectedNotification.id)}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        selectedNotification.starred 
-                          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {selectedNotification.starred ? 'お気に入り解除' : 'お気に入り追加'}
-                    </button>
-                    <button
-                      onClick={closeNotificationDetail}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      閉じる
-                    </button>
                   </div>
                 </div>
               </div>
