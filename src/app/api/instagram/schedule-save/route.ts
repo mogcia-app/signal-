@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/firebase-admin';
+import { getAdminDb } from '../../../../lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(request: NextRequest) {
@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Firestoreにスケジュールを保存
+    const db = getAdminDb();
     const scheduleRef = db.collection('userSchedules').doc(userId);
     
     const scheduleDoc = {
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Firestoreからスケジュールを取得
+    const db = getAdminDb();
     const scheduleRef = db.collection('userSchedules').doc(userId);
     const scheduleDoc = await scheduleRef.get();
 

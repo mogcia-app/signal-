@@ -96,7 +96,7 @@ function buildBusinessContext(businessInfo: {
   
   // Instagram AI設定の情報を追加
   if (businessInfo.snsAISettings && businessInfo.snsAISettings.instagram) {
-    const instagramSettings = businessInfo.snsAISettings.instagram as any;
+    const instagramSettings = businessInfo.snsAISettings.instagram as Record<string, unknown>;
     if (instagramSettings.tone) {
       context += `Instagramトーン: ${instagramSettings.tone}\n`;
     }
@@ -180,7 +180,7 @@ async function generateScheduleWithAI(prompt: string) {
   const weeklyPosts = weeklyPostsMatch ? parseInt(weeklyPostsMatch[1]) : 2;
   
   // 投稿する曜日を決定（週の投稿回数に基づく）
-  const postingDays = [];
+  const postingDays: string[] = [];
   
   if (weeklyPosts === 1) {
     postingDays.push("水"); // 週1回は水曜日
@@ -203,7 +203,7 @@ async function generateScheduleWithAI(prompt: string) {
   const mockSchedule = dayNames.map(day => {
     const isPostingDay = postingDays.includes(day);
     
-    let posts = [];
+    let posts: Array<{ title: string; description: string; emoji: string; category: string }> = [];
     if (isPostingDay) {
       // 投稿する曜日に応じて内容を決定
       if (day === "月") {

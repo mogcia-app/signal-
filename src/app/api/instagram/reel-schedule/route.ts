@@ -93,7 +93,7 @@ function buildBusinessContext(businessInfo: {
   
   // Instagram AI設定の情報を追加
   if (businessInfo.snsAISettings && businessInfo.snsAISettings.instagram) {
-    const instagramSettings = businessInfo.snsAISettings.instagram as any;
+    const instagramSettings = businessInfo.snsAISettings.instagram as Record<string, unknown>;
     if (instagramSettings.tone) {
       context.push(`Instagramトーン: ${instagramSettings.tone}`);
     }
@@ -213,30 +213,17 @@ function getDefaultSchedule() {
   const weeklyPosts = 2;
   
   // 投稿する曜日を決定（週の投稿回数に基づく）
-  const postingDays = [];
+  const postingDays: string[] = [];
   
-  if (weeklyPosts === 1) {
-    postingDays.push("水"); // 週1回は水曜日
-  } else if (weeklyPosts === 2) {
-    postingDays.push("月", "木"); // 週2回は月・木
-  } else if (weeklyPosts === 3) {
-    postingDays.push("月", "水", "金"); // 週3回は月・水・金
-  } else if (weeklyPosts === 4) {
-    postingDays.push("月", "火", "木", "金"); // 週4回は月・火・木・金
-  } else if (weeklyPosts === 5) {
-    postingDays.push("月", "火", "水", "木", "金"); // 週5回は平日
-  } else if (weeklyPosts === 6) {
-    postingDays.push("月", "火", "水", "木", "金", "土"); // 週6回は土曜日まで
-  } else if (weeklyPosts === 7) {
-    postingDays.push("月", "火", "水", "木", "金", "土", "日"); // 毎日
-  }
+  // 週2回のスケジュールを設定
+  postingDays.push("月", "木"); // 週2回は月・木
   
   const dayNames = ["月", "火", "水", "木", "金", "土", "日"];
   
   return dayNames.map(day => {
     const isPostingDay = postingDays.includes(day);
     
-    let posts = [];
+    let posts: Array<{ title: string; description: string; emoji: string; category: string }> = [];
     if (isPostingDay) {
       // 投稿する曜日に応じて内容を決定
       if (day === "月") {
