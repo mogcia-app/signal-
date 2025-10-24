@@ -24,6 +24,7 @@ interface PostEditorProps {
   isAIGenerated?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   planData?: any; // AI投稿文生成用
+  aiPromptPlaceholder?: string; // AIプロンプトのプレースホルダー
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -42,7 +43,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   scheduledTime: externalScheduledTime = '',
   onScheduledTimeChange,
   isAIGenerated = false,
-  planData
+  planData,
+  aiPromptPlaceholder = "例: 新商品の紹介、日常の出来事、お客様の声など..."
 }) => {
   const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
@@ -554,7 +556,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               type="text"
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder="例: 新商品の紹介、日常の出来事、お客様の声など..."
+              placeholder={aiPromptPlaceholder}
               disabled={!planData}
               className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 ${
                 !planData ? 'opacity-50 cursor-not-allowed' : ''

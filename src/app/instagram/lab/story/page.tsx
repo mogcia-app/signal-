@@ -73,54 +73,63 @@ export default function StoryLabPage() {
           />
         )}
 
-        {/* 2カラムレイアウト */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 左カラム: ストーリー投稿エディター */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-6">
-              <span className="text-2xl mr-3">📱</span>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800">ストーリー作成</h2>
-                <p className="text-sm text-gray-600">Instagramストーリー用の投稿を作成・編集します</p>
-              </div>
+        {/* ストーリー投稿エディター */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center mb-6">
+            <span className="text-2xl mr-3">📱</span>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">投稿文エディター</h2>
+              <p className="text-sm text-gray-600">投稿文を作成・編集しましょう</p>
             </div>
-            
-            <PostEditor
-              content={postContent}
-              onContentChange={setPostContent}
-              title={postTitle}
-              onTitleChange={setPostTitle}
-              hashtags={selectedHashtags}
-              onHashtagsChange={setSelectedHashtags}
-              postType={postType}
-              onPostTypeChange={setPostType}
-              image={postImage}
-              onImageChange={setPostImage}
-              scheduledDate={scheduledDate}
-              onScheduledDateChange={setScheduledDate}
-              scheduledTime={scheduledTime}
-              onScheduledTimeChange={setScheduledTime}
-              isAIGenerated={isAIGenerated}
-              planData={planData}
-            />
           </div>
-
-          {/* 右カラム: ツールパネル */}
-          <div>
-            <ToolPanel
-              onTemplateSelect={(template) => setPostContent(template)}
-              onHashtagSelect={(hashtag) => {
-                if (!selectedHashtags.includes(hashtag)) {
-                  setSelectedHashtags([...selectedHashtags, hashtag]);
-                }
+          
+          <PostEditor
+            content={postContent}
+            onContentChange={setPostContent}
+            title={postTitle}
+            onTitleChange={setPostTitle}
+            hashtags={selectedHashtags}
+            onHashtagsChange={setSelectedHashtags}
+            postType={postType}
+            image={postImage}
+            onImageChange={setPostImage}
+            scheduledDate={scheduledDate}
+            onScheduledDateChange={setScheduledDate}
+            scheduledTime={scheduledTime}
+            onScheduledTimeChange={setScheduledTime}
+            isAIGenerated={isAIGenerated}
+            planData={planData}
+            aiPromptPlaceholder="例: 今日の出来事、おすすめ商品、お店の雰囲気、スタッフ紹介、限定情報など..."
+          />
+          
+          {/* 保存・クリアボタン */}
+          <div className="flex space-x-3 mt-6">
+            <button
+              onClick={() => {
+                // 保存処理（実装が必要）
+                console.log('保存:', { postContent, postTitle, selectedHashtags, postType });
               }}
-              postContent={postContent}
-              onImageGenerated={setPostImage}
-            />
+              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+            >
+              保存
+            </button>
+            <button
+              onClick={() => {
+                setPostContent('');
+                setPostTitle('');
+                setSelectedHashtags([]);
+                setPostImage(null);
+                setScheduledDate('');
+                setScheduledTime('');
+              }}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              クリア
+            </button>
           </div>
         </div>
 
-        {/* AIチャットウィジェット */}
+        {/* AIチャットウィジェット - ストーリー特化 */}
         <AIChatWidget
           contextData={{
             planData,
@@ -131,7 +140,9 @@ export default function StoryLabPage() {
               hashtags: selectedHashtags,
               type: postType,
               image: postImage
-            }
+            },
+            postTypeContext: 'story',
+            aiPromptContext: 'Instagramストーリーの作成・最適化に特化したAIアシスタントです。ストーリーの特徴を活かした親しみやすく魅力的なコンテンツ作成をお手伝いします。'
           }}
         />
       </div>

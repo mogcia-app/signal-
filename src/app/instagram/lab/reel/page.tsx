@@ -85,24 +85,24 @@ export default function ReelLabPage() {
               </div>
             </div>
             
-            <PostEditor
-              content={postContent}
-              onContentChange={setPostContent}
-              title={postTitle}
-              onTitleChange={setPostTitle}
-              hashtags={selectedHashtags}
-              onHashtagsChange={setSelectedHashtags}
-              postType={postType}
-              onPostTypeChange={setPostType}
-              image={postImage}
-              onImageChange={setPostImage}
-              scheduledDate={scheduledDate}
-              onScheduledDateChange={setScheduledDate}
-              scheduledTime={scheduledTime}
-              onScheduledTimeChange={setScheduledTime}
-              isAIGenerated={isAIGenerated}
-              planData={planData}
-            />
+          <PostEditor
+            content={postContent}
+            onContentChange={setPostContent}
+            title={postTitle}
+            onTitleChange={setPostTitle}
+            hashtags={selectedHashtags}
+            onHashtagsChange={setSelectedHashtags}
+            postType={postType}
+            image={postImage}
+            onImageChange={setPostImage}
+            scheduledDate={scheduledDate}
+            onScheduledDateChange={setScheduledDate}
+            scheduledTime={scheduledTime}
+            onScheduledTimeChange={setScheduledTime}
+            isAIGenerated={isAIGenerated}
+            planData={planData}
+            aiPromptPlaceholder="例: 商品の使い方、おすすめポイント、バックステージ、チュートリアル、トレンド動画など..."
+          />
           </div>
 
           {/* 右カラム: ツールパネル */}
@@ -120,7 +120,7 @@ export default function ReelLabPage() {
           </div>
         </div>
 
-        {/* AIチャットウィジェット */}
+        {/* AIチャットウィジェット - リール特化 */}
         <AIChatWidget
           contextData={{
             planData,
@@ -131,7 +131,9 @@ export default function ReelLabPage() {
               hashtags: selectedHashtags,
               type: postType,
               image: postImage
-            }
+            },
+            postTypeContext: 'reel',
+            aiPromptContext: 'Instagramリール動画の作成・最適化に特化したAIアシスタントです。リールの特徴を活かしたエンゲージメントの高い動画コンテンツ作成をお手伝いします。'
           }}
         />
       </div>

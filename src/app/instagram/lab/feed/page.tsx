@@ -85,24 +85,24 @@ export default function FeedLabPage() {
               </div>
             </div>
             
-            <PostEditor
-              content={postContent}
-              onContentChange={setPostContent}
-              title={postTitle}
-              onTitleChange={setPostTitle}
-              hashtags={selectedHashtags}
-              onHashtagsChange={setSelectedHashtags}
-              postType={postType}
-              onPostTypeChange={setPostType}
-              image={postImage}
-              onImageChange={setPostImage}
-              scheduledDate={scheduledDate}
-              onScheduledDateChange={setScheduledDate}
-              scheduledTime={scheduledTime}
-              onScheduledTimeChange={setScheduledTime}
-              isAIGenerated={isAIGenerated}
-              planData={planData}
-            />
+          <PostEditor
+            content={postContent}
+            onContentChange={setPostContent}
+            title={postTitle}
+            onTitleChange={setPostTitle}
+            hashtags={selectedHashtags}
+            onHashtagsChange={setSelectedHashtags}
+            postType={postType}
+            image={postImage}
+            onImageChange={setPostImage}
+            scheduledDate={scheduledDate}
+            onScheduledDateChange={setScheduledDate}
+            scheduledTime={scheduledTime}
+            onScheduledTimeChange={setScheduledTime}
+            isAIGenerated={isAIGenerated}
+            planData={planData}
+            aiPromptPlaceholder="例: 新商品の紹介、ブランドストーリー、お客様の声、会社の取り組みなど..."
+          />
           </div>
 
           {/* 右カラム: ツールパネル */}
@@ -120,7 +120,7 @@ export default function FeedLabPage() {
           </div>
         </div>
 
-        {/* AIチャットウィジェット */}
+        {/* AIチャットウィジェット - フィード特化 */}
         <AIChatWidget
           contextData={{
             planData,
@@ -131,7 +131,9 @@ export default function FeedLabPage() {
               hashtags: selectedHashtags,
               type: postType,
               image: postImage
-            }
+            },
+            postTypeContext: 'feed',
+            aiPromptContext: 'Instagramフィード投稿の作成・最適化に特化したAIアシスタントです。フィード投稿の特徴を活かした魅力的なコンテンツ作成をお手伝いします。'
           }}
         />
       </div>
