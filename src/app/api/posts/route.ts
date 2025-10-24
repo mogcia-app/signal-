@@ -33,6 +33,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('POST /api/posts - Received data:', body);
     const { userId, title, content, hashtags, postType, scheduledDate, scheduledTime, status = 'draft', imageUrl, imageData, analytics } = body;
+    
+    // 投稿タイプのデバッグログ
+    console.log('投稿タイプデバッグ:', {
+      postType: postType,
+      title: title,
+      userId: userId
+    });
 
     // バリデーション
     if (!userId || !title || !content) {
@@ -59,6 +66,7 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('About to save to Firestore:', postData);
+    console.log('保存される投稿タイプ:', postData.postType);
     const docRef = await adminDb.collection('posts').add(postData);
     
     // デバッグ用ログ
@@ -135,6 +143,12 @@ export async function GET(request: NextRequest) {
     const posts = snapshot.docs
       .map(doc => {
         const data = doc.data();
+        // 取得した投稿タイプのデバッグログ
+        console.log('取得した投稿タイプデバッグ:', {
+          postId: doc.id,
+          postType: data.postType,
+          title: data.title
+        });
         return {
           id: doc.id,
           ...data,

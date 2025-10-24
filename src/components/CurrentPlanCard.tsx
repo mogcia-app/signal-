@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Target, Calendar, Users, TrendingUp, Tag } from 'lucide-react';
+import { Target, Calendar, Users, Tag } from 'lucide-react';
 import { PlanData } from '../app/instagram/plan/types/plan';
 
 interface CurrentPlanCardProps {
@@ -49,7 +49,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   const currentFollowers = planData.currentFollowers || 0;
   const targetFollowers = planData.targetFollowers || 0;
   const strategies = planData.strategies || [];
-  const postCategories = planData.postCategories || [];
+  // const postCategories = planData.postCategories || [];
   
   // 新しい達成度計算: 現在のフォロワー数 = 0%, 目標フォロワー数 = 100%
   // actualFollowersが提供されている場合はそれを使用、そうでなければ計画の現在フォロワー数を使用

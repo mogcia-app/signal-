@@ -8,14 +8,14 @@ import SNSLayout from '../../components/sns-layout';
 import { 
   User, 
   Mail, 
-  Settings,
+  // Settings,
   ArrowRight,
   Calendar,
   Shield,
-  Bell,
+  // Bell,
   Globe,
-  Heart,
-  LogOut,
+  // Heart,
+  // LogOut,
   Key,
   Eye,
   EyeOff,
@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const { 
     userProfile, 
     loading: profileLoading, 
@@ -35,7 +35,7 @@ export default function DashboardPage() {
     getContractDaysRemaining
   } = useUserProfile();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   
   // パスワード変更機能の状態
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -83,17 +83,17 @@ export default function DashboardPage() {
     }
   }, [user, loading, userProfile, profileLoading, router, getContractSNS]);
 
-  const handleSignOut = async () => {
-    try {
-      setIsLoading(true);
-      await signOut();
-      router.push('/login');
-    } catch (error) {
-      console.error('ログアウトエラー:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const handleSignOut = async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     await signOut();
+  //     router.push('/login');
+  //   } catch (error) {
+  //     console.error('ログアウトエラー:', error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handlePasswordChange = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {

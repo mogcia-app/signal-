@@ -8,7 +8,7 @@ import { usePlanForm } from './hooks/usePlanForm'
 import { useSimulation } from './hooks/useSimulation'
 import { useAIDiagnosis } from './hooks/useAIDiagnosis'
 import { PlanForm } from './components/PlanForm'
-import { CurrentGoalPanel } from './components/CurrentGoalPanel'
+// import { CurrentGoalPanel } from './components/CurrentGoalPanel'
 import { SimulationPanel } from './components/SimulationPanel'
 import { AIDiagnosisPanel } from './components/AIDiagnosisPanel'
 import { SimulationRequest } from './types/plan'
@@ -16,10 +16,10 @@ import { SimulationRequest } from './types/plan'
 export default function InstagramPlanPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'simulation' | 'ai'>('simulation')
-  const [analyticsData, setAnalyticsData] = useState<Array<{
-    followerIncrease?: number;
-    [key: string]: unknown;
-  }>>([])
+  // const [analyticsData, setAnalyticsData] = useState<Array<{
+  //   followerIncrease?: number;
+  //   [key: string]: unknown;
+  // }>>([])
   
   // カスタムフックの使用
   const { 
@@ -27,8 +27,8 @@ export default function InstagramPlanPage() {
     selectedStrategies, 
     selectedCategories, 
     isSaving,
-    saveError,
-    saveSuccess,
+    // saveError,
+    // saveSuccess,
     isLoadingPlan,
     loadedPlanId,
     planStartDate,
@@ -73,8 +73,8 @@ export default function InstagramPlanPage() {
       });
       
       if (response.ok) {
-        const result = await response.json();
-        setAnalyticsData(result.analytics || []);
+        // const result = await response.json();
+        // setAnalyticsData(result.analytics || []);
       }
     } catch (error) {
       console.error('Analytics fetch error:', error);

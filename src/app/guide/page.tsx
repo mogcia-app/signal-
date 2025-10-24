@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import SNSLayout from '../../components/sns-layout';
 import { AIChatWidget } from '../../components/ai-chat-widget';
 import { 
@@ -27,54 +27,54 @@ import {
 } from 'lucide-react';
 
 // SNSを判定する関数（複数の方法を組み合わせ）
-const getCurrentSNS = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
-  if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
-  
-  // 1. セッションストレージから最後にアクセスしたSNSを取得
-  const lastAccessedSNS = sessionStorage.getItem('lastAccessedSNS');
-  
-  // 2. リファラーから判定
-  const referrer = document.referrer;
-  
-  console.log('🔍 ガイドページ - SNS判定デバッグ:', {
-    lastAccessedSNS: lastAccessedSNS,
-    referrer: referrer,
-    pathname: window.location.pathname,
-    fullURL: window.location.href
-  });
-  
-  // リファラーから判定（最優先）
-  if (referrer.includes('/x/')) {
-    console.log('✅ Xページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'x');
-    return 'x';
-  }
-  if (referrer.includes('/instagram/')) {
-    console.log('✅ Instagramページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'instagram');
-    return 'instagram';
-  }
-  if (referrer.includes('/tiktok/')) {
-    console.log('✅ TikTokページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'tiktok');
-    return 'tiktok';
-  }
-  if (referrer.includes('/youtube/')) {
-    console.log('✅ YouTubeページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'youtube');
-    return 'youtube';
-  }
-  
-  // リファラーから判定できない場合は、最後にアクセスしたSNSを使用
-  if (lastAccessedSNS && ['instagram', 'x', 'tiktok', 'youtube'].includes(lastAccessedSNS)) {
-    console.log(`✅ セッションストレージからSNS復元: ${lastAccessedSNS}`);
-    return lastAccessedSNS as 'instagram' | 'x' | 'tiktok' | 'youtube';
-  }
-  
-  console.log('⚠️ 判定できず、デフォルトのInstagramを使用');
-  // 最終的にデフォルト
-  return 'instagram';
-};
+// const getCurrentSNS = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
+//   if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
+//   
+//   // 1. セッションストレージから最後にアクセスしたSNSを取得
+//   const lastAccessedSNS = sessionStorage.getItem('lastAccessedSNS');
+//   
+//   // 2. リファラーから判定
+//   const referrer = document.referrer;
+//   
+//   console.log('🔍 ガイドページ - SNS判定デバッグ:', {
+//     lastAccessedSNS: lastAccessedSNS,
+//     referrer: referrer,
+//     pathname: window.location.pathname,
+//     fullURL: window.location.href
+//   });
+//   
+//   // リファラーから判定（最優先）
+//   if (referrer.includes('/x/')) {
+//     console.log('✅ Xページからアクセス検出');
+//     sessionStorage.setItem('lastAccessedSNS', 'x');
+//     return 'x';
+//   }
+//   if (referrer.includes('/instagram/')) {
+//     console.log('✅ Instagramページからアクセス検出');
+//     sessionStorage.setItem('lastAccessedSNS', 'instagram');
+//     return 'instagram';
+//   }
+//   if (referrer.includes('/tiktok/')) {
+//     console.log('✅ TikTokページからアクセス検出');
+//     sessionStorage.setItem('lastAccessedSNS', 'tiktok');
+//     return 'tiktok';
+//   }
+//   if (referrer.includes('/youtube/')) {
+//     console.log('✅ YouTubeページからアクセス検出');
+//     sessionStorage.setItem('lastAccessedSNS', 'youtube');
+//     return 'youtube';
+//   }
+//   
+//   // リファラーから判定できない場合は、最後にアクセスしたSNSを使用
+//   if (lastAccessedSNS && ['instagram', 'x', 'tiktok', 'youtube'].includes(lastAccessedSNS)) {
+//     console.log(`✅ セッションストレージからSNS復元: ${lastAccessedSNS}`);
+//     return lastAccessedSNS as 'instagram' | 'x' | 'tiktok' | 'youtube';
+//   }
+//   
+//   console.log('⚠️ 判定できず、デフォルトのInstagramを使用');
+//   // 最終的にデフォルト
+//   return 'instagram';
+// };
 
 interface GuideSection {
   id: string;
@@ -95,25 +95,25 @@ interface GuideStep {
 export default function GuidePage() {
   const [activeSection, setActiveSection] = useState<string>('getting-started');
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
+  // const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
 
   // SNS判定とデバッグ用のuseEffect
-  useEffect(() => {
-    const detectedSNS = getCurrentSNS();
-    setCurrentSNS(detectedSNS);
-    
-    console.log('🎯 ガイドページがマウントされました！', {
-      timestamp: Date.now(),
-      pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR',
-      search: typeof window !== 'undefined' ? window.location.search : 'SSR',
-      detectedSNS: detectedSNS,
-      referrer: typeof window !== 'undefined' ? document.referrer : 'SSR'
-    });
-    
-    return () => {
-      console.log('🎯 ガイドページがアンマウントされました！');
-    };
-  }, []);
+  // useEffect(() => {
+  //   const detectedSNS = getCurrentSNS();
+  //   setCurrentSNS(detectedSNS);
+  //   
+  //   console.log('🎯 ガイドページがマウントされました！', {
+  //     timestamp: Date.now(),
+  //     pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR',
+  //     search: typeof window !== 'undefined' ? window.location.search : 'SSR',
+  //     detectedSNS: detectedSNS,
+  //     referrer: typeof window !== 'undefined' ? document.referrer : 'SSR'
+  //   });
+  //   
+  //   return () => {
+  //     console.log('🎯 ガイドページがアンマウントされました！');
+  //   };
+  // }, []);
 
   const guideSections: GuideSection[] = [
     {

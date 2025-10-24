@@ -251,6 +251,13 @@ export default function InstagramPostsPage() {
           }
           
           const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+          // デバッグログを追加
+          console.log('投稿タイプデバッグ:', {
+            postId: post.id,
+            postType: post.postType,
+            title: post.title
+          });
+          
           return {
             day: dayNames[scheduledDate.getDay()],
             date: `${scheduledDate.getMonth() + 1}/${scheduledDate.getDate()}`,
@@ -308,6 +315,13 @@ export default function InstagramPostsPage() {
           else {
             createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt as string);
           }
+          
+          // デバッグログを追加
+          console.log('未分析投稿タイプデバッグ:', {
+            postId: post.id,
+            postType: post.postType,
+            title: post.title
+          });
           
           return {
             id: post.id,

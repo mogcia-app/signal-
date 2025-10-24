@@ -11,7 +11,7 @@ import SNSLayout from '../../components/sns-layout';
 
 export default function OnboardingPage() {
   const { user, loading: authLoading } = useAuth();
-  const { userProfile, loading: profileLoading } = useUserProfile();
+  const { userProfile } = useUserProfile();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isEditing, setIsEditing] = useState(false);
@@ -23,7 +23,7 @@ export default function OnboardingPage() {
     companySize: '',
     businessType: '',
     description: '',
-    targetMarket: '',
+    targetMarket: [] as string[],
     catchphrase: ''
   });
   const [customIndustry, setCustomIndustry] = useState('');
@@ -61,7 +61,11 @@ export default function OnboardingPage() {
         companySize: userProfile.businessInfo.companySize || '',
         businessType: userProfile.businessInfo.businessType || '',
         description: userProfile.businessInfo.description || '',
-        targetMarket: userProfile.businessInfo.targetMarket || '',
+        targetMarket: Array.isArray(userProfile.businessInfo.targetMarket) 
+          ? userProfile.businessInfo.targetMarket 
+          : userProfile.businessInfo.targetMarket 
+            ? [userProfile.businessInfo.targetMarket] 
+            : [],
         catchphrase: userProfile.businessInfo.catchphrase || ''
       });
       setGoals(userProfile.businessInfo.goals || []);
@@ -117,22 +121,26 @@ export default function OnboardingPage() {
     return map[value] || value;
   };
 
-  const getTargetMarketLabel = (value: string) => {
-    const map: Record<string, string> = {
-      'teens': '10代',
-      '20s': '20代',
-      '30s': '30代',
-      '40s': '40代',
-      '50plus': '50代以上',
-      'all': '全年齢'
-    };
-    return map[value] || value;
-  };
+  // const getTargetMarketLabel = (value: string | string[]) => {
+  //   const map: Record<string, string> = {
+  //     'teens': '10代',
+  //     '20s': '20代',
+  //     '30s': '30代',
+  //     '40s': '40代',
+  //     '50plus': '50代以上',
+  //     'all': '全年齢'
+  //   };
+  //   
+  //   if (Array.isArray(value)) {
+  //     return value.map(v => map[v] || v).join(', ');
+  //   }
+  //   return map[value] || value;
+  // };
 
   // 選択肢データ
   const industryOptions = ['IT・テクノロジー', '小売・EC', '飲食', '美容・健康', '教育', '不動産', 'その他'];
   const companySizeOptions = ['個人', '2-10名', '11-50名', '51-200名', '201名以上'];
-  const businessTypeOptions = ['BtoC', 'BtoB', 'BtoB/BtoC両方'];
+  // const businessTypeOptions = ['BtoC', 'BtoB', 'BtoB/BtoC両方'];
   const targetMarketOptions = ['10代', '20代', '30代', '40代', '50代以上', '全年齢'];
   
   const goalOptions = [
@@ -153,12 +161,12 @@ export default function OnboardingPage() {
     'アイデア不足'
   ];
 
-  const toneOptions = [
-    { value: 'フレンドリー', label: 'フレンドリー', emoji: '😊' },
-    { value: 'プロフェッショナル', label: 'プロフェッショナル', emoji: '💼' },
-    { value: 'カジュアル', label: 'カジュアル', emoji: '🎉' },
-    { value: 'フォーマル', label: 'フォーマル', emoji: '🎩' }
-  ];
+  // const toneOptions = [
+  //   { value: 'フレンドリー', label: 'フレンドリー', emoji: '😊' },
+  //   { value: 'プロフェッショナル', label: 'プロフェッショナル', emoji: '💼' },
+  //   { value: 'カジュアル', label: 'カジュアル', emoji: '🎉' },
+  //   { value: 'フォーマル', label: 'フォーマル', emoji: '🎩' }
+  // ];
 
   const featureOptions = [
     'ハッシュタグ最適化',
@@ -274,7 +282,7 @@ export default function OnboardingPage() {
   };
 
   // 各ステップの検証
-  const isStep1Valid = businessInfo.industry && businessInfo.companySize && businessInfo.businessType && businessInfo.targetMarket;
+  const isStep1Valid = businessInfo.industry && businessInfo.companySize && businessInfo.businessType && businessInfo.targetMarket.length > 0;
   const isStep2Valid = goals.length > 0 && challenges.length > 0;
   const isStep3Valid = Object.keys(snsAISettings).length > 0 && 
     Object.values(snsAISettings).some(s => s.enabled && s.tone && s.tone.trim());
@@ -289,7 +297,7 @@ export default function OnboardingPage() {
 
   return (
     <SNSLayout 
-      customTitle="初期設定" 
+      customTitle="マイアカウント" 
       customDescription="御社専用AIを構築するための情報を入力してください"
     >
       <div className="py-6">
@@ -449,7 +457,7 @@ export default function OnboardingPage() {
                 {step < 3 && (
                   <div
                     className={`flex-1 h-1 mx-2 ${
-                      step < currentStep ? 'bg-green-500' : 'bg-gray-300'
+                      step < currentStep ? 'bg-[#FF8A15]' : 'bg-gray-300'
                     }`}
                   />
                 )}
@@ -544,16 +552,28 @@ export default function OnboardingPage() {
                 {/* ターゲット市場 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ターゲット市場 <span className="text-red-500">*</span>
+                    ターゲット市場（複数選択可） <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {targetMarketOptions.map((option) => (
                       <button
                         key={option}
-                        onClick={() => setBusinessInfo({ ...businessInfo, targetMarket: option })}
+                        onClick={() => {
+                          if (businessInfo.targetMarket.includes(option)) {
+                            setBusinessInfo({ 
+                              ...businessInfo, 
+                              targetMarket: businessInfo.targetMarket.filter(market => market !== option) 
+                            });
+                          } else {
+                            setBusinessInfo({ 
+                              ...businessInfo, 
+                              targetMarket: [...businessInfo.targetMarket, option] 
+                            });
+                          }
+                        }}
                         className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                          businessInfo.targetMarket === option
-                            ? 'border-[#FF8A15] bg-white text-[#FF8A15]'
+                          businessInfo.targetMarket.includes(option)
+                            ? 'border-[#FF8A15] bg-orange-50 text-[#FF8A15]'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -561,6 +581,9 @@ export default function OnboardingPage() {
                       </button>
                     ))}
                   </div>
+                  {businessInfo.targetMarket.length > 0 && (
+                    <p className="mt-2 text-sm text-black">{businessInfo.targetMarket.length}個選択中</p>
+                  )}
                 </div>
 
                 {/* キャッチコピー */}
@@ -832,270 +855,264 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* ステップ3: SNS AI設定 */}
+          {/* ステップ3: Instagram AI設定 */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-black mb-2">SNS AI設定</h2>
-                <p className="text-black">各SNSのAI設定を行ってください</p>
+                <h2 className="text-2xl font-bold text-black mb-2">Instagram AI設定</h2>
+                <p className="text-black">Instagram専用AIの設定を行ってください</p>
               </div>
 
               <div className="space-y-6">
                 {/* Instagram設定 */}
                 <div className="p-6 bg-white border-2 border-[#FF8A15]">
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center mb-6">
                     <div className="flex items-center space-x-3">
                       <span className="text-3xl">📷</span>
                       <h3 className="text-xl font-bold text-black">Instagram AI設定</h3>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Instagram設定を常に有効にする */}
+                    {(() => {
+                      // Instagram設定を常に有効にする
+                      if (!snsAISettings.instagram?.enabled) {
+                        setSnsAISettings({
+                          ...snsAISettings,
+                          instagram: {
+                            enabled: true,
+                            tone: snsAISettings.instagram?.tone || '',
+                            features: snsAISettings.instagram?.features || [],
+                            manner: snsAISettings.instagram?.manner || '',
+                            cautions: snsAISettings.instagram?.cautions || '',
+                            goals: snsAISettings.instagram?.goals || '',
+                            motivation: snsAISettings.instagram?.motivation || '',
+                            additionalInfo: snsAISettings.instagram?.additionalInfo || ''
+                          }
+                        });
+                      }
+                      return null;
+                    })()}
+                    {/* トーン入力 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        トーン <span className="text-red-500">*</span>
+                      </label>
                       <input
-                        type="checkbox"
-                        checked={snsAISettings.instagram?.enabled || false}
+                        type="text"
+                        value={snsAISettings.instagram?.tone || ''}
                         onChange={(e) => {
                           setSnsAISettings({
                             ...snsAISettings,
                             instagram: {
                               ...snsAISettings.instagram,
-                              enabled: e.target.checked,
-                              tone: snsAISettings.instagram?.tone || '',
-                              features: snsAISettings.instagram?.features || [],
-                              manner: snsAISettings.instagram?.manner || '',
-                              cautions: snsAISettings.instagram?.cautions || '',
-                              goals: snsAISettings.instagram?.goals || '',
-                              motivation: snsAISettings.instagram?.motivation || '',
-                              additionalInfo: snsAISettings.instagram?.additionalInfo || ''
+                              enabled: true,
+                              tone: e.target.value,
+                              features: snsAISettings.instagram?.features || []
                             }
                           });
                         }}
-                        className="sr-only peer"
+                        placeholder="例: フレンドリー、プロフェッショナル、カジュアルなど"
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#FF8A15] peer-focus:ring-opacity-30 peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF8A15]"></div>
-                    </label>
-                  </div>
+                    </div>
 
-                  {snsAISettings.instagram?.enabled && (
-                    <div className="space-y-4">
-                      {/* トーン入力 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          トーン <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={snsAISettings.instagram?.tone || ''}
-                          onChange={(e) => {
-                            setSnsAISettings({
-                              ...snsAISettings,
-                              instagram: {
-                                ...snsAISettings.instagram,
-                                enabled: true,
-                                tone: e.target.value,
-                                features: snsAISettings.instagram?.features || []
-                              }
-                            });
-                          }}
-                          placeholder="例: フレンドリー、プロフェッショナル、カジュアルなど"
-                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
-                        />
-                      </div>
+                    {/* マナー */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        マナー・ルール
+                      </label>
+                      <textarea
+                        value={snsAISettings.instagram?.manner || ''}
+                        onChange={(e) => {
+                          setSnsAISettings({
+                            ...snsAISettings,
+                            instagram: {
+                              ...snsAISettings.instagram,
+                              enabled: true,
+                              manner: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="例: 絵文字は控えめに、敬語を使う、業界用語は避けるなど"
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        rows={3}
+                      />
+                    </div>
 
-                      {/* マナー */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          マナー・ルール
-                        </label>
-                        <textarea
-                          value={snsAISettings.instagram?.manner || ''}
-                          onChange={(e) => {
-                            setSnsAISettings({
-                              ...snsAISettings,
-                              instagram: {
-                                ...snsAISettings.instagram,
-                                enabled: true,
-                                manner: e.target.value
-                              }
-                            });
-                          }}
-                          placeholder="例: 絵文字は控えめに、敬語を使う、業界用語は避けるなど"
-                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
-                          rows={3}
-                        />
-                      </div>
+                    {/* 注意事項 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        注意事項・NGワード
+                      </label>
+                      <textarea
+                        value={snsAISettings.instagram?.cautions || ''}
+                        onChange={(e) => {
+                          setSnsAISettings({
+                            ...snsAISettings,
+                            instagram: {
+                              ...snsAISettings.instagram,
+                              enabled: true,
+                              cautions: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="例: 競合他社名は使わない、特定の表現は避けるなど"
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        rows={3}
+                      />
+                    </div>
 
-                      {/* 注意事項 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          注意事項・NGワード
-                        </label>
-                        <textarea
-                          value={snsAISettings.instagram?.cautions || ''}
-                          onChange={(e) => {
-                            setSnsAISettings({
-                              ...snsAISettings,
-                              instagram: {
-                                ...snsAISettings.instagram,
-                                enabled: true,
-                                cautions: e.target.value
-                              }
-                            });
-                          }}
-                          placeholder="例: 競合他社名は使わない、特定の表現は避けるなど"
-                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
-                          rows={3}
-                        />
-                      </div>
+                    {/* Instagram目標 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Instagram運用の目標
+                      </label>
+                      <textarea
+                        value={snsAISettings.instagram?.goals || ''}
+                        onChange={(e) => {
+                          setSnsAISettings({
+                            ...snsAISettings,
+                            instagram: {
+                              ...snsAISettings.instagram,
+                              enabled: true,
+                              goals: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="例: 3ヶ月で1万フォロワー達成、エンゲージメント率5%以上など"
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        rows={3}
+                      />
+                    </div>
 
-                      {/* Instagram目標 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Instagram運用の目標
-                        </label>
-                        <textarea
-                          value={snsAISettings.instagram?.goals || ''}
-                          onChange={(e) => {
-                            setSnsAISettings({
-                              ...snsAISettings,
-                              instagram: {
-                                ...snsAISettings.instagram,
-                                enabled: true,
-                                goals: e.target.value
-                              }
-                            });
-                          }}
-                          placeholder="例: 3ヶ月で1万フォロワー達成、エンゲージメント率5%以上など"
-                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
-                          rows={3}
-                        />
-                      </div>
+                    {/* 運用動機 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Instagramを始めた理由・動機
+                      </label>
+                      <textarea
+                        value={snsAISettings.instagram?.motivation || ''}
+                        onChange={(e) => {
+                          setSnsAISettings({
+                            ...snsAISettings,
+                            instagram: {
+                              ...snsAISettings.instagram,
+                              enabled: true,
+                              motivation: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="例: ブランド認知度を上げたい、顧客とのコミュニケーションを強化したいなど"
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        rows={3}
+                      />
+                    </div>
 
-                      {/* 運用動機 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Instagramを始めた理由・動機
-                        </label>
-                        <textarea
-                          value={snsAISettings.instagram?.motivation || ''}
-                          onChange={(e) => {
-                            setSnsAISettings({
-                              ...snsAISettings,
-                              instagram: {
-                                ...snsAISettings.instagram,
-                                enabled: true,
-                                motivation: e.target.value
-                              }
-                            });
-                          }}
-                          placeholder="例: ブランド認知度を上げたい、顧客とのコミュニケーションを強化したいなど"
-                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
-                          rows={3}
-                        />
-                      </div>
+                    {/* その他AI参考情報 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        その他AIに伝えたい情報
+                      </label>
+                      <textarea
+                        value={snsAISettings.instagram?.additionalInfo || ''}
+                        onChange={(e) => {
+                          setSnsAISettings({
+                            ...snsAISettings,
+                            instagram: {
+                              ...snsAISettings.instagram,
+                              enabled: true,
+                              additionalInfo: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="例: 投稿頻度の希望、好きなインフルエンサー、参考にしたいアカウントなど"
+                        className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        rows={3}
+                      />
+                    </div>
 
-                      {/* その他AI参考情報 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          その他AIに伝えたい情報
-                        </label>
-                        <textarea
-                          value={snsAISettings.instagram?.additionalInfo || ''}
-                          onChange={(e) => {
-                            setSnsAISettings({
-                              ...snsAISettings,
-                              instagram: {
-                                ...snsAISettings.instagram,
-                                enabled: true,
-                                additionalInfo: e.target.value
-                              }
-                            });
-                          }}
-                          placeholder="例: 投稿頻度の希望、好きなインフルエンサー、参考にしたいアカウントなど"
-                          className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
-                          rows={3}
-                        />
-                      </div>
-
-                      {/* 機能選択 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">機能（複数選択可）</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {featureOptions.map((option) => (
-                            <button
-                              key={option}
-                              onClick={() => {
-                                const currentFeatures = snsAISettings.instagram?.features || [];
-                                const newFeatures = currentFeatures.includes(option)
-                                  ? currentFeatures.filter(f => f !== option)
-                                  : [...currentFeatures, option];
-                                
-                                setSnsAISettings({
-                                  ...snsAISettings,
-                                  instagram: {
-                                    ...snsAISettings.instagram,
-                                    enabled: true,
-                                    tone: snsAISettings.instagram?.tone || 'フレンドリー',
-                                    features: newFeatures
-                                  }
-                                });
-                              }}
-                              className={`p-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                                snsAISettings.instagram?.features?.includes(option)
-                                  ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                              }`}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      {/* カスタム機能追加 */}
-                      <div className="mt-3 flex gap-2">
-                        <input
-                          type="text"
-                          value={customFeature}
-                          onChange={(e) => setCustomFeature(e.target.value)}
-                          placeholder="カスタム機能を追加"
-                          className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:border-[#FF8A15]"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter' && customFeature.trim()) {
+                    {/* 機能選択 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">機能（複数選択可）</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {featureOptions.map((option) => (
+                          <button
+                            key={option}
+                            onClick={() => {
                               const currentFeatures = snsAISettings.instagram?.features || [];
+                              const newFeatures = currentFeatures.includes(option)
+                                ? currentFeatures.filter(f => f !== option)
+                                : [...currentFeatures, option];
+                              
                               setSnsAISettings({
                                 ...snsAISettings,
                                 instagram: {
                                   ...snsAISettings.instagram,
                                   enabled: true,
                                   tone: snsAISettings.instagram?.tone || 'フレンドリー',
-                                  features: [...currentFeatures, customFeature.trim()]
+                                  features: newFeatures
                                 }
                               });
-                              setCustomFeature('');
-                            }
-                          }}
-                        />
-                        <button
-                          onClick={() => {
-                            if (customFeature.trim()) {
-                              const currentFeatures = snsAISettings.instagram?.features || [];
-                              setSnsAISettings({
-                                ...snsAISettings,
-                                instagram: {
-                                  ...snsAISettings.instagram,
-                                  enabled: true,
-                                  tone: snsAISettings.instagram?.tone || 'フレンドリー',
-                                  features: [...currentFeatures, customFeature.trim()]
-                                }
-                              });
-                              setCustomFeature('');
-                            }
-                          }}
-                          className="px-4 py-2 bg-[#FF8A15] text-white hover:bg-[#E67A0A] transition-colors"
-                        >
-                          追加
-                        </button>
+                            }}
+                            className={`p-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                              snsAISettings.instagram?.features?.includes(option)
+                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  )}
+                    {/* カスタム機能追加 */}
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        type="text"
+                        value={customFeature}
+                        onChange={(e) => setCustomFeature(e.target.value)}
+                        placeholder="カスタム機能を追加"
+                        className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:border-[#FF8A15]"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && customFeature.trim()) {
+                            const currentFeatures = snsAISettings.instagram?.features || [];
+                            setSnsAISettings({
+                              ...snsAISettings,
+                              instagram: {
+                                ...snsAISettings.instagram,
+                                enabled: true,
+                                tone: snsAISettings.instagram?.tone || 'フレンドリー',
+                                features: [...currentFeatures, customFeature.trim()]
+                              }
+                            });
+                            setCustomFeature('');
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          if (customFeature.trim()) {
+                            const currentFeatures = snsAISettings.instagram?.features || [];
+                            setSnsAISettings({
+                              ...snsAISettings,
+                              instagram: {
+                                ...snsAISettings.instagram,
+                                enabled: true,
+                                tone: snsAISettings.instagram?.tone || 'フレンドリー',
+                                features: [...currentFeatures, customFeature.trim()]
+                              }
+                            });
+                            setCustomFeature('');
+                          }
+                        }}
+                        className="px-4 py-2 bg-[#FF8A15] text-white hover:bg-[#E67A0A] transition-colors"
+                      >
+                        追加
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 他のSNSも同様に追加可能 */}
@@ -1183,7 +1200,13 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
-                  <p className="text-black">{getTargetMarketLabel(businessInfo.targetMarket) || '未設定'}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {businessInfo.targetMarket.length > 0 ? businessInfo.targetMarket.map((market, index) => (
+                      <span key={index} className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm">
+                        {market}
+                      </span>
+                    )) : <span className="text-black">未設定</span>}
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">💬 キャッチコピー</label>
@@ -1248,93 +1271,72 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* SNS AI設定 */}
+            {/* Instagram AI設定 */}
             <div className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-6">
-              <h3 className="text-lg font-bold text-black mb-4">SNS AI設定</h3>
+              <h3 className="text-lg font-bold text-black mb-4">Instagram AI設定</h3>
               <div className="space-y-4">
-                {Object.keys(snsAISettings).length > 0 ? (
-                  Object.entries(snsAISettings).map(([snsType, settings]) => {
-                    const extendedSettings = settings as {
-                      enabled: boolean;
-                      tone?: string;
-                      features?: string[];
-                      manner?: string;
-                      cautions?: string;
-                      goals?: string;
-                      motivation?: string;
-                      additionalInfo?: string;
-                    };
-                    
-                    return (
-                      <div key={snsType} className="p-4 border-2 border-[#FF8A15]">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-2xl">
-                              {snsType === 'instagram' ? '📷' : snsType === 'x' ? '🐦' : '📱'}
-                            </span>
-                            <span className="font-bold text-black text-lg capitalize">{snsType}</span>
-                          </div>
-                          <span className={`px-3 py-1 text-xs font-medium ${
-                            extendedSettings.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {extendedSettings.enabled ? '✓ 有効' : '無効'}
-                          </span>
-                        </div>
-                        {extendedSettings.enabled && (
-                          <div className="space-y-3 text-sm">
-                            {extendedSettings.tone && (
-                              <div className="pb-2 border-b border-gray-200">
-                                <span className="text-black font-medium">トーン:</span>
-                                <p className="text-black mt-1">{extendedSettings.tone}</p>
-                              </div>
-                            )}
-                            {extendedSettings.manner && (
-                              <div className="pb-2 border-b border-gray-200">
-                                <span className="text-black font-medium">マナー・ルール:</span>
-                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.manner}</p>
-                              </div>
-                            )}
-                            {extendedSettings.cautions && (
-                              <div className="pb-2 border-b border-gray-200">
-                                <span className="text-black font-medium">注意事項・NGワード:</span>
-                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.cautions}</p>
-                              </div>
-                            )}
-                            {extendedSettings.goals && (
-                              <div className="pb-2 border-b border-gray-200">
-                                <span className="text-black font-medium">Instagram運用の目標:</span>
-                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.goals}</p>
-                              </div>
-                            )}
-                            {extendedSettings.motivation && (
-                              <div className="pb-2 border-b border-gray-200">
-                                <span className="text-black font-medium">運用動機:</span>
-                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.motivation}</p>
-                              </div>
-                            )}
-                            {extendedSettings.additionalInfo && (
-                              <div className="pb-2 border-b border-gray-200">
-                                <span className="text-black font-medium">その他AI参考情報:</span>
-                                <p className="text-black mt-1 whitespace-pre-wrap">{extendedSettings.additionalInfo}</p>
-                              </div>
-                            )}
-                            {extendedSettings.features && extendedSettings.features.length > 0 && (
-                              <div>
-                                <span className="text-black font-medium">機能:</span>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {extendedSettings.features.map((feature, idx) => (
-                                    <span key={idx} className="px-2 py-1 border border-[#FF8A15] text-[#FF8A15] text-xs">
-                                      {feature}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                {snsAISettings.instagram ? (
+                  <div className="p-4 border-2 border-[#FF8A15]">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl">📷</span>
+                        <span className="font-bold text-black text-lg">Instagram</span>
                       </div>
-                    );
-                  })
+                      <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-700">
+                        ✓ 有効
+                      </span>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      {snsAISettings.instagram.tone && (
+                        <div className="pb-2 border-b border-gray-200">
+                          <span className="text-black font-medium">トーン:</span>
+                          <p className="text-black mt-1">{snsAISettings.instagram.tone}</p>
+                        </div>
+                      )}
+                      {snsAISettings.instagram.manner && (
+                        <div className="pb-2 border-b border-gray-200">
+                          <span className="text-black font-medium">マナー・ルール:</span>
+                          <p className="text-black mt-1 whitespace-pre-wrap">{snsAISettings.instagram.manner}</p>
+                        </div>
+                      )}
+                      {snsAISettings.instagram.cautions && (
+                        <div className="pb-2 border-b border-gray-200">
+                          <span className="text-black font-medium">注意事項・NGワード:</span>
+                          <p className="text-black mt-1 whitespace-pre-wrap">{snsAISettings.instagram.cautions}</p>
+                        </div>
+                      )}
+                      {snsAISettings.instagram.goals && (
+                        <div className="pb-2 border-b border-gray-200">
+                          <span className="text-black font-medium">Instagram運用の目標:</span>
+                          <p className="text-black mt-1 whitespace-pre-wrap">{snsAISettings.instagram.goals}</p>
+                        </div>
+                      )}
+                      {snsAISettings.instagram.motivation && (
+                        <div className="pb-2 border-b border-gray-200">
+                          <span className="text-black font-medium">運用動機:</span>
+                          <p className="text-black mt-1 whitespace-pre-wrap">{snsAISettings.instagram.motivation}</p>
+                        </div>
+                      )}
+                      {snsAISettings.instagram.additionalInfo && (
+                        <div className="pb-2 border-b border-gray-200">
+                          <span className="text-black font-medium">その他AI参考情報:</span>
+                          <p className="text-black mt-1 whitespace-pre-wrap">{snsAISettings.instagram.additionalInfo}</p>
+                        </div>
+                      )}
+                      {snsAISettings.instagram.features && snsAISettings.instagram.features.length > 0 && (
+                        <div>
+                          <span className="text-black font-medium">機能:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {snsAISettings.instagram.features.map((feature, idx) => (
+                              <span key={idx} className="px-2 py-1 border border-[#FF8A15] text-[#FF8A15] text-xs">
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <p className="text-black">未設定</p>
                 )}

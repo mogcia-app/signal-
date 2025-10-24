@@ -98,7 +98,7 @@ interface Notification {
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
+  // const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
   const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'unread' | 'starred' | 'archived'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,16 +106,16 @@ export default function NotificationsPage() {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   // SNS判定のuseEffect
-  useEffect(() => {
-    const detectedSNS = getCurrentSNS();
-    setCurrentSNS(detectedSNS);
-    
-    console.log('🎯 お知らせページ - SNS判定:', {
-      detectedSNS: detectedSNS,
-      referrer: typeof window !== 'undefined' ? document.referrer : 'SSR',
-      pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR'
-    });
-  }, []);
+  // useEffect(() => {
+  //   const detectedSNS = getCurrentSNS();
+  //   setCurrentSNS(detectedSNS);
+  //   
+  //   console.log('🎯 お知らせページ - SNS判定:', {
+  //     detectedSNS: detectedSNS,
+  //     referrer: typeof window !== 'undefined' ? document.referrer : 'SSR',
+  //     pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR'
+  //   });
+  // }, []);
 
   useEffect(() => {
     console.log('🔍 認証状態の変化を監視:', { user, uid: user?.uid });

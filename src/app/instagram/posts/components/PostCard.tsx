@@ -143,6 +143,13 @@ const PostCard: React.FC<PostCardProps> = ({
 
   // 投稿タイプ表示の絵文字
   const getPostTypeIcon = (postType: string) => {
+    // デバッグログを追加
+    console.log('PostCard 投稿タイプデバッグ:', {
+      postId: post.id,
+      postType: postType,
+      title: post.title
+    });
+    
     switch (postType) {
       case 'feed': return '📸';
       case 'reel': return '🎬';
