@@ -109,7 +109,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               Signal<span style={{ color: '#FF8A15' }}>.</span>
             </div>
           </div>
-          <p className="text-sm text-black mt-1">Instagram管理プラットフォーム</p>
+         
         </div>
 
 
