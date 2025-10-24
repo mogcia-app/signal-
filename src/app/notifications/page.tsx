@@ -6,74 +6,14 @@ import { AIChatWidget } from '../../components/ai-chat-widget';
 import { 
   Bell, 
   AlertCircle, 
-  CheckCircle, 
-  Info, 
-  AlertTriangle,
   Clock,
-  Search,
-  Archive,
-  Eye,
-  Star,
-  StarOff,
-  ChevronDown,
-  X,
-  Calendar,
-  Tag
+  Tag,
+  ChevronDown
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../../contexts/auth-context';
 import { auth } from '../../lib/firebase';
-
-// SNSを判定する関数（複数の方法を組み合わせ）
-const getCurrentSNS = (): 'instagram' | 'x' | 'tiktok' | 'youtube' => {
-  if (typeof window === 'undefined') return 'instagram'; // SSR時はデフォルト
-  
-  // 1. セッションストレージから最後にアクセスしたSNSを取得
-  const lastAccessedSNS = sessionStorage.getItem('lastAccessedSNS');
-  
-  // 2. リファラーから判定
-  const referrer = document.referrer;
-  
-  console.log('🔍 SNS判定デバッグ:', {
-    lastAccessedSNS: lastAccessedSNS,
-    referrer: referrer,
-    pathname: window.location.pathname,
-    fullURL: window.location.href
-  });
-  
-  // リファラーから判定（最優先）
-  if (referrer.includes('/x/')) {
-    console.log('✅ Xページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'x');
-    return 'x';
-  }
-  if (referrer.includes('/instagram/')) {
-    console.log('✅ Instagramページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'instagram');
-    return 'instagram';
-  }
-  if (referrer.includes('/tiktok/')) {
-    console.log('✅ TikTokページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'tiktok');
-    return 'tiktok';
-  }
-  if (referrer.includes('/youtube/')) {
-    console.log('✅ YouTubeページからアクセス検出');
-    sessionStorage.setItem('lastAccessedSNS', 'youtube');
-    return 'youtube';
-  }
-  
-  // リファラーから判定できない場合は、最後にアクセスしたSNSを使用
-  if (lastAccessedSNS && ['instagram', 'x', 'tiktok', 'youtube'].includes(lastAccessedSNS)) {
-    console.log(`✅ セッションストレージからSNS復元: ${lastAccessedSNS}`);
-    return lastAccessedSNS as 'instagram' | 'x' | 'tiktok' | 'youtube';
-  }
-  
-  console.log('⚠️ 判定できず、デフォルトのInstagramを使用');
-  // 最終的にデフォルト
-  return 'instagram';
-};
 
 interface Notification {
   id: string;
@@ -100,10 +40,8 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   // const [currentSNS, setCurrentSNS] = useState<'instagram' | 'x' | 'tiktok' | 'youtube'>('instagram');
   const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'unread' | 'starred' | 'archived'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
 
   // SNS判定のuseEffect
   // useEffect(() => {
@@ -138,14 +76,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     // フィルタリング処理
     filterNotifications();
-  }, [notifications, selectedFilter, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // フィルタや検索が変更されたときにAPIを再呼び出し
-  useEffect(() => {
-    if (selectedFilter !== 'all' || searchQuery.trim()) {
-      fetchNotifications();
-    }
-  }, [selectedFilter, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [notifications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Firestoreのデータを適切な形式に変換
   const convertFirestoreData = (data: Record<string, unknown>): Notification => {
@@ -188,9 +119,7 @@ export default function NotificationsPage() {
       console.log('🔑 認証トークンを取得:', { hasToken: !!token });
       
       const params = new URLSearchParams({
-        userId: user.uid,
-        filter: selectedFilter,
-        ...(searchQuery && { search: searchQuery })
+        userId: user.uid
       });
 
       const response = await fetch(`/api/notifications?${params}`, {
@@ -343,56 +272,13 @@ export default function NotificationsPage() {
   const filterNotifications = () => {
     let filtered = [...notifications];
 
-    // ステータスフィルタ
-    if (selectedFilter === 'unread') {
-      filtered = filtered.filter(notification => !notification.read);
-    } else if (selectedFilter === 'starred') {
-      filtered = filtered.filter(notification => notification.starred);
-    } else if (selectedFilter === 'archived') {
-      filtered = filtered.filter(notification => notification.status === 'archived');
-    } else {
-      filtered = filtered.filter(notification => notification.status === 'published');
-    }
-
-    // 検索フィルタ
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(notification => 
-        notification.title.toLowerCase().includes(query) ||
-        notification.message.toLowerCase().includes(query)
-      );
-    }
+    // 公開済みの通知のみを表示
+    filtered = filtered.filter(notification => notification.status === 'published');
 
     // 作成日時でソート（新しい順）
     filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     setFilteredNotifications(filtered);
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'success': return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5 text-yellow-600" />;
-      case 'error': return <AlertCircle className="w-5 h-5 text-red-600" />;
-      default: return <Info className="w-5 h-5 text-blue-600" />;
-    }
-  };
-
-  const getNotificationBgColor = (type: string) => {
-    switch (type) {
-      case 'success': return 'bg-green-50 border-green-200';
-      case 'warning': return 'bg-yellow-50 border-yellow-200';
-      case 'error': return 'bg-red-50 border-red-200';
-      default: return 'bg-blue-50 border-blue-200';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
   };
 
   const formatDate = (dateInput: string | Record<string, unknown>) => {
@@ -472,83 +358,17 @@ export default function NotificationsPage() {
     }
   };
 
-  const toggleStar = async (notificationId: string) => {
-    try {
-      const response = await fetch(`/api/notifications/${notificationId}/actions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'star',
-          userId: user?.uid
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setNotifications(prev => 
-          prev.map(notification => 
-            notification.id === notificationId 
-              ? { ...notification, starred: result.data.starred }
-              : notification
-          )
-        );
-      } else {
-        console.error('お気に入り更新エラー:', result.error);
+  const toggleNotificationDetail = (notification: Notification) => {
+    const newExpanded = new Set(expandedNotifications);
+    if (newExpanded.has(notification.id)) {
+      newExpanded.delete(notification.id);
+    } else {
+      newExpanded.add(notification.id);
+      if (!notification.read) {
+        markAsRead(notification.id);
       }
-    } catch (error) {
-      console.error('お気に入り更新エラー:', error);
     }
-  };
-
-  const archiveNotification = async (notificationId: string) => {
-    try {
-      const response = await fetch(`/api/notifications/${notificationId}/actions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'archive',
-          userId: user?.uid
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setNotifications(prev => 
-          prev.map(notification => 
-            notification.id === notificationId 
-              ? { ...notification, status: 'archived' as const }
-              : notification
-          )
-        );
-      } else {
-        console.error('アーカイブ更新エラー:', result.error);
-      }
-    } catch (error) {
-      console.error('アーカイブ更新エラー:', error);
-    }
-  };
-
-  const unreadCount = notifications.filter(n => !n.read && n.status === 'published').length;
-  const starredCount = notifications.filter(n => n.starred && n.status === 'published').length;
-
-
-  // 通知の詳細表示
-  const openNotificationDetail = (notification: Notification) => {
-    setSelectedNotification(notification);
-    if (!notification.read) {
-      markAsRead(notification.id);
-    }
-  };
-
-  // 詳細モーダルを閉じる
-  const closeNotificationDetail = () => {
-    setSelectedNotification(null);
+    setExpandedNotifications(newExpanded);
   };
 
   if (isLoading) {
@@ -605,47 +425,6 @@ export default function NotificationsPage() {
             </div>
           </div> */}
 
-          {/* フィルターと検索 */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            {/* フィルター */}
-            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-              {[
-                { id: 'all', label: 'すべて', count: notifications.filter(n => n.status === 'published').length },
-                { id: 'unread', label: '未読', count: unreadCount },
-                { id: 'starred', label: 'お気に入り', count: starredCount },
-                { id: 'archived', label: 'アーカイブ', count: notifications.filter(n => n.status === 'archived').length }
-              ].map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setSelectedFilter(filter.id as 'all' | 'unread' | 'starred' | 'archived')}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                    selectedFilter === filter.id
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-black hover:text-black'
-                  }`}
-                >
-                  <span>{filter.label}</span>
-                  {filter.count > 0 && (
-                    <span className="bg-gray-200 text-black px-2 py-1 rounded-full text-xs">
-                      {filter.count}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* 検索 */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-black" />
-              <input
-                type="text"
-                placeholder="お知らせを検索..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
         </div>
 
         {/* 通知一覧 */}
@@ -668,8 +447,8 @@ export default function NotificationsPage() {
                   <div
                     key={notification.id}
                     className={`bg-white rounded-lg border-2 transition-all hover:shadow-lg ${
-                      notification.read ? '' : 'border-l-4 border-l-blue-500'
-                    } ${getNotificationBgColor(notification.type)}`}
+                      notification.read ? '' : 'border-l-4 border-l-[#FF8A15]'
+                    } bg-orange-50 border-orange-200`}
                   >
                     <div className="p-6">
                       <div className="flex items-start justify-between">
@@ -681,9 +460,13 @@ export default function NotificationsPage() {
                                 {notification.title}
                               </h3>
                               {!notification.read && (
-                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <div className="w-3 h-3 bg-[#FF8A15] rounded-full"></div>
                               )}
-                              <span className={`px-3 py-1 text-sm font-medium rounded-full ${getPriorityColor(notification.priority)}`}>
+                              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                                notification.priority === 'high' || notification.priority === 'medium' 
+                                  ? 'bg-orange-100 text-orange-800' 
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
                                 {notification.priority === 'high' && '高優先度'}
                                 {notification.priority === 'medium' && '中優先度'}
                                 {notification.priority === 'low' && '低優先度'}
@@ -706,7 +489,7 @@ export default function NotificationsPage() {
                                 {notification.tags.map((tag, index) => (
                                   <span
                                     key={index}
-                                    className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                                    className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full"
                                   >
                                     <Tag className="w-3 h-3 mr-1" />
                                     {tag}
@@ -733,114 +516,39 @@ export default function NotificationsPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  openNotificationDetail(notification);
+                                  toggleNotificationDetail(notification);
                                 }}
-                                className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 rounded-md hover:bg-blue-50"
+                                className="flex items-center space-x-1 text-[#FF8A15] hover:text-[#E67A0A] transition-colors px-3 py-1 rounded-md hover:bg-orange-50"
                               >
-                                <span className="text-sm font-medium">詳細を見る</span>
-                                <ChevronDown className="w-4 h-4" />
+                                <span className="text-sm font-medium">
+                                  {expandedNotifications.has(notification.id) ? '詳細を閉じる' : '詳細を見る'}
+                                </span>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${expandedNotifications.has(notification.id) ? 'rotate-180' : ''}`} />
                               </button>
                             </div>
                           </div>
                         </div>
-
-                        {/* アクションボタン */}
-                        <div className="flex items-center space-x-2 ml-4" onClick={(e) => e.stopPropagation()}>
-                          {!notification.read && (
-                            <button
-                              onClick={() => markAsRead(notification.id)}
-                              className="p-2 text-black hover:text-blue-600 transition-colors"
-                              title="既読にする"
-                            >
-                              <Eye className="w-5 h-5" />
-                            </button>
-                          )}
-                          
-                          <button
-                            onClick={() => toggleStar(notification.id)}
-                            className={`p-2 transition-colors ${
-                              notification.starred 
-                                ? 'text-yellow-500 hover:text-yellow-600' 
-                                : 'text-black hover:text-yellow-500'
-                            }`}
-                            title={notification.starred ? 'お気に入りを解除' : 'お気に入りに追加'}
-                          >
-                            {notification.starred ? <Star className="w-5 h-5 fill-current" /> : <StarOff className="w-5 h-5" />}
-                          </button>
-
-                          {notification.status === 'published' && (
-                            <button
-                              onClick={() => archiveNotification(notification.id)}
-                              className="p-2 text-black hover:text-black transition-colors"
-                              title="アーカイブ"
-                            >
-                              <Archive className="w-5 h-5" />
-                            </button>
-                          )}
-                        </div>
                       </div>
                     </div>
+                    
+                    {/* 展開された詳細内容 */}
+                    {expandedNotifications.has(notification.id) && (
+                      <div className="border-t border-gray-200 pt-4 mt-4">
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <p className="text-gray-700 text-lg leading-relaxed">{notification.message}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })
             )}
         </div>
 
-        {/* 詳細モーダル */}
-        {selectedNotification && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                {/* モーダルヘッダー */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-3">
-                    <h2 className="text-2xl font-bold text-black">{selectedNotification.title}</h2>
-                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getPriorityColor(selectedNotification.priority)}`}>
-                      {selectedNotification.priority === 'high' && '高優先度'}
-                      {selectedNotification.priority === 'medium' && '中優先度'}
-                      {selectedNotification.priority === 'low' && '低優先度'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={closeNotificationDetail}
-                    className="p-2 text-black hover:text-black transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                {/* モーダル内容 */}
-                <div className="space-y-6">
-                  {/* メッセージ */}
-                  <div>
-                    <p className="text-gray-700 text-lg leading-relaxed">{selectedNotification.message}</p>
-                  </div>
-
-                  {/* アクションボタン */}
-                  <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-                    {!selectedNotification.read && (
-                      <button
-                        onClick={() => {
-                          markAsRead(selectedNotification.id);
-                          closeNotificationDetail();
-                        }}
-                        className="px-4 py-2 bg-[#FF8A15] text-white hover:bg-[#E67A0A] transition-colors"
-                      >
-                        既読にする
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* AIチャットウィジェット */}
         <AIChatWidget 
           contextData={{
-            notifications: notifications,
-            selectedFilter: selectedFilter
+            notifications: notifications
           }}
         />
     </SNSLayout>
