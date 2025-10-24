@@ -212,7 +212,8 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               <span>👤</span>
               <span>マイアカウント</span>
             </Link>
-            <Link 
+
+            {/*<Link 
               href="/notifications"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
@@ -241,7 +242,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
         </div>
 
         {/* ユーザー情報 */}
-        <div className="p-4 mt-auto">
+        {/* <div className="p-4 mt-auto">
           <div className="flex items-center space-x-3 mb-3">
             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
               <span className="text-sm font-medium text-black">
@@ -257,6 +258,10 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               </div>
             </div>
           </div>
+        </div> */}
+        
+        {/* ログアウトボタン */}
+        <div className="p-4 mt-auto">
           <button
             onClick={handleSignOut}
             className="w-full px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg flex items-center space-x-2"
@@ -270,7 +275,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
       {/* メインコンテンツエリア */}
       <div className="flex-1">
         {/* タイトルセクション */}
-        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
+        {/* <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -284,7 +289,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               <p className="text-xs sm:text-sm text-black truncate">{customDescription || '写真・動画投稿プラットフォーム'}</p>
             </div>
           </div>
-        </div>
+        </div> */}
         
         {/* メインコンテンツ */}
         <main className="p-4 sm:p-6">

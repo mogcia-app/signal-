@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Heart, MessageCircle, Share, Eye, Save, UserPlus, Users, Target, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
+import { Heart, MessageCircle, Share, Eye, Save, UserPlus, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
 import { InputData } from './types';
 
 interface AnalyticsFormProps {
@@ -21,8 +21,8 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
   const [sentiment, setSentiment] = useState<'satisfied' | 'dissatisfied' | null>(null);
   const [memo, setMemo] = useState('');
   const [isEditingMemo, setIsEditingMemo] = useState(false);
-  const [showAudienceAnalysis, setShowAudienceAnalysis] = useState(false);
-  const [showReachSourceAnalysis, setShowReachSourceAnalysis] = useState(false);
+  // const [showAudienceAnalysis, setShowAudienceAnalysis] = useState(false);
+  // const [showReachSourceAnalysis, setShowReachSourceAnalysis] = useState(false);
   const handleInputChange = (field: keyof InputData, value: string) => {
     onChange({
       ...data,
@@ -30,44 +30,44 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
     });
   };
 
-  const handleGenderChange = (field: 'male' | 'female' | 'other', value: string) => {
-    onChange({
-      ...data,
-      audience: {
-        ...data.audience,
-        gender: {
-          ...data.audience.gender,
-          [field]: value
-        }
-      }
-    });
-  };
+  // const handleGenderChange = (field: 'male' | 'female' | 'other', value: string) => {
+  //   onChange({
+  //     ...data,
+  //     audience: {
+  //       ...data.audience,
+  //       gender: {
+  //         ...data.audience.gender,
+  //         [field]: value
+  //       }
+  //     }
+  //   });
+  // };
 
-  const handleAgeChange = (field: '13-17' | '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+', value: string) => {
-    onChange({
-      ...data,
-      audience: {
-        ...data.audience,
-        age: {
-          ...data.audience.age,
-          [field]: value
-        }
-      }
-    });
-  };
+  // const handleAgeChange = (field: '13-17' | '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+', value: string) => {
+  //   onChange({
+  //     ...data,
+  //     audience: {
+  //       ...data.audience,
+  //       age: {
+  //         ...data.audience.age,
+  //         [field]: value
+  //       }
+  //     }
+  //   });
+  // };
 
-  const handleSourcesChange = (field: 'posts' | 'profile' | 'explore' | 'search' | 'other', value: string) => {
-    onChange({
-      ...data,
-      reachSource: {
-        ...data.reachSource,
-        sources: {
-          ...data.reachSource.sources,
-          [field]: value
-        }
-      }
-    });
-  };
+  // const handleSourcesChange = (field: 'posts' | 'profile' | 'explore' | 'search' | 'other', value: string) => {
+  //   onChange({
+  //     ...data,
+  //     reachSource: {
+  //       ...data.reachSource,
+  //       sources: {
+  //         ...data.reachSource.sources,
+  //         [field]: value
+  //       }
+  //     }
+  //   });
+  // };
 
   const handleSentimentClick = (selectedSentiment: 'satisfied' | 'dissatisfied') => {
     setSentiment(selectedSentiment);
@@ -81,18 +81,18 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
     setIsEditingMemo(false);
   };
 
-  const handleFollowersChange = (field: 'followers' | 'nonFollowers', value: string) => {
-    onChange({
-      ...data,
-      reachSource: {
-        ...data.reachSource,
-        followers: {
-          ...data.reachSource.followers,
-          [field]: value
-        }
-      }
-    });
-  };
+  // const handleFollowersChange = (field: 'followers' | 'nonFollowers', value: string) => {
+  //   onChange({
+  //     ...data,
+  //     reachSource: {
+  //       ...data.reachSource,
+  //       followers: {
+  //         ...data.reachSource.followers,
+  //         [field]: value
+  //       }
+  //     }
+  //   });
+  // };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -346,340 +346,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
         </div>
       </div>
 
-        {/* オーディエンス分析 */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800">オーディエンス分析</h3>
-                <p className="text-xs text-black">フォロワーの性別・年齢分布を入力してください</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowAudienceAnalysis(!showAudienceAnalysis)}
-              className="text-black hover:text-gray-700 transition-colors"
-            >
-              {showAudienceAnalysis ? '−' : '+'}
-            </button>
-          </div>
 
-          {showAudienceAnalysis && (
-            <div>
-              {/* 性別分析 */}
-              <div className="mb-3">
-                <h4 className="text-xs font-semibold text-gray-700 mb-2">性別分析</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  👨 男性 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.gender.male}
-                  onChange={(e) => handleGenderChange('male', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  👩 女性 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.gender.female}
-                  onChange={(e) => handleGenderChange('female', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  🏳️‍🌈 その他 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.gender.other}
-                  onChange={(e) => handleGenderChange('other', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 年齢層分析 */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-700 mb-2">年齢層分析</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  13-17歳 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.age['13-17']}
-                  onChange={(e) => handleAgeChange('13-17', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  18-24歳 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.age['18-24']}
-                  onChange={(e) => handleAgeChange('18-24', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  25-34歳 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.age['25-34']}
-                  onChange={(e) => handleAgeChange('25-34', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  35-44歳 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.age['35-44']}
-                  onChange={(e) => handleAgeChange('35-44', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  45-54歳 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.age['45-54']}
-                  onChange={(e) => handleAgeChange('45-54', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  55-64歳 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.age['55-64']}
-                  onChange={(e) => handleAgeChange('55-64', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div className="sm:col-span-2 lg:col-span-1">
-                <label className="block text-xs font-medium text-black mb-2">
-                  65歳以上 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.audience.age['65+']}
-                  onChange={(e) => handleAgeChange('65+', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-        </div>
-
-        {/* 閲覧数ソース分析 */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
-                <Target className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800">閲覧数ソース分析</h3>
-                <p className="text-xs text-black">閲覧数の流入元とフォロワー構成を入力してください</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowReachSourceAnalysis(!showReachSourceAnalysis)}
-              className="text-black hover:text-gray-700 transition-colors"
-            >
-              {showReachSourceAnalysis ? '−' : '+'}
-            </button>
-          </div>
-
-          {showReachSourceAnalysis && (
-            <div>
-              {/* 閲覧数ソース */}
-              <div className="mb-3">
-                <h4 className="text-xs font-semibold text-gray-700 mb-2">閲覧数ソース</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  📱 投稿 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.reachSource.sources.posts}
-                  onChange={(e) => handleSourcesChange('posts', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  👤 プロフィール (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.reachSource.sources.profile}
-                  onChange={(e) => handleSourcesChange('profile', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  🔍 検索 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.reachSource.sources.search}
-                  onChange={(e) => handleSourcesChange('search', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  🌟 探索 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.reachSource.sources.explore}
-                  onChange={(e) => handleSourcesChange('explore', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div className="sm:col-span-2 lg:col-span-1">
-                <label className="block text-xs font-medium text-black mb-2">
-                  🔗 その他 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.reachSource.sources.other}
-                  onChange={(e) => handleSourcesChange('other', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* フォロワー構成 */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-700 mb-2">フォロワー構成</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  👥 フォロワー内 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.reachSource.followers.followers}
-                  onChange={(e) => handleFollowersChange('followers', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-black mb-2">
-                  🌐 フォロワー外 (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={data.reachSource.followers.nonFollowers}
-                  onChange={(e) => handleFollowersChange('nonFollowers', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-        </div>
 
         {/* 感情分析セクション */}
         <div className="p-4 border-t border-gray-200">
