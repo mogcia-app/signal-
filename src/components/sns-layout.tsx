@@ -17,6 +17,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
   const router = useRouter();
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLabExpanded, setIsLabExpanded] = useState(false);
 
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
@@ -139,18 +140,65 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               <span>📋</span>
               <span>運用計画</span>
             </Link>
-            <Link 
-              href="/instagram/lab"
-              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                pathname === '/instagram/lab' 
-                  ? 'bg-orange-100 text-orange-800 font-medium' 
-                  : 'text-black hover:bg-gray-100'
-              }`}
-            >
-              <span>🧪</span>
-              <span>投稿ラボ</span>
-            </Link>
-            <Link 
+            
+            {/* 投稿ラボ - 展開可能なサブメニュー */}
+            <div>
+              <button
+                onClick={() => setIsLabExpanded(!isLabExpanded)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg ${
+                  pathname.startsWith('/instagram/lab') 
+                    ? 'bg-orange-100 text-orange-800 font-medium' 
+                    : 'text-black hover:bg-gray-100'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <span>🧪</span>
+                  <span>投稿ラボ</span>
+                </div>
+                <span className={`transform transition-transform ${isLabExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              
+              {isLabExpanded && (
+                <div className="ml-4 mt-1 space-y-1">
+                  <Link 
+                    href="/instagram/lab/feed"
+                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                      pathname === '/instagram/lab/feed' 
+                        ? 'bg-orange-100 text-orange-800 font-medium' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>📸</span>
+                    <span>フィード</span>
+                  </Link>
+                  <Link 
+                    href="/instagram/lab/reel"
+                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                      pathname === '/instagram/lab/reel' 
+                        ? 'bg-orange-100 text-orange-800 font-medium' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>🎬</span>
+                    <span>リール</span>
+                  </Link>
+                  <Link 
+                    href="/instagram/lab/story"
+                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                      pathname === '/instagram/lab/story' 
+                        ? 'bg-orange-100 text-orange-800 font-medium' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>📱</span>
+                    <span>ストーリー</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+            {/* <Link 
               href="/instagram/analytics"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
                 pathname === '/instagram/analytics' 
@@ -160,7 +208,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
             >
               <span>📊</span>
               <span>投稿分析</span>
-            </Link>
+            </Link> */}
             <Link 
               href="/instagram/posts"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
