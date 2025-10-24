@@ -354,6 +354,14 @@ export default function NotificationsPage() {
         window.dispatchEvent(new CustomEvent('notificationRead', { 
           detail: { notificationId } 
         }));
+        
+        // 即座にサイドバーの未読数を更新（フォールバック）
+        setTimeout(() => {
+          console.log('🔄 フォールバック: サイドバー更新を強制実行');
+          window.dispatchEvent(new CustomEvent('notificationRead', { 
+            detail: { notificationId } 
+          }));
+        }, 100);
       } else {
         console.error('既読更新エラー:', result.error);
       }

@@ -80,10 +80,12 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
     };
     
     window.addEventListener('notificationRead', handleNotificationRead);
+    console.log('📡 サイドバー: notificationReadイベントリスナー登録完了');
     
     return () => {
       clearInterval(interval);
       window.removeEventListener('notificationRead', handleNotificationRead);
+      console.log('📡 サイドバー: notificationReadイベントリスナー削除');
     };
   }, [user?.uid, fetchUnreadCount]);
 
