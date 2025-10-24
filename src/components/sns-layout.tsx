@@ -219,9 +219,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               <span>🔔</span>
               <span>お知らせ</span>
               {unreadCount > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                  {unreadCount}
-                </span>
+                <div className="ml-auto w-3 h-3 bg-[#FF8A15] rounded-full"></div>
               )}
             </Link>
            {/*< Link 
