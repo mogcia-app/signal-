@@ -258,7 +258,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
 
         {/* 基本メトリクス */}
         <div className="p-4 border-t border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">基本分析</h3>
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">反応データ</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
@@ -298,6 +298,20 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               min="0"
               value={data.shares}
               onChange={(e) => handleInputChange('shares', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+              <Share className="w-4 h-4 mr-2 text-orange-500" />
+              リポスト数
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={data.reposts}
+              onChange={(e) => handleInputChange('reposts', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               placeholder="0"
             />

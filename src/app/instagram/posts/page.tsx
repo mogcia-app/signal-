@@ -250,12 +250,6 @@ export default function InstagramPostsPage() {
           }
           
           const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-          // デバッグログを追加
-          console.log('投稿タイプデバッグ:', {
-            postId: post.id,
-            postType: post.postType,
-            title: post.title
-          });
           
           return {
             day: dayNames[scheduledDate.getDay()],
@@ -325,7 +319,7 @@ export default function InstagramPostsPage() {
           return {
             id: post.id,
             title: post.title,
-            type: post.postType === 'reel' ? 'リール' : post.postType === 'feed' ? 'フィード' : 'ストーリー',
+            type: post.postType, // 英語のまま保持
             imageUrl: post.imageUrl || null,
             createdAt: createdAt.toLocaleDateString('ja-JP'),
             status: '分析未設定'

@@ -10,29 +10,8 @@ import { CurrentPlanCard } from '../../components/CurrentPlanCard';
 import PostPreview from './components/PostPreview';
 import AnalyticsForm from './components/AnalyticsForm';
 import AnalyticsStats from './components/AnalyticsStats';
+import { AnalyticsData } from './components/types';
 // import StatsCards from './components/StatsCards'; // クイックアクションに置き換え
-
-// 分析データの型定義
-interface AnalyticsData {
-  id: string;
-  userId: string;
-  postId?: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  reach: number;
-  saves: number;
-  followerIncrease: number;
-  engagementRate: number;
-  publishedAt: Date;
-  publishedTime: string;
-  createdAt: Date;
-  title?: string;
-  content?: string;
-  hashtags?: string[];
-  thumbnail?: string;
-  category?: 'reel' | 'feed' | 'story';
-}
 
 interface DashboardStats {
   followers: number;
@@ -61,6 +40,7 @@ function InstagramDashboardContent() {
     likes: '',
     comments: '',
     shares: '',
+    reposts: '',
     reach: '',
     saves: '',
     followerIncrease: '',
@@ -71,6 +51,32 @@ function InstagramDashboardContent() {
     hashtags: '',
     thumbnail: '',
     category: 'feed' as 'reel' | 'feed' | 'story',
+    // フィード専用フィールド
+    reachFollowerPercent: '',
+    interactionCount: '',
+    interactionFollowerPercent: '',
+    reachSourceProfile: '',
+    reachSourceFeed: '',
+    reachSourceExplore: '',
+    reachSourceSearch: '',
+    reachSourceOther: '',
+    reachedAccounts: '',
+    profileVisits: '',
+    profileFollows: '',
+    // リール専用フィールド
+    reelReachFollowerPercent: '',
+    reelInteractionCount: '',
+    reelInteractionFollowerPercent: '',
+    reelReachSourceProfile: '',
+    reelReachSourceReel: '',
+    reelReachSourceExplore: '',
+    reelReachSourceSearch: '',
+    reelReachSourceOther: '',
+    reelReachedAccounts: '',
+    reelSkipRate: '',
+    reelNormalSkipRate: '',
+    reelPlayTime: '',
+    reelAvgPlayTime: '',
     audience: {
       gender: {
         male: '',
@@ -240,6 +246,7 @@ function InstagramDashboardContent() {
         likes: '',
         comments: '',
         shares: '',
+        reposts: '',
         reach: '',
         saves: '',
         followerIncrease: '',
@@ -250,6 +257,32 @@ function InstagramDashboardContent() {
         hashtags: '',
         thumbnail: '',
         category: 'feed',
+        // フィード専用フィールド
+        reachFollowerPercent: '',
+        interactionCount: '',
+        interactionFollowerPercent: '',
+        reachSourceProfile: '',
+        reachSourceFeed: '',
+        reachSourceExplore: '',
+        reachSourceSearch: '',
+        reachSourceOther: '',
+        reachedAccounts: '',
+        profileVisits: '',
+        profileFollows: '',
+        // リール専用フィールド
+        reelReachFollowerPercent: '',
+        reelInteractionCount: '',
+        reelInteractionFollowerPercent: '',
+        reelReachSourceProfile: '',
+        reelReachSourceReel: '',
+        reelReachSourceExplore: '',
+        reelReachSourceSearch: '',
+        reelReachSourceOther: '',
+        reelReachedAccounts: '',
+        reelSkipRate: '',
+        reelNormalSkipRate: '',
+        reelPlayTime: '',
+        reelAvgPlayTime: '',
         audience: {
           gender: {
             male: '',

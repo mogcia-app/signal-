@@ -39,9 +39,6 @@ const PostStats: React.FC<PostStatsProps> = ({
             <span className="text-2xl mr-2">📅</span>
             今週の投稿予定
           </h2>
-          <a href="/instagram/lab" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
-            投稿管理 →
-          </a>
         </div>
         <div className="p-6 space-y-3">
           {scheduledPosts.length === 0 ? (
@@ -92,9 +89,6 @@ const PostStats: React.FC<PostStatsProps> = ({
             <span className="text-2xl mr-2">📊</span>
             分析待ちの投稿
           </h2>
-          <a href="/instagram/analytics" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
-            分析する →
-          </a>
         </div>
         <div className="p-6 space-y-3">
           {unanalyzedPosts.length === 0 ? (
@@ -131,7 +125,7 @@ const PostStats: React.FC<PostStatsProps> = ({
                         'bg-pink-100 text-pink-800'
                       }`}>
                         {post.type === 'reel' ? '🎬' : post.type === 'feed' ? '📸' : '📱'}
-                        {post.type}
+                        {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
                       </span>
                       <span className="inline-flex items-center px-2 py-1  text-xs font-medium bg-orange-100 text-orange-800">
                         ⏳ 分析未設定
@@ -146,12 +140,14 @@ const PostStats: React.FC<PostStatsProps> = ({
                   </div>
                 </div>
                 <div className="ml-3">
-                  <a 
-                    href={`/instagram/analytics?postId=${post.id}`}
-                    className="inline-flex items-center px-3 py-1.5 bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 transition-colors"
-                  >
-                    分析する
-                  </a>
+                  {post.type !== 'story' ? (
+                    <a 
+                      href={`${post.type === 'feed' ? '/analytics/feed' : '/instagram/analytics/reel'}?postId=${post.id}`}
+                      className="inline-flex items-center px-3 py-1.5 bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 transition-colors"
+                    >
+                      分析する
+                    </a>
+                  ) : null}
                 </div>
               </div>
             ))

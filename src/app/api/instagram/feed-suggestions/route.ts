@@ -109,3 +109,5 @@ async function generateSuggestionsWithAI(prompt: string) {
 
   return mockSuggestions;
 }
+
+

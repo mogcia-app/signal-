@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AuthGuard } from '../../../../components/auth-guard';
-import { useAuth } from '../../../../contexts/auth-context';
-import { usePlanData } from '../../../../hooks/usePlanData';
-import { CurrentPlanCard } from '../../../../components/CurrentPlanCard';
-import ReelAnalyticsForm from '../../components/ReelAnalyticsForm';
-import ReelAnalyticsStats from '../../components/ReelAnalyticsStats';
-import SNSLayout from '../../../../components/sns-layout';
+import { AuthGuard } from '../../../components/auth-guard';
+import { useAuth } from '../../../contexts/auth-context';
+import { usePlanData } from '../../../hooks/usePlanData';
+import { CurrentPlanCard } from '../../../components/CurrentPlanCard';
+import FeedAnalyticsForm from '../../instagram/components/FeedAnalyticsForm';
+import FeedAnalyticsStats from '../../instagram/components/FeedAnalyticsStats';
+import SNSLayout from '../../../components/sns-layout';
 
 // オーディエンス分析データの型定義
 interface AudienceData {
@@ -97,7 +97,7 @@ interface AnalyticsData {
 }
 
 
-function AnalyticsReelContent() {
+function AnalyticsFeedContent() {
   const { user } = useAuth();
   const { planData } = usePlanData('instagram');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
@@ -117,7 +117,7 @@ function AnalyticsReelContent() {
     if (!user?.uid) return;
     
     try {
-      const { auth } = await import('../../../../lib/firebase');
+      const { auth } = await import('../../../lib/firebase');
       const token = await auth.currentUser?.getIdToken();
       
       const response = await fetch(`/api/posts?userId=${user.uid}`, {
@@ -140,7 +140,7 @@ function AnalyticsReelContent() {
             title: post.title || '',
             content: post.content || '',
             hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
-            postType: post.postType || 'reel'
+            postType: post.postType || 'feed'
           });
         }
       }
@@ -174,7 +174,7 @@ function AnalyticsReelContent() {
     content: '',
     hashtags: '',
     thumbnail: '',
-    category: 'reel' as 'reel' | 'feed' | 'story',
+    category: 'feed' as 'reel' | 'feed' | 'story',
     // フィード専用フィールド
     reachFollowerPercent: '',
     interactionCount: '',
@@ -247,7 +247,7 @@ function AnalyticsReelContent() {
       console.log('Fetching analytics via simple API for user:', user.uid);
       
       // Firebase認証トークンを取得
-      const { auth } = await import('../../../../lib/firebase');
+      const { auth } = await import('../../../lib/firebase');
       const token = await auth.currentUser?.getIdToken();
       
       const response = await fetch(`/api/analytics/simple?userId=${user.uid}`, {
@@ -333,7 +333,7 @@ function AnalyticsReelContent() {
           content: item.content || '',
           hashtags: item.hashtags || [],
           thumbnail: item.thumbnail || '',
-          category: item.category || 'reel',
+          category: item.category || 'feed',
           // フィード専用フィールド
           reachFollowerPercent: item.reachFollowerPercent || 0,
           interactionCount: item.interactionCount || 0,
@@ -408,7 +408,7 @@ function AnalyticsReelContent() {
       console.log('Saving analytics data via simple API');
       
       // Firebase認証トークンを取得
-      const { auth } = await import('../../../../lib/firebase');
+      const { auth } = await import('../../../lib/firebase');
       const token = await auth.currentUser?.getIdToken();
       
       const response = await fetch('/api/analytics/simple', {
@@ -447,20 +447,6 @@ function AnalyticsReelContent() {
           reachedAccounts: parseInt(inputData.reachedAccounts) || 0,
           profileVisits: parseInt(inputData.profileVisits) || 0,
           profileFollows: parseInt(inputData.profileFollows) || 0,
-          // リール専用フィールド
-          reelReachFollowerPercent: parseFloat(inputData.reelReachFollowerPercent) || 0,
-          reelInteractionCount: parseInt(inputData.reelInteractionCount) || 0,
-          reelInteractionFollowerPercent: parseFloat(inputData.reelInteractionFollowerPercent) || 0,
-          reelReachSourceProfile: parseInt(inputData.reelReachSourceProfile) || 0,
-          reelReachSourceReel: parseInt(inputData.reelReachSourceReel) || 0,
-          reelReachSourceExplore: parseInt(inputData.reelReachSourceExplore) || 0,
-          reelReachSourceSearch: parseInt(inputData.reelReachSourceSearch) || 0,
-          reelReachSourceOther: parseInt(inputData.reelReachSourceOther) || 0,
-          reelReachedAccounts: parseInt(inputData.reelReachedAccounts) || 0,
-          reelSkipRate: parseFloat(inputData.reelSkipRate) || 0,
-          reelNormalSkipRate: parseFloat(inputData.reelNormalSkipRate) || 0,
-          reelPlayTime: parseInt(inputData.reelPlayTime) || 0,
-          reelAvgPlayTime: parseFloat(inputData.reelAvgPlayTime) || 0,
           audience: {
             gender: {
               male: parseFloat(inputData.audience.gender.male) || 0,
@@ -523,7 +509,7 @@ function AnalyticsReelContent() {
         content: '',
         hashtags: '',
         thumbnail: '',
-        category: 'reel',
+        category: 'feed',
         // フィード専用フィールド
         reachFollowerPercent: '',
         interactionCount: '',
@@ -598,15 +584,15 @@ function AnalyticsReelContent() {
 
   return (
     <SNSLayout 
-      customTitle="リール分析" 
-      customDescription="Instagramリール投稿の分析データを入力・管理します"
+      customTitle="フィード分析" 
+      customDescription="Instagram投稿の分析データを入力・管理します"
     >
       <div className="p-6">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* 左カラム: 分析データ入力フォーム */}
           <div className="space-y-6">
             {/* 統合された分析データ入力フォーム */}
-            <ReelAnalyticsForm
+            <FeedAnalyticsForm
               data={inputData}
               onChange={setInputData}
               onSave={handleSaveAnalytics}
@@ -625,7 +611,7 @@ function AnalyticsReelContent() {
             />
 
             {/* 統計表示コンポーネント */}
-            <ReelAnalyticsStats
+            <FeedAnalyticsStats
               analyticsData={analyticsData}
               isLoading={isLoading}
             />
@@ -636,10 +622,10 @@ function AnalyticsReelContent() {
   );
 }
 
-export default function AnalyticsReelPage() {
+export default function AnalyticsFeedPage() {
   return (
     <AuthGuard>
-      <AnalyticsReelContent />
+      <AnalyticsFeedContent />
     </AuthGuard>
   );
 }

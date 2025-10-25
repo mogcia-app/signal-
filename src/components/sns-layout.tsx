@@ -205,7 +205,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               <button
                 onClick={() => setIsAnalyticsExpanded(!isAnalyticsExpanded)}
                 className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg ${
-                  pathname.startsWith('/instagram/analytics') 
+                  pathname.startsWith('/analytics') 
                     ? 'bg-orange-100 text-orange-800 font-medium' 
                     : 'text-black hover:bg-gray-100'
                 }`}
@@ -222,9 +222,9 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               {isAnalyticsExpanded && (
                 <div className="ml-4 mt-1 space-y-1">
                   <Link 
-                    href="/instagram/analytics/feed"
+                    href="/analytics/feed"
                     className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                      pathname === '/instagram/analytics/feed' 
+                      pathname === '/analytics/feed' 
                         ? 'bg-orange-100 text-orange-800 font-medium' 
                         : 'text-gray-600 hover:bg-gray-50'
                     }`}
@@ -360,7 +360,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
       {/* メインコンテンツエリア */}
       <div className="flex-1">
         {/* タイトルセクション */}
-        {/* <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -368,13 +368,13 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               </svg>
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-xl font-semibold text-black truncate">
+              <h1 className="text-sm sm:text-base font-semibold text-black truncate">
                 {customTitle || 'Instagram Dashboard'}
               </h1>
-              <p className="text-xs sm:text-sm text-black truncate">{customDescription || '写真・動画投稿プラットフォーム'}</p>
+              <p className="text-xs text-black truncate">{customDescription || '写真・動画投稿プラットフォーム'}</p>
             </div>
           </div>
-        </div> */}
+        </div>
         
         {/* メインコンテンツ */}
         <main className="p-4 sm:p-6">

@@ -39,6 +39,7 @@ export interface AnalyticsData {
   likes: number;
   comments: number;
   shares: number;
+  reposts: number;
   reach: number;
   saves: number;
   followerIncrease: number;
@@ -53,6 +54,32 @@ export interface AnalyticsData {
   audience?: AudienceData;
   reachSource?: ReachSourceData;
   createdAt: Date;
+  // フィード専用フィールド
+  reachFollowerPercent?: number;
+  interactionCount?: number;
+  interactionFollowerPercent?: number;
+  reachSourceProfile?: number;
+  reachSourceFeed?: number;
+  reachSourceExplore?: number;
+  reachSourceSearch?: number;
+  reachSourceOther?: number;
+  reachedAccounts?: number;
+  profileVisits?: number;
+  profileFollows?: number;
+  // リール専用フィールド
+  reelReachFollowerPercent?: number;
+  reelInteractionCount?: number;
+  reelInteractionFollowerPercent?: number;
+  reelReachSourceProfile?: number;
+  reelReachSourceReel?: number;
+  reelReachSourceExplore?: number;
+  reelReachSourceSearch?: number;
+  reelReachSourceOther?: number;
+  reelReachedAccounts?: number;
+  reelSkipRate?: number;
+  reelNormalSkipRate?: number;
+  reelPlayTime?: number;
+  reelAvgPlayTime?: number;
 }
 
 // 投稿データの型定義
@@ -82,6 +109,7 @@ export interface InputData {
   likes: string;
   comments: string;
   shares: string;
+  reposts: string;
   reach: string;
   saves: string;
   followerIncrease: string;
@@ -92,6 +120,32 @@ export interface InputData {
   hashtags: string;
   thumbnail: string;
   category: 'reel' | 'feed' | 'story';
+  // フィード専用フィールド
+  reachFollowerPercent: string; // 閲覧数とフォロワー%
+  interactionCount: string; // インタラクション数
+  interactionFollowerPercent: string; // インタラクション数とフォロワー%
+  reachSourceProfile: string; // プロフィール
+  reachSourceFeed: string; // フィード
+  reachSourceExplore: string; // 発見
+  reachSourceSearch: string; // 検索
+  reachSourceOther: string; // その他
+  reachedAccounts: string; // リーチしたアカウント
+  profileVisits: string; // プロフィールアクセス数
+  profileFollows: string; // フォロー数
+  // リール専用フィールド
+  reelReachFollowerPercent: string; // 閲覧数・フォロワー%
+  reelInteractionCount: string; // インタラクション数
+  reelInteractionFollowerPercent: string; // インタラクション数・フォロワー%
+  reelReachSourceProfile: string; // プロフィール
+  reelReachSourceReel: string; // リール
+  reelReachSourceExplore: string; // 発見
+  reelReachSourceSearch: string; // 検索
+  reelReachSourceOther: string; // その他
+  reelReachedAccounts: string; // リーチしたアカウント
+  reelSkipRate: string; // スキップ率
+  reelNormalSkipRate: string; // 通常のスキップ率
+  reelPlayTime: string; // 再生時間
+  reelAvgPlayTime: string; // 平均再生時間
   audience: {
     gender: {
       male: string;

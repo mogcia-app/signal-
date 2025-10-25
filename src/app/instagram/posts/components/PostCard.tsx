@@ -201,12 +201,12 @@ const PostCard: React.FC<PostCardProps> = ({
             <span className={`px-2 py-1  text-xs font-medium ${getStatusColor(post.status)}`}>
               {getStatusLabel(post.status)}
             </span>
-            {hasAnalytics && (
+            {hasAnalytics && post.postType !== 'story' && (
               <span className="px-2 py-1 text-xs  bg-green-100 text-green-800 font-medium">
                 📊 分析済み
               </span>
             )}
-            {hasAnalytics && postAnalytics?.sentiment && (
+            {hasAnalytics && postAnalytics?.sentiment && post.postType !== 'story' && (
               (() => {
                 const sentimentDisplay = getSentimentDisplay(postAnalytics.sentiment);
                 return sentimentDisplay ? (
@@ -221,17 +221,33 @@ const PostCard: React.FC<PostCardProps> = ({
         <div className="flex items-center space-x-4 text-sm text-black">
           <span className="flex items-center">
             <Calendar size={14} className="mr-1" />
-            {post.scheduledDate ? 
-              (post.scheduledDate instanceof Date ? 
-                post.scheduledDate.toLocaleDateString('ja-JP') : 
-                (post.scheduledDate && typeof post.scheduledDate === 'object' && 'toDate' in post.scheduledDate) ?
-                  post.scheduledDate.toDate().toLocaleDateString('ja-JP') :
-                  String(post.scheduledDate)
-              ) : '日付未設定'}
+            {(() => {
+              try {
+                if (!post.scheduledDate) return '記録なし';
+                
+                let date: Date;
+                if (post.scheduledDate instanceof Date) {
+                  date = post.scheduledDate;
+                } else if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'toDate' in post.scheduledDate) {
+                  date = post.scheduledDate.toDate();
+                } else {
+                  date = new Date(post.scheduledDate);
+                }
+                
+                // Invalid Date チェック
+                if (isNaN(date.getTime())) {
+                  return '記録なし';
+                }
+                
+                return date.toLocaleDateString('ja-JP');
+              } catch (error) {
+                return '記録なし';
+              }
+            })()}
           </span>
           <span className="flex items-center">
             <Clock size={14} className="mr-1" />
-            {post.scheduledTime || '時間未設定'}
+            {post.scheduledTime || '記録なし'}
           </span>
         </div>
       </div>
@@ -313,8 +329,8 @@ const PostCard: React.FC<PostCardProps> = ({
           </div>
         )}
 
-        {/* 分析データ（分析済みの場合のみ） */}
-        {hasAnalytics && postAnalytics && (
+        {/* 分析データ（分析済みの場合のみ、ストーリーは除く） */}
+        {hasAnalytics && postAnalytics && post.postType !== 'story' && (
           <div className="mb-3">
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
@@ -365,13 +381,16 @@ const PostCard: React.FC<PostCardProps> = ({
               >
                 <Edit size={14} />
               </a>
-              <a
-                href={`/instagram/analytics?postId=${post.id}`}
-                className="p-2 text-black hover:text-[#ff8a15] hover:bg-orange-50  transition-colors"
-                title="分析ページで投稿データを入力"
-              >
-                📊
-              </a>
+      {/* 分析ボタン（ストーリー以外） */}
+      {post.postType !== 'story' && (
+        <a
+          href={`${post.postType === 'feed' ? '/analytics/feed' : '/instagram/analytics/reel'}?postId=${post.id}`}
+          className="p-2 text-black hover:text-[#ff8a15] hover:bg-orange-50  transition-colors"
+          title={`${post.postType === 'feed' ? 'フィード' : 'リール'}分析ページで投稿データを入力`}
+        >
+          📊
+        </a>
+      )}
               <button
                 onClick={() => onDeletePost(post.id)}
                 className="p-2 text-black hover:text-red-600 hover:bg-red-50  transition-colors"
