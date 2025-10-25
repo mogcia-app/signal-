@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { adminDb } from '../../../../lib/firebase-admin';
 
 // 特定の投稿取得
 export async function GET(
@@ -10,10 +9,14 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const postId = resolvedParams.id;
-    const docRef = doc(db, 'posts', postId);
-    const docSnap = await getDoc(docRef);
+    
+    console.log('=== POST GET REQUEST ===');
+    console.log('Post ID:', postId);
+    
+    const docRef = adminDb.collection('posts').doc(postId);
+    const docSnap = await docRef.get();
 
-    if (!docSnap.exists()) {
+    if (!docSnap.exists) {
       return NextResponse.json(
         { error: '投稿が見つかりません' },
         { status: 404 }
@@ -22,13 +25,17 @@ export async function GET(
 
     const postData = {
       id: docSnap.id,
-      ...docSnap.data()
+      ...docSnap.data(),
+      createdAt: docSnap.data()?.createdAt?.toDate?.() || docSnap.data()?.createdAt,
+      updatedAt: docSnap.data()?.updatedAt?.toDate?.() || docSnap.data()?.updatedAt
     };
 
+    console.log('Post retrieved successfully:', postId);
     return NextResponse.json({ post: postData });
 
   } catch (error) {
-    console.error('投稿取得エラー:', error);
+    console.error('=== POST GET ERROR ===');
+    console.error('Error details:', error);
     return NextResponse.json(
       { error: '投稿の取得に失敗しました' },
       { status: 500 }
@@ -47,6 +54,10 @@ export async function PUT(
     const body = await request.json();
     const { title, content, hashtags, postType, scheduledDate, scheduledTime, status, imageUrl, imageData, analytics } = body;
 
+    console.log('=== POST UPDATE REQUEST ===');
+    console.log('Post ID:', postId);
+    console.log('Update data:', { title, content, hashtags, postType, status });
+
     const updateData: Record<string, unknown> = {
       updatedAt: new Date()
     };
@@ -63,22 +74,18 @@ export async function PUT(
     if (imageData !== undefined) updateData.imageData = imageData;
     if (analytics !== undefined) updateData.analytics = analytics;
 
-    const docRef = doc(db, 'posts', postId);
-    await updateDoc(docRef, updateData);
+    const docRef = adminDb.collection('posts').doc(postId);
+    await docRef.update(updateData);
 
-    // デバッグ用ログ
-    console.log('Post updated with analytics:', {
-      id: postId,
-      analytics: updateData.analytics
-    });
-
+    console.log('Post updated successfully:', postId);
     return NextResponse.json({
       message: '投稿が更新されました',
       id: postId
     });
 
   } catch (error) {
-    console.error('投稿更新エラー:', error);
+    console.error('=== POST UPDATE ERROR ===');
+    console.error('Error details:', error);
     return NextResponse.json(
       { error: '投稿の更新に失敗しました' },
       { status: 500 }
@@ -94,18 +101,43 @@ export async function DELETE(
   try {
     const resolvedParams = await params;
     const postId = resolvedParams.id;
-    const docRef = doc(db, 'posts', postId);
-    await deleteDoc(docRef);
-
+    
+    console.log('=== POST DELETE REQUEST ===');
+    console.log('Post ID:', postId);
+    
+    // 投稿の存在確認
+    const docRef = adminDb.collection('posts').doc(postId);
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) {
+      console.log('Post not found:', postId);
+      return NextResponse.json(
+        { error: '投稿が見つかりません' },
+        { status: 404 }
+      );
+    }
+    
+    // 投稿を削除
+    await docRef.delete();
+    
+    console.log('Post deleted successfully:', postId);
     return NextResponse.json({
+      success: true,
       message: '投稿が削除されました',
       id: postId
     });
 
   } catch (error) {
-    console.error('投稿削除エラー:', error);
+    console.error('=== POST DELETE ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
     return NextResponse.json(
-      { error: '投稿の削除に失敗しました' },
+      { 
+        success: false,
+        error: '投稿の削除に失敗しました',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
