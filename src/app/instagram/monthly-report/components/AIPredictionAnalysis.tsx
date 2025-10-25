@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Brain, TrendingUp, Loader2, Sparkles } from 'lucide-react';
+import { Brain, Loader2, Sparkles } from 'lucide-react';
 import { useAuth } from '../../../../contexts/auth-context';
 
 interface AIPredictionAnalysisProps {
@@ -121,31 +121,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
     setIsExpanded(false);
   };
 
-  // 学習段階に応じた表示最適化
-  const getOptimizedContent = () => {
-    if (!analysisResult) return null;
-
-    const { masterContext } = analysisResult;
-    
-    // 最適化された学習段階では簡潔な表示
-    if (masterContext?.isOptimized) {
-      return {
-        showDetailedInsights: false,
-        showDetailedRecommendations: false,
-        summaryLength: 'short'
-      };
-    }
-    
-    // 初期段階では詳細な表示
-    return {
-      showDetailedInsights: true,
-      showDetailedRecommendations: true,
-      summaryLength: 'full'
-    };
-  };
-
-  const optimizedContent = getOptimizedContent();
-
   return (
     <div className="mt-6 h-full">
       {/* AI予測分析 - 開閉式 */}
@@ -238,64 +213,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   <div className="text-base text-orange-800 whitespace-pre-wrap leading-relaxed">
                     {typeof monthlyReview?.message === 'string' ? monthlyReview.message : 
                      analysisResult.summary || 'まとめを生成中...'}
-                  </div>
-                </div>
-
-                {/* AI予測分析結果 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* フォロワー増加予測 */}
-                  <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
-                    <div className="flex items-center mb-4">
-                      <div className="w-6 h-6 text-blue-600 mr-2">👥</div>
-                      <h3 className="text-lg font-semibold text-blue-900">フォロワー増加予測</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-base text-black">来週の予測</span>
-                        <span className="text-2xl font-bold text-green-600">
-                          +{analysisResult.predictions.followerGrowth.weekly}人
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-base text-black">来月の予測</span>
-                        <span className="text-2xl font-bold text-green-600">
-                          +{analysisResult.predictions.followerGrowth.monthly}人
-                        </span>
-                      </div>
-                      <div className="text-xs text-black mt-4">
-                        {analysisResult.masterContext?.isOptimized ? 
-                          'AIによる予測' :
-                          '現在の投稿ペースを基に予測'
-                        }
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* AI最適化提案 */}
-                  <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-none border border-orange-200">
-                    <div className="flex items-center mb-3">
-                      <TrendingUp className="w-5 h-5 text-orange-600 mr-2" />
-                      <h3 className="font-semibold text-orange-900">AI最適化提案</h3>
-                    </div>
-                    <div className="space-y-2">
-                      {optimizedContent?.showDetailedRecommendations ? (
-                        analysisResult.recommendations.map((recommendation, index) => (
-                          <div key={index} className="text-sm text-orange-800">
-                            • {recommendation}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-orange-800">
-                          • {analysisResult.recommendations[0]}
-                        </div>
-                      )}
-                      <div className="text-xs text-black mt-2">
-                        {analysisResult.masterContext?.isOptimized ? 
-                          '学習済みパターンによる最適化提案' :
-                          'AI分析による改善提案'
-                        }
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
