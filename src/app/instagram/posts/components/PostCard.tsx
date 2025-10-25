@@ -365,15 +365,17 @@ const PostCard: React.FC<PostCardProps> = ({
       {/* アクションボタン */}
       <div className="px-4 pb-4">
         <div className="flex items-center justify-end space-x-2">
+          {/* 詳細表示ボタン（すべてのカードに表示） */}
+          <button
+            onClick={() => alert('投稿詳細を表示')}
+            className="p-2 text-black hover:text-blue-600 hover:bg-blue-50  transition-colors"
+            title="詳細表示"
+          >
+            <Eye size={14} />
+          </button>
+          
           {!hasAnalytics && (
             <>
-              <button
-                onClick={() => alert('投稿詳細を表示')}
-                className="p-2 text-black hover:text-blue-600 hover:bg-blue-50  transition-colors"
-                title="詳細表示"
-              >
-                <Eye size={14} />
-              </button>
               <a
                 href={`/instagram/lab?edit=${post.id}`}
                 className="p-2 text-black hover:text-green-600 hover:bg-green-50  transition-colors"
@@ -381,16 +383,38 @@ const PostCard: React.FC<PostCardProps> = ({
               >
                 <Edit size={14} />
               </a>
-      {/* 分析ボタン（ストーリー以外） */}
-      {post.postType !== 'story' && (
-        <a
-          href={`${post.postType === 'feed' ? '/analytics/feed' : '/instagram/analytics/reel'}?postId=${post.id}`}
-          className="p-2 text-black hover:text-[#ff8a15] hover:bg-orange-50  transition-colors"
-          title={`${post.postType === 'feed' ? 'フィード' : 'リール'}分析ページで投稿データを入力`}
-        >
-          📊
-        </a>
-      )}
+              {/* 分析ボタン（ストーリー以外） */}
+              {post.postType !== 'story' && (
+                <a
+                  href={`${post.postType === 'feed' ? '/analytics/feed' : '/instagram/analytics/reel'}?postId=${post.id}`}
+                  className="p-2 text-black hover:text-[#ff8a15] hover:bg-orange-50  transition-colors"
+                  title={`${post.postType === 'feed' ? 'フィード' : 'リール'}分析ページで投稿データを入力`}
+                >
+                  📊
+                </a>
+              )}
+              <button
+                onClick={() => onDeletePost(post.id)}
+                className="p-2 text-black hover:text-red-600 hover:bg-red-50  transition-colors"
+                title="削除"
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
+          )}
+          
+          {hasAnalytics && (
+            <>
+              {/* 分析済みの場合のボタン */}
+              {post.postType !== 'story' && (
+                <a
+                  href={`${post.postType === 'feed' ? '/analytics/feed' : '/instagram/analytics/reel'}?postId=${post.id}`}
+                  className="p-2 text-black hover:text-[#ff8a15] hover:bg-orange-50  transition-colors"
+                  title={`${post.postType === 'feed' ? 'フィード' : 'リール'}分析ページで投稿データを確認・編集`}
+                >
+                  📊
+                </a>
+              )}
               <button
                 onClick={() => onDeletePost(post.id)}
                 className="p-2 text-black hover:text-red-600 hover:bg-red-50  transition-colors"

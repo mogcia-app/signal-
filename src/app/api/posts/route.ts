@@ -105,11 +105,18 @@ export async function POST(request: NextRequest) {
 // 投稿一覧取得
 export async function GET(request: NextRequest) {
   try {
+    console.log('=== POSTS API GET REQUEST ===');
+    console.log('Request URL:', request.url);
+    console.log('Request method:', request.method);
+    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const status = searchParams.get('status');
     const postType = searchParams.get('postType');
     const limit = parseInt(searchParams.get('limit') || '50');
+
+    console.log('Query parameters:', { userId, status, postType, limit });
 
     // 本番環境でFirebase設定がない場合は空の配列を返す
     if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
@@ -165,17 +172,25 @@ export async function GET(request: NextRequest) {
     console.log('Fetched posts from collection:', posts.length, 'records');
     console.log('Posts query result sample:', posts.slice(0, 2));
 
-    return NextResponse.json({
+    const response = {
       posts,
       total: snapshot.size
-    });
+    };
+    
+    console.log('Returning response:', response);
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error('投稿取得エラー:', error);
+    console.error('=== POSTS API ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     // エラーが発生した場合は空の配列を返す
-    return NextResponse.json({
+    const errorResponse = {
       posts: [],
-      total: 0
-    });
+      total: 0,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+    console.log('Returning error response:', errorResponse);
+    return NextResponse.json(errorResponse);
   }
 }

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import SNSLayout from '../../../components/sns-layout';
 import { postsApi } from '../../../lib/api';
 import { useAuth } from '../../../contexts/auth-context';
-import { Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon, Calendar, Clock } from 'lucide-react';
+import { Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon, Calendar, Clock, Trash2 } from 'lucide-react';
 
 // コンポーネントのインポート
 import PostCard from './components/PostCard';
@@ -118,6 +118,7 @@ export default function InstagramPostsPage() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'analyzed' | 'created'>('all');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   
   const [scheduledPosts, setScheduledPosts] = useState<Array<{
@@ -156,6 +157,7 @@ export default function InstagramPostsPage() {
       };
       
       const searchParams = new URLSearchParams(params);
+      console.log('Fetching posts from:', `/api/posts?${searchParams.toString()}`);
       const response = await fetch(`/api/posts?${searchParams.toString()}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -164,12 +166,37 @@ export default function InstagramPostsPage() {
         }
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
       
       const result = await response.json();
-      setPosts(result.posts || []);
+      const postsData = result.posts || [];
+      
+      // リアルタイムの日時取得でソート
+      const now = new Date();
+      const sortedPosts = postsData.sort((a: PostData, b: PostData) => {
+        // 作成済み（created）を最優先
+        if (a.status === 'created' && b.status !== 'created') return -1;
+        if (b.status === 'created' && a.status !== 'created') return 1;
+        
+        // 同じステータスの場合は、作成日時で降順（新しい順）
+        const aCreatedAt = a.createdAt instanceof Date ? a.createdAt : 
+                          typeof a.createdAt === 'string' ? new Date(a.createdAt) :
+                          a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+        const bCreatedAt = b.createdAt instanceof Date ? b.createdAt : 
+                          typeof b.createdAt === 'string' ? new Date(b.createdAt) :
+                          b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+        
+        return bCreatedAt.getTime() - aCreatedAt.getTime();
+      });
+      
+      setPosts(sortedPosts);
     } catch (error) {
       console.error('投稿取得エラー:', error);
     } finally {
@@ -340,6 +367,39 @@ export default function InstagramPostsPage() {
     }
   }, [user?.uid, fetchPosts, fetchAnalytics]);
 
+  // リアルタイムソート更新（30秒ごと）
+  useEffect(() => {
+    // 投稿がない場合は何もしない
+    if (posts.length === 0) return;
+    
+    const interval = setInterval(() => {
+      setPosts(prevPosts => {
+        // 投稿が存在しない場合はソートしない
+        if (prevPosts.length === 0) return prevPosts;
+        
+        return [...prevPosts].sort((a: PostData, b: PostData) => {
+          // 作成済み（created）を最優先
+          if (a.status === 'created' && b.status !== 'created') return -1;
+          if (b.status === 'created' && a.status !== 'created') return 1;
+          
+          // 同じステータスの場合は、作成日時で降順（新しい順）
+          const aCreatedAt = a.createdAt instanceof Date ? a.createdAt : 
+                            typeof a.createdAt === 'string' ? new Date(a.createdAt) :
+                            a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+          const bCreatedAt = b.createdAt instanceof Date ? b.createdAt : 
+                            typeof b.createdAt === 'string' ? new Date(b.createdAt) :
+                            b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+          
+          return bCreatedAt.getTime() - aCreatedAt.getTime();
+        });
+      });
+    }, 30000); // 30秒ごと
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, []); // 依存配列を空にして、マウント時のみ実行
+
   useEffect(() => {
     if (posts.length > 0) {
       processPostsData();
@@ -360,12 +420,98 @@ export default function InstagramPostsPage() {
     }
   };
 
+  // 手動入力データ削除
+  const handleDeleteManualAnalytics = async (analyticsId: string) => {
+    if (!confirm('この分析データを削除しますか？')) return;
+    
+    try {
+      const idToken = await user?.getIdToken();
+      
+      console.log('Deleting analytics with ID:', analyticsId);
+      console.log('User ID:', user?.uid);
+      
+      const response = await fetch(`/api/analytics/${analyticsId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': user?.uid || '',
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      console.log('Delete response status:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Delete result:', result);
+        setAnalyticsData(analyticsData.filter(a => a.id !== analyticsId));
+        alert('分析データを削除しました');
+      } else {
+        const errorText = await response.text();
+        console.error('Delete error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('削除エラー:', error);
+      alert(`削除に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
 
 
   // 手動入力の分析データ
   const manualAnalyticsData = analyticsData.filter(a => 
     a.postId === null || a.postId === '' || a.postId === undefined
   );
+
+  // タブの投稿数を効率的に計算
+  const tabCounts = React.useMemo(() => {
+    const allPostsCount = posts.length + manualAnalyticsData.length;
+    
+    const analyzedPostsCount = posts.filter(post => {
+      const hasAnalytics = analyticsData.some(a => a.postId === post.id) || !!post.analytics;
+      return hasAnalytics;
+    }).length + manualAnalyticsData.length; // 手動入力データは全て分析済み
+    
+    const createdOnlyCount = posts.filter(post => {
+      const hasAnalytics = analyticsData.some(a => a.postId === post.id) || !!post.analytics;
+      return !hasAnalytics;
+    }).length;
+    
+    return {
+      all: allPostsCount,
+      analyzed: analyzedPostsCount,
+      created: createdOnlyCount
+    };
+  }, [posts, analyticsData, manualAnalyticsData]);
+
+  // フィルタリングされた投稿を効率的に計算
+  const filteredPosts = React.useMemo(() => {
+    const filtered = posts.filter(post => {
+      if (activeTab === 'all') return true;
+      const hasAnalytics = analyticsData.some(a => a.postId === post.id) || !!post.analytics;
+      const shouldShow = activeTab === 'analyzed' ? hasAnalytics : !hasAnalytics;
+      
+      // デバッグログ
+      console.log('Post filtering:', {
+        postId: post.id,
+        title: post.title,
+        activeTab,
+        hasAnalytics,
+        shouldShow
+      });
+      
+      return shouldShow;
+    });
+    
+    console.log('Filtered posts result:', {
+      activeTab,
+      totalPosts: posts.length,
+      filteredCount: filtered.length,
+      manualAnalyticsCount: manualAnalyticsData.length
+    });
+    
+    return filtered;
+  }, [posts, analyticsData, activeTab, manualAnalyticsData]);
 
   return (
     <>
@@ -405,16 +551,65 @@ export default function InstagramPostsPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div>
+              {/* タブナビゲーション */}
+              <div className="mb-6">
+                <div className="bg-white border border-gray-200 p-1">
+                  <nav className="flex space-x-1">
+                    <button
+                      onClick={() => setActiveTab('all')}
+                      className={`py-2 px-4 font-medium text-sm transition-all duration-200 ${
+                        activeTab === 'all'
+                          ? 'bg-[#ff8a15] text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                      }`}
+                    >
+                      すべての投稿 ({tabCounts.all})
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('analyzed')}
+                      className={`py-2 px-4 font-medium text-sm transition-all duration-200 ${
+                        activeTab === 'analyzed'
+                          ? 'bg-[#ff8a15] text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                      }`}
+                    >
+                      分析済み ({tabCounts.analyzed})
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('created')}
+                      className={`py-2 px-4 font-medium text-sm transition-all duration-200 ${
+                        activeTab === 'created'
+                          ? 'bg-[#ff8a15] text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                      }`}
+                    >
+                      作成のみ ({tabCounts.created})
+                    </button>
+                  </nav>
+                </div>
+              </div>
+
               {/* 手動入力の分析データを表示 */}
-              {manualAnalyticsData.map((analytics, index) => (
-                <div key={`manual-${index}`} className="bg-white shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+              {manualAnalyticsData.length > 0 && (activeTab === 'all' || activeTab === 'analyzed') && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+                  {manualAnalyticsData.map((analytics, index) => (
+                    <div key={`manual-${index}`} className="bg-white shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                   {/* カードヘッダー */}
                   <div className="p-4 border-b border-gray-100">
                     <div className="mb-2">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="text-2xl">📊</span>
-                        <h3 className="text-lg font-semibold text-black truncate">{analytics.title || '手動入力データ'}</h3>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">📊</span>
+                          <h3 className="text-lg font-semibold text-black truncate">{analytics.title || '手動入力データ'}</h3>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteManualAnalytics(analytics.id)}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          title="削除"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className="px-2 py-1  text-xs font-medium bg-blue-100 text-blue-800">
@@ -538,65 +733,66 @@ export default function InstagramPostsPage() {
                     </div>
                   </div>
 
-                
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
 
-              {/* 通常の投稿一覧 */}
-              {posts.map((post) => {
-                const hasAnalytics = analyticsData.some(a => a.postId === post.id) || !!post.analytics;
-                const analyticsFromData = analyticsData.find(a => a.postId === post.id);
-                const postAnalytics = analyticsFromData ? {
-                  id: analyticsFromData.id,
-                  postId: analyticsFromData.postId,
-                  likes: analyticsFromData.likes,
-                  comments: analyticsFromData.comments,
-                  shares: analyticsFromData.shares,
-                  reach: analyticsFromData.reach,
-                  engagementRate: analyticsFromData.engagementRate,
-                  publishedAt: analyticsFromData.publishedAt,
-                  title: analyticsFromData.title,
-                  content: analyticsFromData.content,
-                  hashtags: analyticsFromData.hashtags,
-                  category: analyticsFromData.category,
-                  thumbnail: analyticsFromData.thumbnail,
-                  audience: analyticsFromData.audience,
-                  reachSource: analyticsFromData.reachSource
-                } : post.analytics ? {
-                  id: post.id,
-                  postId: post.id,
-                  likes: post.analytics.likes,
-                  comments: post.analytics.comments,
-                  shares: post.analytics.shares,
-                  reach: post.analytics.reach,
-                  engagementRate: post.analytics.engagementRate,
-                  publishedAt: post.analytics.publishedAt,
-                  title: post.title,
-                  content: post.content,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  hashtags: Array.isArray(post.hashtags) ? post.hashtags : (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []),
-                  category: undefined,
-                  thumbnail: undefined,
-                  audience: post.analytics.audience,
-                  reachSource: post.analytics.reachSource
-                } : null;
-                
-                return (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    hasAnalytics={hasAnalytics}
-                    postAnalytics={postAnalytics}
-                    onDeletePost={handleDeletePost}
-                  />
-                );
-              })}
+              {/* 投稿一覧 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {filteredPosts.map((post) => {
+                  const hasAnalytics = analyticsData.some(a => a.postId === post.id) || !!post.analytics;
+                  const analyticsFromData = analyticsData.find(a => a.postId === post.id);
+                  const postAnalytics = analyticsFromData ? {
+                    id: analyticsFromData.id,
+                    postId: analyticsFromData.postId,
+                    likes: analyticsFromData.likes,
+                    comments: analyticsFromData.comments,
+                    shares: analyticsFromData.shares,
+                    reach: analyticsFromData.reach,
+                    engagementRate: analyticsFromData.engagementRate,
+                    publishedAt: analyticsFromData.publishedAt,
+                    title: analyticsFromData.title,
+                    content: analyticsFromData.content,
+                    hashtags: analyticsFromData.hashtags,
+                    category: analyticsFromData.category,
+                    thumbnail: analyticsFromData.thumbnail,
+                    audience: analyticsFromData.audience,
+                    reachSource: analyticsFromData.reachSource
+                  } : post.analytics ? {
+                    id: post.id,
+                    postId: post.id,
+                    likes: post.analytics.likes,
+                    comments: post.analytics.comments,
+                    shares: post.analytics.shares,
+                    reach: post.analytics.reach,
+                    engagementRate: post.analytics.engagementRate,
+                    publishedAt: post.analytics.publishedAt,
+                    title: post.title,
+                    content: post.content,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    hashtags: Array.isArray(post.hashtags) ? post.hashtags : (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []),
+                    category: undefined,
+                    thumbnail: undefined,
+                    audience: post.analytics.audience,
+                    reachSource: post.analytics.reachSource
+                  } : null;
+                  
+                  return (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      hasAnalytics={hasAnalytics}
+                      postAnalytics={postAnalytics}
+                      onDeletePost={handleDeletePost}
+                    />
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
       </SNSLayout>
-
-
     </>
   );
 }

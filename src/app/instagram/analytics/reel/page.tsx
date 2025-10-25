@@ -160,6 +160,19 @@ function AnalyticsReelContent() {
     }
   }, [fetchPostData]);
 
+  // postDataが取得された時にinputDataを更新
+  useEffect(() => {
+    if (postData) {
+      setInputData(prev => ({
+        ...prev,
+        title: postData.title,
+        content: postData.content,
+        hashtags: Array.isArray(postData.hashtags) ? postData.hashtags.join(' ') : postData.hashtags || '',
+        category: postData.postType === 'feed' ? 'feed' : postData.postType === 'reel' ? 'reel' : 'story'
+      }));
+    }
+  }, [postData]);
+
   const [inputData, setInputData] = useState({
     likes: '',
     comments: '',

@@ -47,6 +47,77 @@ export default function StoryLabPage() {
   const { planData } = usePlanData('instagram');
   const { user } = useAuth();
   
+  // 投稿データを取得する関数
+  const fetchPostData = useCallback(async (postId: string) => {
+    if (!user?.uid) return;
+    
+    try {
+      const { auth } = await import('../../../../lib/firebase');
+      const token = await auth.currentUser?.getIdToken();
+      
+      const response = await fetch(`/api/posts?userId=${user.uid}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-user-id': user.uid,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (result.success && result.data) {
+        const post = result.data.find((p: { id: string }) => p.id === postId);
+        if (post) {
+          // 投稿データをフォームに設定
+          setPostTitle(post.title || '');
+          setPostContent(post.content || '');
+          
+          // ハッシュタグを配列に変換
+          const hashtags = Array.isArray(post.hashtags) ? post.hashtags : 
+                          (typeof post.hashtags === 'string' ? 
+                            post.hashtags.split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : 
+                            []);
+          setSelectedHashtags(hashtags);
+          
+          // スケジュール情報を設定
+          if (post.scheduledDate) {
+            const scheduledDate = post.scheduledDate instanceof Date ? post.scheduledDate : 
+                                typeof post.scheduledDate === 'string' ? new Date(post.scheduledDate) :
+                                post.scheduledDate?.toDate ? post.scheduledDate.toDate() : null;
+            if (scheduledDate) {
+              setScheduledDate(scheduledDate.toISOString().split('T')[0]);
+            }
+          }
+          
+          if (post.scheduledTime) {
+            setScheduledTime(post.scheduledTime);
+          }
+          
+          // 画像データを設定
+          if (post.imageData) {
+            setPostImage(post.imageData);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('投稿データ取得エラー:', error);
+    }
+  }, [user?.uid]);
+
+  // URLパラメータから投稿IDを取得して投稿データを読み込む
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const editId = urlParams.get('edit');
+      
+      if (editId && user?.uid) {
+        fetchPostData(editId);
+      }
+    }
+  }, [user?.uid, fetchPostData]);
+  
   // 分析データを取得
   const fetchAnalytics = useCallback(async () => {
     if (!user?.uid) return;
