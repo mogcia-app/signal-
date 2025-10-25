@@ -88,6 +88,19 @@ export default function PostDetailPage() {
     return timeString;
   };
 
+  // 投稿文からハッシュタグを抽出する関数
+  const extractHashtagsFromContent = (content: string): string[] => {
+    const hashtagRegex = /#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g;
+    const matches = content.match(hashtagRegex);
+    return matches ? matches.map(tag => tag.substring(1)) : []; // #を除去
+  };
+
+  // 投稿文からハッシュタグを除去する関数
+  const removeHashtagsFromContent = (content: string): string => {
+    const hashtagRegex = /#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g;
+    return content.replace(hashtagRegex, '').trim();
+  };
+
   if (loading) {
     return (
       <SNSLayout customTitle="投稿詳細" customDescription="投稿の詳細情報を表示">
@@ -136,7 +149,7 @@ export default function PostDetailPage() {
         </div>
 
         {/* 投稿カード */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white shadow-sm border border-orange-200 overflow-hidden">
           {/* サムネ画像 */}
           {post.imageUrl ? (
             <div className="aspect-video bg-gray-100 relative overflow-hidden">
@@ -165,17 +178,17 @@ export default function PostDetailPage() {
             {/* 投稿文全文 */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">投稿文</h3>
-              <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
-                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+              <div className="bg-orange-50 p-4 border-l-4 border-orange-500">
+                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{removeHashtagsFromContent(post.content)}</p>
               </div>
             </div>
 
             {/* 投稿タイプ */}
             <div className="mb-4">
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                post.postType === 'feed' ? 'bg-blue-100 text-blue-800' :
-                post.postType === 'reel' ? 'bg-purple-100 text-purple-800' :
-                'bg-pink-100 text-pink-800'
+              <span className={`inline-block px-3 py-1 text-sm font-medium ${
+                post.postType === 'feed' ? 'bg-orange-100 text-orange-800' :
+                post.postType === 'reel' ? 'bg-orange-200 text-orange-900' :
+                'bg-orange-300 text-orange-900'
               }`}>
                 {post.postType === 'feed' ? 'フィード' : 
                  post.postType === 'reel' ? 'リール' : 'ストーリー'}
@@ -183,33 +196,40 @@ export default function PostDetailPage() {
             </div>
 
             {/* ハッシュタグ */}
-            {post.hashtags && post.hashtags.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">ハッシュタグ</h3>
-                <div className="flex flex-wrap gap-2">
-                  {post.hashtags.map((tag, index) => (
-                    <span key={index} className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-100 transition-colors">
-                      #{tag}
-                    </span>
-                  ))}
+            {(() => {
+              // 投稿文から抽出したハッシュタグと、既存のhashtagsフィールドをマージして重複を除去
+              const contentHashtags = extractHashtagsFromContent(post.content);
+              const existingHashtags = post.hashtags || [];
+              const allHashtags = [...new Set([...contentHashtags, ...existingHashtags])];
+              
+              return allHashtags.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">ハッシュタグ</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {allHashtags.map((tag, index) => (
+                      <span key={index} className="inline-block px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100 transition-colors">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* スケジュール情報 */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">スケジュール情報</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-orange-50 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center text-gray-700">
-                    <Calendar size={18} className="mr-3 text-blue-500" />
+                    <Calendar size={18} className="mr-3 text-orange-500" />
                     <div>
                       <div className="text-sm text-gray-500">投稿予定日</div>
                       <div className="font-medium">{formatDate(post.scheduledDate)}</div>
                     </div>
                   </div>
                   <div className="flex items-center text-gray-700">
-                    <Clock size={18} className="mr-3 text-green-500" />
+                    <Clock size={18} className="mr-3 text-orange-600" />
                     <div>
                       <div className="text-sm text-gray-500">投稿予定時刻</div>
                       <div className="font-medium">{formatTime(post.scheduledTime)}</div>
@@ -223,39 +243,39 @@ export default function PostDetailPage() {
             {post.analytics && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">分析データ</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-orange-50 p-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {post.analytics.likes !== undefined && (
-                      <div className="text-center p-3 bg-white rounded-lg border">
-                        <Heart size={24} className="text-red-500 mx-auto mb-2" />
+                      <div className="text-center p-3 bg-white border border-orange-200">
+                        <Heart size={24} className="text-orange-500 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">いいね</div>
                         <div className="text-xl font-bold text-gray-900">{post.analytics.likes.toLocaleString()}</div>
                       </div>
                     )}
                     {post.analytics.comments !== undefined && (
-                      <div className="text-center p-3 bg-white rounded-lg border">
-                        <MessageCircle size={24} className="text-blue-500 mx-auto mb-2" />
+                      <div className="text-center p-3 bg-white border border-orange-200">
+                        <MessageCircle size={24} className="text-orange-600 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">コメント</div>
                         <div className="text-xl font-bold text-gray-900">{post.analytics.comments.toLocaleString()}</div>
                       </div>
                     )}
                     {post.analytics.shares !== undefined && (
-                      <div className="text-center p-3 bg-white rounded-lg border">
-                        <Share size={24} className="text-green-500 mx-auto mb-2" />
+                      <div className="text-center p-3 bg-white border border-orange-200">
+                        <Share size={24} className="text-orange-700 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">シェア</div>
                         <div className="text-xl font-bold text-gray-900">{post.analytics.shares.toLocaleString()}</div>
                       </div>
                     )}
                     {post.analytics.reach !== undefined && (
-                      <div className="text-center p-3 bg-white rounded-lg border">
-                        <EyeIcon size={24} className="text-purple-500 mx-auto mb-2" />
+                      <div className="text-center p-3 bg-white border border-orange-200">
+                        <EyeIcon size={24} className="text-orange-800 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">リーチ</div>
                         <div className="text-xl font-bold text-gray-900">{post.analytics.reach.toLocaleString()}</div>
                       </div>
                     )}
                     {post.analytics.engagementRate !== undefined && (
-                      <div className="text-center p-3 bg-white rounded-lg border">
-                        <div className="w-6 h-6 bg-orange-500 rounded-full mx-auto mb-2 flex items-center justify-center">
+                      <div className="text-center p-3 bg-white border border-orange-200">
+                        <div className="w-6 h-6 bg-orange-500 mx-auto mb-2 flex items-center justify-center">
                           <span className="text-white text-xs font-bold">%</span>
                         </div>
                         <div className="text-sm text-gray-600 mb-1">エンゲージメント率</div>
@@ -263,8 +283,8 @@ export default function PostDetailPage() {
                       </div>
                     )}
                     {post.analytics.publishedAt && (
-                      <div className="text-center p-3 bg-white rounded-lg border">
-                        <Calendar size={24} className="text-indigo-500 mx-auto mb-2" />
+                      <div className="text-center p-3 bg-white border border-orange-200">
+                        <Calendar size={24} className="text-orange-600 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">投稿日時</div>
                         <div className="text-sm font-bold text-gray-900">
                           {new Date(post.analytics.publishedAt).toLocaleDateString('ja-JP')}
@@ -283,9 +303,9 @@ export default function PostDetailPage() {
             )}
 
             {/* メタ情報 */}
-            <div className="border-t pt-6 mt-6">
+            <div className="border-t border-orange-200 pt-6 mt-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">メタ情報</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-orange-50 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">作成日:</span>
