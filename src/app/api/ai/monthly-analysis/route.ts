@@ -222,11 +222,13 @@ ${userProfile?.businessInfo ? `
 コメント: ${(changes.commentsChange ?? 0) >= 0 ? '+' : ''}${(changes.commentsChange ?? 0).toFixed(1)}%、
 リーチ: ${(changes.reachChange ?? 0) >= 0 ? '+' : ''}${(changes.reachChange ?? 0).toFixed(1)}%
 
-【回答形式】
-1. ${period === 'weekly' ? '今週' : '今月'}のまとめ（100文字）
-2. 次へのステップ3つ（具体的で実行可能な提案、各50文字）
-3. 詳細インサイト3つ（各50文字）
-4. フォロワー増加予測の根拠（何をしたら伸びるか具体的に80文字）`;
+【回答形式】（簡潔に、箇条書きで）
+1. ${period === 'weekly' ? '今週' : '今月'}のまとめ（最大100文字、要約）
+2. 次へのステップ3つ（各30文字以内）
+3. 詳細インサイト3つ（各30文字以内）
+4. フォロワー増加予測の根拠（何をしたら伸びるか、60文字以内）
+
+重要: 簡潔で実用的な内容のみ。詳細な説明は不要。`;
 
   // 学習段階に応じてプロンプトを最適化
   if (isOptimized && ragHitRate > 0.7) {
@@ -271,7 +273,7 @@ ${userProfile?.businessInfo ? `
         '夕方18-20時の投稿でエンゲージメント向上',
         'リール投稿を増やしてリーチ拡大'
       ],
-      summary: aiResponse.substring(0, 200) + '...'
+      summary: aiResponse.substring(0, 300)
     };
     
   } catch (error) {
