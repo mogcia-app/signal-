@@ -245,25 +245,54 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     setIsLoading(true);
 
     try {
+      // ブラウザ互換性チェック
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+      
+      console.log('Browser detection:', { isSafari, isMobile, userAgent: navigator.userAgent });
+
       // 実際のAI APIを呼び出し
       const idToken = user ? await user.getIdToken() : null;
+      
+      // タイムアウト設定（Safari/iOSでは長めに設定）
+      const timeoutMs = isSafari || isMobile ? 60000 : 30000;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           ...(idToken && { 'Authorization': `Bearer ${idToken}` })
         },
         body: JSON.stringify({
           message: inputMessage.trim(),
           context: contextData,
           userId: user?.uid,
-          pageType: 'instagram' // Instagramページからのチャット
-        })
+          pageType: 'instagram', // Instagramページからのチャット
+          browserInfo: {
+            isSafari,
+            isMobile,
+            userAgent: navigator.userAgent
+          }
+        }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error('Failed to get AI response');
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+
+      // レスポンスのContent-Typeをチェック
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response format');
       }
 
       const data = await response.json();
@@ -288,13 +317,27 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMessage: Message = {
+      
+      let errorMessage = '申し訳ございません。エラーが発生しました。しばらくしてから再度お試しください。';
+      
+      // エラーの種類に応じてメッセージを変更
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'リクエストがタイムアウトしました。もう一度お試しください。';
+        } else if (error.message.includes('API Error')) {
+          errorMessage = 'サーバーエラーが発生しました。しばらくしてから再度お試しください。';
+        } else if (error.message.includes('Invalid response format')) {
+          errorMessage = 'レスポンス形式エラーが発生しました。ブラウザを更新してからお試しください。';
+        }
+      }
+      
+      const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: '申し訳ございません。エラーが発生しました。しばらくしてから再度お試しください。',
+        content: errorMessage,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }

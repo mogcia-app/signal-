@@ -12,6 +12,11 @@ interface ChatRequest {
   context?: Record<string, unknown>;
   userId?: string;
   pageType?: string;
+  browserInfo?: {
+    isSafari: boolean;
+    isMobile: boolean;
+    userAgent: string;
+  };
 }
 
 interface InstagramData {
@@ -37,7 +42,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body: ChatRequest = await request.json();
-    const { message, userId, pageType } = body;
+    const { message, userId, pageType, browserInfo } = body;
+    
+    // ブラウザ情報をログ出力
+    if (browserInfo) {
+      console.log('Browser info:', browserInfo);
+    }
 
     if (!message?.trim()) {
       return NextResponse.json(
@@ -91,21 +101,43 @@ export async function POST(request: NextRequest) {
     // 使用回数を記録
     await recordUsage(currentUserId);
 
-    return NextResponse.json({
+    // Safari/iOSでの互換性を考慮したレスポンス
+    const response = {
       success: true,
       response: aiResponse,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      browserCompatible: true
+    };
+
+    return NextResponse.json(response, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
   } catch (error) {
     console.error('AI Chat API Error:', error);
-    return NextResponse.json(
-      { 
-        error: 'AI chat failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    
+    const errorResponse = {
+      success: false,
+      error: 'AI chat failed',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      browserCompatible: true
+    };
+
+    return NextResponse.json(errorResponse, {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
   }
 }
 
