@@ -11,7 +11,7 @@ interface PostData {
   id: string;
   userId: string;
   title: string;
-  description: string;
+  content: string;
   postType: 'feed' | 'reel' | 'story';
   scheduledDate: string;
   scheduledTime: string;
@@ -23,7 +23,9 @@ interface PostData {
     likes?: number;
     comments?: number;
     shares?: number;
-    views?: number;
+    reach?: number;
+    engagementRate?: number;
+    publishedAt?: Date;
   };
 }
 
@@ -164,7 +166,7 @@ export default function PostDetailPage() {
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">投稿文</h3>
               <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
-                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{post.description}</p>
+                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{post.content}</p>
               </div>
             </div>
 
@@ -222,7 +224,7 @@ export default function PostDetailPage() {
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">分析データ</h3>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {post.analytics.likes !== undefined && (
                       <div className="text-center p-3 bg-white rounded-lg border">
                         <Heart size={24} className="text-red-500 mx-auto mb-2" />
@@ -244,11 +246,35 @@ export default function PostDetailPage() {
                         <div className="text-xl font-bold text-gray-900">{post.analytics.shares.toLocaleString()}</div>
                       </div>
                     )}
-                    {post.analytics.views !== undefined && (
+                    {post.analytics.reach !== undefined && (
                       <div className="text-center p-3 bg-white rounded-lg border">
                         <EyeIcon size={24} className="text-purple-500 mx-auto mb-2" />
-                        <div className="text-sm text-gray-600 mb-1">表示回数</div>
-                        <div className="text-xl font-bold text-gray-900">{post.analytics.views.toLocaleString()}</div>
+                        <div className="text-sm text-gray-600 mb-1">リーチ</div>
+                        <div className="text-xl font-bold text-gray-900">{post.analytics.reach.toLocaleString()}</div>
+                      </div>
+                    )}
+                    {post.analytics.engagementRate !== undefined && (
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <div className="w-6 h-6 bg-orange-500 rounded-full mx-auto mb-2 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">%</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-1">エンゲージメント率</div>
+                        <div className="text-xl font-bold text-gray-900">{post.analytics.engagementRate.toFixed(1)}%</div>
+                      </div>
+                    )}
+                    {post.analytics.publishedAt && (
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <Calendar size={24} className="text-indigo-500 mx-auto mb-2" />
+                        <div className="text-sm text-gray-600 mb-1">投稿日時</div>
+                        <div className="text-sm font-bold text-gray-900">
+                          {new Date(post.analytics.publishedAt).toLocaleDateString('ja-JP')}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {new Date(post.analytics.publishedAt).toLocaleTimeString('ja-JP', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
