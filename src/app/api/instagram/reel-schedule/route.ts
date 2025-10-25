@@ -172,15 +172,15 @@ function buildBusinessContext(businessInfo: {
   }
   
   if (businessInfo.goals && businessInfo.goals.length > 0) {
-    context.push(`目標: ${businessInfo.goals.join(', ')}`);
+    context.push(`目標: ${Array.isArray(businessInfo.goals) ? businessInfo.goals.join(', ') : businessInfo.goals}`);
   }
   
   if (businessInfo.challenges && businessInfo.challenges.length > 0) {
-    context.push(`課題: ${businessInfo.challenges.join(', ')}`);
+    context.push(`課題: ${Array.isArray(businessInfo.challenges) ? businessInfo.challenges.join(', ') : businessInfo.challenges}`);
   }
   
   if (businessInfo.features && businessInfo.features.length > 0) {
-    context.push(`機能: ${businessInfo.features.join(', ')}`);
+    context.push(`機能: ${Array.isArray(businessInfo.features) ? businessInfo.features.join(', ') : businessInfo.features}`);
   }
   
   if (businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0) {

@@ -168,19 +168,19 @@ function buildBusinessContext(businessInfo: {
   }
   
   if (businessInfo.targetMarket && businessInfo.targetMarket.length > 0) {
-    context += `ターゲット市場: ${businessInfo.targetMarket.join(', ')}\n`;
+    context += `ターゲット市場: ${Array.isArray(businessInfo.targetMarket) ? businessInfo.targetMarket.join(', ') : businessInfo.targetMarket}\n`;
   }
   
   if (businessInfo.goals && businessInfo.goals.length > 0) {
-    context += `目標: ${businessInfo.goals.join(', ')}\n`;
+    context += `目標: ${Array.isArray(businessInfo.goals) ? businessInfo.goals.join(', ') : businessInfo.goals}\n`;
   }
   
   if (businessInfo.challenges && businessInfo.challenges.length > 0) {
-    context += `課題: ${businessInfo.challenges.join(', ')}\n`;
+    context += `課題: ${Array.isArray(businessInfo.challenges) ? businessInfo.challenges.join(', ') : businessInfo.challenges}\n`;
   }
   
   if (businessInfo.features && businessInfo.features.length > 0) {
-    context += `機能: ${businessInfo.features.join(', ')}\n`;
+    context += `機能: ${Array.isArray(businessInfo.features) ? businessInfo.features.join(', ') : businessInfo.features}\n`;
   }
   
   if (businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0) {
