@@ -136,9 +136,15 @@ export default function ReelLabPage() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get('edit');
+      const postId = urlParams.get('postId');
       
-      if (editId && user?.uid) {
-        fetchPostData(editId);
+      console.log('URL parameters:', { editId, postId });
+      
+      // editまたはpostIdパラメータがある場合に投稿データを取得
+      const targetId = editId || postId;
+      if (targetId && user?.uid) {
+        console.log('Loading post data for ID:', targetId);
+        fetchPostData(targetId);
       }
     }
   }, [user?.uid, fetchPostData]);

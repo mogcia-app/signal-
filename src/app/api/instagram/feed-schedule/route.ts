@@ -7,6 +7,12 @@ export async function POST(request: NextRequest) {
   try {
     console.log('=== FEED SCHEDULE API CALLED ===');
     
+    // iPad Chrome対応: User-Agentをチェック
+    const userAgent = request.headers.get('user-agent') || '';
+    const isIPadChrome = /iPad.*Chrome/i.test(userAgent);
+    console.log('User-Agent:', userAgent);
+    console.log('Is iPad Chrome:', isIPadChrome);
+    
     const body = await request.json();
     console.log('Request body:', { 
       monthlyPosts: body.monthlyPosts, 
@@ -37,8 +43,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // iPad Chrome対応: ビジネス情報を軽量化
+    let optimizedBusinessInfo = businessInfo;
+    if (isIPadChrome) {
+      console.log('🔄 Optimizing business info for iPad Chrome...');
+      optimizedBusinessInfo = {
+        industry: businessInfo.industry,
+        companySize: businessInfo.companySize,
+        businessType: businessInfo.businessType,
+        description: businessInfo.description?.substring(0, 200), // 200文字に制限
+        targetMarket: Array.isArray(businessInfo.targetMarket) ? 
+          businessInfo.targetMarket.slice(0, 3) : businessInfo.targetMarket, // 3つまで
+        goals: businessInfo.goals?.slice(0, 3), // 3つまで
+        snsAISettings: businessInfo.snsAISettings
+      };
+      console.log('Optimized business info size:', JSON.stringify(optimizedBusinessInfo).length, 'characters');
+    }
+
     // ビジネス情報からコンテキストを構築
-    const context = buildBusinessContext(businessInfo);
+    const context = buildBusinessContext(optimizedBusinessInfo);
     console.log('Business context built:', context.length, 'characters');
     
     // AIプロンプトを構築
@@ -48,12 +71,37 @@ export async function POST(request: NextRequest) {
     const scheduleResponse = await generateScheduleWithAI(prompt);
     console.log('Schedule generated:', scheduleResponse.length, 'days');
 
-    // iPad Safari対応: 明示的なContent-Typeとキャッシュ制御
-    return NextResponse.json({
+    // iPad Chrome対応: レスポンスサイズをチェック
+    const responseData = {
       success: true,
       schedule: scheduleResponse,
-      timestamp: new Date().toISOString()
-    }, {
+      timestamp: new Date().toISOString(),
+      isIPadOptimized: isIPadChrome
+    };
+    
+    const responseSize = JSON.stringify(responseData).length;
+    console.log('Response size:', responseSize, 'characters');
+    
+    if (isIPadChrome && responseSize > 50000) {
+      console.warn('⚠️ Large response detected for iPad Chrome, optimizing...');
+      // iPad Chrome用にスケジュールを簡略化
+      const optimizedSchedule = scheduleResponse.map((day: { day: string; dayName: string; posts: Array<{ title: string; description: string; emoji: string; category: string }> }) => ({
+        day: day.day,
+        dayName: day.dayName,
+        posts: day.posts.map((post: { title: string; description: string; emoji: string; category: string }) => ({
+          title: post.title,
+          description: post.description?.substring(0, 100), // 100文字に制限
+          emoji: post.emoji,
+          category: post.category
+        }))
+      }));
+      
+      responseData.schedule = optimizedSchedule;
+      console.log('Optimized response size:', JSON.stringify(responseData).length, 'characters');
+    }
+
+    // iPad Safari対応: 明示的なContent-Typeとキャッシュ制御
+    return NextResponse.json(responseData, {
       status: 200,
       headers: {
         'Content-Type': 'application/json; charset=utf-8',

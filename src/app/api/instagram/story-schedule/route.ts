@@ -5,7 +5,21 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== STORY SCHEDULE API CALLED ===');
+    
+    // iPad Chrome対応: User-Agentをチェック
+    const userAgent = request.headers.get('user-agent') || '';
+    const isIPadChrome = /iPad.*Chrome/i.test(userAgent);
+    console.log('User-Agent:', userAgent);
+    console.log('Is iPad Chrome:', isIPadChrome);
+    
     const body = await request.json();
+    console.log('Request body:', { 
+      monthlyPosts: body.monthlyPosts, 
+      dailyPosts: body.dailyPosts, 
+      hasBusinessInfo: !!body.businessInfo 
+    });
+    
     const { 
       monthlyPosts, 
       dailyPosts, 
@@ -13,25 +27,108 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!monthlyPosts || !dailyPosts || !businessInfo) {
-      return NextResponse.json({ error: '必要なパラメータが不足しています' }, { status: 400 });
+      console.error('Missing required parameters:', { monthlyPosts, dailyPosts, businessInfo });
+      return NextResponse.json({ 
+        success: false,
+        error: '必要なパラメータが不足しています',
+        details: { monthlyPosts, dailyPosts, hasBusinessInfo: !!businessInfo }
+      }, { 
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
+
+    // iPad Chrome対応: ビジネス情報を軽量化
+    let optimizedBusinessInfo = businessInfo;
+    if (isIPadChrome) {
+      console.log('🔄 Optimizing business info for iPad Chrome...');
+      optimizedBusinessInfo = {
+        industry: businessInfo.industry,
+        companySize: businessInfo.companySize,
+        businessType: businessInfo.businessType,
+        description: businessInfo.description?.substring(0, 200), // 200文字に制限
+        targetMarket: Array.isArray(businessInfo.targetMarket) ? 
+          businessInfo.targetMarket.slice(0, 3) : businessInfo.targetMarket, // 3つまで
+        goals: businessInfo.goals?.slice(0, 3), // 3つまで
+        snsAISettings: businessInfo.snsAISettings
+      };
+      console.log('Optimized business info size:', JSON.stringify(optimizedBusinessInfo).length, 'characters');
     }
 
     // ビジネス情報からコンテキストを構築
-    const context = buildBusinessContext(businessInfo);
+    const context = buildBusinessContext(optimizedBusinessInfo);
+    console.log('Business context built:', context.length, 'characters');
     
     // AIプロンプトを構築
     const prompt = buildSchedulePrompt(monthlyPosts, dailyPosts, context);
 
     // OpenAI APIを呼び出してスケジュールを生成
     const scheduleResponse = await generateScheduleWithAI(prompt);
+    console.log('Schedule generated:', scheduleResponse.length, 'days');
 
-    return NextResponse.json({
-      schedule: scheduleResponse
+    // iPad Chrome対応: レスポンスサイズをチェック
+    const responseData = {
+      success: true,
+      schedule: scheduleResponse,
+      timestamp: new Date().toISOString(),
+      isIPadOptimized: isIPadChrome
+    };
+    
+    const responseSize = JSON.stringify(responseData).length;
+    console.log('Response size:', responseSize, 'characters');
+    
+    if (isIPadChrome && responseSize > 50000) {
+      console.warn('⚠️ Large response detected for iPad Chrome, optimizing...');
+      // iPad Chrome用にスケジュールを簡略化
+      const optimizedSchedule = scheduleResponse.map((day: { day: string; dayName: string; posts: Array<{ title: string; description: string; emoji: string; category: string }> }) => ({
+        day: day.day,
+        dayName: day.dayName,
+        posts: day.posts.map((post: { title: string; description: string; emoji: string; category: string }) => ({
+          title: post.title,
+          description: post.description?.substring(0, 100), // 100文字に制限
+          emoji: post.emoji,
+          category: post.category
+        }))
+      }));
+      
+      responseData.schedule = optimizedSchedule;
+      console.log('Optimized response size:', JSON.stringify(responseData).length, 'characters');
+    }
+
+    return NextResponse.json(responseData, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
   } catch (error) {
-    console.error('スケジュール生成エラー:', error);
-    return NextResponse.json({ error: 'スケジュール生成に失敗しました' }, { status: 500 });
+    console.error('=== STORY SCHEDULE ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    return NextResponse.json({ 
+      success: false,
+      error: 'スケジュール生成に失敗しました',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
   }
 }
 

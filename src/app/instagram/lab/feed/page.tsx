@@ -125,16 +125,33 @@ export default function FeedLabPage() {
     }
   }, [user?.uid]);
 
-  // URLパラメータから投稿IDを取得して投稿データを読み込む
+  // URLパラメータの変更を監視
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const editId = urlParams.get('edit');
-      
-      if (editId && user?.uid) {
-        fetchPostData(editId);
+    const handleUrlChange = () => {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('edit');
+        const postId = urlParams.get('postId');
+        
+        console.log('URL changed, parameters:', { editId, postId });
+        
+        const targetId = editId || postId;
+        if (targetId && user?.uid) {
+          console.log('URL change detected, loading post data for ID:', targetId);
+          fetchPostData(targetId);
+        }
       }
-    }
+    };
+
+    // 初回読み込み
+    handleUrlChange();
+
+    // popstateイベント（ブラウザの戻る/進むボタン）を監視
+    window.addEventListener('popstate', handleUrlChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+    };
   }, [user?.uid, fetchPostData]);
   
   // 分析データを取得
