@@ -221,12 +221,24 @@ ${userProfile?.businessInfo ? `
 コメント: ${(changes.commentsChange ?? 0) >= 0 ? '+' : ''}${(changes.commentsChange ?? 0).toFixed(1)}%、
 リーチ: ${(changes.reachChange ?? 0) >= 0 ? '+' : ''}${(changes.reachChange ?? 0).toFixed(1)}%
 
-【回答形式】（簡潔に、箇条書きで）
+【回答形式】
+${totalPosts === 0 ? `
+投稿数がゼロの場合でも、ビジネス情報に基づいて実践的な提案を行う:
+1. ${period === 'weekly' ? '今週' : '今月'}のまとめ（最大100文字）
+   - 投稿ゼロの現状認識と、ビジネス目標に基づいた投稿の重要性を述べる
+   - フォロワー増加予測に向けた提案と根拠（週1-2回の投稿で期待できる効果）を含める
+
+2. 次へのステップ3つ（各80文字以内）
+   - 具体的な投稿テーマや内容の提案
+   - 具体的なユーザーに合わせたコンテンツ例2つを挙げる
+   - 実践可能なアクション
+
+重要: データがない場合でも、ビジネス情報（業種、ターゲット市場、目標）を活用して実践的な提案を行う。
+` : `
 1. ${period === 'weekly' ? '今週' : '今月'}のまとめ（最大100文字、フォロワー増加予測の根拠を含める）
 2. 次へのステップ3つ（各30文字以内）
 3. 詳細インサイト3つ（各30文字以内）
-
-重要: 簡潔で実用的な内容のみ。詳細な説明は不要。`;
+`}`;
 
   // 学習段階に応じてプロンプトを最適化
   if (isOptimized && ragHitRate > 0.7) {
@@ -244,7 +256,6 @@ ${userProfile?.businessInfo ? `
     // 予測値を抽出（簡易的な実装）
     const followerGrowthWeekly = Math.round(totalPosts * 2.5 + Math.random() * 10);
     const followerGrowthMonthly = Math.round(totalPosts * 8 + Math.random() * 30);
-    const engagementRate = totals.avgEngagementRate || 0;
     
     return {
       predictions: {
@@ -252,13 +263,13 @@ ${userProfile?.businessInfo ? `
           weekly: followerGrowthWeekly,
           monthly: followerGrowthMonthly
         },
-        engagementRate,
+        engagementRate: 0,
         optimalPostingTime: '18:00-20:00'
       },
       insights: [
-        `エンゲージメント率${engagementRate}%で${engagementRate > 3 ? '良好' : '改善の余地あり'}`,
         `投稿頻度${totalPosts}件で${totalPosts > 10 ? '適切' : '増加推奨'}`,
-        `リーチ数${totalReach.toLocaleString()}で${totalReach > 1000 ? '順調' : '拡大が必要'}`
+        `リーチ数${totalReach.toLocaleString()}で${totalReach > 1000 ? '順調' : '拡大が必要'}`,
+        '定期的な投稿でフォロワーとの関係を構築'
       ],
       recommendations: [
         '投稿頻度を週3-4回に増やす',
@@ -284,7 +295,7 @@ ${userProfile?.businessInfo ? `
       insights: [
         'データ分析中です',
         '継続的な投稿が重要です',
-        'エンゲージメント向上を目指しましょう'
+        'フォロワーとの交流を深めましょう'
       ],
       recommendations: [
         '投稿頻度を維持する',
