@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../contexts/auth-context';
 import SNSLayout from '../../../../components/sns-layout';
@@ -134,20 +135,38 @@ export default function PostDetailPage() {
 
         {/* 投稿カード */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          {/* 画像 */}
-          {post.imageUrl && (
-            <div className="aspect-video bg-gray-100 relative">
-              <ImageIcon className="w-16 h-16 text-gray-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          {/* サムネ画像 */}
+          {post.imageUrl ? (
+            <div className="aspect-video bg-gray-100 relative overflow-hidden">
+              <Image
+                src={post.imageUrl}
+                alt={post.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </div>
+          ) : (
+            <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 relative flex items-center justify-center">
+              <div className="text-center">
+                <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">画像なし</p>
+              </div>
             </div>
           )}
 
           {/* コンテンツ */}
           <div className="p-6">
             {/* タイトル */}
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">{post.title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{post.title}</h2>
 
-            {/* 説明 */}
-            <p className="text-gray-700 mb-4 leading-relaxed">{post.description}</p>
+            {/* 投稿文全文 */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">投稿文</h3>
+              <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{post.description}</p>
+              </div>
+            </div>
 
             {/* 投稿タイプ */}
             <div className="mb-4">
@@ -163,70 +182,94 @@ export default function PostDetailPage() {
 
             {/* ハッシュタグ */}
             {post.hashtags && post.hashtags.length > 0 && (
-              <div className="mb-4">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">ハッシュタグ</h3>
                 <div className="flex flex-wrap gap-2">
                   {post.hashtags.map((tag, index) => (
-                    <span key={index} className="text-blue-600 text-sm">#{tag}</span>
+                    <span key={index} className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-100 transition-colors">
+                      #{tag}
+                    </span>
                   ))}
                 </div>
               </div>
             )}
 
             {/* スケジュール情報 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="flex items-center text-gray-600">
-                <Calendar size={16} className="mr-2" />
-                <span className="text-sm">投稿予定日: {formatDate(post.scheduledDate)}</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <Clock size={16} className="mr-2" />
-                <span className="text-sm">投稿予定時刻: {formatTime(post.scheduledTime)}</span>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">スケジュール情報</h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center text-gray-700">
+                    <Calendar size={18} className="mr-3 text-blue-500" />
+                    <div>
+                      <div className="text-sm text-gray-500">投稿予定日</div>
+                      <div className="font-medium">{formatDate(post.scheduledDate)}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-gray-700">
+                    <Clock size={18} className="mr-3 text-green-500" />
+                    <div>
+                      <div className="text-sm text-gray-500">投稿予定時刻</div>
+                      <div className="font-medium">{formatTime(post.scheduledTime)}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* 分析データ */}
             {post.analytics && (
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">分析データ</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {post.analytics.likes !== undefined && (
-                    <div className="text-center">
-                      <Heart size={20} className="text-red-500 mx-auto mb-1" />
-                      <div className="text-sm text-gray-600">いいね</div>
-                      <div className="font-semibold text-gray-900">{post.analytics.likes}</div>
-                    </div>
-                  )}
-                  {post.analytics.comments !== undefined && (
-                    <div className="text-center">
-                      <MessageCircle size={20} className="text-blue-500 mx-auto mb-1" />
-                      <div className="text-sm text-gray-600">コメント</div>
-                      <div className="font-semibold text-gray-900">{post.analytics.comments}</div>
-                    </div>
-                  )}
-                  {post.analytics.shares !== undefined && (
-                    <div className="text-center">
-                      <Share size={20} className="text-green-500 mx-auto mb-1" />
-                      <div className="text-sm text-gray-600">シェア</div>
-                      <div className="font-semibold text-gray-900">{post.analytics.shares}</div>
-                    </div>
-                  )}
-                  {post.analytics.views !== undefined && (
-                    <div className="text-center">
-                      <EyeIcon size={20} className="text-purple-500 mx-auto mb-1" />
-                      <div className="text-sm text-gray-600">表示回数</div>
-                      <div className="font-semibold text-gray-900">{post.analytics.views}</div>
-                    </div>
-                  )}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">分析データ</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {post.analytics.likes !== undefined && (
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <Heart size={24} className="text-red-500 mx-auto mb-2" />
+                        <div className="text-sm text-gray-600 mb-1">いいね</div>
+                        <div className="text-xl font-bold text-gray-900">{post.analytics.likes.toLocaleString()}</div>
+                      </div>
+                    )}
+                    {post.analytics.comments !== undefined && (
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <MessageCircle size={24} className="text-blue-500 mx-auto mb-2" />
+                        <div className="text-sm text-gray-600 mb-1">コメント</div>
+                        <div className="text-xl font-bold text-gray-900">{post.analytics.comments.toLocaleString()}</div>
+                      </div>
+                    )}
+                    {post.analytics.shares !== undefined && (
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <Share size={24} className="text-green-500 mx-auto mb-2" />
+                        <div className="text-sm text-gray-600 mb-1">シェア</div>
+                        <div className="text-xl font-bold text-gray-900">{post.analytics.shares.toLocaleString()}</div>
+                      </div>
+                    )}
+                    {post.analytics.views !== undefined && (
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <EyeIcon size={24} className="text-purple-500 mx-auto mb-2" />
+                        <div className="text-sm text-gray-600 mb-1">表示回数</div>
+                        <div className="text-xl font-bold text-gray-900">{post.analytics.views.toLocaleString()}</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
             {/* メタ情報 */}
-            <div className="border-t pt-4 mt-6">
-              <div className="text-sm text-gray-500 space-y-1">
-                <div>作成日: {formatDate(post.createdAt)}</div>
-                <div>更新日: {formatDate(post.updatedAt)}</div>
-                <div>投稿ID: {post.id}</div>
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">メタ情報</h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">作成日:</span>
+                    <span className="ml-2 font-medium text-gray-700">{formatDate(post.createdAt)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">更新日:</span>
+                    <span className="ml-2 font-medium text-gray-700">{formatDate(post.updatedAt)}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
