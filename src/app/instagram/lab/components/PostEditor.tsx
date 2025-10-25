@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles } from 'lucide-react';
 import { postsApi } from '../../../../lib/api';
 import { useAuth } from '../../../../contexts/auth-context';
@@ -370,13 +371,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               </p>
             </div>
             <div className="flex space-x-2">
-              <a
+              <Link
                 href="/instagram/posts"
                 className="inline-flex items-center px-3 py-1 text-xs bg-[#ff8a15] text-white hover:bg-orange-600 transition-colors"
               >
                 <Eye size={12} className="mr-1" />
                 投稿一覧を見る
-              </a>
+              </Link>
             </div>
           </div>
         </div>
