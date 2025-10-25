@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Edit, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon } from 'lucide-react';
+import { Trash2, Eye, Calendar, Clock, Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon } from 'lucide-react';
 
 interface PostData {
   id: string;
@@ -366,23 +366,16 @@ const PostCard: React.FC<PostCardProps> = ({
       <div className="px-4 pb-4">
         <div className="flex items-center justify-end space-x-2">
           {/* 詳細表示ボタン（すべてのカードに表示） */}
-          <button
-            onClick={() => alert('投稿詳細を表示')}
-            className="p-2 text-black hover:text-blue-600 hover:bg-blue-50  transition-colors"
-            title="詳細表示"
+          <a
+            href={`/instagram/posts/${post.id}`}
+            className="p-2 text-black hover:text-blue-600 hover:bg-blue-50 transition-colors"
+            title="投稿詳細を表示"
           >
             <Eye size={14} />
-          </button>
+          </a>
           
           {!hasAnalytics && (
             <>
-              <a
-                href={`/instagram/lab?edit=${post.id}`}
-                className="p-2 text-black hover:text-green-600 hover:bg-green-50  transition-colors"
-                title="投稿ラボで編集"
-              >
-                <Edit size={14} />
-              </a>
               {/* 分析ボタン（ストーリー以外） */}
               {post.postType !== 'story' && (
                 <a

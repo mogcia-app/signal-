@@ -517,7 +517,7 @@ export default function InstagramPostsPage() {
     <>
       <SNSLayout 
         customTitle="投稿一覧"
-        customDescription="作成した投稿の管理・編集・削除を行えます"
+        customDescription="作成した投稿の詳細表示・管理・削除・分析を行えます"
       >
         <div className="max-w-7xl mx-auto p-4 sm:p-6">
           {/* 統計表示 */}
