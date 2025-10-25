@@ -195,89 +195,36 @@ async function performAIAnalysis(
   const ragHitRate = masterContext?.ragHitRate || 0;
   
   // プロンプトを構築（学習段階に応じて最適化）
-  let prompt = `以下のInstagram分析データを基に、AI予測分析を実行してください：
+  let prompt = `Instagram分析データを基に、簡潔に分析してください。
 
-【基本データ】
-- 期間: ${period === 'weekly' ? '週次' : '月次'} (${date})
-- 総投稿数: ${totalPosts}件
-- 総いいね数: ${totalLikes.toLocaleString()}件
-- 総コメント数: ${totalComments.toLocaleString()}件
-- 総シェア数: ${totalShares.toLocaleString()}件
-- 総リーチ数: ${totalReach.toLocaleString()}人
-- 総保存数: ${totals.totalSaves || 0}件
-- 総リポスト数: ${totals.totalReposts || 0}件
-- フォロワー増加数: ${totals.totalFollowerIncrease || 0}人
-- 平均エンゲージメント率: ${totals.avgEngagementRate || 0}%
-
-【前期間との比較】
-- いいね数変化: ${(changes.likesChange ?? 0) >= 0 ? '+' : ''}${(changes.likesChange ?? 0).toFixed(1)}%
-- コメント数変化: ${(changes.commentsChange ?? 0) >= 0 ? '+' : ''}${(changes.commentsChange ?? 0).toFixed(1)}%
-- シェア数変化: ${(changes.sharesChange ?? 0) >= 0 ? '+' : ''}${(changes.sharesChange ?? 0).toFixed(1)}%
-- リーチ数変化: ${(changes.reachChange ?? 0) >= 0 ? '+' : ''}${(changes.reachChange ?? 0).toFixed(1)}%
-- 投稿数変化: ${(changes.postsChange ?? 0) >= 0 ? '+' : ''}${(changes.postsChange ?? 0).toFixed(1)}%
-- フォロワー変化: ${(changes.followerChange ?? 0) >= 0 ? '+' : ''}${(changes.followerChange ?? 0).toFixed(1)}%
-
-【投稿タイプ別統計】
-${reportSummary?.postTypeStats?.map((stat) => 
-  `- ${stat.label}: ${stat.count}件 (${stat.percentage.toFixed(1)}%)`
-).join('\n') || '- データなし'}
-
-【トップハッシュタグ】
-${reportSummary?.hashtagStats?.slice(0, 5).map((tag) => 
-  `- ${tag.hashtag}: ${tag.count}回使用`
-).join('\n') || '- データなし'}
-
-【最適投稿時間帯】
-${reportSummary?.bestTimeSlot ? `${reportSummary.bestTimeSlot.label}: 投稿数${reportSummary.bestTimeSlot.postsInRange}件、平均エンゲージメント${reportSummary.bestTimeSlot.avgEngagement.toFixed(1)}` : '- データなし'}
-
+【御社専用AI設定】
 ${userProfile?.businessInfo ? `
-【クライアント情報】
 - 業種: ${userProfile.businessInfo.industry || '未設定'}
 - 会社規模: ${userProfile.businessInfo.companySize || '未設定'}
 - 事業形態: ${userProfile.businessInfo.businessType || '未設定'}
-- ターゲット市場: ${userProfile.businessInfo.targetMarket || '未設定'}
-${userProfile.businessInfo.catchphrase ? `- キャッチコピー: 「${userProfile.businessInfo.catchphrase}」` : ''}
+- ターゲット市場: ${Array.isArray(userProfile.businessInfo.targetMarket) ? userProfile.businessInfo.targetMarket.join('、') : userProfile.businessInfo.targetMarket || '未設定'}
+- キャッチコピー: ${userProfile.businessInfo.catchphrase || '未設定'}
 - 事業内容: ${userProfile.businessInfo.description || '未設定'}
+- 目標: ${Array.isArray(userProfile.businessInfo.goals) ? userProfile.businessInfo.goals.join('、') : ''}
+- 課題: ${Array.isArray(userProfile.businessInfo.challenges) ? userProfile.businessInfo.challenges.join('、') : ''}
+` : 'ビジネス情報未設定'}
 
-【目標と課題】
-${userProfile.businessInfo.goals && userProfile.businessInfo.goals.length > 0 ? `- 目標: ${userProfile.businessInfo.goals.join(', ')}` : ''}
-${userProfile.businessInfo.challenges && userProfile.businessInfo.challenges.length > 0 ? `- 課題: ${userProfile.businessInfo.challenges.join(', ')}` : ''}
+【Instagram運用データ】
+期間: ${period === 'weekly' ? '週次' : '月次'}
+投稿数: ${totalPosts}件、いいね: ${totalLikes}件、コメント: ${totalComments}件、シェア: ${totalShares}件
+リーチ: ${totalReach}人、フォロワー増加: ${totals.totalFollowerIncrease || 0}人
+投稿タイプ: ${reportSummary?.postTypeStats?.map((stat) => `${stat.label}${stat.count}件`).join('、') || 'なし'}
+最適時間: ${reportSummary?.bestTimeSlot?.label || '不明'}
 
-【商品・サービス】
-${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.productsOrServices.length > 0 
-  ? userProfile.businessInfo.productsOrServices.map((p: { name: string; details?: string }) => 
-    `- ${p.name}${p.details ? `: ${p.details}` : ''}`
-  ).join('\n')
-  : '- 未設定'}
-` : ''}
+【比較】
+いいね: ${(changes.likesChange ?? 0) >= 0 ? '+' : ''}${(changes.likesChange ?? 0).toFixed(1)}%、
+コメント: ${(changes.commentsChange ?? 0) >= 0 ? '+' : ''}${(changes.commentsChange ?? 0).toFixed(1)}%、
+リーチ: ${(changes.reachChange ?? 0) >= 0 ? '+' : ''}${(changes.reachChange ?? 0).toFixed(1)}%
 
-【マスターコンテキスト】
-- 学習フェーズ: ${masterContext?.learningPhase || '初期段階'}
-- RAGヒット率: ${Math.round(ragHitRate * 100)}%
-- 総対話数: ${masterContext?.totalInteractions || 0}回
-
-以下の形式で回答してください：
-
-1. **今週/今月のまとめ**（200文字以内）
-- 期間${period === 'weekly' ? '1週間' : '1ヶ月'}のパフォーマンスを簡潔に要約
-- 特に良かった点と課題を1つずつ
-- 今後の展望を含める
-
-2. **来週/来月の改善点**（各100文字以内で3つ）
-- 具体的で実行可能な改善提案を3つ
-- 各改善点に期待される効果を含める
-
-3. **予測分析**
-- フォロワー増加予測（週次・月次）
-- エンゲージメント率予測
-- 最適投稿時間
-
-4. **詳細インサイト**（各80文字以内で3つ）
-- データから読み取れる重要な発見を3つ
-- 具体的な数値を含める
-
-5. **総合サマリー**（150文字以内）
-- 簡潔な総評と今後の方向性`;
+【回答形式】
+1. ${period === 'weekly' ? '今週' : '今月'}のまとめ（100文字）
+2. 次へのステップ3つ（具体的で実行可能な提案、各50文字）
+3. 詳細インサイト3つ（各50文字）`;
 
   // 学習段階に応じてプロンプトを最適化
   if (isOptimized && ragHitRate > 0.7) {
@@ -329,8 +276,8 @@ ${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.produc
           weekly: Math.round(totalPosts * 2),
           monthly: Math.round(totalPosts * 6)
         },
-        engagementRate: totals.avgEngagementRate || 0,
-        optimalPostingTime: '18:00-20:00'
+        engagementRate: 0,
+        optimalPostingTime: reportSummary?.bestTimeSlot?.label || '18:00-20:00'
       },
       insights: [
         'データ分析中です',

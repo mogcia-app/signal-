@@ -159,15 +159,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-black">AIまとめ</h2>
-                <p className="text-sm text-black">
-                  {hasRunAnalysis ? 
-                    (analysisResult?.masterContext?.isOptimized ? 
-                      '最適化されたAI分析' : 
-                      '機械学習による将来予測'
-                    ) :
-                    'AIによる高度な分析と予測'
-                  }
-                </p>
               </div>
             </div>
             
@@ -236,39 +227,42 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
               </div>
             ) : analysisResult ? (
               <div className="space-y-6">
-                {/* 今月/今週のまとめ */}
-                <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-50 rounded-none border border-orange-200">
-                  <div className="flex items-center mb-3">
-                    <div className="w-5 h-5 text-orange-600 mr-2">📊</div>
-                    <h3 className="font-semibold text-orange-900">
-                      {activeTab === 'weekly' ? '今週のまとめ' : '今月のまとめ'}
-                    </h3>
+                {/* 今月/今週のまとめと改善点を左右に配置 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 今月/今週のまとめ */}
+                  <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-50 rounded-none border border-orange-200">
+                    <div className="flex items-center mb-3">
+                      <div className="w-5 h-5 text-orange-600 mr-2">📊</div>
+                      <h3 className="font-semibold text-orange-900">
+                        {activeTab === 'weekly' ? '今週のまとめ' : '今月のまとめ'}
+                      </h3>
+                    </div>
+                    <div className="text-sm text-orange-800 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                      {typeof monthlyReview?.message === 'string' ? monthlyReview.message : 
+                       analysisResult.summary || 'まとめを生成中...'}
+                    </div>
                   </div>
-                  <div className="text-sm text-orange-800 whitespace-pre-wrap">
-                    {typeof monthlyReview?.message === 'string' ? monthlyReview.message : 
-                     analysisResult.summary || 'まとめを生成中...'}
-                  </div>
-                </div>
 
-                {/* 来月/来週の改善点 */}
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-none border border-blue-200">
-                  <div className="flex items-center mb-3">
-                    <Target className="w-5 h-5 text-blue-600 mr-2" />
-                    <h3 className="font-semibold text-blue-900">
-                      {activeTab === 'weekly' ? '来週の改善点' : '来月の改善点'}
-                    </h3>
-                  </div>
-                  <div className="space-y-2">
-                    {analysisResult.recommendations.slice(0, 3).map((recommendation, index) => (
-                      <div key={index} className="text-sm text-orange-800">
-                        • {recommendation}
-                      </div>
-                    ))}
+                  {/* 来月/来週の改善点 */}
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-none border border-blue-200">
+                    <div className="flex items-center mb-3">
+                      <Target className="w-5 h-5 text-blue-600 mr-2" />
+                      <h3 className="font-semibold text-blue-900">
+                        {activeTab === 'weekly' ? '来週の改善点' : '来月の改善点'}
+                      </h3>
+                    </div>
+                    <div className="space-y-2">
+                      {analysisResult.recommendations.slice(0, 3).map((recommendation, index) => (
+                        <div key={index} className="text-sm text-orange-800">
+                          • {recommendation}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
                 {/* AI予測分析結果 */}
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* フォロワー増加予測 */}
                   <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
                     <div className="flex items-center mb-3">
@@ -291,30 +285,21 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                       <div className="text-xs text-black mt-2">
                         {analysisResult.masterContext?.isOptimized ? 
                           '学習済みパターンによる高精度予測' :
-                          '現在の投稿ペースとエンゲージメント率を基に予測'
+                          '現在の投稿ペースを基に予測'
                         }
                       </div>
                     </div>
                   </div>
 
-                  {/* 投稿パフォーマンス予測 */}
+                  {/* 最適投稿時間 */}
                   <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
                     <div className="flex items-center mb-3">
                       <Zap className="w-5 h-5 text-green-600 mr-2" />
-                      <h3 className="font-semibold text-green-900">投稿パフォーマンス予測</h3>
+                      <h3 className="font-semibold text-green-900">最適投稿時間</h3>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-black">予測エンゲージメント率</span>
-                        <span className="text-sm font-bold text-green-600">
-                          {analysisResult.predictions.engagementRate}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-black">最適投稿時間</span>
-                        <span className="text-sm font-bold text-green-600">
-                          {analysisResult.predictions.optimalPostingTime}
-                        </span>
+                      <div className="text-sm font-bold text-green-600">
+                        {analysisResult.predictions.optimalPostingTime}
                       </div>
                       <div className="text-xs text-black mt-2">
                         {analysisResult.masterContext?.isOptimized ? 
@@ -373,15 +358,13 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                 </div>
 
                 {/* 先月のまとめ */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-4">
+                <div className="space-y-4">
                     <div className="flex items-center mb-4">
                       <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-none flex items-center justify-center mr-3">
                         <BarChart3 className="w-5 h-5 text-white" />
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-black">先月のまとめ</h3>
-                        <p className="text-sm text-black">前期間との比較と成果サマリー</p>
                       </div>
                     </div>
 
@@ -471,7 +454,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     </div>
                   </div>
                 </div>
-              </div>
             ) : (
               <div className="text-center py-8 text-black">
                 <Brain className="w-16 h-16 mx-auto mb-4 text-black" />

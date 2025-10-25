@@ -30,6 +30,8 @@ interface InstagramData {
   goalSettings?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   recentActivity?: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  businessInfo?: any;
 }
 
 export async function POST(request: NextRequest) {
@@ -144,7 +146,7 @@ export async function POST(request: NextRequest) {
 // Instagram全体のデータを取得する関数
 async function fetchInstagramData(userId: string): Promise<InstagramData> {
   try {
-    const [planSnapshot, analyticsSnapshot, postsSnapshot, goalSettingsSnapshot] = await Promise.all([
+    const [planSnapshot, analyticsSnapshot, postsSnapshot, goalSettingsSnapshot, userSnapshot] = await Promise.all([
       // 運用計画データ
       adminDb.collection('plans')
         .where('userId', '==', userId)
@@ -170,6 +172,11 @@ async function fetchInstagramData(userId: string): Promise<InstagramData> {
       adminDb.collection('goalSettings')
         .where('userId', '==', userId)
         .limit(1)
+        .get(),
+      
+      // ユーザープロファイル（ビジネス情報）
+      adminDb.collection('users')
+        .doc(userId)
         .get()
     ]);
 
@@ -177,6 +184,7 @@ async function fetchInstagramData(userId: string): Promise<InstagramData> {
     const analyticsData = analyticsSnapshot.docs.map(doc => doc.data());
     const postsData = postsSnapshot.docs.map(doc => doc.data());
     const goalSettings = goalSettingsSnapshot.docs[0]?.data() || null;
+    const businessInfo = userSnapshot.data()?.businessInfo || null;
 
     // 最近の活動データ（投稿と分析の統合）
     const recentActivity = [
@@ -198,7 +206,8 @@ async function fetchInstagramData(userId: string): Promise<InstagramData> {
       analyticsData,
       postsData,
       goalSettings,
-      recentActivity
+      recentActivity,
+      businessInfo
     };
 
   } catch (error) {
@@ -209,9 +218,21 @@ async function fetchInstagramData(userId: string): Promise<InstagramData> {
 
 // Instagram専門のAIプロンプトを構築
 function buildInstagramAIPrompt(instagramData: InstagramData): string {
-  const { planData, analyticsData, postsData, goalSettings, recentActivity } = instagramData;
+  const { planData, analyticsData, postsData, goalSettings, recentActivity, businessInfo } = instagramData;
 
   let systemPrompt = `あなたはInstagram運用の専門AIアドバイザーです。ユーザーのInstagramアカウント全体を理解し、具体的で実践的なアドバイスを提供してください。
+
+【御社専用AI設定】
+${businessInfo ? `
+- 業種: ${businessInfo.industry || '未設定'}
+- 会社規模: ${businessInfo.companySize || '未設定'}
+- 事業形態: ${businessInfo.businessType || '未設定'}
+- ターゲット市場: ${Array.isArray(businessInfo.targetMarket) ? businessInfo.targetMarket.join('、') : businessInfo.targetMarket || '未設定'}
+- キャッチコピー: ${businessInfo.catchphrase || '未設定'}
+- 事業内容: ${businessInfo.description || '未設定'}
+- 目標: ${Array.isArray(businessInfo.goals) ? businessInfo.goals.join('、') : ''}
+- 課題: ${Array.isArray(businessInfo.challenges) ? businessInfo.challenges.join('、') : ''}
+` : 'ビジネス情報未設定'}
 
 【あなたの役割】
 - Instagram運用の専門家として、ユーザーの状況を正確に把握し、最適なアドバイスを提供
