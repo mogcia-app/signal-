@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// iPad Safari対応: Node.jsランタイムを明示的に指定
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== FEED SCHEDULE API CALLED ===');
+    
     const body = await request.json();
+    console.log('Request body:', { 
+      monthlyPosts: body.monthlyPosts, 
+      dailyPosts: body.dailyPosts, 
+      hasBusinessInfo: !!body.businessInfo 
+    });
+    
     const { 
       monthlyPosts, 
       dailyPosts, 
@@ -10,25 +21,67 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!monthlyPosts || !dailyPosts || !businessInfo) {
-      return NextResponse.json({ error: '必要なパラメータが不足しています' }, { status: 400 });
+      console.error('Missing required parameters:', { monthlyPosts, dailyPosts, businessInfo });
+      return NextResponse.json({ 
+        success: false,
+        error: '必要なパラメータが不足しています',
+        details: { monthlyPosts, dailyPosts, hasBusinessInfo: !!businessInfo }
+      }, { 
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
     }
 
     // ビジネス情報からコンテキストを構築
     const context = buildBusinessContext(businessInfo);
+    console.log('Business context built:', context.length, 'characters');
     
     // AIプロンプトを構築
     const prompt = buildSchedulePrompt(monthlyPosts, dailyPosts, context);
 
     // OpenAI APIを呼び出してスケジュールを生成
     const scheduleResponse = await generateScheduleWithAI(prompt);
+    console.log('Schedule generated:', scheduleResponse.length, 'days');
 
+    // iPad Safari対応: 明示的なContent-Typeとキャッシュ制御
     return NextResponse.json({
-      schedule: scheduleResponse
+      success: true,
+      schedule: scheduleResponse,
+      timestamp: new Date().toISOString()
+    }, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
   } catch (error) {
-    console.error('スケジュール生成エラー:', error);
-    return NextResponse.json({ error: 'スケジュール生成に失敗しました' }, { status: 500 });
+    console.error('=== FEED SCHEDULE ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    return NextResponse.json({ 
+      success: false,
+      error: 'スケジュール生成に失敗しました',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
   }
 }
 

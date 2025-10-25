@@ -192,8 +192,10 @@ export default function ReelLabPage() {
       const scheduleResponse = await fetch('/api/instagram/reel-schedule', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': `Bearer ${idToken}`,
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
         },
         body: JSON.stringify({
           monthlyPosts,

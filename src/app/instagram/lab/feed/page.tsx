@@ -183,11 +183,19 @@ export default function FeedLabPage() {
       const businessData = await businessResponse.json();
       
       // スケジュール生成APIを呼び出し
+      console.log('Calling schedule API with:', {
+        monthlyPosts,
+        dailyPosts,
+        hasBusinessInfo: !!businessData.businessInfo
+      });
+      
       const scheduleResponse = await fetch('/api/instagram/feed-schedule', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': `Bearer ${idToken}`,
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
         },
         body: JSON.stringify({
           monthlyPosts,
@@ -196,18 +204,48 @@ export default function FeedLabPage() {
         }),
       });
       
+      console.log('📊 Schedule API response status:', scheduleResponse.status);
+      console.log('📊 Schedule API response headers:', Object.fromEntries(scheduleResponse.headers.entries()));
+      
       if (!scheduleResponse.ok) {
-        throw new Error('スケジュール生成に失敗しました');
+        const errorText = await scheduleResponse.text();
+        console.error('❌ Schedule API error response:', errorText);
+        throw new Error(`スケジュール生成に失敗しました: ${scheduleResponse.status} - ${errorText}`);
+      }
+      
+      // iPad Safari対応: レスポンスのContent-Typeを確認
+      const contentType = scheduleResponse.headers.get('content-type');
+      console.log('📄 Response Content-Type:', contentType);
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('⚠️ Unexpected Content-Type:', contentType);
       }
       
       const scheduleData = await scheduleResponse.json();
-      setGeneratedSchedule(scheduleData.schedule || []);
+      console.log('✅ Schedule API response data:', scheduleData);
+      
+      if (scheduleData.success && scheduleData.schedule) {
+        console.log('🎉 Schedule generated successfully:', scheduleData.schedule.length, 'days');
+        setGeneratedSchedule(scheduleData.schedule);
+        setSaveMessage('スケジュールが生成されました！');
+      } else {
+        console.error('❌ Invalid schedule data format:', scheduleData);
+        throw new Error(scheduleData.error || 'スケジュールデータの形式が正しくありません');
+      }
       
     } catch (error) {
-      console.error('スケジュール生成エラー:', error);
-      setScheduleError(error instanceof Error ? error.message : 'スケジュール生成に失敗しました');
+      console.error('💥 Schedule generation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'スケジュール生成に失敗しました';
+      setScheduleError(errorMessage);
+      
+      // iPad Safari用の追加デバッグ情報
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('🌐 Network error detected - possible iPad Safari issue');
+        setScheduleError('ネットワークエラーが発生しました。iPad Safariの場合、ページを再読み込みしてください。');
+      }
     } finally {
       setIsGeneratingSchedule(false);
+      console.log('🏁 Schedule generation completed');
     }
   }, [user, monthlyPosts, dailyPosts]);
 

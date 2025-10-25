@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// iPad Safari対応: Node.jsランタイムを明示的に指定
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
