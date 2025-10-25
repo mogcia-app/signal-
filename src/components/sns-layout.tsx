@@ -111,7 +111,22 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               Signal<span style={{ color: '#FF8A15' }}>.</span>
             </div>
           </div>
-         
+        </div>
+
+        {/* ユーザー情報 */}
+        <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white">
+              <span className="text-lg font-medium">
+                {userProfile?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-black truncate">
+                {userProfile?.name || user?.email || 'ユーザー'}
+              </div>
+            </div>
+          </div>
         </div>
 
 

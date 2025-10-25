@@ -110,7 +110,7 @@ function AnalyticsReelContent() {
     postType: 'feed' | 'reel' | 'story';
   } | null>(null);
   // URLパラメータから投稿IDを取得
-  const [postId] = useState<string | null>(null);
+  const [postId, setPostId] = useState<string | null>(null);
 
   // 投稿データを取得する関数
   const fetchPostData = useCallback(async (id: string) => {
@@ -132,17 +132,28 @@ function AnalyticsReelContent() {
       }
       
       const result = await response.json();
-      if (result.success && result.data) {
-        const post = result.data.find((p: { id: string }) => p.id === id);
+      console.log('Reel Analytics API Response:', result);
+      
+      if (result.posts && Array.isArray(result.posts)) {
+        const post = result.posts.find((p: { id: string }) => p.id === id);
+        console.log('Found post for reel analytics:', post);
+        
         if (post) {
-          setPostData({
+          const postData = {
             id: post.id,
             title: post.title || '',
             content: post.content || '',
             hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
             postType: post.postType || 'reel'
-          });
+          };
+          
+          console.log('Setting post data for reel analytics:', postData);
+          setPostData(postData);
+        } else {
+          console.error('Post not found for reel analytics with ID:', id);
         }
+      } else {
+        console.error('Invalid API response structure for reel analytics:', result);
       }
     } catch (error) {
       console.error('投稿データ取得エラー:', error);
@@ -154,7 +165,9 @@ function AnalyticsReelContent() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const id = urlParams.get('postId');
+      console.log('URL params postId:', id);
       if (id) {
+        setPostId(id);
         fetchPostData(id);
       }
     }

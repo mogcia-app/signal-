@@ -67,10 +67,23 @@ export default function StoryLabPage() {
       }
       
       const result = await response.json();
-      if (result.success && result.data) {
-        const post = result.data.find((p: { id: string }) => p.id === postId);
+      console.log('API Response:', result);
+      
+      if (result.posts && Array.isArray(result.posts)) {
+        const post = result.posts.find((p: { id: string }) => p.id === postId);
+        console.log('Found post for editing:', post);
+        
         if (post) {
           // 投稿データをフォームに設定
+          console.log('Setting form data:', {
+            title: post.title,
+            content: post.content,
+            hashtags: post.hashtags,
+            scheduledDate: post.scheduledDate,
+            scheduledTime: post.scheduledTime,
+            imageData: post.imageData ? 'exists' : 'none'
+          });
+          
           setPostTitle(post.title || '');
           setPostContent(post.content || '');
           
@@ -99,7 +112,13 @@ export default function StoryLabPage() {
           if (post.imageData) {
             setPostImage(post.imageData);
           }
+          
+          console.log('Form data set successfully');
+        } else {
+          console.error('Post not found with ID:', postId);
         }
+      } else {
+        console.error('Invalid API response structure:', result);
       }
     } catch (error) {
       console.error('投稿データ取得エラー:', error);
