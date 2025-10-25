@@ -24,9 +24,9 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       setLoginSuccess(true);
-      // 2秒後にInstagramダッシュボードに遷移
+      // 2秒後にフィード（ラボ）に遷移
       setTimeout(() => {
-        router.push('/instagram');
+        router.push('/instagram/lab/feed');
       }, 2000);
     } catch (error) {
       setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');

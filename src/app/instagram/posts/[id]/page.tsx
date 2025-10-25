@@ -200,13 +200,25 @@ export default function PostDetailPage() {
               // 投稿文から抽出したハッシュタグと、既存のhashtagsフィールドをマージして重複を除去
               const contentHashtags = extractHashtagsFromContent(post.content);
               const existingHashtags = post.hashtags || [];
-              const allHashtags = [...new Set([...contentHashtags, ...existingHashtags])];
               
-              return allHashtags.length > 0 && (
+              // デバッグログ
+              console.log('Content hashtags:', contentHashtags);
+              console.log('Existing hashtags:', existingHashtags);
+              
+              // より確実な重複除去: 小文字に統一してから重複除去
+              const normalizedContentHashtags = contentHashtags.map(tag => tag.toLowerCase().trim());
+              const normalizedExistingHashtags = existingHashtags.map(tag => tag.toLowerCase().trim());
+              
+              // 重複を除去してユニークなハッシュタグのみ取得
+              const uniqueHashtags = [...new Set([...normalizedContentHashtags, ...normalizedExistingHashtags])];
+              
+              console.log('Unique hashtags:', uniqueHashtags);
+              
+              return uniqueHashtags.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">ハッシュタグ</h3>
                   <div className="flex flex-wrap gap-2">
-                    {allHashtags.map((tag, index) => (
+                    {uniqueHashtags.map((tag, index) => (
                       <span key={index} className="inline-block px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100 transition-colors">
                         #{tag}
                       </span>

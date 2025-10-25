@@ -71,7 +71,7 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
       {metrics.map((metric, index) => (
-        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div key={index} className="bg-white rounded-none shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-black">{metric.label}</p>

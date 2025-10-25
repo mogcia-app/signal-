@@ -33,9 +33,9 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
       {/* ハッシュタグ分析 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6">
         <div className="flex items-center mb-6">
-          <div className="w-8 h-8 bg-gradient-to-r from-orange-600 to-red-600 rounded-lg flex items-center justify-center mr-3">
+          <div className="w-8 h-8 bg-gradient-to-r from-orange-600 to-red-600 rounded-none flex items-center justify-center mr-3">
             <Hash className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -46,7 +46,7 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
 
         <div className="space-y-3">
           {hashtagStats.length > 0 ? hashtagStats.map((item, index) => (
-            <div key={item.hashtag} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={item.hashtag} className="flex items-center justify-between p-3 bg-gray-50 rounded-none">
               <div className="flex items-center">
                 <span className="w-6 h-6 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-xs font-bold mr-3">
                   {index + 1}
@@ -68,30 +68,23 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
       </div>
 
       {/* 投稿時間分析 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-black">投稿時間分析</h2>
-              <p className="text-sm text-black">
-                投稿分析ページで入力した実際の投稿時間ベースの分析
-              </p>
-            </div>
+      <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center mb-6">
+          <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-none flex items-center justify-center mr-3">
+            <Clock className="w-5 h-5 text-white" />
           </div>
-          <div className="text-right">
-            <div className="text-sm text-black">
-               総投稿数: {hashtagStats.length}件
-            </div>
+          <div>
+            <h2 className="text-lg font-semibold text-black">投稿時間分析</h2>
+            <p className="text-sm text-black">
+              投稿分析ページで入力した実際の投稿時間ベースの分析
+            </p>
           </div>
         </div>
 
         <div className="space-y-3">
           {/* 最適な投稿時間の提案 */}
           {bestTimeSlot && bestTimeSlot.postsInRange > 0 && (
-            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 mb-4">
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200 mb-4">
               <div className="flex items-center mb-2">
                 <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2">
                   <TrendingUp className="w-4 h-4 text-green-600" />
@@ -107,23 +100,11 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
 
           {/* 時間帯別データ */}
           {timeSlotData.map(({ label, color, postsInRange, avgEngagement }) => (
-            <div key={label} className={`p-3 rounded-lg ${postsInRange > 0 ? 'bg-gray-50' : 'bg-gray-25'}`}>
+            <div key={label} className={`p-3 rounded-none ${postsInRange > 0 ? 'bg-gray-50' : 'bg-gray-25'}`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">{label}</span>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-bold text-black">{postsInRange}件</span>
-                  {postsInRange > 0 && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      avgEngagement > bestTimeSlot.avgEngagement * 0.8 
-                        ? 'bg-green-100 text-green-800' 
-                        : avgEngagement > bestTimeSlot.avgEngagement * 0.5
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {avgEngagement > bestTimeSlot.avgEngagement * 0.8 ? '高' : 
-                       avgEngagement > bestTimeSlot.avgEngagement * 0.5 ? '中' : '低'}
-                    </span>
-                  )}
                 </div>
               </div>
               {postsInRange > 0 ? (

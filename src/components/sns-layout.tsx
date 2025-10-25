@@ -101,7 +101,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-white flex flex-col lg:flex-row">
       {/* サイドバー */}
       <div className="w-full lg:w-64 bg-white shadow-lg flex-shrink-0">
         {/* ロゴ・ブランディング */}
@@ -134,7 +134,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">メニュー</h3>
           <nav className="space-y-1">
-            <Link 
+           {/*<Link 
               href="/instagram"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
                 pathname === '/instagram' 
@@ -144,7 +144,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
             >
               <span>🏠</span>
               <span>ダッシュボード</span>
-            </Link>
+            </Link>*/}
             <Link 
               href="/instagram/plan"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${

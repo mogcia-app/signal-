@@ -1,16 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { usePlanData } from '../../hooks/usePlanData';
 import { useAuth } from '../../contexts/auth-context';
 import { AuthGuard } from '../../components/auth-guard';
 import SNSLayout from '../../components/sns-layout';
 import { CurrentPlanCard } from '../../components/CurrentPlanCard';
-import PostPreview from './components/PostPreview';
-import AnalyticsForm from './components/AnalyticsForm';
-import AnalyticsStats from './components/AnalyticsStats';
-import { AnalyticsData } from './components/types';
 // import StatsCards from './components/StatsCards'; // クイックアクションに置き換え
 
 interface DashboardStats {
@@ -29,84 +26,62 @@ interface DashboardStats {
   monthlyStoryPosts: number;
 }
 
+interface RecentPost {
+  id: string;
+  title: string;
+  postType: string;
+  icon: string;
+  timeAgo: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  reach: number;
+  hasAnalytics: boolean;
+}
+
+interface PerformanceSummary {
+  weeklyGrowth: {
+    value: number;
+    status: string;
+    color: string;
+    label: string;
+  };
+  engagement: {
+    value: number;
+    status: string;
+    color: string;
+    label: string;
+  };
+  frequency: {
+    value: number;
+    status: string;
+    color: string;
+    label: string;
+  };
+}
+
+interface GoalProgress {
+  weeklyPosts: {
+    current: number;
+    goal: number;
+    progress: number;
+    status: string;
+    label: string;
+  };
+  followerGrowth: {
+    current: number;
+    goal: number;
+    progress: number;
+    status: string;
+    label: string;
+  };
+}
+
 
 function InstagramDashboardContent() {
   const { user } = useAuth();
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { planData } = usePlanData('instagram');
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
-  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
-  const [inputData, setInputData] = useState({
-    likes: '',
-    comments: '',
-    shares: '',
-    reposts: '',
-    reach: '',
-    saves: '',
-    followerIncrease: '',
-    publishedAt: new Date().toISOString().split('T')[0],
-    publishedTime: new Date().toTimeString().slice(0, 5),
-    title: '',
-    content: '',
-    hashtags: '',
-    thumbnail: '',
-    category: 'feed' as 'reel' | 'feed' | 'story',
-    // フィード専用フィールド
-    reachFollowerPercent: '',
-    interactionCount: '',
-    interactionFollowerPercent: '',
-    reachSourceProfile: '',
-    reachSourceFeed: '',
-    reachSourceExplore: '',
-    reachSourceSearch: '',
-    reachSourceOther: '',
-    reachedAccounts: '',
-    profileVisits: '',
-    profileFollows: '',
-    // リール専用フィールド
-    reelReachFollowerPercent: '',
-    reelInteractionCount: '',
-    reelInteractionFollowerPercent: '',
-    reelReachSourceProfile: '',
-    reelReachSourceReel: '',
-    reelReachSourceExplore: '',
-    reelReachSourceSearch: '',
-    reelReachSourceOther: '',
-    reelReachedAccounts: '',
-    reelSkipRate: '',
-    reelNormalSkipRate: '',
-    reelPlayTime: '',
-    reelAvgPlayTime: '',
-    audience: {
-      gender: {
-        male: '',
-        female: '',
-        other: ''
-      },
-      age: {
-        '13-17': '',
-        '18-24': '',
-        '25-34': '',
-        '35-44': '',
-        '45-54': '',
-        '55-64': '',
-        '65+': ''
-      }
-    },
-    reachSource: {
-      sources: {
-        posts: '',
-        profile: '',
-        explore: '',
-        search: '',
-        other: ''
-      },
-      followers: {
-        followers: '',
-        nonFollowers: ''
-      }
-    }
-  });
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     followers: 0,
@@ -124,46 +99,7 @@ function InstagramDashboardContent() {
     monthlyStoryPosts: 0
   });
 
-  const [goalNotifications, setGoalNotifications] = useState<{
-    title: string;
-    current: number;
-    target: number;
-    unit: string;
-    status: string;
-  }[]>([]);
-
   const instagramSettings = {}; // SNS設定は不要になったため空オブジェクト
-
-  // 分析データを取得
-  const fetchAnalytics = useCallback(async () => {
-    if (!user?.uid) return;
-    
-    try {
-      const idToken = await user.getIdToken();
-      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
-        headers: {
-          'Authorization': `Bearer ${idToken}`,
-          'x-user-id': user.uid,
-        },
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        setAnalyticsData(result.analytics || []);
-      }
-    } catch (error) {
-      console.error('Analytics fetch error:', error);
-    }
-  }, [user]);
-
-  // 目標設定の状態
-  const [showGoalSettings, setShowGoalSettings] = useState(false);
-  const [goalSettings, setGoalSettings] = useState({
-    weeklyPostGoal: 5,
-    followerGoal: 10,
-    monthlyPostGoal: 20
-  });
-  const [isSavingGoals, setIsSavingGoals] = useState(false);
 
   // 次のアクションの状態
   const [nextActions, setNextActions] = useState<Array<{
@@ -178,212 +114,11 @@ function InstagramDashboardContent() {
     color: string;
   }>>([]);
 
-  // 投稿分析データを保存
-  const handleSaveAnalytics = async (sentimentData?: { sentiment: 'satisfied' | 'dissatisfied' | null; memo: string }) => {
-    if (!user?.uid) {
-      alert('ログインが必要です');
-      return;
-    }
+  // 新しいデータの状態
+  const [recentPosts, setRecentPosts] = useState<RecentPost[]>([]);
+  const [performanceSummary, setPerformanceSummary] = useState<PerformanceSummary | null>(null);
+  const [goalProgress, setGoalProgress] = useState<GoalProgress | null>(null);
 
-    if (!inputData.likes) {
-      alert('いいね数を入力してください');
-      return;
-    }
-    if (!inputData.reach) {
-      alert('閲覧数を入力してください');
-      return;
-    }
-
-    setIsAnalyticsLoading(true);
-    try {
-      const idToken = await user.getIdToken();
-      
-      const response = await fetch('/api/analytics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-          'x-user-id': user.uid,
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          postId: null,
-          likes: inputData.likes,
-          comments: inputData.comments,
-          shares: inputData.shares,
-          reach: inputData.reach,
-          saves: inputData.saves,
-          followerIncrease: inputData.followerIncrease,
-          publishedAt: inputData.publishedAt,
-          publishedTime: inputData.publishedTime,
-          title: inputData.title,
-          content: inputData.content,
-          hashtags: inputData.hashtags,
-          thumbnail: inputData.thumbnail,
-          category: inputData.category,
-          audience: inputData.audience,
-          reachSource: inputData.reachSource,
-          sentiment: sentimentData?.sentiment || null,
-          sentimentMemo: sentimentData?.memo || ''
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '保存に失敗しました');
-      }
-
-      const result = await response.json();
-      console.log('Analytics saved:', result);
-
-      alert('投稿分析データを保存しました！');
-      
-      // データを再取得
-      await fetchAnalytics();
-
-      // 入力データをリセット
-      setInputData({
-        likes: '',
-        comments: '',
-        shares: '',
-        reposts: '',
-        reach: '',
-        saves: '',
-        followerIncrease: '',
-        publishedAt: new Date().toISOString().split('T')[0],
-        publishedTime: new Date().toTimeString().slice(0, 5),
-        title: '',
-        content: '',
-        hashtags: '',
-        thumbnail: '',
-        category: 'feed',
-        // フィード専用フィールド
-        reachFollowerPercent: '',
-        interactionCount: '',
-        interactionFollowerPercent: '',
-        reachSourceProfile: '',
-        reachSourceFeed: '',
-        reachSourceExplore: '',
-        reachSourceSearch: '',
-        reachSourceOther: '',
-        reachedAccounts: '',
-        profileVisits: '',
-        profileFollows: '',
-        // リール専用フィールド
-        reelReachFollowerPercent: '',
-        reelInteractionCount: '',
-        reelInteractionFollowerPercent: '',
-        reelReachSourceProfile: '',
-        reelReachSourceReel: '',
-        reelReachSourceExplore: '',
-        reelReachSourceSearch: '',
-        reelReachSourceOther: '',
-        reelReachedAccounts: '',
-        reelSkipRate: '',
-        reelNormalSkipRate: '',
-        reelPlayTime: '',
-        reelAvgPlayTime: '',
-        audience: {
-          gender: {
-            male: '',
-            female: '',
-            other: ''
-          },
-          age: {
-            '13-17': '',
-            '18-24': '',
-            '25-34': '',
-            '35-44': '',
-            '45-54': '',
-            '55-64': '',
-            '65+': ''
-          }
-        },
-        reachSource: {
-          sources: {
-            posts: '',
-            profile: '',
-            explore: '',
-            search: '',
-            other: ''
-          },
-          followers: {
-            followers: '',
-            nonFollowers: ''
-          }
-        }
-      });
-
-    } catch (error) {
-      console.error('保存エラー:', error);
-      alert(`保存に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsAnalyticsLoading(false);
-    }
-  };
-
-  // 目標設定を保存
-  const saveGoalSettings = async () => {
-    if (!user?.uid) return;
-    
-    try {
-      setIsSavingGoals(true);
-      const idToken = await user.getIdToken();
-      
-      const response = await fetch('/api/instagram/goal-settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user.uid,
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify(goalSettings)
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setShowGoalSettings(false);
-          // 目標達成追跡を再取得
-          await fetchGoalTracking();
-          alert('目標設定を保存しました！');
-        }
-      }
-    } catch (error) {
-      console.error('目標設定保存エラー:', error);
-      alert('目標設定の保存に失敗しました');
-    } finally {
-      setIsSavingGoals(false);
-    }
-  };
-
-  // 目標設定を読み込み
-  const fetchGoalSettings = useCallback(async () => {
-    if (!user?.uid) return;
-    
-    try {
-      const idToken = await user.getIdToken();
-      const response = await fetch('/api/instagram/goal-settings', {
-        headers: {
-          'x-user-id': user.uid,
-          'Authorization': `Bearer ${idToken}`
-        }
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          setGoalSettings({
-            weeklyPostGoal: result.data.weeklyPostGoal || 5,
-            followerGoal: result.data.followerGoal || 10,
-            monthlyPostGoal: result.data.monthlyPostGoal || 20
-          });
-        }
-      }
-    } catch (error) {
-      console.error('目標設定取得エラー:', error);
-    }
-  }, [user]);
 
   // 次のアクションを取得
   const fetchNextActions = useCallback(async () => {
@@ -409,13 +144,19 @@ function InstagramDashboardContent() {
     }
   }, [user]);
 
-  // 目標達成追跡を取得
-  const fetchGoalTracking = useCallback(async () => {
+  // 次のアクションを即座に更新する関数（外部から呼び出し可能）
+  const refreshNextActions = useCallback(() => {
+    console.log('🔄 Refreshing next actions...');
+    fetchNextActions();
+  }, [fetchNextActions]);
+
+  // 最近の投稿を取得
+  const fetchRecentPosts = useCallback(async () => {
     if (!user?.uid) return;
     
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch('/api/instagram/goal-tracking', {
+      const response = await fetch('/api/instagram/recent-posts', {
         headers: {
           'x-user-id': user.uid,
           'Authorization': `Bearer ${idToken}`
@@ -425,11 +166,59 @@ function InstagramDashboardContent() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          setGoalNotifications(result.data.goals.slice(0, 3)); // 上位3件のみ表示
+          setRecentPosts(result.data.posts || []);
         }
       }
     } catch (error) {
-      console.error('目標達成追跡取得エラー:', error);
+      console.error('Recent posts fetch error:', error);
+    }
+  }, [user]);
+
+  // パフォーマンスサマリーを取得
+  const fetchPerformanceSummary = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/instagram/performance-summary', {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setPerformanceSummary(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Performance summary fetch error:', error);
+    }
+  }, [user]);
+
+  // 目標進捗を取得
+  const fetchGoalProgress = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/instagram/goal-progress', {
+        headers: {
+          'x-user-id': user.uid,
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setGoalProgress(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Goal progress fetch error:', error);
     }
   }, [user]);
 
@@ -455,6 +244,7 @@ function InstagramDashboardContent() {
     }
     return [];
   }, [user]);
+
 
   // ダッシュボード統計を取得
   const fetchDashboardStats = useCallback(async () => {
@@ -518,39 +308,44 @@ function InstagramDashboardContent() {
       // ダッシュボード統計をAPIから取得
       await fetchDashboardStats();
 
-
-
-      // 目標達成通知をAPIから取得
-      await fetchGoalTracking();
-
-      // 次のアクションを取得
-      await fetchNextActions();
+      // 新しいデータを取得
+      await Promise.all([
+        fetchRecentPosts(),
+        fetchPerformanceSummary(),
+        fetchGoalProgress(),
+        fetchNextActions()
+      ]);
 
     } catch (error) {
       console.error('データ取得エラー:', error);
     } finally {
       setLoading(false);
     }
-  }, [user, fetchAnalyticsData, fetchDashboardStats, fetchGoalTracking, fetchNextActions]);
+  }, [user, fetchAnalyticsData, fetchDashboardStats, fetchRecentPosts, fetchPerformanceSummary, fetchGoalProgress, fetchNextActions]);
+
+  // グローバルにアクセス可能な更新関数を設定
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as Window & { refreshNextActions?: () => void }).refreshNextActions = refreshNextActions;
+    }
+  }, [refreshNextActions]);
 
   useEffect(() => {
     // 認証状態が確定してからデータを取得
     if (user?.uid) {
       console.log('User authenticated, fetching data for:', user.uid);
       fetchPostsAndCalculateStats();
-      fetchGoalSettings(); // 目標設定を読み込み
-      fetchAnalytics(); // analyticsデータを取得
       
-      // ポーリングは一時的に無効化
-      // const interval = setInterval(() => {
-      //   fetchPostsAndCalculateStats();
-      // }, 300000);
+      // 4日ごとに自動更新（4日 = 4 * 24 * 60 * 60 * 1000 = 345,600,000ms）
+      const interval = setInterval(() => {
+        fetchPostsAndCalculateStats();
+      }, 345600000);
       
-      // return () => clearInterval(interval);
+      return () => clearInterval(interval);
     } else {
       console.log('User not authenticated, skipping data fetch');
     }
-  }, [user?.uid, fetchPostsAndCalculateStats, fetchGoalSettings, fetchAnalytics]);
+  }, [user?.uid, fetchPostsAndCalculateStats]);
 
   // ローディング状態
   if (profileLoading) {
@@ -580,80 +375,11 @@ function InstagramDashboardContent() {
         <div className="max-w-7xl mx-auto">
           {/* 計画内容の連携表示 */}
           <div className="mb-8">
-            {(() => {
-              // フォロワー増加数を計算
-              const totalFollowerIncrease = analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
-              const actualFollowers = planData ? Number(planData.currentFollowers || 0) + totalFollowerIncrease : 0;
-              
-              return (
-                <CurrentPlanCard 
-                  planData={planData}
-                  snsType="instagram"
-                  actualFollowers={actualFollowers}
-                />
-              );
-            })()}
-          </div>
-
-          {/* 投稿分析統計 */}
-          <div className="mb-8">
-            <AnalyticsStats
-              analyticsData={analyticsData}
-              isLoading={isAnalyticsLoading}
+            <CurrentPlanCard 
+              planData={planData}
+              snsType="instagram"
+              actualFollowers={planData ? Number(planData.currentFollowers || 0) : 0}
             />
-          </div>
-
-          {/* フォロワー増加入力セクション */}
-          <div className="bg-white p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-              <span className="text-2xl mr-2">👥</span>
-              フォロワー増加入力
-            </h2>
-            
-            <div className="max-w-md">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  フォロワー増加数
-                </label>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="number"
-                    value={inputData.followerIncrease}
-                    onChange={(e) => setInputData(prev => ({ ...prev, followerIncrease: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="例: 50"
-                    min="0"
-                  />
-                  <span className="text-sm text-gray-600">人</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  今週のフォロワー増加数を入力してください
-                </p>
-              </div>
-              
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    if (!inputData.followerIncrease) {
-                      alert('フォロワー増加数を入力してください');
-                      return;
-                    }
-                    handleSaveAnalytics();
-                  }}
-                  disabled={isAnalyticsLoading}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                >
-                  {isAnalyticsLoading ? '保存中...' : 'フォロワー増加を記録'}
-                </button>
-                
-                <button
-                  onClick={() => setInputData(prev => ({ ...prev, followerIncrease: '' }))}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  クリア
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* 次のアクション */}
@@ -702,163 +428,346 @@ function InstagramDashboardContent() {
             </div>
           </div>
 
-          {/* 目標設定・達成通知 */}
-          <div className="bg-white p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                <span className="text-2xl mr-2">🎯</span>
-                目標設定・達成状況
+          {/* ダッシュボード統計 */}
+          <div className="mb-8">
+            <div className="bg-white p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span className="text-2xl mr-2">📊</span>
+                ダッシュボード統計
               </h2>
-              <button
-                onClick={() => setShowGoalSettings(!showGoalSettings)}
-                className="px-4 py-2 bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
-              >
-                {showGoalSettings ? 'キャンセル' : '目標設定'}
-              </button>
-            </div>
-
-                  {/* 目標設定フォーム */}
-                  {showGoalSettings && (
-                    <div className="bg-white border border-gray-200 p-4 mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">目標を設定してください</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">週間投稿目標</label>
-                    <input
-                      type="number"
-                      value={goalSettings.weeklyPostGoal}
-                      onChange={(e) => setGoalSettings(prev => ({ ...prev, weeklyPostGoal: parseInt(e.target.value) || 0 }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="1"
-                      max="50"
-                    />
-                    <p className="text-xs text-black mt-1">週に何回投稿するか</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">フォロワー増加目標</label>
-                    <input
-                      type="number"
-                      value={goalSettings.followerGoal}
-                      onChange={(e) => setGoalSettings(prev => ({ ...prev, followerGoal: parseInt(e.target.value) || 0 }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="1"
-                      max="1000"
-                    />
-                    <p className="text-xs text-black mt-1">月に何人増やすか</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">月間投稿目標</label>
-                    <input
-                      type="number"
-                      value={goalSettings.monthlyPostGoal}
-                      onChange={(e) => setGoalSettings(prev => ({ ...prev, monthlyPostGoal: parseInt(e.target.value) || 0 }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="1"
-                      max="200"
-                    />
-                    <p className="text-xs text-black mt-1">月に何回投稿するか</p>
-                  </div>
-                </div>
-                <div className="flex justify-end mt-4 space-x-3">
-                  <button
-                    onClick={() => setShowGoalSettings(false)}
-                    className="px-4 py-2 text-black border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    onClick={saveGoalSettings}
-                    disabled={isSavingGoals}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                  >
-                    {isSavingGoals ? '保存中...' : '目標を保存'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 目標達成状況表示 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
               {loading ? (
-                <div className="col-span-3 text-center py-8">
+                <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-                  <p className="text-black mt-2">読み込み中...</p>
-                </div>
-              ) : goalNotifications.length === 0 ? (
-                <div className="col-span-3 text-center py-8">
-                  <div className="text-black text-4xl mb-2">🎯</div>
-                  <p className="text-black">目標を設定してください</p>
-                  <button
-                    onClick={() => setShowGoalSettings(true)}
-                    className="mt-2 px-4 py-2 bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
-                  >
-                    目標を設定する
-                  </button>
+                  <p className="text-gray-600 mt-2">統計データを読み込み中...</p>
                 </div>
               ) : (
-                goalNotifications.map((goal, index) => (
-                  <div key={index} className="bg-white p-4 border border-gray-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">{goal.title}</span>
-                      <span className={`text-xs px-2 py-1 ${
-                        goal.status === 'achieved' 
-                          ? 'text-green-600 bg-green-100' 
-                          : 'text-orange-600 bg-orange-100'
-                      }`}>
-                        {goal.status === 'achieved' ? '🎉 達成済み' : '進行中'}
-                      </span>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    {/* フォロワー数 */}
+                    <div className="bg-white p-4 border border-orange-500">
+                      <div className="mb-2">
+                        <span className="text-xs text-orange-600 font-medium">フォロワー</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{stats.followers.toLocaleString()}</div>
+                      <div className="text-xs text-gray-600">
+                        {stats.followerGrowth > 0 ? '+' : ''}{stats.followerGrowth}%
+                      </div>
                     </div>
-                    <div className={`text-2xl font-bold ${
-                      goal.status === 'achieved' ? 'text-green-600' : 'text-orange-600'
-                    }`}>
-                      {goal.unit === '件' ? `${goal.current}/${goal.target}` : `${goal.current}${goal.unit}`}
+
+                    {/* エンゲージメント率 */}
+                    <div className="bg-white p-4 border border-orange-500">
+                      <div className="mb-2">
+                        <span className="text-xs text-orange-600 font-medium">エンゲージ</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{stats.engagement.toFixed(1)}%</div>
+                      <div className="text-xs text-gray-600">平均率</div>
                     </div>
-                    <div className="text-xs text-black">
-                      {goal.unit === '件' ? `${Math.round((goal.current / goal.target) * 100)}% 達成` : `目標: ${goal.target}${goal.unit}`}
+
+                    {/* リーチ数 */}
+                    <div className="bg-white p-4 border border-orange-500">
+                      <div className="mb-2">
+                        <span className="text-xs text-orange-600 font-medium">リーチ</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{stats.reach.toLocaleString()}</div>
+                      <div className="text-xs text-gray-600">総リーチ</div>
                     </div>
-                  </div>
-                ))
+
+                    {/* いいね数 */}
+                    <div className="bg-white p-4 border border-orange-500">
+                      <div className="mb-2">
+                        <span className="text-xs text-orange-600 font-medium">いいね</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{stats.likes.toLocaleString()}</div>
+                      <div className="text-xs text-gray-600">総いいね</div>
+                    </div>
+
+                    {/* コメント数 */}
+                    <div className="bg-white p-4 border border-orange-500">
+                      <div className="mb-2">
+                        <span className="text-xs text-orange-600 font-medium">コメント</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{stats.comments.toLocaleString()}</div>
+                      <div className="text-xs text-gray-600">総コメント</div>
+                    </div>
+
+                    {/* 保存数 */}
+                    <div className="bg-white p-4 border border-orange-500">
+                      <div className="mb-2">
+                        <span className="text-xs text-orange-600 font-medium">保存</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{stats.saves.toLocaleString()}</div>
+                      <div className="text-xs text-gray-600">総保存</div>
+                    </div>
+                </div>
               )}
             </div>
           </div>
 
-          {/* 投稿分析セクション */}
-          <div className="bg-white p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-              <span className="text-2xl mr-2">📊</span>
-              投稿分析
-            </h2>
-            
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {/* 左カラム: 分析データ入力フォーム */}
-              <div className="space-y-6">
-                {/* 統合された分析データ入力フォーム */}
-                <AnalyticsForm
-                  data={inputData}
-                  onChange={setInputData}
-                  onSave={handleSaveAnalytics}
-                  isLoading={isAnalyticsLoading}
-                />
-              </div>
+          {/* 投稿活動統計 */}
+          <div className="mb-8">
+            <div className="bg-white p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span className="text-2xl mr-2">📈</span>
+                投稿活動統計
+              </h2>
+              
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">活動データを読み込み中...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* 今週の投稿数 */}
+                    <div className="bg-white p-6 border border-orange-500">
+                      <div className="mb-4">
+                        <span className="text-sm text-orange-600 font-medium">今週の投稿</span>
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900 mb-2">{stats.postsThisWeek}</div>
+                      <div className="text-sm text-gray-600">今週の投稿数</div>
+                    </div>
 
-              {/* 右カラム: 投稿プレビュー */}
-              <div className="space-y-6">
-                {/* 投稿プレビューセクション */}
-                <PostPreview
-                  selectedPost={null}
-                  inputData={{
-                    title: inputData.title,
-                    content: inputData.content,
-                    hashtags: inputData.hashtags,
-                    category: inputData.category,
-                    thumbnail: inputData.thumbnail,
-                    publishedAt: inputData.publishedAt,
-                    publishedTime: inputData.publishedTime
-                  }}
-                />
+                    {/* 月間フィード投稿 */}
+                    <div className="bg-white p-6 border border-orange-500">
+                      <div className="mb-4">
+                        <span className="text-sm text-orange-600 font-medium">フィード</span>
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900 mb-2">{stats.monthlyFeedPosts}</div>
+                      <div className="text-sm text-gray-600">今月の投稿数</div>
+                    </div>
+
+                    {/* 月間リール投稿 */}
+                    <div className="bg-white p-6 border border-orange-500">
+                      <div className="mb-4">
+                        <span className="text-sm text-orange-600 font-medium">リール</span>
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900 mb-2">{stats.monthlyReelPosts}</div>
+                      <div className="text-sm text-gray-600">今月の投稿数</div>
+                    </div>
+
+                    {/* 月間ストーリー投稿 */}
+                    <div className="bg-white p-6 border border-orange-500">
+                      <div className="mb-4">
+                        <span className="text-sm text-orange-600 font-medium">ストーリー</span>
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900 mb-2">{stats.monthlyStoryPosts}</div>
+                      <div className="text-sm text-gray-600">今月の投稿数</div>
+                    </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* クイックアクション */}
+          <div className="mb-8">
+            <div className="bg-white p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span className="text-2xl mr-2">⚡</span>
+                クイックアクション
+              </h2>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <a
+                  href="/instagram/lab/feed"
+                  className="p-4 border border-orange-500 hover:bg-orange-50 transition-colors text-center"
+                >
+                  <div className="text-3xl mb-2">📝</div>
+                  <div className="font-medium text-gray-800">フィード作成</div>
+                  <div className="text-sm text-gray-600">新しい投稿を作成</div>
+                </a>
+                
+                <a
+                  href="/instagram/lab/reel"
+                  className="p-4 border border-orange-500 hover:bg-orange-50 transition-colors text-center"
+                >
+                  <div className="text-3xl mb-2">🎬</div>
+                  <div className="font-medium text-gray-800">リール作成</div>
+                  <div className="text-sm text-gray-600">動画コンテンツ作成</div>
+                </a>
+                
+                <a
+                  href="/instagram/lab/story"
+                  className="p-4 border border-orange-500 hover:bg-orange-50 transition-colors text-center"
+                >
+                  <div className="text-3xl mb-2">📱</div>
+                  <div className="font-medium text-gray-800">ストーリー作成</div>
+                  <div className="text-sm text-gray-600">一時的な投稿作成</div>
+                </a>
+                
+                <a
+                  href="/instagram/analytics"
+                  className="p-4 border border-orange-500 hover:bg-orange-50 transition-colors text-center"
+                >
+                  <div className="text-3xl mb-2">📊</div>
+                  <div className="font-medium text-gray-800">分析実行</div>
+                  <div className="text-sm text-gray-600">投稿パフォーマンス分析</div>
+                </a>
               </div>
             </div>
           </div>
+
+          {/* 最近の投稿 */}
+          <div className="mb-8">
+            <div className="bg-white p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span className="text-2xl mr-2">📋</span>
+                最近の投稿
+              </h2>
+              
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">投稿データを読み込み中...</p>
+                </div>
+              ) : recentPosts.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">📝</div>
+                  <p className="text-gray-600">最近の投稿がありません</p>
+                  <p className="text-sm text-gray-500 mt-1">新しい投稿を作成しましょう</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentPosts.slice(0, 3).map((post) => (
+                    <div key={post.id} className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                            <span className="text-2xl">{post.icon}</span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-800">{post.title}</h3>
+                            <p className="text-sm text-gray-600">{post.timeAgo}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {post.hasAnalytics ? (
+                            <>
+                              <div className="text-sm text-gray-600">いいね: {post.likes.toLocaleString()}</div>
+                              <div className="text-sm text-gray-600">コメント: {post.comments.toLocaleString()}</div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-orange-600">分析待ち</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="text-center py-4">
+                    <Link
+                      href="/instagram/posts"
+                      className="text-orange-600 hover:text-orange-700 font-medium"
+                    >
+                      すべての投稿を見る →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* パフォーマンスサマリー */}
+          <div className="mb-8">
+            <div className="bg-white p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span className="text-2xl mr-2">📈</span>
+                パフォーマンスサマリー
+              </h2>
+              
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">パフォーマンスデータを読み込み中...</p>
+                </div>
+              ) : performanceSummary ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-4 border border-orange-500">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-orange-600 font-medium">{performanceSummary.weeklyGrowth.label}</span>
+                      <span className={`text-sm ${performanceSummary.weeklyGrowth.color}`}>{performanceSummary.weeklyGrowth.status}</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">+{performanceSummary.weeklyGrowth.value}</div>
+                    <div className="text-sm text-gray-600">フォロワー増加</div>
+                  </div>
+                  
+                  <div className="p-4 border border-orange-500">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-orange-600 font-medium">{performanceSummary.frequency.label}</span>
+                      <span className={`text-sm ${performanceSummary.frequency.color}`}>{performanceSummary.frequency.status}</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{performanceSummary.frequency.value}</div>
+                    <div className="text-sm text-gray-600">今週の投稿数</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">📈</div>
+                  <p className="text-gray-600">パフォーマンスデータがありません</p>
+                  <p className="text-sm text-gray-500 mt-1">投稿と分析を開始しましょう</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 目標進捗 */}
+          <div className="mb-8">
+            <div className="bg-white p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span className="text-2xl mr-2">🎯</span>
+                目標進捗
+              </h2>
+              
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">目標データを読み込み中...</p>
+                </div>
+              ) : goalProgress ? (
+                <div className="space-y-4">
+                  <div className="p-4 border border-orange-500">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-800">{goalProgress.weeklyPosts.label}</span>
+                      <span className="text-sm text-gray-600">{goalProgress.weeklyPosts.current}/{goalProgress.weeklyPosts.goal}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-orange-500 h-2 rounded-full" 
+                        style={{ width: `${goalProgress.weeklyPosts.progress}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {Math.round(goalProgress.weeklyPosts.progress)}% 達成 - {goalProgress.weeklyPosts.status}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 border border-orange-500">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-800">{goalProgress.followerGrowth.label}</span>
+                      <span className="text-sm text-gray-600">+{goalProgress.followerGrowth.current.toFixed(1)}/{goalProgress.followerGrowth.goal}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full" 
+                        style={{ width: `${goalProgress.followerGrowth.progress}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {Math.round(goalProgress.followerGrowth.progress)}% 達成 - {goalProgress.followerGrowth.status}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">🎯</div>
+                  <p className="text-gray-600">目標データがありません</p>
+                  <p className="text-sm text-gray-500 mt-1">目標を設定して進捗を追跡しましょう</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+
+
 
         </div>
       </SNSLayout>

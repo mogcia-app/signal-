@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '../../../../lib/firebase-admin';
 
 interface AnalyticsData {
   id: string;
   userId: string;
-  postId?: string;
+  postId: string | null;
   likes: number;
   comments: number;
   shares: number;
@@ -19,7 +19,7 @@ interface AnalyticsData {
   // 投稿情報
   title?: string;
   content?: string;
-  hashtags?: string[] | string; // 配列または文字列の両方に対応
+  hashtags?: string[] | string;
   thumbnail?: string;
   category?: 'reel' | 'feed' | 'story';
   // フィード専用フィールド
@@ -47,7 +47,6 @@ interface AnalyticsData {
   reelSkipRate?: number;
   reelNormalSkipRate?: number;
   reelPlayTime?: number;
-  reelAvgPlayTime?: number;
   // オーディエンス分析
   audience?: {
     gender: {
@@ -64,19 +63,24 @@ interface AnalyticsData {
       '55-64': number;
       '65+': number;
     };
+    topCities: {
+      city: string;
+      percentage: number;
+    }[];
+    topCountries: {
+      country: string;
+      percentage: number;
+    }[];
+    followers: number;
+    nonFollowers: number;
   };
+  // リーチソース分析
   reachSource?: {
-    sources: {
-      posts: number;
-      profile: number;
-      explore: number;
-      search: number;
-      other: number;
-    };
-    followers: {
-      followers: number;
-      nonFollowers: number;
-    };
+    profile: number;
+    feed: number;
+    explore: number;
+    search: number;
+    other: number;
   };
 }
 
@@ -84,7 +88,7 @@ interface PostData {
   id: string;
   title: string;
   content: string;
-  hashtags: string[] | string; // 配列または文字列の両方に対応
+  hashtags: string[] | string;
   postType: 'feed' | 'reel' | 'story';
   scheduledDate?: string;
   scheduledTime?: string;
@@ -128,49 +132,35 @@ function getWeekRange(weekString: string): { start: Date; end: Date } {
 }
 
 // 前期間のデータを取得
-function getPreviousPeriod(period: 'weekly' | 'monthly', currentDate: string): string {
+function getPreviousWeek(currentWeekString: string): string {
   try {
-    console.log('📅 getPreviousPeriod呼び出し:', { period, currentDate });
+    console.log('📅 getPreviousWeek呼び出し:', currentWeekString);
     
-    if (period === 'monthly') {
-      // 月次形式 (2025-10) を完全な日付に変換
-      const fullDate = currentDate + '-01';
-      console.log('📅 月次日付変換:', { currentDate, fullDate });
-      
-      const current = new Date(fullDate);
-      if (isNaN(current.getTime())) {
-        throw new Error(`Invalid date format: ${fullDate}`);
-      }
-      
-      current.setMonth(current.getMonth() - 1);
-      const result = current.toISOString().slice(0, 7);
-      console.log('📅 getPreviousPeriod結果(monthly):', result);
-      return result;
-    } else {
-      const [year, week] = currentDate.split('-W');
-      
-      if (!year || !week || isNaN(parseInt(year)) || isNaN(parseInt(week))) {
-        throw new Error(`Invalid year or week: year=${year}, week=${week}`);
-      }
-      
-      const currentWeek = parseInt(week);
-      const previousWeek = currentWeek > 1 ? currentWeek - 1 : 52;
-      const previousYear = currentWeek > 1 ? year : (parseInt(year) - 1).toString();
-      const result = `${previousYear}-W${previousWeek.toString().padStart(2, '0')}`;
-      console.log('📅 getPreviousPeriod結果(weekly):', result);
-      return result;
+    const [year, week] = currentWeekString.split('-W');
+    
+    if (!year || !week || isNaN(parseInt(year)) || isNaN(parseInt(week))) {
+      throw new Error(`Invalid year or week: year=${year}, week=${week}`);
     }
+    
+    const currentWeek = parseInt(week);
+    const previousWeek = currentWeek > 1 ? currentWeek - 1 : 52;
+    const previousYear = currentWeek > 1 ? year : (parseInt(year) - 1).toString();
+    const result = `${previousYear}-W${previousWeek.toString().padStart(2, '0')}`;
+    console.log('📅 getPreviousWeek結果:', result);
+    return result;
   } catch (error) {
-    console.error('❌ getPreviousPeriodエラー:', error);
-    console.error('❌ パラメータ:', { period, currentDate });
+    console.error('❌ getPreviousWeekエラー:', error);
+    console.error('❌ パラメータ:', currentWeekString);
     throw error;
   }
 }
 
 // データを期間でフィルタリング
-function filterDataByPeriod(data: AnalyticsData[], period: 'weekly' | 'monthly', date: string): AnalyticsData[] {
+function filterDataByWeek(data: AnalyticsData[], weekString: string): AnalyticsData[] {
   try {
-    console.log('🔍 filterDataByPeriod呼び出し:', { dataLength: data.length, period, date });
+    console.log('🔍 filterDataByWeek呼び出し:', { dataLength: data.length, weekString });
+    
+    const weekRange = getWeekRange(weekString);
     
     return data.filter(item => {
       try {
@@ -183,30 +173,18 @@ function filterDataByPeriod(data: AnalyticsData[], period: 'weekly' | 'monthly',
           return false;
         }
         
-        if (period === 'monthly') {
-          const itemMonth = itemDate.toISOString().slice(0, 7);
-          const matches = itemMonth === date;
-          if (matches) {
-            console.log('📅 月次マッチ:', { itemMonth, targetDate: date });
-          }
-          return matches;
-        } else if (period === 'weekly') {
-          const weekRange = getWeekRange(date);
-          const matches = itemDate >= weekRange.start && itemDate <= weekRange.end;
-          if (matches) {
-            console.log('📅 週次マッチ:', { itemDate, weekRange });
-          }
-          return matches;
+        const matches = itemDate >= weekRange.start && itemDate <= weekRange.end;
+        if (matches) {
+          console.log('📅 週次マッチ:', { itemDate, weekRange });
         }
-        
-        return true;
+        return matches;
       } catch (error) {
         console.error('❌ フィルタリングエラー:', error, 'item:', item);
         return false;
       }
     });
   } catch (error) {
-    console.error('❌ filterDataByPeriod全体エラー:', error);
+    console.error('❌ filterDataByWeek全体エラー:', error);
     return [];
   }
 }
@@ -230,57 +208,6 @@ function calculateTotals(analytics: AnalyticsData[]) {
 function calculateChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
   return ((current - previous) / previous * 100);
-}
-
-// オーディエンス分析を計算
-function calculateAudienceAnalysis(analytics: AnalyticsData[]) {
-  const audienceData = analytics.filter(data => data.audience);
-  if (audienceData.length === 0) {
-    return {
-      gender: { male: 0, female: 0, other: 0 },
-      age: { '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0 }
-    };
-  }
-
-  const avgGender = {
-    male: audienceData.reduce((sum, data) => sum + (data.audience?.gender.male || 0), 0) / audienceData.length,
-    female: audienceData.reduce((sum, data) => sum + (data.audience?.gender.female || 0), 0) / audienceData.length,
-    other: audienceData.reduce((sum, data) => sum + (data.audience?.gender.other || 0), 0) / audienceData.length
-  };
-
-  const avgAge = {
-    '18-24': audienceData.reduce((sum, data) => sum + (data.audience?.age['18-24'] || 0), 0) / audienceData.length,
-    '25-34': audienceData.reduce((sum, data) => sum + (data.audience?.age['25-34'] || 0), 0) / audienceData.length,
-    '35-44': audienceData.reduce((sum, data) => sum + (data.audience?.age['35-44'] || 0), 0) / audienceData.length,
-    '45-54': audienceData.reduce((sum, data) => sum + (data.audience?.age['45-54'] || 0), 0) / audienceData.length
-  };
-
-  return { gender: avgGender, age: avgAge };
-}
-
-// 閲覧ソース分析を計算
-function calculateReachSourceAnalysis(analytics: AnalyticsData[]) {
-  const reachSourceData = analytics.filter(data => data.reachSource);
-  if (reachSourceData.length === 0) {
-    return {
-      sources: { posts: 0, profile: 0, explore: 0, search: 0 },
-      followers: { followers: 0, nonFollowers: 0 }
-    };
-  }
-
-  const avgSources = {
-    posts: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.posts || 0), 0) / reachSourceData.length,
-    profile: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.profile || 0), 0) / reachSourceData.length,
-    explore: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.explore || 0), 0) / reachSourceData.length,
-    search: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.search || 0), 0) / reachSourceData.length
-  };
-
-  const avgFollowers = {
-    followers: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.followers.followers || 0), 0) / reachSourceData.length,
-    nonFollowers: reachSourceData.reduce((sum, data) => sum + (data.reachSource?.followers.nonFollowers || 0), 0) / reachSourceData.length
-  };
-
-  return { sources: avgSources, followers: avgFollowers };
 }
 
 // ハッシュタグ統計を計算（postsコレクション + 手動入力分析データから取得）
@@ -383,86 +310,94 @@ function calculateTimeSlotAnalysis(analytics: AnalyticsData[]) {
     { label: '午前 (9-12時)', range: [9, 12], color: 'from-green-400 to-green-600' },
     { label: '午後 (12-15時)', range: [12, 15], color: 'from-yellow-400 to-yellow-600' },
     { label: '夕方 (15-18時)', range: [15, 18], color: 'from-orange-400 to-orange-600' },
-    { label: '夜 (18-21時)', range: [18, 21], color: 'from-red-400 to-red-600' },
-    { label: '深夜 (21-6時)', range: [21, 24], color: 'from-purple-400 to-purple-600' }
+    { label: '夜間 (18-21時)', range: [18, 21], color: 'from-red-400 to-red-600' },
+    { label: '深夜 (21-6時)', range: [21, 6], color: 'from-purple-400 to-purple-600' }
   ];
 
-  return timeSlots.map(({ label, range, color }) => {
+  return timeSlots.map(slot => {
     const postsInRange = analytics.filter(data => {
-      if (data.publishedTime && data.publishedTime !== '') {
-        const hour = parseInt(data.publishedTime.split(':')[0]);
-        
-        if (range[0] === 21 && range[1] === 24) {
-          return hour >= 21 || hour < 6;
-        }
-        
-        return hour >= range[0] && hour < range[1];
+      const hour = data.publishedAt instanceof Date ? data.publishedAt.getHours() : 
+        (data.publishedAt && typeof data.publishedAt === 'object' && 'toDate' in data.publishedAt) ?
+          data.publishedAt.toDate().getHours() : new Date(data.publishedAt).getHours();
+      
+      if (slot.range[0] <= slot.range[1]) {
+        return hour >= slot.range[0] && hour < slot.range[1];
+      } else {
+        return hour >= slot.range[0] || hour < slot.range[1];
       }
-      return false;
     });
 
-    const avgEngagement = postsInRange.length > 0 
-      ? postsInRange.reduce((sum, data) => sum + (data.likes + data.comments + data.shares), 0) / postsInRange.length
-      : 0;
+    const totalEngagement = postsInRange.reduce((sum, data) => 
+      sum + data.likes + data.comments + data.shares + (data.saves || 0), 0);
+    const avgEngagement = postsInRange.length > 0 ? totalEngagement / postsInRange.length : 0;
 
     return {
-      label,
-      range,
-      color,
+      ...slot,
       postsInRange: postsInRange.length,
-      avgEngagement
+      avgEngagement: Math.round(avgEngagement)
     };
   });
 }
 
 // 投稿タイプ別統計を計算
 function calculatePostTypeStats(analytics: AnalyticsData[], posts: PostData[]) {
-  // analyticsから投稿タイプを集計（categoryフィールドを使用）
-  const feedCount = analytics.filter(data => data.category === 'feed').length;
-  const reelCount = analytics.filter(data => data.category === 'reel').length;
-  const storyCount = analytics.filter(data => data.category === 'story').length;
+  const postTypeCounts: { [key: string]: number } = { feed: 0, reel: 0, story: 0 };
+  
+  // postsコレクションから投稿タイプを集計
+  posts.forEach(post => {
+    if (post.postType && postTypeCounts.hasOwnProperty(post.postType)) {
+      postTypeCounts[post.postType]++;
+    }
+  });
 
-  // postsからの集計（後方互換性のため）
-  const postsFeedCount = posts.filter(post => post.postType === 'feed').length;
-  const postsReelCount = posts.filter(post => post.postType === 'reel').length;
-  const postsStoryCount = posts.filter(post => post.postType === 'story').length;
-
-  // analyticsとpostsの合計
-  const totalFeed = feedCount + postsFeedCount;
-  const totalReel = reelCount + postsReelCount;
-  const totalStory = storyCount + postsStoryCount;
-  const total = totalFeed + totalReel + totalStory;
-
+  const total = Object.values(postTypeCounts).reduce((sum, count) => sum + count, 0);
+  
   return [
-    { type: 'feed', count: totalFeed, label: '📸 フィード', color: 'from-blue-400 to-blue-600', bg: 'from-blue-50 to-blue-100' },
-    { type: 'reel', count: totalReel, label: '🎬 リール', color: 'from-purple-400 to-purple-600', bg: 'from-purple-50 to-purple-100' },
-    { type: 'story', count: totalStory, label: '📱 ストーリーズ', color: 'from-pink-400 to-pink-600', bg: 'from-pink-50 to-pink-100' }
+    { type: 'feed', count: postTypeCounts.feed, label: 'フィード', color: 'text-blue-600', bg: 'bg-blue-100' },
+    { type: 'reel', count: postTypeCounts.reel, label: 'リール', color: 'text-purple-600', bg: 'bg-purple-100' },
+    { type: 'story', count: postTypeCounts.story, label: 'ストーリー', color: 'text-green-600', bg: 'bg-green-100' }
   ].map(({ type, count, label, color, bg }) => {
     const percentage = total > 0 ? (count / total * 100) : 0;
     return { type, count, label, color, bg, percentage };
   });
 }
 
+// 現在の週を取得する関数
+function getCurrentWeek(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  
+  // 年の最初の日を取得
+  const startOfYear = new Date(year, 0, 1);
+  
+  // 現在の日付までの経過日数を計算
+  const daysSinceStart = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // 週数を計算（1週目から開始）
+  const weekNumber = Math.ceil((daysSinceStart + startOfYear.getDay() + 1) / 7);
+  
+  return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    console.log('🚀 月次レポートサマリーAPI開始');
+    console.log('🚀 週次レポートサマリーAPI開始');
     
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const period = searchParams.get('period') as 'weekly' | 'monthly';
-    const date = searchParams.get('date');
+    const weekString = searchParams.get('week') || getCurrentWeek(); // デフォルトは現在の週
 
-    console.log('🔍 パラメータ確認:', { userId, period, date });
+    console.log('🔍 パラメータ確認:', { userId, weekString });
 
-    if (!userId || !period || !date) {
+    if (!userId) {
       console.log('❌ パラメータ不足');
       return NextResponse.json(
-        { error: 'userId, period, date パラメータが必要です' },
+        { error: 'userId パラメータが必要です' },
         { status: 400 }
       );
     }
 
-    console.log('📊 月次レポートサマリー取得開始:', { userId, period, date });
+    console.log('📊 週次レポートサマリー取得開始:', { userId, weekString });
 
     // Firebase接続確認
     console.log('🔍 Firebase接続確認中...');
@@ -499,13 +434,11 @@ export async function GET(request: NextRequest) {
         publishedAt: data.publishedAt?.toDate ? data.publishedAt.toDate() : new Date(data.publishedAt || Date.now()),
         publishedTime: data.publishedTime || '',
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-        // 投稿情報
         title: data.title,
         content: data.content,
         hashtags: data.hashtags,
         thumbnail: data.thumbnail,
         category: data.category,
-        // フィード専用フィールド
         reachFollowerPercent: data.reachFollowerPercent,
         interactionCount: data.interactionCount,
         interactionFollowerPercent: data.interactionFollowerPercent,
@@ -517,7 +450,6 @@ export async function GET(request: NextRequest) {
         reachedAccounts: data.reachedAccounts,
         profileVisits: data.profileVisits,
         profileFollows: data.profileFollows,
-        // リール専用フィールド
         reelReachFollowerPercent: data.reelReachFollowerPercent,
         reelInteractionCount: data.reelInteractionCount,
         reelInteractionFollowerPercent: data.reelInteractionFollowerPercent,
@@ -530,8 +462,6 @@ export async function GET(request: NextRequest) {
         reelSkipRate: data.reelSkipRate,
         reelNormalSkipRate: data.reelNormalSkipRate,
         reelPlayTime: data.reelPlayTime,
-        reelAvgPlayTime: data.reelAvgPlayTime,
-        // オーディエンス分析
         audience: data.audience,
         reachSource: data.reachSource
       };
@@ -570,8 +500,8 @@ export async function GET(request: NextRequest) {
       postsCount: posts.length 
     });
 
-    // 現在期間のデータをフィルタリング（投稿一覧ページと同じロジック）
-    const currentAnalytics = filterDataByPeriod(analytics, period, date);
+    // 現在週のデータをフィルタリング
+    const currentAnalytics = filterDataByWeek(analytics, weekString);
     
     // 投稿データは期間フィルタリングを別途実装
     const currentPosts = posts.filter(post => {
@@ -579,35 +509,23 @@ export async function GET(request: NextRequest) {
         (post.createdAt && typeof post.createdAt === 'object' && 'toDate' in post.createdAt) ?
           post.createdAt.toDate() : new Date(post.createdAt);
       
-      if (period === 'monthly') {
-        const postMonth = postDate.toISOString().slice(0, 7);
-        return postMonth === date;
-      } else if (period === 'weekly') {
-        const weekRange = getWeekRange(date);
-        return postDate >= weekRange.start && postDate <= weekRange.end;
-      }
-      return true;
+      const weekRange = getWeekRange(weekString);
+      return postDate >= weekRange.start && postDate <= weekRange.end;
     });
     
-    // 前期間のデータを取得
-    const previousPeriod = getPreviousPeriod(period, date);
-    const previousAnalytics = filterDataByPeriod(analytics, period, previousPeriod);
+    // 前週のデータを取得
+    const previousWeek = getPreviousWeek(weekString);
+    const previousAnalytics = filterDataByWeek(analytics, previousWeek);
     const previousPosts = posts.filter(post => {
       const postDate = post.createdAt instanceof Date ? post.createdAt : 
         (post.createdAt && typeof post.createdAt === 'object' && 'toDate' in post.createdAt) ?
           post.createdAt.toDate() : new Date(post.createdAt);
       
-      if (period === 'monthly') {
-        const postMonth = postDate.toISOString().slice(0, 7);
-        return postMonth === previousPeriod;
-      } else if (period === 'weekly') {
-        const weekRange = getWeekRange(previousPeriod);
-        return postDate >= weekRange.start && postDate <= weekRange.end;
-      }
-      return true;
+      const weekRange = getWeekRange(previousWeek);
+      return postDate >= weekRange.start && postDate <= weekRange.end;
     });
 
-    console.log('📊 期間別データ:', { 
+    console.log('📊 週別データ:', { 
       currentAnalytics: currentAnalytics.length,
       currentPosts: currentPosts.length,
       previousAnalytics: previousAnalytics.length,
@@ -650,13 +568,9 @@ export async function GET(request: NextRequest) {
     };
 
     // 詳細分析を計算（投稿一覧ページと同じロジック）
-    const audienceAnalysis = calculateAudienceAnalysis(currentAnalytics);
-    const reachSourceAnalysis = calculateReachSourceAnalysis(currentAnalytics);
     const hashtagStats = calculateHashtagStats(currentAnalytics, currentPosts);
     const timeSlotAnalysis = calculateTimeSlotAnalysis(currentAnalytics);
     const postTypeStats = calculatePostTypeStats(currentAnalytics, currentPosts);
-    
-    console.log('📊 投稿タイプ別統計:', postTypeStats);
 
     // 最適な投稿時間を特定
     const bestTimeSlot = timeSlotAnalysis.reduce((best, current) => {
@@ -667,25 +581,22 @@ export async function GET(request: NextRequest) {
     }, timeSlotAnalysis[0]);
 
     const summary = {
-      period,
-      date,
+      period: 'weekly' as const,
+      date: weekString,
       totals: currentTotals,
       previousTotals,
       changes,
-      audienceAnalysis,
-      reachSourceAnalysis,
       hashtagStats,
       timeSlotAnalysis,
-      bestTimeSlot,
       postTypeStats,
-      // 新しいフィールドを追加
+      bestTimeSlot,
       avgEngagementRate: currentTotals.avgEngagementRate,
       totalSaves: currentTotals.totalSaves,
       totalReposts: currentTotals.totalReposts,
       totalFollowerIncrease: currentTotals.totalFollowerIncrease
     };
 
-    console.log('📊 月次レポートサマリー計算完了');
+    console.log('📊 週次レポートサマリー計算完了');
 
     return NextResponse.json({
       success: true,
@@ -693,7 +604,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ 月次レポートサマリー取得エラー:', error);
+    console.error('❌ 週次レポートサマリー取得エラー:', error);
     console.error('❌ エラー詳細:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -702,7 +613,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: '月次レポートサマリーの取得に失敗しました',
+        error: '週次レポートサマリーの取得に失敗しました',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

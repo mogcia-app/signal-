@@ -147,18 +147,18 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   const optimizedContent = getOptimizedContent();
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 h-full">
       {/* AI予測分析 - 開閉式 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-none shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
         {/* ヘッダー部分 */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-none flex items-center justify-center mr-3">
                 <Brain className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-black">AI予測分析</h2>
+                <h2 className="text-lg font-semibold text-black">AIまとめ</h2>
                 <p className="text-sm text-black">
                   {hasRunAnalysis ? 
                     (analysisResult?.masterContext?.isOptimized ? 
@@ -174,8 +174,8 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
             <div className="flex items-center space-x-3">
               {analysisResult?.masterContext && (
                 <div className="flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-purple-500" />
-                  <span className="text-xs text-purple-600 font-medium">
+                  <Sparkles className="w-4 h-4 text-orange-500" />
+                  <span className="text-xs text-orange-600 font-medium">
                     {analysisResult.masterContext.learningPhase === 'master' ? 'マスター' :
                      analysisResult.masterContext.learningPhase === 'optimized' ? '最適化済み' :
                      analysisResult.masterContext.learningPhase === 'learning' ? '学習中' : '初期段階'}
@@ -187,7 +187,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                 <button
                   onClick={handleRunAnalysis}
                   disabled={isLoading}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-none hover:from-orange-600 hover:to-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
@@ -204,7 +204,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
               ) : (
                 <button
                   onClick={handleCloseAnalysis}
-                  className="flex items-center space-x-2 px-4 py-2 text-black hover:text-black hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 text-black hover:text-black hover:bg-gray-100 rounded-none transition-colors"
                 >
                   <span>閉じる</span>
                 </button>
@@ -215,14 +215,14 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
 
         {/* 分析結果部分 */}
         {isExpanded && (
-          <div className="p-6">
+          <div className="p-6 flex-1">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-purple-600 mr-2" />
+                <Loader2 className="w-6 h-6 animate-spin text-orange-600 mr-2" />
                 <span className="text-black">AI分析を実行中...</span>
               </div>
             ) : error ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="bg-red-50 border border-red-200 rounded-none p-4">
                 <div className="flex items-center">
                   <div className="w-5 h-5 text-red-600 mr-2">⚠️</div>
                   <span className="text-sm text-red-800">{error}</span>
@@ -236,10 +236,41 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
               </div>
             ) : analysisResult ? (
               <div className="space-y-6">
+                {/* 今月/今週のまとめ */}
+                <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-50 rounded-none border border-orange-200">
+                  <div className="flex items-center mb-3">
+                    <div className="w-5 h-5 text-orange-600 mr-2">📊</div>
+                    <h3 className="font-semibold text-orange-900">
+                      {activeTab === 'weekly' ? '今週のまとめ' : '今月のまとめ'}
+                    </h3>
+                  </div>
+                  <div className="text-sm text-orange-800 whitespace-pre-wrap">
+                    {typeof monthlyReview?.message === 'string' ? monthlyReview.message : 
+                     analysisResult.summary || 'まとめを生成中...'}
+                  </div>
+                </div>
+
+                {/* 来月/来週の改善点 */}
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-none border border-blue-200">
+                  <div className="flex items-center mb-3">
+                    <Target className="w-5 h-5 text-blue-600 mr-2" />
+                    <h3 className="font-semibold text-blue-900">
+                      {activeTab === 'weekly' ? '来週の改善点' : '来月の改善点'}
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    {analysisResult.recommendations.slice(0, 3).map((recommendation, index) => (
+                      <div key={index} className="text-sm text-orange-800">
+                        • {recommendation}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* AI予測分析結果 */}
                 <div className="space-y-4">
                   {/* フォロワー増加予測 */}
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
                     <div className="flex items-center mb-3">
                       <div className="w-5 h-5 text-blue-600 mr-2">👥</div>
                       <h3 className="font-semibold text-blue-900">フォロワー増加予測</h3>
@@ -267,7 +298,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   </div>
 
                   {/* 投稿パフォーマンス予測 */}
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
                     <div className="flex items-center mb-3">
                       <Zap className="w-5 h-5 text-green-600 mr-2" />
                       <h3 className="font-semibold text-green-900">投稿パフォーマンス予測</h3>
@@ -295,7 +326,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   </div>
 
                   {/* AI最適化提案 */}
-                  <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
+                  <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-none border border-orange-200">
                     <div className="flex items-center mb-3">
                       <TrendingUp className="w-5 h-5 text-orange-600 mr-2" />
                       <h3 className="font-semibold text-orange-900">AI最適化提案</h3>
@@ -322,7 +353,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   </div>
 
                   {/* AI分析詳細インサイト */}
-                  <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+                  <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-none border border-indigo-200">
                     <div className="flex items-center mb-3">
                       <Brain className="w-5 h-5 text-indigo-600 mr-2" />
                       <h3 className="font-semibold text-indigo-900">AI分析詳細インサイト</h3>
@@ -345,7 +376,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="flex items-center mb-4">
-                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-none flex items-center justify-center mr-3">
                         <BarChart3 className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -355,7 +386,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     </div>
 
                     {/* 前期間との比較 */}
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-none border border-blue-200">
                       <div className="flex items-center mb-3">
                         <TrendingUp className="w-5 h-5 text-blue-600 mr-2" />
                         <h3 className="font-semibold text-blue-900">前期間との比較</h3>
@@ -389,7 +420,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     </div>
 
                     {/* 今月の成果サマリー */}
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
                       <div className="flex items-center mb-3">
                         <BarChart3 className="w-5 h-5 text-green-600 mr-2" />
                         <h3 className="font-semibold text-green-900">今月の成果サマリー</h3>
@@ -414,7 +445,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     </div>
 
                     {/* 先月の総評 */}
-                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-none border border-purple-200">
                       <div className="flex items-center mb-3">
                         <Target className="w-5 h-5 text-purple-600 mr-2" />
                         <h3 className="font-semibold text-purple-900">先月の総評</h3>

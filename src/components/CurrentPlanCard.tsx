@@ -22,7 +22,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   // 計画が存在しない場合
   if (!planData) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-none border border-gray-200 shadow-sm mb-4">
         <div className="p-8 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Target className="w-8 h-8 text-black" />
@@ -33,10 +33,10 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           <p className="text-black text-sm mb-4">
             {snsType === 'instagram' ? 'Instagram' : snsType === 'x' ? 'X (Twitter)' : snsType === 'tiktok' ? 'TikTok' : 'YouTube'}の成長を加速させるために、まず運用計画を立てましょう
           </p>
-          <a
-            href={`/${snsType}/plan`}
-            className="inline-flex items-center px-4 py-2 bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 transition-colors"
-          >
+                      <a
+              href={`/${snsType}/plan`}
+              className="inline-flex items-center px-4 py-2 bg-[#ff8a15] text-white rounded-none hover:bg-orange-600 transition-colors"
+            >
             <Target className="w-4 h-4 mr-2" />
             運用計画を立てる
           </a>
@@ -68,7 +68,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   const hasSimulation = simulationResult && typeof simulationResult === 'object';
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+    <div className="bg-white rounded-none border border-gray-200 shadow-sm mb-4">
       {/* ヘッダー */}
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <h3 className="font-semibold text-black flex items-center">
@@ -101,9 +101,9 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               {displayFollowers.toLocaleString()} → {targetFollowers.toLocaleString()}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div className="w-full bg-gray-200 rounded-none h-2.5">
             <div
-              className="bg-gradient-to-r from-[#ff8a15] to-orange-600 h-2.5 rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-[#ff8a15] to-orange-600 h-2.5 rounded-none transition-all duration-500"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
@@ -173,13 +173,13 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               {strategies.slice(0, 3).map((strategy, index) => (
                 <span
                   key={index}
-                  className="px-2.5 py-1 bg-orange-50 text-orange-700 text-xs rounded-md font-medium"
+                  className="px-2.5 py-1 bg-orange-50 text-orange-700 text-xs rounded-none font-medium"
                 >
                   {strategy}
                 </span>
               ))}
               {strategies.length > 3 && (
-                <span className="px-2.5 py-1 bg-gray-100 text-black text-xs rounded-md">
+                <span className="px-2.5 py-1 bg-gray-100 text-black text-xs rounded-none">
                   +{strategies.length - 3}個
                 </span>
               )}
@@ -190,7 +190,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
 
         {/* AI戦略サマリー（variant = 'full'の場合のみ） */}
         {variant === 'full' && planData.generatedStrategy && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <div className="bg-orange-50 border border-orange-200 rounded-none p-3">
             <p className="text-xs text-orange-700 font-medium mb-2">🤖 AI戦略が生成済み</p>
             <p className="text-xs text-black">
               計画ページで詳細を確認できます

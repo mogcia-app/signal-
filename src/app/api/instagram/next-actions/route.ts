@@ -12,12 +12,13 @@ export async function GET(request: NextRequest) {
 
     // 1. 分析待ちの投稿チェック
     try {
-      const unanalyzedPostsQuery = await adminDb
+      // すべての投稿を取得
+      const allPostsQuery = await adminDb
         .collection('posts')
         .where('userId', '==', userId)
-        .where('status', 'in', ['published', 'created'])
         .get();
 
+      // 分析済みの投稿IDを取得
       const analyticsQuery = await adminDb
         .collection('analytics')
         .where('userId', '==', userId)
@@ -25,9 +26,17 @@ export async function GET(request: NextRequest) {
 
       const analyzedPostIds = new Set(analyticsQuery.docs.map(doc => doc.data().postId).filter(Boolean));
       
-      const unanalyzedPosts = unanalyzedPostsQuery.docs.filter(doc => {
+      // 分析待ちの投稿をカウント（publishedステータスで、分析されていないもの）
+      const unanalyzedPosts = allPostsQuery.docs.filter(doc => {
         const postData = doc.data();
-        return !analyzedPostIds.has(doc.id) && postData.status === 'published';
+        return postData.status === 'published' && !analyzedPostIds.has(doc.id);
+      });
+
+      console.log('📊 分析待ち投稿チェック:', {
+        totalPosts: allPostsQuery.docs.length,
+        analyzedPosts: analyzedPostIds.size,
+        unanalyzedPosts: unanalyzedPosts.length,
+        analyzedPostIds: Array.from(analyzedPostIds)
       });
 
       if (unanalyzedPosts.length > 0) {
@@ -204,8 +213,24 @@ export async function GET(request: NextRequest) {
         });
       } else {
         const latestAnalytics = analyticsQuery.docs[0].data();
-        const lastAnalysisDate = latestAnalytics.createdAt?.toDate?.() || new Date(latestAnalytics.createdAt);
+        // createdAtを使用して分析データの保存日時から計算
+        let lastAnalysisDate = latestAnalytics.createdAt;
+        if (lastAnalysisDate && lastAnalysisDate.toDate) {
+          lastAnalysisDate = lastAnalysisDate.toDate();
+        } else if (lastAnalysisDate && typeof lastAnalysisDate === 'string') {
+          lastAnalysisDate = new Date(lastAnalysisDate);
+        } else {
+          lastAnalysisDate = new Date(latestAnalytics.createdAt);
+        }
+        
         const daysSinceLastAnalysis = Math.floor((new Date().getTime() - lastAnalysisDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        console.log('📈 分析データ鮮度チェック:', {
+          latestAnalyticsId: analyticsQuery.docs[0].id,
+          createdAt: latestAnalytics.createdAt,
+          lastAnalysisDate: lastAnalysisDate,
+          daysSinceLastAnalysis: daysSinceLastAnalysis
+        });
         
         if (daysSinceLastAnalysis > 7) {
           actions.push({
@@ -257,12 +282,294 @@ export async function GET(request: NextRequest) {
       console.error('Scheduled posts check error:', error);
     }
 
+    // 6. エンゲージメント率チェック
+    try {
+      const analyticsQuery = await adminDb
+        .collection('analytics')
+        .where('userId', '==', userId)
+        .get();
+
+      if (analyticsQuery.size > 0) {
+        let totalEngagement = 0;
+        let totalReach = 0;
+        let postCount = 0;
+
+        analyticsQuery.forEach(doc => {
+          const data = doc.data();
+          const engagement = (data.likes || 0) + (data.comments || 0) + (data.shares || 0) + (data.saves || 0);
+          totalEngagement += engagement;
+          totalReach += data.reach || 0;
+          postCount++;
+        });
+
+        const avgEngagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0;
+
+        if (avgEngagementRate < 3) {
+          actions.push({
+            id: 'low_engagement',
+            type: 'engagement',
+            priority: 'high',
+            title: 'エンゲージメント率が低いです',
+            description: `現在のエンゲージメント率: ${avgEngagementRate.toFixed(1)}%。コンテンツの質を向上させましょう`,
+            actionText: '改善策を見る',
+            actionUrl: '/instagram/plan',
+            icon: '📈',
+            color: 'red'
+          });
+        } else if (avgEngagementRate < 5) {
+          actions.push({
+            id: 'medium_engagement',
+            type: 'engagement',
+            priority: 'medium',
+            title: 'エンゲージメント率を向上させましょう',
+            description: `現在のエンゲージメント率: ${avgEngagementRate.toFixed(1)}%。さらなる改善の余地があります`,
+            actionText: '戦略を確認',
+            actionUrl: '/instagram/plan',
+            icon: '📊',
+            color: 'orange'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Engagement rate check error:', error);
+    }
+
+    // 7. ハッシュタグ戦略チェック
+    try {
+      const postsQuery = await adminDb
+        .collection('posts')
+        .where('userId', '==', userId)
+        .where('status', '==', 'published')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get();
+
+      let postsWithoutHashtags = 0;
+      let postsWithFewHashtags = 0;
+
+      postsQuery.forEach(doc => {
+        const data = doc.data();
+        const hashtagCount = data.hashtags ? data.hashtags.length : 0;
+        
+        if (hashtagCount === 0) {
+          postsWithoutHashtags++;
+        } else if (hashtagCount < 5) {
+          postsWithFewHashtags++;
+        }
+      });
+
+      if (postsWithoutHashtags > 0) {
+        actions.push({
+          id: 'no_hashtags',
+          type: 'content',
+          priority: 'high',
+          title: 'ハッシュタグなしの投稿があります',
+          description: `${postsWithoutHashtags}件の投稿にハッシュタグが設定されていません`,
+          actionText: 'ハッシュタグを追加',
+          actionUrl: '/instagram/posts',
+          icon: '#️⃣',
+          color: 'red'
+        });
+      } else if (postsWithFewHashtags > 0) {
+        actions.push({
+          id: 'few_hashtags',
+          type: 'content',
+          priority: 'medium',
+          title: 'ハッシュタグを増やしましょう',
+          description: `${postsWithFewHashtags}件の投稿でハッシュタグが少ないです`,
+          actionText: 'ハッシュタグ戦略を見る',
+          actionUrl: '/instagram/plan',
+          icon: '#️⃣',
+          color: 'orange'
+        });
+      }
+    } catch (error) {
+      console.error('Hashtag strategy check error:', error);
+    }
+
+    // 8. 投稿タイプのバランスチェック
+    try {
+      const postsQuery = await adminDb
+        .collection('posts')
+        .where('userId', '==', userId)
+        .where('status', '==', 'published')
+        .orderBy('createdAt', 'desc')
+        .limit(20)
+        .get();
+
+      const postTypeCounts: { [key: string]: number } = { feed: 0, reel: 0, story: 0 };
+      
+      postsQuery.forEach(doc => {
+        const data = doc.data();
+        const postType = data.postType || 'feed';
+        postTypeCounts[postType] = (postTypeCounts[postType] || 0) + 1;
+      });
+
+      const totalPosts = postsQuery.size;
+      const feedRatio = totalPosts > 0 ? postTypeCounts.feed / totalPosts : 0;
+      const reelRatio = totalPosts > 0 ? postTypeCounts.reel / totalPosts : 0;
+      const storyRatio = totalPosts > 0 ? postTypeCounts.story / totalPosts : 0;
+
+      if (feedRatio > 0.8) {
+        actions.push({
+          id: 'too_many_feeds',
+          type: 'content',
+          priority: 'medium',
+          title: 'フィード投稿が多すぎます',
+          description: 'リールやストーリーも活用してバランスの良い投稿をしましょう',
+          actionText: 'リールを作成',
+          actionUrl: '/instagram/lab/reel',
+          icon: '🎬',
+          color: 'orange'
+        });
+      } else if (reelRatio === 0 && totalPosts > 5) {
+        actions.push({
+          id: 'no_reels',
+          type: 'content',
+          priority: 'medium',
+          title: 'リール投稿がありません',
+          description: 'リールは高いエンゲージメント率を期待できるコンテンツです',
+          actionText: 'リールを作成',
+          actionUrl: '/instagram/lab/reel',
+          icon: '🎬',
+          color: 'blue'
+        });
+      } else if (storyRatio === 0 && totalPosts > 3) {
+        actions.push({
+          id: 'no_stories',
+          type: 'content',
+          priority: 'low',
+          title: 'ストーリー投稿がありません',
+          description: 'ストーリーでフォロワーとの親近感を高めましょう',
+          actionText: 'ストーリーを作成',
+          actionUrl: '/instagram/lab/story',
+          icon: '📱',
+          color: 'blue'
+        });
+      }
+    } catch (error) {
+      console.error('Post type balance check error:', error);
+    }
+
+    // 9. 投稿時間の最適化チェック
+    try {
+      const analyticsQuery = await adminDb
+        .collection('analytics')
+        .where('userId', '==', userId)
+        .orderBy('publishedAt', 'desc')
+        .limit(10)
+        .get();
+
+      if (analyticsQuery.size >= 5) {
+        const hourlyPerformance: { [key: number]: { total: number; count: number } } = {};
+        
+        analyticsQuery.forEach(doc => {
+          const data = doc.data();
+          const publishedAt = data.publishedAt?.toDate?.() || new Date(data.publishedAt);
+          const hour = publishedAt.getHours();
+          const engagement = (data.likes || 0) + (data.comments || 0) + (data.shares || 0) + (data.saves || 0);
+          
+          if (!hourlyPerformance[hour]) {
+            hourlyPerformance[hour] = { total: 0, count: 0 };
+          }
+          hourlyPerformance[hour].total += engagement;
+          hourlyPerformance[hour].count += 1;
+        });
+
+        // 最もパフォーマンスの良い時間帯を見つける
+        let bestHour = null;
+        let bestAvgEngagement = 0;
+        
+        Object.entries(hourlyPerformance).forEach(([hour, data]) => {
+          const avgEngagement = data.total / data.count;
+          if (avgEngagement > bestAvgEngagement) {
+            bestAvgEngagement = avgEngagement;
+            bestHour = parseInt(hour);
+          }
+        });
+
+        if (bestHour !== null) {
+          const currentHour = new Date().getHours();
+          const timeDiff = Math.abs(currentHour - bestHour);
+          
+          if (timeDiff > 2) {
+            actions.push({
+              id: 'optimal_posting_time',
+              type: 'timing',
+              priority: 'low',
+              title: '最適な投稿時間を活用しましょう',
+              description: `${bestHour}時台の投稿が最もエンゲージメント率が高いです`,
+              actionText: '投稿時間を確認',
+              actionUrl: '/instagram/analytics',
+              icon: '⏰',
+              color: 'blue'
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Posting time optimization check error:', error);
+    }
+
+    // 10. フォロワー成長率チェック
+    try {
+      const analyticsQuery = await adminDb
+        .collection('analytics')
+        .where('userId', '==', userId)
+        .orderBy('publishedAt', 'desc')
+        .limit(7)
+        .get();
+
+      if (analyticsQuery.size >= 3) {
+        let totalFollowerIncrease = 0;
+        let postCount = 0;
+
+        analyticsQuery.forEach(doc => {
+          const data = doc.data();
+          if (data.followerIncrease) {
+            totalFollowerIncrease += parseInt(data.followerIncrease) || 0;
+            postCount++;
+          }
+        });
+
+        const avgDailyGrowth = postCount > 0 ? totalFollowerIncrease / postCount : 0;
+
+        if (avgDailyGrowth < 0) {
+          actions.push({
+            id: 'follower_decline',
+            type: 'growth',
+            priority: 'high',
+            title: 'フォロワーが減少しています',
+            description: '最近の投稿でフォロワーが減っています。コンテンツを見直しましょう',
+            actionText: '戦略を見直す',
+            actionUrl: '/instagram/plan',
+            icon: '📉',
+            color: 'red'
+          });
+        } else if (avgDailyGrowth < 1) {
+          actions.push({
+            id: 'slow_growth',
+            type: 'growth',
+            priority: 'medium',
+            title: 'フォロワー成長が緩やかです',
+            description: 'より魅力的なコンテンツでフォロワー増加を加速させましょう',
+            actionText: '成長戦略を確認',
+            actionUrl: '/instagram/plan',
+            icon: '📈',
+            color: 'orange'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Follower growth rate check error:', error);
+    }
+
     // 優先度順にソート（high > medium > low）
     const priorityOrder: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
     actions.sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
 
-    // 最大3件まで返す
-    const limitedActions = actions.slice(0, 3);
+    // 最大5件まで返す
+    const limitedActions = actions.slice(0, 5);
 
     return NextResponse.json({ 
       success: true, 

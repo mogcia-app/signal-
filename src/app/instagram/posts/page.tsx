@@ -414,6 +414,12 @@ export default function InstagramPostsPage() {
       await postsApi.delete(postId);
       setPosts(posts.filter(post => post.id !== postId));
       alert('投稿を削除しました');
+      
+      // 次のアクションを即座に更新
+      if (typeof window !== 'undefined' && (window as Window & { refreshNextActions?: () => void }).refreshNextActions) {
+        console.log('🔄 Triggering next actions refresh after post deletion');
+        (window as Window & { refreshNextActions?: () => void }).refreshNextActions!();
+      }
     } catch (error) {
       console.error('削除エラー:', error);
       alert('削除に失敗しました');
@@ -445,6 +451,12 @@ export default function InstagramPostsPage() {
         console.log('Delete result:', result);
         setAnalyticsData(analyticsData.filter(a => a.id !== analyticsId));
         alert('分析データを削除しました');
+        
+        // 次のアクションを即座に更新
+        if (typeof window !== 'undefined' && (window as Window & { refreshNextActions?: () => void }).refreshNextActions) {
+          console.log('🔄 Triggering next actions refresh after analytics deletion');
+          (window as Window & { refreshNextActions?: () => void }).refreshNextActions!();
+        }
       } else {
         const errorText = await response.text();
         console.error('Delete error response:', errorText);

@@ -534,6 +534,12 @@ function AnalyticsReelContent() {
       // データを再取得
       await fetchAnalytics();
 
+      // 次のアクションを即座に更新
+      if (typeof window !== 'undefined' && (window as Window & { refreshNextActions?: () => void }).refreshNextActions) {
+        console.log('🔄 Triggering next actions refresh after analytics save');
+        (window as Window & { refreshNextActions?: () => void }).refreshNextActions!();
+      }
+
       // 入力データをリセット
       setInputData({
         likes: '',

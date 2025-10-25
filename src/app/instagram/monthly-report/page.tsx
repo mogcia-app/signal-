@@ -14,10 +14,8 @@ import { PerformanceRating } from './components/PerformanceRating';
 import { MetricsCards } from './components/MetricsCards';
 import { DetailedStats } from './components/DetailedStats';
 import { VisualizationSection } from './components/VisualizationSection';
-import { AudienceAnalysis } from './components/AudienceAnalysis';
 import { AdvancedAnalysis } from './components/AdvancedAnalysis';
 import { AIPredictionAnalysis } from './components/AIPredictionAnalysis';
-import { DataExport } from './components/DataExport';
 
 
 // 現在の週を取得する関数
@@ -67,24 +65,33 @@ export default function InstagramMonthlyReportPage() {
       totalLikes: number;
       totalComments: number;
       totalShares: number;
+      totalReposts: number;
       totalReach: number;
-      totalFollowerChange: number;
+      totalSaves: number;
+      totalFollowerIncrease: number;
+      avgEngagementRate: number;
       totalPosts: number;
     };
     previousTotals: {
       totalLikes: number;
       totalComments: number;
       totalShares: number;
+      totalReposts: number;
       totalReach: number;
-      totalFollowerChange: number;
+      totalSaves: number;
+      totalFollowerIncrease: number;
+      avgEngagementRate: number;
       totalPosts: number;
     };
     changes: {
       likesChange: number;
       commentsChange: number;
       sharesChange: number;
+      repostsChange: number;
       reachChange: number;
+      savesChange: number;
       followerChange: number;
+      engagementRateChange: number;
       postsChange: number;
     };
     audienceAnalysis: {
@@ -121,16 +128,23 @@ export default function InstagramMonthlyReportPage() {
   } | null>(null);
 
   // BFFサマリーデータを取得
-  const fetchReportSummary = useCallback(async (period: 'weekly' | 'monthly', date: string) => {
+  const fetchReportSummary = useCallback(async (period: 'weekly' | 'monthly', date: string, signal?: AbortSignal) => {
     if (!user?.uid) return;
     
     try {
       const idToken = await user.getIdToken();
-      const response = await fetch(`/api/analytics/monthly-report-summary?userId=${user.uid}&period=${period}&date=${date}`, {
+      
+      // 週次と月次で異なるAPIエンドポイントを使用
+      const apiEndpoint = period === 'weekly' 
+        ? `/api/analytics/weekly-report-summary?userId=${user.uid}&week=${date}`
+        : `/api/analytics/monthly-report-summary?userId=${user.uid}&period=${period}&date=${date}`;
+      
+      const response = await fetch(apiEndpoint, {
         headers: {
           'x-user-id': user.uid,
           'Authorization': `Bearer ${idToken}`
-        }
+        },
+        signal
       });
       
       if (response.ok) {
@@ -232,7 +246,8 @@ export default function InstagramMonthlyReportPage() {
         // ローカルストレージに保存（月が変わるまで有効）
         localStorage.setItem(reviewCacheKey, JSON.stringify(data));
       } else {
-        console.error('Monthly review API error:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Monthly review API error:', response.status, response.statusText, errorData);
         setMonthlyReview(null);
       }
     } catch (error) {
@@ -284,93 +299,6 @@ export default function InstagramMonthlyReportPage() {
   }, [user, activeTab, selectedMonth, selectedWeek]);
 
 
-  // CSVエクスポート関数
-  const exportToCSV = async () => {
-    if (!user?.uid) {
-      console.log('No user authenticated, skipping CSV export');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const idToken = await user.getIdToken();
-      const response = await fetch('/api/export/csv', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user.uid,
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ 
-          period: activeTab,
-          date: activeTab === 'weekly' ? selectedWeek : selectedMonth,
-          userId: user.uid
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('CSVエクスポートに失敗しました');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `instagram-${activeTab}-report-${activeTab === 'weekly' ? selectedWeek : selectedMonth}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('CSVエクスポートエラー:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // PDFエクスポート関数
-  const exportToPDF = async () => {
-    if (!user?.uid) {
-      console.log('No user authenticated, skipping PDF export');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const idToken = await user.getIdToken();
-      const response = await fetch('/api/export/pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user.uid,
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ 
-          period: activeTab,
-          date: activeTab === 'weekly' ? selectedWeek : selectedMonth,
-          userId: user.uid
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('PDFエクスポートに失敗しました');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `instagram-${activeTab}-report-${activeTab === 'weekly' ? selectedWeek : selectedMonth}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('PDFエクスポートエラー:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // データ件数チェック
   useEffect(() => {
@@ -391,35 +319,11 @@ export default function InstagramMonthlyReportPage() {
     checkDataCount();
   }, [user?.uid]);
 
-  useEffect(() => {
-    const initializeData = async () => {
-      if (!user?.uid) {
-        console.log('No user authenticated, skipping data initialization');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        
-        // BFFサマリーデータを取得
-        const period = activeTab;
-        const date = activeTab === 'weekly' ? selectedWeek : selectedMonth;
-        await fetchReportSummary(period, date);
-        
-      } catch (error) {
-        console.error('データ初期化エラー:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeData();
-  }, [user?.uid, activeTab, selectedWeek, selectedMonth]);
-
-  // 期間変更時のデータ再取得
+  // データ初期化と期間変更時のデータ再取得（統合）
   useEffect(() => {
     if (user?.uid) {
+      const abortController = new AbortController();
+      
       const fetchPeriodData = async () => {
         try {
           setIsLoading(true);
@@ -427,24 +331,38 @@ export default function InstagramMonthlyReportPage() {
           const date = activeTab === 'weekly' ? selectedWeek : selectedMonth;
           
           await Promise.all([
-            fetchReportSummary(period, date),
+            fetchReportSummary(period, date, abortController.signal),
             fetchAccountScore(),
             fetchDailyScores(activeTab === 'weekly' ? 7 : 30),
             fetchPreviousPeriodData(period, date)
           ]);
           
           // 月次レビューは他のデータが揃ってから取得
-          setTimeout(() => {
-            fetchMonthlyReview();
+          const timeoutId = setTimeout(() => {
+            if (!abortController.signal.aborted) {
+              fetchMonthlyReview();
+            }
           }, 1000);
+          
+          return () => clearTimeout(timeoutId);
         } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+            // アボートエラーは無視
+            return;
+          }
           console.error('期間データ取得エラー:', error);
         } finally {
-          setIsLoading(false);
+          if (!abortController.signal.aborted) {
+            setIsLoading(false);
+          }
         }
       };
 
       fetchPeriodData();
+      
+      return () => {
+        abortController.abort();
+      };
     }
   }, [activeTab, selectedMonth, selectedWeek, user?.uid]);
 
@@ -453,8 +371,11 @@ export default function InstagramMonthlyReportPage() {
     totalLikes: 0,
     totalComments: 0,
     totalShares: 0,
+    totalReposts: 0,
     totalReach: 0,
-    totalFollowerChange: 0,
+    totalSaves: 0,
+    totalFollowerIncrease: 0,
+    avgEngagementRate: 0,
     totalPosts: 0
   };
 
@@ -462,8 +383,11 @@ export default function InstagramMonthlyReportPage() {
     totalLikes: 0,
     totalComments: 0,
     totalShares: 0,
+    totalReposts: 0,
     totalReach: 0,
-    totalFollowerChange: 0,
+    totalSaves: 0,
+    totalFollowerIncrease: 0,
+    avgEngagementRate: 0,
     totalPosts: 0
   };
 
@@ -471,8 +395,11 @@ export default function InstagramMonthlyReportPage() {
     likesChange: 0,
     commentsChange: 0,
     sharesChange: 0,
+    repostsChange: 0,
     reachChange: 0,
+    savesChange: 0,
     followerChange: 0,
+    engagementRateChange: 0,
     postsChange: 0
   };
 
@@ -498,126 +425,14 @@ export default function InstagramMonthlyReportPage() {
     label: String(accountScore.label || 'データ読み込み中')
   } : { rating: 'C', color: 'text-yellow-600', bg: 'bg-yellow-100', label: 'データ読み込み中' };
 
-  // ローディング画面
-  if (isLoading) {
-    return (
-      <SNSLayout 
-        customTitle="月次レポート"
-        customDescription="月次のパフォーマンス分析とレポート"
-      >
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto px-6">
-            <div className="relative mb-8">
-              <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                <BarChart3 className="w-12 h-12 text-white animate-pulse" />
-              </div>
-              <div className="absolute inset-0 w-24 h-24 mx-auto">
-                <div className="w-full h-full border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-black mb-3">データを読み込み中...</h2>
-            <p className="text-black mb-6">魅力的な分析レポートを準備しています</p>
-          </div>
-        </div>
-      </SNSLayout>
-    );
-  }
-
-  // アクセス制御画面
-  if (!hasAccess) {
-    return (
-      <SNSLayout 
-        customTitle="月次レポート"
-        customDescription="月次のパフォーマンス分析とレポート"
-      >
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="max-w-md mx-auto text-center p-6">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <div className="relative">
-                <BarChart3 className="w-10 h-10 text-blue-600" />
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-            
-            <h2 className="text-2xl font-bold text-black mb-4">
-              データを集め中...
-            </h2>
-            
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center justify-center mb-2">
-                <div className="w-5 h-5 text-blue-600 mr-2">⏰</div>
-                <span className="font-medium text-blue-800">データ収集中</span>
-              </div>
-              <p className="text-sm text-blue-700">
-                月次レポートの生成には<strong>15件以上のデータ</strong>が必要です
-              </p>
-            </div>
-
-            {dataCount && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h3 className="font-medium text-black mb-3">収集済みデータ</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{dataCount.analyticsCount}</div>
-                    <div className="text-black">アナリティクス</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{dataCount.postsCount}</div>
-                    <div className="text-black">投稿データ</div>
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">合計</span>
-                    <span className="text-lg font-bold text-black">{dataCount.totalCount}件</span>
-                  </div>
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${Math.min((dataCount.totalCount / 15) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-black mt-1">
-                      {15 - dataCount.totalCount > 0 ? `あと${15 - dataCount.totalCount}件でレポート生成` : 'レポート生成可能'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <a
-                href="/instagram/analytics"
-                className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                データを追加して収集を進める
-              </a>
-              <a
-                href="/instagram/lab"
-                className="block w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                投稿ラボでコンテンツを作成
-              </a>
-            </div>
-
-            <p className="text-sm text-black mt-6">
-              データが15件に達すると、自動的に月次レポートが生成されます
-            </p>
-          </div>
-        </div>
-      </SNSLayout>
-    );
-  }
+  // アクセス制御画面（削除）
 
   return (
     <SNSLayout 
       customTitle="月次レポート"
       customDescription="月次のパフォーマンス分析とレポート"
     >
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6 bg-white min-h-screen">
         {/* ヘッダー */}
         <ReportHeader
           activeTab={activeTab}
@@ -626,7 +441,6 @@ export default function InstagramMonthlyReportPage() {
           onTabChange={setActiveTab}
           onWeekChange={setSelectedWeek}
           onMonthChange={setSelectedMonth}
-          onExportPDF={exportToPDF}
           getWeekDisplayName={getWeekDisplayName}
           getMonthDisplayName={getMonthDisplayName}
         />
@@ -642,45 +456,59 @@ export default function InstagramMonthlyReportPage() {
           accountScore={accountScore}
         />
 
+        {/* 運用計画連携 */}
+        <CurrentPlanCard 
+          planData={planData}
+          snsType="instagram"
+        />
+
         {/* 主要指標 */}
         <MetricsCards
           activeTab={activeTab}
-          currentTotals={currentTotals}
-          previousTotals={previousTotals}
-          changes={changes}
+          currentTotals={{
+            totalLikes: currentTotals.totalLikes,
+            totalComments: currentTotals.totalComments,
+            totalShares: currentTotals.totalShares,
+            totalReach: currentTotals.totalReach,
+            totalFollowerChange: currentTotals.totalFollowerIncrease,
+            totalPosts: currentTotals.totalPosts
+          }}
+          previousTotals={{
+            totalLikes: previousTotals.totalLikes,
+            totalComments: previousTotals.totalComments,
+            totalShares: previousTotals.totalShares,
+            totalReach: previousTotals.totalReach,
+            totalFollowerChange: previousTotals.totalFollowerIncrease,
+            totalPosts: previousTotals.totalPosts
+          }}
+          changes={{
+            likesChange: changes.likesChange,
+            commentsChange: changes.commentsChange,
+            sharesChange: changes.sharesChange,
+            reachChange: changes.reachChange,
+            followerChange: changes.followerChange,
+            postsChange: changes.postsChange
+          }}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 運用計画連携 */}
-          <CurrentPlanCard 
-            planData={planData}
-            snsType="instagram"
-          />
-
-          {/* 期間の成果 */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-black mb-4">期間の成果</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <div className="text-lg font-bold text-green-600">
-                  {currentTotals.totalFollowerChange > 0 ? '+' : ''}
-                  {currentTotals.totalFollowerChange}
-                </div>
-                <div className="text-xs text-black">
-                  {activeTab === 'weekly' ? '今週のフォロワー増加' : '今月のフォロワー増加'}
-                </div>
-              </div>
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <div className="text-lg font-bold text-blue-600">
-                  {currentTotals.totalPosts}
-                </div>
-                <div className="text-xs text-black">
-                  {activeTab === 'weekly' ? '今週の投稿数' : '今月の投稿数'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* AI分析 */}
+        <AIPredictionAnalysis
+          activeTab={activeTab}
+          currentTotals={{
+            totalFollowerChange: currentTotals.totalFollowerIncrease,
+            totalPosts: currentTotals.totalPosts,
+            totalLikes: currentTotals.totalLikes,
+            totalComments: currentTotals.totalComments,
+            totalShares: currentTotals.totalShares,
+            totalReach: currentTotals.totalReach
+          }}
+          accountScore={accountScore}
+          previousPeriodData={previousPeriodData}
+          monthlyReview={monthlyReview}
+          performanceRating={performanceRating}
+          selectedMonth={selectedMonth}
+          selectedWeek={selectedWeek}
+        />
 
         {/* 詳細統計 */}
         <DetailedStats
@@ -688,7 +516,17 @@ export default function InstagramMonthlyReportPage() {
           performanceRating={performanceRating}
           previousPeriodData={previousPeriodData}
           activeTab={activeTab}
-          reportSummary={reportSummary}
+          reportSummary={reportSummary ? {
+            ...reportSummary,
+            totals: {
+              ...reportSummary.totals,
+              totalFollowerChange: reportSummary.totals.totalFollowerIncrease
+            },
+            previousTotals: {
+              ...reportSummary.previousTotals,
+              totalFollowerChange: reportSummary.previousTotals.totalFollowerIncrease
+            }
+          } : null}
           getWeekDisplayName={getWeekDisplayName}
           getMonthDisplayName={getMonthDisplayName}
           selectedWeek={selectedWeek}
@@ -702,40 +540,13 @@ export default function InstagramMonthlyReportPage() {
           reportSummary={reportSummary}
         />
 
-        {/* オーディエンス分析セクション */}
-        <AudienceAnalysis
-          activeTab={activeTab}
-          reportSummary={reportSummary}
-          getWeekDisplayName={getWeekDisplayName}
-          getMonthDisplayName={getMonthDisplayName}
-          selectedWeek={selectedWeek}
-          selectedMonth={selectedMonth}
-        />
-
         {/* 高度な分析セクション */}
         <AdvancedAnalysis
           activeTab={activeTab}
           reportSummary={reportSummary}
         />
 
-        {/* AI予測・トレンド分析セクション */}
-        <AIPredictionAnalysis
-          activeTab={activeTab}
-          currentTotals={currentTotals}
-          accountScore={accountScore}
-          previousPeriodData={previousPeriodData}
-          monthlyReview={monthlyReview}
-          performanceRating={performanceRating}
-          selectedMonth={selectedMonth}
-          selectedWeek={selectedWeek}
-        />
 
-        {/* データエクスポートセクション */}
-        <DataExport
-          isLoading={isLoading}
-          onExportCSV={exportToCSV}
-          onExportPDF={exportToPDF}
-        />
 
       </div>
     </SNSLayout>

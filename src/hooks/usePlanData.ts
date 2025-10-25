@@ -69,9 +69,16 @@ export const usePlanData = (snsType: 'instagram' | 'x' | 'tiktok' | 'youtube' = 
         setPlanData(null);
       }
     } catch (err) {
-      console.error('計画データ取得エラー:', err);
-      setError('計画データの取得に失敗しました');
-      setPlanData(null);
+      // 404エラーは計画が存在しないという意味なので、エラーとして扱わない
+      if (err instanceof Error && err.message.includes('404')) {
+        console.log('計画データが見つかりません。新規作成が必要です。');
+        setPlanData(null);
+        setError(null);
+      } else {
+        console.error('計画データ取得エラー:', err);
+        setError('計画データの取得に失敗しました');
+        setPlanData(null);
+      }
     } finally {
       setLoading(false);
     }

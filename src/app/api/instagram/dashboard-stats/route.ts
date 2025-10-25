@@ -129,6 +129,9 @@ export async function GET(request: NextRequest) {
     const monthlyFeedPosts = monthlyPosts.filter(post => post.postType === 'feed').length;
     const monthlyReelPosts = monthlyPosts.filter(post => post.postType === 'reel').length;
     const monthlyStoryPosts = monthlyPosts.filter(post => post.postType === 'story').length;
+    
+    // フィードとリールの合計投稿数
+    const monthlyFeedReelPosts = monthlyFeedPosts + monthlyReelPosts;
 
     // デバッグログ: 日付と投稿の詳細
     console.log('📅 日付範囲:', {
@@ -167,6 +170,7 @@ export async function GET(request: NextRequest) {
       monthlyFeedPosts,
       monthlyReelPosts,
       monthlyStoryPosts,
+      monthlyFeedReelPosts, // フィードとリールの合計
       postTypes: monthlyPosts.map(post => ({ id: post.id, type: post.postType, createdAt: post.createdAt }))
     });
 
@@ -201,11 +205,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 最も多い投稿タイプを特定
+    // 最も多い投稿タイプを特定（フィードとリールを統合）
     const postTypeCounts = {
-      feed: monthlyPosts.filter(post => post.postType === 'feed').length,
-      reel: monthlyPosts.filter(post => post.postType === 'reel').length,
-      story: monthlyPosts.filter(post => post.postType === 'story').length
+      'フィード・リール': monthlyFeedReelPosts, // フィードとリールの合計
+      story: monthlyStoryPosts
     };
     const topPostType = Object.entries(postTypeCounts)
       .sort(([,a], [,b]) => b - a)[0][0];
@@ -218,12 +221,38 @@ export async function GET(request: NextRequest) {
       ? followerChanges.reduce((sum, change) => sum + change, 0) 
       : 0;
 
-    // 総シェア数を使用（analyticsページと一致）
-    const totalSharesCount = totalShares;
+    // 実際のフォロワー数を計算（アナリティクスデータから）
+    // 現在のユーザープロファイルにはフォロワー数が保存されていないため、
+    // アナリティクスデータから計算するか、デフォルト値を使用
+    let currentFollowers = 0; // デフォルト値を0に変更
+    
+    // アナリティクスデータから実際のフォロワー数を推定
+    if (analytics.length > 0) {
+      // 最新のアナリティクスデータからフォロワー数を推定
+      const latestAnalytics = analytics.sort((a, b) => 
+        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+      )[0];
+      
+      // フォロワー数の推定（リーチ数の一定割合として計算）
+      if (latestAnalytics.reach > 0) {
+        // リーチ数の10-20%程度がフォロワー数と仮定
+        currentFollowers = Math.round(latestAnalytics.reach * 0.15);
+      }
+    }
+    
+    // フォロワー増加を加算
+    currentFollowers += followerGrowth;
+    
+    // 最小値を0に設定（負の値にならないように）
+    currentFollowers = Math.max(0, currentFollowers);
+
+    // エンゲージメント率を正しく計算
+    const totalEngagementCount = totalLikes + totalComments + totalShares + totalSaves;
+    const engagementRate = totalReach > 0 ? (totalEngagementCount / totalReach) * 100 : 0;
 
     const dashboardStats: DashboardStats = {
-      followers: 1000 + followerGrowth, // 実際のフォロワー数 + 増加数（現在はベース値1000を使用）
-      engagement: totalSharesCount, // 総シェア数（analyticsページと一致）
+      followers: currentFollowers, // 実際のフォロワー数
+      engagement: Math.round(engagementRate * 100) / 100, // エンゲージメント率（%）
       reach: totalReach,
       saves: totalSaves,
       likes: totalLikes,
@@ -232,8 +261,8 @@ export async function GET(request: NextRequest) {
       weeklyGoal: 5, // 週間目標投稿数
       followerGrowth: Math.round(followerGrowth * 100) / 100,
       topPostType,
-      monthlyFeedPosts,
-      monthlyReelPosts,
+      monthlyFeedPosts, // フィードのみ
+      monthlyReelPosts, // リールのみ
       monthlyStoryPosts,
       totalPosts: posts.length,
       avgEngagementRate: Math.round(avgEngagementRate * 100) / 100,
@@ -247,7 +276,22 @@ export async function GET(request: NextRequest) {
       monthlyFeedPosts: dashboardStats.monthlyFeedPosts,
       monthlyReelPosts: dashboardStats.monthlyReelPosts,
       monthlyStoryPosts: dashboardStats.monthlyStoryPosts,
-      avgEngagementRate: dashboardStats.avgEngagementRate
+      avgEngagementRate: dashboardStats.avgEngagementRate,
+      followers: dashboardStats.followers,
+      engagement: dashboardStats.engagement,
+      reach: dashboardStats.reach,
+      likes: dashboardStats.likes,
+      comments: dashboardStats.comments,
+      saves: dashboardStats.saves,
+      followerGrowth: dashboardStats.followerGrowth,
+      topPostType: dashboardStats.topPostType,
+      followerCalculation: {
+        baseFollowers: currentFollowers - followerGrowth,
+        followerGrowth,
+        finalFollowers: currentFollowers,
+        analyticsCount: analytics.length,
+        hasAnalytics: analytics.length > 0
+      }
     });
 
     return NextResponse.json({

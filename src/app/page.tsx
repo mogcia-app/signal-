@@ -11,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push('/instagram');
+        router.push('/instagram/lab/feed');
       } else {
         router.push('/login');
       }

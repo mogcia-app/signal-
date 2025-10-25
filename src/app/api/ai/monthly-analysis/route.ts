@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-interface AnalyticsData {
-  id: string;
-  userId: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  reach: number;
-  followerChange: number;
-  publishedAt: Date;
-  publishedTime?: string;
-  hashtags?: string[];
-  category?: string;
-}
+import { getAdminDb } from '../../../../lib/firebase-admin';
 
 interface MasterContext {
   userId: string;
@@ -75,32 +62,27 @@ ${context ? `\nマスターコンテキスト:\n${context}` : ''}`
 // RAGシステムでマスターコンテキストを取得
 async function getMasterContext(userId: string): Promise<MasterContext | null> {
   try {
-    // 実際の実装では、Firestoreからマスターコンテキストを取得
-    // ここでは簡易的な実装
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/llm-optimization?userId=${userId}&action=progress`);
+    // 簡易的な実装 - 実際のマスターコンテキスト取得は後で実装
+    console.log('🔍 マスターコンテキスト取得（簡易版）:', userId);
     
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success && result.data) {
-        return {
-          userId,
-          totalInteractions: result.data.totalInteractions || 0,
-          ragHitRate: result.data.totalInteractions > 0 ? result.data.ragHitCount / result.data.totalInteractions : 0,
-          learningPhase: result.data.phase || 'initial',
-          personalizedInsights: [
-            `総対話数: ${result.data.totalInteractions}回`,
-            `RAGヒット率: ${Math.round((result.data.ragHitCount / result.data.totalInteractions) * 100)}%`,
-            `学習フェーズ: ${result.data.phase}`
-          ],
-          recommendations: [
-            'AIとの対話を継続して学習を促進しましょう',
-            '過去の成功パターンを活用した戦略を試してください',
-            'データが蓄積されるほど精度が向上します'
-          ],
-          lastUpdated: new Date()
-        };
-      }
-    }
+    // デフォルトのマスターコンテキストを返す
+    return {
+      userId,
+      totalInteractions: 0,
+      ragHitRate: 0,
+      learningPhase: 'initial',
+      personalizedInsights: [
+        'AI分析を開始しました',
+        'データが蓄積されるほど精度が向上します',
+        '継続的な投稿で成長を追跡できます'
+      ],
+      recommendations: [
+        'AIとの対話を継続して学習を促進しましょう',
+        '過去の成功パターンを活用した戦略を試してください',
+        'データが蓄積されるほど精度が向上します'
+      ],
+      lastUpdated: new Date()
+    };
   } catch (error) {
     console.error('マスターコンテキスト取得エラー:', error);
   }
@@ -108,50 +90,69 @@ async function getMasterContext(userId: string): Promise<MasterContext | null> {
   return null;
 }
 
-// 分析データを取得
-async function getAnalyticsData(userId: string, period: string, date: string): Promise<AnalyticsData[]> {
+// 分析データを取得（月次レポートサマリー全体を取得）
+async function getReportSummary(userId: string, period: string, date: string) {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/analytics/monthly-report-summary?userId=${userId}&period=${period}&date=${date}`);
     
     if (response.ok) {
       const result = await response.json();
       if (result.success && result.data) {
-        // 月次レポートサマリーから分析データを構築
-        const analytics: AnalyticsData[] = [];
-        
-        // 簡易的なデータ構築（実際の実装では、より詳細なデータを取得）
-        for (let i = 0; i < result.data.totals.totalPosts; i++) {
-          analytics.push({
-            id: `analytics-${i}`,
-            userId,
-            likes: Math.round(result.data.totals.totalLikes / result.data.totals.totalPosts),
-            comments: Math.round(result.data.totals.totalComments / result.data.totals.totalPosts),
-            shares: Math.round(result.data.totals.totalShares / result.data.totals.totalPosts),
-            reach: Math.round(result.data.totals.totalReach / result.data.totals.totalPosts),
-            followerChange: Math.round(result.data.totals.totalFollowerChange / result.data.totals.totalPosts),
-            publishedAt: new Date(),
-            publishedTime: '18:00',
-            hashtags: result.data.hashtagStats?.slice(0, 3).map((h: { hashtag: string }) => h.hashtag) || [],
-            category: 'feed'
-          });
-        }
-        
-        return analytics;
+        return result.data;
       }
     }
   } catch (error) {
-    console.error('分析データ取得エラー:', error);
+    console.error('レポートサマリー取得エラー:', error);
   }
   
-  return [];
+  return null;
+}
+
+interface ReportSummary {
+  totals?: {
+    totalLikes?: number;
+    totalComments?: number;
+    totalShares?: number;
+    totalReach?: number;
+    totalPosts?: number;
+    totalSaves?: number;
+    totalReposts?: number;
+    totalFollowerIncrease?: number;
+    avgEngagementRate?: number;
+  };
+  changes?: {
+    likesChange?: number;
+    commentsChange?: number;
+    sharesChange?: number;
+    reachChange?: number;
+    postsChange?: number;
+    followerChange?: number;
+  };
+  previousTotals?: Record<string, unknown>;
+  postTypeStats?: Array<{
+    type: string;
+    count: number;
+    label: string;
+    percentage: number;
+  }>;
+  hashtagStats?: Array<{
+    hashtag: string;
+    count: number;
+  }>;
+  bestTimeSlot?: {
+    label: string;
+    postsInRange: number;
+    avgEngagement: number;
+  };
 }
 
 // AI分析を実行
 async function performAIAnalysis(
-  analyticsData: AnalyticsData[],
+  reportSummary: ReportSummary | null,
   masterContext: MasterContext | null,
   period: 'weekly' | 'monthly',
-  date: string
+  date: string,
+  userId?: string
 ): Promise<{
   predictions: {
     followerGrowth: { weekly: number; monthly: number };
@@ -163,13 +164,31 @@ async function performAIAnalysis(
   summary: string;
 }> {
   
-  // データ分析
-  const totalLikes = analyticsData.reduce((sum, data) => sum + data.likes, 0);
-  const totalComments = analyticsData.reduce((sum, data) => sum + data.comments, 0);
-  const totalShares = analyticsData.reduce((sum, data) => sum + data.shares, 0);
-  const totalReach = analyticsData.reduce((sum, data) => sum + data.reach, 0);
-  const totalPosts = analyticsData.length;
-  const avgEngagement = totalPosts > 0 ? (totalLikes + totalComments + totalShares) / totalPosts : 0;
+  // レポートサマリーからデータを取得
+  const totals = reportSummary?.totals || {};
+  const changes = reportSummary?.changes || {};
+  
+  const totalLikes = totals.totalLikes || 0;
+  const totalComments = totals.totalComments || 0;
+  const totalShares = totals.totalShares || 0;
+  const totalReach = totals.totalReach || 0;
+  const totalPosts = totals.totalPosts || 0;
+  
+  // ユーザープロファイルを取得（onboardingデータ）
+  let userProfile = null;
+  if (userId) {
+    try {
+      const db = getAdminDb();
+      const userDoc = await db.collection('users').doc(userId).get();
+      
+      if (userDoc.exists) {
+        userProfile = userDoc.data();
+        console.log('✅ ユーザープロファイル取得完了');
+      }
+    } catch (error) {
+      console.error('ユーザープロファイル取得エラー:', error);
+    }
+  }
   
   // マスターコンテキストの活用度を判定
   const isOptimized = masterContext && masterContext.learningPhase === 'optimized' || masterContext?.learningPhase === 'master';
@@ -181,11 +200,56 @@ async function performAIAnalysis(
 【基本データ】
 - 期間: ${period === 'weekly' ? '週次' : '月次'} (${date})
 - 総投稿数: ${totalPosts}件
-- 総いいね数: ${totalLikes.toLocaleString()}
-- 総コメント数: ${totalComments.toLocaleString()}
-- 総シェア数: ${totalShares.toLocaleString()}
-- 総リーチ数: ${totalReach.toLocaleString()}
-- 平均エンゲージメント: ${avgEngagement.toFixed(1)}
+- 総いいね数: ${totalLikes.toLocaleString()}件
+- 総コメント数: ${totalComments.toLocaleString()}件
+- 総シェア数: ${totalShares.toLocaleString()}件
+- 総リーチ数: ${totalReach.toLocaleString()}人
+- 総保存数: ${totals.totalSaves || 0}件
+- 総リポスト数: ${totals.totalReposts || 0}件
+- フォロワー増加数: ${totals.totalFollowerIncrease || 0}人
+- 平均エンゲージメント率: ${totals.avgEngagementRate || 0}%
+
+【前期間との比較】
+- いいね数変化: ${(changes.likesChange ?? 0) >= 0 ? '+' : ''}${(changes.likesChange ?? 0).toFixed(1)}%
+- コメント数変化: ${(changes.commentsChange ?? 0) >= 0 ? '+' : ''}${(changes.commentsChange ?? 0).toFixed(1)}%
+- シェア数変化: ${(changes.sharesChange ?? 0) >= 0 ? '+' : ''}${(changes.sharesChange ?? 0).toFixed(1)}%
+- リーチ数変化: ${(changes.reachChange ?? 0) >= 0 ? '+' : ''}${(changes.reachChange ?? 0).toFixed(1)}%
+- 投稿数変化: ${(changes.postsChange ?? 0) >= 0 ? '+' : ''}${(changes.postsChange ?? 0).toFixed(1)}%
+- フォロワー変化: ${(changes.followerChange ?? 0) >= 0 ? '+' : ''}${(changes.followerChange ?? 0).toFixed(1)}%
+
+【投稿タイプ別統計】
+${reportSummary?.postTypeStats?.map((stat) => 
+  `- ${stat.label}: ${stat.count}件 (${stat.percentage.toFixed(1)}%)`
+).join('\n') || '- データなし'}
+
+【トップハッシュタグ】
+${reportSummary?.hashtagStats?.slice(0, 5).map((tag) => 
+  `- ${tag.hashtag}: ${tag.count}回使用`
+).join('\n') || '- データなし'}
+
+【最適投稿時間帯】
+${reportSummary?.bestTimeSlot ? `${reportSummary.bestTimeSlot.label}: 投稿数${reportSummary.bestTimeSlot.postsInRange}件、平均エンゲージメント${reportSummary.bestTimeSlot.avgEngagement.toFixed(1)}` : '- データなし'}
+
+${userProfile?.businessInfo ? `
+【クライアント情報】
+- 業種: ${userProfile.businessInfo.industry || '未設定'}
+- 会社規模: ${userProfile.businessInfo.companySize || '未設定'}
+- 事業形態: ${userProfile.businessInfo.businessType || '未設定'}
+- ターゲット市場: ${userProfile.businessInfo.targetMarket || '未設定'}
+${userProfile.businessInfo.catchphrase ? `- キャッチコピー: 「${userProfile.businessInfo.catchphrase}」` : ''}
+- 事業内容: ${userProfile.businessInfo.description || '未設定'}
+
+【目標と課題】
+${userProfile.businessInfo.goals && userProfile.businessInfo.goals.length > 0 ? `- 目標: ${userProfile.businessInfo.goals.join(', ')}` : ''}
+${userProfile.businessInfo.challenges && userProfile.businessInfo.challenges.length > 0 ? `- 課題: ${userProfile.businessInfo.challenges.join(', ')}` : ''}
+
+【商品・サービス】
+${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.productsOrServices.length > 0 
+  ? userProfile.businessInfo.productsOrServices.map((p: { name: string; details?: string }) => 
+    `- ${p.name}${p.details ? `: ${p.details}` : ''}`
+  ).join('\n')
+  : '- 未設定'}
+` : ''}
 
 【マスターコンテキスト】
 - 学習フェーズ: ${masterContext?.learningPhase || '初期段階'}
@@ -194,19 +258,26 @@ async function performAIAnalysis(
 
 以下の形式で回答してください：
 
-1. 予測分析:
+1. **今週/今月のまとめ**（200文字以内）
+- 期間${period === 'weekly' ? '1週間' : '1ヶ月'}のパフォーマンスを簡潔に要約
+- 特に良かった点と課題を1つずつ
+- 今後の展望を含める
+
+2. **来週/来月の改善点**（各100文字以内で3つ）
+- 具体的で実行可能な改善提案を3つ
+- 各改善点に期待される効果を含める
+
+3. **予測分析**
 - フォロワー増加予測（週次・月次）
 - エンゲージメント率予測
 - 最適投稿時間
 
-2. インサイト:
-- データから読み取れる重要な発見（3つ）
+4. **詳細インサイト**（各80文字以内で3つ）
+- データから読み取れる重要な発見を3つ
+- 具体的な数値を含める
 
-3. 推奨事項:
-- 具体的な改善提案（3つ）
-
-4. 総合サマリー:
-- 簡潔な総評`;
+5. **総合サマリー**（150文字以内）
+- 簡潔な総評と今後の方向性`;
 
   // 学習段階に応じてプロンプトを最適化
   if (isOptimized && ragHitRate > 0.7) {
@@ -224,7 +295,7 @@ async function performAIAnalysis(
     // 予測値を抽出（簡易的な実装）
     const followerGrowthWeekly = Math.round(totalPosts * 2.5 + Math.random() * 10);
     const followerGrowthMonthly = Math.round(totalPosts * 8 + Math.random() * 30);
-    const engagementRate = Math.round((avgEngagement / Math.max(totalReach, 1)) * 100 * 100) / 100;
+    const engagementRate = totals.avgEngagementRate || 0;
     
     return {
       predictions: {
@@ -258,7 +329,7 @@ async function performAIAnalysis(
           weekly: Math.round(totalPosts * 2),
           monthly: Math.round(totalPosts * 6)
         },
-        engagementRate: Math.round((avgEngagement / Math.max(totalReach, 1)) * 100 * 100) / 100,
+        engagementRate: totals.avgEngagementRate || 0,
         optimalPostingTime: '18:00-20:00'
       },
       insights: [
@@ -299,14 +370,14 @@ export async function GET(request: NextRequest) {
     const masterContext = await getMasterContext(userId);
     console.log('✅ マスターコンテキスト取得完了:', masterContext?.learningPhase);
 
-    // 2. 分析データを取得
-    console.log('📊 分析データ取得中...');
-    const analyticsData = await getAnalyticsData(userId, period, date);
-    console.log('✅ 分析データ取得完了:', analyticsData.length, '件');
+    // 2. レポートサマリーを取得
+    console.log('📊 レポートサマリー取得中...');
+    const reportSummary = await getReportSummary(userId, period, date);
+    console.log('✅ レポートサマリー取得完了:', reportSummary ? 'データあり' : 'データなし');
 
     // 3. AI分析を実行
     console.log('🧠 AI分析実行中...');
-    const analysisResult = await performAIAnalysis(analyticsData, masterContext, period, date);
+    const analysisResult = await performAIAnalysis(reportSummary, masterContext, period, date, userId);
     console.log('✅ AI分析完了');
 
     // 4. 結果を返す
@@ -323,7 +394,7 @@ export async function GET(request: NextRequest) {
         metadata: {
           period,
           date,
-          dataPoints: analyticsData.length,
+          dataPoints: reportSummary?.totals?.totalPosts || 0,
           analysisTimestamp: new Date().toISOString()
         }
       }

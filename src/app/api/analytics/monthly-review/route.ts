@@ -216,6 +216,18 @@ function generateMonthlyReview(currentScore: number, previousScore: number, perf
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🚀 Monthly review API開始');
+    
+    // Firebase接続確認
+    if (!adminDb) {
+      console.error('❌ Firebase接続エラー: adminDb is null');
+      return NextResponse.json(
+        { error: 'Firebase接続エラー' },
+        { status: 500 }
+      );
+    }
+    console.log('✅ Firebase接続OK');
+    
     // 🔐 Firebase認証トークンからユーザーIDを取得
     let userId = 'anonymous';
     const authHeader = request.headers.get('authorization');
@@ -353,20 +365,37 @@ export async function GET(request: NextRequest) {
 
     const avgEngagementRate = totalReach > 0 ? (totalEngagement / totalReach * 100) : 0;
 
-    // AI月次レポート生成
-    const aiReport = await generateAIMonthlyReview(
-      userProfile,
-      {
-        currentScore,
-        previousScore,
-        performanceRating,
-        totalPosts: recentPosts.length,
-        totalEngagement,
-        avgEngagementRate
-      },
-      planSummary,
-      recentPosts
-    );
+    // AI月次レポート生成（エラーハンドリング付き）
+    let aiReport;
+    try {
+      aiReport = await generateAIMonthlyReview(
+        userProfile,
+        {
+          currentScore,
+          previousScore,
+          performanceRating,
+          totalPosts: recentPosts.length,
+          totalEngagement,
+          avgEngagementRate
+        },
+        planSummary,
+        recentPosts
+      );
+    } catch (aiError) {
+      console.warn('⚠️ AI生成エラー - フォールバックを使用:', aiError);
+      // AI生成に失敗した場合はフォールバックを使用
+      const review = generateMonthlyReview(currentScore, previousScore, performanceRating);
+      aiReport = {
+        title: review.title,
+        message: review.message,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          basedOnPlan: planSummary ? true : false,
+          postsAnalyzed: recentPosts.length,
+          aiError: aiError instanceof Error ? aiError.message : 'Unknown error'
+        }
+      };
+    }
 
     const result = {
       ...aiReport,
@@ -383,9 +412,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Monthly review API error:', error);
+    console.error('❌ Monthly review API error:', error);
+    console.error('❌ Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
-      { error: 'Failed to generate monthly review' },
+      { 
+        error: 'Failed to generate monthly review',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
@@ -423,30 +460,35 @@ async function generateAIMonthlyReview(
 
 前向きで励ましのトーンを使い、具体的で実行可能な提案を行ってください。`;
 
-  const chatCompletion = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
-    ],
-    temperature: 0.7,
-    max_tokens: 2000,
-  });
+  try {
+    const chatCompletion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
 
-  const aiResponse = chatCompletion.choices[0].message.content || '';
+    const aiResponse = chatCompletion.choices[0].message.content || '';
 
-  // タイトルとメッセージを分割
-  const lines = aiResponse.split('\n');
-  const title = lines[0]?.replace(/^#+\s*/, '').trim() || '📊 今月の振り返り';
-  const message = aiResponse;
+    // タイトルとメッセージを分割
+    const lines = aiResponse.split('\n');
+    const title = lines[0]?.replace(/^#+\s*/, '').trim() || '📊 今月の振り返り';
+    const message = aiResponse;
 
-  return {
-    title,
-    message,
-    metadata: {
-      generatedAt: new Date().toISOString(),
-      basedOnPlan: planSummary ? true : false,
-      postsAnalyzed: recentPosts.length
-    }
-  };
+    return {
+      title,
+      message,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        basedOnPlan: planSummary ? true : false,
+        postsAnalyzed: recentPosts.length
+      }
+    };
+  } catch (apiError) {
+    console.error('❌ OpenAI API呼び出しエラー:', apiError);
+    throw new Error(`OpenAI API error: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
+  }
 }

@@ -25,7 +25,7 @@ export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
   selectedMonth
 }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6 mb-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-black mb-2">パフォーマンス評価</h2>

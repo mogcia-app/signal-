@@ -140,6 +140,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       console.log('投稿を保存しました:', result);
       console.log('Post saved successfully with ID:', result.id);
       
+      // 次のアクションを即座に更新
+      if (typeof window !== 'undefined' && (window as Window & { refreshNextActions?: () => void }).refreshNextActions) {
+        console.log('🔄 Triggering next actions refresh after post creation');
+        (window as Window & { refreshNextActions?: () => void }).refreshNextActions!();
+      }
+      
       // ローカル保存リストにも追加
       setSavedPosts(prev => [...prev, content]);
       

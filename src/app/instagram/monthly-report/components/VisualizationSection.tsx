@@ -39,9 +39,9 @@ export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
       </div>
 
       {/* 投稿タイプ別分析 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6">
         <div className="flex items-center mb-6">
-          <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-teal-600 rounded-lg flex items-center justify-center mr-3">
+          <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-teal-600 rounded-none flex items-center justify-center mr-3">
             <PieChart className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -53,7 +53,7 @@ export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
         {/* 投稿タイプ別の統計 */}
         <div className="space-y-4">
           {postTypeStats.map(({ type, count, label, color, bg, percentage }) => (
-            <div key={type} className={`p-4 bg-gradient-to-r ${bg} rounded-lg`}>
+            <div key={type} className={`p-4 bg-gradient-to-r ${bg} rounded-none`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">{label}</span>
                 <span className="text-lg font-bold text-black">{count}件</span>

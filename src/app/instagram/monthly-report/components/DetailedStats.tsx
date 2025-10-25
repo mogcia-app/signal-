@@ -74,9 +74,9 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6 mt-4">
       <div className="flex items-center mb-6">
-        <div className="w-8 h-8 bg-gradient-to-r from-orange-600 to-red-600 rounded-lg flex items-center justify-center mr-3">
+        <div className="w-8 h-8 bg-gradient-to-r from-orange-600 to-red-600 rounded-none flex items-center justify-center mr-3">
           <BarChart3 className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -92,13 +92,13 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
 
       <div className="space-y-4">
         {/* アカウントスコア */}
-        <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
-          <div className="text-center">
+        <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-none border border-orange-200">
+          <div className="text-center space-y-3">
             <div className="text-3xl font-bold text-orange-600">
               {typeof accountScore?.score === 'number' ? accountScore.score : 0}点
             </div>
             <div className="text-sm text-black">アカウントスコア</div>
-            <div className="text-xs text-black mt-1">
+            <div className="text-xs text-black">
               {String(performanceRating.label)}
             </div>
             
@@ -141,31 +141,31 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
           <h4 className="text-sm font-medium text-gray-700 mb-3">投稿タイプ別統計</h4>
           <div className="space-y-2">
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm text-black">📸 フィード</span>
-              <span className="text-sm font-medium text-black">
+              <span className="text-sm text-gray-700">📸 フィード</span>
+              <span className="text-sm font-medium text-gray-900">
                 {reportSummary?.postTypeStats?.find(p => p.type === 'feed')?.count || 0}件
               </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm text-black">🎬 リール</span>
-              <span className="text-sm font-medium text-black">
+              <span className="text-sm text-gray-700">🎬 リール</span>
+              <span className="text-sm font-medium text-gray-900">
                 {reportSummary?.postTypeStats?.find(p => p.type === 'reel')?.count || 0}件
               </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm text-black">📱 ストーリーズ</span>
-              <span className="text-sm font-medium text-black">
+              <span className="text-sm text-gray-700">📱 ストーリーズ</span>
+              <span className="text-sm font-medium text-gray-900">
                 {reportSummary?.postTypeStats?.find(p => p.type === 'story')?.count || 0}件
               </span>
             </div>
           </div>
           {(!reportSummary?.postTypeStats || reportSummary.postTypeStats.length === 0) && (
             <div className="text-center py-6">
-              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
                 <span className="text-xl">📊</span>
               </div>
-              <p className="text-black font-medium mb-1">投稿を分析してみよう！</p>
-              <p className="text-sm text-black">投稿分析データを入力すると<br />タイプ別統計が表示されます</p>
+              <p className="text-gray-900 font-medium mb-1">投稿を分析してみよう！</p>
+              <p className="text-sm text-gray-600">投稿分析データを入力すると<br />タイプ別統計が表示されます</p>
             </div>
           )}
         </div>
