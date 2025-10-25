@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Brain, Zap, TrendingUp, BarChart3, Target, Loader2, Sparkles } from 'lucide-react';
+import { Brain, TrendingUp, Loader2, Sparkles } from 'lucide-react';
 import { useAuth } from '../../../../contexts/auth-context';
 
 interface AIPredictionAnalysisProps {
@@ -30,6 +30,7 @@ interface AIAnalysisResult {
     followerGrowth: { weekly: number; monthly: number };
     engagementRate: number;
     optimalPostingTime: string;
+    followerGrowthReason?: string;
   };
   insights: string[];
   recommendations: string[];
@@ -187,7 +188,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     </>
                   ) : (
                     <>
-                      <Zap className="w-4 h-4" />
+                      <Brain className="w-4 h-4" />
                       <span>AI分析を実行</span>
                     </>
                   )}
@@ -227,86 +228,57 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
               </div>
             ) : analysisResult ? (
               <div className="space-y-6">
-                {/* 今月/今週のまとめと改善点を左右に配置 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* 今月/今週のまとめ */}
-                  <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-50 rounded-none border border-orange-200">
-                    <div className="flex items-center mb-3">
-                      <div className="w-5 h-5 text-orange-600 mr-2">📊</div>
-                      <h3 className="font-semibold text-orange-900">
-                        {activeTab === 'weekly' ? '今週のまとめ' : '今月のまとめ'}
-                      </h3>
-                    </div>
-                    <div className="text-sm text-orange-800 whitespace-pre-wrap max-h-64 overflow-y-auto">
-                      {typeof monthlyReview?.message === 'string' ? monthlyReview.message : 
-                       analysisResult.summary || 'まとめを生成中...'}
-                    </div>
+                {/* 今月/今週のまとめ - 横長表示 */}
+                <div className="p-6 bg-gradient-to-r from-orange-50 to-orange-50 rounded-none border border-orange-200 w-full">
+                  <div className="flex items-center mb-4">
+                    <div className="w-6 h-6 text-orange-600 mr-2">📊</div>
+                    <h3 className="text-lg font-semibold text-orange-900">
+                      {activeTab === 'weekly' ? '今週のまとめ' : '今月のまとめ'}
+                    </h3>
                   </div>
-
-                  {/* 来月/来週の改善点 */}
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-none border border-blue-200">
-                    <div className="flex items-center mb-3">
-                      <Target className="w-5 h-5 text-blue-600 mr-2" />
-                      <h3 className="font-semibold text-blue-900">
-                        {activeTab === 'weekly' ? '来週の改善点' : '来月の改善点'}
-                      </h3>
-                    </div>
-                    <div className="space-y-2">
-                      {analysisResult.recommendations.slice(0, 3).map((recommendation, index) => (
-                        <div key={index} className="text-sm text-orange-800">
-                          • {recommendation}
-                        </div>
-                      ))}
-                    </div>
+                  <div className="text-base text-orange-800 whitespace-pre-wrap leading-relaxed">
+                    {typeof monthlyReview?.message === 'string' ? monthlyReview.message : 
+                     analysisResult.summary || 'まとめを生成中...'}
                   </div>
                 </div>
 
                 {/* AI予測分析結果 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* フォロワー増加予測 */}
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
-                    <div className="flex items-center mb-3">
-                      <div className="w-5 h-5 text-blue-600 mr-2">👥</div>
-                      <h3 className="font-semibold text-blue-900">フォロワー増加予測</h3>
+                  {/* フォロワー増加予測 - 全幅表示 */}
+                  <div className="md:col-span-2 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
+                    <div className="flex items-center mb-4">
+                      <div className="w-6 h-6 text-blue-600 mr-2">👥</div>
+                      <h3 className="text-lg font-semibold text-blue-900">フォロワー増加予測</h3>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-black">来週の予測</span>
-                        <span className="text-sm font-bold text-green-600">
-                          +{analysisResult.predictions.followerGrowth.weekly}人
-                        </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-base text-black">来週の予測</span>
+                          <span className="text-2xl font-bold text-green-600">
+                            +{analysisResult.predictions.followerGrowth.weekly}人
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-base text-black">来月の予測</span>
+                          <span className="text-2xl font-bold text-green-600">
+                            +{analysisResult.predictions.followerGrowth.monthly}人
+                          </span>
+                        </div>
+                        <div className="text-xs text-black mt-3">
+                          {analysisResult.masterContext?.isOptimized ? 
+                            'AIによる予測' :
+                            '現在の投稿ペースを基に予測'
+                          }
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-black">来月の予測</span>
-                        <span className="text-sm font-bold text-green-600">
-                          +{analysisResult.predictions.followerGrowth.monthly}人
-                        </span>
-                      </div>
-                      <div className="text-xs text-black mt-2">
-                        {analysisResult.masterContext?.isOptimized ? 
-                          '学習済みパターンによる高精度予測' :
-                          '現在の投稿ペースを基に予測'
-                        }
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 最適投稿時間 */}
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
-                    <div className="flex items-center mb-3">
-                      <Zap className="w-5 h-5 text-green-600 mr-2" />
-                      <h3 className="font-semibold text-green-900">最適投稿時間</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm font-bold text-green-600">
-                        {analysisResult.predictions.optimalPostingTime}
-                      </div>
-                      <div className="text-xs text-black mt-2">
-                        {analysisResult.masterContext?.isOptimized ? 
-                          '過去の成功パターンを基に最適化された予測' :
-                          '過去のパフォーマンスパターンを基に予測'
-                        }
-                      </div>
+                      {analysisResult.predictions.followerGrowthReason && (
+                        <div className="text-sm text-green-800 mt-4 p-4 bg-green-100 rounded border border-green-300">
+                          <div className="font-semibold text-green-900 mb-2">📈 増加予測の根拠</div>
+                          <div className="leading-relaxed whitespace-pre-wrap">
+                            {analysisResult.predictions.followerGrowthReason}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -336,124 +308,8 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                       </div>
                     </div>
                   </div>
-
-                  {/* AI分析詳細インサイト */}
-                  <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-none border border-indigo-200">
-                    <div className="flex items-center mb-3">
-                      <Brain className="w-5 h-5 text-indigo-600 mr-2" />
-                      <h3 className="font-semibold text-indigo-900">AI分析詳細インサイト</h3>
-                    </div>
-                    <div className="text-sm text-indigo-800 max-h-96 overflow-y-auto">
-                      <div className="whitespace-pre-wrap">
-                        {analysisResult.insights}
-                      </div>
-                    </div>
-                    <div className="text-xs text-black mt-2">
-                      {analysisResult.masterContext?.isOptimized ? 
-                        '学習済みパターンによる詳細分析' :
-                        'AIによる包括的分析'
-                      }
-                    </div>
-                  </div>
                 </div>
-
-                {/* 先月のまとめ */}
-                <div className="space-y-4">
-                    <div className="flex items-center mb-4">
-                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-none flex items-center justify-center mr-3">
-                        <BarChart3 className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-black">先月のまとめ</h3>
-                      </div>
-                    </div>
-
-                    {/* 前期間との比較 */}
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-none border border-blue-200">
-                      <div className="flex items-center mb-3">
-                        <TrendingUp className="w-5 h-5 text-blue-600 mr-2" />
-                        <h3 className="font-semibold text-blue-900">前期間との比較</h3>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-black">アカウントスコア</span>
-                          {previousPeriodData ? (
-                            <span className={`text-sm font-bold ${
-                              (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? 'text-green-600' : 
-                              (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? 'text-red-600' : 'text-black'
-                            }`}>
-                              {(typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score > previousPeriodData.score) ? '📈 向上' : 
-                               (typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' && accountScore.score < previousPeriodData.score) ? '📉 低下' : '📊 維持'}
-                              ({typeof accountScore?.score === 'number' && typeof previousPeriodData.score === 'number' ? Math.abs(accountScore.score - previousPeriodData.score) : 0}点差)
-                            </span>
-                          ) : (
-                            <span className="text-sm font-bold text-black">📊 初回データ</span>
-                          )}
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-black">投稿数</span>
-                          <span className="text-sm font-bold text-blue-600">
-                            {currentTotals.totalPosts}件
-                          </span>
-                        </div>
-                        <div className="text-xs text-black mt-2">
-                          {activeTab === 'weekly' ? '今週' : '今月'} vs {activeTab === 'weekly' ? '先週' : '先月'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 今月の成果サマリー */}
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
-                      <div className="flex items-center mb-3">
-                        <BarChart3 className="w-5 h-5 text-green-600 mr-2" />
-                        <h3 className="font-semibold text-green-900">今月の成果サマリー</h3>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-black">総いいね数</span>
-                          <span className="text-sm font-bold text-green-600">
-                            {currentTotals.totalLikes.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-black">総投稿数</span>
-                          <span className="text-sm font-bold text-green-600">
-                            {currentTotals.totalPosts}
-                          </span>
-                        </div>
-                        <div className="text-xs text-black mt-2">
-                          {activeTab === 'weekly' ? '今週' : '今月'}の累計成果
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 先月の総評 */}
-                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-none border border-purple-200">
-                      <div className="flex items-center mb-3">
-                        <Target className="w-5 h-5 text-purple-600 mr-2" />
-                        <h3 className="font-semibold text-purple-900">先月の総評</h3>
-                      </div>
-                      <div className="space-y-3">
-                        {monthlyReview ? (
-                          <div className="text-sm text-purple-800">
-                            <div className="font-medium mb-2">{typeof monthlyReview.title === 'string' ? monthlyReview.title : '月次レビュー'}</div>
-                            <div className="text-xs text-purple-700">
-                              {typeof monthlyReview.message === 'string' ? monthlyReview.message : 'レビューを生成中...'}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-sm text-purple-800">
-                            <div className="font-medium mb-2">📊 月次レビュー準備中</div>
-                            <div className="text-xs text-purple-700">
-                              アカウントスコア: {typeof accountScore?.score === 'number' ? accountScore.score : 0}点 ({String(performanceRating.label)})<br />
-                              データを分析してレビューを生成しています...
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              </div>
             ) : (
               <div className="text-center py-8 text-black">
                 <Brain className="w-16 h-16 mx-auto mb-4 text-black" />
