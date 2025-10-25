@@ -30,7 +30,6 @@ interface AIAnalysisResult {
     followerGrowth: { weekly: number; monthly: number };
     engagementRate: number;
     optimalPostingTime: string;
-    followerGrowthReason?: string;
   };
   insights: string[];
   recommendations: string[];
@@ -244,41 +243,31 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
 
                 {/* AI予測分析結果 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* フォロワー増加予測 - 全幅表示 */}
-                  <div className="md:col-span-2 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
+                  {/* フォロワー増加予測 */}
+                  <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-none border border-green-200">
                     <div className="flex items-center mb-4">
                       <div className="w-6 h-6 text-blue-600 mr-2">👥</div>
                       <h3 className="text-lg font-semibold text-blue-900">フォロワー増加予測</h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-base text-black">来週の予測</span>
-                          <span className="text-2xl font-bold text-green-600">
-                            +{analysisResult.predictions.followerGrowth.weekly}人
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-base text-black">来月の予測</span>
-                          <span className="text-2xl font-bold text-green-600">
-                            +{analysisResult.predictions.followerGrowth.monthly}人
-                          </span>
-                        </div>
-                        <div className="text-xs text-black mt-3">
-                          {analysisResult.masterContext?.isOptimized ? 
-                            'AIによる予測' :
-                            '現在の投稿ペースを基に予測'
-                          }
-                        </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-base text-black">来週の予測</span>
+                        <span className="text-2xl font-bold text-green-600">
+                          +{analysisResult.predictions.followerGrowth.weekly}人
+                        </span>
                       </div>
-                      {analysisResult.predictions.followerGrowthReason && (
-                        <div className="text-sm text-green-800 mt-4 p-4 bg-green-100 rounded border border-green-300">
-                          <div className="font-semibold text-green-900 mb-2">📈 増加予測の根拠</div>
-                          <div className="leading-relaxed whitespace-pre-wrap">
-                            {analysisResult.predictions.followerGrowthReason}
-                          </div>
-                        </div>
-                      )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-base text-black">来月の予測</span>
+                        <span className="text-2xl font-bold text-green-600">
+                          +{analysisResult.predictions.followerGrowth.monthly}人
+                        </span>
+                      </div>
+                      <div className="text-xs text-black mt-4">
+                        {analysisResult.masterContext?.isOptimized ? 
+                          'AIによる予測' :
+                          '現在の投稿ペースを基に予測'
+                        }
+                      </div>
                     </div>
                   </div>
 

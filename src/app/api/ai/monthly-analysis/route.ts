@@ -158,7 +158,6 @@ async function performAIAnalysis(
     followerGrowth: { weekly: number; monthly: number };
     engagementRate: number;
     optimalPostingTime: string;
-    followerGrowthReason?: string;
   };
   insights: string[];
   recommendations: string[];
@@ -223,10 +222,9 @@ ${userProfile?.businessInfo ? `
 リーチ: ${(changes.reachChange ?? 0) >= 0 ? '+' : ''}${(changes.reachChange ?? 0).toFixed(1)}%
 
 【回答形式】（簡潔に、箇条書きで）
-1. ${period === 'weekly' ? '今週' : '今月'}のまとめ（最大100文字、要約）
+1. ${period === 'weekly' ? '今週' : '今月'}のまとめ（最大100文字、フォロワー増加予測の根拠を含める）
 2. 次へのステップ3つ（各30文字以内）
 3. 詳細インサイト3つ（各30文字以内）
-4. フォロワー増加予測の根拠（何をしたら伸びるか、60文字以内）
 
 重要: 簡潔で実用的な内容のみ。詳細な説明は不要。`;
 
@@ -248,11 +246,6 @@ ${userProfile?.businessInfo ? `
     const followerGrowthMonthly = Math.round(totalPosts * 8 + Math.random() * 30);
     const engagementRate = totals.avgEngagementRate || 0;
     
-    // AIレスポンスからフォロワー増加予測の根拠を抽出
-    const followerGrowthReason = aiResponse.includes('4.') ? 
-      aiResponse.split('4.')[1]?.split(/\n/)[0]?.trim() || '週に3-4回の投稿とエンゲージメント向上でフォロワー増加' :
-      '週に3-4回の投稿とエンゲージメント向上でフォロワー増加';
-    
     return {
       predictions: {
         followerGrowth: {
@@ -260,8 +253,7 @@ ${userProfile?.businessInfo ? `
           monthly: followerGrowthMonthly
         },
         engagementRate,
-        optimalPostingTime: '18:00-20:00',
-        followerGrowthReason
+        optimalPostingTime: '18:00-20:00'
       },
       insights: [
         `エンゲージメント率${engagementRate}%で${engagementRate > 3 ? '良好' : '改善の余地あり'}`,
@@ -287,8 +279,7 @@ ${userProfile?.businessInfo ? `
           monthly: Math.round(totalPosts * 6)
         },
         engagementRate: 0,
-        optimalPostingTime: reportSummary?.bestTimeSlot?.label || '18:00-20:00',
-        followerGrowthReason: '投稿頻度を週3-4回に増やし、エンゲージメントを向上させることでフォロワーを増やす'
+        optimalPostingTime: reportSummary?.bestTimeSlot?.label || '18:00-20:00'
       },
       insights: [
         'データ分析中です',
