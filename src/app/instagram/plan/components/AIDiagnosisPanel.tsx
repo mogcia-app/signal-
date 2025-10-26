@@ -134,18 +134,25 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
 
 
       {/* 診断ボタン（常に表示、生成済みの場合はテキスト変更） */}
-      {!strategyState.isLoading && !isLoading && (
-        <button
-          onClick={handleStartDiagnosis}
-          disabled={isLoading || strategyState.isLoading}
-          className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4 relative overflow-hidden group"
-        >
-          <span className="relative z-10">
-            {generatedStrategy ? '🔄 AI戦略を再生成する' : '▶ 診断を開始する'}
-          </span>
-          <span className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
-        </button>
-      )}
+      <button
+        onClick={handleStartDiagnosis}
+        disabled={isLoading || strategyState.isLoading}
+        className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4 relative overflow-hidden group"
+      >
+        <span className="relative z-10 flex items-center justify-center">
+          {isLoading || strategyState.isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              AI戦略生成中...
+            </>
+          ) : generatedStrategy ? (
+            '🔄 AI戦略を再生成する'
+          ) : (
+            '▶ 診断を開始する'
+          )}
+        </span>
+        <span className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+      </button>
 
       {/* エラー表示 */}
       {strategyState.error && (
@@ -171,7 +178,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       )}
 
       {/* 診断出力エリア（generatedStrategyがあれば常に表示） */}
-      {generatedStrategy && !isLoading && !strategyState.isLoading && (
+      {generatedStrategy && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-lg">提案内容</h4>

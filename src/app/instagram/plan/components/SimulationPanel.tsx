@@ -33,7 +33,8 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
     isRealistic: true,
     growthRateComparison: { realistic: 0, userTarget: 0 }
   };
-  if (!result || !hasActivePlan) {
+  // 結果がない場合は初期表示
+  if (!result) {
     return (
       <section className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
@@ -71,9 +72,36 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
 
   return (
     <section className="p-6">
-      <h3 className="text-lg font-semibold mb-4 flex items-center">
-        <span className="mr-2">📊</span>目標達成シミュレーション
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold flex items-center">
+          <span className="mr-2">📊</span>目標達成シミュレーション
+        </h3>
+        {onRunSimulation && (
+          <button
+            onClick={onRunSimulation}
+            disabled={isSimulating}
+            className="text-sm bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+          >
+            {isSimulating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                実行中...
+              </>
+            ) : (
+              <>
+                <span className="mr-2">🔄</span>
+                再度シミュレーション実行
+              </>
+            )}
+          </button>
+        )}
+      </div>
+      
+      {simulationError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-red-600 text-sm">{simulationError}</p>
+        </div>
+      )}
       
       <div className="bg-gray-50 p-4 rounded-lg">
         <div className="space-y-4">
