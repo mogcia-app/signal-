@@ -93,17 +93,34 @@ ${context}
 }
 
 async function generateSuggestionsWithAI(prompt: string) {
-  // OpenAI APIの実装（実際のAPIキーが必要）
-  // 現在はモックデータを返す
-  const mockSuggestions = `📷 画像のアイデア
-お店の雰囲気が伝わる店内の写真（自然光で明るく撮影し、スタッフの笑顔も含める）
+  const { default: OpenAI } = await import('openai');
+  
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY,
+  });
 
-💡 ストーリーのヒント
-• 縦長の画面に合わせて構図を調整し、投稿文の内容を視覚的に補強する
-• 自然光を活用して明るく撮影し、親しみやすい雰囲気を作る
-• 短時間で伝わるように簡潔にまとめ、投稿文の要点を強調する
-• テキストや絵文字を効果的に使用して投稿文をより魅力的に演出する
-• エンゲージメントを高めるために、質問や投票機能を活用する`;
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    });
 
-  return mockSuggestions;
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('AIからの応答がありません');
+    }
+
+    return content;
+    
+  } catch (error) {
+    console.error('OpenAI API エラー:', error);
+    throw error;
+  }
 }
