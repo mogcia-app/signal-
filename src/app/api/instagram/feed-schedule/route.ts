@@ -272,98 +272,44 @@ ${context}
 }
 
 async function generateScheduleWithAI(prompt: string) {
-  // OpenAI APIの実装（実際のAPIキーが必要）
-  // 現在はモックデータを返す
-  // プロンプトから投稿頻度を抽出（簡易的な実装）
-  const weeklyPostsMatch = prompt.match(/週の投稿回数: (\d+)回/);
-  const weeklyPosts = weeklyPostsMatch ? parseInt(weeklyPostsMatch[1]) : 2;
+  const OpenAI = require('openai');
   
-  // 投稿する曜日を決定（週の投稿回数に基づく）
-  const postingDays: string[] = [];
-  const dayNames = ["月", "火", "水", "木", "金", "土", "日"];
-  
-  if (weeklyPosts === 1) {
-    postingDays.push("水"); // 週1回は水曜日
-  } else if (weeklyPosts === 2) {
-    postingDays.push("月", "木"); // 週2回は月・木
-  } else if (weeklyPosts === 3) {
-    postingDays.push("月", "水", "金"); // 週3回は月・水・金
-  } else if (weeklyPosts === 4) {
-    postingDays.push("月", "火", "木", "金"); // 週4回は月・火・木・金
-  } else if (weeklyPosts === 5) {
-    postingDays.push("月", "火", "水", "木", "金"); // 週5回は平日
-  } else if (weeklyPosts === 6) {
-    postingDays.push("月", "火", "水", "木", "金", "土"); // 週6回は土曜日まで
-  } else if (weeklyPosts === 7) {
-    postingDays.push("月", "火", "水", "木", "金", "土", "日"); // 毎日
-  }
-  
-  const mockSchedule = dayNames.map(day => {
-    const isPostingDay = postingDays.includes(day);
-    
-    let posts: Array<{ title: string; description: string; emoji: string; category: string }> = [];
-    if (isPostingDay) {
-      // 投稿する曜日に応じて内容を決定
-      if (day === "月") {
-        posts = [{
-          title: "週の始まりのモチベーション投稿",
-          description: "新しい週のスタートを切るためのインスピレーション投稿",
-          emoji: "🌅",
-          category: "モチベーション"
-        }];
-      } else if (day === "火") {
-        posts = [{
-          title: "商品・サービス紹介",
-          description: "メイン商品やサービスの詳細紹介",
-          emoji: "📦",
-          category: "商品紹介"
-        }];
-      } else if (day === "水") {
-        posts = [{
-          title: "お客様の声・レビュー",
-          description: "実際のお客様からのフィードバックやレビュー",
-          emoji: "💬",
-          category: "お客様の声"
-        }];
-      } else if (day === "木") {
-        posts = [{
-          title: "会社の取り組み・ストーリー",
-          description: "会社の理念や取り組みについてのストーリー",
-          emoji: "🏢",
-          category: "会社紹介"
-        }];
-      } else if (day === "金") {
-        posts = [{
-          title: "週末に向けたエンターテイメント",
-          description: "週末を楽しみにするような楽しいコンテンツ",
-          emoji: "🎉",
-          category: "エンターテイメント"
-        }];
-      } else if (day === "土") {
-        posts = [{
-          title: "週末の過ごし方",
-          description: "リラックスした週末の様子",
-          emoji: "🌅",
-          category: "ライフスタイル"
-        }];
-      } else if (day === "日") {
-        posts = [{
-          title: "週の振り返り",
-          description: "今週の振り返りや来週の予告",
-          emoji: "💭",
-          category: "振り返り"
-        }];
-      }
-    }
-    
-    return {
-      day: day,
-      dayName: getDayName(day),
-      posts: posts
-    };
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY,
   });
 
-  return mockSchedule;
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('AIからの応答がありません');
+    }
+
+    const parsedContent = JSON.parse(content);
+    
+    // スケジュールデータを整形
+    if (parsedContent.schedule && Array.isArray(parsedContent.schedule)) {
+      return parsedContent.schedule;
+    }
+    
+    throw new Error('スケジュールデータの形式が正しくありません');
+    
+  } catch (error) {
+    console.error('OpenAI API エラー:', error);
+    throw error;
+  }
 }
 
 function getDayName(day: string): string {

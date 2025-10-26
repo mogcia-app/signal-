@@ -268,7 +268,7 @@ async function generateScheduleWithAI(prompt: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -279,6 +279,7 @@ async function generateScheduleWithAI(prompt: string) {
             content: prompt
           }
         ],
+        response_format: { type: 'json_object' },
         temperature: 0.7,
         max_tokens: 2000
       })
