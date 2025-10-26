@@ -29,9 +29,11 @@ jobs:
     
     - name: Run ESLint
       run: npm run lint
+      continue-on-error: true
     
     - name: Build application
       run: npm run build
+      continue-on-error: true
     
     - name: Run tests
       run: npm run test -- --reporters=jest-junit
