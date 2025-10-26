@@ -269,6 +269,16 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         if (generatedHashtags && generatedHashtags.length > 0) {
           onHashtagsChange(generatedHashtags);
         }
+        
+        // リールの場合は動画構成も生成
+        if (postType === 'reel' && onVideoStructureGenerate) {
+          onVideoStructureGenerate('auto');
+        }
+        
+        // ストーリー・フィードの場合はAIヒントも生成
+        if ((postType === 'story' || postType === 'feed') && onImageVideoSuggestionsGenerate) {
+          onImageVideoSuggestionsGenerate(content);
+        }
       } else {
         throw new Error('自動生成に失敗しました');
       }
