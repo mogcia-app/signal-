@@ -237,16 +237,24 @@ export async function POST(request: NextRequest) {
       }
 
       // 投稿タイプ別の追加指示
+      const postTypeLabel = postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード';
+      const textLengthGuide = postType === 'story' 
+        ? '20-50文字程度、1-2行の短い一言二言' 
+        : postType === 'reel'
+        ? '50-150文字程度、エンゲージメント重視'
+        : '200-400文字程度';
+      
       systemPrompt += `
 
 【投稿生成の指示】
-- 投稿タイプ: ${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}
+- 投稿タイプ: ${postTypeLabel}
+${postType === 'story' ? '- **重要**: ストーリーは短い文（20-50文字、1-2行）にしてください' : ''}
 - 投稿日時: ${scheduledDate ? `${scheduledDate} ${scheduledTime}` : '未設定'}
 - テーマ: ${prompt}
 
 以下の形式で返してください:
 - タイトル: 簡潔で魅力的なタイトル
-- 本文: 計画に沿った投稿文（200-400文字程度）
+- 本文: 計画に沿った投稿文（${textLengthGuide}）
 - ハッシュタグ: 関連するハッシュタグの配列（5-10個）`;
     } else {
       // フォールバック: planData を使用（旧ロジック）
