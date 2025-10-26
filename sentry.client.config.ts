@@ -21,6 +21,15 @@ Sentry.init({
   // サーバーサイドのエラーも監視
   attachStacktrace: true,
   
+  // ログを有効にする
+  enableLogs: true,
+  
+  // インテグレーション
+  integrations: [
+    // console.log, console.warn, console.error をSentryログとして送信
+    Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
+  ],
+  
   // 個人情報をマスク
   beforeSend(event, hint) {
     // 個人情報をマスクする処理を追加
