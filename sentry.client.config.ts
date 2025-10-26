@@ -21,7 +21,6 @@ Sentry.init({
   // サーバーサイドのエラーも監視
   attachStacktrace: true,
   
-  
   // 個人情報をマスク
   beforeSend(event, hint) {
     // 個人情報をマスクする処理を追加

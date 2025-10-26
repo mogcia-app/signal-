@@ -273,7 +273,7 @@ ${context}
 }
 
 async function generateScheduleWithAI(prompt: string) {
-  const OpenAI = require('openai');
+  const { default: OpenAI } = await import('openai');
   
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY,
@@ -313,15 +313,3 @@ async function generateScheduleWithAI(prompt: string) {
   }
 }
 
-function getDayName(day: string): string {
-  const dayMap: { [key: string]: string } = {
-    "月": "Monday",
-    "火": "Tuesday", 
-    "水": "Wednesday",
-    "木": "Thursday",
-    "金": "Friday",
-    "土": "Saturday",
-    "日": "Sunday"
-  };
-  return dayMap[day] || day;
-}

@@ -1,7 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="2" failures="0" errors="0" time="0.318">
-  <testsuite name="Example Test Suite" errors="0" failures="0" skipped="0" timestamp="2025-10-26T08:50:12" time="0.07" tests="2">
-    <testcase classname="Example Test Suite" name="should pass this test" time="0.001">
+<testsuites name="jest tests" tests="29" failures="0" errors="0" time="0.446">
+  <testsuite name="Validation Functions" errors="0" failures="0" skipped="0" timestamp="2025-10-26T09:13:36" time="0.069" tests="12">
+    <testcase classname="Validation Functions &gt; isValidEmail" name="should validate correct email addresses" time="0.001">
+    </testcase>
+    <testcase classname="Validation Functions &gt; isValidEmail" name="should reject invalid email addresses" time="0.001">
+    </testcase>
+    <testcase classname="Validation Functions &gt; isValidEmail" name="should handle edge cases" time="0">
+    </testcase>
+    <testcase classname="Validation Functions &gt; isValidURL" name="should validate correct URLs" time="0.001">
+    </testcase>
+    <testcase classname="Validation Functions &gt; isValidURL" name="should reject invalid URLs" time="0">
+    </testcase>
+    <testcase classname="Validation Functions &gt; isValidURL" name="should handle edge cases" time="0">
+    </testcase>
+    <testcase classname="Validation Functions &gt; validatePassword" name="should accept strong passwords" time="0">
+    </testcase>
+    <testcase classname="Validation Functions &gt; validatePassword" name="should reject short passwords" time="0.001">
+    </testcase>
+    <testcase classname="Validation Functions &gt; validatePassword" name="should reject passwords without uppercase" time="0">
+    </testcase>
+    <testcase classname="Validation Functions &gt; validatePassword" name="should reject passwords without lowercase" time="0">
+    </testcase>
+    <testcase classname="Validation Functions &gt; validatePassword" name="should reject passwords without numbers" time="0">
+    </testcase>
+    <testcase classname="Validation Functions &gt; validatePassword" name="should return multiple errors" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="Date Utils" errors="0" failures="0" skipped="0" timestamp="2025-10-26T09:13:36" time="0.04" tests="8">
+    <testcase classname="Date Utils &gt; formatDate" name="should format date correctly" time="0.027">
+    </testcase>
+    <testcase classname="Date Utils &gt; formatDate" name="should handle different dates" time="0.001">
+    </testcase>
+    <testcase classname="Date Utils &gt; isToday" name="should return true for today" time="0">
+    </testcase>
+    <testcase classname="Date Utils &gt; isToday" name="should return false for yesterday" time="0">
+    </testcase>
+    <testcase classname="Date Utils &gt; isToday" name="should return false for tomorrow" time="0">
+    </testcase>
+    <testcase classname="Date Utils &gt; getDaysBetween" name="should calculate days correctly" time="0">
+    </testcase>
+    <testcase classname="Date Utils &gt; getDaysBetween" name="should handle same day" time="0">
+    </testcase>
+    <testcase classname="Date Utils &gt; getDaysBetween" name="should handle reversed dates" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="cn (className utility)" errors="0" failures="0" skipped="0" timestamp="2025-10-26T09:13:36" time="0.022" tests="7">
+    <testcase classname="cn (className utility)" name="should merge className strings" time="0.004">
+    </testcase>
+    <testcase classname="cn (className utility)" name="should handle conditional classes" time="0">
+    </testcase>
+    <testcase classname="cn (className utility)" name="should handle Tailwind conflicting classes" time="0">
+    </testcase>
+    <testcase classname="cn (className utility)" name="should handle undefined and null" time="0">
+    </testcase>
+    <testcase classname="cn (className utility)" name="should handle empty string" time="0.001">
+    </testcase>
+    <testcase classname="cn (className utility)" name="should handle arrays" time="0">
+    </testcase>
+    <testcase classname="cn (className utility)" name="should handle objects for conditional classes" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="Example Test Suite" errors="0" failures="0" skipped="0" timestamp="2025-10-26T09:13:36" time="0.012" tests="2">
+    <testcase classname="Example Test Suite" name="should pass this test" time="0">
     </testcase>
     <testcase classname="Example Test Suite" name="should calculate correctly" time="0">
     </testcase>
