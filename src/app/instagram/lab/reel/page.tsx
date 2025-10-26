@@ -439,23 +439,23 @@ export default function ReelLabPage() {
                       key={daySchedule.day} 
                       className={`border-2 p-4 ${
                         hasPosts 
-                          ? 'bg-white border-gray-300' 
-                          : 'bg-orange-50 border-orange-300'
+                          ? 'bg-orange-50 border-orange-300' 
+                          : 'bg-white border-gray-300'
                       }`}
                     >
                       <div className="flex items-center mb-3">
                         <span className={`text-lg font-bold mr-2 ${
-                          hasPosts ? 'text-gray-800' : 'text-orange-700'
+                          hasPosts ? 'text-orange-800' : 'text-gray-600'
                         }`}>
                           {daySchedule.day}
                         </span>
                         <span className={`text-sm font-medium ${
-                          hasPosts ? 'text-gray-600' : 'text-orange-600'
+                          hasPosts ? 'text-orange-700' : 'text-gray-500'
                         }`}>
                           {daySchedule.dayName}
                         </span>
                         {!hasPosts && (
-                          <span className="ml-auto text-xs text-orange-700 bg-orange-200 px-2 py-1">
+                          <span className="ml-auto text-xs text-gray-600 bg-gray-200 px-2 py-1">
                             投稿なし
                           </span>
                         )}
@@ -463,13 +463,13 @@ export default function ReelLabPage() {
                       <div className="space-y-2">
                         {hasPosts ? (
                           daySchedule.posts.map((post, postIndex: number) => (
-                            <div key={postIndex} className="bg-gray-50 p-2 text-sm text-gray-800">
+                            <div key={postIndex} className="bg-white bg-opacity-80 p-2 text-sm text-gray-800">
                               {post.emoji} {post.title}
                               <div className="text-xs text-gray-600 mt-1">{post.description}</div>
                             </div>
                           ))
                         ) : (
-                          <div className="text-center py-4 text-sm text-orange-600">
+                          <div className="text-center py-4 text-sm text-gray-500">
                             <div className="text-2xl mb-1">😴</div>
                             <div>この日は投稿しません</div>
                           </div>
