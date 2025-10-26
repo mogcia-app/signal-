@@ -68,17 +68,55 @@ ${businessInfo ? JSON.stringify(businessInfo, null, 2) : 'なし'}
 }
 
 async function generateVideoStructureWithAI(prompt: string) {
-  // OpenAI APIの実装（実際のAPIキーが必要）
-  // 現在はモックデータを返す
-  const mockStructure = {
-    structure: {
-      introduction: "商品の魅力を一瞬で伝える",
-      development: "使用シーンや効果を具体的に紹介",
-      twist: "意外な使い方や隠れた特徴を発見",
-      conclusion: "フォローや購入を促すCTA"
-    },
-    flow: "0-3秒: 商品の全体像を一瞬で見せる → 3-15秒: 実際の使用シーンを複数紹介 → 15-25秒: 意外な使い方や隠れた特徴を発見 → 25-30秒: フォローや購入を促すCTAで締めくくり"
-  };
+  const { default: OpenAI } = await import('openai');
+  
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY,
+  });
 
-  return mockStructure;
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 800,
+      response_format: { type: 'json_object' },
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('AIからの応答がありません');
+    }
+
+    const result = JSON.parse(content);
+    
+    // バリデーション: structureとflowが存在するか
+    if (!result.structure || !result.flow) {
+      throw new Error('AIからの応答形式が正しくありません');
+    }
+    
+    return {
+      structure: result.structure,
+      flow: result.flow
+    };
+    
+  } catch (error) {
+    console.error('OpenAI API エラー:', error);
+    
+    // フォールバック: モックデータを返す
+    return {
+      structure: {
+        introduction: "商品の魅力を一瞬で伝える",
+        development: "使用シーンや効果を具体的に紹介",
+        twist: "意外な使い方や隠れた特徴を発見",
+        conclusion: "フォローや購入を促すCTA"
+      },
+      flow: "0-3秒: 商品の全体像を一瞬で見せる → 3-15秒: 実際の使用シーンを複数紹介 → 15-25秒: 意外な使い方や隠れた特徴を発見 → 25-30秒: フォローや購入を促すCTAで締めくくり"
+    };
+  }
 }
