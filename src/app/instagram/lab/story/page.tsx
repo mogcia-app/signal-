@@ -439,27 +439,30 @@ export default function StoryLabPage() {
             {generatedSchedule.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {generatedSchedule.map((daySchedule, index) => {
-                  const colors = [
-                    'from-red-50 to-red-100 border-red-200 text-red-600 text-red-800',
-                    'from-orange-50 to-orange-100 border-orange-200 text-orange-600 text-orange-800',
-                    'from-yellow-50 to-yellow-100 border-yellow-200 text-yellow-600 text-yellow-800',
-                    'from-green-50 to-green-100 border-green-200 text-green-600 text-green-800',
-                    'from-blue-50 to-blue-100 border-blue-200 text-blue-600 text-blue-800',
-                    'from-purple-50 to-purple-100 border-purple-200 text-purple-600 text-purple-800',
-                    'from-pink-50 to-pink-100 border-pink-200 text-pink-600 text-pink-800'
-                  ];
-                  const colorClass = colors[index % colors.length];
-                  const [bgClass, borderClass, titleColor, textColor] = colorClass.split(' ');
-                  
                   const hasPosts = daySchedule.posts && daySchedule.posts.length > 0;
                   
                   return (
-                    <div key={daySchedule.day} className={`bg-gradient-to-br ${bgClass} ${borderClass} border rounded-lg p-4 ${!hasPosts ? 'opacity-50' : ''}`}>
+                    <div 
+                      key={daySchedule.day} 
+                      className={`border-2 p-4 ${
+                        hasPosts 
+                          ? 'bg-white border-gray-300' 
+                          : 'bg-orange-50 border-orange-300'
+                      }`}
+                    >
                       <div className="flex items-center mb-3">
-                        <span className={`text-lg font-bold ${titleColor} mr-2`}>{daySchedule.day}</span>
-                        <span className={`text-sm font-medium ${textColor}`}>{daySchedule.dayName}</span>
+                        <span className={`text-lg font-bold mr-2 ${
+                          hasPosts ? 'text-gray-800' : 'text-orange-700'
+                        }`}>
+                          {daySchedule.day}
+                        </span>
+                        <span className={`text-sm font-medium ${
+                          hasPosts ? 'text-gray-600' : 'text-orange-600'
+                        }`}>
+                          {daySchedule.dayName}
+                        </span>
                         {!hasPosts && (
-                          <span className="ml-auto text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                          <span className="ml-auto text-xs text-orange-700 bg-orange-200 px-2 py-1">
                             投稿なし
                           </span>
                         )}
@@ -467,13 +470,13 @@ export default function StoryLabPage() {
                       <div className="space-y-2">
                         {hasPosts ? (
                           daySchedule.posts.map((post, postIndex: number) => (
-                            <div key={postIndex} className={`bg-white bg-opacity-60 p-2 rounded text-sm ${textColor}`}>
+                            <div key={postIndex} className="bg-gray-50 p-2 text-sm text-gray-800">
                               {post.emoji} {post.title}
-                              <div className="text-xs opacity-75 mt-1">{post.description}</div>
+                              <div className="text-xs text-gray-600 mt-1">{post.description}</div>
                             </div>
                           ))
                         ) : (
-                          <div className={`text-center py-4 text-sm ${textColor} opacity-60`}>
+                          <div className="text-center py-4 text-sm text-orange-600">
                             <div className="text-2xl mb-1">😴</div>
                             <div>この日は投稿しません</div>
                           </div>
