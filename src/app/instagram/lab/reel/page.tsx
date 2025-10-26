@@ -345,9 +345,15 @@ export default function ReelLabPage() {
   
   useEffect(() => {
     setIsMounted(true);
-    fetchAnalytics();
-    loadSavedSchedule(); // 保存されたスケジュールを読み込み
-  }, [fetchAnalytics, loadSavedSchedule]);
+  }, []);
+
+  useEffect(() => {
+    if (user?.uid) {
+      fetchAnalytics();
+      loadSavedSchedule(); // 保存されたスケジュールを読み込み
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   if (!isMounted) {
     return null;
