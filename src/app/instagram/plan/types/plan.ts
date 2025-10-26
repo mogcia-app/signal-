@@ -60,6 +60,64 @@ export interface SimulationResult {
     message: string;
     advice: string;
   };
+  alternativeOptions?: AlternativeOptions | null;
+}
+
+// 代替案の型定義
+export interface AlternativeOptions {
+  whyDifficult: string;
+  realistic: AlternativeOption;
+  moderate: AlternativeOption;
+  phased: PhasedOption;
+  extendedPeriod: ExtendedPeriodOption;
+  otherStrategies: OtherStrategy[];
+}
+
+export interface AlternativeOption {
+  targetFollowers: number;
+  followerGain: number;
+  monthlyGain: number;
+  monthlyGrowthRate: number;
+  feasibility: string;
+  recommendation: string;
+  pros: string[];
+  cons: string[];
+}
+
+export interface PhasedOption {
+  phase1: {
+    targetFollowers: number;
+    followerGain: number;
+    duration: string;
+    description: string;
+  };
+  phase2: {
+    targetFollowers: number;
+    followerGain: number;
+    duration: string;
+    description: string;
+  };
+  totalDuration: string;
+  feasibility: string;
+  recommendation: string;
+  pros: string[];
+  cons: string[];
+}
+
+export interface ExtendedPeriodOption {
+  period: string;
+  periodMultiplier: number;
+  recommendation: string;
+  pros: string[];
+  cons: string[];
+}
+
+export interface OtherStrategy {
+  title: string;
+  description: string;
+  estimatedBoost: string;
+  cost: string;
+  feasibility: string;
 }
 
 // デバッグ情報の型定義

@@ -46,6 +46,11 @@ async function runSimulation(requestData: SimulationRequest): Promise<Simulation
   // 実現可能性の判定
   const feasibility = calculateFeasibility(followerGain, currentFollowers, planPeriod);
   
+  // 「非常に困難」の場合の代替案を生成
+  const alternativeOptions = feasibility.level === 'very_challenging' 
+    ? generateAlternativeOptions(followerGain, currentFollowers, planPeriod)
+    : null;
+  
   // 投稿頻度の計算
   const postsPerWeek = calculatePostFrequency(strategyValues, postCategories, followerGain);
   const monthlyPostCount = (postsPerWeek.reel + postsPerWeek.feed + postsPerWeek.story) * 4;
@@ -78,7 +83,8 @@ async function runSimulation(requestData: SimulationRequest): Promise<Simulation
     mainAdvice,
     improvementTips,
     graphData,
-    onePointAdvice
+    onePointAdvice,
+    alternativeOptions
   };
 }
 
@@ -404,5 +410,162 @@ function calculateTargetDate(planPeriod: string): string {
     month: 'long',
     day: 'numeric'
   });
+}
+
+// 代替案を生成（非常に困難な場合）
+function generateAlternativeOptions(followerGain: number, currentFollowers: number, planPeriod: string) {
+  const periodMultiplier = getPeriodMultiplier(planPeriod);
+  const monthlyGain = followerGain / periodMultiplier;
+  const growthRate = monthlyGain / Math.max(currentFollowers, 1);
+  
+  // 現実的な目標（月間成長率5%以下）
+  const realisticMonthlyGrowthRate = 0.05;
+  const realisticMonthlyGain = currentFollowers * realisticMonthlyGrowthRate;
+  const realisticTotalGain = realisticMonthlyGain * periodMultiplier;
+  const realisticTargetFollowers = currentFollowers + realisticTotalGain;
+  
+  // 中等度の目標（月間成長率10%以下）
+  const moderateMonthlyGrowthRate = 0.10;
+  const moderateMonthlyGain = currentFollowers * moderateMonthlyGrowthRate;
+  const moderateTotalGain = moderateMonthlyGain * periodMultiplier;
+  const moderateTargetFollowers = currentFollowers + moderateTotalGain;
+  
+  // 段階的アプローチ（半分ずつ達成）
+  const phasedFirstTarget = currentFollowers + Math.ceil(followerGain / 2);
+  const phasedSecondTarget = currentFollowers + followerGain;
+  
+  // 期間延長案
+  const extendedPeriodMultiplier = periodMultiplier * 1.5;
+  const extendedPeriod = getExtendedPeriod(planPeriod);
+  
+  return {
+    whyDifficult: `現在の目標は月間${(growthRate * 100).toFixed(1)}%の成長率が必要です。一般的な成長率（月間3-5%）を大幅に上回るため、達成は非常に困難です。`,
+    
+    realistic: {
+      targetFollowers: Math.round(realisticTargetFollowers),
+      followerGain: Math.round(realisticTotalGain),
+      monthlyGain: Math.round(realisticMonthlyGain),
+      monthlyGrowthRate: 5,
+      feasibility: 'very_realistic',
+      recommendation: '無理なく継続できる現実的な目標です。一貫した投稿とエンゲージメント向上に集中しましょう。',
+      pros: [
+        '継続しやすい投稿ペース',
+        'リスクが低く確実な成長',
+        'コストパフォーマンスが良い',
+        'フォロワーの質を維持できる'
+      ],
+      cons: [
+        '成長ペースがゆっくり',
+        '期間が長くかかる可能性'
+      ]
+    },
+    
+    moderate: {
+      targetFollowers: Math.round(moderateTargetFollowers),
+      followerGain: Math.round(moderateTotalGain),
+      monthlyGain: Math.round(moderateMonthlyGain),
+      monthlyGrowthRate: 10,
+      feasibility: 'moderate',
+      recommendation: 'やや挑戦的ですが、集中的な努力で達成可能な目標です。リール投稿の強化やエンゲージメント戦略の最適化を検討しましょう。',
+      pros: [
+        '現実的な成長を期待できる',
+        '適度な挑戦でモチベーション維持',
+        '戦略次第で上振れの可能性',
+        '短期間で成果が見える'
+      ],
+      cons: [
+        'やや高負荷な投稿ペースが必要',
+        '一貫した戦略実行が必須'
+      ]
+    },
+    
+    phased: {
+      phase1: {
+        targetFollowers: phasedFirstTarget,
+        followerGain: Math.ceil(followerGain / 2),
+        duration: planPeriod,
+        description: '第一段階：基礎を固める期間'
+      },
+      phase2: {
+        targetFollowers: phasedSecondTarget,
+        followerGain: Math.ceil(followerGain / 2),
+        duration: planPeriod,
+        description: '第二段階：成長を加速させる期間'
+      },
+      totalDuration: getDoubledPeriod(planPeriod),
+      feasibility: 'moderate',
+      recommendation: '目標を半分ずつ達成する段階的アプローチ。第一段階で基盤を固めてから、第二段階で成長を加速させます。',
+      pros: [
+        'リスク分散で達成しやすい',
+        '中間的な成功体験を得られる',
+        '戦略を調整できる機会がある',
+        '学習しながら成長できる'
+      ],
+      cons: [
+        '目標達成までに期間が2倍必要',
+        '長期的な継続が必要'
+      ]
+    },
+    
+    extendedPeriod: {
+      period: extendedPeriod,
+      periodMultiplier: extendedPeriodMultiplier,
+      recommendation: `期間を${extendedPeriod}に延長することで、月間${((followerGain / (extendedPeriodMultiplier * currentFollowers)) * 100).toFixed(1)}%の成長率になり、より現実的な目標になります。`,
+      pros: [
+        'より現実的な投稿ペースで達成可能',
+        '無理のない継続的な投稿ができる',
+        'コンテンツ品質を維持できる'
+      ],
+      cons: [
+        '目標達成に時間がかかる'
+      ]
+    },
+    
+    otherStrategies: [
+      {
+        title: '広告予算を投入する',
+        description: 'Instagram広告を活用して、オーガニックな成長を補完します。月1-2万円程度の予算で成長ペースを加速できます。',
+        estimatedBoost: '月間+10-20%の成長促進',
+        cost: '月1-5万円',
+        feasibility: 'realistic'
+      },
+      {
+        title: 'コラボレーション戦略を強化',
+        description: '同ジャンルのアカウントやインフルエンサーとのコラボで相互フォロワー獲得を目指します。',
+        estimatedBoost: '月間+5-15%の成長促進',
+        cost: '時間投資のみ',
+        feasibility: 'realistic'
+      },
+      {
+        title: 'コンテンツ品質と投稿頻度の最適化',
+        description: 'バーチャーリールやトレンド動画を週5-7回投稿し、アルゴリズムに好まれるコンテンツを量産します。',
+        estimatedBoost: '月間+10-30%の成長促進',
+        cost: '時間投資のみ',
+        feasibility: 'challenging'
+      }
+    ]
+  };
+}
+
+// 期間を延長する
+function getExtendedPeriod(planPeriod: string): string {
+  switch (planPeriod) {
+    case '1ヶ月': return '6ヶ月';
+    case '3ヶ月': return '6ヶ月';
+    case '6ヶ月': return '1年';
+    case '1年': return '2年';
+    default: return '6ヶ月';
+  }
+}
+
+// 期間を2倍にする
+function getDoubledPeriod(planPeriod: string): string {
+  switch (planPeriod) {
+    case '1ヶ月': return '2ヶ月';
+    case '3ヶ月': return '6ヶ月';
+    case '6ヶ月': return '1年';
+    case '1年': return '2年';
+    default: return '2ヶ月';
+  }
 }
 
