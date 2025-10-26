@@ -1,0 +1,49 @@
+name: CI with Sentry Prevent
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run ESLint
+      run: npm run lint
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Run tests
+      run: npm run test -- --reporters=jest-junit
+      continue-on-error: true
+    
+    - name: Upload test results to Sentry Prevent
+      if: ${{ !cancelled() }}
+      uses: getsentry/prevent-action@v0
+      env:
+        SENTRY_ORG: mogcia
+        SENTRY_PROJECT: signal
+      with:
+        report-paths: |
+          test-results/junit.xml
+
