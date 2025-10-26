@@ -238,7 +238,7 @@ async function runAIDiagnosis(
 具体的で実行可能な提案を行ってください。`;
 
   const chatCompletion = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4o-mini", // コスト削減のためgpt-4o-miniに変更
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt }
