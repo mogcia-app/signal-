@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { consoleLoggingIntegration } from "@sentry/browser";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -21,13 +22,10 @@ Sentry.init({
   // サーバーサイドのエラーも監視
   attachStacktrace: true,
   
-  // ログを有効にする
-  enableLogs: true,
-  
   // インテグレーション
   integrations: [
     // console.log, console.warn, console.error をSentryログとして送信
-    Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
+    consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
   ],
   
   // 個人情報をマスク
