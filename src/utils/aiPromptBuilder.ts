@@ -345,8 +345,6 @@ export const buildReportPrompt = (
 - アカウントスコア: ${currentScore}点（前月: ${previousScore}点、変動: ${scoreDiff > 0 ? '+' : ''}${scoreDiff}点）
 - パフォーマンス評価: ${rating}
 - 総投稿数: ${monthlyData?.totalPosts || 0}件
-- 総エンゲージメント: ${monthlyData?.totalEngagement || 0}
-- 平均エンゲージメント率: ${monthlyData?.avgEngagementRate || 0}%
 
 ## 運用計画の参照（PDCA - Plan）
 ${planSummary || '運用計画データなし'}
@@ -375,6 +373,10 @@ ${improvements && improvements.length > 0
 1. [具体的なアクション1] → 期待される効果
 2. [具体的なアクション2] → 期待される効果
 3. [具体的なアクション3] → 期待される効果
+
+### 📈 フォロワー成長予測
+今月のパフォーマンスと重点アクションを基に、来月の予想フォロワー数を具体的な数値で示してください。
+例：「現在のフォロワー数 + 施策A・B・C実施で +5〜8人増加が見込めます」
 
 ## 重要事項
 - クライアントの目標（${userProfile.businessInfo.goals.join(', ')}）を意識する
