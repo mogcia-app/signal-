@@ -456,9 +456,9 @@ async function generateAIMonthlyReview(
   );
 
   const userPrompt = `
-上記のクライアント情報と月次データを基に、今月の総括と来月のアクションプランを生成してください。
+上記のクライアント情報と月次データを基に、簡潔で具体的な今月の総括と来月のアクションプランを生成してください。
 
-前向きで励ましのトーンを使い、具体的で実行可能な提案を行ってください。`;
+前向きで励ましのトーンを使い、実行可能な提案に絞ってください。`;
 
   try {
     const chatCompletion = await openai.chat.completions.create({
@@ -468,7 +468,7 @@ async function generateAIMonthlyReview(
         { role: "user", content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 800, // 2000から800に削減（60%削減）
     });
 
     const aiResponse = chatCompletion.choices[0].message.content || '';
