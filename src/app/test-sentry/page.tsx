@@ -13,8 +13,7 @@ export default function TestSentryPage() {
   const triggerError = () => {
     try {
       // 意図的なエラーを発生させる
-      // @ts-ignore
-      undefinedFunction();
+      (window as any).undefinedFunction();
     } catch (error) {
       setErrorThrown(true);
       // Sentryにエラーを報告
@@ -34,8 +33,8 @@ export default function TestSentryPage() {
 
   const triggerTypeError = () => {
     try {
-      // @ts-ignore
-      null.method();
+      const obj: any = null;
+      obj.method();
     } catch (error) {
       setErrorThrown(true);
       throw error;
