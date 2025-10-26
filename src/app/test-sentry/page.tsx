@@ -13,7 +13,9 @@ export default function TestSentryPage() {
   const triggerError = () => {
     try {
       // 意図的なエラーを発生させる
-      (window as any).undefinedFunction();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const undefinedFunc = (window as any).undefinedFunction;
+      undefinedFunc();
     } catch (error) {
       setErrorThrown(true);
       // Sentryにエラーを報告
@@ -33,7 +35,8 @@ export default function TestSentryPage() {
 
   const triggerTypeError = () => {
     try {
-      const obj: any = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const obj = null as any;
       obj.method();
     } catch (error) {
       setErrorThrown(true);

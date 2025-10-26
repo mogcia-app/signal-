@@ -44,6 +44,5 @@ jobs:
         SENTRY_ORG: mogcia
         SENTRY_PROJECT: signal
       with:
-        report-paths: |
-          test-results/junit.xml
+        files: test-results/junit.xml
 

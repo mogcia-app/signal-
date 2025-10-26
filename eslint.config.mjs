@@ -18,6 +18,9 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "functions/lib/**",
+      "jest.config.js",
+      "test-results/**",
     ],
   },
 ];
