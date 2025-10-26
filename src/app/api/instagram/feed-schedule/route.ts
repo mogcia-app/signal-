@@ -219,30 +219,39 @@ function buildBusinessContext(businessInfo: {
 }
 
 function buildSchedulePrompt(monthlyPosts: number, dailyPosts: number, context: string) {
+  const weeklyPostCount = Math.round(monthlyPosts / 4);
+  const postingDaysPerWeek = Math.round(monthlyPosts / 4);
+  
   return `
 あなたはInstagramフィード投稿の専門家です。以下の情報を基に、週間投稿スケジュールを提案してください。
 
-【投稿頻度】
-- 1ヶ月の投稿回数: ${monthlyPosts}回
+【重要：投稿頻度の設定】
+- 月間の投稿回数: ${monthlyPosts}回
 - 1日の投稿回数: ${dailyPosts}回
-- 週の投稿回数: ${Math.round(monthlyPosts / 4)}回（月${monthlyPosts}回 ÷ 4週）
-- 投稿する曜日数: ${Math.round(monthlyPosts / 4)}日/週
+- 週間の投稿回数: ${weeklyPostCount}回
+- 投稿する曜日の数: 週${postingDaysPerWeek}日のみ投稿
+
+【重要な指示】
+1. **週${postingDaysPerWeek}日のみ投稿してください**（月〜日のうち${postingDaysPerWeek}日のみ）
+2. **投稿しない曜日は必ず空の配列にしてください**
+3. 各曜日に投稿する場合は、${dailyPosts}件の投稿内容を提案してください
+
+【投稿する曜日の選び方】
+- 週2回（${postingDaysPerWeek}日）の場合：例）月・水、火・木、水・金、木・土、金・日など
+- 週3回（${postingDaysPerWeek}日）の場合：例）月・水・金、火・木・土、水・金・日など
+- 週4回（${postingDaysPerWeek}日）の場合：例）月・火・木・金、火・水・金・土など
+- 他の頻度の場合も同様に、週${postingDaysPerWeek}日のみを選んでください
 
 【ビジネス情報】
 ${context}
 
 【要求事項】
-1. 投稿頻度に基づいて、投稿する曜日を選択してください
-   - 週2回の場合：月・水、火・木、水・金、木・土、金・日などから選択
-   - 週3回の場合：月・水・金、火・木・土、水・金・日などから選択
-   - 週4回の場合：月・火・木・金、火・水・金・土などから選択
-   - 毎日の場合：月〜日すべて
-2. 選択した曜日のみに投稿内容を提案し、投稿しない曜日は空の配列にしてください
-3. ビジネス情報に基づいて、ターゲット層に響く内容にしてください
-4. 各投稿内容は具体的で実行可能なものにしてください
-5. 曜日ごとに異なるアプローチを取り、バリエーションを持たせてください
-6. エンゲージメントを高めるような内容を心がけてください
-7. フィード投稿に特化した内容（写真中心、ストーリーテリング、商品紹介など）にしてください
+1. 上記の投稿頻度を厳密に守ってください（週${postingDaysPerWeek}日のみ投稿）
+2. ビジネス情報に基づいて、ターゲット層に響く内容にしてください
+3. 各投稿内容は具体的で実行可能なものにしてください
+4. 曜日ごとに異なるアプローチを取り、バリエーションを持たせてください
+5. エンゲージメントを高めるような内容を心がけてください
+6. フィード投稿に特化した内容（写真中心、ストーリーテリング、商品紹介など）にしてください
 
 【出力形式】
 以下のJSON形式で回答してください：
