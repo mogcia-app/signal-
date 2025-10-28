@@ -78,6 +78,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // ユーザーがログインしている場合、Firestoreドキュメントを確認・作成
       if (user) {
+        // セッション開始時刻を記録
+        if (typeof window !== 'undefined') {
+          const existingSession = localStorage.getItem('signal_session_start');
+          if (!existingSession) {
+            localStorage.setItem('signal_session_start', Date.now().toString());
+          }
+        }
+        
         try {
           await ensureUserDocument(user);
           
@@ -87,17 +95,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (!isValid) {
             // 契約が無効な場合、ログアウト処理
-            console.warn('🚫 Contract invalid. User will be logged out.');
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('🚫 Contract invalid. User will be logged out.');
+            }
             if (typeof window !== 'undefined') {
               alert('契約期間が終了しています。管理者にご連絡ください。');
+              localStorage.removeItem('signal_session_start');
             }
           }
         } catch (error) {
-          console.error('Error ensuring user document:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error ensuring user document:', error);
+          }
           setContractValid(false);
         }
       } else {
         setContractValid(false);
+        // ログアウト時はセッション情報をクリア
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('signal_session_start');
+        }
       }
       
       setLoading(false);
@@ -132,6 +149,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  // 6時間で自動ログアウト機能
+  useEffect(() => {
+    if (!user || typeof window === 'undefined') return;
+
+    const checkSessionTimeout = () => {
+      const sessionStart = localStorage.getItem('signal_session_start');
+      
+      if (sessionStart) {
+        const sessionStartTime = parseInt(sessionStart, 10);
+        const currentTime = Date.now();
+        const elapsedTime = currentTime - sessionStartTime;
+        const sixHoursInMs = 6 * 60 * 60 * 1000; // 6時間
+        
+        if (elapsedTime >= sixHoursInMs) {
+          // 6時間経過したら自動ログアウト
+          firebaseSignOut(auth);
+          localStorage.removeItem('signal_session_start');
+          
+          if (typeof window !== 'undefined') {
+            alert('セッションがタイムアウトしました。再度ログインしてください。');
+          }
+        }
+      }
+    };
+
+    // 初回チェック
+    checkSessionTimeout();
+
+    // 5分ごとにチェック
+    const intervalId = setInterval(checkSessionTimeout, 5 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [user]);
+
   const signIn = async (email: string, password: string) => {
     try {
       // まずFirebase認証を実行
@@ -149,9 +200,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await firebaseSignOut(auth);
           throw new Error('CONTRACT_EXPIRED');
         }
+        
+        // ログイン成功時、セッション開始時刻を記録
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('signal_session_start', Date.now().toString());
+        }
       }
     } catch (error) {
-      console.error('Sign in error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Sign in error:', error);
+      }
       throw error;
     }
   };
@@ -159,8 +217,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      
+      // セッション情報をクリア
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('signal_session_start');
+      }
     } catch (error) {
-      console.error('Sign out error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Sign out error:', error);
+      }
       throw error;
     }
   };

@@ -21,6 +21,11 @@ Sentry.init({
   // サーバーサイドのエラーも監視
   attachStacktrace: true,
   
+  // コンソールログをブレッドクラムとして記録
+  integrations: (integrations) => {
+    return integrations;
+  },
+  
   // 個人情報をマスク
   beforeSend(event, hint) {
     // 個人情報をマスクする処理を追加
@@ -45,3 +50,44 @@ Sentry.init({
     },
   },
 });
+
+// コンソールログをSentryに送信する設定
+if (typeof window !== 'undefined') {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  // console.log をオーバーライド
+  console.log = (...args: any[]) => {
+    Sentry.addBreadcrumb({
+      message: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '),
+      level: 'info',
+      category: 'console',
+    });
+    originalLog.apply(console, args);
+  };
+
+  // console.warn をオーバーライド
+  console.warn = (...args: any[]) => {
+    Sentry.addBreadcrumb({
+      message: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '),
+      level: 'warning',
+      category: 'console',
+    });
+    originalWarn.apply(console, args);
+  };
+
+  // console.error をオーバーライド
+  console.error = (...args: any[]) => {
+    Sentry.addBreadcrumb({
+      message: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '),
+      level: 'error',
+      category: 'console',
+    });
+    originalError.apply(console, args);
+  };
+  
+  // Sentry.logger.info を使用可能にする（オプション）
+  // Sentry.loggerは明示的なログ送信用に使用可能
+  // 例: Sentry.logger.info('User triggered test log', { log_source: 'sentry_test' });
+}

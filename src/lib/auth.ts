@@ -17,7 +17,9 @@ export async function checkUserContract(userId: string): Promise<boolean> {
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
-      console.error('❌ User data not found:', userId);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ User data not found:', userId);
+      }
       return false;
     }
     
@@ -41,12 +43,14 @@ export async function checkUserContract(userId: string): Promise<boolean> {
     }
     
     if (!isActive) {
-      console.warn('⏰ Contract expired or inactive:', {
-        userId,
-        status,
-        endDate: endDate.toISOString(),
-        currentDate: now.toISOString()
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⏰ Contract expired or inactive:', {
+          userId,
+          status,
+          endDate: endDate.toISOString(),
+          currentDate: now.toISOString()
+        });
+      }
       
       // 契約期間切れの場合はfalseを返す
       // ログアウト処理は呼び出し側で実装
@@ -56,7 +60,9 @@ export async function checkUserContract(userId: string): Promise<boolean> {
     
     return true;
   } catch (error) {
-    console.error('❌ Error checking contract:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Error checking contract:', error);
+    }
     return false;
   }
 }

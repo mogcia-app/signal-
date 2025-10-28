@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   // 静的生成を無効化してAPIルートの問題を回避
   trailingSlash: false,
+  // 本番環境でconsole文を削除する設定
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'], // error と warn は残す
+    } : false,
+  },
 };
 
 export default withSentryConfig(nextConfig, {
