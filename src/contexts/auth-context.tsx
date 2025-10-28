@@ -10,10 +10,12 @@ import {
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserProfile } from '../types/user';
+import { checkUserContract } from '../lib/auth';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  contractValid: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [contractValid, setContractValid] = useState(false);
 
   // ユーザードキュメントを作成または更新する関数
   const ensureUserDocument = async (user: User) => {
@@ -77,9 +80,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         try {
           await ensureUserDocument(user);
+          
+          // 契約期間をチェック
+          const isValid = await checkUserContract(user.uid);
+          setContractValid(isValid);
+          
+          if (!isValid) {
+            // 契約が無効な場合、ログアウト処理
+            console.warn('🚫 Contract invalid. User will be logged out.');
+            if (typeof window !== 'undefined') {
+              alert('契約期間が終了しています。管理者にご連絡ください。');
+            }
+          }
         } catch (error) {
           console.error('Error ensuring user document:', error);
+          setContractValid(false);
         }
+      } else {
+        setContractValid(false);
       }
       
       setLoading(false);
@@ -135,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     loading,
+    contractValid,
     signIn,
     signOut,
   };

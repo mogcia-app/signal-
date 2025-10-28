@@ -9,7 +9,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, contractValid } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -28,6 +28,24 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (!user) {
     return null;
+  }
+
+  if (!contractValid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-600 text-2xl font-bold mb-4">
+            契約期間が終了しています
+          </div>
+          <p className="text-gray-600 mb-4">
+            お使いのアカウントの契約期間が終了しています。
+          </p>
+          <p className="text-gray-500 text-sm">
+            続けてご利用の場合は、管理者にお問い合わせください。
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
