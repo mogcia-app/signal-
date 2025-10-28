@@ -134,7 +134,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // まずFirebase認証を実行
       await signInWithEmailAndPassword(auth, email, password);
+      
+      // 認証成功後、現在のユーザーを取得
+      const currentUser = auth.currentUser;
+      
+      if (currentUser) {
+        // 契約期間をチェック
+        const isValid = await checkUserContract(currentUser.uid);
+        
+        if (!isValid) {
+          // 契約が無効な場合はログアウト
+          await firebaseSignOut(auth);
+          throw new Error('CONTRACT_EXPIRED');
+        }
+      }
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;

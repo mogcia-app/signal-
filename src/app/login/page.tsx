@@ -28,8 +28,20 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push('/instagram/lab/feed');
       }, 2000);
-    } catch (error) {
-      setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+    } catch (error: unknown) {
+      // 契約期間切れのエラーの場合
+      const errorMessage = error instanceof Error ? error.message : '';
+      const errorCode = (error as { code?: string })?.code;
+      
+      if (errorMessage === 'CONTRACT_EXPIRED' || errorCode === 'auth/contract-expired') {
+        setError('契約期間が終了しています。管理者にご連絡ください。');
+      } else if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password') {
+        setError('メールアドレスまたはパスワードが正しくありません。');
+      } else if (errorCode === 'auth/invalid-email') {
+        setError('無効なメールアドレスです。');
+      } else {
+        setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+      }
       console.error('Login error:', error);
     } finally {
       setLoading(false);

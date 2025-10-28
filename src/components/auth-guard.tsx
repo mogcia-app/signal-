@@ -2,7 +2,10 @@
 
 import { useAuth } from '../contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { checkUserContract } from '../lib/auth';
+import { signOut } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -11,6 +14,24 @@ interface AuthGuardProps {
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading, contractValid } = useAuth();
   const router = useRouter();
+  const [isCheckingContract, setIsCheckingContract] = useState(false);
+
+  // ユーザーが認証済みの場合、契約期間を定期的にチェック
+  useEffect(() => {
+    if (!loading && user && !isCheckingContract) {
+      setIsCheckingContract(true);
+      
+      const checkContract = async () => {
+        const isValid = await checkUserContract(user.uid);
+        if (!isValid) {
+          // 契約が無効な場合、ログアウト
+          await signOut(auth);
+        }
+      };
+      
+      checkContract();
+    }
+  }, [user, loading, isCheckingContract]);
 
   useEffect(() => {
     if (!loading && !user) {

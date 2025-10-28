@@ -4,8 +4,6 @@
 
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { auth } from './firebase';
-import { signOut as firebaseSignOut } from 'firebase/auth';
 import { UserProfile } from '../types/user';
 
 /**
@@ -50,8 +48,8 @@ export async function checkUserContract(userId: string): Promise<boolean> {
         currentDate: now.toISOString()
       });
       
-      // 契約期間切れの場合はログアウト
-      await firebaseSignOut(auth);
+      // 契約期間切れの場合はfalseを返す
+      // ログアウト処理は呼び出し側で実装
       
       return false;
     }
