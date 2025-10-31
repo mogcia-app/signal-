@@ -272,8 +272,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         if (cleanTitle) onTitleChange?.(cleanTitle);
         onContentChange(cleanContent);
         if (generatedHashtags && generatedHashtags.length > 0) {
-          // ハッシュタグから#を削除（APIが既に#を追加しているため）
-          const cleanedHashtags = generatedHashtags.map((tag: string) => tag.replace(/^#+/, '').trim()).filter((tag: string) => tag);
+          // ハッシュタグから#と#-を削除（APIが既に#を追加しているため）
+          const cleanedHashtags = generatedHashtags
+            .map((tag: string) => tag.replace(/^#+-*/, '').replace(/^-+/, '').trim()) // #-や#から始まる場合と、-だけから始まる場合を削除
+            .filter((tag: string) => tag && tag !== '-'); // 空文字列や-だけのものを除外
           onHashtagsChange(cleanedHashtags);
         }
         
@@ -342,8 +344,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         if (cleanTitle) onTitleChange?.(cleanTitle);
         onContentChange(cleanContent);
         if (generatedHashtags && generatedHashtags.length > 0) {
-          // ハッシュタグから#を削除（APIが既に#を追加しているため）
-          const cleanedHashtags = generatedHashtags.map((tag: string) => tag.replace(/^#+/, '').trim()).filter((tag: string) => tag);
+          // ハッシュタグから#と#-を削除（APIが既に#を追加しているため）
+          const cleanedHashtags = generatedHashtags
+            .map((tag: string) => tag.replace(/^#+-*/, '').replace(/^-+/, '').trim()) // #-や#から始まる場合と、-だけから始まる場合を削除
+            .filter((tag: string) => tag && tag !== '-'); // 空文字列や-だけのものを除外
           onHashtagsChange(cleanedHashtags);
         }
         setAiPrompt(''); // テーマをクリア

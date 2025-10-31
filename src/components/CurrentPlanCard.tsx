@@ -45,11 +45,19 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
     );
   }
 
-  // 安全にアクセス
-  const currentFollowers = planData.currentFollowers || 0;
-  const targetFollowers = planData.targetFollowers || 0;
+  // フォームデータから値を取得（プランページと同じ形式）
+  const formData = planData.formData as Record<string, unknown> | undefined;
+  const formCurrentFollowers = formData?.currentFollowers ? parseInt(String(formData.currentFollowers), 10) : null;
+  const formFollowerGain = formData?.followerGain ? parseInt(String(formData.followerGain), 10) : null;
+  const formGoalCategory = formData?.goalCategory ? String(formData.goalCategory) : null;
+  const formTargetAudience = formData?.targetAudience ? String(formData.targetAudience) : null;
+  
+  // formDataがあればそれを使用、なければplanDataの直接プロパティを使用
+  const currentFollowers = formCurrentFollowers ?? (planData.currentFollowers || 0);
+  const followerGain = formFollowerGain ?? ((planData.targetFollowers || 0) - (planData.currentFollowers || 0));
+  const targetFollowers = formData ? (currentFollowers + followerGain) : (planData.targetFollowers || 0);
   const strategies = planData.strategies || [];
-  // const postCategories = planData.postCategories || [];
+  const postCategories = planData.postCategories || [];
   
   // 新しい達成度計算: 現在のフォロワー数 = 0%, 目標フォロワー数 = 100%
   // actualFollowersが提供されている場合はそれを使用、そうでなければ計画の現在フォロワー数を使用
@@ -90,7 +98,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
         {/* 計画タイトル */}
         <div>
           <p className="text-xs text-black mb-1">計画名</p>
-          <p className="font-medium text-black">{planData.title}</p>
+          <p className="font-medium text-black">{planData.title || 'Instagram運用計画'}</p>
         </div>
 
         {/* フォロワー目標進捗 */}
@@ -98,7 +106,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           <div className="flex justify-between text-sm mb-2">
             <span className="text-black">フォロワー目標</span>
             <span className="font-medium text-black">
-              {displayFollowers.toLocaleString()} → {targetFollowers.toLocaleString()}
+              {currentFollowers.toLocaleString()} → {targetFollowers.toLocaleString()}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-none h-2.5">
@@ -119,14 +127,14 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
             <Calendar className="w-4 h-4 text-black" />
             <div className="text-sm">
               <span className="text-black">期間: </span>
-              <span className="font-medium text-black">{planData.planPeriod}</span>
+              <span className="font-medium text-black">{planData.planPeriod || '未設定'}</span>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <Users className="w-4 h-4 text-black" />
             <div className="text-sm">
-              <span className="text-black">ターゲット: </span>
-              <span className="font-medium text-black">{planData.targetAudience}</span>
+              <span className="text-black">ターゲット層: </span>
+              <span className="font-medium text-black">{formTargetAudience || planData.targetAudience || '未設定'}</span>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -135,15 +143,19 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               <span className="text-black">KPI: </span>
               <span className="font-medium text-black">
                 {(() => {
+                  const goalCategory = formGoalCategory || planData.category;
                   const categoryMap: Record<string, string> = {
-                    'follower': 'フォロワー',
-                    'engagement': 'エンゲージメント',
-                    'reach': 'リーチ',
-                    'impression': 'インプレッション',
-                    'click': 'クリック',
-                    'conversion': 'コンバージョン'
+                    'follower': 'フォロワー獲得',
+                    'engagement': 'エンゲージ促進',
+                    'like': 'いいねを増やす',
+                    'save': '保存率向上',
+                    'reach': 'リーチを増やす',
+                    'impressions': 'インプレッションを増やす',
+                    'branding': 'ブランド認知を広める',
+                    'profile': 'プロフィール誘導',
+                    'other': formData?.otherGoal ? String(formData.otherGoal) : 'その他'
                   };
-                  return categoryMap[planData.category] || planData.category;
+                  return categoryMap[goalCategory] || goalCategory || '未設定';
                 })()}
               </span>
             </div>
@@ -165,10 +177,10 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           )}
         </div>
 
-        {/* 施策タグ */}
+        {/* 取り組みたいこと */}
         {strategies.length > 0 && (
           <div>
-            <p className="text-xs text-black mb-2">施策</p>
+            <p className="text-xs text-black mb-2">取り組みたいこと</p>
             <div className="flex flex-wrap gap-2">
               {strategies.slice(0, 3).map((strategy, index) => (
                 <span
@@ -181,6 +193,28 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               {strategies.length > 3 && (
                 <span className="px-2.5 py-1 bg-gray-100 text-black text-xs rounded-none">
                   +{strategies.length - 3}個
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 投稿したい内容 */}
+        {postCategories.length > 0 && (
+          <div>
+            <p className="text-xs text-black mb-2">投稿したい内容</p>
+            <div className="flex flex-wrap gap-2">
+              {postCategories.slice(0, 3).map((category, index) => (
+                <span
+                  key={index}
+                  className="px-2.5 py-1 bg-orange-50 text-orange-700 text-xs rounded-none font-medium"
+                >
+                  {category}
+                </span>
+              ))}
+              {postCategories.length > 3 && (
+                <span className="px-2.5 py-1 bg-gray-100 text-black text-xs rounded-none">
+                  +{postCategories.length - 3}個
                 </span>
               )}
             </div>

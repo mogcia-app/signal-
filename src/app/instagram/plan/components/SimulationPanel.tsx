@@ -587,7 +587,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
       )}
 
       {/* 保存ボタン */}
-      {result && onSave && !hasActivePlan && (
+      {result && onSave && (
         <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <button
             onClick={onSave}
@@ -601,7 +601,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
               </>
             ) : (
               <>
-                💾 この計画を保存する
+                💾 {hasActivePlan ? 'このシュミレーションを更新する' : 'このシュミレーションを保存する'}
               </>
             )}
           </button>
