@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SimulationRequest, SimulationResult } from '../../../instagram/plan/types/plan';
+import { buildPlanPrompt } from '../../../../utils/aiPromptBuilder';
+import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
+import { UserProfile } from '../../../../types/user';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,8 +16,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ユーザーIDを取得
+    let userId = 'anonymous';
+    const authHeader = request.headers.get('authorization');
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        userId = decodedToken.uid;
+        console.log('✅ Authenticated user:', userId);
+      } catch (authError) {
+        console.warn('⚠️ Firebase認証エラー（匿名ユーザーとして処理）:', authError);
+      }
+    }
+
     // シミュレーション処理
-    const simulationResult = await runSimulation(body);
+    const simulationResult = await runSimulation(body, userId);
     
     return NextResponse.json(simulationResult);
   } catch (error) {
@@ -27,7 +45,7 @@ export async function POST(request: NextRequest) {
 }
 
 // シミュレーション処理ロジック（簡素化版）
-async function runSimulation(requestData: SimulationRequest): Promise<SimulationResult> {
+async function runSimulation(requestData: SimulationRequest, userId: string = 'anonymous'): Promise<SimulationResult> {
   const {
     followerGain,
     currentFollowers,
@@ -58,15 +76,30 @@ async function runSimulation(requestData: SimulationRequest): Promise<Simulation
   // ワークロード判定
   const workloadMessage = calculateWorkload(monthlyPostCount);
 
-  // AIアドバイス生成
-  const mainAdvice = generateMainAdvice(strategyValues, goalCategory, followerGain);
-  const improvementTips = generateImprovementTips(strategyValues, hashtagStrategy, postCategories);
-
   // グラフデータ生成
   const graphData = generateGraphData(currentFollowers, followerGain, planPeriod);
 
   // ワンポイントアドバイス生成
   const onePointAdvice = generateOnePointAdvice(graphData.isRealistic, graphData.growthRateComparison);
+
+  // シミュレーション結果を準備
+  const simulationResultData = {
+    monthlyTarget,
+    feasibilityLevel: feasibility.level,
+    postsPerWeek: postsPerWeek
+  };
+
+  // AIアドバイス生成（ユーザープロファイルを使用）
+  const { mainAdvice, improvementTips } = await generateAISimulationAdvice(
+    userId,
+    currentFollowers,
+    followerGain,
+    goalCategory,
+    strategyValues,
+    postCategories,
+    hashtagStrategy,
+    simulationResultData
+  );
 
   // 目標達成日を計算
   const targetDate = calculateTargetDate(planPeriod);
@@ -566,6 +599,152 @@ function getDoubledPeriod(planPeriod: string): string {
     case '6ヶ月': return '1年';
     case '1年': return '2年';
     default: return '2ヶ月';
+  }
+}
+
+// AIアドバイス生成
+async function generateAISimulationAdvice(
+  userId: string,
+  currentFollowers: number,
+  followerGain: number,
+  goalCategory: string,
+  strategyValues: string[],
+  postCategories: string[],
+  hashtagStrategy: string,
+  simulationResult: Record<string, unknown>
+): Promise<{ mainAdvice: string; improvementTips: string[] }> {
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  
+  if (!openaiApiKey) {
+    console.warn('OpenAI API key not configured, falling back to template advice');
+    return {
+      mainAdvice: generateMainAdvice(strategyValues, goalCategory, followerGain),
+      improvementTips: generateImprovementTips(strategyValues, hashtagStrategy, postCategories)
+    };
+  }
+
+  // ユーザープロファイルを取得
+  let userProfile: UserProfile | null = null;
+  try {
+    const userDoc = await adminDb.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      userProfile = userDoc.data() as UserProfile;
+    }
+  } catch (error) {
+    console.warn('ユーザープロファイル取得エラー（デフォルト値を使用）:', error);
+  }
+
+  // フォームデータを準備
+  const formData = {
+    currentFollowers: String(currentFollowers),
+    targetFollowers: String(currentFollowers + followerGain),
+    goalCategory: goalCategory,
+    strategyValues: strategyValues,
+    postCategories: postCategories,
+    tone: hashtagStrategy
+  };
+
+  try {
+    // プロンプトビルダーを使用してシステムプロンプトを構築
+    let systemPrompt: string;
+    
+    if (userProfile) {
+      systemPrompt = buildPlanPrompt(userProfile, 'instagram', formData, simulationResult);
+    } else {
+      // フォールバック: ユーザープロファイルがない場合
+      systemPrompt = `あなたはInstagram運用の専門家です。ユーザーの計画データとシミュレーション結果を基に、具体的で実用的な投稿戦略アドバイスを生成してください。
+
+計画データ:
+- 現在のフォロワー数: ${currentFollowers}
+- 目標フォロワー数: ${currentFollowers + followerGain}
+- KPIカテゴリ: ${goalCategory}
+- 選択戦略: ${strategyValues.join(', ') || 'なし'}
+- 投稿カテゴリ: ${postCategories.join(', ') || 'なし'}
+
+シミュレーション結果:
+- 月間目標: ${simulationResult.monthlyTarget || 'N/A'}
+- 実現可能性: ${simulationResult.feasibilityLevel || 'N/A'}
+- 週間投稿数: フィード${(simulationResult.postsPerWeek as Record<string, unknown>)?.feed || 0}回、リール${(simulationResult.postsPerWeek as Record<string, unknown>)?.reel || 0}回`;
+    }
+
+    // シミュレーション専用のアドバイスリクエスト
+    const userPrompt = `
+以下の2つのセクションで、簡潔で実用的なアドバイスを生成してください：
+
+【メインアドバイス】
+- 1つの文章で、目標達成に向けた最も重要な戦略を提示してください
+- 具体的な数値やアクションを含めてください
+- 長さは50-80文字程度にしてください
+
+【改善提案】
+- 3-5個の具体的な改善提案を箇条書きで提示してください
+- 各提案は15-25文字程度にしてください
+- すぐに実行できるアクションを中心にしてください
+
+出力フォーマット:
+メインアドバイス: [アドバイス内容]
+改善提案:
+1. [提案1]
+2. [提案2]
+3. [提案3]
+`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 800,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0]?.message?.content || '';
+    
+    // AIレスポンスを解析
+    const mainAdviceMatch = aiResponse.match(/メインアドバイス[:：]\s*(.+?)(?:\n|$)/i);
+    const mainAdvice = mainAdviceMatch ? mainAdviceMatch[1].trim() : generateMainAdvice(strategyValues, goalCategory, followerGain);
+    
+    const tipsMatch = aiResponse.match(/改善提案[:：]\s*([\s\S]+?)(?:\n\n|\nメイン|$)/i);
+    let improvementTips: string[] = [];
+    
+    if (tipsMatch) {
+      const tipsText = tipsMatch[1];
+      // 番号付きリストを抽出（例: "1. xxx\n2. xxx"）
+      const tipLines = tipsText.match(/\d+[\.．]\s*(.+?)(?=\n|$)/g);
+      if (tipLines) {
+        improvementTips = tipLines.map((line: string) => line.replace(/^\d+[\.．]\s*/, '').trim()).filter((tip: string) => tip.length > 0);
+      }
+    }
+    
+    // 提案が不足している場合はフォールバックを使用
+    if (improvementTips.length === 0) {
+      improvementTips = generateImprovementTips(strategyValues, hashtagStrategy, postCategories);
+    }
+
+    return { mainAdvice, improvementTips };
+
+  } catch (error) {
+    console.error('AIアドバイス生成エラー:', error);
+    // フォールバック: テンプレートアドバイスを使用
+    return {
+      mainAdvice: generateMainAdvice(strategyValues, goalCategory, followerGain),
+      improvementTips: generateImprovementTips(strategyValues, hashtagStrategy, postCategories)
+    };
   }
 }
 

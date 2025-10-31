@@ -173,13 +173,24 @@ export default function PostDetailPage() {
           {/* コンテンツ */}
           <div className="p-6">
             {/* タイトル */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">{post.title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              {(() => {
+                // タイトルから先頭・末尾の「##」「-」「空白」を削除
+                return post.title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim();
+              })()}
+            </h2>
 
             {/* 投稿文全文 */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">投稿文</h3>
               <div className="bg-orange-50 p-4 border-l-4 border-orange-500">
-                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{removeHashtagsFromContent(post.content)}</p>
+                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                  {(() => {
+                    const cleanedContent = removeHashtagsFromContent(post.content);
+                    // 投稿文から先頭・末尾の「##」「-」「空白」を削除
+                    return cleanedContent.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim();
+                  })()}
+                </p>
               </div>
             </div>
 
@@ -218,11 +229,15 @@ export default function PostDetailPage() {
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">ハッシュタグ</h3>
                   <div className="flex flex-wrap gap-2">
-                    {uniqueHashtags.map((tag, index) => (
-                      <span key={index} className="inline-block px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100 transition-colors">
-                        #{tag}
-                      </span>
-                    ))}
+                    {uniqueHashtags.map((tag, index) => {
+                      // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
+                      const cleanTag = tag.replace(/^#+/, '').trim();
+                      return (
+                        <span key={index} className="inline-block px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100 transition-colors">
+                          #{cleanTag}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               );

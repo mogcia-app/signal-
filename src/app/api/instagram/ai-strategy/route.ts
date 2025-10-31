@@ -66,7 +66,9 @@ function validateInputData(_data: unknown): boolean {
 // AI戦略生成のメイン関数（プロンプトビルダーベース）
 async function generateAIStrategy(
   formData: Record<string, unknown>, 
-  simulationResult: Record<string, unknown> | null,
+  selectedStrategies: string[] = [],
+  selectedCategories: string[] = [],
+  simulationResult: Record<string, unknown> | null = null,
   userId: string = 'anonymous'
 ): Promise<string> {
   const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -161,10 +163,17 @@ async function generateAIStrategy(
   
   if (userProfile) {
     // ✅ プロンプトビルダーを使用（クライアントの詳細情報を含む）
+    // selectedStrategiesとselectedCategoriesをformDataに含める
+    const enhancedFormData = {
+      ...formData,
+      strategyValues: selectedStrategies.length > 0 ? selectedStrategies : (formData.strategyValues || []),
+      postCategories: selectedCategories.length > 0 ? selectedCategories : (formData.postCategories || []),
+    };
+    
     systemPrompt = buildPlanPrompt(
       userProfile, 
       'instagram', 
-      formData as {
+      enhancedFormData as {
         currentFollowers?: number | string;
         targetFollowers?: number | string;
         planPeriod?: string;
@@ -238,11 +247,14 @@ async function generateAIStrategy(
 - 現在のフォロワー数: ${formData?.currentFollowers || '未設定'}
 - 目標フォロワー数: ${formData?.targetFollowers || '未設定'}
 - 達成期間: ${formData?.planPeriod || '未設定'}
+- ターゲット層: ${formData?.targetAudience || '未設定'}
+- KPIカテゴリ: ${formData?.goalCategory || '未設定'}
+- その他目標: ${formData?.otherGoal || '未設定'}
 - ブランドコンセプト: ${formData?.brandConcept || '未設定'}
 - メインカラー: ${formData?.colorVisual || '未設定'}
 - 文章トーン: ${formData?.tone || '未設定'}
-- 選択戦略: ${Array.isArray(formData?.strategyValues) ? formData.strategyValues.join(', ') : 'なし'}
-- 投稿カテゴリ: ${Array.isArray(formData?.postCategories) ? formData.postCategories.join(', ') : 'なし'}
+- 取り組みたいこと（選択戦略）: ${selectedStrategies.length > 0 ? selectedStrategies.join(', ') : (Array.isArray(formData?.strategyValues) ? formData.strategyValues.join(', ') : 'なし')}
+- 投稿したい内容（投稿カテゴリ）: ${selectedCategories.length > 0 ? selectedCategories.join(', ') : (Array.isArray(formData?.postCategories) ? formData.postCategories.join(', ') : 'なし')}
 
 シミュレーション結果:
 - 月間目標: ${simulationResult?.monthlyTarget || 'N/A'}
@@ -388,7 +400,13 @@ export async function POST(request: NextRequest) {
     console.log('Received request body:', JSON.stringify(body, null, 2));
 
     // AI戦略生成
-    const aiStrategy = await generateAIStrategy(body.formData, body.simulationResult, userId);
+    const aiStrategy = await generateAIStrategy(
+      body.formData, 
+      body.selectedStrategies || [],
+      body.selectedCategories || [],
+      body.simulationResult, 
+      userId
+    );
 
     return NextResponse.json({
       strategy: aiStrategy,

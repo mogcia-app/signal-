@@ -327,31 +327,37 @@ export default function InstagramPlanPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleEditCurrentPlan}
-                  className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 transition-colors"
+                  className="p-2 text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded-md transition-colors"
+                  title="編集"
                 >
-                  ✏️ 編集
+                  ✏️
                 </button>
                 <button
                   onClick={handleDeleteCurrentPlan}
-                  className="text-sm bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 transition-colors"
+                  className="p-2 text-gray-600 hover:bg-gray-100 hover:text-red-600 rounded-md transition-colors"
+                  title="削除"
                 >
-                  🗑️ 削除
+                  🗑️
                 </button>
-                <button
-                  onClick={handleSavePlan}
-                  disabled={isSaving}
-                  className="text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-3 transition-colors"
-                >
-                  {isSaving ? '💾 保存中...' : '💾 保存'}
-                </button>
+                {!loadedPlanId && (
+                  <button
+                    onClick={handleSavePlan}
+                    disabled={isSaving}
+                    className="p-2 text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+                    title="保存"
+                  >
+                    💾
+                  </button>
+                )}
                 <button
                   onClick={resetPlan}
-                  className="text-sm bg-white hover:bg-gray-50 text-black border border-gray-300 font-medium py-2 px-3 transition-colors"
+                  className="p-2 text-gray-600 hover:bg-gray-100 hover:text-orange-600 rounded-md transition-colors"
+                  title="再設定"
                 >
-                  🔄 再設定
+                  🔄
                 </button>
               </div>
             </div>
@@ -416,6 +422,8 @@ export default function InstagramPlanPage() {
                     onStartDiagnosis={() => handleStartAiDiagnosis(formData)}
                     onSaveAdvice={handleSaveAdviceAndContinue}
                     formData={formData}
+                    selectedStrategies={selectedStrategies}
+                    selectedCategories={selectedCategories}
                     simulationResult={simulationResult}
                     generatedStrategy={generatedStrategy}
                     setGeneratedStrategy={setGeneratedStrategy}

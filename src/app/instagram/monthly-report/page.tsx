@@ -459,6 +459,7 @@ export default function InstagramMonthlyReportPage() {
         {/* 運用計画連携 */}
         <CurrentPlanCard 
           planData={planData}
+          variant="detailed"
           snsType="instagram"
         />
 

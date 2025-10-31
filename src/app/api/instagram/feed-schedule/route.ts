@@ -68,13 +68,17 @@ export async function POST(request: NextRequest) {
     const prompt = buildSchedulePrompt(monthlyPosts, dailyPosts, context);
 
     // OpenAI APIを呼び出してスケジュールを生成
-    const scheduleResponse = await generateScheduleWithAI(prompt);
+    const scheduleResponse = await generateScheduleWithAI(prompt, monthlyPosts, dailyPosts);
     console.log('Schedule generated:', scheduleResponse.length, 'days');
+    
+    // 投稿頻度に合わせてスケジュールを調整（週の投稿回数に合うように）
+    const adjustedSchedule = adjustScheduleToPostingFrequency(scheduleResponse, monthlyPosts, dailyPosts);
+    console.log('Schedule adjusted to posting frequency:', adjustedSchedule.length, 'days');
 
     // iPad Chrome対応: レスポンスサイズをチェック
     const responseData = {
       success: true,
-      schedule: scheduleResponse,
+      schedule: adjustedSchedule,
       timestamp: new Date().toISOString(),
       isIPadOptimized: isIPadChrome
     };
@@ -85,7 +89,7 @@ export async function POST(request: NextRequest) {
     if (isIPadChrome && responseSize > 50000) {
       console.warn('⚠️ Large response detected for iPad Chrome, optimizing...');
       // iPad Chrome用にスケジュールを簡略化
-      const optimizedSchedule = scheduleResponse.map((day: { day: string; dayName: string; posts: Array<{ title: string; description: string; emoji: string; category: string }> }) => ({
+      const optimizedSchedule = adjustedSchedule.map((day: { day: string; dayName: string; posts: Array<{ title: string; description: string; emoji: string; category: string }> }) => ({
         day: day.day,
         dayName: day.dayName,
         posts: day.posts.map((post: { title: string; description: string; emoji: string; category: string }) => ({
@@ -222,6 +226,11 @@ function buildSchedulePrompt(monthlyPosts: number, dailyPosts: number, context: 
   const weeklyPostCount = Math.round(monthlyPosts / 4);
   const postingDaysPerWeek = Math.round(monthlyPosts / 4);
   
+  // 週1回の場合は特に強調
+  const frequencyNote = postingDaysPerWeek === 1 
+    ? '\n【⚠️ 非常に重要】週1回（1日のみ）の投稿です。7日間のうち、投稿するのは1日だけです。他の6日は必ず空の配列（posts: []）にしてください。'
+    : '';
+  
   return `
 あなたはInstagramフィード投稿の専門家です。以下の情報を基に、週間投稿スケジュールを提案してください。
 
@@ -229,24 +238,31 @@ function buildSchedulePrompt(monthlyPosts: number, dailyPosts: number, context: 
 - 月間の投稿回数: ${monthlyPosts}回
 - 1日の投稿回数: ${dailyPosts}回
 - 週間の投稿回数: ${weeklyPostCount}回
-- 投稿する曜日の数: 週${postingDaysPerWeek}日のみ投稿
+- 投稿する曜日の数: 週${postingDaysPerWeek}日のみ投稿${frequencyNote}
 
 【重要な指示】
 1. **週${postingDaysPerWeek}日のみ投稿してください**（月〜日のうち${postingDaysPerWeek}日のみ）
-2. **投稿しない曜日は必ず空の配列にしてください**
+2. **投稿しない曜日は必ず空の配列（posts: []）にしてください**
 3. 各曜日に投稿する場合は、${dailyPosts}件の投稿内容を提案してください
+4. 7日間全ての曜日を含む配列を返してくださいが、投稿があるのは${postingDaysPerWeek}日のみです
 
 【投稿する曜日の選び方】
-- 週2回（${postingDaysPerWeek}日）の場合：例）月・水、火・木、水・金、木・土、金・日など
-- 週3回（${postingDaysPerWeek}日）の場合：例）月・水・金、火・木・土、水・金・日など
-- 週4回（${postingDaysPerWeek}日）の場合：例）月・火・木・金、火・水・金・土など
-- 他の頻度の場合も同様に、週${postingDaysPerWeek}日のみを選んでください
+${postingDaysPerWeek === 1 
+  ? '- 週1回（1日のみ）の場合：例）月、火、水、木、金、土、日のいずれか1日のみ'
+  : postingDaysPerWeek === 2
+  ? '- 週2回（2日のみ）の場合：例）月・水、火・木、水・金、木・土、金・日など'
+  : postingDaysPerWeek === 3
+  ? '- 週3回（3日のみ）の場合：例）月・水・金、火・木・土、水・金・日など'
+  : postingDaysPerWeek === 4
+  ? '- 週4回（4日のみ）の場合：例）月・火・木・金、火・水・金・土など'
+  : `- 週${postingDaysPerWeek}回（${postingDaysPerWeek}日のみ）の場合：適切に${postingDaysPerWeek}日を選んでください`
+}
 
 【ビジネス情報】
 ${context}
 
 【要求事項】
-1. 上記の投稿頻度を厳密に守ってください（週${postingDaysPerWeek}日のみ投稿）
+1. 上記の投稿頻度を厳密に守ってください（週${postingDaysPerWeek}日のみ投稿、他の日は空配列）
 2. ビジネス情報に基づいて、ターゲット層に響く内容にしてください
 3. 各投稿内容は具体的で実行可能なものにしてください
 4. 曜日ごとに異なるアプローチを取り、バリエーションを持たせてください
@@ -254,12 +270,17 @@ ${context}
 6. フィード投稿に特化した内容（写真中心、ストーリーテリング、商品紹介など）にしてください
 
 【出力形式】
-以下のJSON形式で回答してください：
+以下のJSON形式で回答してください。必ず7日間全てを含めてください：
 {
   "schedule": [
     {
       "day": "月",
       "dayName": "Monday",
+      "posts": []  // 投稿しない場合は空配列
+    },
+    {
+      "day": "火",
+      "dayName": "Tuesday",
       "posts": [
         {
           "title": "投稿タイトル",
@@ -268,19 +289,14 @@ ${context}
           "category": "商品紹介"
         }
       ]
-    },
-    {
-      "day": "火",
-      "dayName": "Tuesday",
-      "posts": []
-    },
-    // ... 他の曜日 ...
+    }
+    // ... 残りの曜日も同様に
   ]
 }
 `;
 }
 
-async function generateScheduleWithAI(prompt: string) {
+async function generateScheduleWithAI(prompt: string, monthlyPosts: number, dailyPosts: number) {
   const { default: OpenAI } = await import('openai');
   
   const openai = new OpenAI({
@@ -291,6 +307,10 @@ async function generateScheduleWithAI(prompt: string) {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
+        {
+          role: 'system',
+          content: 'あなたはInstagramフィード投稿の専門家です。ビジネス情報に基づいて最適な週間投稿スケジュールを提案してください。指定された投稿頻度を厳密に守ってください。'
+        },
         {
           role: 'user',
           content: prompt
@@ -317,7 +337,224 @@ async function generateScheduleWithAI(prompt: string) {
     
   } catch (error) {
     console.error('OpenAI API エラー:', error);
-    throw error;
+    // フォールバック: デフォルトスケジュールを返す
+    return getDefaultSchedule(monthlyPosts, dailyPosts);
   }
+}
+
+// スケジュールを投稿頻度に合わせて調整する関数
+function adjustScheduleToPostingFrequency(
+  schedule: Array<{
+    day: string;
+    dayName: string;
+    posts: Array<{
+      title: string;
+      description: string;
+      emoji: string;
+      category: string;
+    }>;
+  }>,
+  monthlyPosts: number,
+  dailyPosts: number
+): Array<{
+  day: string;
+  dayName: string;
+  posts: Array<{
+    title: string;
+    description: string;
+    emoji: string;
+    category: string;
+  }>;
+}> {
+  const weeklyPostCount = Math.round(monthlyPosts / 4);
+  const postingDaysPerWeek = weeklyPostCount;
+  
+  // 全ての曜日を含むスケジュールを確保（7日間）
+  const dayNames = ["月", "火", "水", "木", "金", "土", "日"];
+  const dayNameMap: { [key: string]: string } = {
+    "月": "Monday",
+    "火": "Tuesday",
+    "水": "Wednesday",
+    "木": "Thursday",
+    "金": "Friday",
+    "土": "Saturday",
+    "日": "Sunday"
+  };
+  
+  // 既存のスケジュールから、投稿がある日を抽出
+  const daysWithPosts = schedule.filter(day => 
+    day.posts && Array.isArray(day.posts) && day.posts.length > 0
+  );
+  
+  // 投稿がある日が指定された投稿回数を超えている場合は、最初のN日のみを残す
+  const selectedDaysWithPosts = daysWithPosts.slice(0, postingDaysPerWeek);
+  
+  // 全ての曜日を含む新しいスケジュールを作成
+  const adjustedSchedule = dayNames.map(day => {
+    // この曜日に投稿があるかチェック
+    const dayWithPosts = selectedDaysWithPosts.find(d => d.day === day);
+    
+    if (dayWithPosts && dayWithPosts.posts && dayWithPosts.posts.length > 0) {
+      // 投稿がある場合、dailyPosts数に合わせて調整
+      const posts = dayWithPosts.posts.slice(0, dailyPosts);
+      return {
+        day: day,
+        dayName: dayNameMap[day] || getDayName(day),
+        posts: posts
+      };
+    } else {
+      // 投稿がない場合は空配列
+      return {
+        day: day,
+        dayName: dayNameMap[day] || getDayName(day),
+        posts: []
+      };
+    }
+  });
+  
+  // 投稿がある日を確認
+  const daysWithPostsInSchedule = adjustedSchedule.filter(day => day.posts.length > 0);
+  const currentPostingDays = daysWithPostsInSchedule.length;
+  
+  // 投稿がある日が指定された投稿回数を超えている場合は、最初のN日のみを残す
+  if (currentPostingDays > postingDaysPerWeek) {
+    // 投稿がある日のインデックスを取得
+    const postingDayIndices: number[] = [];
+    adjustedSchedule.forEach((day, index) => {
+      if (day.posts.length > 0) {
+        postingDayIndices.push(index);
+      }
+    });
+    
+    // 超えている分の投稿を空にする（最初のN日以外）
+    const daysToRemove = postingDayIndices.slice(postingDaysPerWeek);
+    daysToRemove.forEach(index => {
+      adjustedSchedule[index].posts = [];
+    });
+  }
+  
+  // 投稿がある日が指定された投稿回数より少ない場合は、ランダムに追加
+  const finalPostingDays = adjustedSchedule.filter(day => day.posts.length > 0).length;
+  if (finalPostingDays < postingDaysPerWeek) {
+    const daysWithoutPosts = adjustedSchedule.filter(day => day.posts.length === 0);
+    const daysToAdd = postingDaysPerWeek - finalPostingDays;
+    
+    for (let i = 0; i < Math.min(daysToAdd, daysWithoutPosts.length); i++) {
+      const dayToAdd = daysWithoutPosts[i];
+      // デフォルトの投稿内容を追加
+      dayToAdd.posts = [{
+        title: `${dayToAdd.day}曜日のフィード投稿`,
+        description: "投稿内容を追加してください",
+        emoji: "📸",
+        category: "投稿"
+      }];
+    }
+  }
+  
+  return adjustedSchedule;
+}
+
+function getDefaultSchedule(monthlyPosts: number = 8, dailyPosts: number = 1) {
+  const weeklyPostCount = Math.round(monthlyPosts / 4);
+  const postingDaysPerWeek = weeklyPostCount;
+  
+  // 投稿する曜日を決定（週の投稿回数に基づく）
+  const postingDays: string[] = [];
+  
+  // 週の投稿回数に応じて曜日を選択
+  if (postingDaysPerWeek === 1) {
+    postingDays.push("月"); // 週1回は月曜日
+  } else if (postingDaysPerWeek === 2) {
+    postingDays.push("月", "木"); // 週2回は月・木
+  } else if (postingDaysPerWeek === 3) {
+    postingDays.push("月", "水", "金"); // 週3回は月・水・金
+  } else if (postingDaysPerWeek === 4) {
+    postingDays.push("月", "火", "木", "金"); // 週4回は月・火・木・金
+  } else if (postingDaysPerWeek === 5) {
+    postingDays.push("月", "火", "水", "木", "金"); // 週5回
+  } else if (postingDaysPerWeek === 6) {
+    postingDays.push("月", "火", "水", "木", "金", "土"); // 週6回
+  } else if (postingDaysPerWeek === 7) {
+    postingDays.push("月", "火", "水", "木", "金", "土", "日"); // 毎日
+  } else {
+    // デフォルトは週2回
+    postingDays.push("月", "木");
+  }
+  
+  const dayNames = ["月", "火", "水", "木", "金", "土", "日"];
+  
+  const postTemplates: { [key: string]: Array<{ title: string; description: string; emoji: string; category: string }> } = {
+    "月": [{
+      title: "商品紹介フィード",
+      description: "新商品やおすすめ商品を魅力的に紹介",
+      emoji: "📸",
+      category: "商品紹介"
+    }],
+    "火": [{
+      title: "おすすめポイント",
+      description: "商品の特徴やメリットを強調",
+      emoji: "💡",
+      category: "おすすめ"
+    }],
+    "水": [{
+      title: "成功事例紹介",
+      description: "お客様の成功事例や体験談",
+      emoji: "🏆",
+      category: "成功事例"
+    }],
+    "木": [{
+      title: "新商品発表",
+      description: "新商品の発表や予告",
+      emoji: "🌱",
+      category: "新商品"
+    }],
+    "金": [{
+      title: "週末特集",
+      description: "週末の過ごし方やおすすめスポット",
+      emoji: "🎉",
+      category: "週末特集"
+    }],
+    "土": [{
+      title: "エンターテイメント",
+      description: "楽しい投稿やエンターテイメント",
+      emoji: "🎪",
+      category: "エンターテイメント"
+    }],
+    "日": [{
+      title: "週末の過ごし方",
+      description: "リラックスした週末の様子",
+      emoji: "🌅",
+      category: "ライフスタイル"
+    }]
+  };
+  
+  return dayNames.map(day => {
+    const isPostingDay = postingDays.includes(day);
+    
+    let posts: Array<{ title: string; description: string; emoji: string; category: string }> = [];
+    if (isPostingDay && postTemplates[day]) {
+      // 投稿する曜日に応じて内容を決定、dailyPosts数に合わせて調整
+      posts = postTemplates[day].slice(0, dailyPosts);
+    }
+    
+    return {
+      day: day,
+      dayName: getDayName(day),
+      posts: posts
+    };
+  });
+}
+
+function getDayName(day: string): string {
+  const dayMap: { [key: string]: string } = {
+    "月": "Monday",
+    "火": "Tuesday", 
+    "水": "Wednesday",
+    "木": "Thursday",
+    "金": "Friday",
+    "土": "Saturday",
+    "日": "Sunday"
+  };
+  return dayMap[day] || day;
 }
 

@@ -42,6 +42,7 @@ export default function StoryLabPage() {
 
   // AIヒント関連の状態
   const [imageVideoSuggestions, setImageVideoSuggestions] = useState('');
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   
   // 計画データを取得
   const { planData } = usePlanData('instagram');
@@ -308,6 +309,7 @@ export default function StoryLabPage() {
   const generateImageVideoSuggestions = useCallback(async (content: string) => {
     if (!user?.uid) return;
     
+    setIsGeneratingSuggestions(true);
     try {
       // ビジネス情報を取得
       const idToken = await user.getIdToken();
@@ -346,6 +348,8 @@ export default function StoryLabPage() {
       
     } catch (error) {
       console.error('AIヒント生成エラー:', error);
+    } finally {
+      setIsGeneratingSuggestions(false);
     }
   }, [user]);
   
@@ -407,6 +411,7 @@ export default function StoryLabPage() {
                   onChange={(e) => setMonthlyPosts(Number(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
+                  <option value="4">4回（週1回）</option>
                   <option value="8">8回（週2回）</option>
                   <option value="12">12回（週3回）</option>
                   <option value="16">16回（週4回）</option>
@@ -593,8 +598,9 @@ export default function StoryLabPage() {
                 setScheduledTime('');
               }}
               showActionButtons={true}
-              imageVideoSuggestions={imageVideoSuggestions}
-              onImageVideoSuggestionsGenerate={generateImageVideoSuggestions}
+            imageVideoSuggestions={imageVideoSuggestions}
+            onImageVideoSuggestionsGenerate={generateImageVideoSuggestions}
+            isGeneratingSuggestions={isGeneratingSuggestions}
             />
           </div>
 

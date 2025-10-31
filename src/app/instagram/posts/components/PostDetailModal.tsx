@@ -138,7 +138,11 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
             {/* タイトル */}
             <div>
               <h3 className="text-lg font-semibold text-black mb-2">
-                {selectedPost?.title || selectedAnalytics?.title || 'タイトルなし'}
+                {(() => {
+                  const title = selectedPost?.title || selectedAnalytics?.title || 'タイトルなし';
+                  // タイトルから先頭・末尾の「##」「-」「空白」を削除
+                  return title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() || 'タイトルなし';
+                })()}
               </h3>
               <div className="flex items-center space-x-4 text-sm text-black">
                 <span className="flex items-center">
@@ -187,7 +191,11 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-2">投稿内容</h4>
               <p className="text-gray-700 whitespace-pre-wrap">
-                {selectedPost?.content || selectedAnalytics?.content || '投稿内容がありません'}
+                {(() => {
+                  const content = selectedPost?.content || selectedAnalytics?.content || '投稿内容がありません';
+                  // 投稿文から先頭・末尾の「##」「-」「空白」を削除
+                  return content.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() || '投稿内容がありません';
+                })()}
               </p>
             </div>
 
@@ -199,14 +207,18 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                   {(() => {
                     const hashtags = selectedPost?.hashtags || selectedAnalytics?.hashtags || [];
                     return Array.isArray(hashtags) ? hashtags : [];
-                  })().map((hashtag: string, index: number) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
-                    >
-                      #{hashtag}
-                    </span>
-                  ))}
+                  })().map((hashtag: string, index: number) => {
+                    // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
+                    const cleanHashtag = hashtag.replace(/^#+/, '').trim();
+                    return (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
+                      >
+                        #{cleanHashtag}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}

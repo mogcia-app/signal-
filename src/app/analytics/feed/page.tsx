@@ -638,6 +638,7 @@ function AnalyticsFeedContent() {
             {/* 運用計画セクション */}
             <CurrentPlanCard 
               planData={planData}
+              variant="detailed"
               snsType="instagram"
               actualFollowers={actualFollowers}
             />

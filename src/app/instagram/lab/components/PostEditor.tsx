@@ -38,6 +38,7 @@ interface PostEditorProps {
   videoFlow?: string; // 動画構成の流れ
   imageVideoSuggestions?: string; // AIヒントの文章
   onImageVideoSuggestionsGenerate?: (content: string) => void; // AIヒント生成のコールバック
+  isGeneratingSuggestions?: boolean; // AIヒント生成中のローディング状態
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -64,7 +65,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   videoStructure,
   videoFlow,
   imageVideoSuggestions,
-  onImageVideoSuggestionsGenerate
+  onImageVideoSuggestionsGenerate,
+  isGeneratingSuggestions = false
 }) => {
   const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
@@ -264,10 +266,15 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
       if (result.success && result.data) {
         const { title, content, hashtags: generatedHashtags } = result.data;
-        if (title) onTitleChange?.(title);
-        onContentChange(content);
+        // タイトルと投稿文から先頭・末尾の「##」「-」や空白を削除
+        const cleanTitle = title ? title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() : '';
+        const cleanContent = content ? content.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() : '';
+        if (cleanTitle) onTitleChange?.(cleanTitle);
+        onContentChange(cleanContent);
         if (generatedHashtags && generatedHashtags.length > 0) {
-          onHashtagsChange(generatedHashtags);
+          // ハッシュタグから#を削除（APIが既に#を追加しているため）
+          const cleanedHashtags = generatedHashtags.map((tag: string) => tag.replace(/^#+/, '').trim()).filter((tag: string) => tag);
+          onHashtagsChange(cleanedHashtags);
         }
         
         // リールの場合は動画構成も生成
@@ -277,7 +284,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         
         // ストーリー・フィードの場合はAIヒントも生成
         if ((postType === 'story' || postType === 'feed') && onImageVideoSuggestionsGenerate) {
-          onImageVideoSuggestionsGenerate(content);
+          onImageVideoSuggestionsGenerate(cleanContent);
         }
       } else {
         throw new Error('自動生成に失敗しました');
@@ -329,10 +336,15 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
       if (result.success && result.data) {
         const { title, content, hashtags: generatedHashtags } = result.data;
-        if (title) onTitleChange?.(title);
-        onContentChange(content);
+        // タイトルと投稿文から先頭・末尾の「##」「-」や空白を削除
+        const cleanTitle = title ? title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() : '';
+        const cleanContent = content ? content.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() : '';
+        if (cleanTitle) onTitleChange?.(cleanTitle);
+        onContentChange(cleanContent);
         if (generatedHashtags && generatedHashtags.length > 0) {
-          onHashtagsChange(generatedHashtags);
+          // ハッシュタグから#を削除（APIが既に#を追加しているため）
+          const cleanedHashtags = generatedHashtags.map((tag: string) => tag.replace(/^#+/, '').trim()).filter((tag: string) => tag);
+          onHashtagsChange(cleanedHashtags);
         }
         setAiPrompt(''); // テーマをクリア
         
@@ -343,7 +355,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         
         // ストーリー・フィードの場合はAIヒントも生成
         if ((postType === 'story' || postType === 'feed') && onImageVideoSuggestionsGenerate) {
-          onImageVideoSuggestionsGenerate(content);
+          onImageVideoSuggestionsGenerate(cleanContent);
         }
       } else {
         throw new Error('投稿文生成に失敗しました');
@@ -537,9 +549,16 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
 
             <div className="bg-white p-4 rounded-lg border border-orange-100">
-              <div className="text-sm text-gray-700">
-                {imageVideoSuggestions || 'AI投稿文生成で自動提案されます'}
-              </div>
+              {isGeneratingSuggestions ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mr-3"></div>
+                  <span className="text-sm text-gray-600">AIヒントを生成中...</span>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-700">
+                  {imageVideoSuggestions || 'AI投稿文生成で自動提案されます'}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -766,7 +785,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     {/* 投稿内容 */}
                     {title && (
                       <div className="text-lg font-semibold text-black mb-3">
-                        {title}
+                        {title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim()}
                       </div>
                     )}
                     
@@ -785,7 +804,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     
                     {content ? (
                       <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                        {content}
+                        {content.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim()}
                       </div>
                     ) : (
                       <div className="text-black italic text-center py-4">
@@ -795,7 +814,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             {hashtags.length > 0 && (
               <div className="mt-4 pt-3 border-t border-gray-200">
                 <div className="text-sm text-orange-600 flex flex-wrap gap-1">
-                  {hashtags.map(hashtag => `#${hashtag}`).join(' ')}
+                  {hashtags.map(hashtag => {
+                    // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
+                    const cleanHashtag = hashtag.replace(/^#+/, '').trim();
+                    return `#${cleanHashtag}`;
+                  }).join(' ')}
                 </div>
               </div>
             )}

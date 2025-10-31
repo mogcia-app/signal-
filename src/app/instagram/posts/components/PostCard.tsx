@@ -183,39 +183,47 @@ const PostCard: React.FC<PostCardProps> = ({
   };
 
   return (
-    <div className="bg-white shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="relative bg-white shadow-sm border border-gray-200 overflow-visible hover:shadow-md transition-shadow">
+      {/* ラベルをカードの外枠の上に配置 */}
+      <div className="absolute -top-3 left-4 flex items-center space-x-2 z-10">
+        {post.isAIGenerated && (
+          <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 flex items-center shadow-sm">
+            <span className="mr-1">🤖</span>
+            AI生成
+          </span>
+        )}
+        <span className={`px-2 py-1 text-xs font-medium ${getStatusColor(post.status)} shadow-sm`}>
+          {getStatusLabel(post.status)}
+        </span>
+        {hasAnalytics && post.postType !== 'story' && (
+          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 font-medium shadow-sm">
+            📊 分析済み
+          </span>
+        )}
+        {hasAnalytics && postAnalytics?.sentiment && post.postType !== 'story' && (
+          (() => {
+            const sentimentDisplay = getSentimentDisplay(postAnalytics.sentiment);
+            return sentimentDisplay ? (
+              <span className={`px-2 py-1 text-xs font-medium ${sentimentDisplay.bgColor} ${sentimentDisplay.textColor} shadow-sm`}>
+                {sentimentDisplay.icon} {sentimentDisplay.text}
+              </span>
+            ) : null;
+          })()
+        )}
+      </div>
+      
       {/* カードヘッダー */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">{getPostTypeIcon(post.postType)}</span>
-            <h3 className="text-lg font-semibold text-black truncate">{post.title || 'タイトルなし'}</h3>
-          </div>
-          <div className="flex items-center space-x-2">
-            {post.isAIGenerated && (
-              <span className="px-2 py-1  text-xs font-medium bg-purple-100 text-purple-800 flex items-center">
-                <span className="mr-1">🤖</span>
-                AI生成
-              </span>
-            )}
-            <span className={`px-2 py-1  text-xs font-medium ${getStatusColor(post.status)}`}>
-              {getStatusLabel(post.status)}
-            </span>
-            {hasAnalytics && post.postType !== 'story' && (
-              <span className="px-2 py-1 text-xs  bg-green-100 text-green-800 font-medium">
-                📊 分析済み
-              </span>
-            )}
-            {hasAnalytics && postAnalytics?.sentiment && post.postType !== 'story' && (
-              (() => {
-                const sentimentDisplay = getSentimentDisplay(postAnalytics.sentiment);
-                return sentimentDisplay ? (
-                  <span className={`px-2 py-1 text-xs font-medium ${sentimentDisplay.bgColor} ${sentimentDisplay.textColor}`}>
-                    {sentimentDisplay.icon} {sentimentDisplay.text}
-                  </span>
-                ) : null;
-              })()
-            )}
+            <h3 className="text-lg font-semibold text-black truncate">
+              {(() => {
+                const title = post.title || 'タイトルなし';
+                // タイトルから先頭・末尾の「##」「-」「空白」を削除
+                return title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() || 'タイトルなし';
+              })()}
+            </h3>
           </div>
         </div>
         <div className="flex items-center space-x-4 text-sm text-black">
@@ -284,50 +292,49 @@ const PostCard: React.FC<PostCardProps> = ({
           <p className="text-gray-700 text-sm">
             {(() => {
               const content = post.content || '投稿内容がありません';
-              const firstSentence = content.split(/[。！？]/)[0];
-              return firstSentence + (content.includes('。') || content.includes('！') || content.includes('？') ? '...' : '');
+              // 投稿文から先頭・末尾の「##」「-」「空白」を削除
+              const cleanedContent = content.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim();
+              const firstSentence = cleanedContent.split(/[。！？]/)[0];
+              return firstSentence + (cleanedContent.includes('。') || cleanedContent.includes('！') || cleanedContent.includes('？') ? '...' : '');
             })()}
           </p>
         </div>
 
         {/* ハッシュタグ */}
         {(() => {
+          // ハッシュタグを一度だけ処理
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const hashtags = Array.isArray(post.hashtags) ? post.hashtags : 
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []);
-          return hashtags.length > 0;
-        })() && (
-          <div className="mb-3">
-            <div className="flex flex-wrap gap-1">
-              {(() => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const hashtags = Array.isArray(post.hashtags) ? post.hashtags : 
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []);
-                return hashtags.slice(0, 3).map((hashtag: string, index: number) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-blue-100 text-blue-800 text-xs "
-                  >
-                    #{hashtag}
-                  </span>
-                ));
-              })()}
-              {(() => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const hashtags = Array.isArray(post.hashtags) ? post.hashtags : 
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace('#', '')) : []);
-                return hashtags.length > 3 && (
-                  <span className="px-2 py-1 bg-gray-100 text-black text-xs ">
+                          (typeof (post.hashtags as any) === 'string' ? (post.hashtags as any).split(' ').filter((tag: string) => tag.trim() !== '').map((tag: string) => tag.replace(/^#+/, '').trim()) : []);
+          
+          if (hashtags.length === 0) return null;
+          
+          return (
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-1">
+                {hashtags.slice(0, 3).map((hashtag: string, index: number) => {
+                  // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
+                  const cleanHashtag = hashtag.replace(/^#+/, '').trim();
+                  if (!cleanHashtag) return null;
+                  return (
+                    <span
+                      key={index}
+                      className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full"
+                    >
+                      #{cleanHashtag}
+                    </span>
+                  );
+                }).filter(Boolean)}
+                {hashtags.length > 3 && (
+                  <span className="px-2 py-1 bg-gray-100 text-black text-xs rounded-full">
                     +{hashtags.length - 3}
                   </span>
-                );
-              })()}
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* 分析データ（分析済みの場合のみ、ストーリーは除く） */}
         {hasAnalytics && postAnalytics && post.postType !== 'story' && (
@@ -368,7 +375,7 @@ const PostCard: React.FC<PostCardProps> = ({
           {/* 詳細表示ボタン（すべてのカードに表示） */}
           <a
             href={`/instagram/posts/${post.id}`}
-            className="p-2 text-black hover:text-blue-600 hover:bg-blue-50 transition-colors"
+            className="p-2 text-black hover:text-[#ff8a15] hover:bg-orange-50 transition-colors"
             title="投稿詳細を表示"
           >
             <Eye size={14} />

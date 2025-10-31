@@ -9,6 +9,8 @@ interface AIDiagnosisPanelProps {
   onStartDiagnosis: () => void;
   onSaveAdvice: () => void;
   formData: PlanFormData;
+  selectedStrategies: string[];
+  selectedCategories: string[];
   simulationResult?: SimulationResult | null;
   generatedStrategy: string | null;
   setGeneratedStrategy: (strategy: string | null) => void;
@@ -20,6 +22,8 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   onStartDiagnosis,
   onSaveAdvice,
   formData,
+  selectedStrategies,
+  selectedCategories,
   simulationResult,
   generatedStrategy,
   setGeneratedStrategy
@@ -29,7 +33,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
 
   const handleStartDiagnosis = async () => {
     try {
-      await generateStrategy(formData, simulationResult || null);
+      await generateStrategy(formData, selectedStrategies, selectedCategories, simulationResult || null);
       onStartDiagnosis();
     } catch (error) {
       console.error('Strategy generation failed:', error);
@@ -117,6 +121,13 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
       .replace(/__(.*?)__/g, '$1')
       // リストマーカー「- 」を「• 」に変更
       .replace(/^- /gm, '• ')
+      // 行末の#を削除
+      .replace(/#\s*$/gm, '')
+      // 行頭の単独#を削除（##や###以外）
+      .replace(/^#\s+(?!#)/gm, '')
+      // 文末の#（スペースや改行の前）を削除
+      .replace(/\s+#\s+/g, ' ')
+      .replace(/\s+#$/gm, '')
       // 連続する空行を1つに
       .replace(/\n\n\n+/g, '\n\n')
       // 先頭と末尾の空白を削除

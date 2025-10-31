@@ -45,17 +45,21 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
         </div>
 
         <div className="space-y-3">
-          {hashtagStats.length > 0 ? hashtagStats.map((item, index) => (
-            <div key={item.hashtag} className="flex items-center justify-between p-3 bg-gray-50 rounded-none">
-              <div className="flex items-center">
-                <span className="w-6 h-6 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-xs font-bold mr-3">
-                  {index + 1}
-                </span>
-                <span className="text-sm font-medium text-gray-700">#{item.hashtag}</span>
+          {hashtagStats.length > 0 ? hashtagStats.map((item, index) => {
+            // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
+            const cleanHashtag = item.hashtag.replace(/^#+/, '').trim();
+            return (
+              <div key={item.hashtag} className="flex items-center justify-between p-3 bg-gray-50 rounded-none">
+                <div className="flex items-center">
+                  <span className="w-6 h-6 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                    {index + 1}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">#{cleanHashtag}</span>
+                </div>
+                <span className="text-sm font-bold text-black">{item.count}回</span>
               </div>
-              <span className="text-sm font-bold text-black">{item.count}回</span>
-            </div>
-          )) : (
+            );
+          }) : (
             <div className="text-center py-8">
               <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
                 <Hash className="w-6 h-6 text-blue-600" />

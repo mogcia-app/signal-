@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../../contexts/auth-context';
 import { PlanFormData, SimulationResult } from '../types/plan';
 
@@ -229,7 +229,7 @@ export const usePlanForm = () => {
   };
 
   // ✅ 保存された計画を読み込む
-  const loadSavedPlan = async () => {
+  const loadSavedPlan = useCallback(async () => {
     if (!user?.uid) return;
 
     setIsLoadingPlan(true);
@@ -291,7 +291,8 @@ export const usePlanForm = () => {
     } finally {
       setIsLoadingPlan(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   // 計画期間から終了日を計算
   const calculateEndDate = (startDate: Date, period: string): Date => {
@@ -350,6 +351,7 @@ export const usePlanForm = () => {
     if (user?.uid) {
       loadSavedPlan();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
   return {

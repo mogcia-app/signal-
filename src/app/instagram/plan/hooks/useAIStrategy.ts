@@ -9,7 +9,7 @@ interface AIStrategyState {
 
 interface UseAIStrategyReturn {
   strategyState: AIStrategyState;
-  generateStrategy: (formData: PlanFormData, simulationResult: SimulationResult | null) => Promise<void>;
+  generateStrategy: (formData: PlanFormData, selectedStrategies: string[], selectedCategories: string[], simulationResult: SimulationResult | null) => Promise<void>;
   clearStrategy: () => void;
 }
 
@@ -22,6 +22,8 @@ export function useAIStrategy(): UseAIStrategyReturn {
 
   const generateStrategy = async (
     formData: PlanFormData, 
+    selectedStrategies: string[],
+    selectedCategories: string[],
     simulationResult: SimulationResult | null
   ): Promise<void> => {
     setStrategyState({
@@ -44,6 +46,8 @@ export function useAIStrategy(): UseAIStrategyReturn {
         },
         body: JSON.stringify({
           formData,
+          selectedStrategies,
+          selectedCategories,
           simulationResult,
         }),
       });

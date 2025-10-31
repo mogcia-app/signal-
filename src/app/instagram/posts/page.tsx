@@ -613,7 +613,13 @@ export default function InstagramPostsPage() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-3">
                           <span className="text-2xl">📊</span>
-                          <h3 className="text-lg font-semibold text-black truncate">{analytics.title || '手動入力データ'}</h3>
+                          <h3 className="text-lg font-semibold text-black truncate">
+                            {(() => {
+                              const title = analytics.title || '手動入力データ';
+                              // タイトルから先頭・末尾の「##」「-」「空白」を削除
+                              return title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() || '手動入力データ';
+                            })()}
+                          </h3>
                         </div>
                         <button
                           onClick={() => handleDeleteManualAnalytics(analytics.id)}
@@ -687,8 +693,10 @@ export default function InstagramPostsPage() {
                       <p className="text-gray-700 text-sm">
                         {(() => {
                           const content = analytics.content || '投稿内容がありません';
-                          const firstSentence = content.split(/[。！？]/)[0];
-                          return firstSentence + (content.includes('。') || content.includes('！') || content.includes('？') ? '...' : '');
+                          // 投稿文から先頭・末尾の「##」「-」「空白」を削除
+                          const cleanedContent = content.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim();
+                          const firstSentence = cleanedContent.split(/[。！？]/)[0];
+                          return firstSentence + (cleanedContent.includes('。') || cleanedContent.includes('！') || cleanedContent.includes('？') ? '...' : '');
                         })()}
                       </p>
                     </div>
@@ -697,14 +705,18 @@ export default function InstagramPostsPage() {
                     {analytics.hashtags && Array.isArray(analytics.hashtags) && analytics.hashtags.length > 0 && (
                       <div className="mb-3">
                         <div className="flex flex-wrap gap-1">
-                          {analytics.hashtags.slice(0, 3).map((hashtag, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs "
-                            >
-                              #{hashtag}
-                            </span>
-                          ))}
+                          {analytics.hashtags.slice(0, 3).map((hashtag, index) => {
+                            // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
+                            const cleanHashtag = hashtag.replace(/^#+/, '').trim();
+                            return (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs "
+                              >
+                                #{cleanHashtag}
+                              </span>
+                            );
+                          })}
                           {analytics.hashtags.length > 3 && (
                             <span className="px-2 py-1 bg-gray-100 text-black text-xs ">
                               +{analytics.hashtags.length - 3}
