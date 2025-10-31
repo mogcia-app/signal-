@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Copy, Tag } from 'lucide-react';
 
 interface ToolPanelProps {
@@ -9,60 +9,124 @@ interface ToolPanelProps {
   postContent: string;
 }
 
+const DEFAULT_TEMPLATES = [
+  'おはようございます！今日も素敵な一日をお過ごしください✨',
+  'ありがとうございます🙏',
+  'フォローありがとうございます！',
+  'いいねありがとうございます💕',
+  'コメントありがとうございます！',
+  '今日の一枚📸',
+  'お疲れ様でした！',
+  '素敵な週末をお過ごしください🌅'
+];
+
+const STORAGE_KEY_TEMPLATES = 'instagram_lab_templates';
+const STORAGE_KEY_HASHTAGS = 'instagram_lab_hashtags';
+
 export const ToolPanel: React.FC<ToolPanelProps> = ({
   onTemplateSelect,
   onHashtagSelect,
   postContent
 }) => {
-  const [templates, setTemplates] = useState([
-    'おはようございます！今日も素敵な一日をお過ごしください✨',
-    'ありがとうございます🙏',
-    'フォローありがとうございます！',
-    'いいねありがとうございます💕',
-    'コメントありがとうございます！',
-    '今日の一枚📸',
-    'お疲れ様でした！',
-    '素敵な週末をお過ごしください🌅'
-  ]);
+  // localStorageから読み込み
+  const loadTemplates = (): string[] => {
+    if (typeof window === 'undefined') return DEFAULT_TEMPLATES;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_TEMPLATES);
+      return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
+    } catch {
+      return DEFAULT_TEMPLATES;
+    }
+  };
 
+  const loadHashtags = (): string[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_HASHTAGS);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const [templates, setTemplates] = useState<string[]>([]);
   const [hashtags, setHashtags] = useState<string[]>([]);
+
+  // 初回マウント時にlocalStorageから読み込む
+  useEffect(() => {
+    setTemplates(loadTemplates());
+    setHashtags(loadHashtags());
+  }, []);
 
   const [newTemplate, setNewTemplate] = useState('');
   const [newHashtag, setNewHashtag] = useState('');
   const [editingTemplate, setEditingTemplate] = useState<number | null>(null);
   const [editingHashtag, setEditingHashtag] = useState<number | null>(null);
 
+  // localStorageに保存
+  const saveTemplates = (newTemplates: string[]) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(newTemplates));
+      } catch (error) {
+        console.error('Failed to save templates:', error);
+      }
+    }
+  };
+
+  const saveHashtags = (newHashtags: string[]) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY_HASHTAGS, JSON.stringify(newHashtags));
+      } catch (error) {
+        console.error('Failed to save hashtags:', error);
+      }
+    }
+  };
+
   const handleAddTemplate = () => {
     if (newTemplate.trim()) {
-      setTemplates(prev => [...prev, newTemplate.trim()]);
+      const updated = [...templates, newTemplate.trim()];
+      setTemplates(updated);
+      saveTemplates(updated);
       setNewTemplate('');
     }
   };
 
   const handleEditTemplate = (index: number, newValue: string) => {
-    setTemplates(prev => prev.map((template, i) => i === index ? newValue : template));
+    const updated = templates.map((template, i) => i === index ? newValue : template);
+    setTemplates(updated);
+    saveTemplates(updated);
     setEditingTemplate(null);
   };
 
   const handleDeleteTemplate = (index: number) => {
-    setTemplates(prev => prev.filter((_, i) => i !== index));
+    const updated = templates.filter((_, i) => i !== index);
+    setTemplates(updated);
+    saveTemplates(updated);
   };
 
   const handleAddHashtag = () => {
     if (newHashtag.trim()) {
       const hashtag = newHashtag.trim().replace('#', '');
-      setHashtags(prev => [...prev, hashtag]);
+      const updated = [...hashtags, hashtag];
+      setHashtags(updated);
+      saveHashtags(updated);
       setNewHashtag('');
     }
   };
 
   const handleEditHashtag = (index: number, newValue: string) => {
-    setHashtags(prev => prev.map((hashtag, i) => i === index ? newValue : hashtag));
+    const updated = hashtags.map((hashtag, i) => i === index ? newValue : hashtag);
+    setHashtags(updated);
+    saveHashtags(updated);
     setEditingHashtag(null);
   };
 
   const handleDeleteHashtag = (index: number) => {
-    setHashtags(prev => prev.filter((_, i) => i !== index));
+    const updated = hashtags.filter((_, i) => i !== index);
+    setHashtags(updated);
+    saveHashtags(updated);
   };
 
   // コピー機能は将来実装予定
