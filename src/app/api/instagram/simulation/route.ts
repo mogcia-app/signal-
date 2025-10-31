@@ -561,20 +561,6 @@ function generateAlternativeOptions(followerGain: number, currentFollowers: numb
         estimatedBoost: '月間+10-20%の成長促進',
         cost: '月1-5万円',
         feasibility: 'realistic'
-      },
-      {
-        title: 'コラボレーション戦略を強化',
-        description: '同ジャンルのアカウントやインフルエンサーとのコラボで相互フォロワー獲得を目指します。',
-        estimatedBoost: '月間+5-15%の成長促進',
-        cost: '時間投資のみ',
-        feasibility: 'realistic'
-      },
-      {
-        title: 'コンテンツ品質と投稿頻度の最適化',
-        description: 'バーチャーリールやトレンド動画を週5-7回投稿し、アルゴリズムに好まれるコンテンツを量産します。',
-        estimatedBoost: '月間+10-30%の成長促進',
-        cost: '時間投資のみ',
-        feasibility: 'challenging'
       }
     ]
   };

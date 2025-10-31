@@ -10,6 +10,8 @@ interface SimulationPanelProps {
   isSimulating?: boolean;
   simulationError?: string;
   hasActivePlan?: boolean; // 保存された計画があるかどうか
+  onSave?: () => void;
+  isSaving?: boolean;
 }
 
 
@@ -19,7 +21,9 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   onRunSimulation,
   isSimulating = false,
   simulationError,
-  hasActivePlan = false
+  hasActivePlan = false,
+  onSave,
+  isSaving = false
 }) => {
   
   const currentFollowers = parseInt(formData.currentFollowers, 10) || 0;
@@ -579,6 +583,28 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 保存ボタン */}
+      {result && onSave && !hasActivePlan && (
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <button
+            onClick={onSave}
+            disabled={isSaving}
+            className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
+          >
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                保存中...
+              </>
+            ) : (
+              <>
+                💾 この計画を保存する
+              </>
+            )}
+          </button>
         </div>
       )}
     </section>

@@ -132,30 +132,8 @@ export default function InstagramPlanPage() {
   React.useEffect(() => {
     if (simulationResult) {
       setSimulationResultData(simulationResult)
-      // シミュレーション結果をlocalStorageに保存
-      try {
-        localStorage.setItem('instagram_simulation_result', JSON.stringify(simulationResult))
-      } catch (error) {
-        console.warn('localStorage保存エラー:', error)
-      }
     }
   }, [simulationResult, setSimulationResultData])
-
-  // ページロード時にlocalStorageからシミュレーション結果を復元
-  React.useEffect(() => {
-    if (!loadedPlanId && !simulationResult && user?.uid) {
-      try {
-        const savedResult = localStorage.getItem('instagram_simulation_result')
-        if (savedResult) {
-          const parsedResult = JSON.parse(savedResult)
-          setSimulationResultData(parsedResult)
-        }
-      } catch (error) {
-        console.warn('localStorage読み込みエラー:', error)
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid])
 
   // 現在の計画編集
   const handleEditCurrentPlan = () => {
@@ -434,6 +412,8 @@ export default function InstagramPlanPage() {
                     isSimulating={isSimulating}
                     simulationError={simulationError}
                     hasActivePlan={!!loadedPlanId}
+                    onSave={handleSavePlan}
+                    isSaving={isSaving}
                   />
                 )}
 
