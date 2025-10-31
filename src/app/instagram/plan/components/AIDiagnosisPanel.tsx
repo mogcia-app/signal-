@@ -30,6 +30,7 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
 }) => {
   const { strategyState, generateStrategy } = useAIStrategy();
   const [expandedSections, setExpandedSections] = useState<number[]>([0]); // デフォルトで①を展開
+  const [saveMessage, setSaveMessage] = useState<string>('');
 
   const handleStartDiagnosis = async () => {
     try {
@@ -275,13 +276,25 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
           )}
 
           {generatedStrategy && (
-            <div className="pt-4">
+            <div className="pt-4 space-y-3">
               <button
                 className="w-full bg-[#ff8a15] hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-md transition-colors"
-                onClick={onSaveAdvice}
+                onClick={() => {
+                  onSaveAdvice();
+                  setSaveMessage('✅ AI戦略を保存しました！');
+                  // 3秒後にメッセージを非表示
+                  setTimeout(() => {
+                    setSaveMessage('');
+                  }, 3000);
+                }}
               >
                 この戦略を保存する
               </button>
+              {saveMessage && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-md text-center">
+                  <p className="text-sm text-green-700 font-medium">{saveMessage}</p>
+                </div>
+              )}
             </div>
           )}
         </div>

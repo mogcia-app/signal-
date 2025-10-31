@@ -95,12 +95,6 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
 
       {/* コンテンツ */}
       <div className="p-6 space-y-4">
-        {/* 計画タイトル */}
-        <div>
-          <p className="text-xs text-black mb-1">計画名</p>
-          <p className="font-medium text-black">{planData.title || 'Instagram運用計画'}</p>
-        </div>
-
         {/* フォロワー目標進捗 */}
         <div>
           <div className="flex justify-between text-sm mb-2">
@@ -232,84 +226,6 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           </div>
         )}
 
-        {/* 詳細情報（variant = 'detailed'の場合のみ） */}
-        {variant === 'detailed' && planData.formData && (() => {
-          const formData = planData.formData as Record<string, unknown>;
-          const currentFollowers = String(formData.currentFollowers || '');
-          const followerGain = String(formData.followerGain || '');
-          const goalCategory = String(formData.goalCategory || '');
-          const otherGoal = String(formData.otherGoal || '');
-          const targetAudience = String(formData.targetAudience || '');
-          
-          return (
-            <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
-              {/* 目標 */}
-              {currentFollowers && followerGain && (
-                <div className="text-sm">
-                  <span className="font-medium text-gray-700">目標:</span>
-                  <span className="ml-2 text-black">
-                    現在{currentFollowers}人 → {parseInt(currentFollowers) + parseInt(followerGain)}人
-                  </span>
-                </div>
-              )}
-              
-              {/* KPIカテゴリ */}
-              {goalCategory && (
-                <div className="text-sm">
-                  <span className="font-medium text-gray-700">KPI:</span>
-                  <span className="ml-2 text-black">
-                    {goalCategory === 'follower' ? 'フォロワー獲得' :
-                     goalCategory === 'engagement' ? 'エンゲージ促進' :
-                     goalCategory === 'like' ? 'いいねを増やす' :
-                     goalCategory === 'save' ? '保存率向上' :
-                     goalCategory === 'reach' ? 'リーチを増やす' :
-                     goalCategory === 'impressions' ? 'インプレッションを増やす' :
-                     goalCategory === 'branding' ? 'ブランド認知を広める' :
-                     goalCategory === 'profile' ? 'プロフィール誘導' :
-                     goalCategory === 'other' ? (otherGoal || 'その他') :
-                     goalCategory}
-                  </span>
-                </div>
-              )}
-              
-              {/* ターゲット層 */}
-              {targetAudience && (
-                <div className="text-sm">
-                  <span className="font-medium text-gray-700">ターゲット層:</span>
-                  <span className="ml-2 text-black">{targetAudience}</span>
-                </div>
-              )}
-              
-              {/* 取り組みたいこと */}
-              {planData.strategies && planData.strategies.length > 0 && (
-                <div className="text-sm">
-                  <span className="font-medium text-gray-700">取り組みたいこと:</span>
-                  <div className="ml-2 mt-1 flex flex-wrap gap-1">
-                    {planData.strategies.map((strategy, index) => (
-                      <span key={index} className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-                        {strategy}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* 投稿したい内容 */}
-              {planData.postCategories && planData.postCategories.length > 0 && (
-                <div className="text-sm">
-                  <span className="font-medium text-gray-700">投稿したい内容:</span>
-                  <div className="ml-2 mt-1 flex flex-wrap gap-1">
-                    {planData.postCategories.map((category, index) => (
-                      <span key={index} className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-                        {category}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
       </div>
     </div>
   );

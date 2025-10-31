@@ -212,6 +212,24 @@ export const usePlanForm = () => {
         throw new Error(errorData.error || '計画の保存に失敗しました');
       }
 
+      const responseData = await response.json();
+      
+      // 保存された計画IDを設定
+      if (responseData.planId || responseData.id) {
+        setLoadedPlanId(responseData.planId || responseData.id);
+        
+        // 計画の開始日と終了日を設定
+        const startDate = new Date();
+        setPlanStartDate(startDate);
+        
+        const endDate = calculateEndDate(startDate, formData.planPeriod);
+        setPlanEndDate(endDate);
+        
+        // 期間切れチェック
+        const isExpired = endDate < new Date();
+        setIsPlanExpired(isExpired);
+      }
+
       setSaveSuccess(true);
       return true;
     } catch (error) {

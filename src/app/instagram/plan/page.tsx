@@ -40,6 +40,7 @@ export default function InstagramPlanPage() {
     handleCategoryToggle,
     savePlan,
     setSimulationResultData,
+    loadSavedPlan,
     resetPlan
   } = usePlanForm()
 
@@ -186,8 +187,8 @@ export default function InstagramPlanPage() {
     if (success) {
       // 保存成功時の処理
       console.log('計画が正常に保存されました')
-      // ページをリロードして保存された計画を表示
-      window.location.reload()
+      // 保存後は計画IDが設定されるため、シミュレーション結果は保持される
+      // ページリロードは行わない（表示を維持）
     }
     return success
   }
