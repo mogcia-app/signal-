@@ -41,16 +41,20 @@ export default function InstagramPlanPage() {
     savePlan,
     setSimulationResultData,
     loadSavedPlan,
-    resetPlan
+    resetPlan,
+    simulationResult: savedSimulationResult // 保存されたシミュレーション結果
   } = usePlanForm()
 
   const { 
-    simulationResult, 
+    simulationResult: newSimulationResult, 
     isSimulating, 
     simulationError, 
     setSimulationError,
     runSimulation 
   } = useSimulation()
+  
+  // 保存されたシミュレーション結果を優先、なければ新しく実行した結果を使用
+  const simulationResult = savedSimulationResult || newSimulationResult
 
   const { 
     showAiAdvice, 
@@ -129,12 +133,12 @@ export default function InstagramPlanPage() {
     await runSimulation(requestData)
   }
 
-  // シミュレーション結果が更新されたらusePlanFormにも設定
+  // 新しくシミュレーションを実行した結果をusePlanFormにも設定
   React.useEffect(() => {
-    if (simulationResult) {
-      setSimulationResultData(simulationResult)
+    if (newSimulationResult) {
+      setSimulationResultData(newSimulationResult)
     }
-  }, [simulationResult, setSimulationResultData])
+  }, [newSimulationResult, setSimulationResultData])
 
   // 現在の計画編集
   const handleEditCurrentPlan = () => {
