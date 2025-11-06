@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../../../contexts/auth-context";
 import SNSLayout from "../../../components/sns-layout";
 import { usePlanForm } from "./hooks/usePlanForm";
@@ -15,6 +16,7 @@ import { CheckCircle, X } from "lucide-react";
 
 export default function InstagramPlanPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"simulation" | "ai">("simulation");
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false);
@@ -164,9 +166,8 @@ export default function InstagramPlanPage() {
   const confirmDelete = async () => {
     try {
       if (!user) {
-        setToastMessage({ message: "ログインが必要です", type: 'error' });
-        setTimeout(() => setToastMessage(null), 3000);
-        setDeleteConfirm(false);
+        // ログイン画面に自動リダイレクト
+        router.push("/login");
         return;
       }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   User,
   signInWithEmailAndPassword,
@@ -23,6 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [contractValid, setContractValid] = useState(false);
@@ -99,8 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.warn("🚫 Contract invalid. User will be logged out.");
             }
             if (typeof window !== "undefined") {
-              alert("契約期間が終了しています。管理者にご連絡ください。");
               localStorage.removeItem("signal_session_start");
+              // ログイン画面に自動リダイレクト
+              router.push("/login");
             }
           }
         } catch (error) {
@@ -167,8 +170,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           firebaseSignOut(auth);
           localStorage.removeItem("signal_session_start");
 
+          // ログイン画面に自動リダイレクト
           if (typeof window !== "undefined") {
-            alert("セッションがタイムアウトしました。再度ログインしてください。");
+            router.push("/login");
           }
         }
       }

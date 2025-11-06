@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { AuthGuard } from "../../../../components/auth-guard";
 import { useAuth } from "../../../../contexts/auth-context";
 import { usePlanData } from "../../../../hooks/usePlanData";
@@ -99,6 +100,7 @@ interface AnalyticsData {
 
 function AnalyticsReelContent() {
   const { user } = useAuth();
+  const router = useRouter();
   const { planData } = usePlanData("instagram");
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -426,8 +428,8 @@ function AnalyticsReelContent() {
     memo: string;
   }) => {
     if (!user?.uid) {
-      setToastMessage({ message: "ログインが必要です", type: 'error' });
-      setTimeout(() => setToastMessage(null), 3000);
+      // ログイン画面に自動リダイレクト
+      router.push("/login");
       return;
     }
 
