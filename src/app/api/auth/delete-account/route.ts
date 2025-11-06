@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,19 +8,19 @@ export async function POST(request: NextRequest) {
     // バリデーション
     if (!userId) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'ユーザーIDが必要です' 
+          error: "ユーザーIDが必要です",
         },
         { status: 400 }
       );
     }
 
-    if (confirmationText !== 'DELETE') {
+    if (confirmationText !== "DELETE") {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: '確認テキストが正しくありません' 
+          error: "確認テキストが正しくありません",
         },
         { status: 400 }
       );
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // // ユーザーの関連データを削除
     // const batch = writeBatch(db);
-    
+
     // // ユーザープロファイルを削除
     // const userProfileQuery = query(
     //   collection(db, 'userProfiles'),
@@ -82,16 +82,15 @@ export async function POST(request: NextRequest) {
     // モックレスポンス
     return NextResponse.json({
       success: true,
-      message: 'アカウントが正常に削除されました'
+      message: "アカウントが正常に削除されました",
     });
-
   } catch (error) {
-    console.error('アカウント削除エラー:', error);
+    console.error("アカウント削除エラー:", error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: 'アカウントの削除に失敗しました',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: "アカウントの削除に失敗しました",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

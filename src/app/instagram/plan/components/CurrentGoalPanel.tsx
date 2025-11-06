@@ -1,5 +1,5 @@
-import React from 'react';
-import { PlanFormData } from '../types/plan';
+import React from "react";
+import { PlanFormData } from "../types/plan";
 
 interface CurrentGoalPanelProps {
   formData: PlanFormData;
@@ -22,25 +22,26 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
   isSaving = false,
   saveError = null,
   saveSuccess = false,
-  actualFollowers
+  actualFollowers,
 }) => {
   return (
     <section className="p-6">
       <h3 className="text-lg font-semibold mb-4 flex items-center">
         <span className="mr-2">🎯</span>進行中の目標
       </h3>
-      
+
       <div className="bg-gray-50 p-4 rounded-lg mb-4">
         <div className="space-y-3">
-          <h4 className="font-semibold text-black">
-            Instagram成長計画
-          </h4>
-          
+          <h4 className="font-semibold text-black">Instagram成長計画</h4>
+
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-black">現在のフォロワー数</span>
               <div className="font-medium">
-                {actualFollowers !== undefined ? actualFollowers.toLocaleString() : formData.currentFollowers}人
+                {actualFollowers !== undefined
+                  ? actualFollowers.toLocaleString()
+                  : formData.currentFollowers}
+                人
               </div>
             </div>
             <div>
@@ -55,10 +56,10 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
             </div>
             <div>
               <span className="text-black">ターゲット</span>
-              <div className="font-medium">{formData.targetAudience || '未設定'}</div>
+              <div className="font-medium">{formData.targetAudience || "未設定"}</div>
             </div>
           </div>
-          
+
           {selectedStrategies.length > 0 && (
             <div>
               <span className="text-sm text-black">選択した戦略</span>
@@ -73,7 +74,7 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
           )}
         </div>
       </div>
-      
+
       {/* 保存エラー表示 */}
       {saveError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -119,7 +120,7 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
                 保存中...
               </div>
             ) : (
-              '💾 保存'
+              "💾 保存"
             )}
           </button>
         )}

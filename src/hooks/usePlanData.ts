@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/auth-context';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../contexts/auth-context";
 
 // 統一された計画データの型定義
 interface PlanData {
@@ -17,18 +17,18 @@ interface PlanData {
   postCategories: string[];
   createdAt: string | { toDate?: () => Date };
   updatedAt: string | { toDate?: () => Date };
-  
+
   // シミュレーション結果（APIから返された完全なデータ）
   simulationResult?: Record<string, unknown> | null;
-  
+
   // フォームデータ全体
   formData?: Record<string, unknown>;
-  
+
   // AI戦略
   generatedStrategy?: string | null;
 }
 
-export const usePlanData = (snsType: 'instagram' | 'x' | 'tiktok' | 'youtube' = 'instagram') => {
+export const usePlanData = (snsType: "instagram" | "x" | "tiktok" | "youtube" = "instagram") => {
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,23 +44,26 @@ export const usePlanData = (snsType: 'instagram' | 'x' | 'tiktok' | 'youtube' = 
       setLoading(true);
       setError(null);
       const idToken = await user.getIdToken();
-      const response = await fetch(`/api/plans?userId=${user.uid}&snsType=${snsType}&status=active`, {
-        headers: {
-          'Authorization': `Bearer ${idToken}`
+      const response = await fetch(
+        `/api/plans?userId=${user.uid}&snsType=${snsType}&status=active`,
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
         }
-      });
-      
+      );
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', errorText);
+        console.error("API Error Response:", errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
-      
+
       const result = await response.json();
-      
+
       // plansまたはdataのどちらかに対応
       const plansArray = result.plans || result.data || [];
-      
+
       if (plansArray.length > 0) {
         // 最新の計画をそのまま使用（型変換なし）
         const latestPlan = plansArray[0];
@@ -70,13 +73,13 @@ export const usePlanData = (snsType: 'instagram' | 'x' | 'tiktok' | 'youtube' = 
       }
     } catch (err) {
       // 404エラーは計画が存在しないという意味なので、エラーとして扱わない
-      if (err instanceof Error && err.message.includes('404')) {
-        console.log('計画データが見つかりません。新規作成が必要です。');
+      if (err instanceof Error && err.message.includes("404")) {
+        console.log("計画データが見つかりません。新規作成が必要です。");
         setPlanData(null);
         setError(null);
       } else {
-        console.error('計画データ取得エラー:', err);
-        setError('計画データの取得に失敗しました');
+        console.error("計画データ取得エラー:", err);
+        setError("計画データの取得に失敗しました");
         setPlanData(null);
       }
     } finally {

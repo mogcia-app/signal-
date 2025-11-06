@@ -1,5 +1,5 @@
-import React from 'react';
-import { Target, Calendar, Users, Tag, TrendingUp } from 'lucide-react';
+import React from "react";
+import { Target, Calendar, Users, Tag, TrendingUp } from "lucide-react";
 
 interface PlanData {
   id: string;
@@ -16,20 +16,20 @@ interface PlanData {
   postCategories: string[];
   createdAt: string | { toDate?: () => Date };
   updatedAt: string | { toDate?: () => Date };
-  
+
   // シミュレーション結果
   simulationResult?: Record<string, unknown> | null;
-  
+
   // フォームデータ全体
   formData?: Record<string, unknown>;
-  
+
   // AI戦略
   generatedStrategy?: string | null;
 }
 
 interface PlanCardProps {
   planData: PlanData | null;
-  variant?: 'compact' | 'detailed' | 'progress';
+  variant?: "compact" | "detailed" | "progress";
   showStrategies?: boolean;
   showSimulation?: boolean;
   showProgress?: boolean;
@@ -38,11 +38,11 @@ interface PlanCardProps {
 
 export const PlanCard: React.FC<PlanCardProps> = ({
   planData,
-  variant = 'compact',
+  variant = "compact",
   showStrategies = false,
   showSimulation = false,
   showProgress = false,
-  className = ''
+  className = "",
 }) => {
   if (!planData) {
     return (
@@ -52,8 +52,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             <Target size={24} className="text-black" />
           </div>
           <p className="text-black text-sm mb-3">運用計画が設定されていません</p>
-          <a 
-            href="/instagram/plan" 
+          <a
+            href="/instagram/plan"
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
           >
             <Target size={16} className="mr-2" />
@@ -68,7 +68,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   const currentFollowers = planData.currentFollowers || 0;
   const targetFollowers = planData.targetFollowers || 0;
   const strategies = planData.strategies || [];
-  const progressPercentage = targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
+  const progressPercentage =
+    targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
   const remainingFollowers = Math.max(0, targetFollowers - currentFollowers);
 
   return (
@@ -85,8 +86,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
               <p className="text-sm text-black">{planData.title}</p>
             </div>
           </div>
-          <a 
-            href="/instagram/plan" 
+          <a
+            href="/instagram/plan"
             className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
             詳細を見る →
@@ -104,7 +105,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             </div>
             <div className="font-semibold text-black">{targetFollowers.toLocaleString()}人</div>
           </div>
-          
+
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <Calendar size={16} className="text-green-600 mr-1" />
@@ -112,7 +113,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             </div>
             <div className="font-semibold text-black">{planData.planPeriod}</div>
           </div>
-          
+
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <Tag size={16} className="text-purple-600 mr-1" />
@@ -120,7 +121,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             </div>
             <div className="font-semibold text-black">{planData.category}</div>
           </div>
-          
+
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <TrendingUp size={16} className="text-orange-600 mr-1" />
@@ -140,7 +141,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
+              <div
                 className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${Math.min(progressPercentage, 100)}%` }}
               ></div>
@@ -157,7 +158,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           <div className="mb-6">
             <div className="text-sm font-medium text-gray-700 mb-3">採用戦略</div>
             <div className="flex flex-wrap gap-2">
-              {strategies.slice(0, variant === 'detailed' ? 6 : 3).map((strategy, index) => (
+              {strategies.slice(0, variant === "detailed" ? 6 : 3).map((strategy, index) => (
                 <span
                   key={index}
                   className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium"
@@ -165,9 +166,9 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                   {strategy}
                 </span>
               ))}
-              {strategies.length > (variant === 'detailed' ? 6 : 3) && (
+              {strategies.length > (variant === "detailed" ? 6 : 3) && (
                 <span className="px-3 py-1 bg-gray-100 text-black text-xs rounded-full">
-                  +{strategies.length - (variant === 'detailed' ? 6 : 3)}個
+                  +{strategies.length - (variant === "detailed" ? 6 : 3)}個
                 </span>
               )}
             </div>
@@ -175,7 +176,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         )}
 
         {/* シミュレーション結果表示 */}
-        {showSimulation && variant === 'detailed' && planData.simulationResult && (
+        {showSimulation && variant === "detailed" && planData.simulationResult && (
           <div className="border-t border-gray-200 pt-4">
             <div className="text-sm font-medium text-gray-700 mb-3">シミュレーション結果</div>
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
@@ -183,17 +184,28 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                 <div>
                   <span className="text-black">月間目標:</span>
                   <span className="ml-2 font-semibold text-black">
-                    {String((planData.simulationResult as Record<string, unknown>).monthlyTarget || 'N/A')}
+                    {String(
+                      (planData.simulationResult as Record<string, unknown>).monthlyTarget || "N/A"
+                    )}
                   </span>
                 </div>
                 <div>
                   <span className="text-black">達成可能性:</span>
-                  <span className={`ml-2 font-semibold ${
-                    (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'high' ? 'text-green-600' :
-                    (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'medium' ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {String((planData.simulationResult as Record<string, unknown>).feasibilityBadge || 'N/A')}
+                  <span
+                    className={`ml-2 font-semibold ${
+                      (planData.simulationResult as Record<string, unknown>).feasibilityLevel ===
+                      "high"
+                        ? "text-green-600"
+                        : (planData.simulationResult as Record<string, unknown>)
+                              .feasibilityLevel === "medium"
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                    }`}
+                  >
+                    {String(
+                      (planData.simulationResult as Record<string, unknown>).feasibilityBadge ||
+                        "N/A"
+                    )}
                   </span>
                 </div>
               </div>

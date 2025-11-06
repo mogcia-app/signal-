@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,9 +8,9 @@ export async function POST(request: NextRequest) {
     // バリデーション
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: '現在のパスワードと新しいパスワードが必要です' 
+          error: "現在のパスワードと新しいパスワードが必要です",
         },
         { status: 400 }
       );
@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
 
     if (newPassword.length < 8) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: '新しいパスワードは8文字以上である必要があります' 
+          error: "新しいパスワードは8文字以上である必要があります",
         },
         { status: 400 }
       );
@@ -52,16 +52,15 @@ export async function POST(request: NextRequest) {
     // モックレスポンス
     return NextResponse.json({
       success: true,
-      message: 'パスワードが正常に変更されました'
+      message: "パスワードが正常に変更されました",
     });
-
   } catch (error) {
-    console.error('パスワード変更エラー:', error);
+    console.error("パスワード変更エラー:", error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: 'パスワードの変更に失敗しました',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: "パスワードの変更に失敗しました",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

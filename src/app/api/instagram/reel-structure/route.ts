@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const { prompt, businessInfo } = body;
 
     if (!prompt) {
-      return NextResponse.json({ error: 'プロンプトが必要です' }, { status: 400 });
+      return NextResponse.json({ error: "プロンプトが必要です" }, { status: 400 });
     }
 
     // AIプロンプトを構築
@@ -17,26 +17,28 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       structure: structureResponse.structure,
-      flow: structureResponse.flow
+      flow: structureResponse.flow,
     });
-
   } catch (error) {
-    console.error('動画構成生成エラー:', error);
-    return NextResponse.json({ error: '動画構成生成に失敗しました' }, { status: 500 });
+    console.error("動画構成生成エラー:", error);
+    return NextResponse.json({ error: "動画構成生成に失敗しました" }, { status: 500 });
   }
 }
 
-function buildVideoStructurePrompt(prompt: string, businessInfo: {
-  companySize?: string;
-  targetMarket?: string[];
-  goals?: string[];
-  challenges?: string[];
-  features?: string[];
-  industry?: string;
-  businessType?: string;
-  tone?: string;
-  targetAudience?: string;
-} | null) {
+function buildVideoStructurePrompt(
+  prompt: string,
+  businessInfo: {
+    companySize?: string;
+    targetMarket?: string[];
+    goals?: string[];
+    challenges?: string[];
+    features?: string[];
+    industry?: string;
+    businessType?: string;
+    tone?: string;
+    targetAudience?: string;
+  } | null
+) {
   return `
 あなたはInstagramリール動画の構成専門家です。以下のプロンプトを基に、リール動画の起承転結と構成の流れを提案してください。
 
@@ -44,7 +46,7 @@ function buildVideoStructurePrompt(prompt: string, businessInfo: {
 ${prompt}
 
 【ビジネス情報】
-${businessInfo ? JSON.stringify(businessInfo, null, 2) : 'なし'}
+${businessInfo ? JSON.stringify(businessInfo, null, 2) : "なし"}
 
 【要求事項】
 1. リール動画（15-30秒）に適した構成にしてください
@@ -68,55 +70,54 @@ ${businessInfo ? JSON.stringify(businessInfo, null, 2) : 'なし'}
 }
 
 async function generateVideoStructureWithAI(prompt: string) {
-  const { default: OpenAI } = await import('openai');
-  
+  const { default: OpenAI } = await import("openai");
+
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY,
   });
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       messages: [
         {
-          role: 'user',
-          content: prompt
-        }
+          role: "user",
+          content: prompt,
+        },
       ],
       temperature: 0.7,
       max_tokens: 800,
-      response_format: { type: 'json_object' },
+      response_format: { type: "json_object" },
     });
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
-      throw new Error('AIからの応答がありません');
+      throw new Error("AIからの応答がありません");
     }
 
     const result = JSON.parse(content);
-    
+
     // バリデーション: structureとflowが存在するか
     if (!result.structure || !result.flow) {
-      throw new Error('AIからの応答形式が正しくありません');
+      throw new Error("AIからの応答形式が正しくありません");
     }
-    
+
     return {
       structure: result.structure,
-      flow: result.flow
+      flow: result.flow,
     };
-    
   } catch (error) {
-    console.error('OpenAI API エラー:', error);
-    
+    console.error("OpenAI API エラー:", error);
+
     // フォールバック: モックデータを返す
     return {
       structure: {
         introduction: "商品の魅力を一瞬で伝える",
         development: "使用シーンや効果を具体的に紹介",
         twist: "意外な使い方や隠れた特徴を発見",
-        conclusion: "フォローや購入を促すCTA"
+        conclusion: "フォローや購入を促すCTA",
       },
-      flow: "0-3秒: 商品の全体像を一瞬で見せる → 3-15秒: 実際の使用シーンを複数紹介 → 15-25秒: 意外な使い方や隠れた特徴を発見 → 25-30秒: フォローや購入を促すCTAで締めくくり"
+      flow: "0-3秒: 商品の全体像を一瞬で見せる → 3-15秒: 実際の使用シーンを複数紹介 → 15-25秒: 意外な使い方や隠れた特徴を発見 → 25-30秒: フォローや購入を促すCTAで締めくくり",
     };
   }
 }

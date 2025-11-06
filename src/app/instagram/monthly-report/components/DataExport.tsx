@@ -1,5 +1,5 @@
-import React from 'react';
-import { Download, BarChart3, PieChart } from 'lucide-react';
+import React from "react";
+import { Download, BarChart3, PieChart } from "lucide-react";
 
 interface DataExportProps {
   isLoading: boolean;
@@ -7,11 +7,7 @@ interface DataExportProps {
   onExportPDF: () => void;
 }
 
-export const DataExport: React.FC<DataExportProps> = ({
-  isLoading,
-  onExportCSV,
-  onExportPDF
-}) => {
+export const DataExport: React.FC<DataExportProps> = ({ isLoading, onExportCSV, onExportPDF }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
       <div className="flex items-center justify-between mb-6">
@@ -28,7 +24,7 @@ export const DataExport: React.FC<DataExportProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* CSV出力 */}
-        <button 
+        <button
           onClick={onExportCSV}
           disabled={isLoading}
           className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -43,7 +39,7 @@ export const DataExport: React.FC<DataExportProps> = ({
         </button>
 
         {/* PDFレポート */}
-        <button 
+        <button
           onClick={onExportPDF}
           disabled={isLoading}
           className="flex items-center justify-center p-4 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

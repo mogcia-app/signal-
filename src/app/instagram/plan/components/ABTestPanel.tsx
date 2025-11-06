@@ -1,5 +1,5 @@
-import React from 'react';
-import { ABTestComparison } from '../types/plan';
+import React from "react";
+import { ABTestComparison } from "../types/plan";
 
 interface ABTestPanelProps {
   result: ABTestComparison | null;
@@ -12,21 +12,25 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
   result,
   isRunning,
   error,
-  onRunTest
+  onRunTest,
 }) => {
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
-      case 'low': return 'text-green-600 bg-green-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'high': return 'text-red-600 bg-red-100';
-      default: return 'text-black bg-gray-100';
+      case "low":
+        return "text-green-600 bg-green-100";
+      case "medium":
+        return "text-yellow-600 bg-yellow-100";
+      case "high":
+        return "text-red-600 bg-red-100";
+      default:
+        return "text-black bg-gray-100";
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) {return "text-green-600";}
+    if (score >= 60) {return "text-yellow-600";}
+    return "text-red-600";
   };
 
   return (
@@ -43,7 +47,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
         disabled={isRunning}
         className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4"
       >
-        {isRunning ? 'A/Bテスト実行中...' : '▶ A/Bテストを開始'}
+        {isRunning ? "A/Bテスト実行中..." : "▶ A/Bテストを開始"}
       </button>
 
       {/* エラー表示 */}
@@ -65,24 +69,22 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
               </span>
             </div>
             <div className="text-lg font-bold text-purple-900 mb-2">
-              {result.scenarios.find(s => s.id === result.winner)?.name}
+              {result.scenarios.find((s) => s.id === result.winner)?.name}
             </div>
-            <p className="text-sm text-purple-700">
-              {result.recommendation}
-            </p>
+            <p className="text-sm text-purple-700">{result.recommendation}</p>
           </div>
 
           {/* シナリオ比較表 */}
           <div className="space-y-4">
             <h4 className="font-semibold text-black">📊 戦略比較</h4>
-            
+
             {result.scenarios.map((scenario, index) => (
-              <div 
-                key={scenario.id} 
+              <div
+                key={scenario.id}
                 className={`border rounded-lg p-4 ${
-                  scenario.id === result.winner 
-                    ? 'border-purple-300 bg-purple-50' 
-                    : 'border-gray-200 bg-white'
+                  scenario.id === result.winner
+                    ? "border-purple-300 bg-purple-50"
+                    : "border-gray-200 bg-white"
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
@@ -103,9 +105,14 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
                     <div className={`text-lg font-bold ${getScoreColor(scenario.score || 0)}`}>
                       {Math.round(scenario.score || 0)}点
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getRiskColor(scenario.riskLevel)}`}>
-                      {scenario.riskLevel === 'low' ? '低リスク' : 
-                       scenario.riskLevel === 'medium' ? '中リスク' : '高リスク'}
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${getRiskColor(scenario.riskLevel)}`}
+                    >
+                      {scenario.riskLevel === "low"
+                        ? "低リスク"
+                        : scenario.riskLevel === "medium"
+                          ? "中リスク"
+                          : "高リスク"}
                     </span>
                   </div>
                 </div>
@@ -115,26 +122,31 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
                   <div>
                     <span className="font-medium text-gray-700">投稿頻度</span>
                     <div className="text-gray-600">
-                      リール: {scenario.strategy.postsPerWeek.reel}回/週<br/>
-                      フィード: {scenario.strategy.postsPerWeek.feed}回/週<br/>
+                      リール: {scenario.strategy.postsPerWeek.reel}回/週
+                      <br />
+                      フィード: {scenario.strategy.postsPerWeek.feed}回/週
+                      <br />
                       ストーリー: {scenario.strategy.postsPerWeek.story}回/週
                     </div>
                   </div>
-                  
+
                   <div>
                     <span className="font-medium text-gray-700">期待結果</span>
                     <div className="text-gray-600">
-                      フォロワー: +{scenario.expectedOutcome.followerGrowth}人<br/>
-                      エンゲージ: {(scenario.expectedOutcome.engagementRate * 100).toFixed(1)}%<br/>
+                      フォロワー: +{scenario.expectedOutcome.followerGrowth}人<br />
+                      エンゲージ: {(scenario.expectedOutcome.engagementRate * 100).toFixed(1)}%
+                      <br />
                       リーチ: {scenario.expectedOutcome.reach}人
                     </div>
                   </div>
-                  
+
                   <div>
                     <span className="font-medium text-gray-700">必要リソース</span>
                     <div className="text-gray-600">
-                      時間: {scenario.resourceRequirement.timePerWeek}時間/週<br/>
-                      予算: ¥{scenario.resourceRequirement.budget.toLocaleString()}/月<br/>
+                      時間: {scenario.resourceRequirement.timePerWeek}時間/週
+                      <br />
+                      予算: ¥{scenario.resourceRequirement.budget.toLocaleString()}/月
+                      <br />
                       チーム: {scenario.resourceRequirement.teamSize}人
                     </div>
                   </div>

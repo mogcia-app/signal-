@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { useUserProfile } from '../hooks/useUserProfile';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
+import { useUserProfile } from "../hooks/useUserProfile";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
 
 interface UserDataDisplayProps {
   showAll?: boolean;
 }
 
 export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
-  const { 
-    userProfile, 
-    loading, 
+  const {
+    userProfile,
+    loading,
     error,
     getContractSNS,
     getBusinessInfo,
     getBillingInfo,
     isContractActive,
-    getContractDaysRemaining
+    getContractDaysRemaining,
   } = useUserProfile();
 
   if (loading) {
@@ -88,7 +88,7 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-black">ステータス</p>
-              <Badge variant={userProfile.status === 'active' ? "default" : "secondary"}>
+              <Badge variant={userProfile.status === "active" ? "default" : "secondary"}>
                 {userProfile.status}
               </Badge>
             </div>
@@ -105,9 +105,7 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
               {contractActive ? "有効" : "無効"}
             </Badge>
           </CardTitle>
-          <CardDescription>
-            残り日数: {daysRemaining}日
-          </CardDescription>
+          <CardDescription>残り日数: {daysRemaining}日</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
@@ -121,14 +119,18 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-black">契約開始日</p>
-              <p className="text-sm">{new Date(userProfile.contractStartDate).toLocaleDateString('ja-JP')}</p>
+              <p className="text-sm">
+                {new Date(userProfile.contractStartDate).toLocaleDateString("ja-JP")}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-black">契約終了日</p>
-              <p className="text-sm">{new Date(userProfile.contractEndDate).toLocaleDateString('ja-JP')}</p>
+              <p className="text-sm">
+                {new Date(userProfile.contractEndDate).toLocaleDateString("ja-JP")}
+              </p>
             </div>
           </div>
-          
+
           <div>
             <p className="text-sm font-medium text-black mb-2">契約SNS</p>
             <div className="flex flex-wrap gap-2">
@@ -159,31 +161,41 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
                   hashtagOptimization?: boolean;
                   postingFrequency?: string;
                 };
-                
+
                 return (
                   <div key={sns} className="border rounded-lg p-3">
                     <h4 className="font-semibold capitalize mb-2">{sns}</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="font-medium">AI有効:</span> 
-                        <Badge variant={typedSettings.aiEnabled ? "default" : "secondary"} className="ml-1">
+                        <span className="font-medium">AI有効:</span>
+                        <Badge
+                          variant={typedSettings.aiEnabled ? "default" : "secondary"}
+                          className="ml-1"
+                        >
                           {typedSettings.aiEnabled ? "ON" : "OFF"}
                         </Badge>
                       </div>
                       <div>
-                        <span className="font-medium">自動投稿:</span> 
-                        <Badge variant={typedSettings.autoPosting ? "default" : "secondary"} className="ml-1">
+                        <span className="font-medium">自動投稿:</span>
+                        <Badge
+                          variant={typedSettings.autoPosting ? "default" : "secondary"}
+                          className="ml-1"
+                        >
                           {typedSettings.autoPosting ? "ON" : "OFF"}
                         </Badge>
                       </div>
                       <div>
-                        <span className="font-medium">ハッシュタグ最適化:</span> 
-                        <Badge variant={typedSettings.hashtagOptimization ? "default" : "secondary"} className="ml-1">
+                        <span className="font-medium">ハッシュタグ最適化:</span>
+                        <Badge
+                          variant={typedSettings.hashtagOptimization ? "default" : "secondary"}
+                          className="ml-1"
+                        >
                           {typedSettings.hashtagOptimization ? "ON" : "OFF"}
                         </Badge>
                       </div>
                       <div>
-                        <span className="font-medium">投稿頻度:</span> {typedSettings.postingFrequency || '未設定'}
+                        <span className="font-medium">投稿頻度:</span>{" "}
+                        {typedSettings.postingFrequency || "未設定"}
                       </div>
                     </div>
                   </div>
@@ -228,7 +240,9 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
                 <p className="text-sm font-medium text-black">目標</p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {businessInfo.goals.map((goal: string, index: number) => (
-                    <Badge key={index} variant="outline">{goal}</Badge>
+                    <Badge key={index} variant="outline">
+                      {goal}
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -238,7 +252,9 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
                 <p className="text-sm font-medium text-black">課題</p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {businessInfo.challenges.map((challenge: string, index: number) => (
-                    <Badge key={index} variant="outline">{challenge}</Badge>
+                    <Badge key={index} variant="outline">
+                      {challenge}
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -255,25 +271,29 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
-              {'paymentMethod' in billingInfo && billingInfo.paymentMethod && (
+              {"paymentMethod" in billingInfo && billingInfo.paymentMethod && (
                 <div>
                   <p className="text-sm font-medium text-black">支払い方法</p>
                   <p className="text-sm">{billingInfo.paymentMethod}</p>
                 </div>
               )}
-              {'nextBillingDate' in billingInfo && billingInfo.nextBillingDate && (
+              {"nextBillingDate" in billingInfo && billingInfo.nextBillingDate && (
                 <div>
                   <p className="text-sm font-medium text-black">次回請求日</p>
-                  <p className="text-sm">{new Date(billingInfo.nextBillingDate).toLocaleDateString('ja-JP')}</p>
+                  <p className="text-sm">
+                    {new Date(billingInfo.nextBillingDate).toLocaleDateString("ja-JP")}
+                  </p>
                 </div>
               )}
-              {'lastPaymentDate' in billingInfo && billingInfo.lastPaymentDate && (
+              {"lastPaymentDate" in billingInfo && billingInfo.lastPaymentDate && (
                 <div>
                   <p className="text-sm font-medium text-black">最終支払日</p>
-                  <p className="text-sm">{new Date(billingInfo.lastPaymentDate).toLocaleDateString('ja-JP')}</p>
+                  <p className="text-sm">
+                    {new Date(billingInfo.lastPaymentDate).toLocaleDateString("ja-JP")}
+                  </p>
                 </div>
               )}
-              {'amount' in billingInfo && billingInfo.amount && (
+              {"amount" in billingInfo && billingInfo.amount && (
                 <div>
                   <p className="text-sm font-medium text-black">金額</p>
                   <p className="text-sm">¥{billingInfo.amount.toLocaleString()}</p>
@@ -294,11 +314,11 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm font-medium text-black">作成日時</p>
-                <p className="text-sm">{new Date(userProfile.createdAt).toLocaleString('ja-JP')}</p>
+                <p className="text-sm">{new Date(userProfile.createdAt).toLocaleString("ja-JP")}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-black">更新日時</p>
-                <p className="text-sm">{new Date(userProfile.updatedAt).toLocaleString('ja-JP')}</p>
+                <p className="text-sm">{new Date(userProfile.updatedAt).toLocaleString("ja-JP")}</p>
               </div>
             </div>
             {userProfile.notes && (

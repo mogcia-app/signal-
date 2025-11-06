@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
+import React from "react";
+import Image from "next/image";
 
 interface ScheduledPost {
   day: string;
@@ -26,10 +26,7 @@ interface PostStatsProps {
   unanalyzedPosts: UnanalyzedPost[];
 }
 
-const PostStats: React.FC<PostStatsProps> = ({
-  scheduledPosts,
-  unanalyzedPosts
-}) => {
+const PostStats: React.FC<PostStatsProps> = ({ scheduledPosts, unanalyzedPosts }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       {/* 今週の投稿予定 */}
@@ -48,7 +45,10 @@ const PostStats: React.FC<PostStatsProps> = ({
             </div>
           ) : (
             scheduledPosts.map((post, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
                 <div className="flex items-center flex-1">
                   <div className="text-center mr-4 min-w-[50px]">
                     <div className="text-xs text-black">{post.day}</div>
@@ -56,12 +56,16 @@ const PostStats: React.FC<PostStatsProps> = ({
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center mb-1">
-                      <span className={`inline-flex items-center px-2 py-1  text-xs font-medium mr-2 ${
-                        post.type === 'reel' ? 'bg-purple-100 text-purple-800' :
-                        post.type === 'feed' ? 'bg-blue-100 text-blue-800' :
-                        'bg-pink-100 text-pink-800'
-                      }`}>
-                        {post.type === 'reel' ? '🎬' : post.type === 'feed' ? '📸' : '📱'}
+                      <span
+                        className={`inline-flex items-center px-2 py-1  text-xs font-medium mr-2 ${
+                          post.type === "reel"
+                            ? "bg-purple-100 text-purple-800"
+                            : post.type === "feed"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-pink-100 text-pink-800"
+                        }`}
+                      >
+                        {post.type === "reel" ? "🎬" : post.type === "feed" ? "📸" : "📱"}
                         {post.type}
                       </span>
                       <span className="inline-flex items-center px-2 py-1  text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -99,12 +103,15 @@ const PostStats: React.FC<PostStatsProps> = ({
             </div>
           ) : (
             unanalyzedPosts.map((post, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-orange-50 hover:bg-orange-100 transition-colors border border-orange-200">
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 bg-orange-50 hover:bg-orange-100 transition-colors border border-orange-200"
+              >
                 <div className="flex items-center flex-1">
                   <div className="w-12 h-12 mr-3 flex-shrink-0">
                     {post.imageUrl ? (
-                      <Image 
-                        src={post.imageUrl} 
+                      <Image
+                        src={post.imageUrl}
                         alt={post.title}
                         width={64}
                         height={64}
@@ -119,13 +126,21 @@ const PostStats: React.FC<PostStatsProps> = ({
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center mb-1">
-                      <span className={`inline-flex items-center px-2 py-1  text-xs font-medium mr-2 ${
-                        post.type === 'reel' ? 'bg-purple-100 text-purple-800' :
-                        post.type === 'feed' ? 'bg-blue-100 text-blue-800' :
-                        'bg-pink-100 text-pink-800'
-                      }`}>
-                        {post.type === 'reel' ? '🎬' : post.type === 'feed' ? '📸' : '📱'}
-                        {post.type === 'reel' ? 'リール' : post.type === 'feed' ? 'フィード' : 'ストーリー'}
+                      <span
+                        className={`inline-flex items-center px-2 py-1  text-xs font-medium mr-2 ${
+                          post.type === "reel"
+                            ? "bg-purple-100 text-purple-800"
+                            : post.type === "feed"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-pink-100 text-pink-800"
+                        }`}
+                      >
+                        {post.type === "reel" ? "🎬" : post.type === "feed" ? "📸" : "📱"}
+                        {post.type === "reel"
+                          ? "リール"
+                          : post.type === "feed"
+                            ? "フィード"
+                            : "ストーリー"}
                       </span>
                       <span className="inline-flex items-center px-2 py-1  text-xs font-medium bg-orange-100 text-orange-800">
                         ⏳ 分析未設定
@@ -140,9 +155,9 @@ const PostStats: React.FC<PostStatsProps> = ({
                   </div>
                 </div>
                 <div className="ml-3">
-                  {post.type !== 'story' ? (
-                    <a 
-                      href={`${post.type === 'feed' ? '/analytics/feed' : '/instagram/analytics/reel'}?postId=${post.id}`}
+                  {post.type !== "story" ? (
+                    <a
+                      href={`${post.type === "feed" ? "/analytics/feed" : "/instagram/analytics/reel"}?postId=${post.id}`}
                       className="inline-flex items-center px-3 py-1.5 bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 transition-colors"
                     >
                       分析する

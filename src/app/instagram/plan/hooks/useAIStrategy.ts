@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { PlanFormData, SimulationResult } from '../types/plan';
+import { useState } from "react";
+import { PlanFormData, SimulationResult } from "../types/plan";
 
 interface AIStrategyState {
   strategy: string | null;
@@ -9,7 +9,12 @@ interface AIStrategyState {
 
 interface UseAIStrategyReturn {
   strategyState: AIStrategyState;
-  generateStrategy: (formData: PlanFormData, selectedStrategies: string[], selectedCategories: string[], simulationResult: SimulationResult | null) => Promise<void>;
+  generateStrategy: (
+    formData: PlanFormData,
+    selectedStrategies: string[],
+    selectedCategories: string[],
+    simulationResult: SimulationResult | null
+  ) => Promise<void>;
   clearStrategy: () => void;
 }
 
@@ -21,7 +26,7 @@ export function useAIStrategy(): UseAIStrategyReturn {
   });
 
   const generateStrategy = async (
-    formData: PlanFormData, 
+    formData: PlanFormData,
     selectedStrategies: string[],
     selectedCategories: string[],
     simulationResult: SimulationResult | null
@@ -34,15 +39,15 @@ export function useAIStrategy(): UseAIStrategyReturn {
 
     try {
       // 🔐 Firebase認証トークンを取得
-      const { auth } = await import('../../../../lib/firebase');
+      const { auth } = await import("../../../../lib/firebase");
       const currentUser = auth.currentUser;
       const token = currentUser ? await currentUser.getIdToken() : null;
 
-      const response = await fetch('/api/instagram/ai-strategy', {
-        method: 'POST',
+      const response = await fetch("/api/instagram/ai-strategy", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({
           formData,
@@ -58,20 +63,19 @@ export function useAIStrategy(): UseAIStrategyReturn {
       }
 
       const data = await response.json();
-      
+
       setStrategyState({
         strategy: data.strategy,
         isLoading: false,
         error: null,
       });
-
     } catch (error) {
-      console.error('AI Strategy generation error:', error);
-      
+      console.error("AI Strategy generation error:", error);
+
       setStrategyState({
         strategy: null,
         isLoading: false,
-        error: error instanceof Error ? error.message : '戦略生成に失敗しました',
+        error: error instanceof Error ? error.message : "戦略生成に失敗しました",
       });
     }
   };

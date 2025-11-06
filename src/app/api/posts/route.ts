@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '../../../lib/firebase-admin';
-import { checkAndCreateMonthlyReportNotification } from '../../../lib/monthly-report-notifications';
+import { NextRequest, NextResponse } from "next/server";
+import { adminDb } from "../../../lib/firebase-admin";
+import { checkAndCreateMonthlyReportNotification } from "../../../lib/monthly-report-notifications";
 
 // 投稿データの型定義
 interface PostData {
@@ -9,10 +9,10 @@ interface PostData {
   title: string;
   content: string;
   hashtags: string[];
-  postType: 'feed' | 'reel' | 'story';
+  postType: "feed" | "reel" | "story";
   scheduledDate?: string;
   scheduledTime?: string;
-  status: 'draft' | 'scheduled' | 'published';
+  status: "draft" | "scheduled" | "published";
   imageUrl?: string | null; // 画像URL
   imageData?: string | null; // Base64画像データ（一時保存用）
   analytics?: {
@@ -31,30 +31,39 @@ interface PostData {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('POST /api/posts - Received data:', body);
-    const { userId, title, content, hashtags, postType, scheduledDate, scheduledTime, status = 'draft', imageUrl, imageData, analytics } = body;
-    
+    console.log("POST /api/posts - Received data:", body);
+    const {
+      userId,
+      title,
+      content,
+      hashtags,
+      postType,
+      scheduledDate,
+      scheduledTime,
+      status = "draft",
+      imageUrl,
+      imageData,
+      analytics,
+    } = body;
+
     // 投稿タイプのデバッグログ
-    console.log('投稿タイプデバッグ:', {
+    console.log("投稿タイプデバッグ:", {
       postType: postType,
       title: title,
-      userId: userId
+      userId: userId,
     });
 
     // バリデーション
     if (!userId || !title || !content) {
-      return NextResponse.json(
-        { error: '必須フィールドが不足しています' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
     }
 
-    const postData: Omit<PostData, 'id'> = {
+    const postData: Omit<PostData, "id"> = {
       userId,
       title,
       content,
       hashtags: hashtags || [],
-      postType: postType || 'feed',
+      postType: postType || "feed",
       scheduledDate: scheduledDate || null,
       scheduledTime: scheduledTime || null,
       status,
@@ -62,135 +71,136 @@ export async function POST(request: NextRequest) {
       imageData: imageData || null,
       analytics: analytics || null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
-    console.log('About to save to Firestore:', postData);
-    console.log('保存される投稿タイプ:', postData.postType);
-    const docRef = await adminDb.collection('posts').add(postData);
-    
+    console.log("About to save to Firestore:", postData);
+    console.log("保存される投稿タイプ:", postData.postType);
+    const docRef = await adminDb.collection("posts").add(postData);
+
     // デバッグ用ログ
-    console.log('Post created successfully:', {
+    console.log("Post created successfully:", {
       id: docRef.id,
       status: postData.status,
       title: postData.title,
-      userId: postData.userId
+      userId: postData.userId,
     });
 
     // 月次レポート通知をチェック・作成
     try {
       const notificationCreated = await checkAndCreateMonthlyReportNotification(userId);
       if (notificationCreated) {
-        console.log('✅ 月次レポート通知を作成しました');
+        console.log("✅ 月次レポート通知を作成しました");
       }
     } catch (notificationError) {
-      console.error('⚠️ 月次レポート通知作成エラー（投稿保存は成功）:', notificationError);
+      console.error("⚠️ 月次レポート通知作成エラー（投稿保存は成功）:", notificationError);
     }
-    
+
     return NextResponse.json({
       id: docRef.id,
-      message: '投稿が保存されました',
-      data: { ...postData, id: docRef.id }
+      message: "投稿が保存されました",
+      data: { ...postData, id: docRef.id },
     });
-
   } catch (error) {
-    console.error('投稿作成エラー:', error);
-    return NextResponse.json(
-      { error: '投稿の保存に失敗しました' },
-      { status: 500 }
-    );
+    console.error("投稿作成エラー:", error);
+    return NextResponse.json({ error: "投稿の保存に失敗しました" }, { status: 500 });
   }
 }
 
 // 投稿一覧取得
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== POSTS API GET REQUEST ===');
-    console.log('Request URL:', request.url);
-    console.log('Request method:', request.method);
-    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
-    
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const status = searchParams.get('status');
-    const postType = searchParams.get('postType');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    console.log("=== POSTS API GET REQUEST ===");
+    console.log("Request URL:", request.url);
+    console.log("Request method:", request.method);
+    console.log("Request headers:", Object.fromEntries(request.headers.entries()));
 
-    console.log('Query parameters:', { userId, status, postType, limit });
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const status = searchParams.get("status");
+    const postType = searchParams.get("postType");
+    const limit = parseInt(searchParams.get("limit") || "50");
+
+    console.log("Query parameters:", { userId, status, postType, limit });
 
     // 本番環境でFirebase設定がない場合は空の配列を返す
-    if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-      console.log('Firebase API key not found in production, returning empty posts');
+    if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+      console.log("Firebase API key not found in production, returning empty posts");
       return NextResponse.json({
         posts: [],
-        total: 0
+        total: 0,
       });
     }
 
-    console.log('Firebase API key found, proceeding with database query');
-    console.log('Query parameters:', { userId, status, postType, limit });
+    console.log("Firebase API key found, proceeding with database query");
+    console.log("Query parameters:", { userId, status, postType, limit });
 
     // Admin SDKでクエリ構築
-    let queryRef: FirebaseFirestore.Query = adminDb.collection('posts');
+    let queryRef: FirebaseFirestore.Query = adminDb.collection("posts");
 
     if (userId) {
-      console.log('Filtering posts by userId:', userId);
-      queryRef = queryRef.where('userId', '==', userId);
+      console.log("Filtering posts by userId:", userId);
+      queryRef = queryRef.where("userId", "==", userId);
     }
     if (status) {
-      console.log('Filtering posts by status:', status);
-      queryRef = queryRef.where('status', '==', status);
+      console.log("Filtering posts by status:", status);
+      queryRef = queryRef.where("status", "==", status);
     }
     if (postType) {
-      console.log('Filtering posts by postType:', postType);
-      queryRef = queryRef.where('postType', '==', postType);
+      console.log("Filtering posts by postType:", postType);
+      queryRef = queryRef.where("postType", "==", postType);
     }
 
     const snapshot = await queryRef.get();
     const posts = snapshot.docs
-      .map(doc => {
+      .map((doc) => {
         const data = doc.data();
         // 取得した投稿タイプのデバッグログ
-        console.log('取得した投稿タイプデバッグ:', {
+        console.log("取得した投稿タイプデバッグ:", {
           postId: doc.id,
           postType: data.postType,
-          title: data.title
+          title: data.title,
         });
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate?.() || data.createdAt
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
         };
       })
       .sort((a, b) => {
-        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime();
-        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime();
+        const aTime =
+          a.createdAt instanceof Date
+            ? a.createdAt.getTime()
+            : new Date(a.createdAt as string).getTime();
+        const bTime =
+          b.createdAt instanceof Date
+            ? b.createdAt.getTime()
+            : new Date(b.createdAt as string).getTime();
         return bTime - aTime;
       })
       .slice(0, limit);
 
-    console.log('Fetched posts from collection:', posts.length, 'records');
-    console.log('Posts query result sample:', posts.slice(0, 2));
+    console.log("Fetched posts from collection:", posts.length, "records");
+    console.log("Posts query result sample:", posts.slice(0, 2));
 
     const response = {
       posts,
-      total: snapshot.size
+      total: snapshot.size,
     };
-    
-    console.log('Returning response:', response);
-    return NextResponse.json(response);
 
+    console.log("Returning response:", response);
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('=== POSTS API ERROR ===');
-    console.error('Error details:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error("=== POSTS API ERROR ===");
+    console.error("Error details:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
     // エラーが発生した場合は空の配列を返す
     const errorResponse = {
       posts: [],
       total: 0,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
-    console.log('Returning error response:', errorResponse);
+    console.log("Returning error response:", errorResponse);
     return NextResponse.json(errorResponse);
   }
 }

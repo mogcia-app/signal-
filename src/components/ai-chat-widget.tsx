@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, X, Bot, User, Lightbulb } from 'lucide-react';
-import { useUserProfile } from '../hooks/useUserProfile';
-import { useAuth } from '../contexts/auth-context';
+import React, { useState, useRef, useEffect } from "react";
+import { Send, X, Bot, User, Lightbulb } from "lucide-react";
+import { useUserProfile } from "../hooks/useUserProfile";
+import { useAuth } from "../contexts/auth-context";
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
 }
@@ -19,14 +19,14 @@ interface AIChatWidgetProps {
 export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [usageInfo, setUsageInfo] = useState({
     usageCount: 0,
     maxUsage: 50,
     remainingUsage: 50,
-    canUse: true
+    canUse: true,
   });
   const [isCheckingUsage, setIsCheckingUsage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -35,25 +35,25 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
   // 使用回数を取得
   const fetchUsageInfo = async () => {
-    if (!user?.uid) return;
-    
+    if (!user?.uid) {return;}
+
     try {
       setIsCheckingUsage(true);
       const idToken = await user.getIdToken();
-      
-      const response = await fetch('/api/ai-chat/usage', {
+
+      const response = await fetch("/api/ai-chat/usage", {
         headers: {
-          'x-user-id': user.uid,
-          'Authorization': `Bearer ${idToken}`
-        }
+          "x-user-id": user.uid,
+          Authorization: `Bearer ${idToken}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setUsageInfo(data);
       }
     } catch (error) {
-      console.error('Failed to fetch usage info:', error);
+      console.error("Failed to fetch usage info:", error);
     } finally {
       setIsCheckingUsage(false);
     }
@@ -61,19 +61,19 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
   // 使用回数を記録
   const recordUsage = async () => {
-    if (!user?.uid) return false;
-    
+    if (!user?.uid) {return false;}
+
     try {
       const idToken = await user.getIdToken();
-      
-      const response = await fetch('/api/ai-chat/usage', {
-        method: 'POST',
+
+      const response = await fetch("/api/ai-chat/usage", {
+        method: "POST",
         headers: {
-          'x-user-id': user.uid,
-          'Authorization': `Bearer ${idToken}`
-        }
+          "x-user-id": user.uid,
+          Authorization: `Bearer ${idToken}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setUsageInfo(data);
@@ -84,10 +84,10 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
         return false;
       }
     } catch (error) {
-      console.error('Failed to record usage:', error);
+      console.error("Failed to record usage:", error);
       return false;
     }
-    
+
     return false;
   };
 
@@ -97,99 +97,99 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   // 計画系テンプレート
   const planTemplates = [
     {
-      id: 'current-goal',
-      title: '現在の目標確認',
-      message: '現在の目標フォロワー数と達成期限を確認したいです。'
+      id: "current-goal",
+      title: "現在の目標確認",
+      message: "現在の目標フォロワー数と達成期限を確認したいです。",
     },
     {
-      id: 'simulation-result',
-      title: 'シミュレーション結果',
-      message: 'シミュレーション結果について詳しく教えてください。'
+      id: "simulation-result",
+      title: "シミュレーション結果",
+      message: "シミュレーション結果について詳しく教えてください。",
     },
     {
-      id: 'posting-strategy',
-      title: '投稿戦略の確認',
-      message: '推奨されている投稿戦略について教えてください。'
+      id: "posting-strategy",
+      title: "投稿戦略の確認",
+      message: "推奨されている投稿戦略について教えてください。",
     },
     {
-      id: 'feasibility-check',
-      title: '実現可能性の確認',
-      message: 'この計画の実現可能性はどの程度ですか？'
+      id: "feasibility-check",
+      title: "実現可能性の確認",
+      message: "この計画の実現可能性はどの程度ですか？",
     },
     {
-      id: 'workload-check',
-      title: '作業負荷の確認',
-      message: '週間・月間の作業負荷について詳しく教えてください。'
+      id: "workload-check",
+      title: "作業負荷の確認",
+      message: "週間・月間の作業負荷について詳しく教えてください。",
     },
     {
-      id: 'improvement-tips',
-      title: '改善のヒント',
-      message: '計画を改善するための具体的なヒントを教えてください。'
+      id: "improvement-tips",
+      title: "改善のヒント",
+      message: "計画を改善するための具体的なヒントを教えてください。",
     },
     {
-      id: 'goal-adjustment',
-      title: '目標の調整',
-      message: '現在の目標を調整する必要がありますか？新しい目標を提案してください。'
+      id: "goal-adjustment",
+      title: "目標の調整",
+      message: "現在の目標を調整する必要がありますか？新しい目標を提案してください。",
     },
     {
-      id: 'progress-tracking',
-      title: '進捗の確認',
-      message: '現在の進捗状況と目標達成までの道のりを教えてください。'
-    }
+      id: "progress-tracking",
+      title: "進捗の確認",
+      message: "現在の進捗状況と目標達成までの道のりを教えてください。",
+    },
   ];
 
   // Instagram全体アドバイザーテンプレート
   const instagramTemplates = [
     {
-      id: 'daily-posting',
-      title: '今日の投稿内容',
-      message: '今日投稿すべきコンテンツのアイデアと具体的な内容を教えてください。'
+      id: "daily-posting",
+      title: "今日の投稿内容",
+      message: "今日投稿すべきコンテンツのアイデアと具体的な内容を教えてください。",
     },
     {
-      id: 'hashtag-optimization',
-      title: 'ハッシュタグ最適化',
-      message: '現在の投稿に最適なハッシュタグを選んでください。'
+      id: "hashtag-optimization",
+      title: "ハッシュタグ最適化",
+      message: "現在の投稿に最適なハッシュタグを選んでください。",
     },
     {
-      id: 'story-ideas',
-      title: 'ストーリーアイデア',
-      message: '今日のストーリー投稿のアイデアを教えてください。'
+      id: "story-ideas",
+      title: "ストーリーアイデア",
+      message: "今日のストーリー投稿のアイデアを教えてください。",
     },
     {
-      id: 'reel-trends',
-      title: 'リールトレンド',
-      message: '今バズっているリールのトレンドと活用方法を教えてください。'
+      id: "reel-trends",
+      title: "リールトレンド",
+      message: "今バズっているリールのトレンドと活用方法を教えてください。",
     },
     {
-      id: 'analytics-review',
-      title: '分析データの見方',
-      message: '最近の投稿の分析データを確認して、改善点を教えてください。'
+      id: "analytics-review",
+      title: "分析データの見方",
+      message: "最近の投稿の分析データを確認して、改善点を教えてください。",
     },
     {
-      id: 'follower-growth',
-      title: 'フォロワー増加',
-      message: 'フォロワーを増やすための今すぐできる具体的なアクションを教えてください。'
+      id: "follower-growth",
+      title: "フォロワー増加",
+      message: "フォロワーを増やすための今すぐできる具体的なアクションを教えてください。",
     },
     {
-      id: 'content-calendar',
-      title: 'コンテンツカレンダー',
-      message: '今週の投稿スケジュールとコンテンツプランを立ててください。'
+      id: "content-calendar",
+      title: "コンテンツカレンダー",
+      message: "今週の投稿スケジュールとコンテンツプランを立ててください。",
     },
     {
-      id: 'brand-voice',
-      title: 'ブランドボイス',
-      message: '投稿のトーンや文体を統一するためのアドバイスをください。'
+      id: "brand-voice",
+      title: "ブランドボイス",
+      message: "投稿のトーンや文体を統一するためのアドバイスをください。",
     },
     {
-      id: 'crisis-management',
-      title: 'トラブル対応',
-      message: 'ネガティブなコメントや炎上した時の対応方法を教えてください。'
-    }
+      id: "crisis-management",
+      title: "トラブル対応",
+      message: "ネガティブなコメントや炎上した時の対応方法を教えてください。",
+    },
   ];
 
   // メッセージの自動スクロール
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -206,151 +206,154 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   // 初期メッセージ
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const displayName = userProfile?.name || user?.displayName || 'ユーザー';
+      const displayName = userProfile?.name || user?.displayName || "ユーザー";
       const welcomeMessage: Message = {
-        id: '1',
-        role: 'assistant',
+        id: "1",
+        role: "assistant",
         content: `${displayName}さん、こんにちは！Instagram運用について何でもお聞きください。`,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
       setMessages([welcomeMessage]);
     }
   }, [isOpen, messages.length, userProfile, user]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+    if (!inputMessage.trim() || isLoading) {return;}
 
     // 使用制限をチェック
     if (!usageInfo.canUse) {
-      alert('今月の使用回数が上限に達しています。来月までお待ちください。');
+      alert("今月の使用回数が上限に達しています。来月までお待ちください。");
       return;
     }
 
     // 使用回数を記録
     const canUse = await recordUsage();
     if (!canUse) {
-      alert('今月の使用回数が上限に達しています。来月までお待ちください。');
+      alert("今月の使用回数が上限に達しています。来月までお待ちください。");
       return;
     }
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: inputMessage.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage("");
     setIsLoading(true);
 
     try {
       // ブラウザ互換性チェック
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
-      
-      console.log('Browser detection:', { isSafari, isMobile, userAgent: navigator.userAgent });
+
+      console.log("Browser detection:", { isSafari, isMobile, userAgent: navigator.userAgent });
 
       // 実際のAI APIを呼び出し
       const idToken = user ? await user.getIdToken() : null;
-      
+
       // タイムアウト設定（Safari/iOSでは長めに設定）
       const timeoutMs = isSafari || isMobile ? 60000 : 30000;
-      
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
+
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          ...(idToken && { 'Authorization': `Bearer ${idToken}` })
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(idToken && { Authorization: `Bearer ${idToken}` }),
         },
         body: JSON.stringify({
           message: inputMessage.trim(),
           context: contextData,
           userId: user?.uid,
-          pageType: 'instagram', // Instagramページからのチャット
+          pageType: "instagram", // Instagramページからのチャット
           browserInfo: {
             isSafari,
             isMobile,
-            userAgent: navigator.userAgent
-          }
+            userAgent: navigator.userAgent,
+          },
         }),
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error:', response.status, errorText);
+        console.error("API Error:", response.status, errorText);
         throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
 
       // レスポンスのContent-Typeをチェック
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Invalid response format');
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Invalid response format");
       }
 
       const data = await response.json();
-      console.log('AI API response:', data);
-      
+      console.log("AI API response:", data);
+
       if (data.success && data.response) {
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
-          role: 'assistant',
+          role: "assistant",
           content: data.response,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
-        setMessages(prev => [...prev, assistantMessage]);
+        setMessages((prev) => [...prev, assistantMessage]);
       } else {
-        throw new Error(data.error || 'Failed to get AI response');
+        throw new Error(data.error || "Failed to get AI response");
       }
 
       // テンプレート返答の場合はログ出力
       if (data.isTemplateResponse) {
-        console.log('Template response used - no AI tokens consumed');
+        console.log("Template response used - no AI tokens consumed");
       }
-
     } catch (error) {
-      console.error('Chat error:', error);
-      
-      let errorMessage = '申し訳ございません。エラーが発生しました。しばらくしてから再度お試しください。';
-      
+      console.error("Chat error:", error);
+
+      let errorMessage =
+        "申し訳ございません。エラーが発生しました。しばらくしてから再度お試しください。";
+
       // エラーの種類に応じてメッセージを変更
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          errorMessage = 'リクエストがタイムアウトしました。もう一度お試しください。';
-        } else if (error.message.includes('API Error')) {
-          errorMessage = 'サーバーエラーが発生しました。しばらくしてから再度お試しください。';
-        } else if (error.message.includes('Invalid response format')) {
-          errorMessage = 'レスポンス形式エラーが発生しました。ブラウザを更新してからお試しください。';
+        if (error.name === "AbortError") {
+          errorMessage = "リクエストがタイムアウトしました。もう一度お試しください。";
+        } else if (error.message.includes("API Error")) {
+          errorMessage = "サーバーエラーが発生しました。しばらくしてから再度お試しください。";
+        } else if (error.message.includes("Invalid response format")) {
+          errorMessage =
+            "レスポンス形式エラーが発生しました。ブラウザを更新してからお試しください。";
         }
       }
-      
+
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: errorMessage,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMsg]);
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  const handleTemplateClick = (template: typeof planTemplates[0] | typeof instagramTemplates[0]) => {
+  const handleTemplateClick = (
+    template: (typeof planTemplates)[0] | (typeof instagramTemplates)[0]
+  ) => {
     setInputMessage(template.message);
     setShowTemplates(false);
   };
@@ -366,7 +369,9 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
               <div className="flex items-center space-x-2">
                 <Bot size={16} className="text-orange-600" />
                 <p className="text-sm font-medium text-black whitespace-nowrap">
-                  {userProfile?.name ? `${userProfile.name}さん、Instagram運用を相談しよう！` : 'Instagram運用を相談しよう！'}
+                  {userProfile?.name
+                    ? `${userProfile.name}さん、Instagram運用を相談しよう！`
+                    : "Instagram運用を相談しよう！"}
                 </p>
               </div>
               {/* 吹き出しの矢印 */}
@@ -375,7 +380,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
               </div>
             </div>
           </div>
-          
+
           {/* チャットボタン */}
           <button
             data-ai-chat-button
@@ -403,7 +408,10 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
       {/* チャットウィンドウ */}
       {isOpen && (
-        <div data-ai-chat-widget className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-[9999]">
+        <div
+          data-ai-chat-widget
+          className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-[9999]"
+        >
           {/* ヘッダー */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg">
             <div className="flex items-center space-x-2">
@@ -429,28 +437,26 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
                   className={`max-w-[80%] p-3 rounded-lg ${
-                    message.role === 'user'
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-100 text-gray-800'
+                    message.role === "user"
+                      ? "bg-orange-500 text-white"
+                      : "bg-gray-100 text-gray-800"
                   }`}
                 >
                   <div className="flex items-start space-x-2">
-                    {message.role === 'assistant' && (
+                    {message.role === "assistant" && (
                       <Bot size={16} className="mt-0.5 text-orange-600 flex-shrink-0" />
                     )}
-                    {message.role === 'user' && (
-                      <User size={16} className="mt-0.5 flex-shrink-0" />
-                    )}
+                    {message.role === "user" && <User size={16} className="mt-0.5 flex-shrink-0" />}
                     <div className="text-sm whitespace-pre-wrap">{message.content}</div>
                   </div>
                 </div>
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
@@ -458,14 +464,20 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                     <Bot size={16} className="text-orange-600" />
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
 
@@ -486,7 +498,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                   </button>
                 </div>
               </div>
-              
+
               {/* スクロール可能なテンプレートエリア */}
               <div className="max-h-64 overflow-y-auto p-4">
                 {/* 計画系テンプレート */}
@@ -502,9 +514,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                         <div className="text-xs font-medium text-gray-800 mb-1">
                           {template.title}
                         </div>
-                        <div className="text-xs text-black line-clamp-2">
-                          {template.message}
-                        </div>
+                        <div className="text-xs text-black line-clamp-2">{template.message}</div>
                       </button>
                     ))}
                   </div>
@@ -512,7 +522,9 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
                 {/* Instagram運用テンプレート */}
                 <div>
-                  <h4 className="text-xs font-medium text-gray-600 mb-2">📱 Instagram運用について</h4>
+                  <h4 className="text-xs font-medium text-gray-600 mb-2">
+                    📱 Instagram運用について
+                  </h4>
                   <div className="grid grid-cols-2 gap-2">
                     {instagramTemplates.map((template) => (
                       <button
@@ -523,9 +535,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                         <div className="text-xs font-medium text-gray-800 mb-1">
                           {template.title}
                         </div>
-                        <div className="text-xs text-black line-clamp-2">
-                          {template.message}
-                        </div>
+                        <div className="text-xs text-black line-clamp-2">{template.message}</div>
                       </button>
                     ))}
                   </div>
@@ -545,7 +555,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                 )}
               </div>
             )}
-            
+
             {/* テンプレートボタン */}
             <div className="mb-2">
               <button
@@ -556,7 +566,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                 <span>よく使われる質問</span>
               </button>
             </div>
-            
+
             <div className="flex space-x-2">
               <textarea
                 value={inputMessage}
@@ -572,15 +582,15 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
                 disabled={!inputMessage.trim() || isLoading || !usageInfo.canUse}
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center relative ${
                   !inputMessage.trim() || isLoading || !usageInfo.canUse
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-orange-500 hover:bg-orange-600 text-white'
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-orange-500 hover:bg-orange-600 text-white"
                 }`}
                 title={
-                  !usageInfo.canUse 
-                    ? '今月の使用回数が上限に達しています' 
-                    : !inputMessage.trim() 
-                    ? 'メッセージを入力してください' 
-                    : '送信'
+                  !usageInfo.canUse
+                    ? "今月の使用回数が上限に達しています"
+                    : !inputMessage.trim()
+                      ? "メッセージを入力してください"
+                      : "送信"
                 }
               >
                 <Send size={16} />

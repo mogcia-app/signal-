@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '../../../../lib/firebase-admin';
+import { NextRequest, NextResponse } from "next/server";
+import { adminDb } from "../../../../lib/firebase-admin";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
+    const userId = request.headers.get("x-user-id");
     if (!userId) {
-      return NextResponse.json({ success: false, error: 'User ID is required' }, { status: 401 });
+      return NextResponse.json({ success: false, error: "User ID is required" }, { status: 401 });
     }
 
     const now = new Date();
@@ -14,33 +14,33 @@ export async function GET(request: NextRequest) {
 
     // 今週の投稿数を取得
     const weeklyPostsQuery = await adminDb
-      .collection('posts')
-      .where('userId', '==', userId)
-      .where('status', '==', 'published')
-      .where('createdAt', '>=', oneWeekAgo)
+      .collection("posts")
+      .where("userId", "==", userId)
+      .where("status", "==", "published")
+      .where("createdAt", ">=", oneWeekAgo)
       .get();
 
     // 今月の投稿数を取得
     const monthlyPostsQuery = await adminDb
-      .collection('posts')
-      .where('userId', '==', userId)
-      .where('status', '==', 'published')
-      .where('createdAt', '>=', oneMonthAgo)
+      .collection("posts")
+      .where("userId", "==", userId)
+      .where("status", "==", "published")
+      .where("createdAt", ">=", oneMonthAgo)
       .get();
 
     // 分析データを取得（過去30日）
     const analyticsQuery = await adminDb
-      .collection('analytics')
-      .where('userId', '==', userId)
+      .collection("analytics")
+      .where("userId", "==", userId)
       .get();
 
     // 今週の成長率計算
-    const weeklyAnalytics = analyticsQuery.docs.filter(doc => {
+    const weeklyAnalytics = analyticsQuery.docs.filter((doc) => {
       const data = doc.data();
       let publishedAt = data.publishedAt;
       if (publishedAt && publishedAt.toDate) {
         publishedAt = publishedAt.toDate();
-      } else if (publishedAt && typeof publishedAt === 'string') {
+      } else if (publishedAt && typeof publishedAt === "string") {
         publishedAt = new Date(publishedAt);
       }
       return publishedAt && publishedAt >= oneWeekAgo;
@@ -50,10 +50,11 @@ export async function GET(request: NextRequest) {
     let weeklyEngagement = 0;
     let weeklyReach = 0;
 
-    weeklyAnalytics.forEach(doc => {
+    weeklyAnalytics.forEach((doc) => {
       const data = doc.data();
       weeklyFollowerGrowth += parseInt(data.followerIncrease) || 0;
-      weeklyEngagement += (data.likes || 0) + (data.comments || 0) + (data.shares || 0) + (data.saves || 0);
+      weeklyEngagement +=
+        (data.likes || 0) + (data.comments || 0) + (data.shares || 0) + (data.saves || 0);
       weeklyReach += data.reach || 0;
     });
 
@@ -62,37 +63,37 @@ export async function GET(request: NextRequest) {
     // 投稿頻度の評価
     const postsThisWeek = weeklyPostsQuery.size;
     const postsThisMonth = monthlyPostsQuery.size;
-    
-    let frequencyStatus = '低い';
-    let frequencyColor = 'text-red-600';
+
+    let frequencyStatus = "低い";
+    let frequencyColor = "text-red-600";
     if (postsThisWeek >= 5) {
-      frequencyStatus = '活発';
-      frequencyColor = 'text-green-600';
+      frequencyStatus = "活発";
+      frequencyColor = "text-green-600";
     } else if (postsThisWeek >= 3) {
-      frequencyStatus = '普通';
-      frequencyColor = 'text-orange-600';
+      frequencyStatus = "普通";
+      frequencyColor = "text-orange-600";
     }
 
     // エンゲージメントの評価
-    let engagementStatus = '低い';
-    let engagementColor = 'text-red-600';
+    let engagementStatus = "低い";
+    let engagementColor = "text-red-600";
     if (avgWeeklyEngagementRate >= 5) {
-      engagementStatus = '良好';
-      engagementColor = 'text-green-600';
+      engagementStatus = "良好";
+      engagementColor = "text-green-600";
     } else if (avgWeeklyEngagementRate >= 3) {
-      engagementStatus = '普通';
-      engagementColor = 'text-orange-600';
+      engagementStatus = "普通";
+      engagementColor = "text-orange-600";
     }
 
     // 成長の評価
-    let growthStatus = '減少';
-    let growthColor = 'text-red-600';
+    let growthStatus = "減少";
+    let growthColor = "text-red-600";
     if (weeklyFollowerGrowth > 10) {
-      growthStatus = '順調';
-      growthColor = 'text-green-600';
+      growthStatus = "順調";
+      growthColor = "text-green-600";
     } else if (weeklyFollowerGrowth > 0) {
-      growthStatus = '微増';
-      growthColor = 'text-orange-600';
+      growthStatus = "微増";
+      growthColor = "text-orange-600";
     }
 
     const performanceSummary = {
@@ -100,48 +101,50 @@ export async function GET(request: NextRequest) {
         value: weeklyFollowerGrowth,
         status: growthStatus,
         color: growthColor,
-        label: '今週の成長'
+        label: "今週の成長",
       },
       engagement: {
         value: avgWeeklyEngagementRate,
         status: engagementStatus,
         color: engagementColor,
-        label: 'エンゲージメント'
+        label: "エンゲージメント",
       },
       frequency: {
         value: postsThisWeek,
         status: frequencyStatus,
         color: frequencyColor,
-        label: '投稿頻度'
+        label: "投稿頻度",
       },
       stats: {
         postsThisWeek,
         postsThisMonth,
         weeklyEngagement,
-        weeklyReach
-      }
+        weeklyReach,
+      },
     };
 
-    console.log('📈 Performance summary calculated:', {
+    console.log("📈 Performance summary calculated:", {
       userId,
       weeklyGrowth: weeklyFollowerGrowth,
       engagementRate: avgWeeklyEngagementRate,
       postsThisWeek,
       frequencyStatus,
       engagementStatus,
-      growthStatus
+      growthStatus,
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      data: performanceSummary
+    return NextResponse.json({
+      success: true,
+      data: performanceSummary,
     });
-
   } catch (error) {
-    console.error('Performance summary fetch error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to fetch performance summary' 
-    }, { status: 500 });
+    console.error("Performance summary fetch error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch performance summary",
+      },
+      { status: 500 }
+    );
   }
 }

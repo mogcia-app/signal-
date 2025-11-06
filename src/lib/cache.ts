@@ -10,7 +10,7 @@ class MemoryCache {
 
   get(key: string): unknown | null {
     const item = this.cache.get(key);
-    
+
     if (!item) {
       return null;
     }
@@ -45,7 +45,7 @@ class MemoryCache {
   getStats(): { size: number; keys: string[] } {
     return {
       size: this.cache.size,
-      keys: Array.from(this.cache.keys())
+      keys: Array.from(this.cache.keys()),
     };
   }
 }
@@ -57,9 +57,9 @@ export const cache = new MemoryCache();
 export function generateCacheKey(prefix: string, params: Record<string, unknown>): string {
   const sortedParams = Object.keys(params)
     .sort()
-    .map(key => `${key}:${params[key]}`)
-    .join('|');
-  
+    .map((key) => `${key}:${params[key]}`)
+    .join("|");
+
   return `${prefix}:${sortedParams}`;
 }
 
@@ -72,21 +72,25 @@ export function withCache<T extends unknown[], R>(
   return async (...args: T): Promise<R> => {
     const key = keyGenerator(...args);
     const cached = cache.get(key);
-    
+
     if (cached) {
       return cached as R;
     }
 
     const result = await fn(...args);
     cache.set(key, result, ttl);
-    
+
     return result;
   };
 }
 
 // 定期的なクリーンアップ（5分ごと）
-if (typeof window === 'undefined') { // サーバーサイドのみ
-  setInterval(() => {
-    cache.cleanup();
-  }, 5 * 60 * 1000);
+if (typeof window === "undefined") {
+  // サーバーサイドのみ
+  setInterval(
+    () => {
+      cache.cleanup();
+    },
+    5 * 60 * 1000
+  );
 }

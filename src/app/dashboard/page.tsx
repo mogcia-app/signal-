@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useAuth } from '../../contexts/auth-context';
-import { useUserProfile } from '../../hooks/useUserProfile';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import SNSLayout from '../../components/sns-layout';
-import { 
-  User, 
-  Mail, 
+import { useAuth } from "../../contexts/auth-context";
+import { useUserProfile } from "../../hooks/useUserProfile";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import SNSLayout from "../../components/sns-layout";
+import {
+  User,
+  Mail,
   // Settings,
   ArrowRight,
   Calendar,
@@ -21,56 +21,59 @@ import {
   EyeOff,
   CheckCircle,
   AlertCircle,
-  Building2
-} from 'lucide-react';
+  Building2,
+} from "lucide-react";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
-  const { 
-    userProfile, 
-    loading: profileLoading, 
+  const {
+    userProfile,
+    loading: profileLoading,
     error: profileError,
     getContractSNS,
     isContractActive,
-    getContractDaysRemaining
+    getContractDaysRemaining,
   } = useUserProfile();
   const router = useRouter();
   // const [isLoading, setIsLoading] = useState(false);
-  
+
   // パスワード変更機能の状態
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [passwordMessage, setPasswordMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
-    console.log('🎯 ダッシュボードページがマウントされました！', {
+    console.log("🎯 ダッシュボードページがマウントされました！", {
       user: !!user,
       userProfile: !!userProfile,
       profileLoading: profileLoading,
       error: profileError,
-      referrer: typeof window !== 'undefined' ? document.referrer : 'SSR',
-      pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR'
+      referrer: typeof window !== "undefined" ? document.referrer : "SSR",
+      pathname: typeof window !== "undefined" ? window.location.pathname : "SSR",
     });
 
     // ユーザーがログインしていない場合はログインページにリダイレクト
     // loading中はリダイレクトしない（Firebase初期化待ち）
     if (!loading && !user) {
-      console.log('❌ ユーザーがログインしていません。ログインページにリダイレクトします。');
-      router.push('/login');
+      console.log("❌ ユーザーがログインしていません。ログインページにリダイレクトします。");
+      router.push("/login");
       return;
     }
 
     // プロフィールが読み込まれたら契約SNSを確認
     if (userProfile && !profileLoading) {
       const contractSNS = getContractSNS();
-      console.log('🔍 契約SNS:', contractSNS);
-      
+      console.log("🔍 契約SNS:", contractSNS);
+
       // 自動リダイレクトを無効化 - ダッシュボードページとして表示
       // if (contractSNS && contractSNS.length === 1) {
       //   console.log('✅ 単一SNS契約。Instagramページにリダイレクトします。');
@@ -97,17 +100,17 @@ export default function DashboardPage() {
 
   const handlePasswordChange = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordMessage({ type: 'error', text: 'すべてのフィールドを入力してください' });
+      setPasswordMessage({ type: "error", text: "すべてのフィールドを入力してください" });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordMessage({ type: 'error', text: '新しいパスワードが一致しません' });
+      setPasswordMessage({ type: "error", text: "新しいパスワードが一致しません" });
       return;
     }
 
     if (newPassword.length < 6) {
-      setPasswordMessage({ type: 'error', text: '新しいパスワードは6文字以上で入力してください' });
+      setPasswordMessage({ type: "error", text: "新しいパスワードは6文字以上で入力してください" });
       return;
     }
 
@@ -116,10 +119,10 @@ export default function DashboardPage() {
       setPasswordMessage(null);
 
       // パスワード変更APIを呼び出し
-      const response = await fetch('/api/auth/change-password', {
-        method: 'POST',
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           currentPassword,
@@ -128,18 +131,21 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
-        setPasswordMessage({ type: 'success', text: 'パスワードが正常に変更されました' });
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+        setPasswordMessage({ type: "success", text: "パスワードが正常に変更されました" });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
         setShowPasswordChange(false);
       } else {
         const errorData = await response.json();
-        setPasswordMessage({ type: 'error', text: errorData.error || 'パスワード変更に失敗しました' });
+        setPasswordMessage({
+          type: "error",
+          text: errorData.error || "パスワード変更に失敗しました",
+        });
       }
     } catch (error) {
-      console.error('パスワード変更エラー:', error);
-      setPasswordMessage({ type: 'error', text: 'パスワード変更中にエラーが発生しました' });
+      console.error("パスワード変更エラー:", error);
+      setPasswordMessage({ type: "error", text: "パスワード変更中にエラーが発生しました" });
     } finally {
       setIsChangingPassword(false);
     }
@@ -175,8 +181,8 @@ export default function DashboardPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-black mb-4">エラーが発生しました</h1>
           <p className="text-red-600 mb-6">{profileError}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             ページを再読み込み
@@ -193,52 +199,51 @@ export default function DashboardPage() {
   // 表示用の変換関数
   const getIndustryLabel = (value: string) => {
     const map: Record<string, string> = {
-      'it': 'IT・テクノロジー',
-      'retail': '小売・EC',
-      'food': '飲食',
-      'beauty': '美容・健康',
-      'education': '教育',
-      'realestate': '不動産',
-      'other': 'その他'
+      it: "IT・テクノロジー",
+      retail: "小売・EC",
+      food: "飲食",
+      beauty: "美容・健康",
+      education: "教育",
+      realestate: "不動産",
+      other: "その他",
     };
     return map[value] || value;
   };
 
   const getCompanySizeLabel = (value: string) => {
     const map: Record<string, string> = {
-      'individual': '個人',
-      'small': '2-10名',
-      'medium': '11-50名',
-      'large': '51-200名',
-      'enterprise': '201名以上'
+      individual: "個人",
+      small: "2-10名",
+      medium: "11-50名",
+      large: "51-200名",
+      enterprise: "201名以上",
     };
     return map[value] || value;
   };
 
   const getBusinessTypeLabel = (value: string) => {
     const map: Record<string, string> = {
-      'btoc': 'BtoC',
-      'btob': 'BtoB',
-      'both': 'BtoB/BtoC両方'
+      btoc: "BtoC",
+      btob: "BtoB",
+      both: "BtoB/BtoC両方",
     };
     return map[value] || value;
   };
 
   const getTargetMarketLabel = (value: string) => {
     const map: Record<string, string> = {
-      'teens': '10代',
-      '20s': '20代',
-      '30s': '30代',
-      '40s': '40代',
-      '50plus': '50代以上',
-      'all': '全年齢'
+      teens: "10代",
+      "20s": "20代",
+      "30s": "30代",
+      "40s": "40代",
+      "50plus": "50代以上",
+      all: "全年齢",
     };
     return map[value] || value;
   };
 
   return (
     <SNSLayout customTitle="マイアカウント" customDescription="アカウント設定とプロフィール管理">
-
       {/* メインコンテンツ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* プロフィールセクション */}
@@ -249,7 +254,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <h2 className="text-3xl font-bold text-black mb-2">
-                {userProfile?.name || user.displayName || 'ユーザー'}
+                {userProfile?.name || user.displayName || "ユーザー"}
               </h2>
               <p className="text-black flex items-center space-x-2 text-lg">
                 <Mail className="w-5 h-5" />
@@ -269,7 +274,7 @@ export default function DashboardPage() {
                 <span className="font-semibold">契約状況</span>
               </div>
               <p className="text-3xl font-bold">
-                {hasActiveContract ? 'アクティブ' : '非アクティブ'}
+                {hasActiveContract ? "アクティブ" : "非アクティブ"}
               </p>
             </div>
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-2xl text-white shadow-lg">
@@ -277,18 +282,14 @@ export default function DashboardPage() {
                 <Globe className="w-6 h-6" />
                 <span className="font-semibold">契約SNS数</span>
               </div>
-              <p className="text-3xl font-bold">
-                {contractSNS?.length || 0}
-              </p>
+              <p className="text-3xl font-bold">{contractSNS?.length || 0}</p>
             </div>
             <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl text-white shadow-lg">
               <div className="flex items-center space-x-3 mb-3">
                 <Calendar className="w-6 h-6" />
                 <span className="font-semibold">残り日数</span>
               </div>
-              <p className="text-3xl font-bold">
-                {daysRemaining || 0}日
-              </p>
+              <p className="text-3xl font-bold">{daysRemaining || 0}日</p>
             </div>
           </div>
         </div>
@@ -305,13 +306,18 @@ export default function DashboardPage() {
                   className="group p-6 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-blue-50 hover:to-indigo-100 rounded-2xl text-center transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
                 >
                   <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                    {sns === 'instagram' ? '📷' : 
-                     sns === 'x' ? '🐦' : 
-                     sns === 'tiktok' ? '🎵' : 
-                     sns === 'youtube' ? '📺' : '📱'}
+                    {sns === "instagram"
+                      ? "📷"
+                      : sns === "x"
+                        ? "🐦"
+                        : sns === "tiktok"
+                          ? "🎵"
+                          : sns === "youtube"
+                            ? "📺"
+                            : "📱"}
                   </div>
                   <div className="text-sm font-bold text-black capitalize group-hover:text-blue-600 transition-colors">
-                    {sns === 'x' ? 'X (Twitter)' : sns}
+                    {sns === "x" ? "X (Twitter)" : sns}
                   </div>
                 </button>
               ))}
@@ -330,30 +336,40 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Building2 className="h-4 w-4 inline mr-2" />
-                      業種
-                    </label>
-                    <p className="text-black">{getIndustryLabel(userProfile.businessInfo.industry) || '未設定'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
-                    <p className="text-black">{getCompanySizeLabel(userProfile.businessInfo.companySize) || '未設定'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
-                    <p className="text-black">{getBusinessTypeLabel(userProfile.businessInfo.businessType) || '未設定'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ターゲット市場</label>
-                    <p className="text-black">{getTargetMarketLabel(userProfile.businessInfo.targetMarket) || '未設定'}</p>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <Building2 className="h-4 w-4 inline mr-2" />
+                    業種
+                  </label>
+                  <p className="text-black">
+                    {getIndustryLabel(userProfile.businessInfo.industry) || "未設定"}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">会社規模</label>
+                  <p className="text-black">
+                    {getCompanySizeLabel(userProfile.businessInfo.companySize) || "未設定"}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">事業形態</label>
+                  <p className="text-black">
+                    {getBusinessTypeLabel(userProfile.businessInfo.businessType) || "未設定"}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ターゲット市場
+                  </label>
+                  <p className="text-black">
+                    {getTargetMarketLabel(userProfile.businessInfo.targetMarket) || "未設定"}
+                  </p>
+                </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">事業内容</label>
-                <p className="text-black">{userProfile.businessInfo.description || '未設定'}</p>
+                <p className="text-black">{userProfile.businessInfo.description || "未設定"}</p>
               </div>
 
               {userProfile.businessInfo.goals && userProfile.businessInfo.goals.length > 0 && (
@@ -372,21 +388,22 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {userProfile.businessInfo.challenges && userProfile.businessInfo.challenges.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">課題</label>
-                  <div className="flex flex-wrap gap-2">
-                    {userProfile.businessInfo.challenges.map((challenge, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm"
-                      >
-                        {challenge}
-                      </span>
-                    ))}
+              {userProfile.businessInfo.challenges &&
+                userProfile.businessInfo.challenges.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">課題</label>
+                    <div className="flex flex-wrap gap-2">
+                      {userProfile.businessInfo.challenges.map((challenge, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm"
+                        >
+                          {challenge}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </div>
         )}
@@ -402,28 +419,38 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-4">
               {Object.entries(userProfile.snsAISettings).map(([snsType, settings]) => (
-                <div key={snsType} className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+                <div
+                  key={snsType}
+                  className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <span className="text-2xl">
-                        {snsType === 'instagram' ? '📷' : 
-                         snsType === 'x' ? '🐦' : 
-                         snsType === 'tiktok' ? '🎵' : 
-                         snsType === 'youtube' ? '📺' : '📱'}
+                        {snsType === "instagram"
+                          ? "📷"
+                          : snsType === "x"
+                            ? "🐦"
+                            : snsType === "tiktok"
+                              ? "🎵"
+                              : snsType === "youtube"
+                                ? "📺"
+                                : "📱"}
                       </span>
                       <h4 className="text-lg font-semibold text-black capitalize">
-                        {snsType === 'x' ? 'X (Twitter)' : snsType}
+                        {snsType === "x" ? "X (Twitter)" : snsType}
                       </h4>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      settings.enabled 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {settings.enabled ? '✓ 有効' : '無効'}
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        settings.enabled
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {settings.enabled ? "✓ 有効" : "無効"}
                     </span>
                   </div>
-                  
+
                   {settings.enabled && (
                     <div className="space-y-2 ml-11">
                       {settings.tone && (
@@ -434,7 +461,9 @@ export default function DashboardPage() {
                       )}
                       {settings.features && settings.features.length > 0 && (
                         <div>
-                          <span className="text-sm font-medium text-gray-700 block mb-1">機能:</span>
+                          <span className="text-sm font-medium text-gray-700 block mb-1">
+                            機能:
+                          </span>
                           <div className="flex flex-wrap gap-2">
                             {settings.features.map((feature, index) => (
                               <span
@@ -476,116 +505,130 @@ export default function DashboardPage() {
             {showPasswordChange && (
               <div className="mt-6 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl">
                 <h4 className="text-xl font-bold text-black mb-6">パスワード変更</h4>
-                  
-                  {passwordMessage && (
-                    <div className={`mb-4 p-3 rounded-lg flex items-center space-x-2 ${
-                      passwordMessage.type === 'success' 
-                        ? 'bg-green-50 text-green-700' 
-                        : 'bg-red-50 text-red-700'
-                    }`}>
-                      {passwordMessage.type === 'success' ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4" />
-                      )}
-                      <span className="text-sm">{passwordMessage.text}</span>
-                    </div>
-                  )}
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        現在のパスワード
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showCurrentPassword ? 'text' : 'password'}
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="現在のパスワードを入力"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          className="absolute right-3 top-2.5 text-black hover:text-black"
-                        >
-                          {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
+                {passwordMessage && (
+                  <div
+                    className={`mb-4 p-3 rounded-lg flex items-center space-x-2 ${
+                      passwordMessage.type === "success"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {passwordMessage.type === "success" ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4" />
+                    )}
+                    <span className="text-sm">{passwordMessage.text}</span>
+                  </div>
+                )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        新しいパスワード
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showNewPassword ? 'text' : 'password'}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="新しいパスワードを入力"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-2.5 text-black hover:text-black"
-                        >
-                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        新しいパスワード（確認）
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="新しいパスワードを再入力"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-2.5 text-black hover:text-black"
-                        >
-                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-3">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      現在のパスワード
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPassword ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="現在のパスワードを入力"
+                      />
                       <button
-                        onClick={handlePasswordChange}
-                        disabled={isChangingPassword}
-                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute right-3 top-2.5 text-black hover:text-black"
                       >
-                        {isChangingPassword ? '変更中...' : 'パスワードを変更'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowPasswordChange(false);
-                          setCurrentPassword('');
-                          setNewPassword('');
-                          setConfirmPassword('');
-                          setPasswordMessage(null);
-                        }}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                      >
-                        キャンセル
+                        {showCurrentPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      新しいパスワード
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="新しいパスワードを入力"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-2.5 text-black hover:text-black"
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      新しいパスワード（確認）
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="新しいパスワードを再入力"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-2.5 text-black hover:text-black"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handlePasswordChange}
+                      disabled={isChangingPassword}
+                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isChangingPassword ? "変更中..." : "パスワードを変更"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowPasswordChange(false);
+                        setCurrentPassword("");
+                        setNewPassword("");
+                        setConfirmPassword("");
+                        setPasswordMessage(null);
+                      }}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
+      </div>
     </SNSLayout>
   );
 }

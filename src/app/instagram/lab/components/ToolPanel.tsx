@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Copy, Tag } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Plus, Edit, Trash2, Copy, Tag } from "lucide-react";
 
 interface ToolPanelProps {
   onTemplateSelect: (template: string) => void;
@@ -10,27 +10,27 @@ interface ToolPanelProps {
 }
 
 const DEFAULT_TEMPLATES = [
-  'おはようございます！今日も素敵な一日をお過ごしください✨',
-  'ありがとうございます🙏',
-  'フォローありがとうございます！',
-  'いいねありがとうございます💕',
-  'コメントありがとうございます！',
-  '今日の一枚📸',
-  'お疲れ様でした！',
-  '素敵な週末をお過ごしください🌅'
+  "おはようございます！今日も素敵な一日をお過ごしください✨",
+  "ありがとうございます🙏",
+  "フォローありがとうございます！",
+  "いいねありがとうございます💕",
+  "コメントありがとうございます！",
+  "今日の一枚📸",
+  "お疲れ様でした！",
+  "素敵な週末をお過ごしください🌅",
 ];
 
-const STORAGE_KEY_TEMPLATES = 'instagram_lab_templates';
-const STORAGE_KEY_HASHTAGS = 'instagram_lab_hashtags';
+const STORAGE_KEY_TEMPLATES = "instagram_lab_templates";
+const STORAGE_KEY_HASHTAGS = "instagram_lab_hashtags";
 
 export const ToolPanel: React.FC<ToolPanelProps> = ({
   onTemplateSelect,
   onHashtagSelect,
-  postContent
+  postContent,
 }) => {
   // localStorageから読み込み
   const loadTemplates = (): string[] => {
-    if (typeof window === 'undefined') return DEFAULT_TEMPLATES;
+    if (typeof window === "undefined") {return DEFAULT_TEMPLATES;}
     try {
       const saved = localStorage.getItem(STORAGE_KEY_TEMPLATES);
       return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
@@ -40,7 +40,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
   };
 
   const loadHashtags = (): string[] => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === "undefined") {return [];}
     try {
       const saved = localStorage.getItem(STORAGE_KEY_HASHTAGS);
       return saved ? JSON.parse(saved) : [];
@@ -58,28 +58,28 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
     setHashtags(loadHashtags());
   }, []);
 
-  const [newTemplate, setNewTemplate] = useState('');
-  const [newHashtag, setNewHashtag] = useState('');
+  const [newTemplate, setNewTemplate] = useState("");
+  const [newHashtag, setNewHashtag] = useState("");
   const [editingTemplate, setEditingTemplate] = useState<number | null>(null);
   const [editingHashtag, setEditingHashtag] = useState<number | null>(null);
 
   // localStorageに保存
   const saveTemplates = (newTemplates: string[]) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(newTemplates));
       } catch (error) {
-        console.error('Failed to save templates:', error);
+        console.error("Failed to save templates:", error);
       }
     }
   };
 
   const saveHashtags = (newHashtags: string[]) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         localStorage.setItem(STORAGE_KEY_HASHTAGS, JSON.stringify(newHashtags));
       } catch (error) {
-        console.error('Failed to save hashtags:', error);
+        console.error("Failed to save hashtags:", error);
       }
     }
   };
@@ -89,12 +89,12 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
       const updated = [...templates, newTemplate.trim()];
       setTemplates(updated);
       saveTemplates(updated);
-      setNewTemplate('');
+      setNewTemplate("");
     }
   };
 
   const handleEditTemplate = (index: number, newValue: string) => {
-    const updated = templates.map((template, i) => i === index ? newValue : template);
+    const updated = templates.map((template, i) => (i === index ? newValue : template));
     setTemplates(updated);
     saveTemplates(updated);
     setEditingTemplate(null);
@@ -108,16 +108,16 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
 
   const handleAddHashtag = () => {
     if (newHashtag.trim()) {
-      const hashtag = newHashtag.trim().replace('#', '');
+      const hashtag = newHashtag.trim().replace("#", "");
       const updated = [...hashtags, hashtag];
       setHashtags(updated);
       saveHashtags(updated);
-      setNewHashtag('');
+      setNewHashtag("");
     }
   };
 
   const handleEditHashtag = (index: number, newValue: string) => {
-    const updated = hashtags.map((hashtag, i) => i === index ? newValue : hashtag);
+    const updated = hashtags.map((hashtag, i) => (i === index ? newValue : hashtag));
     setHashtags(updated);
     saveHashtags(updated);
     setEditingHashtag(null);
@@ -160,7 +160,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                 onChange={(e) => setNewTemplate(e.target.value)}
                 placeholder="新しい文言を追加..."
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTemplate()}
+                onKeyPress={(e) => e.key === "Enter" && handleAddTemplate()}
               />
               <button
                 onClick={handleAddTemplate}
@@ -185,7 +185,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                     className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                     onBlur={(e) => handleEditTemplate(index, e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         handleEditTemplate(index, e.currentTarget.value);
                       }
                     }}
@@ -243,7 +243,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                 onChange={(e) => setNewHashtag(e.target.value)}
                 placeholder="新しいハッシュタグを追加..."
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddHashtag()}
+                onKeyPress={(e) => e.key === "Enter" && handleAddHashtag()}
               />
               <button
                 onClick={handleAddHashtag}
@@ -269,7 +269,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                       className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
                       onBlur={(e) => handleEditHashtag(index, e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === "Enter") {
                           handleEditHashtag(index, e.currentTarget.value);
                         }
                       }}
@@ -313,7 +313,6 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
           </div>
         </div>
       </div>
-
     </div>
   );
 };

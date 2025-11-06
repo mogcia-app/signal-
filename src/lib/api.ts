@@ -1,26 +1,26 @@
 // API呼び出し用のクライアント関数
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = "/api";
 
 // 共通のfetch関数
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   // Firebase認証トークンを取得
-  const { auth } = await import('./firebase');
+  const { auth } = await import("./firebase");
   const user = auth.currentUser;
-  
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
-  
+
   // 認証トークンがある場合は追加
   if (user) {
     try {
       const token = await user.getIdToken();
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     } catch (error) {
-      console.warn('認証トークンの取得に失敗しました:', error);
+      console.warn("認証トークンの取得に失敗しました:", error);
     }
   }
 
@@ -29,7 +29,7 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
   };
 
   const response = await fetch(url, { ...defaultOptions, ...options });
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -46,33 +46,35 @@ export const postsApi = {
     title: string;
     content: string;
     hashtags: string[];
-    postType: 'feed' | 'reel' | 'story';
+    postType: "feed" | "reel" | "story";
     scheduledDate?: string;
     scheduledTime?: string;
-    status?: 'draft' | 'created' | 'scheduled' | 'published';
+    status?: "draft" | "created" | "scheduled" | "published";
     imageUrl?: string | null;
     imageData?: string | null;
   }) => {
-    return apiRequest('/posts', {
-      method: 'POST',
+    return apiRequest("/posts", {
+      method: "POST",
       body: JSON.stringify(postData),
     });
   },
 
   // 投稿一覧取得
-  list: async (params: {
-    userId?: string;
-    status?: string;
-    postType?: string;
-    limit?: number;
-  } = {}) => {
+  list: async (
+    params: {
+      userId?: string;
+      status?: string;
+      postType?: string;
+      limit?: number;
+    } = {}
+  ) => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) {
         searchParams.append(key, value.toString());
       }
     });
-    
+
     return apiRequest(`/posts?${searchParams.toString()}`);
   },
 
@@ -82,12 +84,15 @@ export const postsApi = {
   },
 
   // 投稿更新
-  update: async (id: string, updateData: Record<string, unknown> & {
-    imageUrl?: string | null;
-    imageData?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    updateData: Record<string, unknown> & {
+      imageUrl?: string | null;
+      imageData?: string | null;
+    }
+  ) => {
     return apiRequest(`/posts/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(updateData),
     });
   },
@@ -95,7 +100,7 @@ export const postsApi = {
   // 投稿削除
   delete: async (id: string) => {
     return apiRequest(`/posts/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   },
 };
@@ -115,24 +120,26 @@ export const plansApi = {
     simulation: Record<string, unknown>;
     aiPersona: Record<string, unknown>;
   }) => {
-    return apiRequest('/plans', {
-      method: 'POST',
+    return apiRequest("/plans", {
+      method: "POST",
       body: JSON.stringify(planData),
     });
   },
 
   // 計画一覧取得
-  list: async (params: {
-    userId?: string;
-    limit?: number;
-  } = {}) => {
+  list: async (
+    params: {
+      userId?: string;
+      limit?: number;
+    } = {}
+  ) => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) {
         searchParams.append(key, value.toString());
       }
     });
-    
+
     return apiRequest(`/plans?${searchParams.toString()}`);
   },
 
@@ -144,7 +151,7 @@ export const plansApi = {
   // 計画更新
   update: async (id: string, updateData: Record<string, unknown>) => {
     return apiRequest(`/plans/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(updateData),
     });
   },
@@ -152,7 +159,7 @@ export const plansApi = {
   // 計画削除
   delete: async (id: string) => {
     return apiRequest(`/plans/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   },
 };
@@ -169,8 +176,8 @@ export const usersApi = {
     preferences?: Record<string, unknown>;
     socialAccounts?: Record<string, unknown>;
   }) => {
-    return apiRequest('/users', {
-      method: 'POST',
+    return apiRequest("/users", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
   },
@@ -182,8 +189,8 @@ export const usersApi = {
 
   // ユーザープロフィール更新
   updateProfile: async (userId: string, updateData: Record<string, unknown>) => {
-    return apiRequest('/users', {
-      method: 'PUT',
+    return apiRequest("/users", {
+      method: "PUT",
       body: JSON.stringify({ userId, ...updateData }),
     });
   },
@@ -192,54 +199,51 @@ export const usersApi = {
 // 分析関連API（最小限版）
 export const analyticsApi = {
   // いいね数のみ保存
-  create: async (analyticsData: {
-    userId: string;
-    likes: number;
-    publishedAt?: string;
-  }) => {
-    return apiRequest('/analytics', {
-      method: 'POST',
+  create: async (analyticsData: { userId: string; likes: number; publishedAt?: string }) => {
+    return apiRequest("/analytics", {
+      method: "POST",
       body: JSON.stringify(analyticsData),
     });
   },
 
   // 分析データ一覧取得
-  list: async (params: {
-    userId: string;
-  }) => {
+  list: async (params: { userId: string }) => {
     const searchParams = new URLSearchParams();
-    searchParams.append('userId', params.userId);
-    
+    searchParams.append("userId", params.userId);
+
     return apiRequest(`/analytics?${searchParams.toString()}`);
   },
 };
 
-
 // エラーハンドリング用のヘルパー
 export const handleApiError = (error: unknown) => {
-  console.error('API Error:', error);
-  
+  console.error("API Error:", error);
+
   if (error instanceof Error) {
     return error.message;
   }
-  
-  if (error instanceof TypeError && error.message.includes('fetch')) {
-    return 'ネットワークエラーが発生しました。インターネット接続を確認してください。';
+
+  if (error instanceof TypeError && error.message.includes("fetch")) {
+    return "ネットワークエラーが発生しました。インターネット接続を確認してください。";
   }
-  
-  return '予期しないエラーが発生しました。';
+
+  return "予期しないエラーが発生しました。";
 };
 
 // SNSプロフィール関連API
 export const snsProfileApi = {
   // SNSプロフィール更新
-  update: async (userId: string, platform: string, profileData: {
-    followers?: number;
-    subscribers?: number;
-    username?: string;
-  }) => {
-    return apiRequest('/user/sns-profile', {
-      method: 'PUT',
+  update: async (
+    userId: string,
+    platform: string,
+    profileData: {
+      followers?: number;
+      subscribers?: number;
+      username?: string;
+    }
+  ) => {
+    return apiRequest("/user/sns-profile", {
+      method: "PUT",
       body: JSON.stringify({ userId, platform, profileData }),
     });
   },
@@ -248,8 +252,8 @@ export const snsProfileApi = {
   get: async (userId: string, platform?: string) => {
     const params = new URLSearchParams({ userId });
     if (platform) {
-      params.append('platform', platform);
+      params.append("platform", platform);
     }
     return apiRequest(`/user/sns-profile?${params.toString()}`);
-  }
+  },
 };

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { Sparkles, CheckCircle, AlertCircle } from "lucide-react";
 
 interface AIAssistantProps {
-  postType: 'feed' | 'reel' | 'story';
+  postType: "feed" | "reel" | "story";
   onGeneratePost: (content: string, hashtags: string[]) => void;
   onCheckPost: (content: string, hashtags: string[]) => void;
 }
@@ -19,91 +19,87 @@ interface AICheckResult {
 export const AIAssistant: React.FC<AIAssistantProps> = ({
   postType,
   onGeneratePost,
-  onCheckPost: _onCheckPost // eslint-disable-line @typescript-eslint/no-unused-vars
+  onCheckPost: _onCheckPost,  
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<AICheckResult | null>(null);
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState("");
 
   const handleGeneratePost = async () => {
-    if (!prompt.trim()) return;
-    
+    if (!prompt.trim()) {return;}
+
     setIsGenerating(true);
     try {
       // 実際のAPI呼び出しをここに実装
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 模擬処理
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // 模擬処理
+
       const generatedContent = `✨ ${prompt}について投稿文を生成しました！
 
-この投稿は${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}に最適化されています。
+この投稿は${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}に最適化されています。
 エンゲージメントを高めるために、以下のポイントを意識しました：
 
 • 感情に訴える表現
 • 行動を促すCTA
 • 視覚的に魅力的な文章構成
 
-#${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム'} #${prompt.replace(/\s+/g, '')} #エンゲージメント`;
+#${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "インスタグラム"} #${prompt.replace(/\s+/g, "")} #エンゲージメント`;
 
       const hashtags = [
-        postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'インスタグラム',
-        prompt.replace(/\s+/g, ''),
-        'エンゲージメント',
-        '投稿',
-        'SNS'
+        postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "インスタグラム",
+        prompt.replace(/\s+/g, ""),
+        "エンゲージメント",
+        "投稿",
+        "SNS",
       ];
 
       onGeneratePost(generatedContent, hashtags);
     } catch (error) {
-      console.error('投稿生成エラー:', error);
+      console.error("投稿生成エラー:", error);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleCheckPost = async (content: string, _hashtags: string[]) => { // eslint-disable-line @typescript-eslint/no-unused-vars
-    if (!content.trim()) return;
-    
+  const handleCheckPost = async (content: string, _hashtags: string[]) => {
+     
+    if (!content.trim()) {return;}
+
     setIsChecking(true);
     try {
       // 実際のAPI呼び出しをここに実装
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬処理
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // 模擬処理
+
       // 模擬的なチェック結果
       const result: AICheckResult = {
         score: Math.floor(Math.random() * 30) + 70, // 70-100のスコア
         suggestions: [
-          'より具体的な数値や事例を追加すると良いでしょう',
-          '感情に訴える表現を増やしてみてください',
-          '行動を促す呼びかけを追加することをお勧めします'
+          "より具体的な数値や事例を追加すると良いでしょう",
+          "感情に訴える表現を増やしてみてください",
+          "行動を促す呼びかけを追加することをお勧めします",
         ],
-        hashtagSuggestions: [
-          'トレンド',
-          'バイラル',
-          'フォロー',
-          'いいね'
-        ],
-        engagementPrediction: Math.floor(Math.random() * 20) + 5 // 5-25%の予測エンゲージメント
+        hashtagSuggestions: ["トレンド", "バイラル", "フォロー", "いいね"],
+        engagementPrediction: Math.floor(Math.random() * 20) + 5, // 5-25%の予測エンゲージメント
       };
 
       setCheckResult(result);
     } catch (error) {
-      console.error('投稿チェックエラー:', error);
+      console.error("投稿チェックエラー:", error);
     } finally {
       setIsChecking(false);
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 90) {return "text-green-600";}
+    if (score >= 80) {return "text-yellow-600";}
+    return "text-red-600";
   };
 
   const getScoreBg = (score: number) => {
-    if (score >= 90) return 'bg-green-100';
-    if (score >= 80) return 'bg-yellow-100';
-    return 'bg-red-100';
+    if (score >= 90) {return "bg-green-100";}
+    if (score >= 80) {return "bg-yellow-100";}
+    return "bg-red-100";
   };
 
   return (
@@ -116,15 +112,13 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
 
         {/* AI投稿生成 */}
         <div className="mb-6">
-          <h3 className="text-md font-medium text-gray-800 mb-3">
-            🤖 AI投稿文生成
-          </h3>
+          <h3 className="text-md font-medium text-gray-800 mb-3">🤖 AI投稿文生成</h3>
           <div className="space-y-3">
             <input
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={`${postType === 'reel' ? 'リール' : postType === 'story' ? 'ストーリーズ' : 'フィード'}のテーマや内容を入力してください...`}
+              placeholder={`${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}のテーマや内容を入力してください...`}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             <button
@@ -154,7 +148,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
               <CheckCircle className="mr-2 text-green-600" size={16} />
               投稿分析結果
             </h3>
-            
+
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className={`p-3 rounded-lg ${getScoreBg(checkResult.score)}`}>
                 <div className="text-sm text-black">総合スコア</div>
@@ -176,7 +170,10 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
                 <ul className="space-y-1">
                   {checkResult.suggestions.map((suggestion, index) => (
                     <li key={index} className="text-sm text-black flex items-start">
-                      <AlertCircle size={14} className="mr-2 mt-0.5 text-yellow-500 flex-shrink-0" />
+                      <AlertCircle
+                        size={14}
+                        className="mr-2 mt-0.5 text-yellow-500 flex-shrink-0"
+                      />
                       {suggestion}
                     </li>
                   ))}
@@ -202,16 +199,15 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
 
         {/* 投稿チェックボタン */}
         <div>
-          <h3 className="text-md font-medium text-gray-800 mb-3">
-            🔍 投稿文チェック
-          </h3>
+          <h3 className="text-md font-medium text-gray-800 mb-3">🔍 投稿文チェック</h3>
           <p className="text-sm text-black mb-3">
             作成した投稿文をAIが分析し、エンゲージメント向上のための提案を行います。
           </p>
           <button
             onClick={() => {
               // 実際のコンテンツとハッシュタグを取得する必要があります
-              const content = (document.querySelector('textarea') as HTMLTextAreaElement)?.value || '';
+              const content =
+                (document.querySelector("textarea") as HTMLTextAreaElement)?.value || "";
               const hashtags: string[] = [];
               handleCheckPost(content, hashtags);
             }}

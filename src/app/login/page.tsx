@@ -1,48 +1,48 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '../../contexts/auth-context';
-import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { useState } from "react";
+import { useAuth } from "../../contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const { signIn } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       await signIn(email, password);
       setLoginSuccess(true);
       // 2秒後にフィード（ラボ）に遷移
       setTimeout(() => {
-        router.push('/instagram/lab/feed');
+        router.push("/instagram/lab/feed");
       }, 2000);
     } catch (error: unknown) {
       // 契約期間切れのエラーの場合
-      const errorMessage = error instanceof Error ? error.message : '';
+      const errorMessage = error instanceof Error ? error.message : "";
       const errorCode = (error as { code?: string })?.code;
-      
-      if (errorMessage === 'CONTRACT_EXPIRED' || errorCode === 'auth/contract-expired') {
-        setError('契約期間が終了しています。管理者にご連絡ください。');
-      } else if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password') {
-        setError('メールアドレスまたはパスワードが正しくありません。');
-      } else if (errorCode === 'auth/invalid-email') {
-        setError('無効なメールアドレスです。');
+
+      if (errorMessage === "CONTRACT_EXPIRED" || errorCode === "auth/contract-expired") {
+        setError("契約期間が終了しています。管理者にご連絡ください。");
+      } else if (errorCode === "auth/user-not-found" || errorCode === "auth/wrong-password") {
+        setError("メールアドレスまたはパスワードが正しくありません。");
+      } else if (errorCode === "auth/invalid-email") {
+        setError("無効なメールアドレスです。");
       } else {
-        setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+        setError("ログインに失敗しました。メールアドレスとパスワードを確認してください。");
       }
-      console.error('Login error:', error);
+      console.error("Login error:", error);
     } finally {
       setLoading(false);
     }
@@ -60,9 +60,7 @@ export default function LoginPage() {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-3">
               ログイン成功！
             </h2>
-            <p className="text-black text-lg">
-              ダッシュボードに移動しています...
-            </p>
+            <p className="text-black text-lg">ダッシュボードに移動しています...</p>
             <div className="mt-8">
               <div className="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-500 mx-auto"></div>
             </div>
@@ -89,9 +87,7 @@ export default function LoginPage() {
           <h1 className="text-4xl font-bold text-black mb-2">
             Signal<span className="text-[#ff8a15]">.</span>
           </h1>
-          <p className="text-black text-lg">
-            アカウントにログイン
-          </p>
+          <p className="text-black text-lg">アカウントにログイン</p>
         </div>
 
         {/* ログインフォーム */}
@@ -132,7 +128,7 @@ export default function LoginPage() {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   value={password}
@@ -171,7 +167,7 @@ export default function LoginPage() {
                     ログイン中...
                   </>
                 ) : (
-                  'ログイン'
+                  "ログイン"
                 )}
               </button>
             </div>
@@ -179,7 +175,8 @@ export default function LoginPage() {
             {/* 注意事項 */}
             <div className="text-center">
               <p className="text-sm text-black bg-orange-50 rounded-lg p-3 border border-orange-100">
-                <span className="font-medium text-orange-700">※</span> 管理者によって登録されたメールアドレスでのみログイン可能です
+                <span className="font-medium text-orange-700">※</span>{" "}
+                管理者によって登録されたメールアドレスでのみログイン可能です
               </p>
             </div>
           </form>
@@ -204,4 +201,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

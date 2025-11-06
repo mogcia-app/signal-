@@ -1,14 +1,14 @@
-import React from 'react';
-import { Users, Target } from 'lucide-react';
+import React from "react";
+import { Users, Target } from "lucide-react";
 
 interface AudienceAnalysisProps {
-  activeTab: 'weekly' | 'monthly';
+  activeTab: "weekly" | "monthly";
   reportSummary: {
-    period: 'weekly' | 'monthly';
+    period: "weekly" | "monthly";
     date: string;
     audienceAnalysis: {
       gender: { male: number; female: number; other: number };
-      age: { '18-24': number; '25-34': number; '35-44': number; '45-54': number };
+      age: { "18-24": number; "25-34": number; "35-44": number; "45-54": number };
     };
     reachSourceAnalysis: {
       sources: { posts: number; profile: number; explore: number; search: number };
@@ -27,16 +27,16 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
   getWeekDisplayName,
   getMonthDisplayName,
   selectedWeek,
-  selectedMonth
+  selectedMonth,
 }) => {
   const audienceAnalysis = reportSummary?.audienceAnalysis || {
     gender: { male: 0, female: 0, other: 0 },
-    age: { '18-24': 0, '25-34': 0, '35-44': 0, '45-54': 0 }
+    age: { "18-24": 0, "25-34": 0, "35-44": 0, "45-54": 0 },
   };
 
   const reachSourceAnalysis = reportSummary?.reachSourceAnalysis || {
     sources: { posts: 0, profile: 0, explore: 0, search: 0 },
-    followers: { followers: 0, nonFollowers: 0 }
+    followers: { followers: 0, nonFollowers: 0 },
   };
 
   // BFFから取得したデータを直接使用
@@ -54,10 +54,9 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
           <div>
             <h2 className="text-lg font-semibold text-black">オーディエンス分析</h2>
             <p className="text-sm text-black">
-              {activeTab === 'weekly' 
+              {activeTab === "weekly"
                 ? `${getWeekDisplayName(selectedWeek)}のオーディエンス構成`
-                : `${getMonthDisplayName(selectedMonth)}のオーディエンス構成`
-              }
+                : `${getMonthDisplayName(selectedMonth)}のオーディエンス構成`}
             </p>
           </div>
         </div>
@@ -94,25 +93,25 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-xs font-bold text-gray-700">
-                  {audienceData.age['18-24'].toFixed(1)}%
+                  {audienceData.age["18-24"].toFixed(1)}%
                 </div>
                 <div className="text-xs text-black">18-24歳</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-xs font-bold text-gray-700">
-                  {audienceData.age['25-34'].toFixed(1)}%
+                  {audienceData.age["25-34"].toFixed(1)}%
                 </div>
                 <div className="text-xs text-black">25-34歳</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-xs font-bold text-gray-700">
-                  {audienceData.age['35-44'].toFixed(1)}%
+                  {audienceData.age["35-44"].toFixed(1)}%
                 </div>
                 <div className="text-xs text-black">35-44歳</div>
               </div>
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-xs font-bold text-gray-700">
-                  {audienceData.age['45-54'].toFixed(1)}%
+                  {audienceData.age["45-54"].toFixed(1)}%
                 </div>
                 <div className="text-xs text-black">45-54歳</div>
               </div>
@@ -130,10 +129,9 @@ export const AudienceAnalysis: React.FC<AudienceAnalysisProps> = ({
           <div>
             <h2 className="text-lg font-semibold text-black">閲覧数ソース分析</h2>
             <p className="text-sm text-black">
-              {activeTab === 'weekly' 
+              {activeTab === "weekly"
                 ? `${getWeekDisplayName(selectedWeek)}の閲覧ソース構成`
-                : `${getMonthDisplayName(selectedMonth)}の閲覧ソース構成`
-              }
+                : `${getMonthDisplayName(selectedMonth)}の閲覧ソース構成`}
             </p>
           </div>
         </div>

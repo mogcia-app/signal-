@@ -1,43 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAdminDb } from '../../../../lib/firebase-admin';
+import { NextRequest, NextResponse } from "next/server";
+import { getAdminDb } from "../../../../lib/firebase-admin";
 
 // GET: 分析データを取得
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get("userId");
 
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
     const db = getAdminDb();
-    
+
     // 分析データを取得
-    const analyticsRef = db.collection('analytics');
+    const analyticsRef = db.collection("analytics");
     const querySnapshot = await analyticsRef
-      .where('userId', '==', userId)
-      .orderBy('publishedAt', 'desc')
+      .where("userId", "==", userId)
+      .orderBy("publishedAt", "desc")
       .get();
 
-    const analyticsData = querySnapshot.docs.map(doc => ({
+    const analyticsData = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       publishedAt: doc.data().publishedAt?.toDate?.()?.toISOString() || doc.data().publishedAt,
-      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
     }));
 
     return NextResponse.json({
       success: true,
-      data: analyticsData
+      data: analyticsData,
     });
-
   } catch (error) {
-    console.error('Analytics fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch analytics data' },
-      { status: 500 }
-    );
+    console.error("Analytics fetch error:", error);
+    return NextResponse.json({ error: "Failed to fetch analytics data" }, { status: 500 });
   }
 }
 
@@ -91,15 +87,15 @@ export async function POST(request: NextRequest) {
       audience,
       reachSource,
       sentiment,
-      sentimentMemo
+      sentimentMemo,
     } = body;
 
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
     const db = getAdminDb();
-    
+
     // 分析データを保存
     const analyticsData = {
       userId,
@@ -113,12 +109,12 @@ export async function POST(request: NextRequest) {
       followerIncrease: parseInt(followerIncrease) || 0,
       engagementRate: 0,
       publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
-      publishedTime: publishedTime || '',
-      title: title || '',
-      content: content || '',
+      publishedTime: publishedTime || "",
+      title: title || "",
+      content: content || "",
       hashtags: hashtags || [],
-      thumbnail: thumbnail || '',
-      category: category || 'feed',
+      thumbnail: thumbnail || "",
+      category: category || "feed",
       // フィード専用フィールド
       reachFollowerPercent: parseFloat(reachFollowerPercent) || 0,
       interactionCount: parseInt(interactionCount) || 0,
@@ -148,25 +144,20 @@ export async function POST(request: NextRequest) {
       audience: audience || null,
       reachSource: reachSource || null,
       sentiment: sentiment || null,
-      sentimentMemo: sentimentMemo || '',
+      sentimentMemo: sentimentMemo || "",
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('analytics').add(analyticsData);
+    const docRef = await db.collection("analytics").add(analyticsData);
 
     return NextResponse.json({
       success: true,
       id: docRef.id,
-      message: 'Analytics data saved successfully'
+      message: "Analytics data saved successfully",
     });
-
   } catch (error) {
-    console.error('Analytics save error:', error);
-    return NextResponse.json(
-      { error: 'Failed to save analytics data' },
-      { status: 500 }
-    );
+    console.error("Analytics save error:", error);
+    return NextResponse.json({ error: "Failed to save analytics data" }, { status: 500 });
   }
 }
-

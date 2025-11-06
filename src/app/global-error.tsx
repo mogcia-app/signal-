@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import * as Sentry from '@sentry/nextjs';
-import { useEffect } from 'react';
+import * as Sentry from "@sentry/nextjs";
+import { useEffect } from "react";
 
 export default function GlobalError({
   error,
@@ -22,9 +22,9 @@ export default function GlobalError({
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">エラーが発生しました</h1>
             <p className="text-gray-600 mb-6">
-              {error && typeof error === 'object' && 'message' in error 
-                ? error.message 
-                : '予期しないエラーが発生しました'}
+              {error && typeof error === "object" && "message" in error
+                ? error.message
+                : "予期しないエラーが発生しました"}
             </p>
             <button
               onClick={reset}
@@ -38,4 +38,3 @@ export default function GlobalError({
     </html>
   );
 }
-

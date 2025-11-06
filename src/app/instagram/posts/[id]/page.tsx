@@ -1,18 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '../../../../contexts/auth-context';
-import SNSLayout from '../../../../components/sns-layout';
-import { Calendar, Clock, Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "../../../../contexts/auth-context";
+import SNSLayout from "../../../../components/sns-layout";
+import {
+  Calendar,
+  Clock,
+  Image as ImageIcon,
+  Heart,
+  MessageCircle,
+  Share,
+  Eye as EyeIcon,
+  ArrowLeft,
+} from "lucide-react";
 
 interface PostData {
   id: string;
   userId: string;
   title: string;
   content: string;
-  postType: 'feed' | 'reel' | 'story';
+  postType: "feed" | "reel" | "story";
   scheduledDate: string;
   scheduledTime: string;
   createdAt: string;
@@ -39,16 +48,16 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!user?.uid || !id) return;
+      if (!user?.uid || !id) {return;}
 
       try {
-        const { auth } = await import('../../../../lib/firebase');
+        const { auth } = await import("../../../../lib/firebase");
         const token = await auth.currentUser?.getIdToken();
 
         const response = await fetch(`/api/posts?userId=${user.uid}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'x-user-id': user.uid,
+            Authorization: `Bearer ${token}`,
+            "x-user-id": user.uid,
           },
         });
 
@@ -62,11 +71,11 @@ export default function PostDetailPage() {
         if (foundPost) {
           setPost(foundPost);
         } else {
-          setError('投稿が見つかりません');
+          setError("投稿が見つかりません");
         }
       } catch (err) {
-        console.error('投稿取得エラー:', err);
-        setError('投稿の取得に失敗しました');
+        console.error("投稿取得エラー:", err);
+        setError("投稿の取得に失敗しました");
       } finally {
         setLoading(false);
       }
@@ -77,10 +86,10 @@ export default function PostDetailPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    return date.toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -92,13 +101,13 @@ export default function PostDetailPage() {
   const extractHashtagsFromContent = (content: string): string[] => {
     const hashtagRegex = /#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g;
     const matches = content.match(hashtagRegex);
-    return matches ? matches.map(tag => tag.substring(1)) : []; // #を除去
+    return matches ? matches.map((tag) => tag.substring(1)) : []; // #を除去
   };
 
   // 投稿文からハッシュタグを除去する関数
   const removeHashtagsFromContent = (content: string): string => {
     const hashtagRegex = /#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g;
-    return content.replace(hashtagRegex, '').trim();
+    return content.replace(hashtagRegex, "").trim();
   };
 
   if (loading) {
@@ -120,7 +129,7 @@ export default function PostDetailPage() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">エラー</h1>
-            <p className="text-gray-600 mb-6">{error || '投稿が見つかりません'}</p>
+            <p className="text-gray-600 mb-6">{error || "投稿が見つかりません"}</p>
             <button
               onClick={() => router.back()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -173,10 +182,13 @@ export default function PostDetailPage() {
           {/* コンテンツ */}
           <div className="p-6">
             {/* タイトル */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 break-words">
               {(() => {
                 // タイトルから先頭・末尾の「##」「-」「空白」を削除
-                return post.title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim();
+                return post.title
+                  .replace(/^[\s#-]+|[\s#-]+$/g, "")
+                  .replace(/^#+/g, "")
+                  .trim();
               })()}
             </h2>
 
@@ -188,7 +200,10 @@ export default function PostDetailPage() {
                   {(() => {
                     const cleanedContent = removeHashtagsFromContent(post.content);
                     // 投稿文から先頭・末尾の「##」「-」「空白」を削除
-                    return cleanedContent.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim();
+                    return cleanedContent
+                      .replace(/^[\s#-]+|[\s#-]+$/g, "")
+                      .replace(/^#+/g, "")
+                      .trim();
                   })()}
                 </p>
               </div>
@@ -196,13 +211,20 @@ export default function PostDetailPage() {
 
             {/* 投稿タイプ */}
             <div className="mb-4">
-              <span className={`inline-block px-3 py-1 text-sm font-medium ${
-                post.postType === 'feed' ? 'bg-orange-100 text-orange-800' :
-                post.postType === 'reel' ? 'bg-orange-200 text-orange-900' :
-                'bg-orange-300 text-orange-900'
-              }`}>
-                {post.postType === 'feed' ? 'フィード' : 
-                 post.postType === 'reel' ? 'リール' : 'ストーリー'}
+              <span
+                className={`inline-block px-3 py-1 text-sm font-medium ${
+                  post.postType === "feed"
+                    ? "bg-orange-100 text-orange-800"
+                    : post.postType === "reel"
+                      ? "bg-orange-200 text-orange-900"
+                      : "bg-orange-300 text-orange-900"
+                }`}
+              >
+                {post.postType === "feed"
+                  ? "フィード"
+                  : post.postType === "reel"
+                    ? "リール"
+                    : "ストーリー"}
               </span>
             </div>
 
@@ -211,35 +233,46 @@ export default function PostDetailPage() {
               // 投稿文から抽出したハッシュタグと、既存のhashtagsフィールドをマージして重複を除去
               const contentHashtags = extractHashtagsFromContent(post.content);
               const existingHashtags = post.hashtags || [];
-              
+
               // デバッグログ
-              console.log('Content hashtags:', contentHashtags);
-              console.log('Existing hashtags:', existingHashtags);
-              
+              console.log("Content hashtags:", contentHashtags);
+              console.log("Existing hashtags:", existingHashtags);
+
               // より確実な重複除去: 小文字に統一してから重複除去
-              const normalizedContentHashtags = contentHashtags.map(tag => tag.toLowerCase().trim());
-              const normalizedExistingHashtags = existingHashtags.map(tag => tag.toLowerCase().trim());
-              
+              const normalizedContentHashtags = contentHashtags.map((tag) =>
+                tag.toLowerCase().trim()
+              );
+              const normalizedExistingHashtags = existingHashtags.map((tag) =>
+                tag.toLowerCase().trim()
+              );
+
               // 重複を除去してユニークなハッシュタグのみ取得
-              const uniqueHashtags = [...new Set([...normalizedContentHashtags, ...normalizedExistingHashtags])];
-              
-              console.log('Unique hashtags:', uniqueHashtags);
-              
-              return uniqueHashtags.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">ハッシュタグ</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {uniqueHashtags.map((tag, index) => {
-                      // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
-                      const cleanTag = tag.replace(/^#+/, '').trim();
-                      return (
-                        <span key={index} className="inline-block px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100 transition-colors">
-                          #{cleanTag}
-                        </span>
-                      );
-                    })}
+              const uniqueHashtags = [
+                ...new Set([...normalizedContentHashtags, ...normalizedExistingHashtags]),
+              ];
+
+              console.log("Unique hashtags:", uniqueHashtags);
+
+              return (
+                uniqueHashtags.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">ハッシュタグ</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueHashtags.map((tag, index) => {
+                        // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
+                        const cleanTag = tag.replace(/^#+/, "").trim();
+                        return (
+                          <span
+                            key={index}
+                            className="inline-block px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100 transition-colors"
+                          >
+                            #{cleanTag}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )
               );
             })()}
 
@@ -276,28 +309,36 @@ export default function PostDetailPage() {
                       <div className="text-center p-3 bg-white border border-orange-200">
                         <Heart size={24} className="text-orange-500 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">いいね</div>
-                        <div className="text-xl font-bold text-gray-900">{post.analytics.likes.toLocaleString()}</div>
+                        <div className="text-xl font-bold text-gray-900">
+                          {post.analytics.likes.toLocaleString()}
+                        </div>
                       </div>
                     )}
                     {post.analytics.comments !== undefined && (
                       <div className="text-center p-3 bg-white border border-orange-200">
                         <MessageCircle size={24} className="text-orange-600 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">コメント</div>
-                        <div className="text-xl font-bold text-gray-900">{post.analytics.comments.toLocaleString()}</div>
+                        <div className="text-xl font-bold text-gray-900">
+                          {post.analytics.comments.toLocaleString()}
+                        </div>
                       </div>
                     )}
                     {post.analytics.shares !== undefined && (
                       <div className="text-center p-3 bg-white border border-orange-200">
                         <Share size={24} className="text-orange-700 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">シェア</div>
-                        <div className="text-xl font-bold text-gray-900">{post.analytics.shares.toLocaleString()}</div>
+                        <div className="text-xl font-bold text-gray-900">
+                          {post.analytics.shares.toLocaleString()}
+                        </div>
                       </div>
                     )}
                     {post.analytics.reach !== undefined && (
                       <div className="text-center p-3 bg-white border border-orange-200">
                         <EyeIcon size={24} className="text-orange-800 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">リーチ</div>
-                        <div className="text-xl font-bold text-gray-900">{post.analytics.reach.toLocaleString()}</div>
+                        <div className="text-xl font-bold text-gray-900">
+                          {post.analytics.reach.toLocaleString()}
+                        </div>
                       </div>
                     )}
                     {post.analytics.engagementRate !== undefined && (
@@ -306,7 +347,9 @@ export default function PostDetailPage() {
                           <span className="text-white text-xs font-bold">%</span>
                         </div>
                         <div className="text-sm text-gray-600 mb-1">エンゲージメント率</div>
-                        <div className="text-xl font-bold text-gray-900">{post.analytics.engagementRate.toFixed(1)}%</div>
+                        <div className="text-xl font-bold text-gray-900">
+                          {post.analytics.engagementRate.toFixed(1)}%
+                        </div>
                       </div>
                     )}
                     {post.analytics.publishedAt && (
@@ -314,12 +357,12 @@ export default function PostDetailPage() {
                         <Calendar size={24} className="text-orange-600 mx-auto mb-2" />
                         <div className="text-sm text-gray-600 mb-1">投稿日時</div>
                         <div className="text-sm font-bold text-gray-900">
-                          {new Date(post.analytics.publishedAt).toLocaleDateString('ja-JP')}
+                          {new Date(post.analytics.publishedAt).toLocaleDateString("ja-JP")}
                         </div>
                         <div className="text-xs text-gray-600">
-                          {new Date(post.analytics.publishedAt).toLocaleTimeString('ja-JP', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
+                          {new Date(post.analytics.publishedAt).toLocaleTimeString("ja-JP", {
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </div>
                       </div>
@@ -336,11 +379,15 @@ export default function PostDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">作成日:</span>
-                    <span className="ml-2 font-medium text-gray-700">{formatDate(post.createdAt)}</span>
+                    <span className="ml-2 font-medium text-gray-700">
+                      {formatDate(post.createdAt)}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-500">更新日:</span>
-                    <span className="ml-2 font-medium text-gray-700">{formatDate(post.updatedAt)}</span>
+                    <span className="ml-2 font-medium text-gray-700">
+                      {formatDate(post.updatedAt)}
+                    </span>
                   </div>
                 </div>
               </div>

@@ -55,7 +55,7 @@ export interface SimulationResult {
     };
   };
   onePointAdvice: {
-    type: 'warning' | 'success';
+    type: "warning" | "success";
     title: string;
     message: string;
     advice: string;
@@ -146,7 +146,7 @@ export interface SimulationRequest {
   accountAge?: number; // アカウント開設からの月数
   currentEngagementRate?: number; // 現在のエンゲージメント率
   avgPostsPerWeek?: number; // 現在の週間投稿数
-  contentQuality?: 'low' | 'medium' | 'high'; // コンテンツ品質
+  contentQuality?: "low" | "medium" | "high"; // コンテンツ品質
   niche?: string; // ジャンル・ニッチ
   budget?: number; // 広告予算（月額）
   teamSize?: number; // 運営チーム人数
@@ -187,7 +187,7 @@ export interface ABTestScenario {
     engagementRate: number;
     reach: number;
   };
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   resourceRequirement: {
     timePerWeek: number; // 週あたりの時間
     budget: number; // 月あたりの予算
@@ -224,39 +224,38 @@ export interface PlanData {
   postCategories: string[];
   createdAt: string | { toDate?: () => Date };
   updatedAt: string | { toDate?: () => Date };
-  
+
   // シミュレーション結果（APIから返された完全なデータ）
   simulationResult?: Record<string, unknown> | null;
-  
+
   // フォームデータ全体
   formData?: Record<string, unknown>;
-  
+
   // AI戦略
   generatedStrategy?: string | null;
 }
 
 // デフォルトの計画データ
 export const DEFAULT_PLAN_DATA: PlanData = {
-  id: 'default-plan',
-  userId: 'default-user',
-  snsType: 'instagram',
-  status: 'active',
-  title: 'Instagram成長加速計画',
+  id: "default-plan",
+  userId: "default-user",
+  snsType: "instagram",
+  status: "active",
+  title: "Instagram成長加速計画",
   targetFollowers: 10000,
   currentFollowers: 3250,
-  planPeriod: '6ヶ月',
-  targetAudience: '20〜30代女性',
-  category: 'フォロワー獲得',
-  strategies: ['ハッシュタグ最適化', 'ストーリー活用', 'リール投稿', 'エンゲージメント向上'],
-  postCategories: ['ノウハウ', '実績紹介', 'ビフォーアフター'],
-  createdAt: '2024-09-01',
-  updatedAt: '2024-09-01',
+  planPeriod: "6ヶ月",
+  targetAudience: "20〜30代女性",
+  category: "フォロワー獲得",
+  strategies: ["ハッシュタグ最適化", "ストーリー活用", "リール投稿", "エンゲージメント向上"],
+  postCategories: ["ノウハウ", "実績紹介", "ビフォーアフター"],
+  createdAt: "2024-09-01",
+  updatedAt: "2024-09-01",
   simulationResult: {
     monthlyTarget: 500,
-    feasibilityLevel: 'high',
-    feasibilityBadge: '達成可能'
+    feasibilityLevel: "high",
+    feasibilityBadge: "達成可能",
   },
   formData: {},
-  generatedStrategy: null
+  generatedStrategy: null,
 };
-

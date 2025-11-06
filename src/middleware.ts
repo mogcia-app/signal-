@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 // ✅ middleware.ts（本番復旧用・安全版）
 // ミドルウェア本体（ここは今後も使う前提で残す）
@@ -14,9 +14,9 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // 認証が必要なページやルートのみ残す
-    '/admin/:path*',
-    '/my-account',
-    '/settings/:path*',
+    "/admin/:path*",
+    "/my-account",
+    "/settings/:path*",
     // '/api/x/:path*',        // ← 一時的に無効化（Phase 2で再有効化）
     // '/api/instagram/:path*', // ← 一時的に無効化（Phase 2で再有効化）
   ],

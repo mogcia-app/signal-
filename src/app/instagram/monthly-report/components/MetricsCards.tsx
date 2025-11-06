@@ -1,8 +1,8 @@
-import React from 'react';
-import { Heart, MessageCircle, Share, Eye, ArrowUp, ArrowDown } from 'lucide-react';
+import React from "react";
+import { Heart, MessageCircle, Share, Eye, ArrowUp, ArrowDown } from "lucide-react";
 
 interface MetricsCardsProps {
-  activeTab: 'weekly' | 'monthly';
+  activeTab: "weekly" | "monthly";
   currentTotals: {
     totalLikes: number;
     totalComments: number;
@@ -32,40 +32,40 @@ interface MetricsCardsProps {
 export const MetricsCards: React.FC<MetricsCardsProps> = ({
   activeTab,
   currentTotals,
-  previousTotals: _, // eslint-disable-line @typescript-eslint/no-unused-vars
-  changes
+  previousTotals: _,  
+  changes,
 }) => {
-  const periodLabel = activeTab === 'weekly' ? '前週比' : '前月比';
+  const periodLabel = activeTab === "weekly" ? "前週比" : "前月比";
 
   const metrics = [
     {
-      label: 'いいね総数',
+      label: "いいね総数",
       value: currentTotals.totalLikes,
       icon: Heart,
-      iconColor: 'text-red-500',
-      change: changes.likesChange
+      iconColor: "text-red-500",
+      change: changes.likesChange,
     },
     {
-      label: 'コメント総数',
+      label: "コメント総数",
       value: currentTotals.totalComments,
       icon: MessageCircle,
-      iconColor: 'text-blue-500',
-      change: changes.commentsChange
+      iconColor: "text-blue-500",
+      change: changes.commentsChange,
     },
     {
-      label: 'シェア総数',
+      label: "シェア総数",
       value: currentTotals.totalShares,
       icon: Share,
-      iconColor: 'text-green-500',
-      change: changes.sharesChange
+      iconColor: "text-green-500",
+      change: changes.sharesChange,
     },
     {
-      label: '閲覧数総数',
+      label: "閲覧数総数",
       value: currentTotals.totalReach,
       icon: Eye,
-      iconColor: 'text-purple-500',
-      change: changes.reachChange
-    }
+      iconColor: "text-purple-500",
+      change: changes.reachChange,
+    },
   ];
 
   return (
@@ -75,9 +75,7 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-black">{metric.label}</p>
-              <p className="text-2xl font-bold text-black">
-                {metric.value.toLocaleString()}
-              </p>
+              <p className="text-2xl font-bold text-black">{metric.value.toLocaleString()}</p>
             </div>
             <metric.icon className={`w-8 h-8 ${metric.iconColor}`} />
           </div>
@@ -87,9 +85,11 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
             ) : (
               <ArrowDown className="w-4 h-4 text-red-500 mr-1" />
             )}
-            <span className={`text-sm font-medium ${
-              metric.change >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
+            <span
+              className={`text-sm font-medium ${
+                metric.change >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
               {Math.abs(metric.change).toFixed(1)}% {periodLabel}
             </span>
           </div>

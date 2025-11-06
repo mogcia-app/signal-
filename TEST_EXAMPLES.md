@@ -21,16 +21,16 @@
 ### 基本的な構造
 
 ```typescript
-describe('関数名や機能', () => {
-  test('テストケースの説明', () => {
+describe("関数名や機能", () => {
+  test("テストケースの説明", () => {
     // 準備
-    const input = 'something';
-    
+    const input = "something";
+
     // 実行
     const result = yourFunction(input);
-    
+
     // アサート
-    expect(result).toBe('expected');
+    expect(result).toBe("expected");
   });
 });
 ```
@@ -39,21 +39,21 @@ describe('関数名や機能', () => {
 
 ```typescript
 // 等しい
-expect(result).toBe('value');
+expect(result).toBe("value");
 
 // 真偽値
 expect(result).toBe(true);
 
 // 配列
 expect(array).toHaveLength(3);
-expect(array).toContain('item');
+expect(array).toContain("item");
 
 // オブジェクト
-expect(obj).toHaveProperty('key');
-expect(obj.key).toBe('value');
+expect(obj).toHaveProperty("key");
+expect(obj.key).toBe("value");
 
 // 文字列
-expect(str).toContain('substring');
+expect(str).toContain("substring");
 expect(str).toMatch(/regex/);
 
 // エラー
@@ -67,8 +67,8 @@ expect(() => riskyFunction()).toThrow();
 `src/__tests__/your-feature.test.ts`
 
 ```typescript
-describe('Your Feature', () => {
-  test('should do something', () => {
+describe("Your Feature", () => {
+  test("should do something", () => {
     expect(true).toBe(true);
   });
 });
@@ -111,6 +111,7 @@ npm run test:coverage
 ```
 
 結果:
+
 - **Statements**: コードの実行割合
 - **Branches**: 分岐のカバー割合
 - **Functions**: 関数の実行割合
@@ -136,22 +137,22 @@ npm run test:coverage
 
 ```typescript
 // src/__tests__/api/instagram.test.ts
-describe('Instagram API', () => {
-  test('should fetch analytics data', async () => {
+describe("Instagram API", () => {
+  test("should fetch analytics data", async () => {
     // テストコード
   });
 });
 
 // src/__tests__/components/PostCard.test.tsx
-describe('PostCard', () => {
-  test('should render correctly', () => {
+describe("PostCard", () => {
+  test("should render correctly", () => {
     // テストコード
   });
 });
 
 // src/__tests__/hooks/usePlanForm.test.ts
-describe('usePlanForm', () => {
-  test('should handle form submission', () => {
+describe("usePlanForm", () => {
+  test("should handle form submission", () => {
     // テストコード
   });
 });
@@ -160,38 +161,41 @@ describe('usePlanForm', () => {
 ## 🔧 テストのベストプラクティス
 
 ### 1. テストケースの命名
+
 ```typescript
 // ❌ 悪い例
-test('test 1', () => {});
+test("test 1", () => {});
 
 // ✅ 良い例
-test('should return error when email is invalid', () => {});
+test("should return error when email is invalid", () => {});
 ```
 
 ### 2. AAA パターン
+
 ```typescript
-test('should calculate sum correctly', () => {
+test("should calculate sum correctly", () => {
   // Arrange (準備)
   const a = 1;
   const b = 2;
-  
+
   // Act (実行)
   const result = add(a, b);
-  
+
   // Assert (検証)
   expect(result).toBe(3);
 });
 ```
 
 ### 3. エッジケース
+
 ```typescript
-test('should handle edge cases', () => {
+test("should handle edge cases", () => {
   // 空文字列
-  expect(validate('')).toBe(false);
-  
+  expect(validate("")).toBe(false);
+
   // null/undefined
   expect(validate(null)).toBe(false);
-  
+
   // 境界値
   expect(validate(MAX_LENGTH)).toBe(true);
   expect(validate(MAX_LENGTH + 1)).toBe(false);
@@ -203,4 +207,3 @@ test('should handle edge cases', () => {
 - [Jest ドキュメント](https://jestjs.io/docs/getting-started)
 - [React Testing Library](https://testing-library.com/react)
 - [Testing Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
-

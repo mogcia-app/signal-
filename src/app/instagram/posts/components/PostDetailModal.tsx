@@ -1,8 +1,17 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import { X, Calendar, Clock, Image as ImageIcon, Heart, MessageCircle, Share, Eye as EyeIcon } from 'lucide-react';
+import React from "react";
+import Image from "next/image";
+import {
+  X,
+  Calendar,
+  Clock,
+  Image as ImageIcon,
+  Heart,
+  MessageCircle,
+  Share,
+  Eye as EyeIcon,
+} from "lucide-react";
 
 interface PostData {
   id: string;
@@ -10,13 +19,19 @@ interface PostData {
   title: string;
   content: string;
   hashtags: string[];
-  postType: 'feed' | 'reel' | 'story';
-  scheduledDate?: Date | { toDate(): Date; seconds: number; nanoseconds: number; type?: string } | string;
+  postType: "feed" | "reel" | "story";
+  scheduledDate?:
+    | Date
+    | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
+    | string;
   scheduledTime?: string;
-  status: 'draft' | 'created' | 'scheduled' | 'published';
+  status: "draft" | "created" | "scheduled" | "published";
   imageUrl?: string | null;
   imageData?: string | null;
-  createdAt: Date | { toDate(): Date; seconds: number; nanoseconds: number; type?: string } | string;
+  createdAt:
+    | Date
+    | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
+    | string;
   updatedAt: Date;
   analytics?: {
     likes: number;
@@ -33,13 +48,13 @@ interface PostData {
         other: number;
       };
       age: {
-        '13-17': number;
-        '18-24': number;
-        '25-34': number;
-        '35-44': number;
-        '45-54': number;
-        '55-64': number;
-        '65+': number;
+        "13-17": number;
+        "18-24": number;
+        "25-34": number;
+        "35-44": number;
+        "45-54": number;
+        "55-64": number;
+        "65+": number;
       };
     };
     reachSource?: {
@@ -79,13 +94,13 @@ interface AnalyticsData {
       other: number;
     };
     age: {
-      '13-17': number;
-      '18-24': number;
-      '25-34': number;
-      '35-44': number;
-      '45-54': number;
-      '55-64': number;
-      '65+': number;
+      "13-17": number;
+      "18-24": number;
+      "25-34": number;
+      "35-44": number;
+      "45-54": number;
+      "55-64": number;
+      "65+": number;
     };
   };
   reachSource?: {
@@ -114,9 +129,9 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
   isOpen,
   selectedPost,
   selectedAnalytics,
-  onClose
+  onClose,
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -139,42 +154,54 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
             <div>
               <h3 className="text-lg font-semibold text-black mb-2">
                 {(() => {
-                  const title = selectedPost?.title || selectedAnalytics?.title || 'タイトルなし';
+                  const title = selectedPost?.title || selectedAnalytics?.title || "タイトルなし";
                   // タイトルから先頭・末尾の「##」「-」「空白」を削除
-                  return title.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() || 'タイトルなし';
+                  return (
+                    title
+                      .replace(/^[\s#-]+|[\s#-]+$/g, "")
+                      .replace(/^#+/g, "")
+                      .trim() || "タイトルなし"
+                  );
                 })()}
               </h3>
               <div className="flex items-center space-x-4 text-sm text-black">
                 <span className="flex items-center">
                   <Calendar size={14} className="mr-1" />
-                  {selectedPost?.scheduledDate || selectedAnalytics?.publishedAt ? 
-                    (() => {
-                      const dateValue = selectedPost?.scheduledDate || selectedAnalytics?.publishedAt;
-                      if (dateValue instanceof Date) {
-                        return dateValue.toLocaleDateString('ja-JP');
-                      } else if (dateValue && typeof dateValue === 'object' && 'toDate' in dateValue) {
-                        return dateValue.toDate().toLocaleDateString('ja-JP');
-                      } else {
-                        return new Date(dateValue || '').toLocaleDateString('ja-JP');
-                      }
-                    })() : 
-                    '日付未設定'}
+                  {selectedPost?.scheduledDate || selectedAnalytics?.publishedAt
+                    ? (() => {
+                        const dateValue =
+                          selectedPost?.scheduledDate || selectedAnalytics?.publishedAt;
+                        if (dateValue instanceof Date) {
+                          return dateValue.toLocaleDateString("ja-JP");
+                        } else if (
+                          dateValue &&
+                          typeof dateValue === "object" &&
+                          "toDate" in dateValue
+                        ) {
+                          return dateValue.toDate().toLocaleDateString("ja-JP");
+                        } else {
+                          return new Date(dateValue || "").toLocaleDateString("ja-JP");
+                        }
+                      })()
+                    : "日付未設定"}
                 </span>
                 <span className="flex items-center">
                   <Clock size={14} className="mr-1" />
-                  {selectedPost?.scheduledTime || '時間未設定'}
+                  {selectedPost?.scheduledTime || "時間未設定"}
                 </span>
               </div>
             </div>
 
             {/* サムネイル */}
-            {(selectedPost?.imageData || selectedPost?.imageUrl || selectedAnalytics?.thumbnail) && (
+            {(selectedPost?.imageData ||
+              selectedPost?.imageUrl ||
+              selectedAnalytics?.thumbnail) && (
               <div>
                 <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
-                  {(selectedPost?.imageData || selectedAnalytics?.thumbnail) ? (
-                    <Image 
-                      src={selectedPost?.imageData || selectedAnalytics?.thumbnail || ''} 
-                      alt="投稿画像" 
+                  {selectedPost?.imageData || selectedAnalytics?.thumbnail ? (
+                    <Image
+                      src={selectedPost?.imageData || selectedAnalytics?.thumbnail || ""}
+                      alt="投稿画像"
                       width={500}
                       height={500}
                       quality={95}
@@ -192,15 +219,26 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
               <h4 className="text-sm font-medium text-gray-700 mb-2">投稿内容</h4>
               <p className="text-gray-700 whitespace-pre-wrap">
                 {(() => {
-                  const content = selectedPost?.content || selectedAnalytics?.content || '投稿内容がありません';
+                  const content =
+                    selectedPost?.content || selectedAnalytics?.content || "投稿内容がありません";
                   // 投稿文から先頭・末尾の「##」「-」「空白」を削除
-                  return content.replace(/^[\s#-]+|[\s#-]+$/g, '').replace(/^#+/g, '').trim() || '投稿内容がありません';
+                  return (
+                    content
+                      .replace(/^[\s#-]+|[\s#-]+$/g, "")
+                      .replace(/^#+/g, "")
+                      .trim() || "投稿内容がありません"
+                  );
                 })()}
               </p>
             </div>
 
             {/* ハッシュタグ */}
-            {((selectedPost?.hashtags && Array.isArray(selectedPost.hashtags) && selectedPost.hashtags.length > 0) || (selectedAnalytics?.hashtags && Array.isArray(selectedAnalytics.hashtags) && selectedAnalytics.hashtags.length > 0)) && (
+            {((selectedPost?.hashtags &&
+              Array.isArray(selectedPost.hashtags) &&
+              selectedPost.hashtags.length > 0) ||
+              (selectedAnalytics?.hashtags &&
+                Array.isArray(selectedAnalytics.hashtags) &&
+                selectedAnalytics.hashtags.length > 0)) && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">ハッシュタグ</h4>
                 <div className="flex flex-wrap gap-2">
@@ -209,7 +247,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                     return Array.isArray(hashtags) ? hashtags : [];
                   })().map((hashtag: string, index: number) => {
                     // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
-                    const cleanHashtag = hashtag.replace(/^#+/, '').trim();
+                    const cleanHashtag = hashtag.replace(/^#+/, "").trim();
                     return (
                       <span
                         key={index}
@@ -235,28 +273,36 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                         <Heart size={16} className="text-red-500" />
                         <span className="text-sm font-medium text-gray-700">いいね</span>
                       </div>
-                      <div className="text-2xl font-bold text-black">{selectedAnalytics.likes.toLocaleString()}</div>
+                      <div className="text-2xl font-bold text-black">
+                        {selectedAnalytics.likes.toLocaleString()}
+                      </div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-2 mb-2">
                         <MessageCircle size={16} className="text-blue-500" />
                         <span className="text-sm font-medium text-gray-700">コメント</span>
                       </div>
-                      <div className="text-2xl font-bold text-black">{selectedAnalytics.comments.toLocaleString()}</div>
+                      <div className="text-2xl font-bold text-black">
+                        {selectedAnalytics.comments.toLocaleString()}
+                      </div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-2 mb-2">
                         <Share size={16} className="text-green-500" />
                         <span className="text-sm font-medium text-gray-700">シェア</span>
                       </div>
-                      <div className="text-2xl font-bold text-black">{selectedAnalytics.shares.toLocaleString()}</div>
+                      <div className="text-2xl font-bold text-black">
+                        {selectedAnalytics.shares.toLocaleString()}
+                      </div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-2 mb-2">
                         <EyeIcon size={16} className="text-purple-500" />
                         <span className="text-sm font-medium text-gray-700">閲覧数</span>
                       </div>
-                      <div className="text-2xl font-bold text-black">{selectedAnalytics.reach.toLocaleString()}</div>
+                      <div className="text-2xl font-bold text-black">
+                        {selectedAnalytics.reach.toLocaleString()}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -271,15 +317,21 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                         <h5 className="text-sm font-medium text-gray-800 mb-3">性別分析</h5>
                         <div className="grid grid-cols-3 gap-3">
                           <div className="text-center">
-                            <div className="text-lg font-bold text-blue-900">{selectedAnalytics.audience.gender.male}%</div>
+                            <div className="text-lg font-bold text-blue-900">
+                              {selectedAnalytics.audience.gender.male}%
+                            </div>
                             <div className="text-sm text-black">👨 男性</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-lg font-bold text-pink-900">{selectedAnalytics.audience.gender.female}%</div>
+                            <div className="text-lg font-bold text-pink-900">
+                              {selectedAnalytics.audience.gender.female}%
+                            </div>
                             <div className="text-sm text-black">👩 女性</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-lg font-bold text-purple-900">{selectedAnalytics.audience.gender.other}%</div>
+                            <div className="text-lg font-bold text-purple-900">
+                              {selectedAnalytics.audience.gender.other}%
+                            </div>
                             <div className="text-sm text-black">🏳️‍🌈 その他</div>
                           </div>
                         </div>
@@ -291,31 +343,45 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                         <div className="grid grid-cols-2 gap-3">
                           <div className="flex justify-between">
                             <span className="text-sm text-black">13-17歳:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.audience.age['13-17']}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.audience.age["13-17"]}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">18-24歳:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.audience.age['18-24']}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.audience.age["18-24"]}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">25-34歳:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.audience.age['25-34']}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.audience.age["25-34"]}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">35-44歳:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.audience.age['35-44']}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.audience.age["35-44"]}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">45-54歳:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.audience.age['45-54']}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.audience.age["45-54"]}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">55-64歳:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.audience.age['55-64']}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.audience.age["55-64"]}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">65+歳:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.audience.age['65+']}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.audience.age["65+"]}%
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -334,23 +400,33 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                         <div className="grid grid-cols-2 gap-3">
                           <div className="flex justify-between">
                             <span className="text-sm text-black">📱 投稿:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.reachSource.sources.posts}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.reachSource.sources.posts}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">👤 プロフィール:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.reachSource.sources.profile}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.reachSource.sources.profile}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">🔍 探索:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.reachSource.sources.explore}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.reachSource.sources.explore}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">🔎 検索:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.reachSource.sources.search}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.reachSource.sources.search}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">🌐 その他:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.reachSource.sources.other}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.reachSource.sources.other}%
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -361,11 +437,15 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
                         <div className="grid grid-cols-2 gap-3">
                           <div className="flex justify-between">
                             <span className="text-sm text-black">👥 フォロワー内:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.reachSource.followers.followers}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.reachSource.followers.followers}%
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-black">🌐 フォロワー外:</span>
-                            <span className="text-sm font-medium text-black">{selectedAnalytics.reachSource.followers.nonFollowers}%</span>
+                            <span className="text-sm font-medium text-black">
+                              {selectedAnalytics.reachSource.followers.nonFollowers}%
+                            </span>
                           </div>
                         </div>
                       </div>

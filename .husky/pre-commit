@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# エラーのみチェック（警告は無視）
+# エラーがある場合のみコミットをブロック
+npm run lint 2>&1 | grep -q "✖.*errors" && {
+  echo "❌ Lint errors found. Please fix them before committing."
+  exit 1
+} || {
+  echo "✅ No lint errors found (warnings are OK for now)."
+}
+
+# フォーマットチェック（オプション - コメントアウト可能）
+# npm run format:check

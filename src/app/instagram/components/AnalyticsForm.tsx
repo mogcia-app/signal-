@@ -1,32 +1,40 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Image from 'next/image';
-import { Heart, MessageCircle, Share, Eye, Save, UserPlus, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
-import { InputData } from './types';
+import React, { useState } from "react";
+import Image from "next/image";
+import {
+  Heart,
+  MessageCircle,
+  Share,
+  Eye,
+  Save,
+  UserPlus,
+  ThumbsUp,
+  ThumbsDown,
+  Edit3,
+} from "lucide-react";
+import { InputData } from "./types";
 
 interface AnalyticsFormProps {
   data: InputData;
   onChange: (data: InputData) => void;
-  onSave: (sentimentData?: { sentiment: 'satisfied' | 'dissatisfied' | null; memo: string }) => void;
+  onSave: (sentimentData?: {
+    sentiment: "satisfied" | "dissatisfied" | null;
+    memo: string;
+  }) => void;
   isLoading: boolean;
 }
 
-const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
-  data,
-  onChange,
-  onSave,
-  isLoading
-}) => {
-  const [sentiment, setSentiment] = useState<'satisfied' | 'dissatisfied' | null>(null);
-  const [memo, setMemo] = useState('');
+const AnalyticsForm: React.FC<AnalyticsFormProps> = ({ data, onChange, onSave, isLoading }) => {
+  const [sentiment, setSentiment] = useState<"satisfied" | "dissatisfied" | null>(null);
+  const [memo, setMemo] = useState("");
   const [isEditingMemo, setIsEditingMemo] = useState(false);
   // const [showAudienceAnalysis, setShowAudienceAnalysis] = useState(false);
   // const [showReachSourceAnalysis, setShowReachSourceAnalysis] = useState(false);
   const handleInputChange = (field: keyof InputData, value: string) => {
     onChange({
       ...data,
-      [field]: value
+      [field]: value,
     });
   };
 
@@ -69,7 +77,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
   //   });
   // };
 
-  const handleSentimentClick = (selectedSentiment: 'satisfied' | 'dissatisfied') => {
+  const handleSentimentClick = (selectedSentiment: "satisfied" | "dissatisfied") => {
     setSentiment(selectedSentiment);
   };
 
@@ -104,51 +112,44 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
       <div className="space-y-4">
         {/* 投稿情報手動入力 */}
         <div className="p-4 bg-white rounded-lg space-y-4">
-          
           <div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                タイトル
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">タイトル</label>
               <input
                 type="text"
                 value={data.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
+                onChange={(e) => handleInputChange("title", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                 placeholder="投稿のタイトルを入力"
               />
             </div>
             <div className="mt-2">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                内容
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">内容</label>
               <textarea
                 value={data.content}
-                onChange={(e) => handleInputChange('content', e.target.value)}
+                onChange={(e) => handleInputChange("content", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                 rows={3}
                 placeholder="投稿の内容を入力"
               />
             </div>
             <div className="mt-2">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                ハッシュタグ
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">ハッシュタグ</label>
               <input
                 type="text"
                 value={data.hashtags}
-                onChange={(e) => handleInputChange('hashtags', e.target.value)}
+                onChange={(e) => handleInputChange("hashtags", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
                 placeholder="#hashtag1 #hashtag2"
               />
             </div>
             <div className="mt-2">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                カテゴリ
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">カテゴリ</label>
               <select
                 value={data.category}
-                onChange={(e) => handleInputChange('category', e.target.value as 'reel' | 'feed' | 'story')}
+                onChange={(e) =>
+                  handleInputChange("category", e.target.value as "reel" | "feed" | "story")
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               >
                 <option value="feed">フィード</option>
@@ -157,9 +158,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               </select>
             </div>
             <div className="mt-2">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                サムネイル画像
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">サムネイル画像</label>
               <div className="relative">
                 <input
                   type="file"
@@ -169,20 +168,20 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                     if (file) {
                       // ファイルサイズチェック（2MB制限）
                       if (file.size > 2 * 1024 * 1024) {
-                        alert('画像ファイルは2MB以下にしてください。');
+                        alert("画像ファイルは2MB以下にしてください。");
                         return;
                       }
-                      
+
                       // 画像を圧縮してBase64に変換
-                      const canvas = document.createElement('canvas');
-                      const ctx = canvas.getContext('2d');
+                      const canvas = document.createElement("canvas");
+                      const ctx = canvas.getContext("2d");
                       const img = new window.Image();
-                      
+
                       img.onload = () => {
                         // 最大サイズを200x200に制限
                         const maxSize = 200;
                         let { width, height } = img;
-                        
+
                         if (width > height) {
                           if (width > maxSize) {
                             height = (height * maxSize) / width;
@@ -194,18 +193,18 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                             height = maxSize;
                           }
                         }
-                        
+
                         canvas.width = width;
                         canvas.height = height;
-                        
+
                         // 画像を描画
                         ctx?.drawImage(img, 0, 0, width, height);
-                        
+
                         // JPEG形式で圧縮（品質70%）
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        handleInputChange('thumbnail', compressedDataUrl);
+                        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+                        handleInputChange("thumbnail", compressedDataUrl);
                       };
-                      
+
                       img.src = URL.createObjectURL(file);
                     }
                   }}
@@ -213,9 +212,9 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                 />
                 {data.thumbnail && (
                   <div className="mt-2">
-                    <Image 
-                      src={data.thumbnail} 
-                      alt="サムネイルプレビュー" 
+                    <Image
+                      src={data.thumbnail}
+                      alt="サムネイルプレビュー"
                       width={80}
                       height={80}
                       className="w-20 h-20 object-cover rounded-lg border border-gray-200"
@@ -232,24 +231,20 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
           <h3 className="text-sm font-semibold text-gray-800 mb-3">投稿日時</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                投稿日
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">投稿日</label>
               <input
                 type="date"
                 value={data.publishedAt}
-                onChange={(e) => handleInputChange('publishedAt', e.target.value)}
+                onChange={(e) => handleInputChange("publishedAt", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                投稿時間
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">投稿時間</label>
               <input
                 type="time"
                 value={data.publishedTime}
-                onChange={(e) => handleInputChange('publishedTime', e.target.value)}
+                onChange={(e) => handleInputChange("publishedTime", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
               />
             </div>
@@ -260,107 +255,105 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
         <div className="p-4 border-t border-gray-200">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">反応データ</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
-              <Heart className="w-4 h-4 mr-2 text-red-500" />
-              いいね数
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={data.likes}
-              onChange={(e) => handleInputChange('likes', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
-              <MessageCircle className="w-4 h-4 mr-2 text-blue-500" />
-              コメント数
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={data.comments}
-              onChange={(e) => handleInputChange('comments', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
-              <Share className="w-4 h-4 mr-2 text-green-500" />
-              シェア数
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={data.shares}
-              onChange={(e) => handleInputChange('shares', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
-              <Share className="w-4 h-4 mr-2 text-orange-500" />
-              リポスト数
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={data.reposts}
-              onChange={(e) => handleInputChange('reposts', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
-              <Eye className="w-4 h-4 mr-2 text-purple-500" />
-              閲覧数
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={data.reach}
-              onChange={(e) => handleInputChange('reach', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
-              <Save className="w-4 h-4 mr-2 text-yellow-500" />
-              保存数
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={data.saves}
-              onChange={(e) => handleInputChange('saves', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
-              <UserPlus className="w-4 h-4 mr-2 text-indigo-500" />
-              フォロワー増加数
-            </label>
-            <input
-              type="number"
-              value={data.followerIncrease}
-              onChange={(e) => handleInputChange('followerIncrease', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-              placeholder="0"
-            />
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <Heart className="w-4 h-4 mr-2 text-red-500" />
+                いいね数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.likes}
+                onChange={(e) => handleInputChange("likes", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <MessageCircle className="w-4 h-4 mr-2 text-blue-500" />
+                コメント数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.comments}
+                onChange={(e) => handleInputChange("comments", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <Share className="w-4 h-4 mr-2 text-green-500" />
+                シェア数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.shares}
+                onChange={(e) => handleInputChange("shares", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <Share className="w-4 h-4 mr-2 text-orange-500" />
+                リポスト数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.reposts}
+                onChange={(e) => handleInputChange("reposts", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <Eye className="w-4 h-4 mr-2 text-purple-500" />
+                閲覧数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.reach}
+                onChange={(e) => handleInputChange("reach", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <Save className="w-4 h-4 mr-2 text-yellow-500" />
+                保存数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.saves}
+                onChange={(e) => handleInputChange("saves", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <UserPlus className="w-4 h-4 mr-2 text-indigo-500" />
+                フォロワー増加数
+              </label>
+              <input
+                type="number"
+                value={data.followerIncrease}
+                onChange={(e) => handleInputChange("followerIncrease", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
+                placeholder="0"
+              />
+            </div>
           </div>
         </div>
-      </div>
-
-
 
         {/* 感情分析セクション */}
         <div className="p-4 border-t border-gray-200">
@@ -369,30 +362,32 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
               <Heart className="h-5 w-5 text-pink-600 mr-2" />
               <h3 className="text-lg font-semibold text-black">分析結果の感想</h3>
             </div>
-            
+
             <div className="space-y-4">
               {/* 感情選択 */}
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">この分析結果に満足していますか？</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  この分析結果に満足していますか？
+                </p>
                 <div className="flex space-x-4">
                   <button
-                    onClick={() => handleSentimentClick('satisfied')}
+                    onClick={() => handleSentimentClick("satisfied")}
                     className={`flex items-center px-4 py-2 rounded-lg border-2 transition-all ${
-                      sentiment === 'satisfied'
-                        ? 'border-[#ff8a15] bg-orange-50 text-orange-700'
-                        : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50'
+                      sentiment === "satisfied"
+                        ? "border-[#ff8a15] bg-orange-50 text-orange-700"
+                        : "border-gray-200 hover:border-orange-300 hover:bg-orange-50"
                     }`}
                   >
                     <ThumbsUp className="h-4 w-4 mr-2" />
                     <span className="text-sm font-medium">満足</span>
                   </button>
-                  
+
                   <button
-                    onClick={() => handleSentimentClick('dissatisfied')}
+                    onClick={() => handleSentimentClick("dissatisfied")}
                     className={`flex items-center px-4 py-2 rounded-lg border-2 transition-all ${
-                      sentiment === 'dissatisfied'
-                        ? 'border-red-500 bg-red-50 text-red-700'
-                        : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
+                      sentiment === "dissatisfied"
+                        ? "border-red-500 bg-red-50 text-red-700"
+                        : "border-gray-200 hover:border-red-300 hover:bg-red-50"
                     }`}
                   >
                     <ThumbsDown className="h-4 w-4 mr-2" />
@@ -414,7 +409,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                     </button>
                   )}
                 </div>
-                
+
                 {isEditingMemo ? (
                   <div className="space-y-2">
                     <textarea
@@ -444,15 +439,17 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({
                   <div
                     onClick={() => setIsEditingMemo(true)}
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      memo 
-                        ? 'border-gray-300 bg-gray-50 hover:bg-gray-100' 
-                        : 'border-dashed border-gray-300 hover:border-gray-400'
+                      memo
+                        ? "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                        : "border-dashed border-gray-300 hover:border-gray-400"
                     }`}
                   >
                     {memo ? (
                       <p className="text-sm text-gray-700 whitespace-pre-wrap">{memo}</p>
                     ) : (
-                      <p className="text-sm text-black">改善点や気づいたことをメモしてください...</p>
+                      <p className="text-sm text-black">
+                        改善点や気づいたことをメモしてください...
+                      </p>
                     )}
                   </div>
                 )}

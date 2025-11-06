@@ -20,17 +20,21 @@
 ## 📊 確認方法
 
 ### GitHub Actions
+
 **https://github.com/mogcia-app/signal-/actions**
 
 最新のワークフローが成功していることを確認：
+
 - ✅ テスト実行
 - ✅ ビルド成功
 - ✅ Sentry Preventへのアップロード
 
 ### Sentry Prevent ダッシュボード
+
 **https://mogcia.sentry.io/prevent/signal/**
 
 テスト分析データが表示される：
+
 - テスト実行時間
 - 失敗率
 - 不安定なテストの特定
@@ -38,6 +42,7 @@
 ## 🚀 使い方
 
 ### ローカルでテスト実行
+
 ```bash
 # すべてのテストを実行
 npm test
@@ -50,21 +55,23 @@ npm run test:coverage
 ```
 
 ### テストの追加
+
 `src/__tests__/` に新しいテストファイルを作成：
 
 ```typescript
 // src/__tests__/utils.test.ts
-import { formatDate } from '@/utils/date';
+import { formatDate } from "@/utils/date";
 
-describe('formatDate', () => {
-  test('should format date correctly', () => {
-    const date = new Date('2024-01-01');
-    expect(formatDate(date)).toBe('2024年1月1日');
+describe("formatDate", () => {
+  test("should format date correctly", () => {
+    const date = new Date("2024-01-01");
+    expect(formatDate(date)).toBe("2024年1月1日");
   });
 });
 ```
 
 ### GitHubにプッシュすると自動実行
+
 1. 変更をコミット
 2. プッシュ
 3. GitHub Actionsが自動実行
@@ -74,6 +81,7 @@ describe('formatDate', () => {
 ## 📈 今後の活用方法
 
 ### 1. テストを追加してカバレッジ向上
+
 ```bash
 # 現在のテスト
 npm test
@@ -85,22 +93,27 @@ npm run test:coverage
 カバレッジが低い箇所を特定してテストを追加
 
 ### 2. 不安定なテストを特定
+
 Sentry Preventダッシュボードで：
+
 - フレーキーなテストを特定
 - 失敗率の高いテストを修正
 
 ### 3. CI/CDの品質向上
+
 - テストが失敗したらPRのマージをブロック
 - コードレビュー前にテスト結果を確認
 
 ## 🎯 次のステップ
 
 ### 即座にできること
+
 1. **テストを追加**: より多くの機能をテスト
 2. **カバレッジ向上**: 未テストのコードにテストを追加
 3. **継続的な改善**: テストが失敗したらすぐに修正
 
 ### 長期的な改善
+
 1. **E2Eテスト**: PlaywrightやCypressで統合テスト
 2. **パフォーマンステスト**: ページの読み込み速度をテスト
 3. **ビジュアルリグレッションテスト**: スクリーンショット比較
@@ -120,4 +133,3 @@ Sentry Preventダッシュボードで：
 - [x] テスト成功
 - [ ] 追加テストの作成（今後）
 - [ ] カバレッジ向上（今後）
-

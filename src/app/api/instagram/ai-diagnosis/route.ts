@@ -1,71 +1,70 @@
-import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import { buildAnalysisPrompt } from '../../../../utils/aiPromptBuilder';
-import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
-import { UserProfile } from '../../../../types/user';
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+import { buildAnalysisPrompt } from "../../../../utils/aiPromptBuilder";
+import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { UserProfile } from "../../../../types/user";
 
 // OpenAI APIの初期化
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null;
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export async function POST(request: NextRequest) {
   try {
     // 🔐 Firebase認証トークンからユーザーIDを取得
-    let userId = 'anonymous';
-    const authHeader = request.headers.get('authorization');
-    
-    if (authHeader?.startsWith('Bearer ')) {
+    let userId = "anonymous";
+    const authHeader = request.headers.get("authorization");
+
+    if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.substring(7);
       try {
         const decodedToken = await adminAuth.verifyIdToken(token);
         userId = decodedToken.uid;
-        console.log('✅ Authenticated user:', userId);
+        console.log("✅ Authenticated user:", userId);
       } catch (authError) {
-        console.warn('⚠️ Firebase認証エラー（匿名ユーザーとして処理）:', authError);
+        console.warn("⚠️ Firebase認証エラー（匿名ユーザーとして処理）:", authError);
       }
     }
 
     const body = await request.json();
-    
+
     // OpenAI APIキーのチェック
     if (!openai) {
-      return NextResponse.json(
-        { error: 'OpenAI APIキーが設定されていません' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "OpenAI APIキーが設定されていません" }, { status: 500 });
     }
 
     // ✅ ユーザープロファイルを取得
     let userProfile: UserProfile | null = null;
     try {
-      const userDoc = await adminDb.collection('users').doc(userId).get();
+      const userDoc = await adminDb.collection("users").doc(userId).get();
       if (userDoc.exists) {
         userProfile = userDoc.data() as UserProfile;
-        console.log('✅ ユーザープロファイル取得成功');
+        console.log("✅ ユーザープロファイル取得成功");
       }
     } catch (error) {
-      console.warn('⚠️ ユーザープロファイル取得エラー:', error);
+      console.warn("⚠️ ユーザープロファイル取得エラー:", error);
     }
 
     // ✅ 最新の運用計画を取得（PDCA - Plan）
     let latestPlan: Record<string, unknown> | null = null;
     try {
       const plansSnapshot = await adminDb
-        .collection('plans')
-        .where('userId', '==', userId)
-        .where('snsType', '==', 'instagram')
-        .where('status', '==', 'active')
-        .orderBy('createdAt', 'desc')
+        .collection("plans")
+        .where("userId", "==", userId)
+        .where("snsType", "==", "instagram")
+        .where("status", "==", "active")
+        .orderBy("createdAt", "desc")
         .limit(1)
         .get();
 
       if (!plansSnapshot.empty) {
         latestPlan = plansSnapshot.docs[0].data();
-        console.log('✅ 運用計画取得成功');
+        console.log("✅ 運用計画取得成功");
       }
     } catch (error) {
-      console.warn('⚠️ 運用計画取得エラー:', error);
+      console.warn("⚠️ 運用計画取得エラー:", error);
     }
 
     // ✅ 最近の投稿データを取得（PDCA - Do）
@@ -78,26 +77,26 @@ export async function POST(request: NextRequest) {
     }> = [];
     try {
       const postsSnapshot = await adminDb
-        .collection('posts')
-        .where('userId', '==', userId)
-        .where('platform', '==', 'instagram')
-        .orderBy('createdAt', 'desc')
+        .collection("posts")
+        .where("userId", "==", userId)
+        .where("platform", "==", "instagram")
+        .orderBy("createdAt", "desc")
         .limit(10)
         .get();
 
-      recentPosts = postsSnapshot.docs.map(doc => {
+      recentPosts = postsSnapshot.docs.map((doc) => {
         const data = doc.data();
         return {
-          title: data.title || '',
-          content: data.content || '',
+          title: data.title || "",
+          content: data.content || "",
           hashtags: data.hashtags || [],
           createdAt: data.createdAt?.toDate?.() || new Date(),
-          isAIGenerated: data.isAIGenerated || false
+          isAIGenerated: data.isAIGenerated || false,
         };
       });
       console.log(`✅ 投稿データ取得成功: ${recentPosts.length}件`);
     } catch (error) {
-      console.warn('⚠️ 投稿データ取得エラー:', error);
+      console.warn("⚠️ 投稿データ取得エラー:", error);
     }
 
     // ✅ 分析データを取得（PDCA - Check）
@@ -110,25 +109,25 @@ export async function POST(request: NextRequest) {
     }> = [];
     try {
       const analyticsSnapshot = await adminDb
-        .collection('analytics')
-        .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc')
+        .collection("analytics")
+        .where("userId", "==", userId)
+        .orderBy("createdAt", "desc")
         .limit(30)
         .get();
 
-      analyticsData = analyticsSnapshot.docs.map(doc => {
+      analyticsData = analyticsSnapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           reach: data.reach || 0,
           likes: data.likes || 0,
           comments: data.comments || 0,
           shares: data.shares || 0,
-          publishedTime: data.publishedTime || ''
+          publishedTime: data.publishedTime || "",
         };
       });
       console.log(`✅ 分析データ取得成功: ${analyticsData.length}件`);
     } catch (error) {
-      console.warn('⚠️ 分析データ取得エラー:', error);
+      console.warn("⚠️ 分析データ取得エラー:", error);
     }
 
     // AI診断処理
@@ -139,14 +138,14 @@ export async function POST(request: NextRequest) {
       analyticsData,
       body.planData
     );
-    
+
     return NextResponse.json(diagnosisResult);
   } catch (error) {
-    console.error('AI診断エラー:', error);
+    console.error("AI診断エラー:", error);
     return NextResponse.json(
-      { 
-        error: 'AI診断処理中にエラーが発生しました',
-        details: error instanceof Error ? error.message : 'Unknown error'
+      {
+        error: "AI診断処理中にエラーが発生しました",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
@@ -157,25 +156,37 @@ export async function POST(request: NextRequest) {
 async function runAIDiagnosis(
   userProfile: UserProfile | null,
   latestPlan: Record<string, unknown> | null,
-  recentPosts: Array<{ title: string; content: string; hashtags: string[]; createdAt: Date; isAIGenerated?: boolean }>,
-  analyticsData: Array<{ reach: number; likes: number; comments: number; shares: number; publishedTime?: string }>,
+  recentPosts: Array<{
+    title: string;
+    content: string;
+    hashtags: string[];
+    createdAt: Date;
+    isAIGenerated?: boolean;
+  }>,
+  analyticsData: Array<{
+    reach: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    publishedTime?: string;
+  }>,
   planData?: unknown
 ) {
   if (!openai) {
-    throw new Error('OpenAI API not initialized');
+    throw new Error("OpenAI API not initialized");
   }
 
   // ✅ プロンプトビルダーを使用（PDCA - Check）
   let systemPrompt: string;
-  
+
   if (userProfile) {
-    systemPrompt = buildAnalysisPrompt(userProfile, 'instagram');
-    
+    systemPrompt = buildAnalysisPrompt(userProfile, "instagram");
+
     // 運用計画の参照
     if (latestPlan) {
-      const planType = (latestPlan.planType as string) || 'AI生成';
-      const strategy = (latestPlan.generatedStrategy as string) || '';
-      
+      const planType = (latestPlan.planType as string) || "AI生成";
+      const strategy = (latestPlan.generatedStrategy as string) || "";
+
       systemPrompt += `
 
 【運用計画の参照（PDCA - Plan）】
@@ -187,13 +198,16 @@ async function runAIDiagnosis(
 
     // 投稿データの参照
     if (recentPosts.length > 0) {
-      const aiGeneratedCount = recentPosts.filter(p => p.isAIGenerated).length;
+      const aiGeneratedCount = recentPosts.filter((p) => p.isAIGenerated).length;
       systemPrompt += `
 
 【投稿データの参照（PDCA - Do）】
 - 総投稿数: ${recentPosts.length}件
 - AI生成投稿: ${aiGeneratedCount}件
-- 最近の投稿テーマ: ${recentPosts.slice(0, 5).map(p => p.title).join(', ')}
+- 最近の投稿テーマ: ${recentPosts
+        .slice(0, 5)
+        .map((p) => p.title)
+        .join(", ")}
 
 投稿内容の質と運用計画との整合性を評価してください。`;
     }
@@ -201,9 +215,13 @@ async function runAIDiagnosis(
     // 分析データの参照
     if (analyticsData.length > 0) {
       const totalReach = analyticsData.reduce((sum, a) => sum + a.reach, 0);
-      const totalEngagement = analyticsData.reduce((sum, a) => sum + a.likes + a.comments + a.shares, 0);
-      const avgEngagement = totalReach > 0 ? (totalEngagement / totalReach * 100).toFixed(2) : '0';
-      
+      const totalEngagement = analyticsData.reduce(
+        (sum, a) => sum + a.likes + a.comments + a.shares,
+        0
+      );
+      const avgEngagement =
+        totalReach > 0 ? ((totalEngagement / totalReach) * 100).toFixed(2) : "0";
+
       systemPrompt += `
 
 【分析データの参照（PDCA - Check）】
@@ -241,13 +259,13 @@ async function runAIDiagnosis(
     model: "gpt-4o-mini", // コスト削減のためgpt-4o-miniに変更
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
+      { role: "user", content: userPrompt },
     ],
     temperature: 0.7,
     max_tokens: 2000,
   });
 
-  const aiResponse = chatCompletion.choices[0].message.content || '';
+  const aiResponse = chatCompletion.choices[0].message.content || "";
 
   return {
     success: true,
@@ -256,7 +274,7 @@ async function runAIDiagnosis(
       postsAnalyzed: recentPosts.length,
       analyticsDataPoints: analyticsData.length,
       hasPlan: latestPlan ? true : false,
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   };
 }

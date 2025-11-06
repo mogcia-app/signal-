@@ -6,13 +6,13 @@ export interface AudienceData {
     other: number; // その他の割合（%）
   };
   age: {
-    '13-17': number; // 13-17歳の割合（%）
-    '18-24': number; // 18-24歳の割合（%）
-    '25-34': number; // 25-34歳の割合（%）
-    '35-44': number; // 35-44歳の割合（%）
-    '45-54': number; // 45-54歳の割合（%）
-    '55-64': number; // 55-64歳の割合（%）
-    '65+': number; // 65歳以上の割合（%）
+    "13-17": number; // 13-17歳の割合（%）
+    "18-24": number; // 18-24歳の割合（%）
+    "25-34": number; // 25-34歳の割合（%）
+    "35-44": number; // 35-44歳の割合（%）
+    "45-54": number; // 45-54歳の割合（%）
+    "55-64": number; // 55-64歳の割合（%）
+    "65+": number; // 65歳以上の割合（%）
   };
 }
 
@@ -50,7 +50,7 @@ export interface AnalyticsData {
   content?: string;
   hashtags?: string[];
   thumbnail?: string;
-  category?: 'reel' | 'feed' | 'story';
+  category?: "reel" | "feed" | "story";
   audience?: AudienceData;
   reachSource?: ReachSourceData;
   createdAt: Date;
@@ -119,7 +119,7 @@ export interface InputData {
   content: string;
   hashtags: string;
   thumbnail: string;
-  category: 'reel' | 'feed' | 'story';
+  category: "reel" | "feed" | "story";
   // フィード専用フィールド
   reachFollowerPercent: string; // 閲覧数とフォロワー%
   interactionCount: string; // インタラクション数
@@ -153,13 +153,13 @@ export interface InputData {
       other: string;
     };
     age: {
-      '13-17': string;
-      '18-24': string;
-      '25-34': string;
-      '35-44': string;
-      '45-54': string;
-      '55-64': string;
-      '65+': string;
+      "13-17": string;
+      "18-24": string;
+      "25-34": string;
+      "35-44": string;
+      "45-54": string;
+      "55-64": string;
+      "65+": string;
     };
   };
   reachSource: {

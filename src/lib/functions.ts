@@ -7,31 +7,31 @@
 export const callHelloWorld = async () => {
   try {
     // 一時的にNext.js API routesを使用
-    const baseUrl = '/api';
-    
+    const baseUrl = "/api";
+
     const response = await fetch(`${baseUrl}/helloWorld`);
     const data = await response.text();
     return data;
   } catch (error) {
-    console.error('Error calling helloWorld:', error);
+    console.error("Error calling helloWorld:", error);
     throw error;
   }
 };
 
 // API 関数を呼び出す
-export const callApi = async (method: 'GET' | 'POST' = 'GET', body?: Record<string, unknown>) => {
+export const callApi = async (method: "GET" | "POST" = "GET", body?: Record<string, unknown>) => {
   try {
     // 一時的にNext.js API routesを使用
-    const baseUrl = '/api';
-    
+    const baseUrl = "/api";
+
     const options: RequestInit = {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     };
 
-    if (body && method === 'POST') {
+    if (body && method === "POST") {
       options.body = JSON.stringify(body);
     }
 
@@ -39,7 +39,7 @@ export const callApi = async (method: 'GET' | 'POST' = 'GET', body?: Record<stri
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error calling api:', error);
+    console.error("Error calling api:", error);
     throw error;
   }
 };

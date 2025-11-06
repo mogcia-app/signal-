@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAdminDb } from '../../../../../lib/firebase-admin';
+import { NextRequest, NextResponse } from "next/server";
+import { getAdminDb } from "../../../../../lib/firebase-admin";
 
 interface UserNotificationAction {
   id: string;
@@ -15,31 +15,28 @@ interface UserNotificationAction {
 // モックデータ（実際の実装ではFirestoreのuserNotificationsコレクションを使用）
 // const mockUserNotifications: UserNotificationAction[] = [];
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: notificationId } = await params;
     const body = await request.json();
-    const { action, userId = 'current-user' } = body;
+    const { action, userId = "current-user" } = body;
 
     if (!action) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'アクションが指定されていません' 
+        {
+          success: false,
+          error: "アクションが指定されていません",
         },
         { status: 400 }
       );
     }
 
-    const validActions = ['read', 'star', 'archive'];
+    const validActions = ["read", "star", "archive"];
     if (!validActions.includes(action)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: '無効なアクションです' 
+        {
+          success: false,
+          error: "無効なアクションです",
         },
         { status: 400 }
       );
@@ -47,7 +44,9 @@ export async function POST(
 
     // FirestoreのuserNotificationsコレクションを使用（Admin SDK）
     const db = getAdminDb();
-    const userNotificationRef = db.collection('userNotifications').doc(`${userId}_${notificationId}`);
+    const userNotificationRef = db
+      .collection("userNotifications")
+      .doc(`${userId}_${notificationId}`);
     const userNotificationSnap = await userNotificationRef.get();
 
     let userNotification: UserNotificationAction;
@@ -64,19 +63,19 @@ export async function POST(
         starred: false,
         archived: false,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
     }
 
     // アクションに応じて状態を更新
     switch (action) {
-      case 'read':
+      case "read":
         userNotification.read = true;
         break;
-      case 'star':
+      case "star":
         userNotification.starred = !userNotification.starred;
         break;
-      case 'archive':
+      case "archive":
         userNotification.archived = true;
         break;
     }
@@ -89,33 +88,31 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: userNotification,
-      message: getActionMessage(action, userNotification)
+      message: getActionMessage(action, userNotification),
     });
-
   } catch (error) {
-    console.error('通知アクションエラー:', error);
+    console.error("通知アクションエラー:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: '通知アクションの実行に失敗しました',
-        details: error instanceof Error ? error.message : 'Unknown error'
+      {
+        success: false,
+        error: "通知アクションの実行に失敗しました",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
   }
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: notificationId } = await params;
-    const userId = request.nextUrl.searchParams.get('userId') || 'current-user';
+    const userId = request.nextUrl.searchParams.get("userId") || "current-user";
 
     // Firestoreから取得（Admin SDK）
     const db = getAdminDb();
-    const userNotificationRef = db.collection('userNotifications').doc(`${userId}_${notificationId}`);
+    const userNotificationRef = db
+      .collection("userNotifications")
+      .doc(`${userId}_${notificationId}`);
     const userNotificationSnap = await userNotificationRef.get();
 
     if (!userNotificationSnap.exists) {
@@ -130,8 +127,8 @@ export async function GET(
           starred: false,
           archived: false,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
+          updatedAt: new Date().toISOString(),
+        },
       });
     }
 
@@ -139,16 +136,15 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: userNotification
+      data: userNotification,
     });
-
   } catch (error) {
-    console.error('通知アクション取得エラー:', error);
+    console.error("通知アクション取得エラー:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: '通知アクションの取得に失敗しました',
-        details: error instanceof Error ? error.message : 'Unknown error'
+      {
+        success: false,
+        error: "通知アクションの取得に失敗しました",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
@@ -157,13 +153,13 @@ export async function GET(
 
 function getActionMessage(action: string, userNotification: UserNotificationAction): string {
   switch (action) {
-    case 'read':
-      return '通知を既読にしました';
-    case 'star':
-      return userNotification.starred ? 'お気に入りに追加しました' : 'お気に入りを解除しました';
-    case 'archive':
-      return '通知をアーカイブしました';
+    case "read":
+      return "通知を既読にしました";
+    case "star":
+      return userNotification.starred ? "お気に入りに追加しました" : "お気に入りを解除しました";
+    case "archive":
+      return "通知をアーカイブしました";
     default:
-      return '通知の状態を更新しました';
+      return "通知の状態を更新しました";
   }
 }

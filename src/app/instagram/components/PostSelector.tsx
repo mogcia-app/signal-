@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Image from 'next/image';
-import { Search, Filter, Calendar, Clock, Eye } from 'lucide-react';
+import React, { useState } from "react";
+import Image from "next/image";
+import { Search, Filter, Calendar, Clock, Eye } from "lucide-react";
 
 interface PostSelectorProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,23 +19,31 @@ const PostSelector: React.FC<PostSelectorProps> = ({
   selectedPostId,
   onPostSelect,
   onPostIdSelect,
-  isLoading = false
+  isLoading = false,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedPostType, setSelectedPostType] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedPostType, setSelectedPostType] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   // フィルタリング
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = !searchTerm || 
-      (post.title?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (post.content?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (post.hashtags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())) || false);
-    
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch =
+      !searchTerm ||
+      post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      false ||
+      post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      false ||
+      post.hashtags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      false;
+
     const matchesStatus = !selectedStatus || post.status === selectedStatus;
-    const matchesPostType = !selectedPostType || post.postType === selectedPostType || post.type === selectedPostType || post.category === selectedPostType;
-    
+    const matchesPostType =
+      !selectedPostType ||
+      post.postType === selectedPostType ||
+      post.type === selectedPostType ||
+      post.category === selectedPostType;
+
     return matchesSearch && matchesStatus && matchesPostType;
   });
 
@@ -47,21 +55,31 @@ const PostSelector: React.FC<PostSelectorProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return 'bg-orange-100 text-orange-800';
-      case 'created': return 'bg-orange-100 text-orange-800';
-      case 'scheduled': return 'bg-orange-100 text-orange-800';
-      case 'draft': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-orange-100 text-orange-800';
+      case "published":
+        return "bg-orange-100 text-orange-800";
+      case "created":
+        return "bg-orange-100 text-orange-800";
+      case "scheduled":
+        return "bg-orange-100 text-orange-800";
+      case "draft":
+        return "bg-orange-100 text-orange-800";
+      default:
+        return "bg-orange-100 text-orange-800";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'published': return '公開済み';
-      case 'created': return '作成済み';
-      case 'scheduled': return '予約済み';
-      case 'draft': return '下書き';
-      default: return status;
+      case "published":
+        return "公開済み";
+      case "created":
+        return "作成済み";
+      case "scheduled":
+        return "予約済み";
+      case "draft":
+        return "下書き";
+      default:
+        return status;
     }
   };
 
@@ -69,10 +87,14 @@ const PostSelector: React.FC<PostSelectorProps> = ({
   const getPostTypeLabel = (post: any) => {
     const type = post.postType || post.type || post.category;
     switch (type) {
-      case 'feed': return 'フィード';
-      case 'reel': return 'リール';
-      case 'story': return 'ストーリー';
-      default: return type || 'フィード';
+      case "feed":
+        return "フィード";
+      case "reel":
+        return "リール";
+      case "story":
+        return "ストーリー";
+      default:
+        return type || "フィード";
     }
   };
 
@@ -104,7 +126,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
           />
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm('')}
+              onClick={() => setSearchTerm("")}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-black hover:text-black"
             >
               <span className="text-lg">×</span>
@@ -163,15 +185,15 @@ const PostSelector: React.FC<PostSelectorProps> = ({
             {filteredPosts.map((post) => {
               const isSelected = selectedPostId === post.id;
               const hasAnalytics = !!post.analytics;
-              
+
               return (
                 <div
                   key={post.id}
                   onClick={() => handlePostSelect(post)}
                   className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
-                    isSelected 
-                      ? 'border-[#ff8a15] bg-orange-50' 
-                      : 'border-gray-200 hover:border-gray-300'
+                    isSelected
+                      ? "border-[#ff8a15] bg-orange-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   <div className="flex items-start space-x-3">
@@ -180,16 +202,20 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                       <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
                         {post.imageUrl || post.imageData ? (
                           <Image
-                            src={post.imageUrl || post.imageData || ''}
+                            src={post.imageUrl || post.imageData || ""}
                             alt="投稿画像"
                             width={48}
                             height={48}
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                        <div className="text-black text-lg">
-                          {(post.postType || post.type || post.category) === 'reel' ? '🎬' : (post.postType || post.type || post.category) === 'story' ? '📸' : '📷'}
-                        </div>
+                          <div className="text-black text-lg">
+                            {(post.postType || post.type || post.category) === "reel"
+                              ? "🎬"
+                              : (post.postType || post.type || post.category) === "story"
+                                ? "📸"
+                                : "📷"}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -198,10 +224,12 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="text-sm font-medium text-black truncate">
-                          {post.title || 'タイトルなし'}
+                          {post.title || "タイトルなし"}
                         </h4>
                         <div className="flex items-center space-x-1">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}
+                          >
                             {getStatusLabel(post.status)}
                           </span>
                           {hasAnalytics && (
@@ -211,11 +239,11 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                           )}
                         </div>
                       </div>
-                      
+
                       <p className="text-xs text-black line-clamp-2 mb-2">
-                        {post.content || '内容なし'}
+                        {post.content || "内容なし"}
                       </p>
-                      
+
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3 text-xs text-black">
                           <span className="flex items-center">
@@ -223,13 +251,15 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                           </span>
                           <span className="flex items-center">
                             <Calendar size={12} className="mr-1" />
-                            {post.createdAt ? (
-                              post.createdAt instanceof Date ? 
-                                post.createdAt.toLocaleDateString('ja-JP') :
-                                (typeof post.createdAt === 'object' && post.createdAt && 'toDate' in post.createdAt) ?
-                                  post.createdAt.toDate().toLocaleDateString('ja-JP') :
-                                  new Date(post.createdAt as string).toLocaleDateString('ja-JP')
-                            ) : '日付不明'}
+                            {post.createdAt
+                              ? post.createdAt instanceof Date
+                                ? post.createdAt.toLocaleDateString("ja-JP")
+                                : typeof post.createdAt === "object" &&
+                                    post.createdAt &&
+                                    "toDate" in post.createdAt
+                                  ? post.createdAt.toDate().toLocaleDateString("ja-JP")
+                                  : new Date(post.createdAt as string).toLocaleDateString("ja-JP")
+                              : "日付不明"}
                           </span>
                           {post.scheduledTime && (
                             <span className="flex items-center">
@@ -238,7 +268,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                             </span>
                           )}
                         </div>
-                        
+
                         {hasAnalytics && (
                           <div className="flex items-center space-x-2 text-xs text-black">
                             <span className="flex items-center">
@@ -248,7 +278,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                           </div>
                         )}
                       </div>
-                      
+
                       {/* ハッシュタグ */}
                       {post.hashtags && post.hashtags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -258,9 +288,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                             </span>
                           ))}
                           {post.hashtags.length > 3 && (
-                            <span className="text-xs text-black">
-                              +{post.hashtags.length - 3}
-                            </span>
+                            <span className="text-xs text-black">+{post.hashtags.length - 3}</span>
                           )}
                         </div>
                       )}
@@ -279,7 +307,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
           <button
             onClick={() => {
               onPostSelect(null);
-              onPostIdSelect('');
+              onPostIdSelect("");
             }}
             className="w-full px-4 py-2 text-sm text-black hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
           >

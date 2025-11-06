@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Heart, MessageSquare, ThumbsUp, ThumbsDown, Edit3, Save } from 'lucide-react';
+import React, { useState } from "react";
+import { Heart, MessageSquare, ThumbsUp, ThumbsDown, Edit3, Save } from "lucide-react";
 
 interface SentimentAnalysisProps {
-  onSentimentChange?: (sentiment: 'satisfied' | 'dissatisfied' | null, memo: string) => void;
+  onSentimentChange?: (sentiment: "satisfied" | "dissatisfied" | null, memo: string) => void;
 }
 
 export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalysisProps) {
-  const [sentiment, setSentiment] = useState<'satisfied' | 'dissatisfied' | null>(null);
-  const [memo, setMemo] = useState('');
+  const [sentiment, setSentiment] = useState<"satisfied" | "dissatisfied" | null>(null);
+  const [memo, setMemo] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleSentimentClick = (selectedSentiment: 'satisfied' | 'dissatisfied') => {
+  const handleSentimentClick = (selectedSentiment: "satisfied" | "dissatisfied") => {
     setSentiment(selectedSentiment);
     onSentimentChange?.(selectedSentiment, memo);
   };
@@ -33,30 +33,30 @@ export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalys
         <Heart className="h-5 w-5 text-pink-600 mr-2" />
         <h3 className="text-lg font-semibold text-black">分析結果の感想</h3>
       </div>
-      
+
       <div className="space-y-4">
         {/* 感情選択 */}
         <div>
           <p className="text-sm font-medium text-gray-700 mb-3">この分析結果に満足していますか？</p>
           <div className="flex space-x-4">
             <button
-              onClick={() => handleSentimentClick('satisfied')}
+              onClick={() => handleSentimentClick("satisfied")}
               className={`flex items-center px-4 py-2 rounded-lg border-2 transition-all ${
-                sentiment === 'satisfied'
-                  ? 'border-green-500 bg-green-50 text-green-700'
-                  : 'border-gray-200 hover:border-green-300 hover:bg-green-50'
+                sentiment === "satisfied"
+                  ? "border-green-500 bg-green-50 text-green-700"
+                  : "border-gray-200 hover:border-green-300 hover:bg-green-50"
               }`}
             >
               <ThumbsUp className="h-4 w-4 mr-2" />
               <span className="text-sm font-medium">満足</span>
             </button>
-            
+
             <button
-              onClick={() => handleSentimentClick('dissatisfied')}
+              onClick={() => handleSentimentClick("dissatisfied")}
               className={`flex items-center px-4 py-2 rounded-lg border-2 transition-all ${
-                sentiment === 'dissatisfied'
-                  ? 'border-red-500 bg-red-50 text-red-700'
-                  : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
+                sentiment === "dissatisfied"
+                  ? "border-red-500 bg-red-50 text-red-700"
+                  : "border-gray-200 hover:border-red-300 hover:bg-red-50"
               }`}
             >
               <ThumbsDown className="h-4 w-4 mr-2" />
@@ -78,7 +78,7 @@ export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalys
               </button>
             )}
           </div>
-          
+
           {isEditing ? (
             <div className="space-y-2">
               <textarea
@@ -108,9 +108,9 @@ export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalys
             <div
               onClick={() => setIsEditing(true)}
               className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                memo 
-                  ? 'border-gray-300 bg-gray-50 hover:bg-gray-100' 
-                  : 'border-dashed border-gray-300 hover:border-gray-400'
+                memo
+                  ? "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                  : "border-dashed border-gray-300 hover:border-gray-400"
               }`}
             >
               {memo ? (
@@ -128,8 +128,8 @@ export default function SentimentAnalysis({ onSentimentChange }: SentimentAnalys
             <div className="flex items-center text-sm text-black">
               <MessageSquare className="h-4 w-4 mr-2" />
               <span>
-                {sentiment === 'satisfied' ? '満足' : '不満'}として記録されました
-                {memo && ' - メモも保存済み'}
+                {sentiment === "satisfied" ? "満足" : "不満"}として記録されました
+                {memo && " - メモも保存済み"}
               </span>
             </div>
           </div>

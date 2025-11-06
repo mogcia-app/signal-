@@ -1,12 +1,12 @@
-import React from 'react';
-import { PieChart } from 'lucide-react';
-import RechartsAreaChart from '../../../../components/RechartsAreaChart';
+import React from "react";
+import { PieChart } from "lucide-react";
+import RechartsAreaChart from "../../../../components/RechartsAreaChart";
 
 interface VisualizationSectionProps {
   dailyScores: Record<string, unknown> | null;
-  activeTab: 'weekly' | 'monthly';
+  activeTab: "weekly" | "monthly";
   reportSummary: {
-    period: 'weekly' | 'monthly';
+    period: "weekly" | "monthly";
     date: string;
     postTypeStats: {
       type: string;
@@ -22,10 +22,9 @@ interface VisualizationSectionProps {
 export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
   dailyScores,
   activeTab,
-  reportSummary
+  reportSummary,
 }) => {
   const postTypeStats = reportSummary?.postTypeStats || [];
-
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
@@ -34,7 +33,7 @@ export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
         <RechartsAreaChart
           data={Array.isArray(dailyScores?.dailyScores) ? dailyScores.dailyScores : []}
           title="アカウントスコア推移"
-          subtitle={`${activeTab === 'weekly' ? '週次' : '月次'}のスコア変動`}
+          subtitle={`${activeTab === "weekly" ? "週次" : "月次"}のスコア変動`}
         />
       </div>
 
@@ -60,7 +59,7 @@ export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
               </div>
               <div className="flex items-center space-x-3">
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className={`h-full bg-gradient-to-r ${color} rounded-full transition-all duration-500`}
                     style={{ width: `${percentage}%` }}
                   />

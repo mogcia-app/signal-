@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 
 interface PostFiltersProps {
   searchTerm: string;
@@ -33,7 +33,7 @@ const PostFilters: React.FC<PostFiltersProps> = ({
   showFilters,
   setShowFilters,
   onRefresh,
-  filteredPostsCount
+  filteredPostsCount,
 }) => {
   return (
     <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6 mb-6">
@@ -41,8 +41,18 @@ const PostFilters: React.FC<PostFiltersProps> = ({
         {/* 検索バー */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="h-5 w-5 text-black"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </div>
           <input
@@ -54,11 +64,16 @@ const PostFilters: React.FC<PostFiltersProps> = ({
           />
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm('')}
+              onClick={() => setSearchTerm("")}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-black hover:text-black"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           )}
@@ -73,8 +88,18 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <svg className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg
+                  className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
                 <span className="text-sm font-medium text-gray-700">フィルター</span>
                 {(selectedStatus || selectedPostType || dateFrom || dateTo) && (
@@ -83,17 +108,27 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                   </span>
                 )}
               </button>
-              
+
               {/* アクティブフィルター表示 */}
               <div className="flex items-center space-x-2">
                 {selectedStatus && (
                   <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                    {selectedStatus === 'created' ? '作成済み' : selectedStatus === 'analyzed' ? '分析済み' : selectedStatus}
+                    {selectedStatus === "created"
+                      ? "作成済み"
+                      : selectedStatus === "analyzed"
+                        ? "分析済み"
+                        : selectedStatus}
                   </span>
                 )}
                 {selectedPostType && (
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {selectedPostType === 'feed' ? '📸フィード' : selectedPostType === 'reel' ? '🎬リール' : selectedPostType === 'story' ? '📱ストーリーズ' : selectedPostType}
+                    {selectedPostType === "feed"
+                      ? "📸フィード"
+                      : selectedPostType === "reel"
+                        ? "🎬リール"
+                        : selectedPostType === "story"
+                          ? "📱ストーリーズ"
+                          : selectedPostType}
                   </span>
                 )}
                 {(dateFrom || dateTo) && (
@@ -124,17 +159,17 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                   <span className="text-sm font-medium text-gray-700">ステータス</span>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { value: '', label: 'すべて' },
-                      { value: 'created', label: '作成済み' },
-                      { value: 'analyzed', label: '分析済み' }
+                      { value: "", label: "すべて" },
+                      { value: "created", label: "作成済み" },
+                      { value: "analyzed", label: "分析済み" },
                     ].map((option) => (
                       <button
                         key={option.value}
                         onClick={() => setSelectedStatus(option.value)}
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          selectedStatus === option.value 
-                            ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                            : 'bg-white text-black border border-gray-200 hover:bg-gray-50'
+                          selectedStatus === option.value
+                            ? "bg-purple-100 text-purple-700 border border-purple-200"
+                            : "bg-white text-black border border-gray-200 hover:bg-gray-50"
                         }`}
                       >
                         {option.label}
@@ -148,18 +183,18 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                   <span className="text-sm font-medium text-gray-700">タイプ</span>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { value: '', label: 'すべて', icon: '📝' },
-                      { value: 'feed', label: 'フィード', icon: '📸' },
-                      { value: 'reel', label: 'リール', icon: '🎬' },
-                      { value: 'story', label: 'ストーリーズ', icon: '📱' }
+                      { value: "", label: "すべて", icon: "📝" },
+                      { value: "feed", label: "フィード", icon: "📸" },
+                      { value: "reel", label: "リール", icon: "🎬" },
+                      { value: "story", label: "ストーリーズ", icon: "📱" },
                     ].map((option) => (
                       <button
                         key={option.value}
                         onClick={() => setSelectedPostType(option.value)}
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
-                          selectedPostType === option.value 
-                            ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                            : 'bg-white text-black border border-gray-200 hover:bg-gray-50'
+                          selectedPostType === option.value
+                            ? "bg-blue-100 text-blue-700 border border-blue-200"
+                            : "bg-white text-black border border-gray-200 hover:bg-gray-50"
                         }`}
                       >
                         <span>{option.icon}</span>
@@ -192,8 +227,8 @@ const PostFilters: React.FC<PostFiltersProps> = ({
                   {(dateFrom || dateTo) && (
                     <button
                       onClick={() => {
-                        setDateFrom('');
-                        setDateTo('');
+                        setDateFrom("");
+                        setDateTo("");
                       }}
                       className="px-3 py-2 text-sm text-black hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                     >

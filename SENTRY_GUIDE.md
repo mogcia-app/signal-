@@ -5,6 +5,7 @@
 ### 主要な画面
 
 #### 1. エラー一覧（Issues）
+
 **URL**: `mogcia.sentry.io/issues/`
 
 - **確認できること**:
@@ -18,6 +19,7 @@
   - 「割り当て」でチームメンバーにアサイン
 
 #### 2. ダッシュボード（Dashboard）
+
 **URL**: `mogcia.sentry.io/dashboard/default-overview/`
 
 - **確認できること**:
@@ -32,6 +34,7 @@
   - フィルターで特定のプロジェクトや環境を絞り込む
 
 #### 3. 探索（Explore / Discover）
+
 **URL**: `mogcia.sentry.io/discover/`
 
 - **確認できること**:
@@ -40,6 +43,7 @@
   - 特定の条件でフィルタリング
 
 #### 4. 設定（Settings）
+
 **URL**: `mogcia.sentry.io/settings/`
 
 - **設定項目**:
@@ -116,20 +120,25 @@ Actions:
 ### エラーに状態を付ける
 
 #### 状態の種類
+
 - **Unresolved（未解決）**: 修正が必要なエラー
 - **Resolved（解決済み）**: 修正が完了したエラー
 - **Ignored（無視）**: 無視するエラー
 
 #### 状態の変更方法
+
 エラーをクリック → 右上の「Resolve」ボタン
 
 ### エラーに割り当てる
+
 エラーの詳細ページで：
+
 1. 「Assign」をクリック
 2. 担当者を選択
 3. コメントで状況を共有
 
 ### エラーを無視する
+
 1. エラーの詳細ページで「Ignore」をクリック
 2. 理由を選択：
    - "This error is coming from browser extensions"
@@ -168,23 +177,29 @@ Actions:
 ### よくあるエラーパターン
 
 #### 1. ReferenceError
+
 ```
 undefinedFunction is not defined
 ```
+
 **原因**: 関数が定義されていない
 **対処**: 関数名のタイポやインポート漏れを確認
 
 #### 2. TypeError
+
 ```
 Cannot read properties of null
 ```
+
 **原因**: nullやundefinedのプロパティにアクセス
 **対処**: nullチェックを追加
 
 #### 3. Network Error
+
 ```
 Failed to fetch
 ```
+
 **原因**: APIコールが失敗
 **対処**: ネットワーク接続、APIの状態を確認
 
@@ -193,19 +208,23 @@ Failed to fetch
 ## 💡 便利な機能
 
 ### 1. リリース追跡
+
 - デプロイ後にエラーが増えたか確認
 - どのリリースでエラーが発生したか追跡
 
 ### 2. ユーザー報告
+
 - ユーザーがエラーを報告する機能
 - フィードバック付きでエラーを報告
 
 ### 3. パフォーマンス監視
+
 - ページの読み込み速度
 - スロークエリの検出
 - トランザクションの分析
 
 ### 4. セッションリプレイ
+
 - ユーザーの操作を記録
 - エラー発生時の状況を映像で確認
 
@@ -214,15 +233,18 @@ Failed to fetch
 ## 🔍 検索・フィルタリング
 
 ### よく使うフィルター
+
 - **is:unresolved** - 未解決のエラーのみ
 - **environment:production** - 本番環境のみ
 - **level:error** - エラーレベルのみ
 - **has:user** - ユーザー情報があるもののみ
 
 ### 検索例
+
 ```
 is:unresolved environment:production level:error
 ```
+
 → 本番環境の未解決のエラーのみ表示
 
 ---
@@ -230,11 +252,13 @@ is:unresolved environment:production level:error
 ## 📊 レポート機能
 
 ### 週次レポート
+
 1. Settings → Projects → Reports
 2. 自動で週次レポートをメール送信
 3. エラー数の推移、解決率などを確認
 
 ### ダッシュボードのカスタマイズ
+
 1. ダッシュボードで「Edit Dashboard」
 2. 必要なウィジェットを追加
 3. 独自のメトリクスを表示
@@ -244,6 +268,7 @@ is:unresolved environment:production level:error
 ## 🎓 実践的なチュートリアル
 
 ### シナリオ1: 新規エラーが発生した
+
 1. **Slackやメールで通知を受ける**
 2. **Sentryダッシュボードにアクセス**
 3. **エラーの詳細を確認** → スタックトレース、ユーザー情報
@@ -252,12 +277,14 @@ is:unresolved environment:production level:error
 6. **Resolveボタンでマーク**
 
 ### シナリオ2: ユーザーから「エラーが出た」と報告を受けた
+
 1. **SentryでそのユーザーのIDを検索**
 2. **過去のエラーを確認** → 同じ問題が過去にも発生していないか
 3. **新しいエラーなら詳細を確認**
 4. **フィードバックを送ったユーザーに連絡**
 
 ### シナリオ3: デプロイ後にエラーが急増
+
 1. **ダッシュボードでリリースごとのエラー数を確認**
 2. **どのリリースで増えたかを特定**
 3. **そのリリースの変更内容を確認**
@@ -268,15 +295,15 @@ is:unresolved environment:production level:error
 ## ⚙️ 高度な設定
 
 ### 1. エラーを無視する設定
+
 **sentry.client.config.ts**で設定：
+
 ```typescript
-ignoreErrors: [
-  'ResizeObserver loop limit exceeded',
-  '特定のエラーメッセージ',
-]
+ignoreErrors: ["ResizeObserver loop limit exceeded", "特定のエラーメッセージ"];
 ```
 
 ### 2. 特定の情報をマスク
+
 ```typescript
 beforeSend(event) {
   // 個人情報をマスク
@@ -288,6 +315,7 @@ beforeSend(event) {
 ```
 
 ### 3. パフォーマンス監視の調整
+
 ```typescript
 tracesSampleRate: 0.1, // 10%のみサンプリング
 ```
@@ -297,15 +325,18 @@ tracesSampleRate: 0.1, // 10%のみサンプリング
 ## 🆘 トラブルシューティング
 
 ### エラーが記録されない
+
 - DSNが正しく設定されているか確認
 - `enabled: true` になっているか確認
 - ブラウザのコンソールでネットワークエラーがないか確認
 
 ### エラーが多すぎる
+
 - `ignoreErrors`で不要なエラーを除外
 - 同じエラーを自動でグループ化
 
 ### デプロイ後もエラーが表示される
+
 - キャッシュをクリア
 - ブラウザのリロード
 - Sentryのグループ解除を確認
@@ -317,4 +348,3 @@ tracesSampleRate: 0.1, // 10%のみサンプリング
 - [Sentry公式ドキュメント](https://docs.sentry.io/)
 - [Next.js Sentry統合](https://docs.sentry.io/platforms/javascript/guides/nextjs/)
 - [エラー監視のベストプラクティス](https://docs.sentry.io/product/issues/)
-

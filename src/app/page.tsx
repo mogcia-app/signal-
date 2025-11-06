@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useAuth } from '../contexts/auth-context';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useAuth } from "../contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -11,9 +11,9 @@ export default function Home() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push('/instagram/lab/feed');
+        router.push("/instagram/lab/feed");
       } else {
-        router.push('/login');
+        router.push("/login");
       }
     }
   }, [user, loading, router]);

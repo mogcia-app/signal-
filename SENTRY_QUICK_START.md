@@ -3,6 +3,7 @@
 ## 現在の設定状況
 
 ✅ 設定ファイル作成済み
+
 - `sentry.client.config.ts`
 - `sentry.server.config.ts`
 - `sentry.edge.config.ts`
@@ -69,6 +70,7 @@ npm run dev
 詳しくは `sentry.client.config.ts` を参照してください。
 
 主要な設定：
+
 - `tracesSampleRate`: パフォーマンス監視のサンプリング率
 - `environment`: 環境設定
 - `ignoreErrors`: 無視するエラーパターン
@@ -80,4 +82,3 @@ npm run dev
 3. ✅ テストページで確認
 4. ✅ 本番環境にデプロイ
 5. ✅ Sentryダッシュボードでエラー監視
-

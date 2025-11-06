@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Target } from 'lucide-react';
+import React from "react";
+import { Target } from "lucide-react";
 // import { ReachSourceData } from './types';
 
 interface ReachSourceDataInput {
@@ -23,27 +23,24 @@ interface ReachSourceAnalysisFormProps {
   onChange: (data: ReachSourceDataInput) => void;
 }
 
-const ReachSourceAnalysisForm: React.FC<ReachSourceAnalysisFormProps> = ({
-  data,
-  onChange
-}) => {
-  const handleSourcesChange = (field: keyof ReachSourceDataInput['sources'], value: string) => {
+const ReachSourceAnalysisForm: React.FC<ReachSourceAnalysisFormProps> = ({ data, onChange }) => {
+  const handleSourcesChange = (field: keyof ReachSourceDataInput["sources"], value: string) => {
     onChange({
       ...data,
       sources: {
         ...data.sources,
-        [field]: value
-      }
+        [field]: value,
+      },
     });
   };
 
-  const handleFollowersChange = (field: keyof ReachSourceDataInput['followers'], value: string) => {
+  const handleFollowersChange = (field: keyof ReachSourceDataInput["followers"], value: string) => {
     onChange({
       ...data,
       followers: {
         ...data.followers,
-        [field]: value
-      }
+        [field]: value,
+      },
     });
   };
 
@@ -65,16 +62,14 @@ const ReachSourceAnalysisForm: React.FC<ReachSourceAnalysisFormProps> = ({
           <h3 className="text-sm font-semibold text-gray-800 mb-3">閲覧数ソース</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                📱 投稿 (%)
-              </label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">📱 投稿 (%)</label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 step="0.1"
                 value={data.sources.posts}
-                onChange={(e) => handleSourcesChange('posts', e.target.value)}
+                onChange={(e) => handleSourcesChange("posts", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="0"
               />
@@ -89,52 +84,46 @@ const ReachSourceAnalysisForm: React.FC<ReachSourceAnalysisFormProps> = ({
                 max="100"
                 step="0.1"
                 value={data.sources.profile}
-                onChange={(e) => handleSourcesChange('profile', e.target.value)}
+                onChange={(e) => handleSourcesChange("profile", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="0"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                🔍 検索 (%)
-              </label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">🔍 検索 (%)</label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 step="0.1"
                 value={data.sources.search}
-                onChange={(e) => handleSourcesChange('search', e.target.value)}
+                onChange={(e) => handleSourcesChange("search", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="0"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                🌟 探索 (%)
-              </label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">🌟 探索 (%)</label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 step="0.1"
                 value={data.sources.explore}
-                onChange={(e) => handleSourcesChange('explore', e.target.value)}
+                onChange={(e) => handleSourcesChange("explore", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="0"
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                🔗 その他 (%)
-              </label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">🔗 その他 (%)</label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 step="0.1"
                 value={data.sources.other}
-                onChange={(e) => handleSourcesChange('other', e.target.value)}
+                onChange={(e) => handleSourcesChange("other", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="0"
               />
@@ -156,7 +145,7 @@ const ReachSourceAnalysisForm: React.FC<ReachSourceAnalysisFormProps> = ({
                 max="100"
                 step="0.1"
                 value={data.followers.followers}
-                onChange={(e) => handleFollowersChange('followers', e.target.value)}
+                onChange={(e) => handleFollowersChange("followers", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="0"
               />
@@ -171,7 +160,7 @@ const ReachSourceAnalysisForm: React.FC<ReachSourceAnalysisFormProps> = ({
                 max="100"
                 step="0.1"
                 value={data.followers.nonFollowers}
-                onChange={(e) => handleFollowersChange('nonFollowers', e.target.value)}
+                onChange={(e) => handleFollowersChange("nonFollowers", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="0"
               />

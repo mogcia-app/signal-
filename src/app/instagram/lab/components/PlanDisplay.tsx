@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Calendar, Target, TrendingUp, User, Tag } from 'lucide-react';
-import { PlanData } from '../../plan/types/plan';
+import React from "react";
+import { Calendar, Target, TrendingUp, User, Tag } from "lucide-react";
+import { PlanData } from "../../plan/types/plan";
 
 interface PlanDisplayProps {
   planData?: PlanData | null;
@@ -17,9 +17,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Target className="w-8 h-8 text-black" />
             </div>
-            <h3 className="text-lg font-semibold text-black mb-2">
-              運用計画が設定されていません
-            </h3>
+            <h3 className="text-lg font-semibold text-black mb-2">運用計画が設定されていません</h3>
             <p className="text-black mb-4">
               Instagramの成長を加速させるために、まず運用計画を立てましょう
             </p>
@@ -40,10 +38,11 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   const currentFollowers = planData.currentFollowers || 0;
   const targetFollowers = planData.targetFollowers || 0;
   const strategies = planData.strategies || [];
-  const progressPercentage = targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
-  
+  const progressPercentage =
+    targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
+
   // シミュレーション結果があるか確認
-  const hasSimulation = planData.simulationResult && typeof planData.simulationResult === 'object';
+  const hasSimulation = planData.simulationResult && typeof planData.simulationResult === "object";
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -51,7 +50,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
         <h3 className="text-lg font-semibold text-black">現在の運用計画</h3>
         <p className="text-sm text-black mt-1">{planData.title}</p>
       </div>
-      
+
       <div className="p-6">
         {/* フォロワー目標進捗 */}
         <div className="mb-6">
@@ -110,10 +109,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
           <div className="text-sm font-medium text-gray-700 mb-2">採用戦略</div>
           <div className="flex flex-wrap gap-2">
             {strategies.slice(0, 3).map((strategy, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md"
-              >
+              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md">
                 {strategy}
               </span>
             ))}
@@ -134,17 +130,28 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
                 <div className="flex justify-between">
                   <span className="text-black">月間目標:</span>
                   <span className="font-medium text-black">
-                    {String((planData.simulationResult as Record<string, unknown>).monthlyTarget || 'N/A')}
+                    {String(
+                      (planData.simulationResult as Record<string, unknown>).monthlyTarget || "N/A"
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-black">達成可能性:</span>
-                  <span className={`font-medium ${
-                    (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'high' ? 'text-green-600' :
-                    (planData.simulationResult as Record<string, unknown>).feasibilityLevel === 'medium' ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {String((planData.simulationResult as Record<string, unknown>).feasibilityBadge || 'N/A')}
+                  <span
+                    className={`font-medium ${
+                      (planData.simulationResult as Record<string, unknown>).feasibilityLevel ===
+                      "high"
+                        ? "text-green-600"
+                        : (planData.simulationResult as Record<string, unknown>)
+                              .feasibilityLevel === "medium"
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                    }`}
+                  >
+                    {String(
+                      (planData.simulationResult as Record<string, unknown>).feasibilityBadge ||
+                        "N/A"
+                    )}
                   </span>
                 </div>
               </div>

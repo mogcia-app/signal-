@@ -1,11 +1,6 @@
-'use client';
+"use client";
 
-import { 
-  Users, 
-  Heart, 
-  Eye, 
-  Bookmark,
-} from 'lucide-react';
+import { Users, Heart, Eye, Bookmark } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,8 +11,8 @@ import {
   Tooltip,
   Legend,
   Filler,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+} from "chart.js";
+import { Line } from "react-chartjs-2";
 
 // Chart.jsの設定
 ChartJS.register(
@@ -54,19 +49,30 @@ interface AnalyticsChartsProps {
 
 export default function AnalyticsCharts({ analyticsData, stats, loading }: AnalyticsChartsProps) {
   // グラフ用のデータを動的に生成
-  const generateChartData = (type: 'likes' | 'followers' | 'saves' | 'reach') => {
-    const labels = ['月', '火', '水', '木', '金', '土', '日'];
+  const generateChartData = (type: "likes" | "followers" | "saves" | "reach") => {
+    const labels = ["月", "火", "水", "木", "金", "土", "日"];
     const data = labels.map(() => 0);
-    
+
     if (analyticsData.length === 0) {
-      return { labels, datasets: [{ data, borderColor: '#ff8a15', backgroundColor: 'rgba(255, 138, 21, 0.1)', tension: 0.4, fill: true }] };
+      return {
+        labels,
+        datasets: [
+          {
+            data,
+            borderColor: "#ff8a15",
+            backgroundColor: "rgba(255, 138, 21, 0.1)",
+            tension: 0.4,
+            fill: true,
+          },
+        ],
+      };
     }
 
     // 過去7日間のデータを計算（analyticsデータから）
     labels.forEach((_, index) => {
       const targetDate = new Date();
       targetDate.setDate(targetDate.getDate() - (6 - index));
-      
+
       const dayAnalytics = analyticsData.filter((analytics: AnalyticsData) => {
         const postDate = new Date(analytics.publishedAt);
         return postDate.toDateString() === targetDate.toDateString();
@@ -74,38 +80,45 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
 
       data[index] = dayAnalytics.reduce((sum: number, analytics: AnalyticsData) => {
         switch (type) {
-          case 'likes': return sum + analytics.likes;
-          case 'followers': return sum + Math.floor(analytics.likes * 0.1); // 推定フォロワー増加
-          case 'saves': return sum + analytics.shares;
-          case 'reach': return sum + analytics.reach;
-          default: return sum;
+          case "likes":
+            return sum + analytics.likes;
+          case "followers":
+            return sum + Math.floor(analytics.likes * 0.1); // 推定フォロワー増加
+          case "saves":
+            return sum + analytics.shares;
+          case "reach":
+            return sum + analytics.reach;
+          default:
+            return sum;
         }
       }, 0);
     });
 
     const colors = {
-      likes: { border: '#ff8a15', bg: 'rgba(255, 138, 21, 0.1)' },
-      followers: { border: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' },
-      saves: { border: '#ea580c', bg: 'rgba(234, 88, 12, 0.1)' },
-      reach: { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.1)' }
+      likes: { border: "#ff8a15", bg: "rgba(255, 138, 21, 0.1)" },
+      followers: { border: "#f97316", bg: "rgba(249, 115, 22, 0.1)" },
+      saves: { border: "#ea580c", bg: "rgba(234, 88, 12, 0.1)" },
+      reach: { border: "#dc2626", bg: "rgba(220, 38, 38, 0.1)" },
     };
 
     return {
       labels,
-      datasets: [{
-        data,
-        borderColor: colors[type].border,
-        backgroundColor: colors[type].bg,
-        tension: 0.4,
-        fill: true,
-      }]
+      datasets: [
+        {
+          data,
+          borderColor: colors[type].border,
+          backgroundColor: colors[type].bg,
+          tension: 0.4,
+          fill: true,
+        },
+      ],
     };
   };
 
-  const likesChartData = generateChartData('likes');
-  const followersChartData = generateChartData('followers');
-  const savesChartData = generateChartData('saves');
-  const reachChartData = generateChartData('reach');
+  const likesChartData = generateChartData("likes");
+  const followersChartData = generateChartData("followers");
+  const savesChartData = generateChartData("saves");
+  const reachChartData = generateChartData("reach");
 
   const chartOptions = {
     responsive: true,
@@ -122,7 +135,7 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
       y: {
         beginAtZero: true,
         grid: {
-          color: 'rgba(0, 0, 0, 0.05)',
+          color: "rgba(0, 0, 0, 0.05)",
         },
         ticks: {
           font: {
@@ -132,7 +145,7 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
       },
       x: {
         grid: {
-          color: 'rgba(0, 0, 0, 0.05)',
+          color: "rgba(0, 0, 0, 0.05)",
         },
         ticks: {
           font: {
@@ -143,7 +156,7 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
     },
     interaction: {
       intersect: false,
-      mode: 'index' as const,
+      mode: "index" as const,
     },
   };
 
@@ -163,7 +176,7 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
         </div>
         <div className="mt-2 text-center">
           <span className="text-lg font-bold text-[#f97316]">
-            {loading ? 'ー' : stats.followers.toLocaleString()}
+            {loading ? "ー" : stats.followers.toLocaleString()}
           </span>
           <span className="text-xs text-black ml-1">現在</span>
         </div>
@@ -183,7 +196,7 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
         </div>
         <div className="mt-2 text-center">
           <span className="text-lg font-bold text-[#ff8a15]">
-            {loading ? 'ー' : stats.likes.toLocaleString()}
+            {loading ? "ー" : stats.likes.toLocaleString()}
           </span>
           <span className="text-xs text-black ml-1">合計</span>
         </div>
@@ -203,7 +216,7 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
         </div>
         <div className="mt-2 text-center">
           <span className="text-lg font-bold text-[#ea580c]">
-            {loading ? 'ー' : stats.saves.toLocaleString()}
+            {loading ? "ー" : stats.saves.toLocaleString()}
           </span>
           <span className="text-xs text-black ml-1">合計</span>
         </div>
@@ -223,7 +236,7 @@ export default function AnalyticsCharts({ analyticsData, stats, loading }: Analy
         </div>
         <div className="mt-2 text-center">
           <span className="text-lg font-bold text-[#dc2626]">
-            {loading ? 'ー' : stats.reach.toLocaleString()}
+            {loading ? "ー" : stats.reach.toLocaleString()}
           </span>
           <span className="text-xs text-black ml-1">合計</span>
         </div>

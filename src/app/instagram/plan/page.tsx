@@ -1,30 +1,33 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '../../../contexts/auth-context'
-import SNSLayout from '../../../components/sns-layout'
-import { usePlanForm } from './hooks/usePlanForm'
-import { useSimulation } from './hooks/useSimulation'
-import { useAIDiagnosis } from './hooks/useAIDiagnosis'
-import { PlanForm } from './components/PlanForm'
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../../contexts/auth-context";
+import SNSLayout from "../../../components/sns-layout";
+import { usePlanForm } from "./hooks/usePlanForm";
+import { useSimulation } from "./hooks/useSimulation";
+import { useAIDiagnosis } from "./hooks/useAIDiagnosis";
+import { PlanForm } from "./components/PlanForm";
 // import { CurrentGoalPanel } from './components/CurrentGoalPanel'
-import { SimulationPanel } from './components/SimulationPanel'
-import { AIDiagnosisPanel } from './components/AIDiagnosisPanel'
-import { SimulationRequest } from './types/plan'
+import { SimulationPanel } from "./components/SimulationPanel";
+import { AIDiagnosisPanel } from "./components/AIDiagnosisPanel";
+import { SimulationRequest } from "./types/plan";
+import { CheckCircle, X } from "lucide-react";
 
 export default function InstagramPlanPage() {
-  const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'simulation' | 'ai'>('simulation')
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<"simulation" | "ai">("simulation");
+  const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false);
   // const [analyticsData, setAnalyticsData] = useState<Array<{
   //   followerIncrease?: number;
   //   [key: string]: unknown;
   // }>>([])
-  
+
   // カスタムフックの使用
-  const { 
-    formData, 
-    selectedStrategies, 
-    selectedCategories, 
+  const {
+    formData,
+    selectedStrategies,
+    selectedCategories,
     isSaving,
     // saveError,
     // saveSuccess,
@@ -35,53 +38,49 @@ export default function InstagramPlanPage() {
     isPlanExpired,
     generatedStrategy,
     setGeneratedStrategy,
-    handleInputChange, 
-    handleStrategyToggle, 
+    handleInputChange,
+    handleStrategyToggle,
     handleCategoryToggle,
     savePlan,
     setSimulationResultData,
     loadSavedPlan,
     resetPlan,
-    simulationResult: savedSimulationResult // 保存されたシミュレーション結果
-  } = usePlanForm()
+    simulationResult: savedSimulationResult, // 保存されたシミュレーション結果
+  } = usePlanForm();
 
-  const { 
-    simulationResult: newSimulationResult, 
-    isSimulating, 
-    simulationError, 
+  const {
+    simulationResult: newSimulationResult,
+    isSimulating,
+    simulationError,
     setSimulationError,
-    runSimulation 
-  } = useSimulation()
-  
-  // 保存されたシミュレーション結果を優先、なければ新しく実行した結果を使用
-  const simulationResult = savedSimulationResult || newSimulationResult
+    runSimulation,
+  } = useSimulation();
 
-  const { 
-    showAiAdvice, 
-    isAiLoading, 
-    handleStartAiDiagnosis, 
-    handleSaveAdviceAndContinue 
-  } = useAIDiagnosis()
+  // 保存されたシミュレーション結果を優先、なければ新しく実行した結果を使用
+  const simulationResult = savedSimulationResult || newSimulationResult;
+
+  const { showAiAdvice, isAiLoading, handleStartAiDiagnosis, handleSaveAdviceAndContinue } =
+    useAIDiagnosis();
 
   // 分析データを取得
   const fetchAnalytics = useCallback(async () => {
-    if (!user?.uid) return;
-    
+    if (!user?.uid) {return;}
+
     try {
       const idToken = await user.getIdToken();
       const response = await fetch(`/api/analytics?userId=${user.uid}`, {
         headers: {
-          'Authorization': `Bearer ${idToken}`,
-          'x-user-id': user.uid,
+          Authorization: `Bearer ${idToken}`,
+          "x-user-id": user.uid,
         },
       });
-      
+
       if (response.ok) {
         // const result = await response.json();
         // setAnalyticsData(result.analytics || []);
       }
     } catch (error) {
-      console.error('Analytics fetch error:', error);
+      console.error("Analytics fetch error:", error);
     }
   }, [user]);
 
@@ -90,31 +89,37 @@ export default function InstagramPlanPage() {
     fetchAnalytics();
   }, [fetchAnalytics]);
 
-
   // シミュレーション実行ハンドラー
   const handleRunSimulation = async () => {
     if (!user) {
-      console.error('ユーザーがログインしていません')
-      return
+      console.error("ユーザーがログインしていません");
+      return;
     }
 
-    console.log('=== シミュレーション実行デバッグ ===')
-    console.log('formData:', formData)
-    console.log('selectedStrategies:', selectedStrategies)
-    console.log('selectedCategories:', selectedCategories)
-    console.log('followerGain:', formData.followerGain, 'type:', typeof formData.followerGain)
-    console.log('currentFollowers:', formData.currentFollowers, 'type:', typeof formData.currentFollowers)
-    console.log('planPeriod:', formData.planPeriod, 'type:', typeof formData.planPeriod)
+    console.log("=== シミュレーション実行デバッグ ===");
+    console.log("formData:", formData);
+    console.log("selectedStrategies:", selectedStrategies);
+    console.log("selectedCategories:", selectedCategories);
+    console.log("followerGain:", formData.followerGain, "type:", typeof formData.followerGain);
+    console.log(
+      "currentFollowers:",
+      formData.currentFollowers,
+      "type:",
+      typeof formData.currentFollowers
+    );
+    console.log("planPeriod:", formData.planPeriod, "type:", typeof formData.planPeriod);
 
     // バリデーションチェック
     if (!formData.followerGain || !formData.currentFollowers || !formData.planPeriod) {
-      console.error('必須項目が未入力です:', {
+      console.error("必須項目が未入力です:", {
         followerGain: formData.followerGain,
         currentFollowers: formData.currentFollowers,
-        planPeriod: formData.planPeriod
+        planPeriod: formData.planPeriod,
       });
       // エラーメッセージを表示
-      setSimulationError('必須項目（現在のフォロワー数、フォロワー増加目標、期間）を入力してください');
+      setSimulationError(
+        "必須項目（現在のフォロワー数、フォロワー増加目標、期間）を入力してください"
+      );
       return;
     }
 
@@ -126,82 +131,145 @@ export default function InstagramPlanPage() {
       strategyValues: selectedStrategies,
       postCategories: selectedCategories,
       hashtagStrategy: formData.tone,
-      referenceAccounts: formData.brandConcept
-    }
+      referenceAccounts: formData.brandConcept,
+    };
 
-    console.log('requestData:', requestData)
-    await runSimulation(requestData)
-  }
+    console.log("requestData:", requestData);
+    await runSimulation(requestData);
+  };
 
   // 新しくシミュレーションを実行した結果をusePlanFormにも設定
   React.useEffect(() => {
     if (newSimulationResult) {
-      setSimulationResultData(newSimulationResult)
+      setSimulationResultData(newSimulationResult);
     }
-  }, [newSimulationResult, setSimulationResultData])
+  }, [newSimulationResult, setSimulationResultData]);
 
   // 現在の計画編集
   const handleEditCurrentPlan = () => {
-    console.log('現在の計画を編集')
+    console.log("現在の計画を編集");
     // フォームを編集可能な状態にする
     // 現在は保存された計画をフォームに反映するだけ
-    alert('編集機能は開発中です。現在は計画を再設定して新しく作成してください。')
-  }
+    setToastMessage({ message: "編集機能は開発中です。現在は計画を再設定して新しく作成してください。", type: 'error' });
+    setTimeout(() => setToastMessage(null), 5000);
+  };
 
   // 現在の計画削除
   const handleDeleteCurrentPlan = async () => {
-    console.log('現在の計画を削除')
-    
-    // 削除確認
-    const confirmed = window.confirm('この計画を削除しますか？この操作は取り消せません。')
-    if (!confirmed) return
-    
+    console.log("現在の計画を削除");
+    setDeleteConfirm(true);
+  };
+
+  // 削除実行
+  const confirmDelete = async () => {
     try {
       if (!user) {
-        alert('ログインが必要です')
-        return
+        setToastMessage({ message: "ログインが必要です", type: 'error' });
+        setTimeout(() => setToastMessage(null), 3000);
+        setDeleteConfirm(false);
+        return;
       }
-      
-      const idToken = await user.getIdToken()
+
+      const idToken = await user.getIdToken();
       const response = await fetch(`/api/plans/${loadedPlanId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
         },
-      })
-      
+      });
+
       if (response.ok) {
-        alert('計画が削除されました')
-        // ページをリロードして削除を反映
-        window.location.reload()
+        setToastMessage({ message: "計画が削除されました", type: 'success' });
+        setTimeout(() => {
+          setToastMessage(null);
+          // ページをリロードして削除を反映
+          window.location.reload();
+        }, 2000);
       } else {
-        alert('削除に失敗しました')
+        setToastMessage({ message: "削除に失敗しました", type: 'error' });
+        setTimeout(() => setToastMessage(null), 5000);
       }
     } catch (error) {
-      console.error('削除エラー:', error)
-      alert('削除中にエラーが発生しました')
+      console.error("削除エラー:", error);
+      setToastMessage({ message: "削除中にエラーが発生しました", type: 'error' });
+      setTimeout(() => setToastMessage(null), 5000);
+    } finally {
+      setDeleteConfirm(false);
     }
-  }
-
+  };
 
   // 計画保存ハンドラー
   const handleSavePlan = async (): Promise<boolean> => {
-    const success = await savePlan()
+    const success = await savePlan();
     if (success) {
       // 保存成功時の処理
-      console.log('計画が正常に保存されました')
+      console.log("計画が正常に保存されました");
       // 保存後は計画IDが設定されるため、シミュレーション結果は保持される
       // ページリロードは行わない（表示を維持）
     }
-    return success
-  }
+    return success;
+  };
 
   return (
-    <SNSLayout 
-      customTitle="Instagram 運用計画"
-      customDescription="強みを活かす、実行可能なSNS計画を立てましょう"
-    >
+    <>
+      {/* トースト通知 */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <div className={`flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg min-w-[300px] max-w-md ${
+            toastMessage.type === 'success' 
+              ? 'bg-green-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
+            {toastMessage.type === 'success' ? (
+              <CheckCircle size={20} className="flex-shrink-0" />
+            ) : (
+              <X size={20} className="flex-shrink-0" />
+            )}
+            <p className="font-medium flex-1">{toastMessage.message}</p>
+            <button
+              onClick={() => setToastMessage(null)}
+              className="ml-2 text-white hover:text-gray-200 transition-colors flex-shrink-0"
+              aria-label="閉じる"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 削除確認モーダル */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              計画を削除
+            </h3>
+            <p className="text-gray-700 mb-6">
+              この計画を削除しますか？この操作は取り消せません。
+            </p>
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors"
+              >
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SNSLayout
+        customTitle="Instagram 運用計画"
+        customDescription="強みを活かす、実行可能なSNS計画を立てましょう"
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 計画期間切れアラート */}
         {isPlanExpired && planEndDate && (
@@ -211,11 +279,9 @@ export default function InstagramPlanPage() {
                 <span className="text-2xl">⏰</span>
               </div>
               <div className="ml-3 flex-1">
-                <h3 className="text-lg font-semibold text-yellow-800">
-                  計画期間が終了しました
-                </h3>
+                <h3 className="text-lg font-semibold text-yellow-800">計画期間が終了しました</h3>
                 <p className="text-sm text-yellow-700 mt-1">
-                  計画終了日: {planEndDate.toLocaleDateString('ja-JP')}
+                  計画終了日: {planEndDate.toLocaleDateString("ja-JP")}
                 </p>
                 <p className="text-sm text-yellow-700 mt-2">
                   新しい運用計画を立てて、さらなる成長を目指しませんか？
@@ -239,7 +305,8 @@ export default function InstagramPlanPage() {
         )}
 
         {/* 運用計画実行中 */}
-        {(loadedPlanId || (formData.planPeriod && formData.currentFollowers && formData.followerGain)) && (
+        {(loadedPlanId ||
+          (formData.planPeriod && formData.currentFollowers && formData.followerGain)) && (
           <div className="mb-6 bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-start">
@@ -248,52 +315,63 @@ export default function InstagramPlanPage() {
                 </div>
                 <div className="ml-3 flex-1">
                   <h3 className="text-lg font-semibold text-black">
-                    {loadedPlanId ? '運用計画実行中' : 'Instagram運用計画'}
+                    {loadedPlanId ? "運用計画実行中" : "Instagram運用計画"}
                   </h3>
                   <p className="text-sm text-black mt-1">
-                    {planStartDate && planEndDate 
-                      ? `期間: ${planStartDate.toLocaleDateString('ja-JP')} 〜 ${planEndDate.toLocaleDateString('ja-JP')}`
-                      : `期間: ${formData.planPeriod}`
-                    }
+                    {planStartDate && planEndDate
+                      ? `期間: ${planStartDate.toLocaleDateString("ja-JP")} 〜 ${planEndDate.toLocaleDateString("ja-JP")}`
+                      : `期間: ${formData.planPeriod}`}
                   </p>
                   {planStartDate && planEndDate && (
                     <p className="text-xs text-[#FF8A15] font-medium mt-1">
-                      残り {Math.ceil((planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 日
+                      残り{" "}
+                      {Math.ceil(
+                        (planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                      )}{" "}
+                      日
                     </p>
                   )}
-                  
+
                   {/* 計画の詳細表示 */}
                   <div className="mt-3 space-y-3">
                     {/* 目標 */}
                     <div className="text-sm">
                       <span className="font-medium text-gray-700">目標:</span>
                       <span className="ml-2 text-black">
-                        {formData.currentFollowers && formData.followerGain 
+                        {formData.currentFollowers && formData.followerGain
                           ? `現在${formData.currentFollowers}人 → ${parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人`
-                          : '未設定'
-                        }
+                          : "未設定"}
                       </span>
                     </div>
-                    
+
                     {/* 重視する指標 */}
                     {formData.goalCategory && (
                       <div className="text-sm">
                         <span className="font-medium text-gray-700">KPI:</span>
                         <span className="ml-2 text-black">
-                          {formData.goalCategory === 'follower' ? 'フォロワー獲得' :
-                           formData.goalCategory === 'engagement' ? 'エンゲージ促進' :
-                           formData.goalCategory === 'like' ? 'いいねを増やす' :
-                           formData.goalCategory === 'save' ? '保存率向上' :
-                           formData.goalCategory === 'reach' ? 'リーチを増やす' :
-                           formData.goalCategory === 'impressions' ? 'インプレッションを増やす' :
-                           formData.goalCategory === 'branding' ? 'ブランド認知を広める' :
-                           formData.goalCategory === 'profile' ? 'プロフィール誘導' :
-                           formData.goalCategory === 'other' ? formData.otherGoal || 'その他' :
-                           formData.goalCategory}
+                          {formData.goalCategory === "follower"
+                            ? "フォロワー獲得"
+                            : formData.goalCategory === "engagement"
+                              ? "エンゲージ促進"
+                              : formData.goalCategory === "like"
+                                ? "いいねを増やす"
+                                : formData.goalCategory === "save"
+                                  ? "保存率向上"
+                                  : formData.goalCategory === "reach"
+                                    ? "リーチを増やす"
+                                    : formData.goalCategory === "impressions"
+                                      ? "インプレッションを増やす"
+                                      : formData.goalCategory === "branding"
+                                        ? "ブランド認知を広める"
+                                        : formData.goalCategory === "profile"
+                                          ? "プロフィール誘導"
+                                          : formData.goalCategory === "other"
+                                            ? formData.otherGoal || "その他"
+                                            : formData.goalCategory}
                         </span>
                       </div>
                     )}
-                    
+
                     {/* ターゲット層 */}
                     {formData.targetAudience && (
                       <div className="text-sm">
@@ -301,28 +379,34 @@ export default function InstagramPlanPage() {
                         <span className="ml-2 text-black">{formData.targetAudience}</span>
                       </div>
                     )}
-                    
+
                     {/* 取り組みたいこと */}
                     {selectedStrategies.length > 0 && (
                       <div className="text-sm">
                         <span className="font-medium text-gray-700">取り組みたいこと:</span>
                         <div className="ml-2 mt-1 flex flex-wrap gap-1">
                           {selectedStrategies.map((strategy, index) => (
-                            <span key={index} className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
+                            <span
+                              key={index}
+                              className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full"
+                            >
                               {strategy}
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
-                    
+
                     {/* 投稿したい内容 */}
                     {selectedCategories.length > 0 && (
                       <div className="text-sm">
                         <span className="font-medium text-gray-700">投稿したい内容:</span>
                         <div className="ml-2 mt-1 flex flex-wrap gap-1">
                           {selectedCategories.map((category, index) => (
-                            <span key={index} className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
+                            <span
+                              key={index}
+                              className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full"
+                            >
                               {category}
                             </span>
                           ))}
@@ -386,21 +470,19 @@ export default function InstagramPlanPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="flex flex-col sm:flex-row border-b border-gray-200">
                 <button
-                  onClick={() => setActiveTab('simulation')}
+                  onClick={() => setActiveTab("simulation")}
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                    activeTab === 'simulation'
-                      ? 'bg-[#FF8A15] text-white'
-                      : 'text-black hover:bg-gray-50'
+                    activeTab === "simulation"
+                      ? "bg-[#FF8A15] text-white"
+                      : "text-black hover:bg-gray-50"
                   }`}
                 >
                   📊 シミュレーション
                 </button>
                 <button
-                  onClick={() => setActiveTab('ai')}
+                  onClick={() => setActiveTab("ai")}
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-t sm:border-t-0 sm:border-l border-gray-200 ${
-                    activeTab === 'ai'
-                      ? 'bg-[#FF8A15] text-white'
-                      : 'text-black hover:bg-gray-50'
+                    activeTab === "ai" ? "bg-[#FF8A15] text-white" : "text-black hover:bg-gray-50"
                   }`}
                 >
                   🤖 AI戦略
@@ -409,7 +491,7 @@ export default function InstagramPlanPage() {
 
               {/* タブコンテンツ */}
               <div className="p-0">
-                {activeTab === 'simulation' && (
+                {activeTab === "simulation" && (
                   <SimulationPanel
                     result={simulationResult}
                     formData={formData}
@@ -422,7 +504,7 @@ export default function InstagramPlanPage() {
                   />
                 )}
 
-                {activeTab === 'ai' && (
+                {activeTab === "ai" && (
                   <AIDiagnosisPanel
                     showAdvice={showAiAdvice}
                     isLoading={isAiLoading}
@@ -440,8 +522,8 @@ export default function InstagramPlanPage() {
             </div>
           </div>
         </main>
-
       </div>
-    </SNSLayout>
-  )
+      </SNSLayout>
+    </>
+  );
 }

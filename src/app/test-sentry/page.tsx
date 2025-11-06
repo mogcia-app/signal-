@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function TestSentryPage() {
   const [errorThrown, setErrorThrown] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // 本番環境でのアクセス制限
-  const isProduction = process.env.NODE_ENV === 'production';
-  const enableTest = process.env.NEXT_PUBLIC_ENABLE_SENTRY_TEST === 'true';
+  const isProduction = process.env.NODE_ENV === "production";
+  const enableTest = process.env.NEXT_PUBLIC_ENABLE_SENTRY_TEST === "true";
 
   const triggerError = () => {
     try {
@@ -26,7 +26,7 @@ export default function TestSentryPage() {
   const triggerAsyncError = async () => {
     try {
       // 非同期エラーを発生させる
-      await Promise.reject(new Error('Async error test'));
+      await Promise.reject(new Error("Async error test"));
     } catch (error) {
       setErrorThrown(true);
       throw error;
@@ -63,7 +63,7 @@ export default function TestSentryPage() {
   return (
     <div className="container mx-auto p-8">
       <h1 className="text-3xl font-bold mb-6">Sentry エラーテスト</h1>
-      
+
       <div className="space-y-4">
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
           <p className="text-yellow-700">
@@ -115,4 +115,3 @@ export default function TestSentryPage() {
     </div>
   );
 }
-

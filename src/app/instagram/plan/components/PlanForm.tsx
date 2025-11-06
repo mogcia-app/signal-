@@ -1,12 +1,14 @@
-import React from 'react';
-import { PlanFormData } from '../types/plan';
-import { InfoTooltip } from './InfoTooltip';
+import React from "react";
+import { PlanFormData } from "../types/plan";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface PlanFormProps {
   formData: PlanFormData;
   selectedStrategies: string[];
   selectedCategories: string[];
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
   onStrategyToggle: (strategy: string) => void;
   onCategoryToggle: (category: string) => void;
 }
@@ -17,7 +19,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   selectedCategories,
   onInputChange,
   onStrategyToggle,
-  onCategoryToggle
+  onCategoryToggle,
 }) => {
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
@@ -32,7 +34,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         {/* 期間 */}
         <div>
           <label htmlFor="planPeriod" className="block text-sm font-medium mb-1">
-          期間
+            期間
             <InfoTooltip content="計画を実行する期間を選択してください。1ヶ月から始めることをおすすめします。期間が長いほど、より多くのフォロワーを獲得できますが、継続が重要です。" />
           </label>
           <select
@@ -56,7 +58,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="currentFollowers" className="block text-sm font-medium mb-1">
-             現在のフォロワー数
+              現在のフォロワー数
               <InfoTooltip content="現在のInstagramアカウントのフォロワー数を入力してください。正確な数値でなくても大丈夫です。例：100人、500人、1000人など" />
             </label>
             <input
@@ -109,7 +111,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             <option value="profile">プロフィール誘導</option>
             <option value="other">その他</option>
           </select>
-          {formData.goalCategory === 'other' && (
+          {formData.goalCategory === "other" && (
             <input
               type="text"
               id="otherGoalInput"
@@ -130,16 +132,23 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           </label>
           <div className="flex flex-wrap gap-2">
             {[
-              '写真をたくさん投稿する', '動画（リール）を中心に投稿する', 'ストーリーでフォロワーと交流する',
-              'お客様の投稿を紹介する', 'キャンペーンやイベントを開催する', '広告を出して認知度を上げる', 'コメントに積極的に返信する',
-              '複数枚の写真で商品を紹介する', 'ハッシュタグを工夫する', 'その他'
+              "写真をたくさん投稿する",
+              "動画（リール）を中心に投稿する",
+              "ストーリーでフォロワーと交流する",
+              "お客様の投稿を紹介する",
+              "キャンペーンやイベントを開催する",
+              "広告を出して認知度を上げる",
+              "コメントに積極的に返信する",
+              "複数枚の写真で商品を紹介する",
+              "ハッシュタグを工夫する",
+              "その他",
             ].map((strategy) => (
               <span
                 key={strategy}
                 className={`px-3 py-2 rounded-md cursor-pointer transition-colors ${
                   selectedStrategies.includes(strategy)
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-200 text-black hover:bg-gray-300'
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-200 text-black hover:bg-gray-300"
                 }`}
                 onClick={() => onStrategyToggle(strategy)}
               >
@@ -147,7 +156,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               </span>
             ))}
           </div>
-          {selectedStrategies.includes('その他') && (
+          {selectedStrategies.includes("その他") && (
             <input
               type="text"
               placeholder="その他の取り組みたいことを入力してください"
@@ -172,16 +181,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           </label>
           <div className="flex flex-wrap gap-2">
             {[
-              '役立つ情報やコツ', '実績や成果の紹介', 'ブランドの世界観', '興味を引く内容', '商品の比較',
-              'お悩みの解決方法', 'ビフォーアフター', '共感できるメッセージ',
-              'お客様の声やレビュー', 'キャンペーンやお知らせ', '話題のトレンド', 'その他'
+              "役立つ情報やコツ",
+              "実績や成果の紹介",
+              "ブランドの世界観",
+              "興味を引く内容",
+              "商品の比較",
+              "お悩みの解決方法",
+              "ビフォーアフター",
+              "共感できるメッセージ",
+              "お客様の声やレビュー",
+              "キャンペーンやお知らせ",
+              "話題のトレンド",
+              "その他",
             ].map((category) => (
               <span
                 key={category}
                 className={`px-3 py-2 rounded-md cursor-pointer transition-colors ${
                   selectedCategories.includes(category)
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-200 text-black hover:bg-gray-300'
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-200 text-black hover:bg-gray-300"
                 }`}
                 onClick={() => onCategoryToggle(category)}
               >
@@ -189,7 +207,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               </span>
             ))}
           </div>
-          {selectedCategories.includes('その他') && (
+          {selectedCategories.includes("その他") && (
             <input
               type="text"
               placeholder="その他の投稿したい内容を入力してください"
@@ -222,8 +240,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent resize-none"
           />
         </div>
-
-        
 
         {/* 投稿頻度 */}
         {/* <div>
@@ -377,8 +393,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
           />
         </div> */}
-
-
 
         {/* フォーム完了メッセージ */}
         {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">

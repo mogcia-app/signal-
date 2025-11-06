@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
-import { Brain, Loader2, Sparkles } from 'lucide-react';
-import { useAuth } from '../../../../contexts/auth-context';
+import React, { useState, useCallback } from "react";
+import { Brain, Loader2, Sparkles } from "lucide-react";
+import { useAuth } from "../../../../contexts/auth-context";
 
 interface AIPredictionAnalysisProps {
-  activeTab: 'weekly' | 'monthly';
+  activeTab: "weekly" | "monthly";
   currentTotals: {
     totalFollowerChange: number;
     totalPosts: number;
@@ -56,7 +56,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   monthlyReview,
   performanceRating,
   selectedMonth,
-  selectedWeek
+  selectedWeek,
 }) => {
   const { user } = useAuth();
   const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null);
@@ -67,44 +67,47 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
 
   // AI分析を実行
   const fetchAIAnalysis = useCallback(async () => {
-    if (!user?.uid) return;
+    if (!user?.uid) {return;}
 
     setIsLoading(true);
     setError(null);
 
     try {
       const period = activeTab;
-      const date = activeTab === 'weekly' ? selectedWeek : selectedMonth;
-      
+      const date = activeTab === "weekly" ? selectedWeek : selectedMonth;
+
       if (!date) {
-        throw new Error('日付が指定されていません');
+        throw new Error("日付が指定されていません");
       }
 
-      console.log('🤖 AI分析開始:', { userId: user.uid, period, date });
+      console.log("🤖 AI分析開始:", { userId: user.uid, period, date });
 
-      const response = await fetch(`/api/ai/monthly-analysis?userId=${user.uid}&period=${period}&date=${date}`, {
-        headers: {
-          'x-user-id': user.uid,
+      const response = await fetch(
+        `/api/ai/monthly-analysis?userId=${user.uid}&period=${period}&date=${date}`,
+        {
+          headers: {
+            "x-user-id": user.uid,
+          },
         }
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`AI分析API エラー: ${response.status}`);
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         setAnalysisResult(result.data);
         setHasRunAnalysis(true);
         setIsExpanded(true);
-        console.log('✅ AI分析完了:', result.data);
+        console.log("✅ AI分析完了:", result.data);
       } else {
-        throw new Error(result.error || 'AI分析に失敗しました');
+        throw new Error(result.error || "AI分析に失敗しました");
       }
     } catch (error) {
-      console.error('❌ AI分析エラー:', error);
-      setError(error instanceof Error ? error.message : 'AI分析に失敗しました');
+      console.error("❌ AI分析エラー:", error);
+      setError(error instanceof Error ? error.message : "AI分析に失敗しました");
     } finally {
       setIsLoading(false);
     }
@@ -136,19 +139,23 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                 <h2 className="text-lg font-semibold text-black">AIまとめ</h2>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               {analysisResult?.masterContext && (
                 <div className="flex items-center space-x-2">
                   <Sparkles className="w-4 h-4 text-orange-500" />
                   <span className="text-xs text-orange-600 font-medium">
-                    {analysisResult.masterContext.learningPhase === 'master' ? 'マスター' :
-                     analysisResult.masterContext.learningPhase === 'optimized' ? '最適化済み' :
-                     analysisResult.masterContext.learningPhase === 'learning' ? '学習中' : '初期段階'}
+                    {analysisResult.masterContext.learningPhase === "master"
+                      ? "マスター"
+                      : analysisResult.masterContext.learningPhase === "optimized"
+                        ? "最適化済み"
+                        : analysisResult.masterContext.learningPhase === "learning"
+                          ? "学習中"
+                          : "初期段階"}
                   </span>
                 </div>
               )}
-              
+
               {!isExpanded ? (
                 <button
                   onClick={handleRunAnalysis}
@@ -207,12 +214,13 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   <div className="flex items-center mb-4">
                     <div className="w-6 h-6 text-orange-600 mr-2">📊</div>
                     <h3 className="text-lg font-semibold text-orange-900">
-                      {activeTab === 'weekly' ? '今週のまとめ' : '今月のまとめ'}
+                      {activeTab === "weekly" ? "今週のまとめ" : "今月のまとめ"}
                     </h3>
                   </div>
                   <div className="text-base text-orange-800 whitespace-pre-wrap leading-relaxed">
-                    {typeof monthlyReview?.message === 'string' ? monthlyReview.message : 
-                     analysisResult.summary || 'まとめを生成中...'}
+                    {typeof monthlyReview?.message === "string"
+                      ? monthlyReview.message
+                      : analysisResult.summary || "まとめを生成中..."}
                   </div>
                 </div>
               </div>
