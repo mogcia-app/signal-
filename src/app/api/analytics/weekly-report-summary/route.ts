@@ -432,21 +432,11 @@ export async function GET(request: NextRequest) {
     });
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId") ?? uid;
     const weekString = searchParams.get("week") || getCurrentWeek(); // デフォルトは現在の週
 
-    console.log("🔍 パラメータ確認:", { userId, weekString });
+    console.log("🔍 パラメータ確認:", { uid, weekString });
 
-    if (!userId) {
-      console.log("❌ パラメータ不足");
-      return NextResponse.json({ error: "userId パラメータが必要です" }, { status: 400 });
-    }
-
-    if (userId !== uid) {
-      return NextResponse.json({ error: "別ユーザーの週次レポートにはアクセスできません" }, { status: 403 });
-    }
-
-    console.log("📊 週次レポートサマリー取得開始:", { userId, weekString });
+    console.log("📊 週次レポートサマリー取得開始:", { userId: uid, weekString });
 
     // Firebase接続確認
     console.log("🔍 Firebase接続確認中...");
@@ -460,7 +450,7 @@ export async function GET(request: NextRequest) {
     console.log("🔍 分析データ取得開始...");
     const analyticsSnapshot = await adminDb
       .collection("analytics")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .get();
     console.log("✅ 分析データ取得完了:", analyticsSnapshot.docs.length, "件");
     const analytics: AnalyticsData[] = analyticsSnapshot.docs.map((doc) => {
@@ -519,7 +509,7 @@ export async function GET(request: NextRequest) {
 
     // 投稿データを取得（投稿一覧ページと同じロジック）
     console.log("🔍 投稿データ取得開始...");
-    const postsSnapshot = await adminDb.collection("posts").where("userId", "==", userId).get();
+    const postsSnapshot = await adminDb.collection("posts").where("userId", "==", uid).get();
     console.log("✅ 投稿データ取得完了:", postsSnapshot.docs.length, "件");
     const posts: PostData[] = postsSnapshot.docs.map((doc) => {
       const data = doc.data();

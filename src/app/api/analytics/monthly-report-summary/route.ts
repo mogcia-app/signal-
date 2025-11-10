@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 
 interface AnalyticsData {
   id: string;
@@ -515,22 +516,27 @@ export async function GET(request: NextRequest) {
   try {
     console.log("🚀 月次レポートサマリーAPI開始");
 
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-monthly-report-summary", limit: 30, windowSeconds: 60 },
+      auditEventName: "analytics_monthly_report_summary_access",
+    });
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const period = searchParams.get("period") as "weekly" | "monthly";
+    const period = searchParams.get("period") as "weekly" | "monthly" | null;
     const date = searchParams.get("date");
 
-    console.log("🔍 パラメータ確認:", { userId, period, date });
+    console.log("🔍 パラメータ確認:", { period, date });
 
-    if (!userId || !period || !date) {
+    if (!period || !date) {
       console.log("❌ パラメータ不足");
       return NextResponse.json(
-        { error: "userId, period, date パラメータが必要です" },
+        { error: "period, date パラメータが必要です" },
         { status: 400 }
       );
     }
 
-    console.log("📊 月次レポートサマリー取得開始:", { userId, period, date });
+    console.log("📊 月次レポートサマリー取得開始:", { userId: uid, period, date });
 
     // Firebase接続確認
     console.log("🔍 Firebase接続確認中...");
@@ -544,7 +550,7 @@ export async function GET(request: NextRequest) {
     console.log("🔍 分析データ取得開始...");
     const analyticsSnapshot = await adminDb
       .collection("analytics")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .get();
     console.log("✅ 分析データ取得完了:", analyticsSnapshot.docs.length, "件");
     const analytics: AnalyticsData[] = analyticsSnapshot.docs.map((doc) => {
@@ -608,7 +614,7 @@ export async function GET(request: NextRequest) {
 
     // 投稿データを取得（投稿一覧ページと同じロジック）
     console.log("🔍 投稿データ取得開始...");
-    const postsSnapshot = await adminDb.collection("posts").where("userId", "==", userId).get();
+    const postsSnapshot = await adminDb.collection("posts").where("userId", "==", uid).get();
     console.log("✅ 投稿データ取得完了:", postsSnapshot.docs.length, "件");
     const posts: PostData[] = postsSnapshot.docs.map((doc) => {
       const data = doc.data();
@@ -773,18 +779,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("❌ 月次レポートサマリー取得エラー:", error);
-    console.error("❌ エラー詳細:", {
-      name: error instanceof Error ? error.name : "Unknown",
-      message: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    const { status, body } = buildErrorResponse(error);
     return NextResponse.json(
       {
-        success: false,
+        ...body,
         error: "月次レポートサマリーの取得に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: body.details ?? (body.error !== "月次レポートサマリーの取得に失敗しました" ? body.error : undefined),
+        code: body.code ?? "analytics_monthly_report_summary_error",
       },
-      { status: 500 }
+      { status }
     );
   }
 }

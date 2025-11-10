@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import SNSLayout from "../../../../components/sns-layout";
 import PostEditor from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
 import { usePlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
+import { authFetch } from "../../../../utils/authFetch";
 
 export default function FeedLabPage() {
   const [postContent, setPostContent] = useState("");
@@ -44,21 +45,15 @@ export default function FeedLabPage() {
   // 計画データを取得
   const { planData } = usePlanData("instagram");
   const { user } = useAuth();
+  const isAuthReady = useMemo(() => Boolean(user), [user]);
 
   // 投稿データを取得する関数
   const fetchPostData = useCallback(
     async (postId: string) => {
-      if (!user?.uid) {return;}
+      if (!isAuthReady) {return;}
 
       try {
-        const { auth } = await import("../../../../lib/firebase");
-        const token = await auth.currentUser?.getIdToken();
-
-        const response = await fetch(`/api/posts?userId=${user.uid}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await authFetch("/api/posts");
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -131,7 +126,7 @@ export default function FeedLabPage() {
         console.error("投稿データ取得エラー:", error);
       }
     },
-    [user?.uid]
+    [isAuthReady]
   );
 
   // URLパラメータの変更を監視
@@ -145,7 +140,7 @@ export default function FeedLabPage() {
         console.log("URL changed, parameters:", { editId, postId });
 
         const targetId = editId || postId;
-        if (targetId && user?.uid) {
+        if (targetId && isAuthReady) {
           console.log("URL change detected, loading post data for ID:", targetId);
           fetchPostData(targetId);
         }
@@ -161,23 +156,18 @@ export default function FeedLabPage() {
     return () => {
       window.removeEventListener("popstate", handleUrlChange);
     };
-  }, [user?.uid, fetchPostData]);
+  }, [isAuthReady, fetchPostData]);
 
   // スケジュール生成関数
   const generateSchedule = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     setIsGeneratingSchedule(true);
     setScheduleError("");
 
     try {
       // ビジネス情報を取得
-      const idToken = await user.getIdToken();
-      const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const businessResponse = await authFetch("/api/user/business-info");
 
       if (!businessResponse.ok) {
         throw new Error("ビジネス情報の取得に失敗しました");
@@ -192,14 +182,8 @@ export default function FeedLabPage() {
         hasBusinessInfo: !!businessData.businessInfo,
       });
 
-      const scheduleResponse = await fetch("/api/instagram/feed-schedule", {
+      const scheduleResponse = await authFetch("/api/instagram/feed-schedule", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          Authorization: `Bearer ${idToken}`,
-          Accept: "application/json",
-          "Cache-Control": "no-cache",
-        },
         body: JSON.stringify({
           monthlyPosts,
           dailyPosts,
@@ -257,11 +241,11 @@ export default function FeedLabPage() {
       setIsGeneratingSchedule(false);
       console.log("🏁 Schedule generation completed");
     }
-  }, [user, monthlyPosts, dailyPosts]);
+  }, [isAuthReady, monthlyPosts, dailyPosts]);
 
   // スケジュール保存関数
   const saveSchedule = useCallback(async () => {
-    if (!user?.uid || generatedSchedule.length === 0) {
+    if (!isAuthReady || generatedSchedule.length === 0) {
       setSaveMessage("スケジュールが生成されていません");
       return;
     }
@@ -271,12 +255,7 @@ export default function FeedLabPage() {
 
     try {
       // ビジネス情報を取得
-      const idToken = await user.getIdToken();
-      const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const businessResponse = await authFetch("/api/user/business-info");
 
       if (!businessResponse.ok) {
         throw new Error("ビジネス情報の取得に失敗しました");
@@ -285,14 +264,9 @@ export default function FeedLabPage() {
       const businessData = await businessResponse.json();
 
       // スケジュール保存APIを呼び出し
-      const saveResponse = await fetch("/api/instagram/schedule-save", {
+      const saveResponse = await authFetch("/api/instagram/schedule-save", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
         body: JSON.stringify({
-          userId: user.uid,
           scheduleType: "feed",
           scheduleData: generatedSchedule,
           monthlyPosts,
@@ -313,22 +287,14 @@ export default function FeedLabPage() {
     } finally {
       setIsSavingSchedule(false);
     }
-  }, [user, generatedSchedule, monthlyPosts, dailyPosts]);
+  }, [isAuthReady, generatedSchedule, monthlyPosts, dailyPosts]);
 
   // 保存されたスケジュールを読み込む関数
   const loadSavedSchedule = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch(
-        `/api/instagram/schedule-save?userId=${user.uid}&scheduleType=feed`,
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        }
-      );
+      const response = await authFetch(`/api/instagram/schedule-save?scheduleType=feed`);
 
       if (response.ok) {
         const result = await response.json();
@@ -342,22 +308,17 @@ export default function FeedLabPage() {
     } catch (error) {
       console.error("スケジュール読み込みエラー:", error);
     }
-  }, [user]);
+  }, [isAuthReady]);
 
   // AIヒント生成関数
   const generateImageVideoSuggestions = useCallback(
     async (content: string) => {
-      if (!user?.uid) {return;}
+      if (!isAuthReady) {return;}
 
       setIsGeneratingSuggestions(true);
       try {
         // ビジネス情報を取得
-        const idToken = await user.getIdToken();
-          const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-          });
+        const businessResponse = await authFetch("/api/user/business-info");
 
         if (!businessResponse.ok) {
           throw new Error("ビジネス情報の取得に失敗しました");
@@ -366,12 +327,8 @@ export default function FeedLabPage() {
         const businessData = await businessResponse.json();
 
         // AIヒントを生成
-        const suggestionsResponse = await fetch("/api/instagram/feed-suggestions", {
+        const suggestionsResponse = await authFetch("/api/instagram/feed-suggestions", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
           body: JSON.stringify({
             content,
             businessInfo: businessData.businessInfo,
@@ -390,7 +347,7 @@ export default function FeedLabPage() {
         setIsGeneratingSuggestions(false);
       }
     },
-    [user]
+    [isAuthReady]
   );
 
   useEffect(() => {
@@ -398,10 +355,10 @@ export default function FeedLabPage() {
   }, []);
 
   useEffect(() => {
-    if (user?.uid) {
+    if (isAuthReady) {
       loadSavedSchedule(); // 保存されたスケジュールを読み込み
     }
-  }, [user?.uid, loadSavedSchedule]);
+  }, [isAuthReady, loadSavedSchedule]);
 
   if (!isMounted) {
     return null;

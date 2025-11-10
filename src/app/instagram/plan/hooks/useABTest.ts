@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { SimulationRequest, ABTestComparison } from "../types/plan";
+import { authFetch } from "../../../../utils/authFetch";
 
 export const useABTest = () => {
   const [abTestResult, setAbTestResult] = useState<ABTestComparison | null>(null);
@@ -15,11 +16,8 @@ export const useABTest = () => {
     setAbTestError("");
 
     try {
-      const response = await fetch("/api/instagram/ab-test", {
+      const response = await authFetch("/api/instagram/ab-test", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(requestData),
       });
 

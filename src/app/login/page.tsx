@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const isMaintenanceMode = true;
 
   const { signIn } = useAuth();
   const router = useRouter();
@@ -148,10 +149,14 @@ export default function LoginPage() {
             </div>
 
             {/* エラーメッセージ */}
-            {error && (
+            {(isMaintenanceMode || error) && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-red-700">{error}</div>
+                <div className="text-sm text-red-700">
+                  {isMaintenanceMode
+                    ? "現在メンテナンス中のためログインできません。時間をおいて再度お試しください。"
+                    : error}
+                </div>
               </div>
             )}
 
@@ -159,10 +164,12 @@ export default function LoginPage() {
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isMaintenanceMode}
                 className="group relative w-full flex justify-center items-center py-4 px-6 border border-transparent text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
               >
-                {loading ? (
+                {isMaintenanceMode ? (
+                  "メンテナンス中です"
+                ) : loading ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3"></div>
                     ログイン中...

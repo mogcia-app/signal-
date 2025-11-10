@@ -87,22 +87,12 @@ export async function GET(request: NextRequest) {
       auditEventName: "plan_list",
     });
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId") ?? uid;
     const snsType = searchParams.get("snsType"); // instagram, x, tiktok
     const status = searchParams.get("status"); // active, archived, expired
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    // userIdが指定されていない場合はエラー
-    if (!userId) {
-      return NextResponse.json({ error: "userIdが必要です" }, { status: 400 });
-    }
-
-    if (userId !== uid) {
-      return NextResponse.json({ error: "別ユーザーの計画にはアクセスできません" }, { status: 403 });
-    }
-
     // クエリを構築
-    let query = adminDb.collection("plans").where("userId", "==", userId);
+    let query = adminDb.collection("plans").where("userId", "==", uid);
 
     // SNSタイプでフィルタ
     if (snsType) {
@@ -141,13 +131,7 @@ export async function GET(request: NextRequest) {
       total: snapshot.size,
     });
   } catch (error) {
-    const { searchParams } = new URL(request.url);
     console.error("計画取得エラー:", error);
-    console.error("エラーの詳細:", {
-      message: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined,
-      userId: searchParams.get("userId"),
-    });
     const { status, body } = buildErrorResponse(error);
     return NextResponse.json(body, { status });
   }

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../contexts/auth-context";
+import { authFetch } from "../../../utils/authFetch";
 import SNSLayout from "../../../components/sns-layout";
 import { usePlanForm } from "./hooks/usePlanForm";
 import { useSimulation } from "./hooks/useSimulation";
@@ -62,26 +63,27 @@ export default function InstagramPlanPage() {
 
   const { isAiLoading, handleStartAiDiagnosis, handleSaveAdviceAndContinue } = useAIDiagnosis();
 
+  const isAuthReady = useMemo(() => Boolean(user), [user]);
+
   // 分析データを取得
   const fetchAnalytics = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     try {
-      const response = await fetch(`/api/analytics?userId=${user.uid}`);
-
-      if (response.ok) {
-        // const result = await response.json();
-        // setAnalyticsData(result.analytics || []);
-      }
+      await authFetch("/api/analytics");
+      // const result = await response.json();
+      // setAnalyticsData(result.analytics || []);
     } catch (error) {
       console.error("Analytics fetch error:", error);
     }
-  }, [user]);
+  }, [isAuthReady]);
 
   // コンポーネントマウント時にanalyticsデータを取得
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    if (isAuthReady) {
+      fetchAnalytics();
+    }
+  }, [fetchAnalytics, isAuthReady]);
 
   // シミュレーション実行ハンドラー
   const handleRunSimulation = async () => {
@@ -163,13 +165,8 @@ export default function InstagramPlanPage() {
         return;
       }
 
-      const idToken = await user.getIdToken();
-      const response = await fetch(`/api/plans/${loadedPlanId}`, {
+      const response = await authFetch(`/api/plans/${loadedPlanId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
       });
 
       if (response.ok) {

@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../contexts/auth-context";
+import { authFetch } from "../utils/authFetch";
 
 // 統一された計画データの型定義
 interface PlanData {
@@ -33,9 +34,10 @@ export const usePlanData = (snsType: "instagram" | "x" | "tiktok" | "youtube" = 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const isAuthReady = useMemo(() => Boolean(user), [user]);
 
   const fetchPlanData = useCallback(async () => {
-    if (!user?.uid) {
+    if (!isAuthReady) {
       setLoading(false);
       return;
     }
@@ -43,15 +45,7 @@ export const usePlanData = (snsType: "instagram" | "x" | "tiktok" | "youtube" = 
     try {
       setLoading(true);
       setError(null);
-      const idToken = await user.getIdToken();
-      const response = await fetch(
-        `/api/plans?userId=${user.uid}&snsType=${snsType}&status=active`,
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        }
-      );
+      const response = await authFetch(`/api/plans?snsType=${snsType}&status=active`);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -85,11 +79,11 @@ export const usePlanData = (snsType: "instagram" | "x" | "tiktok" | "youtube" = 
     } finally {
       setLoading(false);
     }
-  }, [user, snsType]);
+  }, [isAuthReady, snsType]);
 
   useEffect(() => {
     fetchPlanData();
-  }, [user?.uid, fetchPlanData, snsType]);
+  }, [isAuthReady, fetchPlanData, snsType]);
 
   // 手動でデータを再取得する関数
   const refetchPlanData = () => {

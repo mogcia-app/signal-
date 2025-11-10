@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "../../../../lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, { requireContract: true });
+
     const body = await request.json();
     const {
-      userId,
       scheduleType, // 'feed' | 'reel' | 'story'
       scheduleData,
       monthlyPosts,
@@ -14,13 +16,16 @@ export async function POST(request: NextRequest) {
       businessInfo,
     } = body;
 
-    if (!userId || !scheduleType || !scheduleData) {
-      return NextResponse.json({ error: "必要なパラメータが不足しています" }, { status: 400 });
+    if (!scheduleType || !scheduleData) {
+      return NextResponse.json(
+        { success: false, error: "必要なパラメータが不足しています" },
+        { status: 400 },
+      );
     }
 
     // Firestoreにスケジュールを保存
     const db = getAdminDb();
-    const scheduleRef = db.collection("userSchedules").doc(userId);
+    const scheduleRef = db.collection("userSchedules").doc(uid);
 
     const scheduleDoc = {
       [`${scheduleType}Schedule`]: {
@@ -41,23 +46,27 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("スケジュール保存エラー:", error);
-    return NextResponse.json({ error: "スケジュール保存に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, { requireContract: true });
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
     const scheduleType = searchParams.get("scheduleType"); // 'feed' | 'reel' | 'story'
 
-    if (!userId || !scheduleType) {
-      return NextResponse.json({ error: "必要なパラメータが不足しています" }, { status: 400 });
+    if (!scheduleType) {
+      return NextResponse.json(
+        { success: false, error: "必要なパラメータが不足しています" },
+        { status: 400 },
+      );
     }
 
     // Firestoreからスケジュールを取得
     const db = getAdminDb();
-    const scheduleRef = db.collection("userSchedules").doc(userId);
+    const scheduleRef = db.collection("userSchedules").doc(uid);
     const scheduleDoc = await scheduleRef.get();
 
     if (!scheduleDoc.exists) {
@@ -77,6 +86,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("スケジュール取得エラー:", error);
-    return NextResponse.json({ error: "スケジュール取得に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

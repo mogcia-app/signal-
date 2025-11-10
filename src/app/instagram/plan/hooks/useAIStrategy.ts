@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PlanFormData, SimulationResult } from "../types/plan";
+import { authFetch } from "../../../../utils/authFetch";
 
 interface AIStrategyState {
   strategy: string | null;
@@ -38,17 +39,8 @@ export function useAIStrategy(): UseAIStrategyReturn {
     });
 
     try {
-      // 🔐 Firebase認証トークンを取得
-      const { auth } = await import("../../../../lib/firebase");
-      const currentUser = auth.currentUser;
-      const token = currentUser ? await currentUser.getIdToken() : null;
-
-      const response = await fetch("/api/instagram/ai-strategy", {
+      const response = await authFetch("/api/instagram/ai-strategy", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
         body: JSON.stringify({
           formData,
           selectedStrategies,

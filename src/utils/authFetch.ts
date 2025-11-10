@@ -13,6 +13,22 @@ const defaultFetch: typeof fetch | undefined =
 
 type FetchImpl = typeof fetch;
 
+const isApiRequest = (input: RequestInfo | URL): boolean => {
+  if (typeof input === "string") {
+    return input.startsWith("/api");
+  }
+
+  if (input instanceof URL) {
+    return input.pathname.startsWith("/api");
+  }
+
+  if (input instanceof Request) {
+    return input.url.startsWith("/api");
+  }
+
+  return false;
+};
+
 export const authFetch = async (
   input: RequestInfo | URL,
   options: RequestInit = {},
@@ -32,6 +48,10 @@ export const authFetch = async (
   }
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+
+  if (process.env.NODE_ENV === "development" && isApiRequest(input)) {
+    console.debug("[authFetch] token attached:", Boolean(token), "url:", input.toString());
   }
 
   return fetchImpl(input, { ...options, headers });

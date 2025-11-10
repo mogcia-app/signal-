@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Brain, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "../../../../contexts/auth-context";
+import { authFetch } from "../../../../utils/authFetch";
 
 interface AIPredictionAnalysisProps {
   activeTab: "weekly" | "monthly";
@@ -39,13 +40,14 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   selectedWeek,
 }) => {
   const { user } = useAuth();
+  const isAuthReady = useMemo(() => Boolean(user), [user]);
   const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   // AI分析を実行
   const fetchAIAnalysis = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     setIsLoading(true);
     setError(null);
@@ -58,11 +60,9 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
         throw new Error("日付が指定されていません");
       }
 
-      console.log("🤖 AI分析開始:", { userId: user.uid, period, date });
+      console.log("🤖 AI分析開始:", { period, date });
 
-      const response = await fetch(
-        `/api/ai/monthly-analysis?userId=${user.uid}&period=${period}&date=${date}`,
-      );
+      const response = await authFetch(`/api/ai/monthly-analysis?period=${period}&date=${date}`);
 
       if (!response.ok) {
         throw new Error(`AI分析API エラー: ${response.status}`);
@@ -83,7 +83,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [user?.uid, activeTab, selectedMonth, selectedWeek]);
+  }, [isAuthReady, activeTab, selectedMonth, selectedWeek]);
 
   // AI分析実行ボタンのハンドラー
   const handleRunAnalysis = () => {

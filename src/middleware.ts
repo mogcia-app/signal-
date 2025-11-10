@@ -20,6 +20,22 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  const isEmulatorEnv =
+    process.env.FIREBASE_AUTH_EMULATOR_HOST ||
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST;
+  const shouldBypassEdgeAuth =
+    process.env.NEXT_PUBLIC_BYPASS_EDGE_AUTH === "true" ||
+    (process.env.NODE_ENV !== "production" && Boolean(isEmulatorEnv));
+
+  if (shouldBypassEdgeAuth) {
+    if (process.env.NODE_ENV !== "production") {
+      console.debug(
+        "[middleware] auth bypass enabled (NEXT_PUBLIC_BYPASS_EDGE_AUTH or emulator detected)",
+      );
+    }
+    return NextResponse.next();
+  }
+
   const authHeader = req.headers.get("authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
     await logSecurityEvent("auth_missing_token", {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
 
 // 目標達成度チェック関数
 async function checkGoalAchievement(userId: string) {
@@ -178,14 +179,15 @@ interface AnalyticsData {
 
 export async function GET(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-list", limit: 60, windowSeconds: 60 },
+      auditEventName: "analytics_list",
+    });
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const snsType = searchParams.get("snsType") ?? "instagram";
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
-    }
-
-    console.log("Fetching analytics for userId:", userId);
+    console.log("Fetching analytics for uid:", uid, "snsType:", snsType);
 
     // 本番環境でFirebase設定がない場合は空の配列を返す
     if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
@@ -196,11 +198,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const snapshot = await adminDb
-      .collection("analytics")
-      .where("userId", "==", userId)
-      // .orderBy('createdAt', 'desc') // インデックス不要にするためコメントアウト
-      .get();
+    let query = adminDb.collection("analytics").where("userId", "==", uid);
+    if (snsType) {
+      query = query.where("snsType", "==", snsType);
+    }
+
+    const snapshot = await query.get();
 
     const analytics = snapshot.docs
       .map((doc) => {
@@ -233,7 +236,16 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Analytics fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch analytics data" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(
+      {
+        ...body,
+        error: "Failed to fetch analytics data",
+        details: body.details ?? (body.error !== "Failed to fetch analytics data" ? body.error : undefined),
+        code: body.code ?? "analytics_list_error",
+      },
+      { status },
+    );
   }
 }
 

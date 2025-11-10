@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../../../contexts/auth-context";
 import { PlanFormData, SimulationResult } from "../types/plan";
+import { authFetch } from "../../../../utils/authFetch";
 
 export const usePlanForm = () => {
   const { user } = useAuth();
+  const isAuthReady = useMemo(() => Boolean(user), [user]);
 
   // 計画の読み込み状態
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
@@ -147,7 +149,7 @@ export const usePlanForm = () => {
 
   // 計画保存関数
   const savePlan = async () => {
-    if (!user?.uid) {
+    if (!isAuthReady) {
       setSaveError("ユーザーがログインしていません");
       return false;
     }
@@ -163,7 +165,11 @@ export const usePlanForm = () => {
     setSaveSuccess(false);
 
     try {
-      const idToken = await user.getIdToken();
+      if (!user) {
+        setSaveError("ユーザー情報を取得できませんでした");
+        setIsSaving(false);
+        return false;
+      }
 
       // 計画データの構築
       const planData = {
@@ -197,12 +203,8 @@ export const usePlanForm = () => {
         updatedAt: new Date(),
       };
 
-      const response = await fetch("/api/plans", {
+      const response = await authFetch("/api/plans", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
         body: JSON.stringify(planData),
       });
 
@@ -247,19 +249,11 @@ export const usePlanForm = () => {
 
   // ✅ 保存された計画を読み込む
   const loadSavedPlan = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     setIsLoadingPlan(true);
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch(
-        `/api/plans?userId=${user.uid}&snsType=instagram&status=active`,
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        }
-      );
+      const response = await authFetch(`/api/plans?snsType=instagram&status=active`);
 
       if (response.ok) {
         const data = await response.json();
@@ -341,15 +335,10 @@ export const usePlanForm = () => {
   // 計画をリセット（新しい計画を立てる）
   const resetPlan = async () => {
     // 既存の計画をアーカイブ
-    if (loadedPlanId && user?.uid) {
+    if (loadedPlanId && isAuthReady) {
       try {
-        const idToken = await user.getIdToken();
-        await fetch(`/api/plans/${loadedPlanId}`, {
+        await authFetch(`/api/plans/${loadedPlanId}`, {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
           body: JSON.stringify({ status: "archived" }),
         });
       } catch (error) {
@@ -368,11 +357,11 @@ export const usePlanForm = () => {
 
   // ✅ 初回マウント時に保存された計画を読み込む
   useEffect(() => {
-    if (user?.uid) {
+    if (isAuthReady) {
       loadSavedPlan();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
+  }, [isAuthReady]);
 
   return {
     formData,

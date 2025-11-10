@@ -173,7 +173,12 @@ export async function requireAuthContext(request: NextRequest, options: RequireA
       request.headers.get("x-real-ip") ??
       undefined;
 
-    if (options.rateLimit) {
+    const isRateLimitDisabled =
+      process.env.NODE_ENV !== "production" ||
+      process.env.NEXT_PUBLIC_DISABLE_RATE_LIMIT === "true" ||
+      process.env.DISABLE_RATE_LIMIT === "true";
+
+    if (options.rateLimit && !isRateLimitDisabled) {
       await enforceRateLimit(uid, options.rateLimit, clientIp);
     }
 

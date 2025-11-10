@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import { usePlanData } from "../../hooks/usePlanData";
@@ -9,6 +9,7 @@ import { AuthGuard } from "../../components/auth-guard";
 import SNSLayout from "../../components/sns-layout";
 import { CurrentPlanCard } from "../../components/CurrentPlanCard";
 // import StatsCards from './components/StatsCards'; // クイックアクションに置き換え
+import { authFetch } from "../../utils/authFetch";
 
 interface DashboardStats {
   followers: number;
@@ -79,6 +80,7 @@ interface GoalProgress {
 
 function InstagramDashboardContent() {
   const { user } = useAuth();
+  const isAuthReady = useMemo(() => Boolean(user), [user]);
   const { loading: profileLoading, error: profileError } = useUserProfile();
   const { planData } = usePlanData("instagram");
   const [loading, setLoading] = useState(true);
@@ -120,10 +122,10 @@ function InstagramDashboardContent() {
 
   // 次のアクションを取得
   const fetchNextActions = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     try {
-      const response = await fetch("/api/instagram/next-actions");
+      const response = await authFetch("/api/instagram/next-actions");
 
       if (response.ok) {
         const result = await response.json();
@@ -134,7 +136,7 @@ function InstagramDashboardContent() {
     } catch (error) {
       console.error("Next actions fetch error:", error);
     }
-  }, [user]);
+  }, [isAuthReady]);
 
   // 次のアクションを即座に更新する関数（外部から呼び出し可能）
   const refreshNextActions = useCallback(() => {
@@ -144,10 +146,10 @@ function InstagramDashboardContent() {
 
   // 最近の投稿を取得
   const fetchRecentPosts = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     try {
-      const response = await fetch("/api/instagram/recent-posts");
+      const response = await authFetch("/api/instagram/recent-posts");
 
       if (response.ok) {
         const result = await response.json();
@@ -158,14 +160,14 @@ function InstagramDashboardContent() {
     } catch (error) {
       console.error("Recent posts fetch error:", error);
     }
-  }, [user]);
+  }, [isAuthReady]);
 
   // パフォーマンスサマリーを取得
   const fetchPerformanceSummary = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     try {
-      const response = await fetch("/api/instagram/performance-summary");
+      const response = await authFetch("/api/instagram/performance-summary");
 
       if (response.ok) {
         const result = await response.json();
@@ -176,14 +178,14 @@ function InstagramDashboardContent() {
     } catch (error) {
       console.error("Performance summary fetch error:", error);
     }
-  }, [user]);
+  }, [isAuthReady]);
 
   // 目標進捗を取得
   const fetchGoalProgress = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     try {
-      const response = await fetch("/api/instagram/goal-progress");
+      const response = await authFetch("/api/instagram/goal-progress");
 
       if (response.ok) {
         const result = await response.json();
@@ -194,14 +196,14 @@ function InstagramDashboardContent() {
     } catch (error) {
       console.error("Goal progress fetch error:", error);
     }
-  }, [user]);
+  }, [isAuthReady]);
 
   // アナリティクスデータを取得
   const fetchAnalyticsData = useCallback(async () => {
-    if (!user?.uid) {return [];}
+    if (!isAuthReady) {return [];}
 
     try {
-      const response = await fetch(`/api/analytics?userId=${user.uid}`);
+      const response = await authFetch("/api/analytics");
 
       if (response.ok) {
         const result = await response.json();
@@ -211,14 +213,14 @@ function InstagramDashboardContent() {
       console.error("アナリティクスデータ取得エラー:", error);
     }
     return [];
-  }, [user]);
+  }, [isAuthReady]);
 
   // ダッシュボード統計を取得
   const fetchDashboardStats = useCallback(async () => {
-    if (!user?.uid) {return;}
+    if (!isAuthReady) {return;}
 
     try {
-      const response = await fetch("/api/instagram/dashboard-stats");
+      const response = await authFetch("/api/instagram/dashboard-stats");
 
       if (response.ok) {
         const result = await response.json();
@@ -250,21 +252,19 @@ function InstagramDashboardContent() {
     } catch (error) {
       console.error("ダッシュボード統計取得エラー:", error);
     }
-  }, [user]);
+  }, [isAuthReady]);
 
   // 投稿データを取得して統計を計算
   const fetchPostsAndCalculateStats = useCallback(async () => {
     try {
       setLoading(true);
 
-      // 認証されたユーザーのUIDを使用
-      const userId = user?.uid;
-      if (!userId) {
+      if (!isAuthReady) {
         console.error("User not authenticated");
         return;
       }
 
-      console.log("Fetching data for authenticated user:", userId);
+      console.log("Fetching data for authenticated user");
 
       // アナリティクスデータを取得
       await fetchAnalyticsData();
@@ -285,7 +285,7 @@ function InstagramDashboardContent() {
       setLoading(false);
     }
   }, [
-    user,
+    isAuthReady,
     fetchAnalyticsData,
     fetchDashboardStats,
     fetchRecentPosts,
@@ -304,8 +304,8 @@ function InstagramDashboardContent() {
 
   useEffect(() => {
     // 認証状態が確定してからデータを取得
-    if (user?.uid) {
-      console.log("User authenticated, fetching data for:", user.uid);
+    if (isAuthReady) {
+      console.log("User authenticated, fetching data");
       fetchPostsAndCalculateStats();
 
       // 4日ごとに自動更新（4日 = 4 * 24 * 60 * 60 * 1000 = 345,600,000ms）
@@ -317,7 +317,7 @@ function InstagramDashboardContent() {
     } else {
       console.log("User not authenticated, skipping data fetch");
     }
-  }, [user?.uid, fetchPostsAndCalculateStats]);
+  }, [isAuthReady, fetchPostsAndCalculateStats]);
 
   // ローディング状態
   if (profileLoading) {

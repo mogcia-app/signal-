@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { ReactNode, useState, useEffect, useCallback } from "react";
+import { ReactNode, useState } from "react";
 
 interface SNSLayoutProps {
   children: ReactNode;
@@ -16,80 +16,11 @@ interface SNSLayoutProps {
 export default function SNSLayout({ children, customTitle, customDescription }: SNSLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isLabExpanded, setIsLabExpanded] = useState(false);
   const [isAnalyticsExpanded, setIsAnalyticsExpanded] = useState(false);
 
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
-
-  // 未読通知数を取得する関数
-  const fetchUnreadCount = useCallback(async () => {
-    if (!user?.uid) {return;}
-
-    try {
-      console.log("🔍 サイドバー: 未読通知数取得開始");
-
-      // Firebase認証トークンを取得
-      const { auth } = await import("../lib/firebase");
-      const token = await auth.currentUser?.getIdToken();
-
-      const response = await fetch(`/api/notifications?userId=${user.uid}&filter=unread`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const count = result.data?.length || 0;
-        console.log("📊 サイドバー: 未読通知数取得成功:", count);
-        setUnreadCount(count);
-      } else {
-        // エラーの詳細をログに出力（開発時のみ）
-        if (process.env.NODE_ENV === "development") {
-          console.warn("未読通知数取得エラー:", {
-            error: result.error,
-            details: result.details,
-            timestamp: result.timestamp,
-          });
-        }
-        // エラーの場合も0件として扱う（ユーザー体験を損なわない）
-        setUnreadCount(0);
-      }
-    } catch (error) {
-      // ネットワークエラーなどの場合
-      if (process.env.NODE_ENV === "development") {
-        console.warn("未読通知数の取得エラー:", error);
-      }
-      setUnreadCount(0);
-    }
-  }, [user?.uid]);
-
-  // コンポーネントマウント時に未読通知数を取得
-  useEffect(() => {
-    fetchUnreadCount();
-
-    // 30秒ごとに未読通知数を更新
-    const interval = setInterval(fetchUnreadCount, 30000);
-
-    // 通知が既読になったときのイベントリスナー
-    const handleNotificationRead = () => {
-      console.log("📡 サイドバー: notificationReadイベント受信");
-      fetchUnreadCount();
-    };
-
-    window.addEventListener("notificationRead", handleNotificationRead);
-    console.log("📡 サイドバー: notificationReadイベントリスナー登録完了");
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("notificationRead", handleNotificationRead);
-      console.log("📡 サイドバー: notificationReadイベントリスナー削除");
-    };
-  }, [user?.uid, fetchUnreadCount]);
 
   const handleSignOut = async () => {
     try {
