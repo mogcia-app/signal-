@@ -4,7 +4,6 @@ import { useState } from "react";
 
 export default function TestSentryPage() {
   const [errorThrown, setErrorThrown] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // 本番環境でのアクセス制限
   const isProduction = process.env.NODE_ENV === "production";

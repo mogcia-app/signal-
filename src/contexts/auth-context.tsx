@@ -12,6 +12,7 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import { UserProfile } from "../types/user";
 import { checkUserContract } from "../lib/auth";
+import { installAuthFetch } from "../utils/installAuthFetch";
 
 interface AuthContextType {
   user: User | null;
@@ -28,6 +29,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [contractValid, setContractValid] = useState(false);
+
+  useEffect(() => {
+    installAuthFetch();
+  }, []);
 
   // ユーザードキュメントを作成または更新する関数
   const ensureUserDocument = async (user: User) => {
@@ -150,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   // 6時間で自動ログアウト機能
   useEffect(() => {
@@ -185,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const intervalId = setInterval(checkSessionTimeout, 5 * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [user]);
+  }, [user, router]);
 
   const signIn = async (email: string, password: string) => {
     try {

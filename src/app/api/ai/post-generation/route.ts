@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -44,20 +45,11 @@ interface PostGenerationRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    // 🔐 Firebase認証トークンからユーザーIDを取得
-    let userId = "anonymous";
-    const authHeader = request.headers.get("authorization");
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        userId = decodedToken.uid;
-        console.log("✅ Authenticated user:", userId);
-      } catch (authError) {
-        console.warn("⚠️ Firebase認証エラー（匿名ユーザーとして処理）:", authError);
-      }
-    }
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "ai-post-generation", limit: 30, windowSeconds: 60 },
+      auditEventName: "ai_post_generation",
+    });
 
     const body: PostGenerationRequest = await request.json();
     let { prompt } = body;
@@ -397,12 +389,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
     });
   } catch (error) {
     console.error("AI投稿文生成エラー:", error);
-    return NextResponse.json(
-      {
-        error: "AI投稿文の生成に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

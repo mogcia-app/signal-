@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "User ID is required" }, { status: 401 });
-    }
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-recent-posts", limit: 60, windowSeconds: 60 },
+      auditEventName: "instagram_recent_posts_access",
+    });
 
     // 最近の投稿を取得（過去30日、最大10件）
     const thirtyDaysAgo = new Date();
@@ -14,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     const postsQuery = await adminDb
       .collection("posts")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .where("status", "==", "published")
       .where("createdAt", ">=", thirtyDaysAgo)
       .orderBy("createdAt", "desc")
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
     // 分析データを取得
     const analyticsQuery = await adminDb
       .collection("analytics")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .get();
 
     const analyticsMap = new Map();
@@ -81,7 +83,7 @@ export async function GET(request: NextRequest) {
     });
 
     console.log("📋 Recent posts fetched:", {
-      userId,
+      userId: uid,
       totalPosts: recentPosts.length,
       postsWithAnalytics: recentPosts.filter((p) => p.hasAnalytics).length,
     });
@@ -92,13 +94,8 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Recent posts fetch error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch recent posts",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

@@ -19,7 +19,7 @@ interface PostData {
   userId: string;
   title: string;
   content: string;
-  hashtags: string[];
+  hashtags?: string[] | string | null;
   postType: "feed" | "reel" | "story";
   scheduledDate?:
     | Date
@@ -128,6 +128,23 @@ interface PostCardProps {
   postAnalytics: AnalyticsData | null;
   onDeletePost: (postId: string) => void;
 }
+
+const normalizeHashtags = (hashtags: PostData["hashtags"]): string[] => {
+  if (Array.isArray(hashtags)) {
+    return hashtags
+      .filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
+      .map((tag) => tag.replace(/^#+/, "").trim());
+  }
+
+  if (typeof hashtags === "string") {
+    return hashtags
+      .split(" ")
+      .map((tag) => tag.replace(/^#+/, "").trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  return [];
+};
 
 const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, onDeletePost }) => {
   // ステータス表示の色分け
@@ -291,7 +308,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
                 }
 
                 return date.toLocaleDateString("ja-JP");
-              } catch (error) {
+              } catch (_error) {
                 return "記録なし";
               }
             })()}
@@ -355,17 +372,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
 
         {/* ハッシュタグ */}
         {(() => {
-          // ハッシュタグを一度だけ処理
-           
-          const hashtags = Array.isArray(post.hashtags)
-            ? post.hashtags
-            : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              typeof (post.hashtags as any) === "string"
-              ? (post.hashtags as any)
-                  .split(" ")
-                  .filter((tag: string) => tag.trim() !== "")
-                  .map((tag: string) => tag.replace(/^#+/, "").trim())
-              : [];
+          const hashtags = normalizeHashtags(post.hashtags);
 
           if (hashtags.length === 0) {return null;}
 

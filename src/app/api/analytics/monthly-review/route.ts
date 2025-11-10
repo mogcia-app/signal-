@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { cache, generateCacheKey } from "../../../../lib/cache";
 import { buildReportPrompt } from "../../../../utils/aiPromptBuilder";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -224,27 +225,18 @@ export async function GET(request: NextRequest) {
   try {
     console.log("🚀 Monthly review API開始");
 
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-monthly-review", limit: 20, windowSeconds: 60 },
+      auditEventName: "analytics_monthly_review_access",
+    });
+
     // Firebase接続確認
     if (!adminDb) {
       console.error("❌ Firebase接続エラー: adminDb is null");
       return NextResponse.json({ error: "Firebase接続エラー" }, { status: 500 });
     }
     console.log("✅ Firebase接続OK");
-
-    // 🔐 Firebase認証トークンからユーザーIDを取得
-    let userId = "anonymous";
-    const authHeader = request.headers.get("authorization");
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        userId = decodedToken.uid;
-        console.log("✅ Authenticated user:", userId);
-      } catch (authError) {
-        console.warn("⚠️ Firebase認証エラー（匿名ユーザーとして処理）:", authError);
-      }
-    }
 
     const { searchParams } = new URL(request.url);
     const currentScore = parseInt(searchParams.get("currentScore") || "0");
@@ -425,13 +417,8 @@ export async function GET(request: NextRequest) {
       message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return NextResponse.json(
-      {
-        error: "Failed to generate monthly review",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

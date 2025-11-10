@@ -6,6 +6,7 @@ import { useUserProfile } from "../../hooks/useUserProfile";
 import { useRouter } from "next/navigation";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { notify } from "../../lib/ui/notifications";
 import {
   CheckCircle,
   ArrowRight,
@@ -225,7 +226,7 @@ export default function OnboardingPage() {
   // 商品・サービスの追加
   const addProduct = () => {
     if (!productName.trim()) {
-      alert("項目名を入力してください");
+      notify({ type: "error", message: "項目名を入力してください" });
       return;
     }
 
@@ -302,14 +303,20 @@ export default function OnboardingPage() {
       });
 
       console.log("✅ Onboarding completed successfully");
-      alert("✅ 設定を保存しました！御社専用AIに反映されました。");
+      notify({
+        type: "success",
+        message: "✅ 設定を保存しました！御社専用AIに反映されました。",
+      });
       setIsEditing(false);
       setCurrentStep(1);
       // ページをリロードして最新データを反映
       window.location.reload();
     } catch (error) {
       console.error("Error completing onboarding:", error);
-      alert("設定の保存に失敗しました。もう一度お試しください。");
+      notify({
+        type: "error",
+        message: "設定の保存に失敗しました。もう一度お試しください。",
+      });
     } finally {
       setIsSubmitting(false);
     }

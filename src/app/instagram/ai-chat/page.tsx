@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import SNSLayout from "../../../components/sns-layout";
 import { Send, Bot, User, Copy, RefreshCw } from "lucide-react";
+import { notify, requestConfirmation } from "../../../lib/ui/notifications";
 
 interface Message {
   id: string;
@@ -152,18 +153,25 @@ export default function InstagramAIChatPage() {
   };
 
   // チャット履歴をクリア
-  const handleClearChat = () => {
-    if (confirm("チャット履歴をクリアしますか？")) {
-      const welcomeMessage: Message = {
-        id: "1",
-        type: "ai",
-        content:
-          "チャット履歴をクリアしました。新しい会話を始めましょう！📊\n\n何かご質問があれば、お気軽にお聞きください。",
-        timestamp: new Date(),
-        suggestions: ["パフォーマンス分析をして", "成長戦略を教えて", "投稿時間の最適化について"],
-      };
-      setMessages([welcomeMessage]);
-    }
+  const handleClearChat = async () => {
+    const confirmed = await requestConfirmation({
+      message: "チャット履歴をクリアしますか？",
+      confirmLabel: "クリア",
+      cancelLabel: "キャンセル",
+    });
+
+    if (!confirmed) {return;}
+
+    const welcomeMessage: Message = {
+      id: "1",
+      type: "ai",
+      content:
+        "チャット履歴をクリアしました。新しい会話を始めましょう！📊\n\n何かご質問があれば、お気軽にお聞きください。",
+      timestamp: new Date(),
+      suggestions: ["パフォーマンス分析をして", "成長戦略を教えて", "投稿時間の最適化について"],
+    };
+    setMessages([welcomeMessage]);
+    notify({ type: "success", message: "チャット履歴をクリアしました。" });
   };
 
   return (

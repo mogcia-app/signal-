@@ -64,15 +64,6 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
   selectedWeek,
   selectedMonth,
 }) => {
-  const currentTotals = reportSummary?.totals || {
-    totalLikes: 0,
-    totalComments: 0,
-    totalShares: 0,
-    totalReach: 0,
-    totalFollowerChange: 0,
-    totalPosts: 0,
-  };
-
   return (
     <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6 mt-4">
       <div className="flex items-center mb-6">

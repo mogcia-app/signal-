@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -13,7 +14,6 @@ interface ChatRequest {
   message: string;
   context?: Record<string, unknown>;
   userId?: string;
-  pageType?: string;
   browserInfo?: {
     isSafari: boolean;
     isMobile: boolean;
@@ -31,19 +31,23 @@ interface InstagramData {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   goalSettings?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  recentActivity?: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   businessInfo?: any;
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid: authenticatedUserId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "ai-chat-post", limit: 20, windowSeconds: 60 },
+      auditEventName: "ai_chat_post",
+    });
+
     if (!openai) {
       return NextResponse.json({ error: "OpenAI API key not configured" }, { status: 500 });
     }
 
     const body: ChatRequest = await request.json();
-    const { message, userId, pageType, browserInfo } = body;
+    const { message, userId, browserInfo } = body;
 
     // ブラウザ情報をログ出力
     if (browserInfo) {
@@ -54,22 +58,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // 🔐 Firebase認証トークンからユーザーIDを取得
-    let authenticatedUserId = "anonymous";
-    const authHeader = request.headers.get("authorization");
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        authenticatedUserId = decodedToken.uid;
-      } catch (authError) {
-        console.warn("⚠️ Firebase認証エラー（匿名ユーザーとして処理）:", authError);
-      }
+    if (userId && userId !== authenticatedUserId) {
+      return NextResponse.json(
+        { error: "User mismatch detected" },
+        { status: 403 },
+      );
     }
 
-    // 実際のユーザーIDを優先
-    const currentUserId = userId || authenticatedUserId;
+    const currentUserId = authenticatedUserId;
 
     // Instagram全体のデータを取得
     const instagramData = await fetchInstagramData(currentUserId);
@@ -120,15 +116,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("AI Chat API Error:", error);
 
+    const { status, body } = buildErrorResponse(error);
     const errorResponse = {
-      success: false,
-      error: "AI chat failed",
-      details: error instanceof Error ? error.message : "Unknown error",
+      ...body,
       browserCompatible: true,
     };
 
     return NextResponse.json(errorResponse, {
-      status: 500,
+      status,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -182,28 +177,11 @@ async function fetchInstagramData(userId: string): Promise<InstagramData> {
     const businessInfo = userSnapshot.data()?.businessInfo || null;
 
     // 最近の活動データ（投稿と分析の統合）
-    const recentActivity = [
-      ...postsData.map((post) => ({ type: "post", ...post })),
-      ...analyticsData.map((analytics) => ({ type: "analytics", ...analytics })),
-    ]
-      .sort((a, b) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const aTime = (a as any).createdAt?.toDate?.() || new Date(0);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const bTime = (b as any).createdAt?.toDate?.() || new Date(0);
-        return bTime.getTime() - aTime.getTime();
-      })
-      .slice(0, 5);
-
-    // 使用されていない変数を削除
-    console.log("Recent activity count:", recentActivity.length);
-
     return {
       planData,
       analyticsData,
       postsData,
       goalSettings,
-      recentActivity,
       businessInfo,
     };
   } catch (error) {
@@ -214,8 +192,7 @@ async function fetchInstagramData(userId: string): Promise<InstagramData> {
 
 // Instagram専門のAIプロンプトを構築
 function buildInstagramAIPrompt(instagramData: InstagramData): string {
-  const { planData, analyticsData, postsData, goalSettings, recentActivity, businessInfo } =
-    instagramData;
+  const { planData, analyticsData, postsData, goalSettings, businessInfo } = instagramData;
 
   let systemPrompt = `あなたはInstagram運用の専門AIアドバイザーです。ユーザーのInstagramアカウント全体を理解し、具体的で実践的なアドバイスを提供してください。
 

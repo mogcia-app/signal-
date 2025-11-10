@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 interface AnalyticsData {
   id: string;
@@ -424,8 +425,14 @@ export async function GET(request: NextRequest) {
   try {
     console.log("🚀 週次レポートサマリーAPI開始");
 
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "weekly-report-summary", limit: 10, windowSeconds: 60 },
+      auditEventName: "analytics_weekly_report_summary",
+    });
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const userId = searchParams.get("userId") ?? uid;
     const weekString = searchParams.get("week") || getCurrentWeek(); // デフォルトは現在の週
 
     console.log("🔍 パラメータ確認:", { userId, weekString });
@@ -433,6 +440,10 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       console.log("❌ パラメータ不足");
       return NextResponse.json({ error: "userId パラメータが必要です" }, { status: 400 });
+    }
+
+    if (userId !== uid) {
+      return NextResponse.json({ error: "別ユーザーの週次レポートにはアクセスできません" }, { status: 403 });
     }
 
     console.log("📊 週次レポートサマリー取得開始:", { userId, weekString });
@@ -659,13 +670,7 @@ export async function GET(request: NextRequest) {
       message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return NextResponse.json(
-      {
-        success: false,
-        error: "週次レポートサマリーの取得に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

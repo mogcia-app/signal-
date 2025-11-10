@@ -4,23 +4,7 @@ import { useAuth } from "../../../../contexts/auth-context";
 
 interface AIPredictionAnalysisProps {
   activeTab: "weekly" | "monthly";
-  currentTotals: {
-    totalFollowerChange: number;
-    totalPosts: number;
-    totalLikes: number;
-    totalComments: number;
-    totalShares: number;
-    totalReach: number;
-  };
-  accountScore: Record<string, unknown> | null;
-  previousPeriodData: Record<string, unknown> | null;
   monthlyReview: Record<string, unknown> | null;
-  performanceRating: {
-    rating: string;
-    color: string;
-    bg: string;
-    label: string;
-  };
   selectedMonth?: string;
   selectedWeek?: string;
 }
@@ -50,11 +34,7 @@ interface AIAnalysisResult {
 
 export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   activeTab,
-  currentTotals,
-  accountScore,
-  previousPeriodData,
   monthlyReview,
-  performanceRating,
   selectedMonth,
   selectedWeek,
 }) => {
@@ -63,8 +43,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [hasRunAnalysis, setHasRunAnalysis] = useState(false);
-
   // AI分析を実行
   const fetchAIAnalysis = useCallback(async () => {
     if (!user?.uid) {return;}
@@ -84,11 +62,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
 
       const response = await fetch(
         `/api/ai/monthly-analysis?userId=${user.uid}&period=${period}&date=${date}`,
-        {
-          headers: {
-            "x-user-id": user.uid,
-          },
-        }
       );
 
       if (!response.ok) {
@@ -99,7 +72,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
 
       if (result.success) {
         setAnalysisResult(result.data);
-        setHasRunAnalysis(true);
         setIsExpanded(true);
         console.log("✅ AI分析完了:", result.data);
       } else {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 interface DashboardStats {
   followers: number;
@@ -27,12 +28,11 @@ interface DashboardStats {
 export async function GET(request: NextRequest) {
   try {
     console.log("🔍 API呼び出し開始");
-    const userId = request.headers.get("x-user-id");
-
-    if (!userId) {
-      console.log("❌ User ID not provided");
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    }
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-dashboard-stats", limit: 60, windowSeconds: 60 },
+      auditEventName: "instagram_dashboard_stats_access",
+    });
 
     console.log("🔍 ダッシュボード統計API呼び出し:", { userId });
 
@@ -328,13 +328,7 @@ export async function GET(request: NextRequest) {
       message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : "No stack trace",
     });
-    return NextResponse.json(
-      {
-        error: "ダッシュボード統計の取得に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : undefined,
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

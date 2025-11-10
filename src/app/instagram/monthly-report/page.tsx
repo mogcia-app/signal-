@@ -5,8 +5,6 @@ import SNSLayout from "../../../components/sns-layout";
 import { useAuth } from "../../../contexts/auth-context";
 import { usePlanData } from "../../../hooks/usePlanData";
 import { CurrentPlanCard } from "../../../components/CurrentPlanCard";
-import { checkUserDataCount } from "../../../lib/monthly-report-notifications";
-import { BarChart3 } from "lucide-react";
 
 // コンポーネントのインポート
 import { ReportHeader } from "./components/ReportHeader";
@@ -48,14 +46,6 @@ export default function InstagramMonthlyReportPage() {
   const [selectedWeek, setSelectedWeek] = useState<string>(
     getCurrentWeekString() // YYYY-WW形式
   );
-  const [isLoading, setIsLoading] = useState(true);
-  const [dataCount, setDataCount] = useState<{
-    analyticsCount: number;
-    postsCount: number;
-    totalCount: number;
-  } | null>(null);
-  const [hasAccess, setHasAccess] = useState<boolean>(false);
-
   // BFF API連携の状態
   const [accountScore, setAccountScore] = useState<Record<string, unknown> | null>(null);
   const [dailyScores, setDailyScores] = useState<Record<string, unknown> | null>(null);
@@ -140,19 +130,12 @@ export default function InstagramMonthlyReportPage() {
       if (!user?.uid) {return;}
 
       try {
-        const idToken = await user.getIdToken();
-
-        // 週次と月次で異なるAPIエンドポイントを使用
         const apiEndpoint =
           period === "weekly"
             ? `/api/analytics/weekly-report-summary?userId=${user.uid}&week=${date}`
             : `/api/analytics/monthly-report-summary?userId=${user.uid}&period=${period}&date=${date}`;
 
         const response = await fetch(apiEndpoint, {
-          headers: {
-            "x-user-id": user.uid,
-            Authorization: `Bearer ${idToken}`,
-          },
           signal,
         });
 
@@ -177,10 +160,7 @@ export default function InstagramMonthlyReportPage() {
     async (days: number = 30) => {
       if (!user?.uid) {return;}
       try {
-        const idToken = await user.getIdToken();
-        const response = await fetch(`/api/analytics/daily-scores?days=${days}`, {
-          headers: { "x-user-id": user.uid, Authorization: `Bearer ${idToken}` },
-        });
+        const response = await fetch(`/api/analytics/daily-scores?days=${days}`);
         if (response.ok) {
           const data = await response.json();
           setDailyScores(data);
@@ -201,8 +181,6 @@ export default function InstagramMonthlyReportPage() {
     async (period: "weekly" | "monthly", currentDate: string) => {
       if (!user?.uid) {return;}
       try {
-        const idToken = await user.getIdToken();
-
         let previousDate: string;
         if (period === "monthly") {
           const current = new Date(currentDate + "-01");
@@ -218,9 +196,6 @@ export default function InstagramMonthlyReportPage() {
 
         const response = await fetch(
           `/api/analytics/account-score?period=${period}&date=${previousDate}`,
-          {
-            headers: { "x-user-id": user.uid, Authorization: `Bearer ${idToken}` },
-          }
         );
         if (response.ok) {
           const data = await response.json();
@@ -241,7 +216,6 @@ export default function InstagramMonthlyReportPage() {
   const fetchMonthlyReview = useCallback(async () => {
     if (!user?.uid || !accountScore) {return;}
     try {
-      const idToken = await user.getIdToken();
       const currentScore = accountScore.score || 0;
       const previousScore = previousPeriodData?.score || 0;
       const performanceRating = accountScore.rating || "C";
@@ -259,9 +233,6 @@ export default function InstagramMonthlyReportPage() {
 
       const response = await fetch(
         `/api/analytics/monthly-review?currentScore=${currentScore}&previousScore=${previousScore}&performanceRating=${performanceRating}`,
-        {
-          headers: { "x-user-id": user.uid, Authorization: `Bearer ${idToken}` },
-        }
       );
       if (response.ok) {
         const data = await response.json();
@@ -284,16 +255,10 @@ export default function InstagramMonthlyReportPage() {
     if (!user?.uid) {return;}
 
     try {
-      const idToken = await user.getIdToken();
       const period = activeTab;
       const date = activeTab === "weekly" ? selectedWeek : selectedMonth;
 
-      const response = await fetch(`/api/analytics/account-score?period=${period}&date=${date}`, {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch(`/api/analytics/account-score?period=${period}&date=${date}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -321,29 +286,6 @@ export default function InstagramMonthlyReportPage() {
   }, [user, activeTab, selectedMonth, selectedWeek]);
 
   // データ件数チェック
-  useEffect(() => {
-    const checkDataCount = async () => {
-      if (!user?.uid) {return;}
-
-      try {
-        const countData = await checkUserDataCount(user.uid);
-        setDataCount(countData);
-        setHasAccess(countData.totalCount >= 15);
-        console.log(
-          "📊 データ件数チェック結果:",
-          countData,
-          "アクセス可能:",
-          countData.totalCount >= 15
-        );
-      } catch (error) {
-        console.error("データ件数チェックエラー:", error);
-        setHasAccess(false);
-      }
-    };
-
-    checkDataCount();
-  }, [user?.uid]);
-
   // データ初期化と期間変更時のデータ再取得（統合）
   useEffect(() => {
     if (user?.uid) {
@@ -351,7 +293,6 @@ export default function InstagramMonthlyReportPage() {
 
       const fetchPeriodData = async () => {
         try {
-          setIsLoading(true);
           const period = activeTab;
           const date = activeTab === "weekly" ? selectedWeek : selectedMonth;
 
@@ -377,9 +318,7 @@ export default function InstagramMonthlyReportPage() {
           }
           console.error("期間データ取得エラー:", error);
         } finally {
-          if (!abortController.signal.aborted) {
-            setIsLoading(false);
-          }
+          // no-op
         }
       };
 
@@ -389,7 +328,17 @@ export default function InstagramMonthlyReportPage() {
         abortController.abort();
       };
     }
-  }, [activeTab, selectedMonth, selectedWeek, user?.uid]);
+  }, [
+    activeTab,
+    selectedMonth,
+    selectedWeek,
+    user?.uid,
+    fetchReportSummary,
+    fetchAccountScore,
+    fetchDailyScores,
+    fetchPreviousPeriodData,
+    fetchMonthlyReview,
+  ]);
 
   // BFFデータから統計値を取得（フォールバック用のデフォルト値）
   const currentTotals = reportSummary?.totals || {
@@ -518,18 +467,7 @@ export default function InstagramMonthlyReportPage() {
         {/* AI分析 */}
         <AIPredictionAnalysis
           activeTab={activeTab}
-          currentTotals={{
-            totalFollowerChange: currentTotals.totalFollowerIncrease,
-            totalPosts: currentTotals.totalPosts,
-            totalLikes: currentTotals.totalLikes,
-            totalComments: currentTotals.totalComments,
-            totalShares: currentTotals.totalShares,
-            totalReach: currentTotals.totalReach,
-          }}
-          accountScore={accountScore}
-          previousPeriodData={previousPeriodData}
           monthlyReview={monthlyReview}
-          performanceRating={performanceRating}
           selectedMonth={selectedMonth}
           selectedWeek={selectedWeek}
         />

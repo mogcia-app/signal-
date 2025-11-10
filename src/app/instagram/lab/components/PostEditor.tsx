@@ -6,6 +6,7 @@ import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles } from "lucide-r
 import { postsApi } from "../../../../lib/api";
 import { useAuth } from "../../../../contexts/auth-context";
 import Image from "next/image";
+import type { PlanData } from "../../plan/types/plan";
 
 interface PostEditorProps {
   content: string;
@@ -22,12 +23,8 @@ interface PostEditorProps {
   scheduledTime?: string;
   onScheduledTimeChange?: (time: string) => void;
   isAIGenerated?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  planData?: any; // AI投稿文生成用
+  planData?: PlanData | null; // AI投稿文生成用
   aiPromptPlaceholder?: string; // AIプロンプトのプレースホルダー
-  onSave?: () => void; // 保存ボタンのコールバック
-  onClear?: () => void; // クリアボタンのコールバック
-  showActionButtons?: boolean; // アクションボタンを表示するかどうか
   onVideoStructureGenerate?: (prompt: string) => void; // 動画構成生成のコールバック
   videoStructure?: {
     introduction: string;
@@ -58,9 +55,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   isAIGenerated = false,
   planData,
   aiPromptPlaceholder = "例: 新商品の紹介、日常の出来事、お客様の声など...",
-  onSave,
-  onClear,
-  showActionButtons = false,
   onVideoStructureGenerate,
   videoStructure,
   videoFlow,
@@ -84,6 +78,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+
+  const showToast = (message: string, type: "success" | "error" = "error") => {
+    setToastMessage({ message, type });
+  };
 
   // 外部から渡された日時を優先、なければ内部状態を使用
   const scheduledDate = externalScheduledDate || internalScheduledDate;
@@ -111,12 +109,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
   const handleSave = async () => {
     if (!user?.uid) {
-      alert("ログインが必要です");
+      showToast("ログインが必要です");
       return;
     }
 
     if (!content.trim()) {
-      alert("投稿文を入力してください");
+      showToast("投稿文を入力してください");
       return;
     }
 
@@ -127,8 +125,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       const maxSize = 800 * 1024; // 800KB制限（Firestoreの1MB制限に余裕を持たせる）
 
       if (base64Size > maxSize) {
-        alert(
-          `画像のサイズが大きすぎます（${Math.round(base64Size / 1024)}KB）。\n800KB以下の画像を選択してください。\n\n画像を圧縮するか、別の画像を選択してください。`
+        showToast(
+          `画像のサイズが大きすぎます（${Math.round(base64Size / 1024)}KB）。\n800KB以下の画像を選択してください。\n\n画像を圧縮するか、別の画像を選択してください。`,
         );
         return;
       }
@@ -192,10 +190,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       let errorMsg = "";
       if (errorMessage.includes("Payload too large") || errorMessage.includes("size")) {
         errorMsg = "画像のサイズが大きすぎます。画像を圧縮するか、別の画像を選択してください。";
-        alert(errorMsg);
+        showToast(errorMsg);
       } else {
         errorMsg = `保存に失敗しました: ${errorMessage}`;
-        alert(`${errorMsg}\n\nもう一度お試しください。`);
+        showToast(`${errorMsg}\n\nもう一度お試しください。`);
       }
 
       // エラートースト通知を表示
@@ -276,13 +274,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
     // ファイルサイズチェック（10MB制限）
     if (file.size > 10 * 1024 * 1024) {
-      alert("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
+      showToast("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
       return;
     }
 
     // 画像ファイルチェック
     if (!file.type.startsWith("image/")) {
-      alert("画像ファイルを選択してください。");
+      showToast("画像ファイルを選択してください。");
       return;
     }
 
@@ -314,7 +312,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       setIsUploading(false);
     } catch (error) {
       console.error("画像アップロードエラー:", error);
-      alert("画像のアップロードに失敗しました。もう一度お試しください。");
+      showToast("画像のアップロードに失敗しました。もう一度お試しください。");
       setIsUploading(false);
     }
   };
@@ -337,7 +335,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   // AI自動生成（テーマも自動選択）
   const handleAutoGenerate = async () => {
     if (!planData) {
-      alert("運用計画が設定されていません");
+      showToast("運用計画が設定されていません");
       return;
     }
 
@@ -410,7 +408,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       }
     } catch (error) {
       console.error("自動生成エラー:", error);
-      alert(`自動生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`);
+      showToast(
+        `自動生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     } finally {
       setIsAutoGenerating(false);
     }
@@ -419,7 +419,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   // AI投稿文生成（テーマ指定）
   const handleAIGenerate = async () => {
     if (!aiPrompt.trim()) {
-      alert("投稿のテーマを入力してください");
+      showToast("投稿のテーマを入力してください");
       return;
     }
 
@@ -493,8 +493,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       }
     } catch (error) {
       console.error("投稿文生成エラー:", error);
-      alert(
-        `投稿文生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`
+      showToast(
+        `投稿文生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     } finally {
       setIsGenerating(false);
@@ -634,7 +634,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     if (onVideoStructureGenerate && content.trim()) {
                       onVideoStructureGenerate(content);
                     } else {
-                      alert("投稿文を入力してから動画構成を生成してください");
+                      showToast("投稿文を入力してから動画構成を生成してください");
                     }
                   }}
                   disabled={!content.trim() || !onVideoStructureGenerate}

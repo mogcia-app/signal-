@@ -6,7 +6,6 @@ import { Plus, Edit, Trash2, Copy, Tag } from "lucide-react";
 interface ToolPanelProps {
   onTemplateSelect: (template: string) => void;
   onHashtagSelect: (hashtag: string) => void;
-  postContent: string;
 }
 
 const DEFAULT_TEMPLATES = [
@@ -26,7 +25,6 @@ const STORAGE_KEY_HASHTAGS = "instagram_lab_hashtags";
 export const ToolPanel: React.FC<ToolPanelProps> = ({
   onTemplateSelect,
   onHashtagSelect,
-  postContent,
 }) => {
   // localStorageから読み込み
   const loadTemplates = (): string[] => {

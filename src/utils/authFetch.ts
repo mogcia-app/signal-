@@ -8,17 +8,31 @@
 
 import { getAuth } from "firebase/auth";
 
-export const authFetch = async (url: string, options: RequestInit = {}) => {
+const defaultFetch: typeof fetch | undefined =
+  typeof fetch !== "undefined" ? fetch.bind(globalThis) : undefined;
+
+type FetchImpl = typeof fetch;
+
+export const authFetch = async (
+  input: RequestInfo | URL,
+  options: RequestInit = {},
+  fetchImpl: FetchImpl | undefined = defaultFetch,
+) => {
+  if (!fetchImpl) {
+    throw new Error("Fetch implementation is not available in this environment.");
+  }
+
   const auth = getAuth();
   const user = auth.currentUser;
   const token = user ? await user.getIdToken() : null;
 
   const headers = new Headers(options.headers || {});
-  if (token) {headers.set("Authorization", `Bearer ${token}`);}
-  headers.set("Content-Type", "application/json");
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
-  const response = await fetch(url, { ...options, headers });
-
-  // エラーチェックは呼び出し側で行うため、ここではチェックしない
-  return response;
+  return fetchImpl(input, { ...options, headers });
 };

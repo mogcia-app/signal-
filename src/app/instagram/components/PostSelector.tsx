@@ -4,15 +4,52 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Search, Filter, Calendar, Clock, Eye } from "lucide-react";
 
+interface SelectorPost {
+  id: string;
+  title?: string;
+  content?: string;
+  hashtags?: string[] | string | null;
+  status?: string;
+  postType?: "feed" | "reel" | "story";
+  type?: string;
+  category?: string;
+  imageUrl?: string | null;
+  imageData?: string | null;
+  createdAt?:
+    | Date
+    | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
+    | string
+    | null;
+  scheduledTime?: string | null;
+  analytics?: {
+    views?: number;
+  } | null;
+}
+
 interface PostSelectorProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  posts: any[];
+  posts: SelectorPost[];
   selectedPostId: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onPostSelect: (post: any) => void;
+  onPostSelect: (post: SelectorPost | null) => void;
   onPostIdSelect: (postId: string) => void;
   isLoading?: boolean;
 }
+
+const normalizeHashtags = (hashtags: SelectorPost["hashtags"]): string[] => {
+  if (Array.isArray(hashtags)) {
+    return hashtags
+      .filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
+      .map((tag) => tag.replace(/^#+/, "").trim());
+  }
+
+  if (typeof hashtags === "string") {
+    return hashtags
+      .split(" ")
+      .map((tag) => tag.replace(/^#+/, "").trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  return [];
+};
 
 const PostSelector: React.FC<PostSelectorProps> = ({
   posts,
@@ -28,14 +65,12 @@ const PostSelector: React.FC<PostSelectorProps> = ({
 
   // フィルタリング
   const filteredPosts = posts.filter((post) => {
+    const normalizedHashtags = normalizeHashtags(post.hashtags);
     const matchesSearch =
       !searchTerm ||
       post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      false ||
       post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      false ||
-      post.hashtags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      false;
+      normalizedHashtags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus = !selectedStatus || post.status === selectedStatus;
     const matchesPostType =
@@ -47,13 +82,16 @@ const PostSelector: React.FC<PostSelectorProps> = ({
     return matchesSearch && matchesStatus && matchesPostType;
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handlePostSelect = (post: any) => {
+  const handlePostSelect = (post: SelectorPost) => {
     onPostSelect(post);
     onPostIdSelect(post.id);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status?: string) => {
+    if (!status) {
+      return "bg-gray-100 text-gray-500";
+    }
+
     switch (status) {
       case "published":
         return "bg-orange-100 text-orange-800";
@@ -64,11 +102,15 @@ const PostSelector: React.FC<PostSelectorProps> = ({
       case "draft":
         return "bg-orange-100 text-orange-800";
       default:
-        return "bg-orange-100 text-orange-800";
+        return "bg-gray-100 text-gray-600";
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status?: string) => {
+    if (!status) {
+      return "未設定";
+    }
+
     switch (status) {
       case "published":
         return "公開済み";
@@ -83,8 +125,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getPostTypeLabel = (post: any) => {
+  const getPostTypeLabel = (post: SelectorPost) => {
     const type = post.postType || post.type || post.category;
     switch (type) {
       case "feed":
@@ -185,6 +226,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
             {filteredPosts.map((post) => {
               const isSelected = selectedPostId === post.id;
               const hasAnalytics = !!post.analytics;
+              const hashtags = normalizeHashtags(post.hashtags);
 
               return (
                 <div
@@ -280,15 +322,15 @@ const PostSelector: React.FC<PostSelectorProps> = ({
                       </div>
 
                       {/* ハッシュタグ */}
-                      {post.hashtags && post.hashtags.length > 0 && (
+                      {hashtags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {post.hashtags.slice(0, 3).map((tag: string, index: number) => (
+                          {hashtags.slice(0, 3).map((tag, index) => (
                             <span key={index} className="text-xs text-[#ff8a15]">
                               #{tag}
                             </span>
                           ))}
-                          {post.hashtags.length > 3 && (
-                            <span className="text-xs text-black">+{post.hashtags.length - 3}</span>
+                          {hashtags.length > 3 && (
+                            <span className="text-xs text-black">+{hashtags.length - 3}</span>
                           )}
                         </div>
                       )}

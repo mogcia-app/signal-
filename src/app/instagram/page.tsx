@@ -98,8 +98,6 @@ function InstagramDashboardContent() {
     monthlyStoryPosts: 0,
   });
 
-  const instagramSettings = {}; // SNS設定は不要になったため空オブジェクト
-
   // 次のアクションの状態
   const [nextActions, setNextActions] = useState<
     Array<{
@@ -125,13 +123,7 @@ function InstagramDashboardContent() {
     if (!user?.uid) {return;}
 
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("/api/instagram/next-actions", {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch("/api/instagram/next-actions");
 
       if (response.ok) {
         const result = await response.json();
@@ -155,13 +147,7 @@ function InstagramDashboardContent() {
     if (!user?.uid) {return;}
 
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("/api/instagram/recent-posts", {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch("/api/instagram/recent-posts");
 
       if (response.ok) {
         const result = await response.json();
@@ -179,13 +165,7 @@ function InstagramDashboardContent() {
     if (!user?.uid) {return;}
 
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("/api/instagram/performance-summary", {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch("/api/instagram/performance-summary");
 
       if (response.ok) {
         const result = await response.json();
@@ -203,13 +183,7 @@ function InstagramDashboardContent() {
     if (!user?.uid) {return;}
 
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("/api/instagram/goal-progress", {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch("/api/instagram/goal-progress");
 
       if (response.ok) {
         const result = await response.json();
@@ -227,13 +201,7 @@ function InstagramDashboardContent() {
     if (!user?.uid) {return [];}
 
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch(`/api/analytics?userId=${user.uid}`);
 
       if (response.ok) {
         const result = await response.json();
@@ -250,13 +218,7 @@ function InstagramDashboardContent() {
     if (!user?.uid) {return;}
 
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("/api/instagram/dashboard-stats", {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch("/api/instagram/dashboard-stats");
 
       if (response.ok) {
         const result = await response.json();
@@ -305,7 +267,7 @@ function InstagramDashboardContent() {
       console.log("Fetching data for authenticated user:", userId);
 
       // アナリティクスデータを取得
-      const analyticsData = await fetchAnalyticsData();
+      await fetchAnalyticsData();
 
       // ダッシュボード統計をAPIから取得
       await fetchDashboardStats();
@@ -410,7 +372,7 @@ function InstagramDashboardContent() {
                   <p className="text-sm text-black mt-1">素晴らしい運用を続けましょう</p>
                 </div>
               ) : (
-                nextActions.map((action, index) => (
+                nextActions.map((action) => (
                   <div
                     key={action.id}
                     className={`p-4 border-l-4 ${

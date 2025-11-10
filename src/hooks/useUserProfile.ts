@@ -136,7 +136,7 @@ export const useUserProfile = () => {
     return (userProfile?.snsAISettings as Record<string, unknown>)?.[snsName] || {};
   };
 
-  const getSNSProfile = (snsName: string) => {
+  const getSNSProfile = (_snsName: string) => {
     // snsProfilesは削除されたため、空オブジェクトを返す
     return {};
   };

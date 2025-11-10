@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
 
 // 計画データの型定義（統一版）
 interface PlanData {
@@ -31,15 +32,21 @@ interface PlanData {
 // 計画作成
 export async function POST(request: NextRequest) {
   try {
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "plan-create", limit: 10, windowSeconds: 60 },
+      auditEventName: "plan_create",
+    });
+
     const body = await request.json();
 
     // バリデーション
-    if (!body.userId || !body.targetFollowers || !body.currentFollowers) {
+    if (!body.targetFollowers || !body.currentFollowers) {
       return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
     }
 
     const planData: Omit<PlanData, "id"> = {
-      userId: body.userId,
+      userId,
       snsType: body.snsType || "instagram",
       status: body.status || "active",
       title: body.title || "Instagram成長計画",
@@ -66,15 +73,21 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("計画作成エラー:", error);
-    return NextResponse.json({ error: "計画の保存に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
 // 計画一覧取得
 export async function GET(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "plan-list", limit: 30, windowSeconds: 60 },
+      auditEventName: "plan_list",
+    });
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const userId = searchParams.get("userId") ?? uid;
     const snsType = searchParams.get("snsType"); // instagram, x, tiktok
     const status = searchParams.get("status"); // active, archived, expired
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -82,6 +95,10 @@ export async function GET(request: NextRequest) {
     // userIdが指定されていない場合はエラー
     if (!userId) {
       return NextResponse.json({ error: "userIdが必要です" }, { status: 400 });
+    }
+
+    if (userId !== uid) {
+      return NextResponse.json({ error: "別ユーザーの計画にはアクセスできません" }, { status: 403 });
     }
 
     // クエリを構築
@@ -131,13 +148,7 @@ export async function GET(request: NextRequest) {
       stack: error instanceof Error ? error.stack : undefined,
       userId: searchParams.get("userId"),
     });
-    return NextResponse.json(
-      {
-        success: false,
-        error: "計画の取得に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

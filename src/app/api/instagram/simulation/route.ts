@@ -1,31 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SimulationRequest, SimulationResult } from "../../../instagram/plan/types/plan";
 import { buildPlanPrompt } from "../../../../utils/aiPromptBuilder";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-simulation", limit: 20, windowSeconds: 60 },
+      auditEventName: "instagram_simulation",
+    });
+
     const body: SimulationRequest = await request.json();
 
     // バリデーション
     if (!body.followerGain || !body.currentFollowers || !body.planPeriod) {
       return NextResponse.json({ error: "必要なパラメータが不足しています" }, { status: 400 });
-    }
-
-    // ユーザーIDを取得
-    let userId = "anonymous";
-    const authHeader = request.headers.get("authorization");
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        userId = decodedToken.uid;
-        console.log("✅ Authenticated user:", userId);
-      } catch (authError) {
-        console.warn("⚠️ Firebase認証エラー（匿名ユーザーとして処理）:", authError);
-      }
     }
 
     // シミュレーション処理
@@ -34,10 +26,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(simulationResult);
   } catch (error) {
     console.error("シミュレーションエラー:", error);
-    return NextResponse.json(
-      { error: "シミュレーション処理中にエラーが発生しました" },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

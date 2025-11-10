@@ -7,6 +7,7 @@ import { collection, addDoc, getDocs, query, where, orderBy } from "firebase/fir
 import { db } from "../../../lib/firebase";
 import { useAuth } from "../../../contexts/auth-context";
 import { BarChart3, Heart, Save, Calendar, RefreshCw } from "lucide-react";
+import { notify } from "../../../lib/ui/notifications";
 
 // 投稿分析データの型定義
 interface AnalyticsData {
@@ -83,12 +84,12 @@ function InstagramAnalyticsContent() {
   // 投稿分析データを保存（直接Firestoreアクセス）
   const handleSaveAnalytics = async () => {
     if (!user?.uid) {
-      alert("ログインが必要です");
+      notify({ type: "error", message: "ログインが必要です" });
       return;
     }
 
     if (!inputData.likes) {
-      alert("いいね数を入力してください");
+      notify({ type: "error", message: "いいね数を入力してください" });
       return;
     }
 
@@ -129,7 +130,7 @@ function InstagramAnalyticsContent() {
       const docRef = await addDoc(collection(db, "analytics"), analyticsPayload);
       console.log("Analytics saved with ID:", docRef.id);
 
-      alert("投稿分析データを保存しました！");
+      notify({ type: "success", message: "投稿分析データを保存しました！" });
 
       // データを再取得
       await fetchAnalytics();
@@ -144,7 +145,10 @@ function InstagramAnalyticsContent() {
       });
     } catch (error) {
       console.error("保存エラー:", error);
-      alert(`保存に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`);
+      notify({
+        type: "error",
+        message: `保存に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
     } finally {
       setIsLoading(false);
     }

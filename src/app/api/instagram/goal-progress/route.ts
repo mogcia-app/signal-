@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "User ID is required" }, { status: 401 });
-    }
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-goal-progress", limit: 30, windowSeconds: 60 },
+      auditEventName: "instagram_goal_progress_access",
+    });
 
     const now = new Date();
     const startOfWeek = new Date(now);
@@ -14,13 +16,13 @@ export async function GET(request: NextRequest) {
     startOfWeek.setHours(0, 0, 0, 0);
 
     // 目標設定を取得
-    const goalDoc = await adminDb.collection("goalSettings").doc(userId).get();
+    const goalDoc = await adminDb.collection("goalSettings").doc(uid).get();
     const goalSettings = goalDoc.exists ? goalDoc.data() : null;
 
     // 今週の投稿数を取得
     const weeklyPostsQuery = await adminDb
       .collection("posts")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .where("status", "==", "published")
       .where("createdAt", ">=", startOfWeek)
       .get();
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
     // フォロワー成長目標の計算
     const analyticsQuery = await adminDb
       .collection("analytics")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .orderBy("publishedAt", "desc")
       .limit(7)
       .get();
@@ -101,7 +103,7 @@ export async function GET(request: NextRequest) {
     };
 
     console.log("🎯 Goal progress calculated:", {
-      userId,
+      userId: uid,
       weeklyPosts: `${postsThisWeek}/${weeklyGoal} (${weeklyPostProgress.toFixed(1)}%)`,
       followerGrowth: `${avgFollowerGrowth.toFixed(1)}/${followerGoal} (${followerGrowthProgress.toFixed(1)}%)`,
       overallAchievement: `${goalProgress.overall.achievedGoals}/${goalProgress.overall.totalGoals}`,
@@ -113,12 +115,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Goal progress fetch error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch goal progress",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

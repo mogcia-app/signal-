@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
 import { checkAndCreateMonthlyReportNotification } from "../../../lib/monthly-report-notifications";
+import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
 
 // 投稿データの型定義
 interface PostData {
@@ -30,10 +31,15 @@ interface PostData {
 // 投稿作成
 export async function POST(request: NextRequest) {
   try {
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "posts-create", limit: 30, windowSeconds: 60 },
+      auditEventName: "posts_create",
+    });
+
     const body = await request.json();
     console.log("POST /api/posts - Received data:", body);
     const {
-      userId,
       title,
       content,
       hashtags,
@@ -54,7 +60,7 @@ export async function POST(request: NextRequest) {
     });
 
     // バリデーション
-    if (!userId || !title || !content) {
+    if (!title || !content) {
       return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
     }
 
@@ -103,20 +109,26 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("投稿作成エラー:", error);
-    return NextResponse.json({ error: "投稿の保存に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
 // 投稿一覧取得
 export async function GET(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "posts-list", limit: 60, windowSeconds: 60 },
+      auditEventName: "posts_list",
+    });
     console.log("=== POSTS API GET REQUEST ===");
     console.log("Request URL:", request.url);
     console.log("Request method:", request.method);
     console.log("Request headers:", Object.fromEntries(request.headers.entries()));
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const userId = searchParams.get("userId") ?? uid;
     const status = searchParams.get("status");
     const postType = searchParams.get("postType");
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -138,10 +150,16 @@ export async function GET(request: NextRequest) {
     // Admin SDKでクエリ構築
     let queryRef: FirebaseFirestore.Query = adminDb.collection("posts");
 
-    if (userId) {
-      console.log("Filtering posts by userId:", userId);
-      queryRef = queryRef.where("userId", "==", userId);
+    if (!userId) {
+      return NextResponse.json({ error: "userIdが必要です" }, { status: 400 });
     }
+
+    if (userId !== uid) {
+      return NextResponse.json({ error: "別ユーザーの投稿にはアクセスできません" }, { status: 403 });
+    }
+
+    console.log("Filtering posts by userId:", userId);
+    queryRef = queryRef.where("userId", "==", userId);
     if (status) {
       console.log("Filtering posts by status:", status);
       queryRef = queryRef.where("status", "==", status);
@@ -194,13 +212,7 @@ export async function GET(request: NextRequest) {
     console.error("=== POSTS API ERROR ===");
     console.error("Error details:", error);
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
-    // エラーが発生した場合は空の配列を返す
-    const errorResponse = {
-      posts: [],
-      total: 0,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-    console.log("Returning error response:", errorResponse);
-    return NextResponse.json(errorResponse);
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

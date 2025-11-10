@@ -317,7 +317,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               <span>マイアカウント</span>
             </Link>
 
-            {/*<Link 
+            {/*<Link
               href="/notifications"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >
@@ -327,7 +327,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
                 <div className="ml-auto w-3 h-3 bg-[#FF8A15] rounded-full"></div>
               )}
             </Link>
-           {/*< Link 
+            {/*< Link 
               href="/guide"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
             >

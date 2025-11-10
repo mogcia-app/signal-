@@ -4,7 +4,6 @@ import { PlanFormData, SimulationResult } from "../types/plan";
 import { useAIStrategy } from "../hooks/useAIStrategy";
 
 interface AIDiagnosisPanelProps {
-  showAdvice: boolean;
   isLoading: boolean;
   onStartDiagnosis: () => void;
   onSaveAdvice: () => void;
@@ -17,7 +16,6 @@ interface AIDiagnosisPanelProps {
 }
 
 export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
-  showAdvice,
   isLoading,
   onStartDiagnosis,
   onSaveAdvice,

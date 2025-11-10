@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Edit3 } from "lucide-react";
 import { postsApi } from "../../../lib/api";
 import { useAuth } from "../../../contexts/auth-context";
+import { notify } from "../../../lib/ui/notifications";
 
 interface PostData {
   id: string;
@@ -117,7 +118,7 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
   const handleManualPostSubmit = async () => {
     if (!user?.uid) {
       console.error("User not authenticated");
-      alert("ログインが必要です");
+      notify({ type: "error", message: "ログインが必要です" });
       return;
     }
 
@@ -158,7 +159,7 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
       // ダッシュボードの統計を再取得
       onDataSaved();
 
-      alert("投稿の分析データを保存しました！");
+      notify({ type: "success", message: "投稿の分析データを保存しました！" });
 
       // フォームをリセット
       setSelectedPost(null);
@@ -183,7 +184,7 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
       });
     } catch (error) {
       console.error("投稿分析データ保存エラー:", error);
-      alert("保存に失敗しました");
+      notify({ type: "error", message: "保存に失敗しました" });
     }
   };
 

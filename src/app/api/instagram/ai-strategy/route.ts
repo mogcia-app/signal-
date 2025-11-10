@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchRelevantKnowledge, saveUserAnalysis, getLearningInsights } from "./knowledge-base";
 import { buildPlanPrompt } from "../../../../utils/aiPromptBuilder";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 // セキュリティ: APIキーの検証
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -16,35 +17,6 @@ function validateApiKey(_request: NextRequest): boolean {
   }
 
   return apiKey === validApiKey;
-}
-
-// セキュリティ: レート制限（簡易実装）
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1分
-const RATE_LIMIT_MAX_REQUESTS = 10; // 1分間に10回まで
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const userLimit = rateLimitMap.get(ip);
-
-  if (!userLimit) {
-    rateLimitMap.set(ip, { count: 1, lastReset: now });
-    return true;
-  }
-
-  // 時間窓をリセット
-  if (now - userLimit.lastReset > RATE_LIMIT_WINDOW) {
-    rateLimitMap.set(ip, { count: 1, lastReset: now });
-    return true;
-  }
-
-  // レート制限チェック
-  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return false;
-  }
-
-  userLimit.count++;
-  return true;
 }
 
 // 入力データの検証
@@ -384,30 +356,11 @@ async function generateAIStrategy(
 
 export async function POST(request: NextRequest) {
   try {
-    // 🔐 Firebase認証トークンからユーザーIDを取得
-    let userId = "anonymous";
-    const authHeader = request.headers.get("authorization");
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        userId = decodedToken.uid;
-        console.log("✅ Authenticated user:", userId);
-      } catch (authError) {
-        console.warn("⚠️ Firebase認証エラー（匿名ユーザーとして処理）:", authError);
-      }
-    }
-
-    // レート制限チェック
-    const clientIP =
-      request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
-    if (!checkRateLimit(clientIP)) {
-      return NextResponse.json(
-        { error: "Rate limit exceeded. Please try again later." },
-        { status: 429 }
-      );
-    }
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-ai-strategy", limit: 15, windowSeconds: 60 },
+      auditEventName: "instagram_ai_strategy",
+    });
 
     // リクエストボディの取得
     const body = await request.json();
@@ -431,14 +384,17 @@ export async function POST(request: NextRequest) {
     console.error("AI Strategy API Error:", error);
 
     // エラーログを記録（本番環境では適切なログサービスを使用）
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const { status, body } = buildErrorResponse(error);
 
     return NextResponse.json(
       {
-        error: "AI戦略生成に失敗しました",
-        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+        ...body,
+        details:
+          process.env.NODE_ENV === "development"
+            ? body.details ?? (error instanceof Error ? error.message : "Unknown error")
+            : undefined,
       },
-      { status: 500 }
+      { status }
     );
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useAuth } from "../../contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
@@ -82,7 +83,7 @@ export default function LoginPage() {
         {/* ロゴ・タイトルセクション */}
         <div className="text-center">
           <div className="mx-auto w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-xl">
-            <img src="/favicon.png" alt="Signal Logo" className="w-14 h-14" />
+            <Image src="/favicon.png" alt="Signal Logo" width={56} height={56} className="w-14 h-14" priority />
           </div>
           <h1 className="text-4xl font-bold text-black mb-2">
             Signal<span className="text-[#ff8a15]">.</span>

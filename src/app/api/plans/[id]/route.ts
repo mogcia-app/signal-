@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 // 計画更新（ステータス変更など）
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // 🔐 Firebase認証トークンからユーザーIDを取得
-    let userId = "";
-    const authHeader = request.headers.get("authorization");
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        userId = decodedToken.uid;
-      } catch (authError) {
-        return NextResponse.json({ error: "認証に失敗しました" }, { status: 401 });
-      }
-    } else {
-      return NextResponse.json({ error: "認証トークンが必要です" }, { status: 401 });
-    }
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "plan-update", limit: 30, windowSeconds: 60 },
+      auditEventName: "plan_update",
+    });
 
     const { id } = await params;
     const body = await request.json();
@@ -50,7 +41,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
   } catch (error) {
     console.error("計画更新エラー:", error);
-    return NextResponse.json({ error: "計画の更新に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -60,21 +52,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 🔐 Firebase認証トークンからユーザーIDを取得
-    let userId = "";
-    const authHeader = request.headers.get("authorization");
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        userId = decodedToken.uid;
-      } catch (authError) {
-        return NextResponse.json({ error: "認証に失敗しました" }, { status: 401 });
-      }
-    } else {
-      return NextResponse.json({ error: "認証トークンが必要です" }, { status: 401 });
-    }
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "plan-delete", limit: 30, windowSeconds: 60 },
+      auditEventName: "plan_delete",
+    });
 
     const { id } = await params;
 
@@ -98,6 +80,7 @@ export async function DELETE(
     });
   } catch (error) {
     console.error("計画削除エラー:", error);
-    return NextResponse.json({ error: "計画の削除に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

@@ -277,6 +277,9 @@ ${
 - 期間: ${planPeriod}
 - 現在のフォロワー: ${currentFollowers} → 目標: ${targetFollowers}
 - KPIカテゴリ: ${formData?.goalCategory || "未設定"}
+- 月次フォロワー目標: ${monthlyTarget}
+- 達成可能性評価: ${feasibility}
+- 週あたり投稿目安: フィード${feedPosts}件 / リール${reelPosts}件
 - ターゲット層: ${formData?.targetAudience || "未設定"}
 - 選択した施策: ${strategies}
 - 投稿カテゴリ: ${categories}

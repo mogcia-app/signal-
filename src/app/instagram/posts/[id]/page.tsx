@@ -51,15 +51,7 @@ export default function PostDetailPage() {
       if (!user?.uid || !id) {return;}
 
       try {
-        const { auth } = await import("../../../../lib/firebase");
-        const token = await auth.currentUser?.getIdToken();
-
-        const response = await fetch(`/api/posts?userId=${user.uid}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-user-id": user.uid,
-          },
-        });
+        const response = await fetch(`/api/posts?userId=${user.uid}`);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

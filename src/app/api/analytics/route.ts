@@ -2,14 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
 
 // 目標達成度チェック関数
-async function checkGoalAchievement(
-  userId: string,
-  analyticsData: {
-    followerIncrease?: number;
-    publishedAt?: string | Date;
-    [key: string]: unknown;
-  }
-) {
+async function checkGoalAchievement(userId: string) {
   try {
     // 目標設定を取得
     const goalDoc = await adminDb.collection("goalSettings").doc(userId).get();
@@ -333,7 +326,7 @@ export async function POST(request: NextRequest) {
 
     // 目標達成度をチェック
     try {
-      await checkGoalAchievement(userId, analyticsData);
+      await checkGoalAchievement(userId);
     } catch (error) {
       console.error("Goal achievement check error:", error);
       // 目標チェックに失敗してもanalytics保存は成功しているので続行

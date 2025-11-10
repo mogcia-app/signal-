@@ -27,7 +27,7 @@ interface PostData {
   userId: string;
   title: string;
   content: string;
-  hashtags: string[];
+  hashtags?: string[] | string | null;
   postType: "feed" | "reel" | "story";
   scheduledDate?:
     | Date
@@ -82,6 +82,23 @@ interface PostData {
     };
   };
 }
+
+const normalizeHashtags = (hashtags: PostData["hashtags"]): string[] => {
+  if (Array.isArray(hashtags)) {
+    return hashtags
+      .filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
+      .map((tag) => tag.replace(/^#+/, "").trim());
+  }
+
+  if (typeof hashtags === "string") {
+    return hashtags
+      .split(" ")
+      .map((tag) => tag.replace(/^#+/, "").trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  return [];
+};
 
 interface AnalyticsData {
   id: string;
@@ -172,9 +189,6 @@ export default function InstagramPostsPage() {
     try {
       setLoading(true);
 
-      const { auth } = await import("../../../lib/firebase");
-      const token = await auth.currentUser?.getIdToken();
-
       const params: Record<string, string> = {
         userId: user.uid,
       };
@@ -184,8 +198,6 @@ export default function InstagramPostsPage() {
       const response = await fetch(`/api/posts?${searchParams.toString()}`, {
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -201,8 +213,6 @@ export default function InstagramPostsPage() {
       const result = await response.json();
       const postsData = result.posts || [];
 
-      // リアルタイムの日時取得でソート
-      const now = new Date();
       const sortedPosts = postsData.sort((a: PostData, b: PostData) => {
         // 作成済み（created）を最優先
         if (a.status === "created" && b.status !== "created") {return -1;}
@@ -242,14 +252,7 @@ export default function InstagramPostsPage() {
     if (!user?.uid) {return;}
 
     try {
-      const idToken = await user.getIdToken();
-
-      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch(`/api/analytics?userId=${user.uid}`);
 
       if (response.ok) {
         const result = await response.json();
@@ -458,9 +461,6 @@ export default function InstagramPostsPage() {
 
   // リアルタイムソート更新（30秒ごと）
   useEffect(() => {
-    // 投稿がない場合は何もしない
-    if (posts.length === 0) {return;}
-
     const interval = setInterval(() => {
       setPosts((prevPosts) => {
         // 投稿が存在しない場合はソートしない
@@ -543,17 +543,11 @@ export default function InstagramPostsPage() {
       id: analyticsId,
       onConfirm: async () => {
         try {
-          const idToken = await user?.getIdToken();
-
           console.log("Deleting analytics with ID:", analyticsId);
           console.log("User ID:", user?.uid);
 
           const response = await fetch(`/api/analytics/${analyticsId}`, {
             method: "DELETE",
-            headers: {
-              "x-user-id": user?.uid || "",
-              Authorization: `Bearer ${idToken}`,
-            },
           });
 
           console.log("Delete response status:", response.status);
@@ -1007,14 +1001,7 @@ export default function InstagramPostsPage() {
                           title: post.title,
                           content: post.content,
                            
-                          hashtags: Array.isArray(post.hashtags)
-                            ? post.hashtags
-                            : typeof (post.hashtags as any) === "string"
-                              ? (post.hashtags as any)
-                                  .split(" ")
-                                  .filter((tag: string) => tag.trim() !== "")
-                                  .map((tag: string) => tag.replace("#", ""))
-                              : [],
+                          hashtags: normalizeHashtags(post.hashtags),
                           category: undefined,
                           thumbnail: undefined,
                           audience: post.analytics.audience,

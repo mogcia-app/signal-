@@ -17,13 +17,6 @@ export default function ReelLabPage() {
   const [scheduledTime, setScheduledTime] = useState("");
   const [isAIGenerated] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState<
-    Array<{
-      followerIncrease?: number;
-      [key: string]: unknown;
-    }>
-  >([]);
-
   // スケジュール関連の状態
   const [monthlyPosts, setMonthlyPosts] = useState(8);
   const [dailyPosts, setDailyPosts] = useState(1);
@@ -69,7 +62,6 @@ export default function ReelLabPage() {
         const response = await fetch(`/api/posts?userId=${user.uid}`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "x-user-id": user.uid,
           },
         });
 
@@ -166,27 +158,6 @@ export default function ReelLabPage() {
   }, [user?.uid, fetchPostData]);
 
   // 分析データを取得
-  const fetchAnalytics = useCallback(async () => {
-    if (!user?.uid) {return;}
-
-    try {
-      const idToken = await user.getIdToken();
-      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "x-user-id": user.uid,
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setAnalyticsData(result.analytics || []);
-      }
-    } catch (error) {
-      console.error("Analytics fetch error:", error);
-    }
-  }, [user]);
-
   // スケジュール生成関数
   const generateSchedule = useCallback(async () => {
     if (!user?.uid) {return;}
@@ -200,7 +171,6 @@ export default function ReelLabPage() {
       const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
-          "x-user-id": user.uid,
         },
       });
 
@@ -256,7 +226,6 @@ export default function ReelLabPage() {
       const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
-          "x-user-id": user.uid,
         },
       });
 
@@ -287,7 +256,7 @@ export default function ReelLabPage() {
         throw new Error("スケジュール保存に失敗しました");
       }
 
-      const saveData = await saveResponse.json();
+      await saveResponse.json();
       setSaveMessage("✅ スケジュールが保存されました！");
     } catch (error) {
       console.error("スケジュール保存エラー:", error);
@@ -308,7 +277,6 @@ export default function ReelLabPage() {
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
-            "x-user-id": user.uid,
           },
         }
       );
@@ -371,11 +339,9 @@ export default function ReelLabPage() {
 
   useEffect(() => {
     if (user?.uid) {
-      fetchAnalytics();
       loadSavedSchedule(); // 保存されたスケジュールを読み込み
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
+  }, [user?.uid, loadSavedSchedule]);
 
   if (!isMounted) {
     return null;
@@ -456,7 +422,7 @@ export default function ReelLabPage() {
             <h3 className="text-lg font-medium text-gray-800 mb-4">週間投稿スケジュール</h3>
             {generatedSchedule.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {generatedSchedule.map((daySchedule, index) => {
+                {generatedSchedule.map((daySchedule) => {
                   const hasPosts = daySchedule.posts && daySchedule.posts.length > 0;
 
                   return (
@@ -653,19 +619,6 @@ export default function ReelLabPage() {
               isAIGenerated={isAIGenerated}
               planData={planData}
               aiPromptPlaceholder="例: 商品の使い方、おすすめポイント、バックステージ、チュートリアル、トレンド動画など..."
-              onSave={() => {
-                // 保存処理（実装が必要）
-                console.log("保存:", { postContent, postTitle, selectedHashtags, postType });
-              }}
-              onClear={() => {
-                setPostContent("");
-                setPostTitle("");
-                setSelectedHashtags([]);
-                setPostImage(null);
-                setScheduledDate("");
-                setScheduledTime("");
-              }}
-              showActionButtons={true}
               onVideoStructureGenerate={generateVideoStructure}
               videoStructure={videoStructure}
               videoFlow={videoFlow}
@@ -681,7 +634,6 @@ export default function ReelLabPage() {
                   setSelectedHashtags([...selectedHashtags, hashtag]);
                 }
               }}
-              postContent={postContent}
             />
           </div>
         </div>

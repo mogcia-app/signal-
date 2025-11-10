@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 // 個別の分析データを削除
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const params = await context.params;
     const { id } = params;
-    const userId = request.headers.get("x-user-id");
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-delete", limit: 10, windowSeconds: 60 },
+      auditEventName: "analytics_delete",
+    });
 
     console.log("=== ANALYTICS DELETE REQUEST ===");
     console.log("Analytics ID:", id);
-    console.log("User ID:", userId);
-
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    }
+    console.log("User ID:", uid);
 
     if (!id) {
       return NextResponse.json({ error: "Analytics ID is required" }, { status: 400 });
@@ -39,7 +40,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     const analyticsData = analyticsDoc.data();
 
     // ユーザーIDの確認（セキュリティ）
-    if (analyticsData?.userId !== userId) {
+    if (analyticsData?.userId !== uid) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
     }
 
@@ -48,7 +49,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
     console.log("Analytics data deleted successfully:", {
       id,
-      userId,
+      userId: uid,
       title: analyticsData?.title || "Unknown",
     });
 
@@ -62,7 +63,8 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     console.error("Error details:", error);
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
 
-    return NextResponse.json({ error: "Failed to delete analytics data" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -71,11 +73,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   try {
     const params = await context.params;
     const { id } = params;
-    const userId = request.headers.get("x-user-id");
-
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    }
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-get", limit: 60, windowSeconds: 60 },
+      auditEventName: "analytics_get",
+    });
 
     if (!id) {
       return NextResponse.json({ error: "Analytics ID is required" }, { status: 400 });
@@ -99,7 +101,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const analyticsData = analyticsDoc.data();
 
     // ユーザーIDの確認（セキュリティ）
-    if (analyticsData?.userId !== userId) {
+    if (analyticsData?.userId !== uid) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
     }
 
@@ -113,6 +115,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     });
   } catch (error) {
     console.error("Analytics fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch analytics data" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

@@ -1,30 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "ユーザーIDが必要です" }, { status: 401 });
-    }
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-dashboard-charts", limit: 60, windowSeconds: 60 },
+      auditEventName: "instagram_dashboard_charts_access",
+    });
 
     // 過去7日間の日付を生成
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 7);
 
-    console.log("📊 Dashboard charts data request:", { userId, startDate, endDate });
+    console.log("📊 Dashboard charts data request:", { uid, startDate, endDate });
 
     // フォロワー成長データを取得
-    const followerGrowthData = await getFollowerGrowthData(userId, startDate, endDate);
+    const followerGrowthData = await getFollowerGrowthData(uid, startDate, endDate);
 
     // 投稿頻度データを取得
-    const postFrequencyData = await getPostFrequencyData(userId, startDate, endDate);
+    const postFrequencyData = await getPostFrequencyData(uid, startDate, endDate);
 
     // AI推奨事項を生成
     const aiRecommendations = await generateAIRecommendations(
-      userId,
+      uid,
       followerGrowthData,
       postFrequencyData
     );
@@ -39,14 +40,8 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("❌ Dashboard charts error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "チャートデータの取得に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

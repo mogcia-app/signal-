@@ -1,29 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function GET(request: NextRequest) {
   try {
-    // 🔐 Firebase認証トークンからユーザーIDを取得
-    let userId = "anonymous";
-    const authHeader = request.headers.get("authorization");
-    const userIdHeader = request.headers.get("x-user-id");
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        userId = decodedToken.uid;
-      } catch (authError) {
-        console.warn("⚠️ Firebase認証エラー:", authError);
-        return NextResponse.json({ error: "Authentication failed" }, { status: 401 });
-      }
-    } else if (userIdHeader) {
-      userId = userIdHeader;
-    }
-
-    if (userId === "anonymous") {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    }
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "ai-chat-usage-get", limit: 30, windowSeconds: 60 },
+      auditEventName: "ai_chat_usage_get",
+    });
 
     // 今月の使用回数を取得
     const today = new Date();
@@ -52,24 +37,18 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Usage API Error:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to get usage info",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    }
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "ai-chat-usage-post", limit: 30, windowSeconds: 60 },
+      auditEventName: "ai_chat_usage_post",
+    });
 
     // 今月の使用回数を記録
     const today = new Date();
@@ -102,12 +81,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Usage recording error:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to record usage",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

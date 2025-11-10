@@ -1,23 +1,86 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { verifyFirebaseIdToken } from "./lib/server/firebase-token-verifier";
+import { logSecurityEvent } from "./lib/server/logging";
 
-// ✅ middleware.ts（本番復旧用・安全版）
-// ミドルウェア本体（ここは今後も使う前提で残す）
-export function middleware(req: NextRequest) {
-  // ここでは特にAPIの認証チェックを行わない
-  // 将来的にCookie認証またはauthFetch対応後に再有効化予定
-  return NextResponse.next();
+const UNAUTHORIZED_RESPONSE = NextResponse.json(
+  { success: false, error: "Unauthorized" },
+  {
+    status: 401,
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  },
+);
+
+export async function middleware(req: NextRequest) {
+  if (req.method === "OPTIONS") {
+    return NextResponse.next();
+  }
+
+  const authHeader = req.headers.get("authorization") ?? "";
+  if (!authHeader.startsWith("Bearer ")) {
+    await logSecurityEvent("auth_missing_token", {
+      path: req.nextUrl.pathname,
+      method: req.method,
+      ip:
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        req.headers.get("x-real-ip") ??
+        "unknown",
+      userAgent: req.headers.get("user-agent") ?? "unknown",
+    });
+    return UNAUTHORIZED_RESPONSE;
+  }
+
+  const token = authHeader.slice("Bearer ".length).trim();
+  if (!token) {
+    await logSecurityEvent("auth_empty_token", {
+      path: req.nextUrl.pathname,
+      method: req.method,
+      ip:
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        req.headers.get("x-real-ip") ??
+        "unknown",
+      userAgent: req.headers.get("user-agent") ?? "unknown",
+    });
+    return UNAUTHORIZED_RESPONSE;
+  }
+
+  try {
+    const payload = await verifyFirebaseIdToken(token);
+    const uid = (payload.user_id as string | undefined) ?? (payload.sub as string | undefined);
+
+    if (!uid) {
+      throw new Error("Token payload missing user_id/sub");
+    }
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-auth-uid", uid);
+    requestHeaders.set("x-auth-token-iat", payload.iat ? String(payload.iat) : "");
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  } catch (error) {
+    await logSecurityEvent("auth_invalid_token", {
+      path: req.nextUrl.pathname,
+      method: req.method,
+      ip:
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        req.headers.get("x-real-ip") ??
+        "unknown",
+      userAgent: req.headers.get("user-agent") ?? "unknown",
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+
+    return UNAUTHORIZED_RESPONSE;
+  }
 }
 
-// ✅ 本番一時安定版
-// matcherから /api/x と /api/instagram を外すことで既存のAPIをブロックしない
 export const config = {
-  matcher: [
-    // 認証が必要なページやルートのみ残す
-    "/admin/:path*",
-    "/my-account",
-    "/settings/:path*",
-    // '/api/x/:path*',        // ← 一時的に無効化（Phase 2で再有効化）
-    // '/api/instagram/:path*', // ← 一時的に無効化（Phase 2で再有効化）
-  ],
+  matcher: ["/api/:path*"],
 };

@@ -112,24 +112,13 @@ function AnalyticsFeedContent() {
     hashtags: string[];
     postType: "feed" | "reel" | "story";
   } | null>(null);
-  // URLパラメータから投稿IDを取得
-  const [postId, setPostId] = useState<string | null>(null);
-
   // 投稿データを取得する関数
   const fetchPostData = useCallback(
     async (id: string) => {
       if (!user?.uid) {return;}
 
       try {
-        const { auth } = await import("../../../lib/firebase");
-        const token = await auth.currentUser?.getIdToken();
-
-        const response = await fetch(`/api/posts?userId=${user.uid}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-user-id": user.uid,
-          },
-        });
+        const response = await fetch(`/api/posts`);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -172,10 +161,7 @@ function AnalyticsFeedContent() {
       const urlParams = new URLSearchParams(window.location.search);
       const id = urlParams.get("postId");
       console.log("URL params postId:", id);
-      if (id) {
-        setPostId(id);
-        fetchPostData(id);
-      }
+      if (id) {fetchPostData(id);}
     }
   }, [fetchPostData]);
 
@@ -281,15 +267,7 @@ function AnalyticsFeedContent() {
       console.log("Fetching analytics via simple API for user:", user.uid);
 
       // Firebase認証トークンを取得
-      const { auth } = await import("../../../lib/firebase");
-      const token = await auth.currentUser?.getIdToken();
-
-      const response = await fetch(`/api/analytics/simple?userId=${user.uid}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-user-id": user.uid,
-        },
-      });
+      const response = await fetch(`/api/analytics/simple?userId=${user.uid}`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -449,15 +427,10 @@ function AnalyticsFeedContent() {
       console.log("Saving analytics data via simple API");
 
       // Firebase認証トークンを取得
-      const { auth } = await import("../../../lib/firebase");
-      const token = await auth.currentUser?.getIdToken();
-
       const response = await fetch("/api/analytics/simple", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "x-user-id": user.uid,
         },
         body: JSON.stringify({
           userId: user.uid,

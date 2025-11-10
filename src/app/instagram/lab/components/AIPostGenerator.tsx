@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { PlanData } from "../../plan/types/plan";
+import { notify } from "../../../../lib/ui/notifications";
 
 interface AIPostGeneratorProps {
   postType: "feed" | "reel" | "story";
@@ -35,7 +36,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   // AI時間提案
   const handleSuggestTime = async () => {
     if (!scheduledDate) {
-      alert("まず投稿日を選択してください");
+      notify({ type: "error", message: "まず投稿日を選択してください" });
       return;
     }
 
@@ -105,7 +106,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   // AI自動生成（テーマも自動選択）
   const handleAutoGenerate = async () => {
     if (!planData) {
-      alert("運用計画が設定されていません");
+      notify({ type: "error", message: "運用計画が設定されていません" });
       return;
     }
 
@@ -147,7 +148,10 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
       }
     } catch (error) {
       console.error("自動生成エラー:", error);
-      alert(`自動生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`);
+      notify({
+        type: "error",
+        message: `自動生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
     } finally {
       setIsAutoGenerating(false);
     }
@@ -155,7 +159,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
 
   const handleGeneratePost = async () => {
     if (!aiPrompt.trim()) {
-      alert("投稿のテーマを入力してください");
+      notify({ type: "error", message: "投稿のテーマを入力してください" });
       return;
     }
 
@@ -199,9 +203,10 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
       }
     } catch (error) {
       console.error("投稿生成エラー:", error);
-      alert(
-        `投稿文生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      notify({
+        type: "error",
+        message: `投稿文生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
     } finally {
       setIsGenerating(false);
     }

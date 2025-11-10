@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Send, X, Bot, User, Lightbulb } from "lucide-react";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { useAuth } from "../contexts/auth-context";
+import { notify } from "../lib/ui/notifications";
 
 interface Message {
   id: string;
@@ -34,19 +35,13 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
   const { user } = useAuth();
 
   // 使用回数を取得
-  const fetchUsageInfo = async () => {
+  const fetchUsageInfo = useCallback(async () => {
     if (!user?.uid) {return;}
 
     try {
       setIsCheckingUsage(true);
-      const idToken = await user.getIdToken();
 
-      const response = await fetch("/api/ai-chat/usage", {
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await fetch("/api/ai-chat/usage");
 
       if (response.ok) {
         const data = await response.json();
@@ -57,21 +52,15 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     } finally {
       setIsCheckingUsage(false);
     }
-  };
+  }, [user?.uid]);
 
   // 使用回数を記録
   const recordUsage = async () => {
     if (!user?.uid) {return false;}
 
     try {
-      const idToken = await user.getIdToken();
-
       const response = await fetch("/api/ai-chat/usage", {
         method: "POST",
-        headers: {
-          "x-user-id": user.uid,
-          Authorization: `Bearer ${idToken}`,
-        },
       });
 
       if (response.ok) {
@@ -201,7 +190,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
     if (user?.uid) {
       fetchUsageInfo();
     }
-  }, [user?.uid]);
+  }, [user?.uid, fetchUsageInfo]);
 
   // 初期メッセージ
   useEffect(() => {
@@ -222,14 +211,20 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({ contextData }) => {
 
     // 使用制限をチェック
     if (!usageInfo.canUse) {
-      alert("今月の使用回数が上限に達しています。来月までお待ちください。");
+      notify({
+        type: "error",
+        message: "今月の使用回数が上限に達しています。来月までお待ちください。",
+      });
       return;
     }
 
     // 使用回数を記録
     const canUse = await recordUsage();
     if (!canUse) {
-      alert("今月の使用回数が上限に達しています。来月までお待ちください。");
+      notify({
+        type: "error",
+        message: "今月の使用回数が上限に達しています。来月までお待ちください。",
+      });
       return;
     }
 

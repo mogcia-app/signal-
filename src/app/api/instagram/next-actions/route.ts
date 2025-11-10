@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "User ID is required" }, { status: 401 });
-    }
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-next-actions", limit: 30, windowSeconds: 60 },
+      auditEventName: "instagram_next_actions_access",
+    });
 
     const actions = [];
 
     // 1. 分析待ちの投稿チェック
     try {
       // すべての投稿を取得
-      const allPostsQuery = await adminDb.collection("posts").where("userId", "==", userId).get();
+      const allPostsQuery = await adminDb.collection("posts").where("userId", "==", uid).get();
 
       // 分析済みの投稿IDを取得
       const analyticsQuery = await adminDb
         .collection("analytics")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .get();
 
       const analyzedPostIds = new Set(
@@ -57,11 +59,11 @@ export async function GET(request: NextRequest) {
 
     // 2. 目標達成度チェック
     try {
-      const goalDoc = await adminDb.collection("goalSettings").doc(userId).get();
+      const goalDoc = await adminDb.collection("goalSettings").doc(uid).get();
       if (goalDoc.exists) {
         const goalSettings = goalDoc.data();
         if (!goalSettings) {
-          console.log("No goal settings data found for user:", userId);
+          console.log("No goal settings data found for user:", uid);
           return;
         }
 
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
         // 今週の投稿数
         const weeklyPostsQuery = await adminDb
           .collection("posts")
-          .where("userId", "==", userId)
+          .where("userId", "==", uid)
           .get();
 
         const weeklyPostCount = weeklyPostsQuery.docs.filter((doc) => {
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
         // フォロワー増加目標
         const analyticsQuery = await adminDb
           .collection("analytics")
-          .where("userId", "==", userId)
+          .where("userId", "==", uid)
           .get();
 
         let totalFollowerIncrease = 0;
@@ -154,7 +156,7 @@ export async function GET(request: NextRequest) {
 
       const recentPostsQuery = await adminDb
         .collection("posts")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .where("createdAt", ">=", lastWeek)
         .get();
 
@@ -193,7 +195,7 @@ export async function GET(request: NextRequest) {
     try {
       const analyticsQuery = await adminDb
         .collection("analytics")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .orderBy("createdAt", "desc")
         .limit(1)
         .get();
@@ -258,7 +260,7 @@ export async function GET(request: NextRequest) {
 
       const scheduledPostsQuery = await adminDb
         .collection("posts")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .where("status", "in", ["scheduled", "draft"])
         .where("scheduledDate", ">=", now)
         .where("scheduledDate", "<=", nextWeek)
@@ -287,13 +289,12 @@ export async function GET(request: NextRequest) {
     try {
       const analyticsQuery = await adminDb
         .collection("analytics")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .get();
 
       if (analyticsQuery.size > 0) {
         let totalEngagement = 0;
         let totalReach = 0;
-        let postCount = 0;
 
         analyticsQuery.forEach((doc) => {
           const data = doc.data();
@@ -301,7 +302,6 @@ export async function GET(request: NextRequest) {
             (data.likes || 0) + (data.comments || 0) + (data.shares || 0) + (data.saves || 0);
           totalEngagement += engagement;
           totalReach += data.reach || 0;
-          postCount++;
         });
 
         const avgEngagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0;
@@ -340,7 +340,7 @@ export async function GET(request: NextRequest) {
     try {
       const postsQuery = await adminDb
         .collection("posts")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .where("status", "==", "published")
         .orderBy("createdAt", "desc")
         .limit(10)
@@ -393,7 +393,7 @@ export async function GET(request: NextRequest) {
     try {
       const postsQuery = await adminDb
         .collection("posts")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .where("status", "==", "published")
         .orderBy("createdAt", "desc")
         .limit(20)
@@ -457,7 +457,7 @@ export async function GET(request: NextRequest) {
     try {
       const analyticsQuery = await adminDb
         .collection("analytics")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .orderBy("publishedAt", "desc")
         .limit(10)
         .get();
@@ -518,7 +518,7 @@ export async function GET(request: NextRequest) {
     try {
       const analyticsQuery = await adminDb
         .collection("analytics")
-        .where("userId", "==", userId)
+        .where("userId", "==", uid)
         .orderBy("publishedAt", "desc")
         .limit(7)
         .get();
@@ -580,12 +580,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Next actions fetch error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch next actions",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

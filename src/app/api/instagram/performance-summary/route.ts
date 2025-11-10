@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "User ID is required" }, { status: 401 });
-    }
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-performance-summary", limit: 60, windowSeconds: 60 },
+      auditEventName: "instagram_performance_summary_access",
+    });
 
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -15,7 +17,7 @@ export async function GET(request: NextRequest) {
     // 今週の投稿数を取得
     const weeklyPostsQuery = await adminDb
       .collection("posts")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .where("status", "==", "published")
       .where("createdAt", ">=", oneWeekAgo)
       .get();
@@ -23,7 +25,7 @@ export async function GET(request: NextRequest) {
     // 今月の投稿数を取得
     const monthlyPostsQuery = await adminDb
       .collection("posts")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .where("status", "==", "published")
       .where("createdAt", ">=", oneMonthAgo)
       .get();
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
     // 分析データを取得（過去30日）
     const analyticsQuery = await adminDb
       .collection("analytics")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .get();
 
     // 今週の成長率計算
@@ -124,7 +126,7 @@ export async function GET(request: NextRequest) {
     };
 
     console.log("📈 Performance summary calculated:", {
-      userId,
+      userId: uid,
       weeklyGrowth: weeklyFollowerGrowth,
       engagementRate: avgWeeklyEngagementRate,
       postsThisWeek,
@@ -139,12 +141,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Performance summary fetch error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch performance summary",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

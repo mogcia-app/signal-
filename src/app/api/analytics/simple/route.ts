@@ -1,31 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
-// GET: 分析データを取得
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-simple-get", limit: 60, windowSeconds: 60 },
+      auditEventName: "analytics_simple_get",
+    });
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId") ?? uid;
+
+    if (userId !== uid) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: access to another user's analytics is not allowed." },
+        { status: 403 },
+      );
     }
 
-    const db = getAdminDb();
-
-    // 分析データを取得
-    const analyticsRef = db.collection("analytics");
-    const querySnapshot = await analyticsRef
-      .where("userId", "==", userId)
+    const querySnapshot = await adminDb
+      .collection("analytics")
+      .where("userId", "==", uid)
       .orderBy("publishedAt", "desc")
       .get();
 
-    const analyticsData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      publishedAt: doc.data().publishedAt?.toDate?.()?.toISOString() || doc.data().publishedAt,
-      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-    }));
+    const analyticsData = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        publishedAt: data.publishedAt?.toDate?.()?.toISOString() ?? data.publishedAt,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() ?? data.createdAt,
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -33,16 +42,23 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Analytics fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch analytics data" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
-// POST: 分析データを保存
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-simple-post", limit: 20, windowSeconds: 60 },
+      auditEventName: "analytics_simple_post",
+    });
+
     const body = await request.json();
+
     const {
-      userId,
+      userId: bodyUserId,
       postId,
       likes,
       comments,
@@ -58,7 +74,6 @@ export async function POST(request: NextRequest) {
       hashtags,
       thumbnail,
       category,
-      // フィード専用フィールド
       reachFollowerPercent,
       interactionCount,
       interactionFollowerPercent,
@@ -70,7 +85,6 @@ export async function POST(request: NextRequest) {
       reachedAccounts,
       profileVisits,
       profileFollows,
-      // リール専用フィールド
       reelReachFollowerPercent,
       reelInteractionCount,
       reelInteractionFollowerPercent,
@@ -90,23 +104,24 @@ export async function POST(request: NextRequest) {
       sentimentMemo,
     } = body;
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    const resolvedUserId = bodyUserId ?? uid;
+    if (resolvedUserId !== uid) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: cannot create analytics for another user." },
+        { status: 403 },
+      );
     }
 
-    const db = getAdminDb();
-
-    // 分析データを保存
     const analyticsData = {
-      userId,
+      userId: uid,
       postId: postId || null,
-      likes: parseInt(likes) || 0,
-      comments: parseInt(comments) || 0,
-      shares: parseInt(shares) || 0,
-      reposts: parseInt(reposts) || 0,
-      reach: parseInt(reach) || 0,
-      saves: parseInt(saves) || 0,
-      followerIncrease: parseInt(followerIncrease) || 0,
+      likes: Number.parseInt(likes) || 0,
+      comments: Number.parseInt(comments) || 0,
+      shares: Number.parseInt(shares) || 0,
+      reposts: Number.parseInt(reposts) || 0,
+      reach: Number.parseInt(reach) || 0,
+      saves: Number.parseInt(saves) || 0,
+      followerIncrease: Number.parseInt(followerIncrease) || 0,
       engagementRate: 0,
       publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
       publishedTime: publishedTime || "",
@@ -115,32 +130,30 @@ export async function POST(request: NextRequest) {
       hashtags: hashtags || [],
       thumbnail: thumbnail || "",
       category: category || "feed",
-      // フィード専用フィールド
-      reachFollowerPercent: parseFloat(reachFollowerPercent) || 0,
-      interactionCount: parseInt(interactionCount) || 0,
-      interactionFollowerPercent: parseFloat(interactionFollowerPercent) || 0,
-      reachSourceProfile: parseInt(reachSourceProfile) || 0,
-      reachSourceFeed: parseInt(reachSourceFeed) || 0,
-      reachSourceExplore: parseInt(reachSourceExplore) || 0,
-      reachSourceSearch: parseInt(reachSourceSearch) || 0,
-      reachSourceOther: parseInt(reachSourceOther) || 0,
-      reachedAccounts: parseInt(reachedAccounts) || 0,
-      profileVisits: parseInt(profileVisits) || 0,
-      profileFollows: parseInt(profileFollows) || 0,
-      // リール専用フィールド
-      reelReachFollowerPercent: parseFloat(reelReachFollowerPercent) || 0,
-      reelInteractionCount: parseInt(reelInteractionCount) || 0,
-      reelInteractionFollowerPercent: parseFloat(reelInteractionFollowerPercent) || 0,
-      reelReachSourceProfile: parseInt(reelReachSourceProfile) || 0,
-      reelReachSourceReel: parseInt(reelReachSourceReel) || 0,
-      reelReachSourceExplore: parseInt(reelReachSourceExplore) || 0,
-      reelReachSourceSearch: parseInt(reelReachSourceSearch) || 0,
-      reelReachSourceOther: parseInt(reelReachSourceOther) || 0,
-      reelReachedAccounts: parseInt(reelReachedAccounts) || 0,
-      reelSkipRate: parseFloat(reelSkipRate) || 0,
-      reelNormalSkipRate: parseFloat(reelNormalSkipRate) || 0,
-      reelPlayTime: parseInt(reelPlayTime) || 0,
-      reelAvgPlayTime: parseFloat(reelAvgPlayTime) || 0,
+      reachFollowerPercent: Number.parseFloat(reachFollowerPercent) || 0,
+      interactionCount: Number.parseInt(interactionCount) || 0,
+      interactionFollowerPercent: Number.parseFloat(interactionFollowerPercent) || 0,
+      reachSourceProfile: Number.parseInt(reachSourceProfile) || 0,
+      reachSourceFeed: Number.parseInt(reachSourceFeed) || 0,
+      reachSourceExplore: Number.parseInt(reachSourceExplore) || 0,
+      reachSourceSearch: Number.parseInt(reachSourceSearch) || 0,
+      reachSourceOther: Number.parseInt(reachSourceOther) || 0,
+      reachedAccounts: Number.parseInt(reachedAccounts) || 0,
+      profileVisits: Number.parseInt(profileVisits) || 0,
+      profileFollows: Number.parseInt(profileFollows) || 0,
+      reelReachFollowerPercent: Number.parseFloat(reelReachFollowerPercent) || 0,
+      reelInteractionCount: Number.parseInt(reelInteractionCount) || 0,
+      reelInteractionFollowerPercent: Number.parseFloat(reelInteractionFollowerPercent) || 0,
+      reelReachSourceProfile: Number.parseInt(reelReachSourceProfile) || 0,
+      reelReachSourceReel: Number.parseInt(reelReachSourceReel) || 0,
+      reelReachSourceExplore: Number.parseInt(reelReachSourceExplore) || 0,
+      reelReachSourceSearch: Number.parseInt(reelReachSourceSearch) || 0,
+      reelReachSourceOther: Number.parseInt(reelReachSourceOther) || 0,
+      reelReachedAccounts: Number.parseInt(reelReachedAccounts) || 0,
+      reelSkipRate: Number.parseFloat(reelSkipRate) || 0,
+      reelNormalSkipRate: Number.parseFloat(reelNormalSkipRate) || 0,
+      reelPlayTime: Number.parseInt(reelPlayTime) || 0,
+      reelAvgPlayTime: Number.parseFloat(reelAvgPlayTime) || 0,
       audience: audience || null,
       reachSource: reachSource || null,
       sentiment: sentiment || null,
@@ -149,7 +162,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection("analytics").add(analyticsData);
+    const docRef = await adminDb.collection("analytics").add(analyticsData);
 
     return NextResponse.json({
       success: true,
@@ -158,6 +171,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Analytics save error:", error);
-    return NextResponse.json({ error: "Failed to save analytics data" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
+
+

@@ -9,7 +9,7 @@ Sentry.init({
   maxBreadcrumbs: 50,
   attachStacktrace: true,
 
-  beforeSend(event, hint) {
+  beforeSend(event, _hint) {
     return event;
   },
 

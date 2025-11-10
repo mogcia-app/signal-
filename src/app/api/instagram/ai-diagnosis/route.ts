@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { buildAnalysisPrompt } from "../../../../utils/aiPromptBuilder";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -13,22 +14,13 @@ const openai = process.env.OPENAI_API_KEY
 
 export async function POST(request: NextRequest) {
   try {
-    // 🔐 Firebase認証トークンからユーザーIDを取得
-    let userId = "anonymous";
-    const authHeader = request.headers.get("authorization");
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-ai-diagnosis", limit: 15, windowSeconds: 60 },
+      auditEventName: "instagram_ai_diagnosis",
+    });
 
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        userId = decodedToken.uid;
-        console.log("✅ Authenticated user:", userId);
-      } catch (authError) {
-        console.warn("⚠️ Firebase認証エラー（匿名ユーザーとして処理）:", authError);
-      }
-    }
-
-    const body = await request.json();
+    const _body = await request.json();
 
     // OpenAI APIキーのチェック
     if (!openai) {
@@ -136,19 +128,13 @@ export async function POST(request: NextRequest) {
       latestPlan,
       recentPosts,
       analyticsData,
-      body.planData
     );
 
     return NextResponse.json(diagnosisResult);
   } catch (error) {
     console.error("AI診断エラー:", error);
-    return NextResponse.json(
-      {
-        error: "AI診断処理中にエラーが発生しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -170,7 +156,6 @@ async function runAIDiagnosis(
     shares: number;
     publishedTime?: string;
   }>,
-  planData?: unknown
 ) {
   if (!openai) {
     throw new Error("OpenAI API not initialized");

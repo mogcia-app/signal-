@@ -45,7 +45,6 @@ export default function InstagramPlanPage() {
     handleCategoryToggle,
     savePlan,
     setSimulationResultData,
-    loadSavedPlan,
     resetPlan,
     simulationResult: savedSimulationResult, // 保存されたシミュレーション結果
   } = usePlanForm();
@@ -61,21 +60,14 @@ export default function InstagramPlanPage() {
   // 保存されたシミュレーション結果を優先、なければ新しく実行した結果を使用
   const simulationResult = savedSimulationResult || newSimulationResult;
 
-  const { showAiAdvice, isAiLoading, handleStartAiDiagnosis, handleSaveAdviceAndContinue } =
-    useAIDiagnosis();
+  const { isAiLoading, handleStartAiDiagnosis, handleSaveAdviceAndContinue } = useAIDiagnosis();
 
   // 分析データを取得
   const fetchAnalytics = useCallback(async () => {
     if (!user?.uid) {return;}
 
     try {
-      const idToken = await user.getIdToken();
-      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "x-user-id": user.uid,
-        },
-      });
+      const response = await fetch(`/api/analytics?userId=${user.uid}`);
 
       if (response.ok) {
         // const result = await response.json();
@@ -507,7 +499,6 @@ export default function InstagramPlanPage() {
 
                 {activeTab === "ai" && (
                   <AIDiagnosisPanel
-                    showAdvice={showAiAdvice}
                     isLoading={isAiLoading}
                     onStartDiagnosis={() => handleStartAiDiagnosis(formData)}
                     onSaveAdvice={handleSaveAdviceAndContinue}

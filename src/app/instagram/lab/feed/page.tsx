@@ -17,13 +17,6 @@ export default function FeedLabPage() {
   const [scheduledTime, setScheduledTime] = useState("");
   const [isAIGenerated] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState<
-    Array<{
-      followerIncrease?: number;
-      [key: string]: unknown;
-    }>
-  >([]);
-
   // スケジュール関連の状態
   const [monthlyPosts, setMonthlyPosts] = useState(8);
   const [dailyPosts, setDailyPosts] = useState(1);
@@ -64,7 +57,6 @@ export default function FeedLabPage() {
         const response = await fetch(`/api/posts?userId=${user.uid}`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "x-user-id": user.uid,
           },
         });
 
@@ -171,28 +163,6 @@ export default function FeedLabPage() {
     };
   }, [user?.uid, fetchPostData]);
 
-  // 分析データを取得
-  const fetchAnalytics = useCallback(async () => {
-    if (!user?.uid) {return;}
-
-    try {
-      const idToken = await user.getIdToken();
-      const response = await fetch(`/api/analytics?userId=${user.uid}`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "x-user-id": user.uid,
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setAnalyticsData(result.analytics || []);
-      }
-    } catch (error) {
-      console.error("Analytics fetch error:", error);
-    }
-  }, [user]);
-
   // スケジュール生成関数
   const generateSchedule = useCallback(async () => {
     if (!user?.uid) {return;}
@@ -206,7 +176,6 @@ export default function FeedLabPage() {
       const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
-          "x-user-id": user.uid,
         },
       });
 
@@ -306,7 +275,6 @@ export default function FeedLabPage() {
       const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
-          "x-user-id": user.uid,
         },
       });
 
@@ -337,7 +305,7 @@ export default function FeedLabPage() {
         throw new Error("スケジュール保存に失敗しました");
       }
 
-      const saveData = await saveResponse.json();
+      await saveResponse.json();
       setSaveMessage("✅ スケジュールが保存されました！");
     } catch (error) {
       console.error("スケジュール保存エラー:", error);
@@ -358,7 +326,6 @@ export default function FeedLabPage() {
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
-            "x-user-id": user.uid,
           },
         }
       );
@@ -386,12 +353,11 @@ export default function FeedLabPage() {
       try {
         // ビジネス情報を取得
         const idToken = await user.getIdToken();
-        const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-            "x-user-id": user.uid,
-          },
-        });
+          const businessResponse = await fetch(`/api/user/business-info?userId=${user.uid}`, {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
 
         if (!businessResponse.ok) {
           throw new Error("ビジネス情報の取得に失敗しました");
@@ -433,11 +399,9 @@ export default function FeedLabPage() {
 
   useEffect(() => {
     if (user?.uid) {
-      fetchAnalytics();
       loadSavedSchedule(); // 保存されたスケジュールを読み込み
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
+  }, [user?.uid, loadSavedSchedule]);
 
   if (!isMounted) {
     return null;
@@ -520,7 +484,7 @@ export default function FeedLabPage() {
             <h3 className="text-lg font-medium text-gray-800 mb-4">週間投稿スケジュール</h3>
             {generatedSchedule.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {generatedSchedule.map((daySchedule, index) => {
+                {generatedSchedule.map((daySchedule) => {
                   const hasPosts = daySchedule.posts && daySchedule.posts.length > 0;
 
                   return (
@@ -717,19 +681,6 @@ export default function FeedLabPage() {
               isAIGenerated={isAIGenerated}
               planData={planData}
               aiPromptPlaceholder="例: 新商品の紹介、ブランドストーリー、お客様の声、会社の取り組みなど..."
-              onSave={() => {
-                // 保存処理（実装が必要）
-                console.log("保存:", { postContent, postTitle, selectedHashtags, postType });
-              }}
-              onClear={() => {
-                setPostContent("");
-                setPostTitle("");
-                setSelectedHashtags([]);
-                setPostImage(null);
-                setScheduledDate("");
-                setScheduledTime("");
-              }}
-              showActionButtons={true}
               imageVideoSuggestions={imageVideoSuggestions}
               onImageVideoSuggestionsGenerate={generateImageVideoSuggestions}
               isGeneratingSuggestions={isGeneratingSuggestions}
@@ -745,7 +696,6 @@ export default function FeedLabPage() {
                   setSelectedHashtags([...selectedHashtags, hashtag]);
                 }
               }}
-              postContent={postContent}
             />
           </div>
         </div>

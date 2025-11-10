@@ -84,7 +84,7 @@ export default function DashboardPage() {
       // }
       // 契約SNSが0個の場合は現在のページを表示
     }
-  }, [user, loading, userProfile, profileLoading, router, getContractSNS]);
+  }, [user, loading, userProfile, profileLoading, profileError, router, getContractSNS]);
 
   // const handleSignOut = async () => {
   //   try {

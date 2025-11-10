@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { cache, generateCacheKey } from "../../../../lib/cache";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 interface AnalyticsData {
   id: string;
@@ -100,17 +101,17 @@ function getPerformanceRating(accountScore: number) {
 // アカウントスコア取得
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-account-score", limit: 30, windowSeconds: 60 },
+      auditEventName: "analytics_account_score_access",
+    });
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "monthly"; // weekly or monthly
     const date = searchParams.get("date"); // YYYY-MM or YYYY-WW
 
-    if (!userId) {
-      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
-    }
-
     // キャッシュキー生成
-    const cacheKey = generateCacheKey("account-score", { userId, period, date });
+    const cacheKey = generateCacheKey("account-score", { userId: uid, period, date });
 
     // キャッシュから取得を試行
     const cached = cache.get(cacheKey);
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 分析データを取得
-    const snapshot = await adminDb.collection("analytics").where("userId", "==", userId).get();
+    const snapshot = await adminDb.collection("analytics").where("userId", "==", uid).get();
 
     const allAnalyticsData = snapshot.docs.map((doc) => {
       const data = doc.data();
@@ -206,12 +207,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Account score calculation error:", error);
-    return NextResponse.json(
-      {
-        error: "スコア計算に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

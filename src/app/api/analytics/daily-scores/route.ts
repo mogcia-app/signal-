@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { cache, generateCacheKey } from "../../../../lib/cache";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 interface AnalyticsData {
   id: string;
@@ -106,16 +107,16 @@ function calculateAccountScore(analyticsData: AnalyticsData[], postsCount: numbe
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-daily-scores", limit: 60, windowSeconds: 60 },
+      auditEventName: "analytics_daily_scores_access",
+    });
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get("days") || "30");
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID required" }, { status: 401 });
-    }
-
     // キャッシュキー生成
-    const cacheKey = generateCacheKey("daily-scores", { userId, days });
+    const cacheKey = generateCacheKey("daily-scores", { userId: uid, days });
     const cached = cache.get(cacheKey);
     if (cached) {
       return NextResponse.json(cached);
@@ -126,13 +127,13 @@ export async function GET(request: NextRequest) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    console.log("Daily scores API - Fetching data for user:", userId, "days:", days);
+    console.log("Daily scores API - Fetching data for user:", uid, "days:", days);
     console.log("Date range:", startDate.toISOString(), "to", endDate.toISOString());
 
     // 分析データを取得（orderByを削除してインデックスエラーを回避）
     const analyticsSnapshot = await adminDb
       .collection("analytics")
-      .where("userId", "==", userId)
+      .where("userId", "==", uid)
       .get();
 
     const allAnalyticsData = analyticsSnapshot.docs.map((doc) => {
@@ -157,7 +158,7 @@ export async function GET(request: NextRequest) {
     console.log("Filtered analytics data:", analyticsData.length);
 
     // 投稿データを取得（期間フィルタリングはクライアント側で実行）
-    const postsSnapshot = await adminDb.collection("posts").where("userId", "==", userId).get();
+    const postsSnapshot = await adminDb.collection("posts").where("userId", "==", uid).get();
 
     const allPostsData = postsSnapshot.docs.map((doc) => {
       const data = doc.data();
@@ -229,16 +230,10 @@ export async function GET(request: NextRequest) {
     console.error("Error details:", {
       message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
-      userId: request.headers.get("x-user-id"),
       days: request.nextUrl.searchParams.get("days"),
     });
 
-    return NextResponse.json(
-      {
-        error: "Failed to fetch daily scores",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

@@ -14,6 +14,7 @@ import {
   Edit3,
 } from "lucide-react";
 import { InputData } from "./types";
+import { notify } from "../../../lib/ui/notifications";
 
 interface AnalyticsFormProps {
   data: InputData;
@@ -168,7 +169,7 @@ const AnalyticsForm: React.FC<AnalyticsFormProps> = ({ data, onChange, onSave, i
                     if (file) {
                       // ファイルサイズチェック（2MB制限）
                       if (file.size > 2 * 1024 * 1024) {
-                        alert("画像ファイルは2MB以下にしてください。");
+                        notify({ type: "error", message: "画像ファイルは2MB以下にしてください。" });
                         return;
                       }
 
