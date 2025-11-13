@@ -6,7 +6,7 @@
  * Phase 3: middleware再有効化の準備
  */
 
-import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
+import { getAuth, onAuthStateChanged, type Unsubscribe, type User } from "firebase/auth";
 
 const defaultFetch: typeof fetch | undefined =
   typeof fetch !== "undefined" ? fetch.bind(globalThis) : undefined;
@@ -29,23 +29,45 @@ const isApiRequest = (input: RequestInfo | URL): boolean => {
   return false;
 };
 
-const waitForUser = async (auth: ReturnType<typeof getAuth>, timeoutMs = 5000) => {
+const waitForUser = async (auth: ReturnType<typeof getAuth>, timeoutMs = 7000) =>
+  new Promise<User | null>((resolve) => {
+    let resolved = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let unsubscribe: Unsubscribe | undefined;
+
+    const finish = (user: User | null) => {
+      if (resolved) {
+        return;
+      }
+      resolved = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      resolve(user);
+    };
+
+    timeoutId = setTimeout(() => finish(null), timeoutMs);
+    unsubscribe = onAuthStateChanged(auth, (user) => {
+      finish(user);
+    });
+  });
+
+const resolveCurrentUser = async (auth: ReturnType<typeof getAuth>) => {
+  if (typeof auth.authStateReady === "function") {
+    await auth.authStateReady();
+    if (auth.currentUser) {
+      return auth.currentUser;
+    }
+  }
+
   if (auth.currentUser) {
     return auth.currentUser;
   }
 
-  return new Promise<User | null>((resolve) => {
-    const timeoutId = setTimeout(() => {
-      unsubscribe();
-      resolve(null);
-    }, timeoutMs);
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      clearTimeout(timeoutId);
-      unsubscribe();
-      resolve(user);
-    });
-  });
+  return waitForUser(auth);
 };
 
 export const authFetch = async (
@@ -58,7 +80,7 @@ export const authFetch = async (
   }
 
   const auth = getAuth();
-  const user = auth.currentUser ?? (await waitForUser(auth));
+  const user = await resolveCurrentUser(auth);
   const token = user ? await user.getIdToken() : null;
 
   const headers = new Headers(options.headers || {});
