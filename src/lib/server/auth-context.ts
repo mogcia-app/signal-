@@ -191,6 +191,16 @@ async function isContractActive(userId: string): Promise<boolean> {
 
   const active = isStatusActive && endDate.getTime() > now.getTime();
 
+  if (!active) {
+    console.warn("[auth-context] contract check failed", {
+      userId,
+      status: userData.status,
+      isStatusActive,
+      contractEndDate: endDate.toISOString(),
+      now: now.toISOString(),
+    });
+  }
+
   return active;
 }
 
