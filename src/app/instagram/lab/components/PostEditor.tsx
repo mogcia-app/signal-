@@ -8,6 +8,11 @@ import { useAuth } from "../../../../contexts/auth-context";
 import Image from "next/image";
 import type { PlanData } from "../../plan/types/plan";
 
+export type AIHintSuggestion = {
+  content: string;
+  rationale?: string;
+};
+
 interface PostEditorProps {
   content: string;
   onContentChange: (content: string) => void;
@@ -33,7 +38,7 @@ interface PostEditorProps {
     conclusion: string;
   }; // 動画構成データ
   videoFlow?: string; // 動画構成の流れ
-  imageVideoSuggestions?: string; // AIヒントの文章
+  imageVideoSuggestions?: AIHintSuggestion | null; // AIヒントの文章
   onImageVideoSuggestionsGenerate?: (content: string) => void; // AIヒント生成のコールバック
   isGeneratingSuggestions?: boolean; // AIヒント生成中のローディング状態
 }
@@ -710,8 +715,16 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     <span className="text-sm text-gray-600">AIヒントを生成中...</span>
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-700">
-                    {imageVideoSuggestions || "AI投稿文生成で自動提案されます"}
+                  <div>
+                    <div className="text-sm text-gray-700 whitespace-pre-line">
+                      {imageVideoSuggestions?.content || "AI投稿文生成で自動提案されます"}
+                    </div>
+                    {imageVideoSuggestions?.rationale && (
+                      <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-300 rounded text-sm text-orange-800 whitespace-pre-line">
+                        <p className="font-medium text-orange-900 mb-1">今回の提案理由</p>
+                        {imageVideoSuggestions.rationale}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

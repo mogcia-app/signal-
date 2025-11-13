@@ -31,8 +31,11 @@ export async function POST(request: NextRequest) {
     // OpenAI APIを呼び出して提案を生成
     const suggestionsResponse = await generateSuggestionsWithAI(prompt);
 
+    const rationale = buildSuggestionRationale(masterContext, businessInfo);
+
     return NextResponse.json({
       suggestions: suggestionsResponse,
+      ...(rationale ? { rationale } : {}),
     });
   } catch (error) {
     console.error("フィードAIヒント生成エラー:", error);
@@ -143,4 +146,47 @@ async function generateSuggestionsWithAI(prompt: string) {
     console.error("OpenAI API エラー:", error);
     throw error;
   }
+}
+
+function buildSuggestionRationale(
+  masterContext: Awaited<ReturnType<typeof getMasterContext>>,
+  businessInfo: Record<string, unknown>
+) {
+  const lines: string[] = [];
+
+  const goldSummary = masterContext?.postPatterns?.summaries?.gold?.summary;
+  if (goldSummary) {
+    lines.push(`成功パターン: ${goldSummary}`);
+  }
+
+  const recommendation = masterContext?.recommendations?.find((item) => typeof item === "string" && item.trim().length > 0);
+  if (recommendation) {
+    lines.push(`推奨アクション: ${recommendation}`);
+  }
+
+  const cautionSummary = masterContext?.postPatterns?.summaries?.red?.summary;
+  if (cautionSummary) {
+    lines.push(`回避ポイント: ${cautionSummary}`);
+  }
+
+  if (lines.length < 2) {
+    const insight = masterContext?.personalizedInsights?.find((item) => typeof item === "string" && item.trim().length > 0);
+    if (insight) {
+      lines.push(`学習インサイト: ${insight}`);
+    }
+  }
+
+  if (lines.length === 0) {
+    const goals = Array.isArray(businessInfo.goals) ? businessInfo.goals : [];
+    if (goals.length > 0) {
+      lines.push(`目標フォーカス: ${goals.slice(0, 2).join(" / ")}`);
+    }
+
+    const targetMarket = Array.isArray(businessInfo.targetMarket) ? businessInfo.targetMarket : [];
+    if (targetMarket.length > 0) {
+      lines.push(`ターゲット: ${targetMarket.slice(0, 2).join(" / ")}`);
+    }
+  }
+
+  return lines.slice(0, 3).join("\n");
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import SNSLayout from "../../../../components/sns-layout";
-import PostEditor from "../components/PostEditor";
+import PostEditor, { AIHintSuggestion } from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
 import CommentReplyAssistant from "../components/CommentReplyAssistant";
 import { usePlanData } from "../../../../hooks/usePlanData";
@@ -40,7 +40,7 @@ export default function FeedLabPage() {
   const [saveMessage, setSaveMessage] = useState("");
 
   // AIヒント関連の状態
-  const [imageVideoSuggestions, setImageVideoSuggestions] = useState("");
+  const [imageVideoSuggestions, setImageVideoSuggestions] = useState<AIHintSuggestion | null>(null);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
 
   // 計画データを取得
@@ -341,7 +341,12 @@ export default function FeedLabPage() {
         }
 
         const suggestionsData = await suggestionsResponse.json();
-        setImageVideoSuggestions(suggestionsData.suggestions);
+        setImageVideoSuggestions({
+          content: suggestionsData.suggestions,
+          rationale: typeof suggestionsData.rationale === "string" && suggestionsData.rationale.trim().length > 0
+            ? suggestionsData.rationale
+            : undefined,
+        });
       } catch (error) {
         console.error("AIヒント生成エラー:", error);
       } finally {

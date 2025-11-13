@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import {
+  buildPostPatternPromptSection,
+  getMasterContext,
+} from "../../ai/monthly-analysis/route";
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-story-suggestions", limit: 30, windowSeconds: 60 },
+      auditEventName: "instagram_story_suggestions",
+    });
+
     const body = await request.json();
     const { content, businessInfo } = body;
 
@@ -10,20 +21,26 @@ export async function POST(request: NextRequest) {
     }
 
     // ビジネス情報からコンテキストを構築
-    const context = buildBusinessContext(businessInfo);
+    const businessContext = buildBusinessContext(businessInfo);
+    const masterContext = await getMasterContext(userId);
+    const patternContext = buildPostPatternPromptSection(masterContext?.postPatterns);
 
     // AIプロンプトを構築
-    const prompt = buildSuggestionsPrompt(content, context);
+    const prompt = buildSuggestionsPrompt(content, businessContext, patternContext);
 
     // OpenAI APIを呼び出して提案を生成
     const suggestionsResponse = await generateSuggestionsWithAI(prompt);
 
+    const rationale = buildSuggestionRationale(masterContext, businessInfo);
+
     return NextResponse.json({
       suggestions: suggestionsResponse,
+      ...(rationale ? { rationale } : {}),
     });
   } catch (error) {
     console.error("画像・動画提案生成エラー:", error);
-    return NextResponse.json({ error: "画像・動画提案生成に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -65,7 +82,7 @@ function buildBusinessContext(businessInfo: Record<string, unknown>): string {
   return context.join("\n");
 }
 
-function buildSuggestionsPrompt(content: string, context: string) {
+function buildSuggestionsPrompt(content: string, context: string, patternContext?: string) {
   return `
 あなたはInstagramストーリーの専門家です。以下の投稿文に合うストーリーのアイデアを提案してください。
 
@@ -74,6 +91,8 @@ ${content}
 
 【ビジネス情報】
 ${context}
+
+${patternContext ?? ""}
 
 【要求事項】
 1. 投稿文に合ったシンプルなストーリーアイデア（2行以内）
@@ -121,4 +140,47 @@ async function generateSuggestionsWithAI(prompt: string) {
     console.error("OpenAI API エラー:", error);
     throw error;
   }
+}
+
+function buildSuggestionRationale(
+  masterContext: Awaited<ReturnType<typeof getMasterContext>>,
+  businessInfo: Record<string, unknown>
+) {
+  const lines: string[] = [];
+
+  const goldSummary = masterContext?.postPatterns?.summaries?.gold?.summary;
+  if (goldSummary) {
+    lines.push(`成功パターン: ${goldSummary}`);
+  }
+
+  const recommendation = masterContext?.recommendations?.find((item) => typeof item === "string" && item.trim().length > 0);
+  if (recommendation) {
+    lines.push(`推奨アクション: ${recommendation}`);
+  }
+
+  const cautionSummary = masterContext?.postPatterns?.summaries?.red?.summary;
+  if (cautionSummary) {
+    lines.push(`回避ポイント: ${cautionSummary}`);
+  }
+
+  if (lines.length < 2) {
+    const insight = masterContext?.personalizedInsights?.find((item) => typeof item === "string" && item.trim().length > 0);
+    if (insight) {
+      lines.push(`学習インサイト: ${insight}`);
+    }
+  }
+
+  if (lines.length === 0) {
+    const goals = Array.isArray(businessInfo.goals) ? businessInfo.goals : [];
+    if (goals.length > 0) {
+      lines.push(`目標フォーカス: ${goals.slice(0, 2).join(" / ")}`);
+    }
+
+    const targetMarket = Array.isArray(businessInfo.targetMarket) ? businessInfo.targetMarket : [];
+    if (targetMarket.length > 0) {
+      lines.push(`ターゲット: ${targetMarket.slice(0, 2).join(" / ")}`);
+    }
+  }
+
+  return lines.slice(0, 3).join("\n");
 }
