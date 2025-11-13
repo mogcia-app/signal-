@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
       reelAvgPlayTime,
       audience,
       reachSource,
+      commentThreads,
       sentiment,
       sentimentMemo,
     } = body;
@@ -112,9 +113,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const now = new Date();
     const analyticsData = {
       userId: uid,
       postId: postId || null,
+      snsType: "instagram",
+      postType: category || "feed",
       likes: Number.parseInt(likes) || 0,
       comments: Number.parseInt(comments) || 0,
       shares: Number.parseInt(shares) || 0,
@@ -156,13 +160,46 @@ export async function POST(request: NextRequest) {
       reelAvgPlayTime: Number.parseFloat(reelAvgPlayTime) || 0,
       audience: audience || null,
       reachSource: reachSource || null,
+      commentThreads: Array.isArray(commentThreads)
+        ? commentThreads
+            .map((thread: any) => ({
+              comment: typeof thread?.comment === "string" ? thread.comment.trim() : "",
+              reply: typeof thread?.reply === "string" ? thread.reply.trim() : "",
+            }))
+            .filter((thread) => thread.comment || thread.reply)
+        : [],
       sentiment: sentiment || null,
       sentimentMemo: sentimentMemo || "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
 
-    const docRef = await adminDb.collection("analytics").add(analyticsData);
+    const analyticsCollection = adminDb.collection("analytics");
+
+    if (analyticsData.postId) {
+      const existingSnapshot = await analyticsCollection
+        .where("userId", "==", uid)
+        .where("postId", "==", analyticsData.postId)
+        .limit(1)
+        .get();
+
+      if (!existingSnapshot.empty) {
+        const existingDoc = existingSnapshot.docs[0];
+        const existingData = existingDoc.data();
+        await existingDoc.ref.update({
+          ...analyticsData,
+          createdAt: existingData.createdAt ?? now,
+        });
+
+        return NextResponse.json({
+          success: true,
+          id: existingDoc.id,
+          message: "Analytics data updated successfully",
+        });
+      }
+    }
+
+    const docRef = await analyticsCollection.add(analyticsData);
 
     return NextResponse.json({
       success: true,

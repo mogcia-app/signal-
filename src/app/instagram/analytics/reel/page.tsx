@@ -9,7 +9,10 @@ import { CurrentPlanCard } from "../../../../components/CurrentPlanCard";
 import ReelAnalyticsForm from "../../components/ReelAnalyticsForm";
 import ReelAnalyticsStats from "../../components/ReelAnalyticsStats";
 import SNSLayout from "../../../../components/sns-layout";
-import { CheckCircle, X } from "lucide-react";
+import { CheckCircle, RefreshCw, X } from "lucide-react";
+import type { CommentThread } from "../../components/types";
+import FeedAnalyticsAIInsights from "../../../analytics/components/FeedAnalyticsAIInsights";
+import { authFetch } from "../../../../utils/authFetch";
 
 // オーディエンス分析データの型定義
 interface AudienceData {
@@ -96,7 +99,81 @@ interface AnalyticsData {
   audience?: AudienceData;
   // 閲覧数ソース分析
   reachSource?: ReachSourceData;
+  commentThreads?: CommentThread[];
+  sentiment?: "satisfied" | "dissatisfied" | null;
+  sentimentMemo?: string;
 }
+
+const createDefaultReelInputData = () => ({
+  likes: "",
+  comments: "",
+  shares: "",
+  reposts: "",
+  reach: "",
+  saves: "",
+  followerIncrease: "",
+  publishedAt: new Date().toISOString().split("T")[0],
+  publishedTime: new Date().toTimeString().slice(0, 5),
+  title: "",
+  content: "",
+  hashtags: "",
+  thumbnail: "",
+  category: "reel" as "reel" | "feed" | "story",
+  reachFollowerPercent: "",
+  interactionCount: "",
+  interactionFollowerPercent: "",
+  reachSourceProfile: "",
+  reachSourceFeed: "",
+  reachSourceExplore: "",
+  reachSourceSearch: "",
+  reachSourceOther: "",
+  reachedAccounts: "",
+  profileVisits: "",
+  profileFollows: "",
+  reelReachFollowerPercent: "",
+  reelInteractionCount: "",
+  reelInteractionFollowerPercent: "",
+  reelReachSourceProfile: "",
+  reelReachSourceReel: "",
+  reelReachSourceExplore: "",
+  reelReachSourceSearch: "",
+  reelReachSourceOther: "",
+  reelReachedAccounts: "",
+  reelSkipRate: "",
+  reelNormalSkipRate: "",
+  reelPlayTime: "",
+  reelAvgPlayTime: "",
+  audience: {
+    gender: {
+      male: "",
+      female: "",
+      other: "",
+    },
+    age: {
+      "13-17": "",
+      "18-24": "",
+      "25-34": "",
+      "35-44": "",
+      "45-54": "",
+      "55-64": "",
+      "65+": "",
+    },
+  },
+  reachSource: {
+    sources: {
+      posts: "",
+      profile: "",
+      explore: "",
+      search: "",
+      other: "",
+    },
+    followers: {
+      followers: "",
+      nonFollowers: "",
+    },
+  },
+  commentThreads: [] as CommentThread[],
+});
 
 function AnalyticsReelContent() {
   const { user } = useAuth();
@@ -111,7 +188,11 @@ function AnalyticsReelContent() {
     content: string;
     hashtags: string[];
     postType: "feed" | "reel" | "story";
+    publishedAt?: string;
+    publishedTime?: string;
   } | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   // 投稿データを取得する関数
   const fetchPostData = useCallback(
     async (id: string) => {
@@ -177,81 +258,13 @@ function AnalyticsReelContent() {
           : postData.hashtags || "",
         category:
           postData.postType === "feed" ? "feed" : postData.postType === "reel" ? "reel" : "story",
+        publishedAt: postData.publishedAt ?? prev.publishedAt ?? new Date().toISOString().split("T")[0],
+        publishedTime: postData.publishedTime ?? prev.publishedTime ?? new Date().toTimeString().slice(0, 5),
       }));
     }
   }, [postData]);
 
-  const [inputData, setInputData] = useState({
-    likes: "",
-    comments: "",
-    shares: "",
-    reposts: "",
-    reach: "",
-    saves: "",
-    followerIncrease: "",
-    publishedAt: new Date().toISOString().split("T")[0],
-    publishedTime: new Date().toTimeString().slice(0, 5), // HH:MM形式
-    title: "",
-    content: "",
-    hashtags: "",
-    thumbnail: "",
-    category: "reel" as "reel" | "feed" | "story",
-    // フィード専用フィールド
-    reachFollowerPercent: "",
-    interactionCount: "",
-    interactionFollowerPercent: "",
-    reachSourceProfile: "",
-    reachSourceFeed: "",
-    reachSourceExplore: "",
-    reachSourceSearch: "",
-    reachSourceOther: "",
-    reachedAccounts: "",
-    profileVisits: "",
-    profileFollows: "",
-    // リール専用フィールド
-    reelReachFollowerPercent: "",
-    reelInteractionCount: "",
-    reelInteractionFollowerPercent: "",
-    reelReachSourceProfile: "",
-    reelReachSourceReel: "",
-    reelReachSourceExplore: "",
-    reelReachSourceSearch: "",
-    reelReachSourceOther: "",
-    reelReachedAccounts: "",
-    reelSkipRate: "",
-    reelNormalSkipRate: "",
-    reelPlayTime: "",
-    reelAvgPlayTime: "",
-    audience: {
-      gender: {
-        male: "",
-        female: "",
-        other: "",
-      },
-      age: {
-        "13-17": "",
-        "18-24": "",
-        "25-34": "",
-        "35-44": "",
-        "45-54": "",
-        "55-64": "",
-        "65+": "",
-      },
-    },
-    reachSource: {
-      sources: {
-        posts: "",
-        profile: "",
-        explore: "",
-        search: "",
-        other: "",
-      },
-      followers: {
-        followers: "",
-        nonFollowers: "",
-      },
-    },
-  });
+  const [inputData, setInputData] = useState(createDefaultReelInputData());
 
   // 分析データを取得（simple API経由）
   const fetchAnalytics = useCallback(async () => {
@@ -327,6 +340,7 @@ function AnalyticsReelContent() {
             sentimentMemo: string;
             createdAt: string;
             updatedAt: string;
+            commentThreads?: CommentThread[];
           }) => ({
             id: item.id || "",
             userId: user.uid,
@@ -375,6 +389,9 @@ function AnalyticsReelContent() {
             reelAvgPlayTime: item.reelAvgPlayTime || 0,
             audience: item.audience,
             reachSource: item.reachSource,
+            commentThreads: Array.isArray(item.commentThreads) ? item.commentThreads : [],
+            sentiment: item.sentiment || null,
+            sentimentMemo: item.sentimentMemo || "",
           })
         );
 
@@ -399,6 +416,65 @@ function AnalyticsReelContent() {
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
+  const handleResetAnalytics = useCallback(async () => {
+    if (!user?.uid) {
+      router.push("/login");
+      return;
+    }
+    if (!postData?.id) {
+      setToastMessage({ message: "投稿が選択されていません。投稿一覧から分析ページを開いてください。", type: "error" });
+      setTimeout(() => setToastMessage(null), 4000);
+      return;
+    }
+    if (!window.confirm("この投稿に紐付く分析データをすべて削除します。よろしいですか？")) {
+      return;
+    }
+
+    setIsResetting(true);
+    setResetError(null);
+
+    try {
+      const params = new URLSearchParams({ postId: postData.id });
+      const response = await authFetch(`/api/analytics/by-post?${params.toString()}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        throw new Error(errorText || `Failed with status ${response.status}`);
+      }
+
+      await response.json();
+
+      const defaultInput = createDefaultReelInputData();
+      if (postData) {
+        defaultInput.title = postData.title ?? "";
+        defaultInput.content = postData.content ?? "";
+        defaultInput.hashtags = Array.isArray(postData.hashtags)
+          ? postData.hashtags.join(" ")
+          : postData.hashtags || "";
+        defaultInput.category =
+          postData.postType === "feed" ? "feed" : postData.postType === "reel" ? "reel" : "story";
+      }
+
+      setInputData(defaultInput);
+      setAnalyticsData((prev) => prev.filter((item) => item.postId !== postData.id));
+
+      await fetchAnalytics();
+
+      setToastMessage({ message: "分析データをリセットしました。", type: "success" });
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (error) {
+      console.error("Reel analytics reset error:", error);
+      const message =
+        error instanceof Error ? error.message : "分析データのリセットに失敗しました。";
+      setResetError(message);
+      setToastMessage({ message, type: "error" });
+      setTimeout(() => setToastMessage(null), 5000);
+    } finally {
+      setIsResetting(false);
+    }
+  }, [user?.uid, postData, router, fetchAnalytics]);
 
   // 投稿分析データを保存（simple API経由）
   const handleSaveAnalytics = async (sentimentData?: {
@@ -421,6 +497,11 @@ function AnalyticsReelContent() {
       setTimeout(() => setToastMessage(null), 3000);
       return;
     }
+    if (sentimentData?.sentiment && !sentimentData.memo.trim()) {
+      setToastMessage({ message: "満足度を選んだ場合、メモは必須です", type: "error" });
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -434,7 +515,7 @@ function AnalyticsReelContent() {
         },
         body: JSON.stringify({
           userId: user.uid,
-          postId: null, // 投稿とのリンクなし
+          postId: postData?.id ?? null,
           likes: parseInt(inputData.likes) || 0,
           comments: parseInt(inputData.comments) || 0,
           shares: parseInt(inputData.shares) || 0,
@@ -507,6 +588,12 @@ function AnalyticsReelContent() {
               nonFollowers: parseFloat(inputData.reachSource.followers.nonFollowers) || 0,
             },
           },
+          commentThreads: inputData.commentThreads
+            .map((thread) => ({
+              comment: thread.comment?.trim() || "",
+              reply: thread.reply?.trim() || "",
+            }))
+            .filter((thread) => thread.comment || thread.reply),
           sentiment: sentimentData?.sentiment || null,
           sentimentMemo: sentimentData?.memo || "",
         }),
@@ -520,7 +607,47 @@ function AnalyticsReelContent() {
       const result = await response.json();
       console.log("Analytics saved via simple API:", result);
 
-      setToastMessage({ message: "投稿分析データを保存しました！", type: 'success' });
+      let feedbackErrorMessage: string | null = null;
+      if (postData?.id && sentimentData?.sentiment) {
+        const sentimentMap: Record<"satisfied" | "dissatisfied", "positive" | "negative"> = {
+          satisfied: "positive",
+          dissatisfied: "negative",
+        };
+
+        try {
+          const feedbackResponse = await fetch("/api/ai/feedback", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: user.uid,
+              postId: postData.id,
+              sentiment: sentimentMap[sentimentData.sentiment],
+              comment: sentimentData.memo?.trim() ? sentimentData.memo.trim() : undefined,
+            }),
+          });
+
+          if (!feedbackResponse.ok) {
+            const feedbackError = await feedbackResponse.json().catch(() => ({}));
+            throw new Error(feedbackError.error || "フィードバックの保存に失敗しました");
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "フィードバックの保存中に未知のエラーが発生しました";
+          console.error("投稿フィードバック保存エラー:", message);
+          feedbackErrorMessage = message;
+        }
+      }
+
+      if (feedbackErrorMessage) {
+        setToastMessage({
+          message: `分析データは保存しましたが、フィードバックの保存に失敗しました: ${feedbackErrorMessage}`,
+          type: "error",
+        });
+      } else {
+        setToastMessage({ message: "投稿分析データを保存しました！", type: "success" });
+      }
       setTimeout(() => setToastMessage(null), 3000);
 
       // データを再取得
@@ -606,6 +733,7 @@ function AnalyticsReelContent() {
             nonFollowers: "",
           },
         },
+        commentThreads: [],
       });
     } catch (error) {
       console.error("保存エラー:", error);
@@ -659,6 +787,27 @@ function AnalyticsReelContent() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* 左カラム: 分析データ入力フォーム */}
           <div className="space-y-6">
+            <div className="bg-white border border-orange-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">リール分析データ</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  リール投稿の分析値を入力し、AI分析や統計に反映させます。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleResetAnalytics}
+                disabled={!postData?.id || isResetting}
+                className="inline-flex items-center px-3 py-2 text-xs font-semibold text-red-600 border border-red-500 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isResetting ? "animate-spin" : ""}`} />
+                {isResetting ? "リセット中..." : "分析データをリセット"}
+              </button>
+            </div>
+            {resetError ? (
+              <p className="text-sm text-red-600">{resetError}</p>
+            ) : null}
+
             {/* 統合された分析データ入力フォーム */}
             <ReelAnalyticsForm
               data={inputData}
@@ -680,7 +829,21 @@ function AnalyticsReelContent() {
             />
 
             {/* 統計表示コンポーネント */}
-            <ReelAnalyticsStats analyticsData={analyticsData} isLoading={isLoading} />
+            <ReelAnalyticsStats
+              analyticsData={analyticsData}
+              isLoading={isLoading}
+              focusPostId={postData?.id ?? null}
+            />
+
+            {/* AI分析セクション */}
+            <FeedAnalyticsAIInsights
+              analyticsData={analyticsData}
+              isLoading={isLoading}
+              targetCategory="reel"
+              title="AI分析（リールまとめ）"
+              description="入力済みのリール分析データとコメントログをもとに、AIがリール投稿の傾向と改善ポイントを抽出します。"
+              emptyMessage="リール投稿の分析データがまだありません。データを保存するとAI分析が利用できます。"
+            />
           </div>
         </div>
       </div>

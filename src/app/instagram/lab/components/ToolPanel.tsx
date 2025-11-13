@@ -137,9 +137,9 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
   // };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col space-y-6">
       {/* よく使う文言 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 mb-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[380px] sm:h-[420px] flex flex-col">
         <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-black flex items-center">
@@ -170,7 +170,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
           </div>
 
           {/* 文言一覧 */}
-          <div className="space-y-2 flex-1 overflow-y-auto">
+          <div className="space-y-2 flex-1 overflow-y-auto pr-1">
             {templates.map((template, index) => (
               <div
                 key={index}
@@ -222,7 +222,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
       </div>
 
       {/* ハッシュタグ管理 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[380px] sm:h-[420px] flex flex-col">
         <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-black flex items-center">
@@ -253,7 +253,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
           </div>
 
           {/* ハッシュタグ一覧 */}
-          <div className="space-y-2 flex-1 overflow-y-auto">
+          <div className="space-y-2 flex-1 overflow-y-auto pr-1">
             {hashtags.length > 0 ? (
               hashtags.map((hashtag, index) => (
                 <div

@@ -11,9 +11,15 @@ interface SNSLayoutProps {
   customTitle?: string;
   customDescription?: string;
   isOnboarding?: boolean;
+  contentClassName?: string;
 }
 
-export default function SNSLayout({ children, customTitle, customDescription }: SNSLayoutProps) {
+export default function SNSLayout({
+  children,
+  customTitle,
+  customDescription,
+  contentClassName,
+}: SNSLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isLabExpanded, setIsLabExpanded] = useState(false);
@@ -219,6 +225,17 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               <span>📈</span>
               <span>月次レポート</span>
             </Link>
+            <Link
+              href="/learning"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname.startsWith("/learning")
+                  ? "bg-orange-100 text-orange-800 font-medium"
+                  : "text-black hover:bg-gray-100"
+              }`}
+            >
+              <span>🗂️</span>
+              <span>学習ダッシュボード</span>
+            </Link>
           </nav>
         </div>
 
@@ -240,14 +257,6 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
         <div className="p-3 sm:p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">共通メニュー</h3>
           <nav className="space-y-1">
-            <Link
-              href="/onboarding"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
-            >
-              <span>👤</span>
-              <span>マイアカウント</span>
-            </Link>
-
             {/*<Link
               href="/notifications"
               className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
@@ -265,6 +274,14 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
               <span>📖</span>
               <span>使い方ガイド</span>
             </Link>*/}
+
+            <Link
+              href="/onboarding"
+              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
+            >
+              <span>👤</span>
+              <span>マイアカウント</span>
+            </Link>
 
             <Link
               href="/terms"
@@ -329,7 +346,7 @@ export default function SNSLayout({ children, customTitle, customDescription }: 
         </div>
 
         {/* メインコンテンツ */}
-        <main className="p-4 sm:p-6">{children}</main>
+        <main className={`px-4 sm:px-6 py-4 sm:py-6 ${contentClassName ?? ""}`}>{children}</main>
       </div>
     </div>
   );

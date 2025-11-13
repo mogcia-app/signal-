@@ -29,12 +29,61 @@ interface PlanData {
   generatedStrategy?: string | null;
 }
 
-export const usePlanData = (snsType: "instagram" | "x" | "tiktok" | "youtube" = "instagram") => {
+type UsePlanDataOptions = {
+  status?: string;
+  effectiveMonth?: string | Date;
+};
+
+function normalizeEffectiveMonth(value?: string | Date) {
+  if (!value) {
+    return undefined;
+  }
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      return undefined;
+    }
+    return value.toISOString().slice(0, 7);
+  }
+
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}$/.test(value)) {
+      return value;
+    }
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 7);
+    }
+  }
+
+  return undefined;
+}
+
+export const usePlanData = (
+  snsType: "instagram" | "x" | "tiktok" | "youtube" = "instagram",
+  options: UsePlanDataOptions = {},
+) => {
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
+
+  const normalizedEffectiveMonth = useMemo(
+    () => normalizeEffectiveMonth(options.effectiveMonth),
+    [options.effectiveMonth],
+  );
+
+  const statusQuery = useMemo(() => {
+    if (options.status) {
+      return options.status;
+    }
+    if (normalizedEffectiveMonth) {
+      return undefined;
+    }
+    return "active";
+  }, [options.status, normalizedEffectiveMonth]);
 
   const fetchPlanData = useCallback(async () => {
     if (!isAuthReady) {
@@ -45,7 +94,16 @@ export const usePlanData = (snsType: "instagram" | "x" | "tiktok" | "youtube" = 
     try {
       setLoading(true);
       setError(null);
-      const response = await authFetch(`/api/plans?snsType=${snsType}&status=active`);
+      const params = new URLSearchParams();
+      params.set("snsType", snsType);
+      if (statusQuery) {
+        params.set("status", statusQuery);
+      }
+      if (normalizedEffectiveMonth) {
+        params.set("effectiveMonth", normalizedEffectiveMonth);
+      }
+
+      const response = await authFetch(`/api/plans?${params.toString()}`);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -79,11 +137,11 @@ export const usePlanData = (snsType: "instagram" | "x" | "tiktok" | "youtube" = 
     } finally {
       setLoading(false);
     }
-  }, [isAuthReady, snsType]);
+  }, [isAuthReady, snsType, statusQuery, normalizedEffectiveMonth]);
 
   useEffect(() => {
     fetchPlanData();
-  }, [isAuthReady, fetchPlanData, snsType]);
+  }, [isAuthReady, fetchPlanData, snsType, statusQuery, normalizedEffectiveMonth]);
 
   // 手動でデータを再取得する関数
   const refetchPlanData = () => {

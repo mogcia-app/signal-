@@ -32,6 +32,11 @@ export interface ReachSourceData {
 }
 
 // 分析データの型定義
+export interface CommentThread {
+  comment: string;
+  reply: string;
+}
+
 export interface AnalyticsData {
   id: string;
   userId: string;
@@ -80,6 +85,9 @@ export interface AnalyticsData {
   reelNormalSkipRate?: number;
   reelPlayTime?: number;
   reelAvgPlayTime?: number;
+  commentThreads?: CommentThread[];
+  sentiment?: "satisfied" | "dissatisfied" | null;
+  sentimentMemo?: string;
 }
 
 // 投稿データの型定義
@@ -175,4 +183,5 @@ export interface InputData {
       nonFollowers: string;
     };
   };
+  commentThreads: CommentThread[];
 }

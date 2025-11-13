@@ -44,19 +44,6 @@ export default function CommonHeader({ unreadCount = 0 }: CommonHeaderProps) {
           {/* 共通メニュー */}
           <nav className="hidden md:flex items-center space-x-1">
             <Link
-              href="/notifications"
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-            >
-              <span className="text-lg">🔔</span>
-              <span>お知らせ</span>
-              {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full min-w-[20px] text-center">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
-
-            <Link
               href="/guide"
               className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
             >
@@ -111,21 +98,6 @@ export default function CommonHeader({ unreadCount = 0 }: CommonHeaderProps) {
         {/* モバイルメニュー */}
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link
-              href="/notifications"
-              className="flex items-center justify-between px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg"
-            >
-              <div className="flex items-center space-x-3">
-                <span className="text-lg">🔔</span>
-                <span>お知らせ</span>
-              </div>
-              {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
-
             <Link
               href="/guide"
               className="flex items-center space-x-3 px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg"

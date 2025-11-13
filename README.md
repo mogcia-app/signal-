@@ -53,6 +53,20 @@ npm run dev
 - **Backend**: Firebase Functions, Node.js
 - **Development**: Firebase Emulators
 
+## 📚 ドキュメント
+
+運用ガイドやナレッジは `docs/` 配下に整理しました。
+
+| ディレクトリ | 内容例 |
+| --- | --- |
+| `docs/sentry/` | Sentry セットアップ、運用メモ、トラブルシュート |
+| `docs/ai/` | AI 機能仕様、コスト分析、トラブルシュート |
+| `docs/ops/` | 本番対応手順、移行計画、環境設定、テスト手順 |
+| `docs/dev/` | 開発フロー、Git/Lint ガイド、コードレビュー基準 |
+| `docs/product/` | LP/HP のコンテンツ草案、差別化資料、デモ資料 |
+
+各フォルダ内の `README` や Markdown を参照すれば、目的の情報へたどり着けます。
+
 ## 📁 プロジェクト構造
 
 ```

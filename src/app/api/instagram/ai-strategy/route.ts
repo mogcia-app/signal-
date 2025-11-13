@@ -4,6 +4,10 @@ import { buildPlanPrompt } from "../../../../utils/aiPromptBuilder";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import {
+  buildPostPatternPromptSection,
+  getMasterContext,
+} from "../../ai/monthly-analysis/route";
 
 // セキュリティ: APIキーの検証
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -265,6 +269,8 @@ async function generateAIStrategy(
   // RAG: 関連知識を検索（既存の学習機能を維持）
   const relevantKnowledge = searchRelevantKnowledge(formData, simulationResult);
   const learningInsights = getLearningInsights(userId);
+  const masterContext = await getMasterContext(userId);
+  const patternLearningContext = buildPostPatternPromptSection(masterContext?.postPatterns);
 
   // RAG: 関連知識をプロンプトに追加
   const knowledgeContext =
@@ -275,6 +281,10 @@ async function generateAIStrategy(
   const learningContext = learningInsights
     ? `\n\n【過去の分析からの学習】\n${learningInsights}`
     : "";
+
+  if (patternLearningContext) {
+    systemPrompt += patternLearningContext;
+  }
 
   const userPrompt = `
 【重要】以下の点を必ず守って戦略を提案してください：
@@ -289,7 +299,7 @@ async function generateAIStrategy(
 
 5. **差別化ポイントを明確に** - 競合と何が違うのか、なぜフォローすべきかを明確に
 
-上記を踏まえて、8つのセクションで**即実行可能で具体的な**戦略を提案してください。${knowledgeContext}${learningContext}`;
+上記を踏まえて、8つのセクションで**即実行可能で具体的な**戦略を提案してください。${knowledgeContext}${learningContext}${patternLearningContext}`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {

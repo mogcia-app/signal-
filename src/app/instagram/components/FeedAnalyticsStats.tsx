@@ -18,9 +18,14 @@ import { AnalyticsData } from "./types";
 interface FeedAnalyticsStatsProps {
   analyticsData: AnalyticsData[];
   isLoading: boolean;
+  focusPostId?: string | null;
 }
 
-const FeedAnalyticsStats: React.FC<FeedAnalyticsStatsProps> = ({ analyticsData, isLoading }) => {
+const FeedAnalyticsStats: React.FC<FeedAnalyticsStatsProps> = ({
+  analyticsData,
+  isLoading,
+  focusPostId,
+}) => {
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -32,7 +37,11 @@ const FeedAnalyticsStats: React.FC<FeedAnalyticsStatsProps> = ({ analyticsData, 
     );
   }
 
-  if (analyticsData.length === 0) {
+  const filteredData = focusPostId
+    ? analyticsData.filter((data) => data.postId === focusPostId)
+    : analyticsData;
+
+  if (filteredData.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-black mb-4">フィード統計データ</h3>
@@ -45,7 +54,7 @@ const FeedAnalyticsStats: React.FC<FeedAnalyticsStatsProps> = ({ analyticsData, 
   }
 
   // フィード用の統計計算（フィード投稿のみ）
-  const feedData = analyticsData.filter((data) => data.category === "feed");
+  const feedData = filteredData.filter((data) => data.category === "feed");
 
   // 基本反応データ
   const totalLikes = feedData.reduce((sum, data) => sum + (Number(data.likes) || 0), 0);
@@ -108,6 +117,8 @@ const FeedAnalyticsStats: React.FC<FeedAnalyticsStatsProps> = ({ analyticsData, 
     (sum, data) => sum + (Number(data.profileVisits) || 0),
     0
   );
+
+  const commentThreads = feedData.flatMap((data) => data.commentThreads ?? []);
 
   return (
     <div className="bg-white shadow-sm border border-gray-200 p-6">
@@ -345,6 +356,42 @@ const FeedAnalyticsStats: React.FC<FeedAnalyticsStatsProps> = ({ analyticsData, 
             <Eye className="w-8 h-8 text-[#ff8a15]" />
           </div>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+          <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
+          コメント・返信ログ
+        </h4>
+        {commentThreads.length === 0 ? (
+          <p className="text-xs text-gray-600">
+            コメントと返信の記録はまだありません。分析フォームから追加するとここに表示されます。
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {commentThreads.map((thread, index) => (
+              <div
+                key={`analytics-comment-thread-${index}`}
+                className="border border-gray-200 bg-white p-4"
+              >
+                <p className="text-xs font-semibold text-gray-600 mb-1">コメント</p>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                  {thread.comment && thread.comment.trim().length > 0
+                    ? thread.comment
+                    : "（コメントが記録されていません）"}
+                </p>
+                <div className="mt-3">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">返信・対応メモ</p>
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                    {thread.reply && thread.reply.trim().length > 0
+                      ? thread.reply
+                      : "（返信・対応メモは未入力です）"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

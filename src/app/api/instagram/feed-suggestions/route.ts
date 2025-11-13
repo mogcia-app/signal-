@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import {
+  buildPostPatternPromptSection,
+  getMasterContext,
+} from "../../ai/monthly-analysis/route";
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid: userId } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "instagram-feed-suggestions", limit: 30, windowSeconds: 60 },
+      auditEventName: "instagram_feed_suggestions",
+    });
+
     const body = await request.json();
     const { content, businessInfo } = body;
 
@@ -10,10 +21,12 @@ export async function POST(request: NextRequest) {
     }
 
     // ビジネス情報からコンテキストを構築
-    const context = buildBusinessContext(businessInfo);
+    const businessContext = buildBusinessContext(businessInfo);
+    const masterContext = await getMasterContext(userId);
+    const patternContext = buildPostPatternPromptSection(masterContext?.postPatterns);
 
     // AIプロンプトを構築
-    const prompt = buildSuggestionsPrompt(content, context);
+    const prompt = buildSuggestionsPrompt(content, businessContext, patternContext);
 
     // OpenAI APIを呼び出して提案を生成
     const suggestionsResponse = await generateSuggestionsWithAI(prompt);
@@ -23,7 +36,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("フィードAIヒント生成エラー:", error);
-    return NextResponse.json({ error: "フィードAIヒント生成に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -65,7 +79,7 @@ function buildBusinessContext(businessInfo: Record<string, unknown>): string {
   return context.join("\n");
 }
 
-function buildSuggestionsPrompt(content: string, context: string) {
+function buildSuggestionsPrompt(content: string, context: string, patternContext?: string) {
   return `
 あなたはInstagramフィード投稿の専門家です。以下の投稿文とビジネス情報を基に、AIが生成した投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒントを簡潔に提案してください。
 
@@ -74,6 +88,8 @@ ${content}
 
 【ビジネス情報】
 ${context}
+
+${patternContext ?? ""}
 
 【要求事項】
 1. 投稿文の内容に合った画像の枚数を提案（1枚〜10枚の範囲）

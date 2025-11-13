@@ -19,9 +19,14 @@ import { AnalyticsData } from "./types";
 interface ReelAnalyticsStatsProps {
   analyticsData: AnalyticsData[];
   isLoading: boolean;
+  focusPostId?: string | null;
 }
 
-const ReelAnalyticsStats: React.FC<ReelAnalyticsStatsProps> = ({ analyticsData, isLoading }) => {
+const ReelAnalyticsStats: React.FC<ReelAnalyticsStatsProps> = ({
+  analyticsData,
+  isLoading,
+  focusPostId,
+}) => {
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -33,7 +38,11 @@ const ReelAnalyticsStats: React.FC<ReelAnalyticsStatsProps> = ({ analyticsData, 
     );
   }
 
-  if (analyticsData.length === 0) {
+  const filteredData = focusPostId
+    ? analyticsData.filter((data) => data.postId === focusPostId)
+    : analyticsData;
+
+  if (filteredData.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-black mb-4">リール統計データ</h3>
@@ -46,7 +55,7 @@ const ReelAnalyticsStats: React.FC<ReelAnalyticsStatsProps> = ({ analyticsData, 
   }
 
   // リール用の統計計算（リール投稿のみ）
-  const reelData = analyticsData.filter((data) => data.category === "reel");
+  const reelData = filteredData.filter((data) => data.category === "reel");
 
   const totalLikes = reelData.reduce((sum, data) => sum + (Number(data.likes) || 0), 0);
   const totalComments = reelData.reduce((sum, data) => sum + (Number(data.comments) || 0), 0);

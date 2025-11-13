@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import SNSLayout from "../../../../components/sns-layout";
 import PostEditor from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
+import CommentReplyAssistant from "../components/CommentReplyAssistant";
 import { usePlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
@@ -311,8 +312,12 @@ export default function StoryLabPage() {
   }
 
   return (
-    <SNSLayout customTitle="ストーリーラボ" customDescription="Instagramストーリーの作成・編集">
-      <div className="space-y-6">
+    <SNSLayout
+      customTitle="ストーリーラボ"
+      customDescription="Instagramストーリーの作成・編集"
+      contentClassName="py-0 sm:py-0"
+    >
+      <div className="pt-4 pb-0 space-y-4">
         {/* ストーリー投稿計画提案 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center mb-6">
@@ -564,7 +569,7 @@ export default function StoryLabPage() {
         </div>
 
         {/* ストーリー投稿エディター */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-4 [&>*:last-child]:mb-0">
           {/* 左カラム: ストーリー投稿エディター */}
           <div>
             <PostEditor
@@ -591,7 +596,13 @@ export default function StoryLabPage() {
           </div>
 
           {/* 右カラム: ツールパネル */}
-          <div>
+          <div className="space-y-6">
+            <CommentReplyAssistant
+              postTitle={postTitle}
+              postContent={postContent}
+              postType={postType}
+              hashtags={selectedHashtags}
+            />
             <ToolPanel
               onTemplateSelect={(template) => setPostContent(template)}
               onHashtagSelect={(hashtag) => {

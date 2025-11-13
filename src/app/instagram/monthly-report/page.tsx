@@ -13,7 +13,14 @@ import { MetricsCards } from "./components/MetricsCards";
 import { DetailedStats } from "./components/DetailedStats";
 import { VisualizationSection } from "./components/VisualizationSection";
 import { AdvancedAnalysis } from "./components/AdvancedAnalysis";
-import { AIPredictionAnalysis } from "./components/AIPredictionAnalysis";
+import {
+  AIPredictionAnalysis,
+  AIAnalysisAlert,
+  AIAnalysisPostTypeHighlight,
+} from "./components/AIPredictionAnalysis";
+import { RiskAlerts } from "./components/risk-alerts";
+import { PostTypeInsights } from "./components/PostTypeInsights";
+import { OverviewHistorySection } from "./components/OverviewHistorySection";
 import { authFetch } from "../../../utils/authFetch";
 
 // 現在の週を取得する関数
@@ -40,13 +47,16 @@ function getWeekRange(weekString: string): { start: Date; end: Date } {
 export default function InstagramMonthlyReportPage() {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
-  const { planData } = usePlanData("instagram");
   const [activeTab, setActiveTab] = useState<"weekly" | "monthly">("monthly");
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7) // YYYY-MM形式
   );
   const [selectedWeek, setSelectedWeek] = useState<string>(
     getCurrentWeekString() // YYYY-WW形式
+  );
+  const { planData } = usePlanData(
+    "instagram",
+    activeTab === "monthly" ? { effectiveMonth: selectedMonth } : undefined,
   );
   // BFF API連携の状態
   const [accountScore, setAccountScore] = useState<Record<string, unknown> | null>(null);
@@ -55,6 +65,23 @@ export default function InstagramMonthlyReportPage() {
     null
   );
   const [monthlyReview, setMonthlyReview] = useState<Record<string, unknown> | null>(null);
+  const [pdcaMetrics, setPdcaMetrics] = useState<{
+    planExists: boolean;
+    loopScore: number;
+    planScore: number;
+    executionRate: number;
+    feedbackCoverage: number;
+    adoptionRate: number;
+    plannedPosts: number;
+    analyzedPosts: number;
+    feedbackCount: number;
+    actionCount: number;
+    actionAppliedCount: number;
+  } | null>(null);
+  const [aiAlerts, setAiAlerts] = useState<AIAnalysisAlert[]>([]);
+  const [postTypeHighlights, setPostTypeHighlights] = useState<AIAnalysisPostTypeHighlight[]>([]);
+  const [hasRequestedAi, setHasRequestedAi] = useState(false);
+  const [overviewHistoryRefreshKey, setOverviewHistoryRefreshKey] = useState(0);
 
   // BFFサマリーデータ
   const [reportSummary, setReportSummary] = useState<{
@@ -150,6 +177,9 @@ export default function InstagramMonthlyReportPage() {
           setReportSummary(null);
         }
       } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
         console.error("BFFサマリーデータ取得エラー:", error);
         setReportSummary(null);
       }
@@ -437,9 +467,8 @@ export default function InstagramMonthlyReportPage() {
           getWeekDisplayName={getWeekDisplayName}
           performanceRating={performanceRating}
           accountScore={accountScore}
+          pdcaMetrics={pdcaMetrics}
         />
-
-        {/* 運用計画連携 */}
         <CurrentPlanCard planData={planData} variant="detailed" snsType="instagram" />
 
         {/* 主要指標 */}
@@ -477,8 +506,32 @@ export default function InstagramMonthlyReportPage() {
           monthlyReview={monthlyReview}
           selectedMonth={selectedMonth}
           selectedWeek={selectedWeek}
+          onPdcaMetricsUpdate={(metrics) => {
+            setPdcaMetrics(metrics ?? null);
+          }}
+          onAlertsUpdate={(alerts) => setAiAlerts(alerts ?? [])}
+          onPostTypeHighlightsUpdate={(highlights) =>
+            setPostTypeHighlights(highlights ?? [])
+          }
+          onLoadingChange={(loading) => {
+            if (loading) {
+              setHasRequestedAi(true);
+            }
+          }}
+          onOverviewUpdated={() => {
+            setOverviewHistoryRefreshKey((prev) => prev + 1);
+          }}
         />
 
+        <RiskAlerts alerts={aiAlerts} />
+        <PostTypeInsights highlights={postTypeHighlights} />
+        <OverviewHistorySection
+          period={activeTab}
+          refreshKey={overviewHistoryRefreshKey}
+          hasRequested={hasRequestedAi}
+        />
+
+        {/* 主要指標 */}
         {/* 詳細統計 */}
         <DetailedStats
           accountScore={accountScore}

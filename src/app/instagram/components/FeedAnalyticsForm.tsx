@@ -2,7 +2,19 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Heart, MessageCircle, Share, Save, ThumbsUp, ThumbsDown, Edit3, CheckCircle, X } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Share,
+  Save,
+  ThumbsUp,
+  ThumbsDown,
+  Edit3,
+  CheckCircle,
+  X,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { InputData } from "./types";
 
 interface FeedAnalyticsFormProps {
@@ -43,6 +55,40 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
 
   const handleSave = () => {
     onSave({ sentiment, memo });
+  };
+
+  const handleAddCommentThread = () => {
+    onChange({
+      ...data,
+      commentThreads: [...data.commentThreads, { comment: "", reply: "" }],
+    });
+  };
+
+  const handleCommentThreadChange = (
+    index: number,
+    field: "comment" | "reply",
+    value: string
+  ) => {
+    const updated = data.commentThreads.map((thread, idx) =>
+      idx === index
+        ? {
+            ...thread,
+            [field]: value,
+          }
+        : thread
+    );
+    onChange({
+      ...data,
+      commentThreads: updated,
+    });
+  };
+
+  const handleRemoveCommentThread = (index: number) => {
+    const updated = data.commentThreads.filter((_, idx) => idx !== index);
+    onChange({
+      ...data,
+      commentThreads: updated,
+    });
   };
 
   return (
@@ -89,152 +135,129 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
           <h3 className="text-sm font-semibold text-gray-800 mb-3">投稿情報</h3>
 
           {postData ? (
-            /* 投稿データが渡された場合：読み取り専用表示 */
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">タイトル</label>
-                <div className="w-full px-3 py-2 border border-gray-300 bg-gray-50 text-gray-800">
-                  {postData.title || "タイトルなし"}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">内容</label>
-                <div className="w-full px-3 py-2 border border-gray-300 bg-gray-50 text-gray-800 min-h-[80px] whitespace-pre-wrap">
-                  {postData.content || "内容なし"}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">ハッシュタグ</label>
-                <div className="w-full px-3 py-2 border border-gray-300 bg-gray-50 text-gray-800">
-                  {postData.hashtags && postData.hashtags.length > 0
-                    ? postData.hashtags.join(" ")
-                    : "ハッシュタグなし"}
-                </div>
-              </div>
+            <div className="p-3 border border-dashed border-gray-300 bg-white text-xs text-gray-600">
+              <p className="font-semibold text-gray-700">投稿プランから自動入力されています。</p>
+              <p className="mt-1">
+                そのまま保存すると元の投稿プランは更新されません。必要に応じて自由に編集してください。
+              </p>
             </div>
-          ) : (
-            /* 投稿データがない場合：手動入力 */
-            <div className="space-y-4">
-              <div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">タイトル</label>
-                  <input
-                    type="text"
-                    value={data.title}
-                    onChange={(e) => handleInputChange("title", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
-                    placeholder="フィード投稿のタイトルを入力"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">内容</label>
-                  <textarea
-                    value={data.content}
-                    onChange={(e) => handleInputChange("content", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
-                    rows={3}
-                    placeholder="フィード投稿の内容を入力"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    ハッシュタグ
-                  </label>
-                  <input
-                    type="text"
-                    value={data.hashtags}
-                    onChange={(e) => handleInputChange("hashtags", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
-                    placeholder="#hashtag1 #hashtag2"
-                  />
-                </div>
-              </div>
-              <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  サムネイル画像
-                </label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        // ファイルサイズチェック（2MB制限）
-                        if (file.size > 2 * 1024 * 1024) {
-                          setToastMessage({ message: "画像ファイルは2MB以下にしてください。", type: 'error' });
-                          setTimeout(() => setToastMessage(null), 3000);
-                          return;
+          ) : null}
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">タイトル</label>
+              <input
+                type="text"
+                value={data.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                placeholder="フィード投稿のタイトルを入力"
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">内容</label>
+              <textarea
+                value={data.content}
+                onChange={(e) => handleInputChange("content", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                rows={3}
+                placeholder="フィード投稿の内容を入力"
+                disabled={isLoading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">ハッシュタグ</label>
+              <input
+                type="text"
+                value={data.hashtags}
+                onChange={(e) => handleInputChange("hashtags", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                placeholder="#hashtag1 #hashtag2"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">サムネイル画像</label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 2 * 1024 * 1024) {
+                        setToastMessage({ message: "画像ファイルは2MB以下にしてください。", type: 'error' });
+                        setTimeout(() => setToastMessage(null), 3000);
+                        return;
+                      }
+
+                      const canvas = document.createElement("canvas");
+                      const ctx = canvas.getContext("2d");
+                      const img = new window.Image();
+
+                      img.onload = () => {
+                        const maxSize = 200;
+                        let { width, height } = img;
+
+                        if (width > height) {
+                          if (width > maxSize) {
+                            height = (height * maxSize) / width;
+                            width = maxSize;
+                          }
+                        } else if (height > maxSize) {
+                          width = (width * maxSize) / height;
+                          height = maxSize;
                         }
 
-                        // 画像を圧縮してBase64に変換
-                        const canvas = document.createElement("canvas");
-                        const ctx = canvas.getContext("2d");
-                        const img = new window.Image();
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx?.drawImage(img, 0, 0, width, height);
 
-                        img.onload = () => {
-                          // 最大サイズを200x200に制限
-                          const maxSize = 200;
-                          let { width, height } = img;
+                        const base64 = canvas.toDataURL("image/jpeg", 0.8);
+                        handleInputChange("thumbnail", base64);
+                      };
 
-                          if (width > height) {
-                            if (width > maxSize) {
-                              height = (height * maxSize) / width;
-                              width = maxSize;
-                            }
-                          } else {
-                            if (height > maxSize) {
-                              width = (width * maxSize) / height;
-                              height = maxSize;
-                            }
-                          }
-
-                          canvas.width = width;
-                          canvas.height = height;
-                          ctx?.drawImage(img, 0, 0, width, height);
-
-                          const base64 = canvas.toDataURL("image/jpeg", 0.8);
-                          handleInputChange("thumbnail", base64);
-                        };
-
-                        img.src = URL.createObjectURL(file);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      img.src = URL.createObjectURL(file);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                  disabled={isLoading}
+                />
+              </div>
+              {data.thumbnail && (
+                <div className="mt-2">
+                  <Image
+                    src={data.thumbnail}
+                    alt="サムネイル"
+                    width={100}
+                    height={100}
+                    className="rounded-lg object-cover"
                   />
                 </div>
-                {data.thumbnail && (
-                  <div className="mt-2">
-                    <Image
-                      src={data.thumbnail}
-                      alt="サムネイル"
-                      width={100}
-                      height={100}
-                      className="rounded-lg object-cover"
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700 mb-3">投稿日</label>
-                <input
-                  type="date"
-                  value={data.publishedAt}
-                  onChange={(e) => handleInputChange("publishedAt", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
-                />
-              </div>
-              <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700 mb-3">投稿時間</label>
-                <input
-                  type="time"
-                  value={data.publishedTime}
-                  onChange={(e) => handleInputChange("publishedTime", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
-                />
-              </div>
+              )}
             </div>
-          )}
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">投稿日</label>
+              <input
+                type="date"
+                value={data.publishedAt}
+                onChange={(e) => handleInputChange("publishedAt", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">投稿時間</label>
+              <input
+                type="time"
+                value={data.publishedTime}
+                onChange={(e) => handleInputChange("publishedTime", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                disabled={isLoading}
+              />
+            </div>
+          </div>
         </div>
 
         {/* フィード反応データ */}
@@ -315,6 +338,66 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
               />
             </div>
           </div>
+        </div>
+
+        {/* コメントと返信ログ */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center">
+              <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
+              コメントと返信ログ
+            </h3>
+            <button
+              type="button"
+              onClick={handleAddCommentThread}
+              className="inline-flex items-center px-3 py-1 text-xs font-semibold text-white bg-[#ff8a15] hover:bg-[#e67a0f] transition-colors"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              コメントを追加
+            </button>
+          </div>
+          {data.commentThreads.length === 0 ? (
+            <p className="text-xs text-gray-600">
+              コメント内容と返信メモを記録すると、振り返りがスムーズになります。＋ボタンでログを追加してください。
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {data.commentThreads.map((thread, index) => (
+                <div key={`comment-thread-${index}`} className="border border-gray-200 bg-white p-4 space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">コメント内容</label>
+                    <textarea
+                      value={thread.comment}
+                      onChange={(e) => handleCommentThreadChange(index, "comment", e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                      placeholder="ユーザーからのコメント内容を入力"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">返信内容・フォロー対応メモ</label>
+                    <textarea
+                      value={thread.reply}
+                      onChange={(e) => handleCommentThreadChange(index, "reply", e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                      placeholder="返信した内容、フォローアップのポイントなど"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCommentThread(index)}
+                      className="inline-flex items-center text-xs text-gray-500 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      削除
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 概要 */}
@@ -585,6 +668,7 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             )}
           </button>
         </div>
+
       </div>
       </div>
     </>
