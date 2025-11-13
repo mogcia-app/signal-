@@ -54,3 +54,5 @@ firebase-debug.*.log
 
 # OS
 Thumbs.db
+# Local service account
+service-account.json

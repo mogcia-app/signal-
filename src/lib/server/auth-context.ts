@@ -49,6 +49,59 @@ type AuthContext = {
   token: Awaited<ReturnType<typeof adminAuth.verifyIdToken>>;
 };
 
+function normalizeDate(input: unknown): Date | null {
+  if (!input) {
+    return null;
+  }
+
+  if (input instanceof Date) {
+    return Number.isNaN(input.getTime()) ? null : input;
+  }
+
+  if (typeof input === "object" && input !== null) {
+    const { toDate, seconds, nanoseconds } = input as {
+      toDate?: () => Date;
+      seconds?: number;
+      nanoseconds?: number;
+    };
+    if (typeof toDate === "function") {
+      const date = toDate();
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    if (typeof seconds === "number") {
+      const millis = seconds * 1000 + (typeof nanoseconds === "number" ? nanoseconds / 1_000_000 : 0);
+      const date = new Date(millis);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+  }
+
+  if (typeof input === "number") {
+    const date = new Date(input);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+
+    const normalized = trimmed.replace(/[./]/g, "-");
+    const [year, month, day] = normalized.split("-").map((v) => Number.parseInt(v, 10));
+    if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
+      const date = new Date(year, month - 1, day);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+  }
+
+  return null;
+}
+
 type RateLimitRecord = {
   userId: string;
   key: string;
@@ -123,20 +176,20 @@ async function isContractActive(userId: string): Promise<boolean> {
   }
 
   const now = new Date();
-  const endDateRaw = userData.contractEndDate;
-  const endDate =
-    endDateRaw instanceof Date
-      ? endDateRaw
-      : endDateRaw
-        ? new Date(endDateRaw)
-        : null;
-  const status = userData.status;
+  const statusNormalized =
+    typeof userData.status === "string" ? userData.status.trim().toLowerCase() : null;
+  const isStatusActive = !statusNormalized || statusNormalized === "active";
+  const endDate = normalizeDate(userData.contractEndDate);
 
-  if (!endDate || Number.isNaN(endDate.getTime())) {
-    return false;
+  if (!endDate) {
+    console.warn("[auth-context] contractEndDate missing or invalid - allowing user as active", {
+      userId,
+      rawValue: userData.contractEndDate,
+    });
+    return isStatusActive;
   }
 
-  const active = status === "active" && endDate > now;
+  const active = isStatusActive && endDate.getTime() > now.getTime();
 
   return active;
 }
@@ -211,6 +264,11 @@ export async function requireAuthContext(request: NextRequest, options: RequireA
       throw error;
     }
 
+    console.error("[auth-context] token verification failed", {
+      path: request.nextUrl.pathname,
+      method: request.method,
+      error: error instanceof Error ? error.message : String(error),
+    });
     await logSecurityEvent("api_token_verification_failed", {
       path: request.nextUrl.pathname,
       method: request.method,
