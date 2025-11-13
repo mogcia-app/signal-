@@ -1,49 +1,40 @@
-/**
- * Firebase Admin SDK
- * サーバーサイド（API Routes）専用
- *
- * Client SDKとは別に初期化
- * Firestoreのrequest.authを正しく設定するために必要
- *
- * 注意: このファイルはサーバーサイドでのみimportすること
- */
-
 import * as admin from "firebase-admin";
 
-// Admin SDKの初期化（既に初期化済みの場合はスキップ）
-function initializeAdminApp() {
-  if (admin.apps.length === 0) {
-    const serviceAccount = {
-      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || "signal-v1-fc481",
-      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    };
+const serviceAccount = {
+  projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || "signal-v1-fc481",
+  clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+};
 
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-      projectId: serviceAccount.projectId,
-    });
+console.log("[firebase-admin] env check", {
+  hasProjectId: Boolean(serviceAccount.projectId),
+  hasClientEmail: Boolean(serviceAccount.clientEmail),
+  privateKeyLength: serviceAccount.privateKey?.length ?? 0,
+});
 
-    console.log("🔥 Firebase Admin SDK initialized:", serviceAccount.projectId);
-  }
-
-  return admin;
+if (!serviceAccount.clientEmail || !serviceAccount.privateKey) {
+  throw new Error(
+    `Missing Firebase Admin credentials (clientEmail: ${Boolean(serviceAccount.clientEmail)}, privateKeyLength: ${
+      serviceAccount.privateKey?.length ?? 0
+    })`,
+  );
 }
 
-// Admin SDK のインスタンスをエクスポート
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+  projectId: serviceAccount.projectId,
+});
+
+console.log("[firebase-admin] initialized", serviceAccount.projectId);
+
 export function getAdminDb() {
-  const adminApp = initializeAdminApp();
-  return adminApp.firestore();
+  return admin.firestore();
 }
 
 export function getAdminAuth() {
-  const adminApp = initializeAdminApp();
-  return adminApp.auth();
+  return admin.auth();
 }
 
-// 互換性のため
+// 互換のため（既存コードで使用されている場合）
 export const adminDb = getAdminDb();
 export const adminAuth = getAdminAuth();
-
-// Admin SDK は認証済みのコンテキストで実行されるため、
-// Firestoreのrequest.authが正しく設定される
