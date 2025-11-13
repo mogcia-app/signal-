@@ -30,7 +30,7 @@ function getVerifier(): CachedVerifier {
     const issuer = `https://securetoken.google.com/${projectId}`;
     const audience = projectId;
     const jwks = createRemoteJWKSet(
-      new URL("https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"),
+      new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"),
     );
 
     globalThis.__FIREBASE_TOKEN_VERIFIER__ = { jwks, issuer, audience };

@@ -80,11 +80,21 @@ export const authFetch = async (
   }
 
   const auth = getAuth();
-  console.debug("[authFetch] currentUser exists?", Boolean(auth.currentUser), "url:", input.toString());
+  console.log("[authFetch] currentUser exists?", Boolean(auth.currentUser), "url:", input.toString());
   const user = await resolveCurrentUser(auth);
-  console.debug("[authFetch] resolved user exists?", Boolean(user), "url:", input.toString());
+  console.log("[authFetch] resolved user exists?", Boolean(user), "url:", input.toString());
   const token = user ? await user.getIdToken() : null;
-  console.debug("[authFetch] token length", token?.length ?? 0, "url:", input.toString());
+  const debugInfo = {
+    url: input.toString(),
+    currentUserExists: Boolean(auth.currentUser),
+    resolvedUserExists: Boolean(user),
+    tokenLength: token?.length ?? 0,
+  };
+  if (typeof window !== "undefined") {
+    (window as typeof window & { __AUTH_FETCH_LOGS__?: typeof debugInfo[] }).__AUTH_FETCH_LOGS__ ??= [];
+    (window as typeof window & { __AUTH_FETCH_LOGS__?: typeof debugInfo[] }).__AUTH_FETCH_LOGS__!.push(debugInfo);
+  }
+  console.log("[authFetch]", debugInfo);
 
   const headers = new Headers(options.headers || {});
   if (token) {
