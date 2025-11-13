@@ -6,6 +6,9 @@ import { useAuth } from "../../contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
 
+const loginMaintenanceEnabled = process.env.NEXT_PUBLIC_LOGIN_MAINTENANCE === "true";
+const isProductionBuild = process.env.NODE_ENV === "production";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,7 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const isMaintenanceMode = true;
+  const isMaintenanceMode = loginMaintenanceEnabled && !isProductionBuild;
 
   const { signIn } = useAuth();
   const router = useRouter();

@@ -17,6 +17,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Signal - ユーザーダッシュボード",
   description: "Signal利用者向けダッシュボード",
+  icons: {
+    icon: [
+      { url: "/favicons/favicon-32.png", sizes: "32x32" },
+      { url: "/favicons/favicon-64.png", sizes: "64x64" },
+      { url: "/favicons/favicon.ico" },
+    ],
+    apple: "/favicons/favicon-180.png", // 128〜180px も作っておくと◎
+  },
 };
 
 export default function RootLayout({
