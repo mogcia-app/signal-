@@ -6,7 +6,7 @@
  * Phase 3: middleware再有効化の準備
  */
 
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
 
 const defaultFetch: typeof fetch | undefined =
   typeof fetch !== "undefined" ? fetch.bind(globalThis) : undefined;
@@ -29,6 +29,25 @@ const isApiRequest = (input: RequestInfo | URL): boolean => {
   return false;
 };
 
+const waitForUser = async (auth: ReturnType<typeof getAuth>, timeoutMs = 5000) => {
+  if (auth.currentUser) {
+    return auth.currentUser;
+  }
+
+  return new Promise<User | null>((resolve) => {
+    const timeoutId = setTimeout(() => {
+      unsubscribe();
+      resolve(null);
+    }, timeoutMs);
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+      resolve(user);
+    });
+  });
+};
+
 export const authFetch = async (
   input: RequestInfo | URL,
   options: RequestInit = {},
@@ -39,7 +58,7 @@ export const authFetch = async (
   }
 
   const auth = getAuth();
-  const user = auth.currentUser;
+  const user = auth.currentUser ?? (await waitForUser(auth));
   const token = user ? await user.getIdToken() : null;
 
   const headers = new Headers(options.headers || {});
