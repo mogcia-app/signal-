@@ -269,12 +269,13 @@ export async function requireAuthContext(request: NextRequest, options: RequireA
       method: request.method,
       error: error instanceof Error ? error.message : String(error),
     });
+    const errorMessage = error instanceof Error ? error.message : String(error);
     await logSecurityEvent("api_token_verification_failed", {
       path: request.nextUrl.pathname,
       method: request.method,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage,
     });
-    throw new UnauthorizedError("Invalid authentication token");
+    throw new UnauthorizedError(`Invalid authentication token: ${errorMessage}`);
   }
 }
 
