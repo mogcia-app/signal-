@@ -80,8 +80,11 @@ export const authFetch = async (
   }
 
   const auth = getAuth();
+  console.debug("[authFetch] currentUser exists?", Boolean(auth.currentUser), "url:", input.toString());
   const user = await resolveCurrentUser(auth);
+  console.debug("[authFetch] resolved user exists?", Boolean(user), "url:", input.toString());
   const token = user ? await user.getIdToken() : null;
+  console.debug("[authFetch] token length", token?.length ?? 0, "url:", input.toString());
 
   const headers = new Headers(options.headers || {});
   if (token) {
