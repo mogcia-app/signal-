@@ -10,6 +10,7 @@
 1. Firebase 認証の公開鍵取得先を誤認。証明書 URL をそのまま `createRemoteJWKSet` に渡したため、パースに失敗。
 2. 401 の発生を「環境構成」と誤解し、ユーザーに環境変数や Vercel 側を疑わせる対応を依頼してしまった。
 3. ミドルウェアの 401 ログ (`auth_invalid_token`) を確認しながらも、自身の変更差分の正当性検証を十分に行っていなかった。
+   - 特に `[WARN] auth_invalid_token ... error: 'JSON Web Key Set malformed'` というログが決め手となり、「返却されたデータが JSON ではない＝JWKS の構造がおかしい」ことを示していた。そこで URL を見直し、PEM テキスト（X.509 証明書）エンドポイントを指定してしまっていたことに気づいた。
 
 ## 防げたポイント
 - Firebase ID トークン検証のドキュメントを再確認すれば、JWKS URL と証明書 URL の違いに気づけた。
