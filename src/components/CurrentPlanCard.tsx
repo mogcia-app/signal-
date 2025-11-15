@@ -75,7 +75,17 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
 
   // 新しい達成度計算: 現在のフォロワー数 = 0%, 目標フォロワー数 = 100%
   // actualFollowersが提供されている場合はそれを使用、そうでなければ計画の現在フォロワー数を使用
-  const displayFollowers = actualFollowers !== undefined ? actualFollowers : currentFollowers;
+  const planActualFollowers =
+    typeof planData.actualFollowers === "number" ? planData.actualFollowers : undefined;
+  const planAnalyticsGain =
+    typeof planData.analyticsFollowerIncrease === "number"
+      ? planData.analyticsFollowerIncrease
+      : undefined;
+  const computedActualFollowers =
+    planActualFollowers ??
+    (planAnalyticsGain !== undefined ? currentFollowers + planAnalyticsGain : undefined);
+  const displayFollowers =
+    actualFollowers ?? computedActualFollowers ?? currentFollowers;
 
   // フォロワー増加数を基準に達成度を計算
   const followerIncrease = displayFollowers - currentFollowers;
@@ -116,7 +126,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           <div className="flex justify-between text-sm mb-2">
             <span className="text-black">フォロワー目標</span>
             <span className="font-medium text-black">
-              {currentFollowers.toLocaleString()} → {targetFollowers.toLocaleString()}
+              {displayFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-none h-2.5">
@@ -128,6 +138,10 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
           <div className="flex justify-between text-xs text-black mt-1">
             <span>{progressPercentage.toFixed(1)}% 達成</span>
             <span>残り {remainingFollowers.toLocaleString()}人</span>
+          </div>
+          <div className="flex justify-between text-[11px] text-black mt-0.5">
+            <span>開始値: {currentFollowers.toLocaleString()}人</span>
+            <span>増加: +{Math.max(0, followerIncrease).toLocaleString()}人</span>
           </div>
         </div>
 

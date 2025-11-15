@@ -9,6 +9,8 @@ interface PlanData {
   title: string;
   targetFollowers: number;
   currentFollowers: number;
+  actualFollowers?: number;
+  analyticsFollowerIncrease?: number;
   planPeriod: string;
   targetAudience: string;
   category: string;
@@ -66,11 +68,19 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
   // 安全にアクセス
   const currentFollowers = planData.currentFollowers || 0;
+  const analyticsFollowerIncrease =
+    typeof planData.analyticsFollowerIncrease === "number"
+      ? planData.analyticsFollowerIncrease
+      : 0;
+  const actualFollowers =
+    typeof planData.actualFollowers === "number"
+      ? planData.actualFollowers
+      : currentFollowers + analyticsFollowerIncrease;
   const targetFollowers = planData.targetFollowers || 0;
   const strategies = planData.strategies || [];
   const progressPercentage =
-    targetFollowers > 0 ? Math.min((currentFollowers / targetFollowers) * 100, 100) : 0;
-  const remainingFollowers = Math.max(0, targetFollowers - currentFollowers);
+    targetFollowers > 0 ? Math.min((actualFollowers / targetFollowers) * 100, 100) : 0;
+  const remainingFollowers = Math.max(0, targetFollowers - actualFollowers);
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
@@ -137,7 +147,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">フォロワー目標進捗</span>
               <span className="text-sm text-black">
-                {currentFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
+                {actualFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">

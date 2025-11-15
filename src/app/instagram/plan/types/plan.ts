@@ -217,6 +217,8 @@ export interface PlanData {
   title: string;
   targetFollowers: number;
   currentFollowers: number;
+  actualFollowers?: number;
+  analyticsFollowerIncrease?: number;
   planPeriod: string;
   targetAudience: string;
   category: string;
@@ -244,6 +246,8 @@ export const DEFAULT_PLAN_DATA: PlanData = {
   title: "Instagram成長加速計画",
   targetFollowers: 10000,
   currentFollowers: 3250,
+  actualFollowers: 3250,
+  analyticsFollowerIncrease: 0,
   planPeriod: "6ヶ月",
   targetAudience: "20〜30代女性",
   category: "フォロワー獲得",

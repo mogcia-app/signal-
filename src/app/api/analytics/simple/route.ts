@@ -2,6 +2,71 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
+function parseFollowerValue(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+async function syncPlanFollowerProgress(userId: string) {
+  try {
+    const plansCollection = adminDb.collection("plans");
+    let planSnapshot = await plansCollection
+      .where("userId", "==", userId)
+      .where("snsType", "==", "instagram")
+      .where("status", "==", "active")
+      .limit(1)
+      .get();
+
+    if (planSnapshot.empty) {
+      planSnapshot = await plansCollection
+        .where("userId", "==", userId)
+        .where("snsType", "==", "instagram")
+        .limit(1)
+        .get();
+    }
+
+    if (planSnapshot.empty) {
+      return;
+    }
+
+    const planDoc = planSnapshot.docs[0];
+    const planData = planDoc.data() || {};
+
+    const analyticsSnapshot = await adminDb
+      .collection("analytics")
+      .where("userId", "==", userId)
+      .where("snsType", "==", "instagram")
+      .get();
+
+    const totalFollowerIncrease = analyticsSnapshot.docs.reduce((sum, doc) => {
+      const value = Number(doc.data().followerIncrease) || 0;
+      return sum + value;
+    }, 0);
+
+    const formCurrent = planData?.formData?.currentFollowers;
+    const parsedFormCurrent = parseFollowerValue(formCurrent);
+    const baselineFollowers =
+      parsedFormCurrent ?? (Number(planData.currentFollowers) || 0);
+    const actualFollowers = Math.max(0, baselineFollowers + totalFollowerIncrease);
+
+    await planDoc.ref.update({
+      analyticsFollowerIncrease: totalFollowerIncrease,
+      actualFollowers,
+      updatedAt: new Date(),
+    });
+  } catch (error) {
+    console.error("計画フォロワー同期エラー:", error);
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { uid } = await requireAuthContext(request, {
@@ -190,6 +255,7 @@ export async function POST(request: NextRequest) {
           ...analyticsData,
           createdAt: existingData.createdAt ?? now,
         });
+        await syncPlanFollowerProgress(uid);
 
         return NextResponse.json({
           success: true,
@@ -200,6 +266,7 @@ export async function POST(request: NextRequest) {
     }
 
     const docRef = await analyticsCollection.add(analyticsData);
+    await syncPlanFollowerProgress(uid);
 
     return NextResponse.json({
       success: true,

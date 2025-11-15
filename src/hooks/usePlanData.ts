@@ -11,6 +11,8 @@ interface PlanData {
   title: string;
   targetFollowers: number;
   currentFollowers: number;
+  actualFollowers?: number;
+  analyticsFollowerIncrease?: number;
   planPeriod: string;
   targetAudience: string;
   category: string;

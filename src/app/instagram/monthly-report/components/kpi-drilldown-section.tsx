@@ -141,10 +141,14 @@ export function KPIDrilldownSection({ breakdowns }: KPIDrilldownSectionProps) {
                           <span>{segment.label}</span>
                           <span>{segment.value.toLocaleString()}件</span>
                         </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-[#ff8a15] rounded-full overflow-hidden">
                           <div
-                            className="h-2 bg-slate-900 rounded-full"
-                            style={{ width: `${share}%` }}
+                            className="h-2 rounded-full"
+                            style={{
+                              width: `${share}%`,
+                              background:
+                                "linear-gradient(90deg, #ffb347 0%, #ff8a15 50%, #ff6b15 100%)",
+                            }}
                           />
                         </div>
                       </div>

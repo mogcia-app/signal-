@@ -11,6 +11,8 @@ interface PlanData {
   title: string;
   targetFollowers: number;
   currentFollowers: number;
+  actualFollowers?: number;
+  analyticsFollowerIncrease?: number;
   planPeriod: string;
   targetAudience: string;
   category: string;
@@ -69,6 +71,8 @@ export async function POST(request: NextRequest) {
       title: body.title || "Instagram成長計画",
       targetFollowers: parseInt(body.targetFollowers),
       currentFollowers: parseInt(body.currentFollowers),
+      actualFollowers: parseInt(body.currentFollowers),
+      analyticsFollowerIncrease: 0,
       planPeriod: body.planPeriod || "6ヶ月",
       targetAudience: body.targetAudience || "未設定",
       category: body.category || "未設定",
