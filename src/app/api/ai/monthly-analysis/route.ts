@@ -2838,6 +2838,16 @@ async function performAIAnalysis(
   );
   totalPosts = inferredPostCount;
   totals.totalPosts = totalPosts;
+  if (totalPosts === 0) {
+    const postSamples = [
+      ...(Array.isArray(summaryExtras?.postDeepDive) ? summaryExtras.postDeepDive : []),
+      ...(Array.isArray(summaryExtras?.posts) ? summaryExtras.posts : []),
+    ];
+    if (postSamples.length > 0) {
+      totalPosts = postSamples.length;
+      totals.totalPosts = totalPosts;
+    }
+  }
   const engagementRate = totals.avgEngagementRate || 0;
   const postTypeStats = reportSummary?.postTypeStats || [];
   const dataPointCount =
