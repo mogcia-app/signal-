@@ -1996,6 +1996,38 @@ function resolveReferenceDate(period: "weekly" | "monthly", date: string): Date 
   return reference;
 }
 
+function derivePostCountFromContentStats(
+  stats?: Record<string, unknown> | null
+): number {
+  if (!stats) {
+    return 0;
+  }
+  const numericKeys = [
+    "totalLikes",
+    "totalComments",
+    "totalShares",
+    "totalReach",
+    "totalSaves",
+    "totalFollowerIncrease",
+    "totalInteractionCount",
+    "totalReachedAccounts",
+    "totalPlayTimeSeconds",
+  ];
+  const record = stats as Record<string, unknown>;
+  const hasSignal = numericKeys.some((key) => {
+    const value = record[key];
+    return typeof value === "number" && Number.isFinite(value) && value > 0;
+  });
+  if (!hasSignal) {
+    return 0;
+  }
+  const explicit = record["totalPosts"];
+  if (typeof explicit === "number" && Number.isFinite(explicit) && explicit > 0) {
+    return Math.round(explicit);
+  }
+  return 1;
+}
+
 async function fetchPlanSummaryForPeriod(
   userId: string,
   period: "weekly" | "monthly",
@@ -2771,14 +2803,41 @@ async function performAIAnalysis(
   generation: AIGenerationResponse | null;
 }> {
   // レポートサマリーからデータを取得
-  const totals = reportSummary?.totals || {};
+  const totals = { ...(reportSummary?.totals || {}) };
   const changes = reportSummary?.changes || {};
 
   const totalLikes = totals.totalLikes || 0;
   const totalComments = totals.totalComments || 0;
   const totalShares = totals.totalShares || 0;
   const totalReach = totals.totalReach || 0;
-  const totalPosts = totals.totalPosts || 0;
+  let totalPosts = totals.totalPosts || 0;
+  const summaryExtras = reportSummary as
+    | {
+        postDeepDive?: unknown[];
+        posts?: unknown[];
+        contentPerformance?: {
+          feed?: Record<string, unknown> | null;
+          reel?: Record<string, unknown> | null;
+        };
+      }
+    | null
+    | undefined;
+  const postDeepDiveCount = Array.isArray(summaryExtras?.postDeepDive)
+    ? summaryExtras?.postDeepDive.length
+    : 0;
+  const postsCollectionCount = Array.isArray(summaryExtras?.posts)
+    ? summaryExtras?.posts.length
+    : 0;
+  const feedDerivedPosts = derivePostCountFromContentStats(summaryExtras?.contentPerformance?.feed);
+  const reelDerivedPosts = derivePostCountFromContentStats(summaryExtras?.contentPerformance?.reel);
+  const inferredPostCount = Math.max(
+    totalPosts,
+    postDeepDiveCount,
+    postsCollectionCount,
+    feedDerivedPosts + reelDerivedPosts
+  );
+  totalPosts = inferredPostCount;
+  totals.totalPosts = totalPosts;
   const engagementRate = totals.avgEngagementRate || 0;
   const postTypeStats = reportSummary?.postTypeStats || [];
   const dataPointCount =
