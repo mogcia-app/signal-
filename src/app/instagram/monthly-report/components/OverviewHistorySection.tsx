@@ -25,12 +25,14 @@ interface OverviewHistorySectionProps {
   period: "weekly" | "monthly";
   refreshKey: number;
   hasRequested: boolean;
+  containerClassName?: string;
 }
 
 export const OverviewHistorySection: React.FC<OverviewHistorySectionProps> = ({
   period,
   refreshKey,
   hasRequested,
+  containerClassName,
 }) => {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
@@ -109,7 +111,7 @@ export const OverviewHistorySection: React.FC<OverviewHistorySectionProps> = ({
   }, [isAuthReady, user?.uid, period, refreshKey, isExpanded]);
 
   return (
-    <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6 mb-6">
+    <div className={`bg-white rounded-none shadow-sm border border-gray-200 p-6 mb-6 ${containerClassName ?? ""}`}>
       <div className="flex items-center justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold text-black">過去のAIサマリー {periodLabel}</h2>

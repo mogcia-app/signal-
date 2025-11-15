@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "../../../../lib/firebase-admin";
+import type { AIGenerationResponse } from "@/types/ai";
 
 interface OverviewHistoryEntry {
   id: string;
@@ -22,6 +23,7 @@ interface OverviewHistoryEntry {
   }>;
   createdAt: string | null;
   updatedAt: string | null;
+  generation: AIGenerationResponse | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -71,6 +73,7 @@ export async function GET(request: NextRequest) {
         updatedAt: docData.updatedAt?.toDate
           ? docData.updatedAt.toDate().toISOString()
           : null,
+        generation: docData.generation ?? null,
       };
     });
 

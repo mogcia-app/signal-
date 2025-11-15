@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "../../../../lib/firebase-admin";
 import * as admin from "firebase-admin";
+import { buildAIContext, AIContextBundle } from "@/lib/ai/context";
+import { AIGenerationResponse, AIInsightBlock, AIReference } from "@/types/ai";
+import { getLearningPhaseLabel } from "@/utils/learningPhase";
 
 export type PostPerformanceTag = "gold" | "gray" | "red" | "neutral";
 
@@ -93,6 +96,12 @@ interface LearningBadge {
   current: number;
   target: number;
   progress: number;
+  condition?: string;
+  highlight?: string;
+  shortcuts?: Array<{
+    label: string;
+    href: string;
+  }>;
 }
 
 export interface MasterContext {
@@ -159,8 +168,18 @@ function buildLearningAchievements(params: {
   feedbackWithCommentCount: number;
   actionAdoptionRate: number;
   actionCount: number;
+  appliedActionCount: number;
+  averageResultDelta: number;
+  positiveFeedbackWeight: number;
+  negativeFeedbackWeight: number;
   monthlyTimelineLength: number;
   weeklyTimelineLength: number;
+  weeklyFeedbackStreak: number;
+  clusterBreakthroughCount: number;
+  completedAbTests: number;
+  personaResonanceSegments: number;
+  ragReferenceDiversity: number;
+  ragHitRate: number;
 }): LearningBadge[] {
   const {
     goldCount,
@@ -168,11 +187,23 @@ function buildLearningAchievements(params: {
     feedbackWithCommentCount,
     actionAdoptionRate,
     actionCount,
+    appliedActionCount,
+    averageResultDelta,
+    positiveFeedbackWeight,
+    negativeFeedbackWeight,
     monthlyTimelineLength,
     weeklyTimelineLength,
+    weeklyFeedbackStreak,
+    clusterBreakthroughCount,
+    completedAbTests,
+    personaResonanceSegments,
+    ragReferenceDiversity,
+    ragHitRate,
   } = params;
 
   const adoptionPercent = Math.round(actionAdoptionRate * 100);
+  const actionImpact = Math.max(0, Number(averageResultDelta.toFixed(1)));
+  const balancedWeight = Math.min(positiveFeedbackWeight, negativeFeedbackWeight);
 
   const badges: LearningBadge[] = [
     {
@@ -237,6 +268,129 @@ function buildLearningAchievements(params: {
       target: 6,
       progress: Math.min(1, weeklyTimelineLength / 6),
       status: weeklyTimelineLength >= 6 ? "earned" : "in_progress",
+    },
+    {
+      id: "action-loop",
+      title: "アクションループ",
+      description: "AI提案を10回採用してPDCAサイクルを定着させましょう。",
+      icon: "repeat",
+      current: appliedActionCount,
+      target: 10,
+      progress: Math.min(1, appliedActionCount / 10),
+      status: appliedActionCount >= 10 ? "earned" : "in_progress",
+      condition:
+        appliedActionCount >= 10
+          ? "AI提案を活用できています"
+          : `あと${Math.max(0, 10 - appliedActionCount)}件採用で達成`,
+      shortcuts: [
+        { label: "Labで提案を見る", href: "/instagram/lab/feed" },
+        { label: "学習ダッシュボード", href: "/learning" },
+      ],
+    },
+    {
+      id: "action-impact",
+      title: "成果インパクト",
+      description: "実行済みアクションの平均効果 +5pt を目指しましょう。",
+      icon: "zap",
+      current: actionImpact,
+      target: 5,
+      progress: Math.min(1, actionImpact / 5),
+      status: actionImpact >= 5 ? "earned" : "in_progress",
+      condition:
+        actionImpact >= 5
+          ? "平均効果が+5ptを突破しました"
+          : `あと${Math.max(0, 5 - actionImpact).toFixed(1)}ptで達成`,
+      shortcuts: [{ label: "翌月アクションを見る", href: "/instagram/monthly-report" }],
+    },
+    {
+      id: "feedback-balance",
+      title: "フィードバック多様性",
+      description: "ポジティブ・ネガティブの両面でフィードバックを集めましょう。",
+      icon: "scale",
+      current: Number(balancedWeight.toFixed(1)),
+      target: 15,
+      progress: Math.min(1, balancedWeight / 15),
+      status: balancedWeight >= 15 ? "earned" : "in_progress",
+      condition:
+        balancedWeight >= 15
+          ? "多面的なフィードバックが集まっています"
+          : `あと${Math.max(0, 15 - balancedWeight).toFixed(1)}ポイントで達成`,
+      shortcuts: [{ label: "フィードバックを入力", href: "/analytics/feed" }],
+    },
+    {
+      id: "cluster-breakthrough",
+      title: "クラスタブレイクスルー",
+      description: "新しい投稿クラスタで平均を超える成果を3件達成しましょう。",
+      icon: "compass",
+      current: clusterBreakthroughCount,
+      target: 3,
+      progress: Math.min(1, clusterBreakthroughCount / 3),
+      status: clusterBreakthroughCount >= 3 ? "earned" : "in_progress",
+      condition:
+        clusterBreakthroughCount >= 3
+          ? "新しい勝ちパターンが見つかりました"
+          : `あと${Math.max(0, 3 - clusterBreakthroughCount)}件で達成`,
+      shortcuts: [{ label: "Labで勝ちパターンを再現", href: "/instagram/lab/feed" }],
+    },
+    {
+      id: "feedback-streak",
+      title: "フィードバック連投",
+      description: "4週連続でフィードバックを入力するとバッジを獲得できます。",
+      icon: "activity",
+      current: weeklyFeedbackStreak,
+      target: 4,
+      progress: Math.min(1, weeklyFeedbackStreak / 4),
+      status: weeklyFeedbackStreak >= 4 ? "earned" : "in_progress",
+      condition:
+        weeklyFeedbackStreak >= 4
+          ? "4週連続の記録を達成しました"
+          : `現在${weeklyFeedbackStreak}週。あと${Math.max(0, 4 - weeklyFeedbackStreak)}週で達成`,
+      shortcuts: [{ label: "週次タイムラインを見る", href: "/learning" }],
+    },
+    {
+      id: "abtest-closer",
+      title: "検証完走",
+      description: "ABテストを完了し、結果を反映させましょう。",
+      icon: "flask",
+      current: completedAbTests,
+      target: 1,
+      progress: Math.min(1, completedAbTests / 1),
+      status: completedAbTests >= 1 ? "earned" : "in_progress",
+      condition:
+        completedAbTests >= 1
+          ? "検証結果まで完走できています"
+          : "テスト登録→結果入力→反映で達成",
+      shortcuts: [{ label: "LabでABテスト管理", href: "/instagram/lab/feed" }],
+    },
+    {
+      id: "audience-resonance",
+      title: "オーディエンス共鳴",
+      description: "年代・性別ごとの共鳴パターンを2つ以上可視化しましょう。",
+      icon: "users",
+      current: personaResonanceSegments,
+      target: 2,
+      progress: Math.min(1, personaResonanceSegments / 2),
+      status: personaResonanceSegments >= 2 ? "earned" : "in_progress",
+      condition:
+        personaResonanceSegments >= 2
+          ? "共鳴セグメントが可視化されています"
+          : `あと${Math.max(0, 2 - personaResonanceSegments)}セグメントで達成`,
+      shortcuts: [{ label: "オーディエンス分析を見る", href: "/instagram/monthly-report" }],
+    },
+    {
+      id: "rag-pilot",
+      title: "コンテキストパイロット",
+      description: "RAGヒット率65%以上でAIがより正確に学習します。",
+      icon: "brain",
+      current: Math.round(ragHitRate * 100),
+      target: 65,
+      progress: Math.min(1, (ragHitRate * 100) / 65),
+      status: ragHitRate >= 0.65 ? "earned" : "in_progress",
+      condition:
+        ragHitRate >= 0.65
+          ? "RAGが安定してヒットしています"
+          : `現在${Math.round(ragHitRate * 100)}%。65%を目指しましょう`,
+      shortcuts: [{ label: "学習リファレンスを確認", href: "/learning" }],
     },
   ];
 
@@ -873,6 +1027,8 @@ export async function getMasterContext(
 ): Promise<MasterContext | null> {
   try {
     const db = getAdminDb();
+    let completedAbTests = 0;
+    let personaResonanceSegments = 0;
     const cacheRef = db.collection(MASTER_CONTEXT_CACHE_COLLECTION).doc(userId);
     const forceRefresh = options.forceRefresh ?? false;
 
@@ -938,6 +1094,55 @@ export async function getMasterContext(
       .limit(120)
       .get();
 
+    try {
+      const abTestSnapshot = await db
+        .collection("ab_tests")
+        .where("userId", "==", userId)
+        .where("status", "==", "completed")
+        .limit(10)
+        .get();
+      completedAbTests = abTestSnapshot.size;
+    } catch (error) {
+      console.error("ABテスト取得エラー（バッジ計算）:", error);
+    }
+
+    try {
+      const personaSnapshot = await db
+        .collection("users")
+        .doc(userId)
+        .collection("postPerformanceSnapshots")
+        .orderBy("updatedAt", "desc")
+        .limit(25)
+        .get();
+      const personaSet = new Set<string>();
+      personaSnapshot.forEach((doc) => {
+        const data = doc.data() || {};
+        const persona = data.personaInsights as
+          | {
+              topGender?: { segment: string; value: number };
+              topAgeRange?: { segment: string; value: number };
+            }
+          | undefined;
+        if (
+          persona?.topGender?.segment &&
+          typeof persona.topGender.value === "number" &&
+          persona.topGender.value >= 40
+        ) {
+          personaSet.add(`gender:${persona.topGender.segment}`);
+        }
+        if (
+          persona?.topAgeRange?.segment &&
+          typeof persona.topAgeRange.value === "number" &&
+          persona.topAgeRange.value >= 30
+        ) {
+          personaSet.add(`age:${persona.topAgeRange.segment}`);
+        }
+      });
+      personaResonanceSegments = personaSet.size;
+    } catch (error) {
+      console.error("オーディエンスデータ取得エラー（バッジ計算）:", error);
+    }
+
     const feedbackCount = feedbackSnapshot.size;
     const actionLogCount = actionLogSnapshot.size;
     const analyticsCount = analyticsSnapshot.size;
@@ -990,6 +1195,19 @@ export async function getMasterContext(
         return evaluatePostPerformance(record, baselineMetrics, aggregate || undefined);
       })
       .filter((signal): signal is PostLearningSignal => Boolean(signal));
+
+    const clusterBreakthroughCount = evaluatedSignals.filter((signal) => {
+      if (signal.tag !== "gold") {
+        return false;
+      }
+      const reachLift =
+        baselineMetrics.avgReach > 0 ? signal.metrics.reach / baselineMetrics.avgReach : 0;
+      const engagementLift =
+        baselineMetrics.avgEngagement > 0
+          ? signal.engagementRate / baselineMetrics.avgEngagement
+          : 0;
+      return reachLift >= 1.3 || engagementLift >= 1.3;
+    }).length;
 
     const sortSignals = (signals: PostLearningSignal[]) =>
       signals
@@ -1199,6 +1417,17 @@ export async function getMasterContext(
 
     const timeline = buildTimeline(monthlyAccumulator, monthLabelFromKey, 8);
     const weeklyTimeline = buildTimeline(weeklyAccumulator, weekLabelFromKey, 12);
+    const weeklyFeedbackStreak = (() => {
+      let streak = 0;
+      for (let i = weeklyTimeline.length - 1; i >= 0; i -= 1) {
+        if (weeklyTimeline[i].feedbackCount > 0) {
+          streak += 1;
+        } else {
+          break;
+        }
+      }
+      return streak;
+    })();
 
     const goldCount = evaluatedSignals.filter((signal) => signal.tag === "gold").length;
     const totalInteractions = entries.length;
@@ -1272,16 +1501,6 @@ export async function getMasterContext(
     const actionAdoptionRate = actionLogCount > 0 ? appliedCount / actionLogCount : 0;
     const averageResultDelta = actionLogCount > 0 ? resultDeltaSum / actionLogCount : 0;
 
-    const achievements = buildLearningAchievements({
-      goldCount,
-      feedbackCount,
-      feedbackWithCommentCount: totalFeedbackWithComment,
-      actionAdoptionRate,
-      actionCount: actionLogCount,
-      monthlyTimelineLength: timeline.length,
-      weeklyTimelineLength: weeklyTimeline.length,
-    });
-
     const topFocusAreas = Object.entries(focusAreaCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
@@ -1312,6 +1531,35 @@ export async function getMasterContext(
     const combinedScore =
       (baseRagScore + feedbackPositiveRate + actionAdoptionRate + averageFeedbackWeight / 5) / 4;
     const ragHitRate = Math.min(1, Math.max(0, Number(combinedScore.toFixed(2))));
+
+    const ragReferenceDiversity = [
+      goldCount > 0,
+      feedbackCount > 0,
+      actionLogCount > 0,
+      completedAbTests > 0,
+      personaResonanceSegments > 0,
+      clusterBreakthroughCount > 0,
+    ].filter(Boolean).length;
+
+    const achievements = buildLearningAchievements({
+      goldCount,
+      feedbackCount,
+      feedbackWithCommentCount: totalFeedbackWithComment,
+      actionAdoptionRate,
+      actionCount: actionLogCount,
+      appliedActionCount: appliedCount,
+      averageResultDelta,
+      positiveFeedbackWeight: positiveWeight,
+      negativeFeedbackWeight: negativeWeight,
+      monthlyTimelineLength: timeline.length,
+      weeklyTimelineLength: weeklyTimeline.length,
+      weeklyFeedbackStreak,
+      clusterBreakthroughCount,
+      completedAbTests,
+      personaResonanceSegments,
+      ragReferenceDiversity,
+      ragHitRate,
+    });
 
     const personalizedInsights: string[] = [];
     if (latestEntry?.overview?.summary) {
@@ -2463,7 +2711,8 @@ async function saveOverviewHistoryEntry(
     score: number;
     dataPointCount: number;
     historicalHitRate: number;
-  }
+  },
+  generation: AIGenerationResponse | null
 ) {
   try {
     const db = getAdminDb();
@@ -2477,6 +2726,7 @@ async function saveOverviewHistoryEntry(
       date,
       overview,
       actionPlans,
+      generation: generation ?? null,
       totalsSnapshot: totals || {},
       changesSnapshot: changes || {},
       confidenceSnapshot: confidence,
@@ -2497,7 +2747,8 @@ async function performAIAnalysis(
   period: "weekly" | "monthly",
   date: string,
   planSummary: PlanSummary | null,
-  userId?: string
+  userId: string | undefined,
+  aiContext: AIContextBundle
 ): Promise<{
   predictions: {
     followerGrowth: { weekly: number; monthly: number };
@@ -2517,6 +2768,7 @@ async function performAIAnalysis(
   recommendations: string[];
   summary: string;
   pdcaMetrics: PDCAMetrics | null;
+  generation: AIGenerationResponse | null;
 }> {
   // レポートサマリーからデータを取得
   const totals = reportSummary?.totals || {};
@@ -2535,22 +2787,17 @@ async function performAIAnalysis(
     (reportSummary?.postTypeStats?.length || 0);
 
   const db = getAdminDb();
+  const userProfile = aiContext.userProfile ?? null;
+  const userProfileForAI =
+    (userProfile as unknown as Record<string, unknown> | null) ?? null;
+  const analysisReferences: AIReference[] = [...aiContext.references];
   let scheduleStats: { monthlyPosts: number } | null = null;
   let feedbackDocs: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>[] = [];
   let actionLogDocs: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>[] = [];
   let pdcaMetrics: PDCAMetrics | null = null;
 
-  // ユーザープロファイルを取得（onboardingデータ）
-  let userProfile: Record<string, any> | null = null;
   if (userId) {
     try {
-      const userDoc = await db.collection("users").doc(userId).get();
-
-      if (userDoc.exists) {
-        const rawProfile = userDoc.data() as Record<string, any> | undefined;
-        userProfile = rawProfile ?? null;
-        console.log("✅ ユーザープロファイル取得完了");
-      }
       scheduleStats = await fetchScheduleStats(db, userId);
       try {
         const feedbackSnapshot = await db
@@ -2575,7 +2822,7 @@ async function performAIAnalysis(
         console.error("アクションログ取得エラー（PDCA計算用）:", actionError);
       }
     } catch (error) {
-      console.error("ユーザープロファイル取得エラー:", error);
+      console.error("ユーザーデータ取得エラー:", error);
     }
   }
 
@@ -2706,7 +2953,7 @@ async function performAIAnalysis(
       historicalHitRate: Number(historicalHitRate.toFixed(2)),
     },
     masterContext,
-    userProfile,
+    userProfile: userProfileForAI,
   });
 
   const actionPlans =
@@ -2787,6 +3034,46 @@ async function performAIAnalysis(
     };
   }
 
+  if (planSummary) {
+    analysisReferences.push({
+      id: planSummary.id,
+      sourceType: "plan",
+      label: planSummary.title,
+      summary: planSummary.simulationSummary || undefined,
+      metadata: {
+        planPeriod: planSummary.planPeriod,
+        targetFollowers: planSummary.targetFollowers,
+      },
+    });
+  }
+
+  const periodLabel = period === "weekly" ? "週次" : "月次";
+
+  analysisReferences.push({
+    id: `report-${period}-${date}`,
+    sourceType: "analytics",
+    label: `${periodLabel}レポート`,
+    summary: `投稿${totalPosts}件 / リーチ${totalReach.toLocaleString()} / ER ${engagementRate.toFixed(
+      1
+    )}%`,
+    metadata: { period, date },
+  });
+
+  if (masterContext) {
+    analysisReferences.push({
+      id: `master-context-${date}`,
+      sourceType: "masterContext",
+      label: "マスターコンテキスト",
+      summary: `フェーズ:${getLearningPhaseLabel(masterContext.learningPhase)} / RAG:${Math.round(
+        (masterContext.ragHitRate || 0) * 100
+      )}%`,
+      metadata: {
+        learningPhase: masterContext.learningPhase,
+        ragHitRate: masterContext.ragHitRate,
+      },
+    });
+  }
+
   const planContext: PlanContextPayload | undefined =
     planSummary || reportSummary
       ? {
@@ -2835,23 +3122,6 @@ async function performAIAnalysis(
       postTypeHighlights,
       planContext
     );
-
-  if (userId) {
-    await saveOverviewHistoryEntry(
-      userId,
-      period,
-      date,
-      overview,
-      actionPlans,
-      reportSummary?.totals,
-      reportSummary?.changes,
-      {
-        score: confidenceScore,
-        dataPointCount,
-        historicalHitRate: Number(historicalHitRate.toFixed(2)),
-      }
-    );
-  }
 
   // プロンプトを構築（学習段階に応じて最適化）
   let prompt = `Instagram分析データを基に、簡潔に分析してください。
@@ -2920,6 +3190,17 @@ ${
 過去の学習データを活用し、簡潔で的確な分析を提供してください。`;
   }
 
+  const insightMessages = [
+    `投稿頻度${totalPosts}件で${totalPosts > 10 ? "適切" : "増加推奨"}`,
+    `リーチ数${totalReach.toLocaleString()}で${totalReach > 1000 ? "順調" : "拡大が必要"}`,
+    "定期的な投稿でフォロワーとの関係を構築",
+  ];
+  const recommendationMessages = [
+    "投稿頻度を週3-4回に増やす",
+    "夕方18-20時の投稿でエンゲージメント向上",
+    "リール投稿を増やしてリーチ拡大",
+  ];
+
   try {
     const feedbackStats = masterContext?.feedbackStats;
     const actionStats = masterContext?.actionStats;
@@ -2941,7 +3222,7 @@ ${
       patternLines.push(`注目ハッシュタグ:${topPatternHashtags.join("、")}`);
     }
     const contextString = masterContext
-      ? `学習フェーズ: ${masterContext.learningPhase}
+      ? `学習フェーズ: ${getLearningPhaseLabel(masterContext.learningPhase)}
 RAGヒット率: ${Math.round(masterContext.ragHitRate * 100)}%
 AI提案活用数: ${masterContext.totalInteractions}
 フィードバック総数: ${feedbackStats?.total ?? 0}（好感度 ${feedbackStats ? Math.round(feedbackStats.positiveRate * 100) : 0}%）
@@ -2957,6 +3238,63 @@ ${patternLines.length > 0 ? `投稿パターン: ${patternLines.join(" / ")}` : 
     // 予測値を抽出（簡易的な実装）
     const followerGrowthWeekly = Math.round(totalPosts * 2.5 + Math.random() * 10);
     const followerGrowthMonthly = Math.round(totalPosts * 8 + Math.random() * 30);
+
+    const generatedAt = new Date().toISOString();
+    const aiInsightBlocks: AIInsightBlock[] = actionPlans.slice(0, 5).map((plan) => ({
+      title: plan.title,
+      description: plan.description,
+      action: plan.recommendedActions[0],
+      referenceIds: [],
+    }));
+    const topPriorityPlan = actionPlans
+      .slice()
+      .sort((a, b) => {
+        const priorityOrder: Record<ActionPlanPriority, number> = { high: 0, medium: 1, low: 2 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      })[0];
+
+    const generationPayload: AIGenerationResponse = {
+      draft: {
+        title: `${periodLabel}サマリー`,
+        body: aiResponse.trim(),
+        hashtags: [],
+      },
+      insights: insightMessages,
+      aiInsights: aiInsightBlocks,
+      imageHints: [],
+      priority: topPriorityPlan
+        ? {
+            focus: topPriorityPlan.focusArea,
+            level: topPriorityPlan.priority,
+            reason: topPriorityPlan.expectedImpact,
+          }
+        : undefined,
+      references: analysisReferences,
+      metadata: {
+        model: "gpt-4o-mini",
+        generatedAt,
+        promptVersion: "monthly-analysis:v1",
+      },
+      rawText: aiResponse,
+    };
+
+    if (userId) {
+      await saveOverviewHistoryEntry(
+        userId,
+        period,
+        date,
+        overview,
+        actionPlans,
+        reportSummary?.totals,
+        reportSummary?.changes,
+        {
+          score: confidenceScore,
+          dataPointCount,
+          historicalHitRate: Number(historicalHitRate.toFixed(2)),
+        },
+        generationPayload
+      );
+    }
 
     return {
       predictions: {
@@ -2977,22 +3315,32 @@ ${patternLines.length > 0 ? `投稿パターン: ${patternLines.join(" / ")}` : 
       actionPlans,
       overview,
       pdcaMetrics,
-      insights: [
-        `投稿頻度${totalPosts}件で${totalPosts > 10 ? "適切" : "増加推奨"}`,
-        `リーチ数${totalReach.toLocaleString()}で${totalReach > 1000 ? "順調" : "拡大が必要"}`,
-        "定期的な投稿でフォロワーとの関係を構築",
-      ],
-      recommendations: [
-        "投稿頻度を週3-4回に増やす",
-        "夕方18-20時の投稿でエンゲージメント向上",
-        "リール投稿を増やしてリーチ拡大",
-      ],
+      insights: insightMessages,
+      recommendations: recommendationMessages,
       summary: overview.summary || aiResponse.substring(0, 300),
+      generation: generationPayload,
     };
   } catch (error) {
     console.error("AI分析エラー:", error);
 
     // フォールバック分析
+    const fallbackGeneration: AIGenerationResponse = {
+      draft: {
+        title: `${periodLabel}サマリー`,
+        body: overview.summary || "AI分析を実行中です。しばらくお待ちください。",
+        hashtags: [],
+      },
+      insights: insightMessages,
+      aiInsights: [],
+      imageHints: [],
+      references: analysisReferences,
+      metadata: {
+        model: "fallback",
+        generatedAt: new Date().toISOString(),
+      },
+      rawText: overview.summary || "",
+    };
+
     return {
       predictions: {
         followerGrowth: {
@@ -3012,13 +3360,10 @@ ${patternLines.length > 0 ? `投稿パターン: ${patternLines.join(" / ")}` : 
       actionPlans,
       overview,
       pdcaMetrics,
-      insights: ["データ分析中です", "継続的な投稿が重要です", "フォロワーとの交流を深めましょう"],
-      recommendations: [
-        "投稿頻度を維持する",
-        "質の高いコンテンツを作成する",
-        "ユーザーとの交流を増やす",
-      ],
-      summary: "AI分析を実行中です。しばらくお待ちください。",
+      insights: insightMessages,
+      recommendations: recommendationMessages,
+      summary: overview.summary || "AI分析を実行中です。しばらくお待ちください。",
+      generation: fallbackGeneration,
     };
   }
 }
@@ -3040,6 +3385,8 @@ export async function GET(request: NextRequest) {
     }
 
     console.log("🤖 AI分析パラメータ:", { userId, period, date });
+
+    const aiContext = await buildAIContext(userId, { snapshotLimit: 5, includeMasterContext: true });
 
     // 1. マスターコンテキストを取得（RAGシステム）
     console.log("🔍 マスターコンテキスト取得中...");
@@ -3064,7 +3411,8 @@ export async function GET(request: NextRequest) {
       period,
       date,
       planSummary,
-      userId
+      userId,
+      aiContext
     );
     console.log("✅ AI分析完了");
 

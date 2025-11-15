@@ -1,13 +1,14 @@
 import React, { useState, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { Brain, Loader2, Lightbulb, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
+import type { AIGenerationResponse, AIInsightBlock } from "@/types/ai";
+import { AIReferenceBadge } from "@/components/AIReferenceBadge";
 
 interface AIPredictionAnalysisProps {
-  activeTab: "weekly" | "monthly";
   monthlyReview: Record<string, unknown> | null;
-  selectedMonth?: string;
-  selectedWeek?: string;
+  selectedMonth: string;
   onPdcaMetricsUpdate?: (metrics: AIAnalysisResult["pdcaMetrics"] | null) => void;
   onAlertsUpdate?: (alerts: AIAnalysisAlert[] | null) => void;
   onPostTypeHighlightsUpdate?: (
@@ -98,6 +99,9 @@ const priorityStyles: Record<
   },
 };
 
+const LAB_DEFAULT_LINK = "/instagram/lab/feed?from=monthly-report";
+const LEARNING_LINK = "/learning";
+
 const planStatusMeta: Record<
   PlanReflectionStatus,
   { label: string; badge: string; description: string }
@@ -167,6 +171,7 @@ interface AIAnalysisResult {
   insights: string[];
   recommendations: string[];
   summary: string;
+  generation?: AIGenerationResponse | null;
   masterContext: {
     learningPhase: string;
     ragHitRate: number;
@@ -184,10 +189,8 @@ interface AIAnalysisResult {
 }
 
 export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
-  activeTab,
   monthlyReview,
   selectedMonth,
-  selectedWeek,
   onPdcaMetricsUpdate,
   onAlertsUpdate,
   onPostTypeHighlightsUpdate,
@@ -213,8 +216,8 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
     setIsActionPlanExpanded(false);
 
     try {
-      const period = activeTab;
-      const date = activeTab === "weekly" ? selectedWeek : selectedMonth;
+      const period = "monthly";
+      const date = selectedMonth;
 
       if (!date) {
         throw new Error("日付が指定されていません");
@@ -268,9 +271,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
     },
     [
       isAuthReady,
-      activeTab,
       selectedMonth,
-      selectedWeek,
       user?.uid,
       onPdcaMetricsUpdate,
       onAlertsUpdate,
@@ -309,6 +310,24 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   }, [analysisResult?.actionPlans]);
 
   const planReflection = analysisResult?.overview?.planReflection ?? null;
+  const generationReferences = useMemo(
+    () =>
+      analysisResult?.generation?.references?.filter((ref) => ref.sourceType !== "snapshot") ?? [],
+    [analysisResult?.generation]
+  );
+  const generationInsightBlocks = useMemo<AIInsightBlock[]>(() => {
+    const generation = analysisResult?.generation;
+    if (!generation) {return [];}
+    if (generation.aiInsights?.length) {
+      return generation.aiInsights;
+    }
+    return (generation.insights ?? []).map((text, index) => ({
+      title: `Insight ${index + 1}`,
+      description: text,
+      action: undefined,
+      referenceIds: undefined,
+    }));
+  }, [analysisResult?.generation]);
 
   const hasAnalysisData = useMemo(() => {
     if (!analysisResult) {
@@ -416,6 +435,78 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                       : "投稿データが不足しているため、詳細なまとめを生成できませんでした。投稿とフィードバックを蓄積して再度AI分析を実行してください。"}
                   </p>
                 </div>
+
+                {analysisResult?.generation?.draft && (
+                  <div className="border border-gray-200 rounded-none p-6 bg-white">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-base font-semibold text-black">AI提案ハイライト</h3>
+                      {analysisResult.generation.priority?.focus &&
+                        analysisResult.generation.priority.level && (
+                          <span
+                            className={`text-xs px-3 py-1 rounded-full border ${
+                              analysisResult.generation.priority.level === "high"
+                                ? "border-red-200 bg-red-50 text-red-700"
+                                : analysisResult.generation.priority.level === "medium"
+                                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                                  : "border-blue-200 bg-blue-50 text-blue-700"
+                            }`}
+                          >
+                            {analysisResult.generation.priority.focus}
+                          </span>
+                        )}
+                    </div>
+                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                      {analysisResult.generation.draft.body}
+                    </p>
+                    {generationInsightBlocks.length > 0 ? (
+                      <ul className="mt-4 space-y-2">
+                        {generationInsightBlocks.slice(0, 4).map((insight, index) => (
+                          <li
+                            key={`ai-generation-insight-${index}`}
+                            className="text-xs text-gray-600 flex items-start gap-2"
+                          >
+                            <span className="text-gray-400 mt-0.5">•</span>
+                            <span className="flex-1">
+                              <span className="font-semibold text-gray-800 block">{insight.title}</span>
+                              {insight.description ? (
+                                <span className="text-gray-600 block mt-0.5">{insight.description}</span>
+                              ) : null}
+                              {insight.action ? (
+                                <span className="text-gray-500 block mt-0.5">
+                                  推奨アクション: {insight.action}
+                                </span>
+                              ) : null}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {generationReferences.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-[11px] font-semibold text-gray-500 mb-1">参照データ</p>
+                        <div className="flex flex-wrap gap-2">
+                          {generationReferences.map((ref) => (
+                            <AIReferenceBadge key={ref.id} reference={ref} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Link
+                        href={LAB_DEFAULT_LINK}
+                        className="text-xs font-semibold text-white bg-slate-900 px-3 py-1.5 rounded-none hover:bg-slate-800 transition-colors"
+                      >
+                        Labで投稿を仕上げる
+                      </Link>
+                      <Link
+                        href={LEARNING_LINK}
+                        className="text-xs font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1.5 rounded-none hover:bg-slate-100 transition-colors"
+                      >
+                        学習ダッシュボードで確認
+                      </Link>
+                    </div>
+                  </div>
+                )}
 
                 <div className="border border-gray-200 rounded-none p-6">
                   <h3 className="text-base font-semibold text-black mb-4">

@@ -6,6 +6,8 @@ import {
   PostLearningSignal,
   PostPerformanceTag,
 } from "../monthly-analysis/route";
+import { buildAIContext } from "@/lib/ai/context";
+import type { AIReference, SnapshotReference } from "@/types/ai";
 
 type PostPatternSummaries = Partial<Record<PostPerformanceTag, PatternSummary>>;
 
@@ -61,6 +63,19 @@ function buildPatternResponse(
   };
 }
 
+type LearningContextPayload = {
+  references?: AIReference[];
+  snapshotReferences?: SnapshotReference[];
+  masterContext?: {
+    learningPhase?: string;
+    ragHitRate?: number;
+    totalInteractions?: number;
+    feedbackStats?: MasterContext["feedbackStats"] | null;
+    actionStats?: MasterContext["actionStats"] | null;
+    achievements?: MasterContext["achievements"] | null;
+  } | null;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -73,7 +88,16 @@ export async function GET(request: NextRequest) {
     const forceRefreshParam = searchParams.get("forceRefresh");
     const forceRefresh = Boolean(forceRefreshParam && forceRefreshParam !== "0");
 
-    const context = await getMasterContext(userId, { forceRefresh });
+    const [context, aiContextBundle] = await Promise.all([
+      getMasterContext(userId, { forceRefresh }),
+      buildAIContext(userId, {
+        includeUserProfile: false,
+        includePlan: false,
+        includeSnapshots: true,
+        includeMasterContext: false,
+        snapshotLimit: 8,
+      }),
+    ]);
 
     if (!context) {
       return NextResponse.json({
@@ -83,6 +107,23 @@ export async function GET(request: NextRequest) {
     }
 
     const { summaries, topHashtags, signals } = buildPatternResponse(context);
+
+    const learningContext: LearningContextPayload | null = aiContextBundle
+      ? {
+          references: aiContextBundle.references,
+          snapshotReferences: aiContextBundle.snapshotReferences,
+          masterContext: context
+            ? {
+                learningPhase: context.learningPhase,
+                ragHitRate: context.ragHitRate,
+                totalInteractions: context.totalInteractions,
+                feedbackStats: context.feedbackStats ?? null,
+                actionStats: context.actionStats ?? null,
+                achievements: context.achievements ?? null,
+              }
+            : null,
+        }
+      : null;
 
     return NextResponse.json({
       success: true,
@@ -104,6 +145,7 @@ export async function GET(request: NextRequest) {
         achievements: context.achievements ?? [],
         postInsights: context.postInsights ?? null,
         lastUpdated: context.lastUpdated?.toISOString?.() ?? null,
+        learningContext,
       },
     });
   } catch (error) {

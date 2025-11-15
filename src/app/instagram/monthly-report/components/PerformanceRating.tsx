@@ -8,10 +8,7 @@ export interface PerformanceRatingProps {
     bg: string;
     label: string;
   };
-  activeTab: "weekly" | "monthly";
-  getWeekDisplayName: (weekStr: string) => string;
   getMonthDisplayName: (monthStr: string) => string;
-  selectedWeek: string;
   selectedMonth: string;
   pdcaMetrics?: {
     planExists: boolean;
@@ -31,10 +28,7 @@ export interface PerformanceRatingProps {
 export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
   accountScore,
   performanceRating,
-  activeTab,
-  getWeekDisplayName,
   getMonthDisplayName,
-  selectedWeek,
   selectedMonth,
   pdcaMetrics,
 }) => {
@@ -53,9 +47,7 @@ export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
         <div>
           <h2 className="text-lg font-semibold text-black mb-2">パフォーマンス評価</h2>
           <p className="text-sm text-black">
-            {activeTab === "weekly"
-              ? `${getWeekDisplayName(selectedWeek)}の総合評価`
-              : `${getMonthDisplayName(selectedMonth)}の総合評価`}
+            {`${getMonthDisplayName(selectedMonth)}の総合評価`}
           </p>
         </div>
         <div className="text-center">

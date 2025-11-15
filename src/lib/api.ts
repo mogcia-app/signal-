@@ -1,3 +1,5 @@
+import type { ABTestUpsertPayload } from "@/types/ab-test";
+
 // API呼び出し用のクライアント関数
 
 const API_BASE_URL = "/api";
@@ -52,6 +54,22 @@ export const postsApi = {
     status?: "draft" | "created" | "scheduled" | "published";
     imageUrl?: string | null;
     imageData?: string | null;
+    snapshotReferences?: Array<{
+      id: string;
+      status: "gold" | "negative" | "normal";
+      score?: number;
+      title?: string;
+      postType?: string;
+      summary?: string;
+      metrics?: Record<string, unknown>;
+    }>;
+    generationReferences?: Array<{
+      id: string;
+      sourceType: string;
+      label: string;
+      summary?: string;
+      metadata?: Record<string, unknown>;
+    }>;
   }) => {
     return apiRequest("/posts", {
       method: "POST",
@@ -255,5 +273,53 @@ export const snsProfileApi = {
       params.append("platform", platform);
     }
     return apiRequest(`/user/sns-profile?${params.toString()}`);
+  },
+};
+
+export const abTestsApi = {
+  list: async (params: { status?: string; limit?: number } = {}) => {
+    const searchParams = new URLSearchParams();
+    if (params.status) {
+      searchParams.append("status", params.status);
+    }
+    if (params.limit) {
+      searchParams.append("limit", String(params.limit));
+    }
+    const query = searchParams.toString();
+    return apiRequest(`/ab-tests${query ? `?${query}` : ""}`);
+  },
+  upsert: async (payload: ABTestUpsertPayload) => {
+    return apiRequest("/ab-tests", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export const actionLogsApi = {
+  list: async (userId: string, params?: { limit?: number; focusArea?: string }) => {
+    const searchParams = new URLSearchParams();
+    searchParams.append("userId", userId);
+    if (params?.limit) {
+      searchParams.append("limit", String(params.limit));
+    }
+    if (params?.focusArea) {
+      searchParams.append("period", params.focusArea);
+    }
+    return apiRequest(`/ai/action-logs?${searchParams.toString()}`);
+  },
+  upsert: async (payload: {
+    userId: string;
+    actionId: string;
+    title: string;
+    focusArea?: string;
+    applied: boolean;
+    resultDelta?: number | null;
+    feedback?: string;
+  }) => {
+    return apiRequest("/ai/action-logs", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 };

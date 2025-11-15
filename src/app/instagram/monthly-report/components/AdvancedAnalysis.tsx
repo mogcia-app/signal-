@@ -2,9 +2,8 @@ import React from "react";
 import { Hash, Clock, TrendingUp } from "lucide-react";
 
 interface AdvancedAnalysisProps {
-  activeTab: "weekly" | "monthly";
   reportSummary: {
-    period: "weekly" | "monthly";
+    period: "monthly";
     date: string;
     hashtagStats: { hashtag: string; count: number }[];
     timeSlotAnalysis: {
@@ -17,10 +16,7 @@ interface AdvancedAnalysisProps {
   } | null;
 }
 
-export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({
-  activeTab, // eslint-disable-line @typescript-eslint/no-unused-vars
-  reportSummary,
-}) => {
+export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({ reportSummary }) => {
   const hashtagStats = reportSummary?.hashtagStats || [];
   const timeSlotData = reportSummary?.timeSlotAnalysis || [];
   const bestTimeSlot = timeSlotData.reduce((best, current) => {

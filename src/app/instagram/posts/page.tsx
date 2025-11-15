@@ -17,6 +17,7 @@ import {
   CheckCircle,
   X,
 } from "lucide-react";
+import type { AIReference, SnapshotReference } from "@/types/ai";
 
 // コンポーネントのインポート
 import PostCard from "./components/PostCard";
@@ -81,6 +82,8 @@ interface PostData {
       };
     };
   };
+  snapshotReferences?: SnapshotReference[];
+  generationReferences?: AIReference[];
 }
 
 const normalizeHashtags = (hashtags: PostData["hashtags"]): string[] => {
@@ -267,6 +270,12 @@ export default function InstagramPostsPage() {
   const processPostsData = useCallback(() => {
     if (!posts.length) {return;}
 
+    const analyzedPostIds = new Set(
+      analyticsData
+        .map((analytics) => analytics.postId)
+        .filter((postId): postId is string => Boolean(postId))
+    );
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -370,6 +379,7 @@ export default function InstagramPostsPage() {
       .filter((post: PostData) => {
         if (post.status !== "created") {return false;}
         if (!post.scheduledDate) {return false;}
+        if (post.id && analyzedPostIds.has(post.id)) {return false;}
 
         try {
           let scheduledDate: Date;
@@ -450,7 +460,7 @@ export default function InstagramPostsPage() {
       })
       .filter((post): post is NonNullable<typeof post> => post !== null);
     setUnanalyzedPosts(unanalyzedPostsData);
-  }, [posts]);
+  }, [posts, analyticsData]);
 
   useEffect(() => {
     if (user?.uid) {

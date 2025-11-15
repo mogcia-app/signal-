@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
+import { buildAIContext } from "@/lib/ai/context";
+import { fetchAbTestSummaries, mapAbTestResultsByPost } from "@/lib/analytics/ab-test-utils";
+import type { ABTestResultTag, ABTestSummary } from "@/types/ab-test";
+import type { AIReference } from "@/types/ai";
 
 interface AnalyticsData {
   id: string;
@@ -23,6 +27,7 @@ interface AnalyticsData {
   hashtags?: string[] | string; // 配列または文字列の両方に対応
   thumbnail?: string;
   category?: "reel" | "feed" | "story";
+  postType?: "reel" | "feed" | "story";
   // フィード専用フィールド
   reachFollowerPercent?: number;
   interactionCount?: number;
@@ -81,6 +86,18 @@ interface AnalyticsData {
   };
 }
 
+interface SnapshotReference {
+  id: string;
+  status: "gold" | "negative" | "normal";
+  score?: number;
+  postId?: string | null;
+  title?: string;
+  postType?: string;
+  summary?: string;
+  metrics?: Record<string, unknown>;
+  textFeatures?: Record<string, unknown>;
+}
+
 interface PostData {
   id: string;
   title: string;
@@ -97,6 +114,146 @@ interface PostData {
   views?: number;
   reach?: number;
   engagementRate?: number;
+  snapshotReferences?: SnapshotReference[];
+  textFeatures?: Record<string, unknown>;
+}
+
+type PostWithAnalytics = PostData & {
+  analyticsSummary?: {
+    likes?: number;
+    comments?: number;
+    shares?: number;
+    reach?: number;
+    saves?: number;
+    followerIncrease?: number;
+    engagementRate?: number;
+  } | null;
+  audienceSummary?: AnalyticsData["audience"];
+  abTestResults?: ABTestResultTag[];
+};
+
+interface PatternHighlights {
+  gold: SnapshotReference[];
+  negative: SnapshotReference[];
+}
+
+interface LearningContextPayload {
+  references: AIReference[];
+  snapshotReferences: SnapshotReference[];
+  masterContext?: {
+    learningPhase?: string;
+    ragHitRate?: number;
+    totalInteractions?: number;
+    feedbackStats?: {
+      total?: number;
+      positiveRate?: number;
+      averageWeight?: number;
+    } | null;
+    actionStats?: {
+      total?: number;
+      adoptionRate?: number;
+      averageResultDelta?: number;
+    } | null;
+    achievements?: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      icon?: string;
+      status?: string;
+      progress?: number;
+    }> | null;
+  } | null;
+}
+
+interface PersonaSegmentSummary {
+  segment: string;
+  type: "gender" | "age";
+  status: "gold" | "negative";
+  value: number;
+  delta?: number;
+  postTitle: string;
+  postId: string;
+}
+
+interface NextMonthFocusAction {
+  id: string;
+  title: string;
+  focusKPI: string;
+  reason: string;
+  recommendedAction: string;
+  referenceIds?: string[];
+}
+
+interface KPIBreakdownSegment {
+  label: string;
+  value: number;
+  delta?: number;
+}
+
+interface KPIBreakdownTopPost {
+  postId: string;
+  title: string;
+  value: number;
+  postType?: "feed" | "reel" | "story";
+  status?: "gold" | "negative" | "normal";
+}
+
+interface KPIBreakdown {
+  key: "reach" | "saves" | "followers" | "engagement";
+  label: string;
+  value: number;
+  unit?: "count" | "percent";
+  changePct?: number;
+  segments: KPIBreakdownSegment[];
+  topPosts: KPIBreakdownTopPost[];
+  insight?: string;
+}
+
+interface FeedbackSentimentComment {
+  postId: string;
+  title: string;
+  comment: string;
+  sentiment: "positive" | "negative" | "neutral";
+  createdAt?: string;
+  postType?: "feed" | "reel" | "story";
+}
+
+interface FeedbackPostSentiment {
+  postId: string;
+  title: string;
+  postType?: "feed" | "reel" | "story";
+  total: number;
+  positive: number;
+  negative: number;
+  neutral: number;
+  score: number;
+  lastComment?: string;
+  lastCommentAt?: string;
+  lastSentiment?: "positive" | "negative" | "neutral";
+  status?: "gold" | "negative" | "normal";
+}
+
+interface FeedbackSentimentSummary {
+  total: number;
+  positive: number;
+  negative: number;
+  neutral: number;
+  positiveRate: number;
+  withCommentCount: number;
+  commentHighlights?: {
+    positive: FeedbackSentimentComment[];
+    negative: FeedbackSentimentComment[];
+  };
+  posts?: FeedbackPostSentiment[];
+}
+
+interface NextMonthFocusAction {
+  id: string;
+  title: string;
+  focusKPI: string;
+  reason: string;
+  recommendedAction: string;
+  referenceIds?: string[];
 }
 
 // 週の開始日と終了日を取得する関数
@@ -243,8 +400,377 @@ function calculateTotals(analytics: AnalyticsData[]) {
 
 // 変化率を計算
 function calculateChange(current: number, previous: number): number {
-  if (previous === 0) {return current > 0 ? 100 : 0;}
+  if (previous === 0) {
+    return current > 0 ? 100 : 0;
+  }
   return ((current - previous) / previous) * 100;
+}
+
+function summarizeSegments(segments: KPIBreakdownSegment[], totalValue: number): string | undefined {
+  if (!segments || segments.length === 0 || totalValue <= 0) {
+    return undefined;
+  }
+  const sorted = [...segments].sort((a, b) => b.value - a.value);
+  const top = sorted[0];
+  if (!top || top.value <= 0) {
+    return undefined;
+  }
+  const share = totalValue > 0 ? (top.value / totalValue) * 100 : 0;
+  return `${top.label}が全体の${share.toFixed(0)}%を占めています`;
+}
+
+function buildTopPosts(
+  posts: PostWithAnalytics[],
+  metric: (post: PostWithAnalytics["analyticsSummary"] | null | undefined) => number,
+  snapshotStatusMap: Map<string, "gold" | "negative" | "normal">
+): KPIBreakdownTopPost[] {
+  return posts
+    .map((post) => {
+      const value = metric(post.analyticsSummary);
+      return {
+        postId: post.id,
+        title: post.title || "無題の投稿",
+        value,
+        postType: post.postType,
+        status: snapshotStatusMap.get(post.id) ?? "normal",
+      };
+    })
+    .filter((entry) => entry.value && entry.value !== 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 3);
+}
+
+function buildKpiBreakdowns(params: {
+  totals: ReturnType<typeof calculateTotals>;
+  previousTotals: ReturnType<typeof calculateTotals>;
+  changes: {
+    likesChange: number;
+    commentsChange: number;
+    sharesChange: number;
+    repostsChange: number;
+    reachChange: number;
+    savesChange: number;
+    followerChange: number;
+    engagementRateChange: number;
+    postsChange: number;
+  };
+  reachSourceAnalysis: ReturnType<typeof calculateReachSourceAnalysis>;
+  posts: PostWithAnalytics[];
+  snapshotStatusMap: Map<string, "gold" | "negative" | "normal">;
+}): KPIBreakdown[] {
+  const { totals, previousTotals, changes, reachSourceAnalysis, posts, snapshotStatusMap } = params;
+  const typeLabelMap: Record<string, string> = {
+    feed: "フィード",
+    reel: "リール",
+    story: "ストーリーズ",
+  };
+
+  const reachSegments: KPIBreakdownSegment[] = [
+    { label: "投稿からの流入", value: reachSourceAnalysis?.sources?.posts || 0 },
+    { label: "プロフィール閲覧", value: reachSourceAnalysis?.sources?.profile || 0 },
+    { label: "発見タブ", value: reachSourceAnalysis?.sources?.explore || 0 },
+    { label: "検索結果", value: reachSourceAnalysis?.sources?.search || 0 },
+    { label: "その他チャネル", value: reachSourceAnalysis?.sources?.other || 0 },
+  ].filter((segment) => segment.value > 0);
+
+  const reachValue = totals.totalReach || 0;
+  const reachBreakdown: KPIBreakdown = {
+    key: "reach",
+    label: "リーチ",
+    value: reachValue,
+    unit: "count",
+    changePct: changes.reachChange ?? 0,
+    segments: reachSegments,
+    topPosts: buildTopPosts(
+      posts,
+      (summary) => summary?.reach || 0,
+      snapshotStatusMap
+    ),
+    insight: summarizeSegments(reachSegments, reachValue),
+  };
+
+  const savesByType = posts.reduce<Record<string, number>>((acc, post) => {
+    const type = post.postType || "feed";
+    const saves = post.analyticsSummary?.saves || 0;
+    acc[type] = (acc[type] || 0) + saves;
+    return acc;
+  }, {});
+
+  const savesSegments: KPIBreakdownSegment[] = Object.entries(savesByType)
+    .map(([type, value]) => ({
+      label: typeLabelMap[type] || type,
+      value,
+    }))
+    .filter((segment) => segment.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const savesValue = totals.totalSaves || 0;
+  const savesBreakdown: KPIBreakdown = {
+    key: "saves",
+    label: "保存数",
+    value: savesValue,
+    unit: "count",
+    changePct: changes.savesChange ?? 0,
+    segments: savesSegments,
+    topPosts: buildTopPosts(
+      posts,
+      (summary) => summary?.saves || 0,
+      snapshotStatusMap
+    ),
+    insight: summarizeSegments(savesSegments, savesValue),
+  };
+
+  const followerSegmentsRaw = posts.reduce<Record<string, number>>((acc, post) => {
+    const type = post.postType || "feed";
+    const gain = post.analyticsSummary?.followerIncrease || 0;
+    acc[type] = (acc[type] || 0) + gain;
+    return acc;
+  }, {});
+
+  const followerSegments: KPIBreakdownSegment[] = Object.entries(followerSegmentsRaw)
+    .map(([type, value]) => ({
+      label: typeLabelMap[type] || type,
+      value,
+    }))
+    .filter((segment) => segment.value !== 0)
+    .sort((a, b) => b.value - a.value);
+
+  const followerValue = totals.totalFollowerIncrease || 0;
+  const followerBreakdown: KPIBreakdown = {
+    key: "followers",
+    label: "フォロワー増減",
+    value: followerValue,
+    unit: "count",
+    changePct: changes.followerChange ?? 0,
+    segments: followerSegments,
+    topPosts: buildTopPosts(
+      posts,
+      (summary) => summary?.followerIncrease || 0,
+      snapshotStatusMap
+    ),
+    insight: summarizeSegments(followerSegments, followerValue),
+  };
+
+  const engagementValue =
+    (totals.totalLikes || 0) +
+    (totals.totalComments || 0) +
+    (totals.totalShares || 0) +
+    (totals.totalSaves || 0);
+  const previousEngagementValue =
+    (previousTotals.totalLikes || 0) +
+    (previousTotals.totalComments || 0) +
+    (previousTotals.totalShares || 0) +
+    (previousTotals.totalSaves || 0);
+  const engagementChange =
+    previousEngagementValue === 0
+      ? engagementValue > 0
+        ? 100
+        : 0
+      : ((engagementValue - previousEngagementValue) / previousEngagementValue) * 100;
+
+  const engagementSegments: KPIBreakdownSegment[] = [
+    { label: "いいね", value: totals.totalLikes || 0 },
+    { label: "コメント", value: totals.totalComments || 0 },
+    { label: "シェア", value: totals.totalShares || 0 },
+    { label: "保存", value: totals.totalSaves || 0 },
+  ].filter((segment) => segment.value > 0);
+
+  const engagementBreakdown: KPIBreakdown = {
+    key: "engagement",
+    label: "エンゲージメント（総和）",
+    value: engagementValue,
+    unit: "count",
+    changePct: engagementChange,
+    segments: engagementSegments,
+    topPosts: buildTopPosts(
+      posts,
+      (summary) =>
+        (summary?.likes || 0) + (summary?.comments || 0) + (summary?.shares || 0) + (summary?.saves || 0),
+      snapshotStatusMap
+    ),
+    insight: summarizeSegments(engagementSegments, engagementValue),
+  };
+
+  return [reachBreakdown, savesBreakdown, followerBreakdown, engagementBreakdown];
+}
+
+function getMonthDateRange(monthStr: string): { start: Date; end: Date } {
+  const [yearStr, monthStrValue] = monthStr.split("-");
+  const year = Number(yearStr);
+  const monthIndex = Number(monthStrValue) - 1;
+  if (Number.isNaN(year) || Number.isNaN(monthIndex)) {
+    throw new Error(`Invalid month string: ${monthStr}`);
+  }
+  const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0));
+  return { start, end };
+}
+
+async function buildFeedbackSentimentSummary(params: {
+  userId: string;
+  month: string;
+  posts: PostWithAnalytics[];
+  snapshotStatusMap: Map<string, "gold" | "negative" | "normal">;
+}): Promise<FeedbackSentimentSummary | null> {
+  const { userId, month, posts, snapshotStatusMap } = params;
+  const postsMap = new Map(posts.map((post) => [post.id, post]));
+  const { start, end } = getMonthDateRange(month);
+
+  const snapshot = await adminDb
+    .collection("ai_post_feedback")
+    .where("userId", "==", userId)
+    .orderBy("createdAt", "desc")
+    .limit(500)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  type RawFeedbackEntry = {
+    id: string;
+    postId?: string;
+    sentiment: "positive" | "negative" | "neutral";
+    comment?: string;
+    createdAt?: Date;
+  };
+
+  const entries: RawFeedbackEntry[] = snapshot.docs
+    .map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt?.toDate?.();
+      return {
+        id: doc.id,
+        postId: data.postId,
+        sentiment: (data.sentiment as RawFeedbackEntry["sentiment"]) || "neutral",
+        comment: data.comment,
+        createdAt,
+      };
+    })
+    .filter((entry) => {
+      if (!entry.createdAt) {
+        return false;
+      }
+      return entry.createdAt >= start && entry.createdAt < end;
+    });
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const counts = {
+    positive: 0,
+    negative: 0,
+    neutral: 0,
+  };
+  let withCommentCount = 0;
+
+  type CommentInternal = FeedbackSentimentComment & { createdAtMs: number };
+  const positiveComments: CommentInternal[] = [];
+  const negativeComments: CommentInternal[] = [];
+
+  const postStats = new Map<
+    string,
+    FeedbackPostSentiment & {
+      lastCommentDate?: Date;
+    }
+  >();
+
+  entries.forEach((entry) => {
+    counts[entry.sentiment] += 1;
+
+    const postMeta = entry.postId ? postsMap.get(entry.postId) : null;
+    const baseComment = entry.comment?.trim();
+
+    if (baseComment) {
+      withCommentCount += 1;
+      const commentPayload: CommentInternal = {
+        postId: entry.postId || "",
+        title: postMeta?.title || "投稿",
+        comment: baseComment,
+        sentiment: entry.sentiment,
+        createdAt: entry.createdAt?.toISOString(),
+        createdAtMs: entry.createdAt?.getTime() ?? 0,
+        postType: postMeta?.postType,
+      };
+      if (entry.sentiment === "positive") {
+        positiveComments.push(commentPayload);
+      } else if (entry.sentiment === "negative") {
+        negativeComments.push(commentPayload);
+      }
+    }
+
+    if (!entry.postId) {
+      return;
+    }
+
+    if (!postStats.has(entry.postId)) {
+      postStats.set(entry.postId, {
+        postId: entry.postId,
+        title: postMeta?.title || "投稿",
+        postType: postMeta?.postType,
+        total: 0,
+        positive: 0,
+        negative: 0,
+        neutral: 0,
+        score: 0,
+        status: snapshotStatusMap.get(entry.postId) ?? "normal",
+      });
+    }
+
+    const stat = postStats.get(entry.postId)!;
+    stat.total += 1;
+    stat[entry.sentiment] += 1;
+    stat.score = stat.positive - stat.negative;
+
+    if (baseComment) {
+      const currentDate = entry.createdAt;
+      if (!stat.lastCommentDate || (currentDate && currentDate > stat.lastCommentDate)) {
+        stat.lastComment = baseComment;
+        stat.lastCommentAt = currentDate?.toISOString();
+        stat.lastSentiment = entry.sentiment;
+        stat.lastCommentDate = currentDate || stat.lastCommentDate;
+      }
+    }
+  });
+
+  const total = counts.positive + counts.negative + counts.neutral;
+  if (total === 0) {
+    return null;
+  }
+
+  const formatComments = (list: CommentInternal[]) =>
+    list
+      .sort((a, b) => b.createdAtMs - a.createdAtMs)
+      .slice(0, 3)
+      .map(({ createdAtMs, ...rest }) => rest);
+
+  const postsArray = Array.from(postStats.values())
+    .map((entry) => {
+      const { lastCommentDate, ...rest } = entry;
+      return rest;
+    })
+    .sort((a, b) => {
+      if (b.score === a.score) {
+        return b.total - a.total;
+      }
+      return b.score - a.score;
+    })
+    .slice(0, 6);
+
+  return {
+    total,
+    positive: counts.positive,
+    negative: counts.negative,
+    neutral: counts.neutral,
+    positiveRate: counts.positive / total,
+    withCommentCount,
+    commentHighlights: {
+      positive: formatComments(positiveComments),
+      negative: formatComments(negativeComments),
+    },
+    posts: postsArray,
+  };
 }
 
 // オーディエンス分析を計算
@@ -292,7 +818,7 @@ function calculateReachSourceAnalysis(analytics: AnalyticsData[]) {
   const reachSourceData = analytics.filter((data) => data.reachSource);
   if (reachSourceData.length === 0) {
     return {
-      sources: { posts: 0, profile: 0, explore: 0, search: 0 },
+      sources: { posts: 0, profile: 0, explore: 0, search: 0, other: 0 },
       followers: { followers: 0, nonFollowers: 0 },
     };
   }
@@ -310,6 +836,9 @@ function calculateReachSourceAnalysis(analytics: AnalyticsData[]) {
     search:
       reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.search || 0), 0) /
       reachSourceData.length,
+    other:
+      reachSourceData.reduce((sum, data) => sum + (data.reachSource?.sources.other || 0), 0) /
+      reachSourceData.length,
   };
 
   const avgFollowers = {
@@ -324,6 +853,162 @@ function calculateReachSourceAnalysis(analytics: AnalyticsData[]) {
   };
 
   return { sources: avgSources, followers: avgFollowers };
+}
+
+function calculateFeedPerformanceStats(analytics: AnalyticsData[]) {
+  const feedData = analytics.filter((data) => data.category === "feed");
+  if (feedData.length === 0) {
+    return null;
+  }
+
+  const safeNumber = (value: number | undefined | null) => Number(value) || 0;
+
+  const totalLikes = feedData.reduce((sum, data) => sum + safeNumber(data.likes), 0);
+  const totalComments = feedData.reduce((sum, data) => sum + safeNumber(data.comments), 0);
+  const totalShares = feedData.reduce((sum, data) => sum + safeNumber(data.shares), 0);
+  const totalReposts = feedData.reduce((sum, data) => sum + safeNumber(data.reposts), 0);
+  const totalSaves = feedData.reduce((sum, data) => sum + safeNumber(data.saves), 0);
+  const totalReach = feedData.reduce((sum, data) => sum + safeNumber(data.reach), 0);
+  const totalFollowerIncrease = feedData.reduce(
+    (sum, data) => sum + safeNumber(data.followerIncrease),
+    0
+  );
+  const totalInteractionCount = feedData.reduce(
+    (sum, data) => sum + safeNumber(data.interactionCount),
+    0
+  );
+
+  const avgReachFollowerPercent =
+    feedData.reduce((sum, data) => sum + safeNumber(data.reachFollowerPercent), 0) /
+    feedData.length;
+  const avgInteractionFollowerPercent =
+    feedData.reduce((sum, data) => sum + safeNumber(data.interactionFollowerPercent), 0) /
+    feedData.length;
+
+  const reachSources = {
+    profile: feedData.reduce((sum, data) => sum + safeNumber(data.reachSourceProfile), 0),
+    feed: feedData.reduce((sum, data) => sum + safeNumber(data.reachSourceFeed), 0),
+    explore: feedData.reduce((sum, data) => sum + safeNumber(data.reachSourceExplore), 0),
+    search: feedData.reduce((sum, data) => sum + safeNumber(data.reachSourceSearch), 0),
+    other: feedData.reduce((sum, data) => sum + safeNumber(data.reachSourceOther), 0),
+  };
+
+  const totalReachedAccounts = feedData.reduce(
+    (sum, data) => sum + safeNumber(data.reachedAccounts),
+    0
+  );
+  const totalProfileVisits = feedData.reduce(
+    (sum, data) => sum + safeNumber(data.profileVisits),
+    0
+  );
+
+  const feedAudience = calculateAudienceAnalysis(feedData);
+  const reelAudience = calculateAudienceAnalysis(
+    analytics.filter((data) => data.category === "reel")
+  );
+
+  return {
+    totalLikes,
+    totalComments,
+    totalShares,
+    totalReposts,
+    totalSaves,
+    totalReach,
+    totalFollowerIncrease,
+    totalInteractionCount,
+    avgReachFollowerPercent,
+    avgInteractionFollowerPercent,
+    reachSources,
+    totalReachedAccounts,
+    totalProfileVisits,
+    audienceBreakdown: {
+      gender: feedAudience.gender,
+      age: feedAudience.age,
+    },
+  };
+}
+
+function calculateReelPerformanceStats(analytics: AnalyticsData[]) {
+  const reelData = analytics.filter((data) => data.category === "reel");
+  if (reelData.length === 0) {
+    return null;
+  }
+
+  const safeNumber = (value: number | undefined | null) => Number(value) || 0;
+
+  const totalLikes = reelData.reduce((sum, data) => sum + safeNumber(data.likes), 0);
+  const totalComments = reelData.reduce((sum, data) => sum + safeNumber(data.comments), 0);
+  const totalShares = reelData.reduce((sum, data) => sum + safeNumber(data.shares), 0);
+  const totalReposts = reelData.reduce((sum, data) => sum + safeNumber(data.reposts), 0);
+  const totalSaves = reelData.reduce((sum, data) => sum + safeNumber(data.saves), 0);
+  const totalReach = reelData.reduce((sum, data) => sum + safeNumber(data.reach), 0);
+  const totalFollowerIncrease = reelData.reduce(
+    (sum, data) => sum + safeNumber(data.followerIncrease),
+    0
+  );
+
+  const totalInteractionCount = reelData.reduce(
+    (sum, data) => sum + safeNumber(data.reelInteractionCount),
+    0
+  );
+  const avgReachFollowerPercent =
+    reelData.reduce((sum, data) => sum + safeNumber(data.reelReachFollowerPercent), 0) /
+    reelData.length;
+  const avgInteractionFollowerPercent =
+    reelData.reduce((sum, data) => sum + safeNumber(data.reelInteractionFollowerPercent), 0) /
+    reelData.length;
+
+  const reachSources = {
+    profile: reelData.reduce((sum, data) => sum + safeNumber(data.reelReachSourceProfile), 0),
+    reel: reelData.reduce((sum, data) => sum + safeNumber(data.reelReachSourceReel), 0),
+    explore: reelData.reduce((sum, data) => sum + safeNumber(data.reelReachSourceExplore), 0),
+    search: reelData.reduce((sum, data) => sum + safeNumber(data.reelReachSourceSearch), 0),
+    other: reelData.reduce((sum, data) => sum + safeNumber(data.reelReachSourceOther), 0),
+  };
+
+  const totalReachedAccounts = reelData.reduce(
+    (sum, data) => sum + safeNumber(data.reelReachedAccounts),
+    0
+  );
+  const totalPlayTimeSeconds = reelData.reduce(
+    (sum, data) => sum + safeNumber(data.reelPlayTime),
+    0
+  );
+  const avgPlayTimeSeconds =
+    reelData.reduce((sum, data) => sum + safeNumber(data.reelAvgPlayTime), 0) / reelData.length;
+
+  const avgSkipRate =
+    reelData.reduce((sum, data) => sum + safeNumber(data.reelSkipRate), 0) / reelData.length;
+  const avgNormalSkipRate =
+    reelData.reduce((sum, data) => sum + safeNumber(data.reelNormalSkipRate), 0) /
+    reelData.length;
+
+  const reelAudience = calculateAudienceAnalysis(
+    analytics.filter((data) => data.category === "reel")
+  );
+
+  return {
+    totalLikes,
+    totalComments,
+    totalShares,
+    totalReposts,
+    totalSaves,
+    totalReach,
+    totalFollowerIncrease,
+    totalInteractionCount,
+    avgReachFollowerPercent,
+    avgInteractionFollowerPercent,
+    reachSources,
+    totalReachedAccounts,
+    totalPlayTimeSeconds,
+    avgPlayTimeSeconds,
+    avgSkipRate,
+    avgNormalSkipRate,
+    audienceBreakdown: {
+      gender: calculateAudienceAnalysis(reelData).gender,
+      age: calculateAudienceAnalysis(reelData).age,
+    },
+  };
 }
 
 // ハッシュタグ統計を計算（postsコレクション + 手動入力分析データから取得）
@@ -456,12 +1141,29 @@ function calculateTimeSlotAnalysis(analytics: AnalyticsData[]) {
           postsInRange.length
         : 0;
 
+    const postTypeStats = ["feed", "reel", "story"].map((type) => {
+      const typePosts = postsInRange.filter(
+        (data) => (data.category || data.postType || "feed") === type
+      );
+      const typeAvgEngagement =
+        typePosts.length > 0
+          ? typePosts.reduce((sum, data) => sum + (data.likes + data.comments + data.shares), 0) /
+            typePosts.length
+          : 0;
+      return {
+        type: type as "feed" | "reel" | "story",
+        count: typePosts.length,
+        avgEngagement: Number(typeAvgEngagement.toFixed(2)),
+      };
+    });
+
     return {
       label,
       range,
       color,
       postsInRange: postsInRange.length,
       avgEngagement,
+      postTypes: postTypeStats,
     };
   });
 }
@@ -510,6 +1212,84 @@ function calculatePostTypeStats(analytics: AnalyticsData[], posts: PostData[]) {
     const percentage = total > 0 ? (count / total) * 100 : 0;
     return { type, count, label, color, bg, percentage };
   });
+}
+
+function buildNextMonthFocusActions(params: {
+  changes: {
+    likesChange: number;
+    commentsChange: number;
+    sharesChange: number;
+    reachChange: number;
+    savesChange: number;
+    followerChange: number;
+    engagementRateChange: number;
+    postsChange: number;
+  };
+  patternHighlights: PatternHighlights;
+  snapshotReferences: SnapshotReference[];
+}): NextMonthFocusAction[] {
+  const actions: NextMonthFocusAction[] = [];
+  const {
+    changes: { reachChange, savesChange, followerChange, engagementRateChange },
+    patternHighlights,
+    snapshotReferences,
+  } = params;
+
+  const topGold = patternHighlights.gold?.[0];
+  const topNegative = patternHighlights.negative?.[0];
+  const fallbackReference = snapshotReferences[0];
+
+  if (reachChange < -5) {
+    actions.push({
+      id: "focus-reach",
+      title: "リーチ回復に集中",
+      focusKPI: "リーチ",
+      reason: `先月比でリーチが ${reachChange.toFixed(1)}% 減少しています。`,
+      recommendedAction:
+        "ゴールド投稿の投稿時間・導入構成を再現し、露出強化の週を1回設けてリーチを底上げしましょう。",
+      referenceIds: [topGold?.id || fallbackReference?.id].filter(Boolean),
+    });
+  }
+
+  if (savesChange < -5 || engagementRateChange < -5) {
+    actions.push({
+      id: "focus-saves",
+      title: "保存率とERの立て直し",
+      focusKPI: "保存率 / エンゲージメント率",
+      reason: `保存率またはERが前月比で低下しています（保存率: ${savesChange.toFixed(
+        1
+      )}%, ER: ${engagementRateChange.toFixed(1)}%）。`,
+      recommendedAction:
+        "ネガティブ投稿で指摘された離脱要因を避け、チェックリスト型やCTA強めの構成を増やして保存を促しましょう。",
+      referenceIds: [topNegative?.id || fallbackReference?.id].filter(Boolean),
+    });
+  }
+
+  if (followerChange < -5) {
+    actions.push({
+      id: "focus-followers",
+      title: "フォロワー増加をテコ入れ",
+      focusKPI: "フォロワー増加数",
+      reason: `フォロワー増加が先月比で ${followerChange.toFixed(1)}% 減少しています。`,
+      recommendedAction:
+        "プロフィール誘導のCTAや求人・キャンペーン投稿を週2回入れ、フォロワー増につながる導線を明示しましょう。",
+      referenceIds: [topGold?.id, topNegative?.id].filter(Boolean),
+    });
+  }
+
+  if (actions.length === 0) {
+    actions.push({
+      id: "focus-scale",
+      title: "好調施策をスケール",
+      focusKPI: "リーチ / 保存率",
+      reason: "主要KPIが安定しているため、成果の出ているパターンを増やす好機です。",
+      recommendedAction:
+        "ゴールド投稿の切り口を週次で再アレンジし、同じ構成で3本のバリエーションを仕込んでみましょう。",
+      referenceIds: [topGold?.id || fallbackReference?.id].filter(Boolean),
+    });
+  }
+
+  return actions.slice(0, 3);
 }
 
 export async function GET(request: NextRequest) {
@@ -636,6 +1416,7 @@ export async function GET(request: NextRequest) {
         views: data.views,
         reach: data.reach,
         engagementRate: data.engagementRate,
+        snapshotReferences: data.snapshotReferences || [],
       };
     });
 
@@ -666,6 +1447,51 @@ export async function GET(request: NextRequest) {
       return true;
     });
 
+    const analyticsByPostId = new Map(
+      currentAnalytics
+        .filter((entry) => typeof entry.postId === "string" && entry.postId)
+        .map((entry) => [entry.postId as string, entry])
+    );
+
+    const [aiContextBundle, abTestSummaries = []] = await Promise.all([
+      buildAIContext(uid, {
+        includeMasterContext: true,
+        snapshotLimit: 8,
+      }),
+      fetchAbTestSummaries(uid, 5).catch((error) => {
+        console.warn("⚠️ A/Bテストサマリー取得エラー:", error);
+        return [];
+      }),
+    ]);
+
+    const abTestResultsByPost = mapAbTestResultsByPost(abTestSummaries);
+
+    let postsWithAnalytics: PostWithAnalytics[] = currentPosts.map((post) => {
+      const analyticsEntry = analyticsByPostId.get(post.id);
+      return {
+        ...post,
+        analyticsSummary: analyticsEntry
+          ? {
+              likes: analyticsEntry.likes,
+              comments: analyticsEntry.comments,
+              shares: analyticsEntry.shares,
+              reach: analyticsEntry.reach,
+              saves: analyticsEntry.saves,
+              followerIncrease: analyticsEntry.followerIncrease,
+              engagementRate: analyticsEntry.engagementRate,
+            }
+          : null,
+        audienceSummary: analyticsEntry?.audience,
+      };
+    });
+
+    if (postsWithAnalytics.length > 0) {
+      postsWithAnalytics = postsWithAnalytics.map((post) => ({
+        ...post,
+        abTestResults: abTestResultsByPost.get(post.id) || [],
+      }));
+    }
+
     // 前期間のデータを取得
     const previousPeriod = getPreviousPeriod(period, date);
     const previousAnalytics = filterDataByPeriod(analytics, period, previousPeriod);
@@ -689,7 +1515,7 @@ export async function GET(request: NextRequest) {
 
     console.log("📊 期間別データ:", {
       currentAnalytics: currentAnalytics.length,
-      currentPosts: currentPosts.length,
+      currentPosts: postsWithAnalytics.length,
       previousAnalytics: previousAnalytics.length,
       previousPosts: previousPosts.length,
     });
@@ -706,13 +1532,13 @@ export async function GET(request: NextRequest) {
     });
 
     // 投稿数も正確に計算
-    currentTotals.totalPosts = currentPosts.length;
+    currentTotals.totalPosts = postsWithAnalytics.length;
     previousTotals.totalPosts = previousPosts.length;
 
     console.log("📊 投稿数上書き後:", {
       currentTotalsPosts: currentTotals.totalPosts,
       previousTotalsPosts: previousTotals.totalPosts,
-      currentPostsLength: currentPosts.length,
+      currentPostsLength: postsWithAnalytics.length,
       previousPostsLength: previousPosts.length,
     });
 
@@ -738,9 +1564,57 @@ export async function GET(request: NextRequest) {
     // 詳細分析を計算（投稿一覧ページと同じロジック）
     const audienceAnalysis = calculateAudienceAnalysis(currentAnalytics);
     const reachSourceAnalysis = calculateReachSourceAnalysis(currentAnalytics);
-    const hashtagStats = calculateHashtagStats(currentAnalytics, currentPosts);
+    const hashtagStats = calculateHashtagStats(currentAnalytics, postsWithAnalytics);
     const timeSlotAnalysis = calculateTimeSlotAnalysis(currentAnalytics);
-    const postTypeStats = calculatePostTypeStats(currentAnalytics, currentPosts);
+    const postTypeStats = calculatePostTypeStats(currentAnalytics, postsWithAnalytics);
+    const feedPerformanceStats = calculateFeedPerformanceStats(currentAnalytics);
+    const reelPerformanceStats = calculateReelPerformanceStats(currentAnalytics);
+
+    const snapshotReferencePayload: SnapshotReference[] = aiContextBundle.snapshotReferences.map(
+      (reference) => ({
+        id: reference.id,
+        status: reference.status,
+        score: reference.score,
+        postId: reference.postId,
+        title: reference.title,
+        postType: reference.postType,
+        summary: reference.summary,
+        metrics: reference.metrics,
+        textFeatures: reference.textFeatures,
+        abTestResults: reference.postId ? abTestResultsByPost.get(reference.postId) : undefined,
+      })
+    );
+
+    const patternHighlights: PatternHighlights = {
+      gold: snapshotReferencePayload.filter((reference) => reference.status === "gold"),
+      negative: snapshotReferencePayload.filter((reference) => reference.status === "negative"),
+    };
+
+    if (snapshotReferencePayload.length > 0) {
+      const textFeaturesByPostId = new Map<string, SnapshotReference>();
+      snapshotReferencePayload.forEach((reference) => {
+        if (reference.postId) {
+          textFeaturesByPostId.set(reference.postId, reference);
+        }
+      });
+      postsWithAnalytics = postsWithAnalytics.map((post) => ({
+        ...post,
+        textFeatures: textFeaturesByPostId.get(post.id)?.textFeatures ?? post.textFeatures,
+      }));
+    }
+
+    const snapshotStatusMap = new Map<string, "gold" | "negative" | "normal">();
+    snapshotReferencePayload.forEach((reference) => {
+      if (reference.postId) {
+        snapshotStatusMap.set(reference.postId, reference.status ?? "normal");
+      }
+    });
+
+    const learningContext: LearningContextPayload = {
+      references: aiContextBundle.references,
+      snapshotReferences: snapshotReferencePayload,
+      masterContext: aiContextBundle.masterContext ?? null,
+    };
 
     console.log("📊 投稿タイプ別統計:", postTypeStats);
 
@@ -751,6 +1625,63 @@ export async function GET(request: NextRequest) {
       }
       return best;
     }, timeSlotAnalysis[0]);
+
+    const personaHighlights: PersonaSegmentSummary[] = snapshotReferencePayload
+      .flatMap((reference) => {
+        const results: PersonaSegmentSummary[] = [];
+        const persona = (reference as SnapshotReference & {
+          personaInsights?: {
+            topGender?: { segment: string; value: number; delta?: number };
+            topAgeRange?: { segment: string; value: number; delta?: number };
+            topGenderDiff?: { segment: string; delta: number };
+            topAgeRangeDiff?: { segment: string; delta: number };
+          };
+        }).personaInsights;
+        const normalizedStatus: "gold" | "negative" =
+          reference.status === "negative" ? "negative" : "gold";
+        if (persona?.topGender) {
+          results.push({
+            segment: persona.topGender.segment,
+            type: "gender",
+            status: normalizedStatus,
+            value: persona.topGender.value,
+            delta: persona.topGenderDiff?.delta,
+            postTitle: reference.title || "",
+            postId: reference.postId ? String(reference.postId) : "",
+          });
+        }
+        if (persona?.topAgeRange) {
+          results.push({
+            segment: persona.topAgeRange.segment,
+            type: "age",
+            status: normalizedStatus,
+            value: persona.topAgeRange.value,
+            delta: persona.topAgeRangeDiff?.delta,
+            postTitle: reference.title || "",
+            postId: reference.postId ? String(reference.postId) : "",
+          });
+        }
+        return results;
+      })
+      .filter((entry) => entry.postId && entry.segment)
+      .sort((a, b) => (b.value || 0) - (a.value || 0))
+      .slice(0, 6);
+
+    const kpiBreakdowns = buildKpiBreakdowns({
+      totals: currentTotals,
+      previousTotals,
+      changes,
+      reachSourceAnalysis,
+      posts: postsWithAnalytics,
+      snapshotStatusMap,
+    });
+
+    const feedbackSentiment = await buildFeedbackSentimentSummary({
+      userId: uid,
+      month: date,
+      posts: postsWithAnalytics,
+      snapshotStatusMap,
+    });
 
     const summary = {
       period,
@@ -764,6 +1695,23 @@ export async function GET(request: NextRequest) {
       timeSlotAnalysis,
       bestTimeSlot,
       postTypeStats,
+      posts: postsWithAnalytics,
+      contentPerformance: {
+        feed: feedPerformanceStats,
+        reel: reelPerformanceStats,
+      },
+      patternHighlights,
+      learningContext,
+      abTestSummaries,
+      feedbackSentiment,
+      kpiBreakdowns,
+      postDeepDive: postsWithAnalytics,
+      nextMonthFocusActions: buildNextMonthFocusActions({
+        changes,
+        patternHighlights,
+        snapshotReferences: snapshotReferencePayload,
+      }),
+      personaHighlights,
       // 新しいフィールドを追加
       avgEngagementRate: currentTotals.avgEngagementRate,
       totalSaves: currentTotals.totalSaves,

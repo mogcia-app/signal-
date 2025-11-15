@@ -13,6 +13,7 @@ import {
   Share,
   Eye as EyeIcon,
 } from "lucide-react";
+import type { AIReference } from "@/types/ai";
 
 interface PostData {
   id: string;
@@ -73,6 +74,7 @@ interface PostData {
       };
     };
   };
+  generationReferences?: AIReference[];
 }
 
 interface AnalyticsData {
@@ -223,6 +225,23 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
         return null;
     }
   };
+
+  const referenceTypeMeta: Record<
+    AIReference["sourceType"] | "default",
+    { label: string; badgeClass: string }
+  > = {
+    profile: { label: "アカウント設定", badgeClass: "border-slate-200 bg-slate-50 text-slate-700" },
+    plan: { label: "運用計画", badgeClass: "border-indigo-200 bg-indigo-50 text-indigo-700" },
+    masterContext: { label: "マスターコンテキスト", badgeClass: "border-amber-200 bg-amber-50 text-amber-700" },
+    snapshot: { label: "投稿実績", badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+    feedback: { label: "フィードバック", badgeClass: "border-rose-200 bg-rose-50 text-rose-700" },
+    analytics: { label: "分析データ", badgeClass: "border-blue-200 bg-blue-50 text-blue-700" },
+    manual: { label: "メモ", badgeClass: "border-slate-200 bg-slate-50 text-slate-700" },
+    default: { label: "参照データ", badgeClass: "border-slate-200 bg-slate-50 text-slate-700" },
+  };
+
+  const getReferenceMeta = (sourceType: AIReference["sourceType"]) =>
+    referenceTypeMeta[sourceType] ?? referenceTypeMeta.default;
 
   return (
     <div className="relative bg-white shadow-sm border border-gray-200 overflow-visible hover:shadow-md transition-shadow">
@@ -404,6 +423,32 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
             </div>
           );
         })()}
+
+        {/* AI参照データ */}
+        {post.generationReferences && post.generationReferences.length > 0 && (
+          <div className="mb-3">
+            <p className="text-[11px] text-slate-500 mb-1">AI参照データ</p>
+            <div className="flex flex-wrap gap-1.5">
+              {post.generationReferences.slice(0, 5).map((reference) => {
+                const meta = getReferenceMeta(reference.sourceType);
+                return (
+                  <span
+                    key={`${post.id}-${reference.id}`}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${meta.badgeClass}`}
+                    title={reference.summary || meta.label}
+                  >
+                    {reference.label || meta.label}
+                  </span>
+                );
+              })}
+              {post.generationReferences.length > 5 && (
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium border border-slate-200 bg-white text-slate-600">
+                  +{post.generationReferences.length - 5}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 分析データ（分析済みの場合のみ、ストーリーは除く） */}
         {hasAnalytics && postAnalytics && post.postType !== "story" && (

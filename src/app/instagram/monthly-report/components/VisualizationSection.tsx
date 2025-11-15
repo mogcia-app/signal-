@@ -4,9 +4,8 @@ import RechartsAreaChart from "../../../../components/RechartsAreaChart";
 
 interface VisualizationSectionProps {
   dailyScores: Record<string, unknown> | null;
-  activeTab: "weekly" | "monthly";
   reportSummary: {
-    period: "weekly" | "monthly";
+    period: "monthly";
     date: string;
     postTypeStats: {
       type: string;
@@ -19,11 +18,7 @@ interface VisualizationSectionProps {
   } | null;
 }
 
-export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
-  dailyScores,
-  activeTab,
-  reportSummary,
-}) => {
+export const VisualizationSection: React.FC<VisualizationSectionProps> = ({ dailyScores, reportSummary }) => {
   const postTypeStats = reportSummary?.postTypeStats || [];
 
   return (
@@ -33,7 +28,7 @@ export const VisualizationSection: React.FC<VisualizationSectionProps> = ({
         <RechartsAreaChart
           data={Array.isArray(dailyScores?.dailyScores) ? dailyScores.dailyScores : []}
           title="アカウントスコア推移"
-          subtitle={`${activeTab === "weekly" ? "週次" : "月次"}のスコア変動`}
+          subtitle="月次のスコア変動"
         />
       </div>
 

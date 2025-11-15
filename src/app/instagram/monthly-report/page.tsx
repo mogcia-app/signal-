@@ -5,6 +5,10 @@ import SNSLayout from "../../../components/sns-layout";
 import { useAuth } from "../../../contexts/auth-context";
 import { usePlanData } from "../../../hooks/usePlanData";
 import { CurrentPlanCard } from "../../../components/CurrentPlanCard";
+import { ChevronDown } from "lucide-react";
+import type { AIActionLog, AIReference } from "@/types/ai";
+import type { ABTestResultTag } from "@/types/ab-test";
+import { actionLogsApi } from "@/lib/api";
 
 // コンポーネントのインポート
 import { ReportHeader } from "./components/ReportHeader";
@@ -22,42 +26,200 @@ import { RiskAlerts } from "./components/risk-alerts";
 import { PostTypeInsights } from "./components/PostTypeInsights";
 import { OverviewHistorySection } from "./components/OverviewHistorySection";
 import { authFetch } from "../../../utils/authFetch";
+import { SnapshotReferenceSection } from "./components/snapshot-reference-section";
+import { ContentPerformanceSection } from "./components/content-performance-section";
+import { AudienceBreakdownSection } from "./components/audience-breakdown-section";
+import {
+  NextMonthFocusActions,
+  type NextMonthFocusAction,
+} from "./components/next-month-focus-actions";
+import { PostDeepDiveSection } from "@/app/instagram/monthly-report/components/post-deep-dive-section";
+import { LearningReferenceCard } from "@/app/instagram/monthly-report/components/learning-reference-card";
+import { KPIDrilldownSection } from "./components/kpi-drilldown-section";
+import type { KPIBreakdown } from "./components/kpi-drilldown-section";
+import {
+  FeedbackSentimentCard,
+  type FeedbackSentimentSummary,
+} from "./components/feedback-sentiment-card";
+import { TimeSlotHeatmap } from "./components/time-slot-heatmap";
 
-// 現在の週を取得する関数
-function getCurrentWeekString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const startOfYear = new Date(year, 0, 1);
-  const days = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-  return `${year}-W${weekNumber.toString().padStart(2, "0")}`;
-}
+type SnapshotReference = {
+  id: string;
+  status: "gold" | "negative" | "normal";
+  score?: number;
+  postId?: string | null;
+  summary?: string;
+  metrics?: {
+    engagementRate?: number;
+    saveRate?: number;
+    reach?: number;
+    saves?: number;
+  };
+  textFeatures?: Record<string, unknown>;
+};
 
-// 週の開始日と終了日を取得する関数
-function getWeekRange(weekString: string): { start: Date; end: Date } {
-  const [year, week] = weekString.split("-W");
-  const startOfYear = new Date(parseInt(year), 0, 1);
-  const startOfWeek = new Date(
-    startOfYear.getTime() + (parseInt(week) - 1) * 7 * 24 * 60 * 60 * 1000
-  );
-  const endOfWeek = new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000);
-  return { start: startOfWeek, end: endOfWeek };
-}
+type AudienceSummary = {
+  gender?: { male?: number; female?: number; other?: number };
+  age?: { "18-24"?: number; "25-34"?: number; "35-44"?: number; "45-54"?: number };
+};
+
+type AnalyticsSummary = {
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  reach?: number;
+  saves?: number;
+  followerIncrease?: number;
+  engagementRate?: number;
+} | null;
+
+type FeedPerformanceStats = {
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalReposts: number;
+  totalSaves: number;
+  totalReach: number;
+  totalFollowerIncrease: number;
+  totalInteractionCount: number;
+  avgReachFollowerPercent: number;
+  avgInteractionFollowerPercent: number;
+  reachSources: {
+    profile: number;
+    feed: number;
+    explore: number;
+    search: number;
+    other: number;
+  };
+  totalReachedAccounts: number;
+  totalProfileVisits: number;
+  audienceBreakdown?: {
+    gender?: { male: number; female: number; other: number };
+    age?: { "18-24": number; "25-34": number; "35-44": number; "45-54": number };
+  };
+};
+
+type ReelPerformanceStats = {
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalReposts: number;
+  totalSaves: number;
+  totalReach: number;
+  totalFollowerIncrease: number;
+  totalInteractionCount: number;
+  avgReachFollowerPercent: number;
+  avgInteractionFollowerPercent: number;
+  reachSources: {
+    profile: number;
+    reel: number;
+    explore: number;
+    search: number;
+    other: number;
+  };
+  totalReachedAccounts: number;
+  totalPlayTimeSeconds: number;
+  avgPlayTimeSeconds: number;
+  avgSkipRate: number;
+  avgNormalSkipRate: number;
+  audienceBreakdown?: {
+    gender?: { male: number; female: number; other: number };
+    age?: { "18-24": number; "25-34": number; "35-44": number; "45-54": number };
+  };
+};
+
+type ReportPost = {
+  id: string;
+  title: string;
+  postType: "feed" | "reel" | "story";
+  content?: string;
+  hashtags?: string[] | string;
+  createdAt?: string | Date | { toDate: () => Date };
+  snapshotReferences?: SnapshotReference[];
+  analyticsSummary?: AnalyticsSummary;
+  audienceSummary?: AudienceSummary;
+  abTestResults?: ABTestResultTag[];
+};
+
+type PatternHighlights = {
+  gold?: SnapshotReference[];
+  negative?: SnapshotReference[];
+};
+
+type MasterContextSummary = {
+  learningPhase?: string;
+  ragHitRate?: number;
+  totalInteractions?: number;
+  feedbackStats?: {
+    total?: number;
+    positiveRate?: number;
+    averageWeight?: number;
+  };
+  actionStats?: {
+    total?: number;
+    adoptionRate?: number;
+    averageResultDelta?: number;
+  };
+  achievements?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    icon?: string;
+    status?: string;
+    progress?: number;
+  }>;
+} | null;
+
+type LearningContextSummary = {
+  references?: AIReference[];
+  snapshotReferences?: SnapshotReference[];
+  masterContext?: MasterContextSummary;
+} | null;
+
+type PersonaSegmentSummary = {
+  segment: string;
+  type: "gender" | "age";
+  status: "gold" | "negative";
+  value: number;
+  delta?: number;
+  postTitle: string;
+  postId: string;
+};
+
+type ABTestSummary = {
+  id: string;
+  name: string;
+  status: string;
+  primaryMetric?: string;
+  winnerVariantLabel?: string | null;
+  summary?: string;
+  completedAt?: string | null;
+  variants?: Array<{
+    label: string;
+    metrics?: {
+      impressions?: number;
+      reach?: number;
+      saves?: number;
+      likes?: number;
+      comments?: number;
+      conversions?: number;
+      engagementRate?: number;
+      saveRate?: number;
+    };
+    result?: string;
+    linkedPostId?: string | null;
+  }>;
+};
 
 export default function InstagramMonthlyReportPage() {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
-  const [activeTab, setActiveTab] = useState<"weekly" | "monthly">("monthly");
+  const [activeView, setActiveView] = useState<"ai" | "metrics">("ai");
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7) // YYYY-MM形式
   );
-  const [selectedWeek, setSelectedWeek] = useState<string>(
-    getCurrentWeekString() // YYYY-WW形式
-  );
-  const { planData } = usePlanData(
-    "instagram",
-    activeTab === "monthly" ? { effectiveMonth: selectedMonth } : undefined,
-  );
+  const [isPlanCardOpen, setIsPlanCardOpen] = useState(false);
+  const { planData } = usePlanData("instagram", { effectiveMonth: selectedMonth });
   // BFF API連携の状態
   const [accountScore, setAccountScore] = useState<Record<string, unknown> | null>(null);
   const [dailyScores, setDailyScores] = useState<Record<string, unknown> | null>(null);
@@ -82,10 +244,21 @@ export default function InstagramMonthlyReportPage() {
   const [postTypeHighlights, setPostTypeHighlights] = useState<AIAnalysisPostTypeHighlight[]>([]);
   const [hasRequestedAi, setHasRequestedAi] = useState(false);
   const [overviewHistoryRefreshKey, setOverviewHistoryRefreshKey] = useState(0);
+  const [actionLogs, setActionLogs] = useState<AIActionLog[]>([]);
+  const [actionLogsLoading, setActionLogsLoading] = useState(false);
+  const [actionLogsError, setActionLogsError] = useState<string | null>(null);
+  const focusAreaForNextMonth = useMemo(() => `next-month-${selectedMonth}`, [selectedMonth]);
+
+  const handleActionLogUpdate = useCallback((log: AIActionLog) => {
+    setActionLogs((prev) => {
+      const remaining = prev.filter((item) => item.actionId !== log.actionId);
+      return [log, ...remaining];
+    });
+  }, []);
 
   // BFFサマリーデータ
   const [reportSummary, setReportSummary] = useState<{
-    period: "weekly" | "monthly";
+    period: "monthly";
     date: string;
     totals: {
       totalLikes: number;
@@ -135,6 +308,11 @@ export default function InstagramMonthlyReportPage() {
       color: string;
       postsInRange: number;
       avgEngagement: number;
+      postTypes?: Array<{
+        type: "feed" | "reel" | "story";
+        count: number;
+        avgEngagement: number;
+      }>;
     }[];
     bestTimeSlot: {
       label: string;
@@ -151,22 +329,33 @@ export default function InstagramMonthlyReportPage() {
       bg: string;
       percentage: number;
     }[];
+    contentPerformance?: {
+      feed: FeedPerformanceStats | null;
+      reel: ReelPerformanceStats | null;
+    };
+    posts?: ReportPost[];
+    patternHighlights?: PatternHighlights;
+    learningContext?: LearningContextSummary;
+    postDeepDive?: ReportPost[];
+    nextMonthFocusActions?: NextMonthFocusAction[];
+    abTestSummaries?: ABTestSummary[];
+    personaHighlights?: PersonaSegmentSummary[];
+    kpiBreakdowns?: KPIBreakdown[];
+    feedbackSentiment?: FeedbackSentimentSummary;
   } | null>(null);
 
   // BFFサマリーデータを取得
   const fetchReportSummary = useCallback(
-    async (period: "weekly" | "monthly", date: string, signal?: AbortSignal) => {
+    async (date: string, signal?: AbortSignal) => {
       if (!isAuthReady) {return;}
 
       try {
-        const apiEndpoint =
-          period === "weekly"
-            ? `/api/analytics/weekly-report-summary?week=${date}`
-            : `/api/analytics/monthly-report-summary?period=${period}&date=${date}`;
-
-        const response = await authFetch(apiEndpoint, {
+        const response = await authFetch(
+          `/api/analytics/monthly-report-summary?period=monthly&date=${date}`,
+          {
           signal,
-        });
+          }
+        );
 
         if (response.ok) {
           const result = await response.json();
@@ -210,24 +399,15 @@ export default function InstagramMonthlyReportPage() {
 
   // 前期間のデータを取得（比較用）
   const fetchPreviousPeriodData = useCallback(
-    async (period: "weekly" | "monthly", currentDate: string) => {
+    async (currentDate: string) => {
       if (!isAuthReady) {return;}
       try {
-        let previousDate: string;
-        if (period === "monthly") {
           const current = new Date(currentDate + "-01");
           current.setMonth(current.getMonth() - 1);
-          previousDate = current.toISOString().slice(0, 7);
-        } else {
-          const [year, week] = currentDate.split("-W");
-          const currentWeek = parseInt(week);
-          const previousWeek = currentWeek > 1 ? currentWeek - 1 : 52;
-          const previousYear = currentWeek > 1 ? year : (parseInt(year) - 1).toString();
-          previousDate = `${previousYear}-W${previousWeek.toString().padStart(2, "0")}`;
-        }
+        const previousDate = current.toISOString().slice(0, 7);
 
         const response = await authFetch(
-          `/api/analytics/account-score?period=${period}&date=${previousDate}`,
+          `/api/analytics/account-score?period=monthly&date=${previousDate}`,
         );
         if (response.ok) {
           const data = await response.json();
@@ -293,10 +473,9 @@ export default function InstagramMonthlyReportPage() {
     if (!isAuthReady) {return;}
 
     try {
-      const period = activeTab;
-      const date = activeTab === "weekly" ? selectedWeek : selectedMonth;
-
-      const response = await authFetch(`/api/analytics/account-score?period=${period}&date=${date}`);
+      const response = await authFetch(
+        `/api/analytics/account-score?period=monthly&date=${selectedMonth}`
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -321,7 +500,7 @@ export default function InstagramMonthlyReportPage() {
         breakdown: {},
       });
     }
-  }, [isAuthReady, activeTab, selectedMonth, selectedWeek]);
+  }, [isAuthReady, selectedMonth]);
 
   // データ件数チェック
   // データ初期化と期間変更時のデータ再取得（統合）
@@ -331,14 +510,11 @@ export default function InstagramMonthlyReportPage() {
 
       const fetchPeriodData = async () => {
         try {
-          const period = activeTab;
-          const date = activeTab === "weekly" ? selectedWeek : selectedMonth;
-
           await Promise.all([
-            fetchReportSummary(period, date, abortController.signal),
+            fetchReportSummary(selectedMonth, abortController.signal),
             fetchAccountScore(),
-            fetchDailyScores(activeTab === "weekly" ? 7 : 30),
-            fetchPreviousPeriodData(period, date),
+            fetchDailyScores(30),
+            fetchPreviousPeriodData(selectedMonth),
           ]);
 
           // 月次レビューは他のデータが揃ってから取得
@@ -366,16 +542,60 @@ export default function InstagramMonthlyReportPage() {
         abortController.abort();
       };
     }
-  }, [
-    activeTab,
-    selectedMonth,
-    selectedWeek,
-    isAuthReady,
-    fetchReportSummary,
-    fetchAccountScore,
-    fetchDailyScores,
-    fetchPreviousPeriodData,
-  ]);
+  }, [selectedMonth, isAuthReady, fetchReportSummary, fetchAccountScore, fetchDailyScores, fetchPreviousPeriodData]);
+
+  useEffect(() => {
+    if (!isAuthReady || !user?.uid || activeView !== "ai") {
+      return;
+    }
+    let cancelled = false;
+    const loadActionLogs = async () => {
+      setActionLogsLoading(true);
+      setActionLogsError(null);
+      try {
+        const result = await actionLogsApi.list(user.uid, {
+          limit: 50,
+          focusArea: focusAreaForNextMonth,
+        });
+        if (!cancelled) {
+          if (result?.success) {
+            const logs: AIActionLog[] = Array.isArray(result.data)
+              ? result.data.map((entry: any) => ({
+                  id: String(entry.id ?? `${user.uid}_${entry.actionId ?? "unknown"}`),
+                  actionId: String(entry.actionId ?? ""),
+                  title: entry.title ?? "",
+                  focusArea: entry.focusArea ?? focusAreaForNextMonth,
+                  applied: Boolean(entry.applied),
+                  resultDelta:
+                    typeof entry.resultDelta === "number" ? Number(entry.resultDelta) : null,
+                  feedback: entry.feedback ?? "",
+                  createdAt: typeof entry.createdAt === "string" ? entry.createdAt : null,
+                  updatedAt: typeof entry.updatedAt === "string" ? entry.updatedAt : null,
+                }))
+              : [];
+            setActionLogs(logs);
+          } else {
+            setActionLogsError(
+              typeof result?.error === "string" ? result.error : "アクション状況の取得に失敗しました"
+            );
+          }
+        }
+      } catch (error) {
+        console.error("actionLogs fetch error:", error);
+        if (!cancelled) {
+          setActionLogsError("アクション状況の取得に失敗しました");
+        }
+      } finally {
+        if (!cancelled) {
+          setActionLogsLoading(false);
+        }
+      }
+    };
+    loadActionLogs();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthReady, user?.uid, focusAreaForNextMonth, activeView]);
 
   // BFFデータから統計値を取得（フォールバック用のデフォルト値）
   const currentTotals = reportSummary?.totals || {
@@ -420,17 +640,6 @@ export default function InstagramMonthlyReportPage() {
     return date.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
   };
 
-  // 週の表示名を取得
-  const getWeekDisplayName = (weekStr: string) => {
-    const weekRange = getWeekRange(weekStr);
-    const startDate = weekRange.start.toLocaleDateString("ja-JP", {
-      month: "short",
-      day: "numeric",
-    });
-    const endDate = weekRange.end.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
-    return `${startDate} - ${endDate}`;
-  };
-
   // パフォーマンス評価（APIデータから）
   const performanceRating = accountScore
     ? {
@@ -448,32 +657,222 @@ export default function InstagramMonthlyReportPage() {
       <div className="max-w-7xl mx-auto p-6 bg-white min-h-screen">
         {/* ヘッダー */}
         <ReportHeader
-          activeTab={activeTab}
-          selectedWeek={selectedWeek}
           selectedMonth={selectedMonth}
-          onTabChange={setActiveTab}
-          onWeekChange={setSelectedWeek}
+          activeView={activeView}
+          onViewChange={setActiveView}
           onMonthChange={setSelectedMonth}
-          getWeekDisplayName={getWeekDisplayName}
           getMonthDisplayName={getMonthDisplayName}
         />
 
         {/* パフォーマンス評価 */}
         <PerformanceRating
-          activeTab={activeTab}
           selectedMonth={selectedMonth}
-          selectedWeek={selectedWeek}
           getMonthDisplayName={getMonthDisplayName}
-          getWeekDisplayName={getWeekDisplayName}
           performanceRating={performanceRating}
           accountScore={accountScore}
           pdcaMetrics={pdcaMetrics}
         />
-        <CurrentPlanCard planData={planData} variant="detailed" snsType="instagram" />
+        <div className="bg-white rounded-none border border-gray-200 shadow-sm mb-6">
+          <button
+            type="button"
+            onClick={() => setIsPlanCardOpen((prev) => !prev)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left"
+          >
+            <div>
+              <p className="text-sm font-semibold text-gray-900">現在の運用計画</p>
+              <p className="text-xs text-gray-500 mt-1">
+                AI提案の前に今月の計画を軽く確認できます
+              </p>
+            </div>
+            <ChevronDown
+              className={`w-5 h-5 text-gray-500 transition-transform ${
+                isPlanCardOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+          {isPlanCardOpen && (
+            <div className="border-t border-gray-200 px-4 py-4">
+              <CurrentPlanCard
+                planData={planData}
+                variant="detailed"
+                snsType="instagram"
+                containerClassName="bg-transparent border-none shadow-none mb-0"
+              />
+            </div>
+          )}
+        </div>
 
-        {/* 主要指標 */}
+        {activeView === "ai" ? (
+          <>
+            <AIPredictionAnalysis
+              monthlyReview={monthlyReview}
+              selectedMonth={selectedMonth}
+              onPdcaMetricsUpdate={(metrics) => {
+                setPdcaMetrics(metrics ?? null);
+              }}
+              onAlertsUpdate={(alerts) => setAiAlerts(alerts ?? [])}
+              onPostTypeHighlightsUpdate={(highlights) =>
+                setPostTypeHighlights(highlights ?? [])
+              }
+              onLoadingChange={(loading) => {
+                if (loading) {
+                  setHasRequestedAi(true);
+                }
+              }}
+              onOverviewUpdated={() => {
+                setOverviewHistoryRefreshKey((prev) => prev + 1);
+              }}
+            />
+            <OverviewHistorySection
+              period="monthly"
+              refreshKey={overviewHistoryRefreshKey}
+              hasRequested={hasRequestedAi}
+              containerClassName="mt-4"
+            />
+
+            <RiskAlerts alerts={aiAlerts} />
+            <PostTypeInsights highlights={postTypeHighlights} />
+            <SnapshotReferenceSection posts={reportSummary?.posts} />
+            <NextMonthFocusActions
+              actions={reportSummary?.nextMonthFocusActions}
+              userId={user?.uid ?? undefined}
+              periodKey={selectedMonth}
+              existingLogs={actionLogs}
+              isLoading={actionLogsLoading}
+              errorMessage={actionLogsError}
+              onActionLogged={handleActionLogUpdate}
+            />
+            <PostDeepDiveSection
+              posts={reportSummary?.postDeepDive ?? reportSummary?.posts}
+              patternHighlights={reportSummary?.patternHighlights}
+            />
+            {reportSummary?.abTestSummaries && reportSummary.abTestSummaries.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-none p-6 shadow-sm mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">A/Bテスト結果サマリー</p>
+                    <p className="text-xs text-slate-500">
+                      今月完了したテストの勝者と指標差分を表示します。
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {reportSummary.abTestSummaries.map((test) => (
+                    <div key={test.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50/70">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{test.name}</p>
+                          <p className="text-[11px] text-slate-500">
+                            KPI: {test.primaryMetric || "未設定"}
+                            {test.completedAt
+                              ? ` / 完了: ${new Date(test.completedAt).toLocaleDateString("ja-JP")}`
+                              : ""}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-[11px] px-2 py-1 rounded-full border ${
+                            test.status === "completed"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-amber-200 bg-amber-50 text-amber-700"
+                          }`}
+                        >
+                          {test.status === "completed" ? "完了" : "実施中"}
+                        </span>
+                      </div>
+                      {test.summary ? (
+                        <p className="text-xs text-slate-600 mb-3">{test.summary}</p>
+                      ) : null}
+                      {test.variants && test.variants.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                          {test.variants.map((variant, index) => (
+                            <div
+                              key={`${test.id}-variant-${index}`}
+                              className={`rounded-md border p-3 ${
+                                variant.result === "win"
+                                  ? "border-emerald-200 bg-emerald-50/70"
+                                  : variant.result === "lose"
+                                    ? "border-slate-200 bg-white"
+                                    : "border-slate-200 bg-white"
+                              }`}
+                            >
+                              <p className="font-semibold text-slate-900">{variant.label}</p>
+                              <p className="text-[11px] text-slate-500 mb-2">
+                                {variant.result === "win"
+                                  ? "勝者"
+                                  : variant.result === "lose"
+                                    ? "敗者"
+                                    : "結果待ち"}
+                              </p>
+                              {variant.metrics ? (
+                                <div className="space-y-1 text-[11px] text-slate-600">
+                                  {variant.metrics.engagementRate !== undefined && (
+                                    <p>ER: {variant.metrics.engagementRate?.toFixed?.(1) ?? "-"}%</p>
+                                  )}
+                                  {variant.metrics.saveRate !== undefined && (
+                                    <p>保存率: {variant.metrics.saveRate?.toFixed?.(1) ?? "-"}%</p>
+                                  )}
+                                  {variant.metrics.reach !== undefined && (
+                                    <p>リーチ: {variant.metrics.reach?.toLocaleString?.() ?? "-"}</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-[11px] text-slate-400">指標データ未入力</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <LearningReferenceCard learningContext={reportSummary?.learningContext} />
+            {reportSummary?.personaHighlights && reportSummary.personaHighlights.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-none p-6 shadow-sm mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">ペルソナ別反応パターン</p>
+                    <p className="text-xs text-slate-500">
+                      今月反応が良かったセグメントと参照投稿を表示します。
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {reportSummary.personaHighlights.slice(0, 6).map((persona) => (
+                    <div
+                      key={`${persona.type}-${persona.segment}-${persona.postId}`}
+                      className="border border-slate-200 rounded-md p-4 bg-slate-50/70"
+                    >
+                      <p className="text-xs text-slate-500 mb-1">
+                        {persona.type === "gender" ? "性別" : "年代"}・投稿: {persona.postTitle}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {persona.segment} ({persona.value?.toFixed(1)}%)
+                      </p>
+                      {typeof persona.delta === "number" && (
+                        <p
+                          className={`text-[11px] font-semibold ${
+                            persona.delta > 0 ? "text-emerald-600" : "text-rose-600"
+                          }`}
+                        >
+                          差分: {persona.delta > 0 ? "+" : ""}
+                          {persona.delta.toFixed(1)}pt
+                        </p>
+                      )}
+                      <p className="text-[11px] mt-1 text-slate-500">
+                        {persona.status === "gold" ? "成功パターン" : "改善パターン"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <FeedbackSentimentCard summary={reportSummary?.feedbackSentiment} />
+          </>
+        ) : (
+          <>
         <MetricsCards
-          activeTab={activeTab}
           currentTotals={{
             totalLikes: currentTotals.totalLikes,
             totalComments: currentTotals.totalComments,
@@ -500,44 +899,12 @@ export default function InstagramMonthlyReportPage() {
           }}
         />
 
-        {/* AI分析 */}
-        <AIPredictionAnalysis
-          activeTab={activeTab}
-          monthlyReview={monthlyReview}
-          selectedMonth={selectedMonth}
-          selectedWeek={selectedWeek}
-          onPdcaMetricsUpdate={(metrics) => {
-            setPdcaMetrics(metrics ?? null);
-          }}
-          onAlertsUpdate={(alerts) => setAiAlerts(alerts ?? [])}
-          onPostTypeHighlightsUpdate={(highlights) =>
-            setPostTypeHighlights(highlights ?? [])
-          }
-          onLoadingChange={(loading) => {
-            if (loading) {
-              setHasRequestedAi(true);
-            }
-          }}
-          onOverviewUpdated={() => {
-            setOverviewHistoryRefreshKey((prev) => prev + 1);
-          }}
-        />
+            <KPIDrilldownSection breakdowns={reportSummary?.kpiBreakdowns} />
 
-        <RiskAlerts alerts={aiAlerts} />
-        <PostTypeInsights highlights={postTypeHighlights} />
-        <OverviewHistorySection
-          period={activeTab}
-          refreshKey={overviewHistoryRefreshKey}
-          hasRequested={hasRequestedAi}
-        />
-
-        {/* 主要指標 */}
-        {/* 詳細統計 */}
         <DetailedStats
           accountScore={accountScore}
           performanceRating={performanceRating}
           previousPeriodData={previousPeriodData}
-          activeTab={activeTab}
           reportSummary={
             reportSummary
               ? {
@@ -553,21 +920,29 @@ export default function InstagramMonthlyReportPage() {
                 }
               : null
           }
-          getWeekDisplayName={getWeekDisplayName}
           getMonthDisplayName={getMonthDisplayName}
-          selectedWeek={selectedWeek}
           selectedMonth={selectedMonth}
         />
 
-        {/* 視覚化セクション */}
-        <VisualizationSection
-          dailyScores={dailyScores}
-          activeTab={activeTab}
-          reportSummary={reportSummary}
-        />
+            <VisualizationSection dailyScores={dailyScores} reportSummary={reportSummary} />
+            {reportSummary?.timeSlotAnalysis && (
+              <div className="mt-6">
+                <TimeSlotHeatmap data={reportSummary.timeSlotAnalysis} />
+              </div>
+            )}
 
-        {/* 高度な分析セクション */}
-        <AdvancedAnalysis activeTab={activeTab} reportSummary={reportSummary} />
+            <AdvancedAnalysis reportSummary={reportSummary} />
+
+            <ContentPerformanceSection
+              feedStats={reportSummary?.contentPerformance?.feed}
+              reelStats={reportSummary?.contentPerformance?.reel}
+            />
+        <AudienceBreakdownSection
+          feed={reportSummary?.contentPerformance?.feed?.audienceBreakdown}
+          reel={reportSummary?.contentPerformance?.reel?.audienceBreakdown}
+        />
+          </>
+        )}
       </div>
     </SNSLayout>
   );

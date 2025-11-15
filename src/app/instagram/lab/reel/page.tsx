@@ -5,6 +5,7 @@ import SNSLayout from "../../../../components/sns-layout";
 import PostEditor from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
 import CommentReplyAssistant from "../components/CommentReplyAssistant";
+import ABTestSidebarSection from "../components/ABTestSidebarSection";
 import { usePlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
@@ -593,6 +594,7 @@ export default function ReelLabPage() {
 
           {/* 右カラム: ツールパネル */}
           <div className="space-y-6">
+            <ABTestSidebarSection currentPostTitle={postTitle} />
             <CommentReplyAssistant
               postTitle={postTitle}
               postContent={postContent}

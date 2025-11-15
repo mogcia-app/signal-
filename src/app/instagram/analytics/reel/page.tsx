@@ -4,10 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "../../../../components/auth-guard";
 import { useAuth } from "../../../../contexts/auth-context";
-import { usePlanData } from "../../../../hooks/usePlanData";
-import { CurrentPlanCard } from "../../../../components/CurrentPlanCard";
 import ReelAnalyticsForm from "../../components/ReelAnalyticsForm";
-import ReelAnalyticsStats from "../../components/ReelAnalyticsStats";
 import SNSLayout from "../../../../components/sns-layout";
 import { CheckCircle, RefreshCw, X } from "lucide-react";
 import type { CommentThread } from "../../components/types";
@@ -178,7 +175,6 @@ const createDefaultReelInputData = () => ({
 function AnalyticsReelContent() {
   const { user } = useAuth();
   const router = useRouter();
-  const { planData } = usePlanData("instagram");
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -745,13 +741,6 @@ function AnalyticsReelContent() {
     }
   };
 
-  // 統計計算（数値に変換してから計算）
-  const totalFollowerIncrease =
-    analyticsData?.reduce((sum, data) => sum + (Number(data.followerIncrease) || 0), 0) || 0;
-
-  // 実際のフォロワー数計算（計画の現在フォロワー数 + フォロワー増加数の合計）
-  const actualFollowers = planData ? (planData.currentFollowers || 0) + totalFollowerIncrease : 0;
-
   return (
     <>
       {/* トースト通知 */}
@@ -783,70 +772,49 @@ function AnalyticsReelContent() {
         customTitle="リール分析"
         customDescription="Instagramリール投稿の分析データを入力・管理します"
       >
-        <div className="p-6">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* 左カラム: 分析データ入力フォーム */}
-          <div className="space-y-6">
-            <div className="bg-white border border-orange-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-gray-800">リール分析データ</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  リール投稿の分析値を入力し、AI分析や統計に反映させます。
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleResetAnalytics}
-                disabled={!postData?.id || isResetting}
-                className="inline-flex items-center px-3 py-2 text-xs font-semibold text-red-600 border border-red-500 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isResetting ? "animate-spin" : ""}`} />
-                {isResetting ? "リセット中..." : "分析データをリセット"}
-              </button>
+        <div className="p-6 space-y-6">
+          <div className="bg-white border border-orange-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">リール分析データ</p>
+              <p className="text-xs text-gray-500 mt-1">
+                リール投稿の分析値を入力し、AI分析や統計に反映させます。
+              </p>
             </div>
-            {resetError ? (
-              <p className="text-sm text-red-600">{resetError}</p>
-            ) : null}
-
-            {/* 統合された分析データ入力フォーム */}
-            <ReelAnalyticsForm
-              data={inputData}
-              onChange={setInputData}
-              onSave={handleSaveAnalytics}
-              isLoading={isLoading}
-              postData={postData}
-            />
+            <button
+              type="button"
+              onClick={handleResetAnalytics}
+              disabled={!postData?.id || isResetting}
+              className="inline-flex items-center px-3 py-2 text-xs font-semibold text-red-600 border border-red-500 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isResetting ? "animate-spin" : ""}`} />
+              {isResetting ? "リセット中..." : "分析データをリセット"}
+            </button>
           </div>
+          {resetError ? (
+            <p className="text-sm text-red-600">{resetError}</p>
+          ) : null}
 
-          {/* 右カラム: 運用計画・統計表示 */}
-          <div className="space-y-6">
-            {/* 運用計画セクション */}
-            <CurrentPlanCard
-              planData={planData}
-              variant="detailed"
-              snsType="instagram"
-              actualFollowers={actualFollowers}
-            />
-
-            {/* 統計表示コンポーネント */}
-            <ReelAnalyticsStats
-              analyticsData={analyticsData}
-              isLoading={isLoading}
-              focusPostId={postData?.id ?? null}
-            />
-
-            {/* AI分析セクション */}
-            <FeedAnalyticsAIInsights
-              analyticsData={analyticsData}
-              isLoading={isLoading}
-              targetCategory="reel"
-              title="AI分析（リールまとめ）"
-              description="入力済みのリール分析データとコメントログをもとに、AIがリール投稿の傾向と改善ポイントを抽出します。"
-              emptyMessage="リール投稿の分析データがまだありません。データを保存するとAI分析が利用できます。"
-            />
-          </div>
+          {/* 統合された分析データ入力フォーム */}
+          <ReelAnalyticsForm
+            data={inputData}
+            onChange={setInputData}
+            onSave={handleSaveAnalytics}
+            isLoading={isLoading}
+            postData={postData}
+            aiInsightsSection={
+              <FeedAnalyticsAIInsights
+                analyticsData={analyticsData}
+                isLoading={isLoading}
+                targetCategory="reel"
+                title="AI分析（リールまとめ）"
+                description="入力済みのリール分析データとコメントログをもとに、AIがリール投稿の傾向と改善ポイントを抽出します。"
+                emptyMessage="リール投稿の分析データがまだありません。データを保存するとAI分析が利用できます。"
+              />
+            }
+            aiInsightsTitle="AI分析（リールまとめ）"
+            aiInsightsDescription="入力済みのリール分析データとコメントログをもとに、AIがリール投稿の傾向と改善ポイントを抽出します。"
+          />
         </div>
-      </div>
       </SNSLayout>
     </>
   );

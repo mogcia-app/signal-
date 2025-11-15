@@ -1,17 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles } from "lucide-react";
 import { postsApi } from "../../../../lib/api";
 import { useAuth } from "../../../../contexts/auth-context";
 import Image from "next/image";
 import type { PlanData } from "../../plan/types/plan";
+import type {
+  AIGenerationResponse,
+  AIReference,
+  SnapshotReference as AISnapshotReference,
+  AIInsightBlock,
+} from "@/types/ai";
+import { AIReferenceBadge } from "@/components/AIReferenceBadge";
 
 export type AIHintSuggestion = {
   content: string;
   rationale?: string;
 };
+
+export type SnapshotReference = AISnapshotReference;
 
 interface PostEditorProps {
   content: string;
@@ -41,6 +50,9 @@ interface PostEditorProps {
   imageVideoSuggestions?: AIHintSuggestion | null; // AIヒントの文章
   onImageVideoSuggestionsGenerate?: (content: string) => void; // AIヒント生成のコールバック
   isGeneratingSuggestions?: boolean; // AIヒント生成中のローディング状態
+  initialSnapshotReferences?: SnapshotReference[];
+  onSnapshotReferencesChange?: (refs: SnapshotReference[]) => void;
+  onSnapshotReferenceClick?: (id: string) => void;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -66,6 +78,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   imageVideoSuggestions,
   onImageVideoSuggestionsGenerate,
   isGeneratingSuggestions = false,
+  initialSnapshotReferences,
+  onSnapshotReferencesChange,
+  onSnapshotReferenceClick,
 }) => {
   const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
@@ -78,6 +93,94 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [snapshotReferences, setSnapshotReferences] = useState<SnapshotReference[]>(
+    initialSnapshotReferences || [],
+  );
+  const [latestGeneration, setLatestGeneration] = useState<AIGenerationResponse | null>(null);
+  const priorityBadgeStyles: Record<"high" | "medium" | "low", string> = {
+    high: "bg-red-50 text-red-700 border border-red-200",
+    medium: "bg-amber-50 text-amber-700 border border-amber-200",
+    low: "bg-blue-50 text-blue-700 border border-blue-200",
+  };
+
+  useEffect(() => {
+    if (initialSnapshotReferences) {
+      setSnapshotReferences(initialSnapshotReferences);
+    }
+  }, [initialSnapshotReferences]);
+
+  const updateSnapshotReferences = (refs: SnapshotReference[]) => {
+    setSnapshotReferences(refs);
+    onSnapshotReferencesChange?.(refs);
+  };
+
+  const cleanGeneratedText = (text?: string | null) =>
+    text
+      ? text
+          .replace(/^[\s#-]+|[\s#-]+$/g, "")
+          .replace(/^#+/g, "")
+          .trim()
+      : "";
+
+  const normalizeGeneratedHashtags = (tags?: string[]) =>
+    (tags ?? [])
+      .map((tag) => tag.replace(/^#+-*/, "").replace(/^-+/, "").trim())
+      .filter((tag) => tag && tag !== "-");
+
+  const snapshotRefsFromAI = (refs?: AIReference[]): SnapshotReference[] => {
+    if (!refs) {return [];}
+    return refs
+      .filter((ref) => ref.sourceType === "snapshot")
+      .map((ref) => ({
+        id: ref.id,
+        status: (ref.metadata?.status as SnapshotReference["status"]) ?? "normal",
+        score:
+          typeof ref.metadata?.score === "number" ? Number(ref.metadata.score) : 0,
+        title: ref.label,
+        summary: ref.summary ?? ref.label,
+        postType:
+          typeof ref.metadata?.postType === "string"
+            ? (ref.metadata.postType as SnapshotReference["postType"])
+            : undefined,
+      }));
+  };
+
+  const applyGeneratedDraft = (payload: {
+    title?: string;
+    content?: string;
+    hashtags?: string[];
+    snapshotReferences?: SnapshotReference[];
+    generation?: AIGenerationResponse | null;
+  }) => {
+    const generation = payload.generation ?? null;
+    const draft = generation?.draft;
+    const finalTitleRaw = draft?.title ?? payload.title ?? "";
+    const finalContentRaw = draft?.body ?? payload.content ?? "";
+    const finalHashtagsRaw =
+      draft?.hashtags && draft.hashtags.length > 0 ? draft.hashtags : payload.hashtags ?? [];
+
+    const cleanTitle = cleanGeneratedText(finalTitleRaw);
+    const cleanContent = cleanGeneratedText(finalContentRaw);
+    const cleanedHashtags = normalizeGeneratedHashtags(finalHashtagsRaw);
+
+    if (cleanTitle) {
+      onTitleChange?.(cleanTitle);
+    }
+    onContentChange(cleanContent || "");
+    if (cleanedHashtags.length > 0) {
+      onHashtagsChange(cleanedHashtags);
+    }
+
+    const normalizedSnapshotRefs =
+      payload.snapshotReferences && payload.snapshotReferences.length > 0
+        ? payload.snapshotReferences
+        : snapshotRefsFromAI(generation?.references);
+
+    updateSnapshotReferences(normalizedSnapshotRefs);
+    setLatestGeneration(generation);
+
+    return { content: cleanContent || payload.content || "" };
+  };
 
   // AI投稿文生成用のstate
   const [aiPrompt, setAiPrompt] = useState("");
@@ -87,6 +190,23 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const showToast = (message: string, type: "success" | "error" = "error") => {
     setToastMessage({ message, type });
   };
+
+  const nonSnapshotReferences = useMemo(
+    () => latestGeneration?.references?.filter((ref) => ref.sourceType !== "snapshot") ?? [],
+    [latestGeneration]
+  );
+  const generationInsightBlocks = useMemo<AIInsightBlock[]>(() => {
+    if (!latestGeneration) {return [];}
+    if (latestGeneration.aiInsights?.length) {
+      return latestGeneration.aiInsights;
+    }
+    return (latestGeneration.insights ?? []).map((text, index) => ({
+      title: `Insight ${index + 1}`,
+      description: text,
+      action: undefined,
+      referenceIds: undefined,
+    }));
+  }, [latestGeneration]);
 
   // 外部から渡された日時を優先、なければ内部状態を使用
   const scheduledDate = externalScheduledDate || internalScheduledDate;
@@ -143,6 +263,17 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       const defaultDate = scheduledDate || new Date().toISOString().split("T")[0];
       const defaultTime = scheduledTime || new Date().toTimeString().slice(0, 5);
 
+      const sanitizedGenerationReferences =
+        latestGeneration?.references
+          ?.slice(0, 8)
+          .map((reference) => ({
+            id: reference.id,
+            sourceType: reference.sourceType,
+            label: reference.label,
+            summary: reference.summary,
+            metadata: reference.metadata,
+          })) ?? [];
+
       const postData = {
         userId: user.uid,
         title: title || "",
@@ -154,6 +285,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         status: "created" as const, // 'draft' → 'created' に変更
         imageData: image || null,
         isAIGenerated, // AI生成フラグを追加
+        snapshotReferences,
+        generationReferences: sanitizedGenerationReferences,
       };
 
       console.log("Saving post data:", {
@@ -220,6 +353,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     handleScheduledDateChange("");
     handleScheduledTimeChange("");
     onImageChange?.(null);
+    updateSnapshotReferences([]);
+    setLatestGeneration(null);
   };
 
   // 画像圧縮関数
@@ -375,38 +510,25 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       }
 
       if (result.success && result.data) {
-        const { title, content, hashtags: generatedHashtags } = result.data;
-        // タイトルと投稿文から先頭・末尾の「##」「-」や空白を削除
-        const cleanTitle = title
-          ? title
-              .replace(/^[\s#-]+|[\s#-]+$/g, "")
-              .replace(/^#+/g, "")
-              .trim()
-          : "";
-        const cleanContent = content
-          ? content
-              .replace(/^[\s#-]+|[\s#-]+$/g, "")
-              .replace(/^#+/g, "")
-              .trim()
-          : "";
-        if (cleanTitle) {onTitleChange?.(cleanTitle);}
-        onContentChange(cleanContent);
-        if (generatedHashtags && generatedHashtags.length > 0) {
-          // ハッシュタグから#と#-を削除（APIが既に#を追加しているため）
-          const cleanedHashtags = generatedHashtags
-            .map((tag: string) => tag.replace(/^#+-*/, "").replace(/^-+/, "").trim()) // #-や#から始まる場合と、-だけから始まる場合を削除
-            .filter((tag: string) => tag && tag !== "-"); // 空文字列や-だけのものを除外
-          onHashtagsChange(cleanedHashtags);
-        }
+        const applied = applyGeneratedDraft({
+          title: result.data.title,
+          content: result.data.content,
+          hashtags: result.data.hashtags,
+          snapshotReferences: result.data.snapshotReferences,
+          generation: result.data.generation ?? null,
+        });
+        const generatedContent = applied.content;
 
-        // リールの場合は動画構成も生成
         if (postType === "reel" && onVideoStructureGenerate) {
           onVideoStructureGenerate("auto");
         }
 
-        // ストーリー・フィードの場合はAIヒントも生成
-        if ((postType === "story" || postType === "feed") && onImageVideoSuggestionsGenerate) {
-          onImageVideoSuggestionsGenerate(cleanContent);
+        if (
+          (postType === "story" || postType === "feed") &&
+          onImageVideoSuggestionsGenerate &&
+          generatedContent
+        ) {
+          onImageVideoSuggestionsGenerate(generatedContent);
         }
       } else {
         throw new Error("自動生成に失敗しました");
@@ -459,39 +581,26 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       }
 
       if (result.success && result.data) {
-        const { title, content, hashtags: generatedHashtags } = result.data;
-        // タイトルと投稿文から先頭・末尾の「##」「-」や空白を削除
-        const cleanTitle = title
-          ? title
-              .replace(/^[\s#-]+|[\s#-]+$/g, "")
-              .replace(/^#+/g, "")
-              .trim()
-          : "";
-        const cleanContent = content
-          ? content
-              .replace(/^[\s#-]+|[\s#-]+$/g, "")
-              .replace(/^#+/g, "")
-              .trim()
-          : "";
-        if (cleanTitle) {onTitleChange?.(cleanTitle);}
-        onContentChange(cleanContent);
-        if (generatedHashtags && generatedHashtags.length > 0) {
-          // ハッシュタグから#と#-を削除（APIが既に#を追加しているため）
-          const cleanedHashtags = generatedHashtags
-            .map((tag: string) => tag.replace(/^#+-*/, "").replace(/^-+/, "").trim()) // #-や#から始まる場合と、-だけから始まる場合を削除
-            .filter((tag: string) => tag && tag !== "-"); // 空文字列や-だけのものを除外
-          onHashtagsChange(cleanedHashtags);
-        }
+        const applied = applyGeneratedDraft({
+          title: result.data.title,
+          content: result.data.content,
+          hashtags: result.data.hashtags,
+          snapshotReferences: result.data.snapshotReferences,
+          generation: result.data.generation ?? null,
+        });
+        const generatedContent = applied.content;
         setAiPrompt(""); // テーマをクリア
 
-        // リールの場合は動画構成も生成
         if (postType === "reel" && onVideoStructureGenerate) {
           onVideoStructureGenerate(aiPrompt);
         }
 
-        // ストーリー・フィードの場合はAIヒントも生成
-        if ((postType === "story" || postType === "feed") && onImageVideoSuggestionsGenerate) {
-          onImageVideoSuggestionsGenerate(cleanContent);
+        if (
+          (postType === "story" || postType === "feed") &&
+          onImageVideoSuggestionsGenerate &&
+          generatedContent
+        ) {
+          onImageVideoSuggestionsGenerate(generatedContent);
         }
       } else {
         throw new Error("投稿文生成に失敗しました");
@@ -572,6 +681,120 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         )}
 
         <div className="p-6">
+          {snapshotReferences.length > 0 && (
+            <div className="mb-6 border border-slate-200 rounded-xl bg-slate-50/70 p-4">
+              <p className="text-xs font-semibold text-slate-800 mb-2 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                AIが参照した投稿
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {snapshotReferences.map((reference) => (
+                <button
+                    key={reference.id}
+                  type="button"
+                  onClick={() => onSnapshotReferenceClick?.(reference.id)}
+                  className={`text-[11px] px-3 py-1 rounded-full border transition-colors ${
+                      reference.status === "gold"
+                      ? "border-amber-300 bg-white text-amber-700 hover:bg-amber-50"
+                        : reference.status === "negative"
+                        ? "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {reference.summary ||
+                      `${reference.status === "gold" ? "ゴールド" : reference.status === "negative" ? "改善" : "参考"}投稿 | ER ${
+                        reference.metrics?.engagementRate?.toFixed?.(1) ?? "-"
+                      }% / 保存率 ${reference.metrics?.saveRate?.toFixed?.(1) ?? "-"}%`}
+                </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {latestGeneration && (
+            <div className="mb-6 border border-slate-200 rounded-xl bg-white p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                  AI提案ハイライト
+                </p>
+                {latestGeneration.priority?.focus && latestGeneration.priority.level && (
+                  <span
+                    className={`text-[11px] px-2 py-1 rounded-full ${priorityBadgeStyles[latestGeneration.priority.level]}`}
+                  >
+                    {latestGeneration.priority.focus}
+                  </span>
+                )}
+              </div>
+              {generationInsightBlocks.length > 0 ? (
+                <ul className="mt-3 space-y-2 text-xs text-slate-700">
+                  {generationInsightBlocks.slice(0, 3).map((insight, index) => (
+                    <li key={`ai-insight-${index}`} className="border border-slate-100 rounded-lg bg-slate-50 px-3 py-2">
+                      <p className="font-semibold text-slate-800">{insight.title}</p>
+                      {insight.description ? (
+                        <p className="mt-1 text-slate-600 whitespace-pre-line">{insight.description}</p>
+                      ) : null}
+                      {insight.action ? (
+                        <p className="mt-1 text-slate-500">推奨アクション: {insight.action}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500">
+                  最新のAI提案の要点がここに表示されます。
+                </p>
+              )}
+              {nonSnapshotReferences.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-[11px] font-semibold text-slate-500 mb-1">参照データ</p>
+                  <div className="flex flex-wrap gap-2">
+                    {nonSnapshotReferences.map((ref) => (
+                      <AIReferenceBadge key={ref.id} reference={ref} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  href="/learning"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1 rounded-none hover:bg-slate-50 transition-colors"
+                >
+                  学習ダッシュボードで根拠を見る
+                </Link>
+                <Link
+                  href="/instagram/monthly-report"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1 rounded-none hover:bg-slate-50 transition-colors"
+                >
+                  月次レポートに移動
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {latestGeneration?.imageHints?.length ? (
+            <div className="mb-6 border border-slate-200 rounded-xl bg-white p-4">
+              <p className="text-xs font-semibold text-slate-700 mb-3">推奨ビジュアル</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {latestGeneration.imageHints.map((hint, index) => (
+                  <div
+                    key={`image-hint-${index}`}
+                    className="border border-slate-100 rounded-lg bg-slate-50/70 p-3 text-xs text-slate-700"
+                  >
+                    <p className="font-semibold text-slate-900">{hint.label}</p>
+                    {hint.description ? (
+                      <p className="mt-1 text-slate-600 whitespace-pre-line">{hint.description}</p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {/* 投稿設定 */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">投稿設定</label>

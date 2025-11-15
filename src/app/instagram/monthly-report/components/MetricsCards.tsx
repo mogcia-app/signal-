@@ -2,7 +2,6 @@ import React from "react";
 import { Heart, MessageCircle, Share, Eye, ArrowUp, ArrowDown } from "lucide-react";
 
 interface MetricsCardsProps {
-  activeTab: "weekly" | "monthly";
   currentTotals: {
     totalLikes: number;
     totalComments: number;
@@ -29,14 +28,7 @@ interface MetricsCardsProps {
   };
 }
 
-export const MetricsCards: React.FC<MetricsCardsProps> = ({
-  activeTab,
-  currentTotals,
-  previousTotals: _,  
-  changes,
-}) => {
-  const periodLabel = activeTab === "weekly" ? "前週比" : "前月比";
-
+export const MetricsCards: React.FC<MetricsCardsProps> = ({ currentTotals, previousTotals: _, changes }) => {
   const metrics = [
     {
       label: "いいね総数",
@@ -90,7 +82,7 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({
                 metric.change >= 0 ? "text-green-600" : "text-red-600"
               }`}
             >
-              {Math.abs(metric.change).toFixed(1)}% {periodLabel}
+              {Math.abs(metric.change).toFixed(1)}% 前月比
             </span>
           </div>
         </div>

@@ -10,9 +10,8 @@ interface DetailedStatsProps {
     label: string;
   };
   previousPeriodData: Record<string, unknown> | null;
-  activeTab: "weekly" | "monthly";
   reportSummary: {
-    period: "weekly" | "monthly";
+    period: "monthly";
     date: string;
     totals: {
       totalLikes: number;
@@ -47,9 +46,7 @@ interface DetailedStatsProps {
       percentage: number;
     }[];
   } | null;
-  getWeekDisplayName: (weekStr: string) => string;
   getMonthDisplayName: (monthStr: string) => string;
-  selectedWeek: string;
   selectedMonth: string;
 }
 
@@ -57,11 +54,8 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
   accountScore,
   performanceRating,
   previousPeriodData,
-  activeTab,
   reportSummary,
-  getWeekDisplayName,
   getMonthDisplayName,
-  selectedWeek,
   selectedMonth,
 }) => {
   return (
@@ -72,11 +66,7 @@ export const DetailedStats: React.FC<DetailedStatsProps> = ({
         </div>
         <div>
           <h2 className="text-lg font-semibold text-black">詳細統計</h2>
-          <p className="text-sm text-black">
-            {activeTab === "weekly"
-              ? `${getWeekDisplayName(selectedWeek)}の詳細データ`
-              : `${getMonthDisplayName(selectedMonth)}の詳細データ`}
-          </p>
+          <p className="text-sm text-black">{`${getMonthDisplayName(selectedMonth)}の詳細データ`}</p>
         </div>
       </div>
 

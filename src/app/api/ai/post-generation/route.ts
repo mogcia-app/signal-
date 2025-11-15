@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
 import { adminDb } from "../../../../lib/firebase-admin";
-import { UserProfile } from "../../../../types/user";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import { buildAIContext } from "@/lib/ai/context";
+import { AIGenerationResponse } from "@/types/ai";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -55,37 +56,14 @@ export async function POST(request: NextRequest) {
     let { prompt } = body;
     const { postType, planData, scheduledDate, scheduledTime, action = "generatePost" } = body;
 
-    // ✅ ユーザープロファイルを取得
-    let userProfile: UserProfile | null = null;
-    try {
-      const userDoc = await adminDb.collection("users").doc(userId).get();
-      if (userDoc.exists) {
-        userProfile = userDoc.data() as UserProfile;
-        console.log("✅ ユーザープロファイル取得成功");
-      }
-    } catch (error) {
-      console.warn("⚠️ ユーザープロファイル取得エラー:", error);
-    }
+    const {
+      userProfile,
+      latestPlan,
+      snapshotReferences,
+      references: aiReferences,
+    } = await buildAIContext(userId, { snapshotLimit: 3, includeMasterContext: true });
 
-    // ✅ 最新の運用計画を取得（PDCA - Plan）
-    let latestPlan: Record<string, unknown> | null = null;
-    try {
-      const plansSnapshot = await adminDb
-        .collection("plans")
-        .where("userId", "==", userId)
-        .where("snsType", "==", "instagram")
-        .where("status", "==", "active")
-        .orderBy("createdAt", "desc")
-        .limit(1)
-        .get();
-
-      if (!plansSnapshot.empty) {
-        latestPlan = plansSnapshot.docs[0].data();
-        console.log("✅ 運用計画取得成功:", latestPlan.planType);
-      }
-    } catch (error) {
-      console.warn("⚠️ 運用計画取得エラー:", error);
-    }
+    const planContext = latestPlan ?? planData ?? null;
 
     // 時間提案の場合
     if (action === "suggestTime") {
@@ -215,7 +193,7 @@ export async function POST(request: NextRequest) {
         const planType = (latestPlan.planType as string) || "AI生成";
         const strategy = (latestPlan.generatedStrategy as string) || "運用計画を参照してください";
 
-        systemPrompt += `
+      systemPrompt += `
 
 【運用計画の参照（PDCA - Plan）】
 この投稿は、以下の運用計画に基づいて生成されます：
@@ -249,35 +227,41 @@ ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文�
 - 本文: 計画に沿った投稿文（${textLengthGuide}）
 - ハッシュタグ: 関連するハッシュタグの配列（5-10個）`;
     } else {
-      // フォールバック: planData を使用（旧ロジック）
-      if (!planData) {
+      const resolvedPlanData = planContext as PostGenerationRequest["planData"] | null;
+
+      if (!resolvedPlanData) {
         return NextResponse.json({ error: "運用計画データが必要です" }, { status: 400 });
       }
 
-      const strategy = planData.strategies[Math.floor(Math.random() * planData.strategies.length)];
+      const strategy =
+        resolvedPlanData.strategies[
+          Math.floor(Math.random() * resolvedPlanData.strategies.length)
+        ];
       const targetGrowth = Math.round(
-        ((planData.targetFollowers - planData.currentFollowers) / planData.targetFollowers) * 100
+        ((resolvedPlanData.targetFollowers - resolvedPlanData.currentFollowers) /
+          resolvedPlanData.targetFollowers) *
+          100
       );
-      const weeklyTarget = planData.simulation.postTypes[postType].weeklyCount;
-      const followerEffect = planData.simulation.postTypes[postType].followerEffect;
+      const weeklyTarget = resolvedPlanData.simulation.postTypes[postType].weeklyCount;
+      const followerEffect = resolvedPlanData.simulation.postTypes[postType].followerEffect;
 
       systemPrompt = `あなたはInstagramの運用をサポートするAIアシスタントです。ユーザーの運用計画に基づいて、効果的な投稿文を生成してください。
 
 運用計画の詳細:
-- 計画名: ${planData.title}
-- 目標フォロワー: ${planData.targetFollowers.toLocaleString()}人
-- 現在のフォロワー: ${planData.currentFollowers.toLocaleString()}人
+- 計画名: ${resolvedPlanData.title}
+- 目標フォロワー: ${resolvedPlanData.targetFollowers.toLocaleString()}人
+- 現在のフォロワー: ${resolvedPlanData.currentFollowers.toLocaleString()}人
 - 達成率: ${targetGrowth}%
-- 計画期間: ${planData.planPeriod}
-- ターゲットオーディエンス: ${planData.targetAudience}
-- カテゴリ: ${planData.category}
-- 戦略: ${planData.strategies.join(", ")}
+- 計画期間: ${resolvedPlanData.planPeriod}
+- ターゲットオーディエンス: ${resolvedPlanData.targetAudience}
+- カテゴリ: ${resolvedPlanData.category}
+- 戦略: ${resolvedPlanData.strategies.join(", ")}
 
 AIペルソナ:
-- トーン: ${planData.aiPersona.tone}
-- スタイル: ${planData.aiPersona.style}
-- パーソナリティ: ${planData.aiPersona.personality}
-- 興味: ${planData.aiPersona.interests.join(", ")}
+- トーン: ${resolvedPlanData.aiPersona.tone}
+- スタイル: ${resolvedPlanData.aiPersona.style}
+- パーソナリティ: ${resolvedPlanData.aiPersona.personality}
+- 興味: ${resolvedPlanData.aiPersona.interests.join(", ")}
 
 投稿設定:
 - 投稿タイプ: ${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}
@@ -287,8 +271,8 @@ AIペルソナ:
 
 生成する投稿文の要件:
 1. 運用計画の戦略（${strategy}）を意識した内容
-2. AIペルソナに沿った${planData.aiPersona.tone}で${planData.aiPersona.style}なスタイル
-3. ${planData.targetAudience}との繋がりを深める内容
+2. AIペルソナに沿った${resolvedPlanData.aiPersona.tone}で${resolvedPlanData.aiPersona.style}なスタイル
+3. ${resolvedPlanData.targetAudience}との繋がりを深める内容
 4. 目標達成への意識を適度に含める
 5. エンゲージメントを促進する要素を含める
 6. 適切なハッシュタグ（5-10個）を含める
@@ -298,6 +282,25 @@ ${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文�
 - タイトル: 簡潔で魅力的なタイトル
 - 本文: 計画に沿った投稿文${postType === "story" ? "（20-50文字程度、2行以内の短い一言二言）" : "（200-400文字程度）"}
 - ハッシュタグ: 関連するハッシュタグの配列`;
+    }
+
+    if (snapshotReferences.length > 0) {
+      const snapshotSummary = snapshotReferences
+        .map(
+          (snapshot) =>
+            `- [${snapshot.status === "gold" ? "成功" : snapshot.status === "negative" ? "反省" : "参考"}] ${
+              snapshot.title || "無題の投稿"
+            }（ER: ${snapshot.metrics?.engagementRate?.toFixed?.(1) ?? "-"}%, 保存率: ${
+              snapshot.metrics?.saveRate?.toFixed?.(1) ?? "-"
+            }%）`,
+        )
+        .join("\n");
+
+      systemPrompt += `
+
+【成功/改善パターンの参照】
+以下の投稿の要素を踏まえて、成功要因を活かしつつ改善点を避けてください:
+${snapshotSummary}`;
     }
 
     const userPrompt = `以下のテーマで${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}投稿文を生成してください:
@@ -372,6 +375,23 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
     // ハッシュタグに#を追加（まだない場合）
     hashtags = hashtags.map((tag) => (tag.startsWith("#") ? tag : `#${tag}`));
 
+    const generationPayload: AIGenerationResponse = {
+      draft: {
+        title,
+        body: content,
+        hashtags,
+      },
+      insights: [],
+      imageHints: [],
+      references: aiReferences,
+      metadata: {
+        model: "gpt-4o-mini",
+        generatedAt: new Date().toISOString(),
+        promptVersion: "post-generation:v1",
+      },
+      rawText: aiResponse,
+    };
+
     return NextResponse.json({
       success: true,
       data: {
@@ -380,11 +400,18 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
         hashtags,
         metadata: {
           postType,
-          generatedAt: new Date().toISOString(),
-          basedOnPlan: latestPlan ? true : false,
+          generatedAt: generationPayload.metadata?.generatedAt,
+          basedOnPlan: Boolean(latestPlan),
           ...(userProfile && { clientName: userProfile.name }),
           ...(latestPlan && { planType: latestPlan.planType as string }),
+          snapshotReferences: snapshotReferences.map((snapshot) => ({
+            id: snapshot.id,
+            status: snapshot.status,
+            score: snapshot.score,
+          })),
         },
+        snapshotReferences,
+        generation: generationPayload,
       },
     });
   } catch (error) {

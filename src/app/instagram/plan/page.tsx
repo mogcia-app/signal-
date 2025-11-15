@@ -443,19 +443,21 @@ export default function InstagramPlanPage() {
           </div>
         )}
 
-        <main className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <main className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8 items-start">
           {/* 左カラム：計画作成フォーム */}
-          <PlanForm
-            formData={formData}
-            selectedStrategies={selectedStrategies}
-            selectedCategories={selectedCategories}
-            onInputChange={handleInputChange}
-            onStrategyToggle={handleStrategyToggle}
-            onCategoryToggle={handleCategoryToggle}
-          />
+          <div className="space-y-6">
+            <PlanForm
+              formData={formData}
+              selectedStrategies={selectedStrategies}
+              selectedCategories={selectedCategories}
+              onInputChange={handleInputChange}
+              onStrategyToggle={handleStrategyToggle}
+              onCategoryToggle={handleCategoryToggle}
+            />
+          </div>
 
           {/* 右カラム：タブ式UI */}
-          <div className="space-y-4">
+          <div className="space-y-4 xl:sticky xl:top-6">
             {/* タブヘッダー */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="flex flex-col sm:flex-row border-b border-gray-200">

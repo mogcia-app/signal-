@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
   Heart,
@@ -32,6 +32,7 @@ interface FeedAnalyticsFormProps {
     hashtags: string[];
     postType: "feed" | "reel" | "story";
   } | null;
+  aiInsightsSection?: ReactNode;
 }
 
 const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
@@ -40,6 +41,7 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
   onSave,
   isLoading,
   postData,
+  aiInsightsSection,
 }) => {
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [sentiment, setSentiment] = useState<"satisfied" | "dissatisfied" | null>(null);
@@ -50,6 +52,35 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
     onChange({
       ...data,
       [field]: value,
+    });
+  };
+
+  const handleAudienceGenderChange = (
+    field: keyof InputData["audience"]["gender"],
+    value: string,
+  ) => {
+    onChange({
+      ...data,
+      audience: {
+        ...data.audience,
+        gender: {
+          ...data.audience.gender,
+          [field]: value,
+        },
+      },
+    });
+  };
+
+  const handleAudienceAgeChange = (field: keyof InputData["audience"]["age"], value: string) => {
+    onChange({
+      ...data,
+      audience: {
+        ...data.audience,
+        age: {
+          ...data.audience.age,
+          [field]: value,
+        },
+      },
     });
   };
 
@@ -337,6 +368,70 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
                 placeholder="0"
               />
             </div>
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <Plus className="w-4 h-4 mr-2 text-[#ff8a15]" />
+                フォロー数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.profileFollows || ""}
+                onChange={(e) => handleInputChange("profileFollows", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* オーディエンス分析 */}
+        <div className="p-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">オーディエンス分析</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {["male", "female", "other"].map((key) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {key === "male" ? "男性 (%)" : key === "female" ? "女性 (%)" : "その他 (%)"}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={data.audience.gender[key as keyof InputData["audience"]["gender"]]}
+                    onChange={(e) =>
+                      handleAudienceGenderChange(
+                        key as keyof InputData["audience"]["gender"],
+                        e.target.value,
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.keys(data.audience.age).map((key) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{key} (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={data.audience.age[key as keyof InputData["audience"]["age"]]}
+                    onChange={(e) =>
+                      handleAudienceAgeChange(key as keyof InputData["audience"]["age"], e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -574,17 +669,6 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
                 placeholder="0"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">フォロー数</label>
-              <input
-                type="number"
-                min="0"
-                value={data.profileFollows || ""}
-                onChange={(e) => handleInputChange("profileFollows", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="0"
-              />
-            </div>
           </div>
         </div>
 
@@ -650,6 +734,17 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             </div>
           </div>
         </div>
+
+        {/* AI分析セクション */}
+        {aiInsightsSection ? (
+          <div className="p-4 border-t border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+              <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
+              AI分析（投稿まとめ）
+            </h3>
+            <div className="bg-white">{aiInsightsSection}</div>
+          </div>
+        ) : null}
 
         {/* 保存ボタン */}
         <div className="flex justify-end pt-4">

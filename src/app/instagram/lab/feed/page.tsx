@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import SNSLayout from "../../../../components/sns-layout";
-import PostEditor, { AIHintSuggestion } from "../components/PostEditor";
+import PostEditor, { AIHintSuggestion, SnapshotReference } from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
 import CommentReplyAssistant from "../components/CommentReplyAssistant";
+import SnapshotInsights, { SnapshotInsight } from "../components/SnapshotInsights";
 import { usePlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
+import ABTestSidebarSection from "../components/ABTestSidebarSection";
 
 export default function FeedLabPage() {
   const [postContent, setPostContent] = useState("");
@@ -42,6 +44,11 @@ export default function FeedLabPage() {
   // AIヒント関連の状態
   const [imageVideoSuggestions, setImageVideoSuggestions] = useState<AIHintSuggestion | null>(null);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [snapshotReferences, setSnapshotReferences] = useState<SnapshotReference[]>([]);
+  const [highlightSnapshotId, setHighlightSnapshotId] = useState<string | null>(null);
+  const [snapshotInsights, setSnapshotInsights] = useState<SnapshotInsight[]>([]);
+  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false);
+  const [snapshotError, setSnapshotError] = useState("");
 
   // 計画データを取得
   const { planData } = usePlanData("instagram");
@@ -115,6 +122,8 @@ export default function FeedLabPage() {
             if (post.imageData) {
               setPostImage(post.imageData);
             }
+
+          setSnapshotReferences(post.snapshotReferences || []);
 
             console.log("Form data set successfully");
           } else {
@@ -311,6 +320,25 @@ export default function FeedLabPage() {
     }
   }, [isAuthReady]);
 
+  const fetchSnapshots = useCallback(async () => {
+    if (!isAuthReady) {return;}
+    setIsLoadingSnapshots(true);
+    setSnapshotError("");
+    try {
+      const response = await authFetch("/api/analytics/snapshots?limit=60");
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data?.error || "スナップショットの取得に失敗しました");
+      }
+      setSnapshotInsights(Array.isArray(data.snapshots) ? data.snapshots : []);
+    } catch (error) {
+      console.error("スナップショット取得エラー:", error);
+      setSnapshotError(error instanceof Error ? error.message : "スナップショットの取得に失敗しました");
+    } finally {
+      setIsLoadingSnapshots(false);
+    }
+  }, [isAuthReady]);
+
   // AIヒント生成関数
   const generateImageVideoSuggestions = useCallback(
     async (content: string) => {
@@ -363,12 +391,21 @@ export default function FeedLabPage() {
   useEffect(() => {
     if (isAuthReady) {
       loadSavedSchedule(); // 保存されたスケジュールを読み込み
+      fetchSnapshots();
     }
-  }, [isAuthReady, loadSavedSchedule]);
+  }, [isAuthReady, loadSavedSchedule, fetchSnapshots]);
 
   if (!isMounted) {
     return null;
   }
+
+  const handleSnapshotBadgeClick = (id: string) => {
+    setHighlightSnapshotId(id);
+  };
+
+  const resolveHighlightClear = () => {
+    setHighlightSnapshotId(null);
+  };
 
   return (
     <SNSLayout
@@ -651,11 +688,23 @@ export default function FeedLabPage() {
               imageVideoSuggestions={imageVideoSuggestions}
               onImageVideoSuggestionsGenerate={generateImageVideoSuggestions}
               isGeneratingSuggestions={isGeneratingSuggestions}
+              initialSnapshotReferences={snapshotReferences}
+              onSnapshotReferencesChange={setSnapshotReferences}
+              onSnapshotReferenceClick={handleSnapshotBadgeClick}
             />
           </div>
 
           {/* 右カラム: ツールパネル */}
           <div className="space-y-6">
+            <ABTestSidebarSection currentPostTitle={postTitle} />
+            <SnapshotInsights
+              snapshots={snapshotInsights}
+              isLoading={isLoadingSnapshots}
+              error={snapshotError}
+              onRefresh={fetchSnapshots}
+              highlightId={highlightSnapshotId}
+              onHighlightClear={resolveHighlightClear}
+            />
             <CommentReplyAssistant
               postTitle={postTitle}
               postContent={postContent}

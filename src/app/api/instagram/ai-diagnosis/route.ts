@@ -4,6 +4,9 @@ import { buildAnalysisPrompt } from "../../../../utils/aiPromptBuilder";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import { buildAIContext } from "@/lib/ai/context";
+import type { AIContextBundle } from "@/lib/ai/context";
+import type { AIGenerationResponse, AIReference } from "@/types/ai";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -27,37 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "OpenAI APIキーが設定されていません" }, { status: 500 });
     }
 
-    // ✅ ユーザープロファイルを取得
-    let userProfile: UserProfile | null = null;
-    try {
-      const userDoc = await adminDb.collection("users").doc(userId).get();
-      if (userDoc.exists) {
-        userProfile = userDoc.data() as UserProfile;
-        console.log("✅ ユーザープロファイル取得成功");
-      }
-    } catch (error) {
-      console.warn("⚠️ ユーザープロファイル取得エラー:", error);
-    }
-
-    // ✅ 最新の運用計画を取得（PDCA - Plan）
-    let latestPlan: Record<string, unknown> | null = null;
-    try {
-      const plansSnapshot = await adminDb
-        .collection("plans")
-        .where("userId", "==", userId)
-        .where("snsType", "==", "instagram")
-        .where("status", "==", "active")
-        .orderBy("createdAt", "desc")
-        .limit(1)
-        .get();
-
-      if (!plansSnapshot.empty) {
-        latestPlan = plansSnapshot.docs[0].data();
-        console.log("✅ 運用計画取得成功");
-      }
-    } catch (error) {
-      console.warn("⚠️ 運用計画取得エラー:", error);
-    }
+    const aiContext = await buildAIContext(userId, {
+      snapshotLimit: 5,
+      includeMasterContext: true,
+    });
+    const userProfile = aiContext.userProfile ?? null;
+    const latestPlan = aiContext.latestPlan ?? null;
 
     // ✅ 最近の投稿データを取得（PDCA - Do）
     let recentPosts: Array<{
@@ -123,12 +101,11 @@ export async function POST(request: NextRequest) {
     }
 
     // AI診断処理
-    const diagnosisResult = await runAIDiagnosis(
-      userProfile,
-      latestPlan,
+    const diagnosisResult = await runAIDiagnosis({
+      aiContext,
       recentPosts,
       analyticsData,
-    );
+    });
 
     return NextResponse.json(diagnosisResult);
   } catch (error) {
@@ -139,35 +116,40 @@ export async function POST(request: NextRequest) {
 }
 
 // AI診断処理ロジック（PDCA - Check）
-async function runAIDiagnosis(
-  userProfile: UserProfile | null,
-  latestPlan: Record<string, unknown> | null,
+async function runAIDiagnosis({
+  aiContext,
+  recentPosts,
+  analyticsData,
+}: {
+  aiContext: AIContextBundle;
   recentPosts: Array<{
     title: string;
     content: string;
     hashtags: string[];
     createdAt: Date;
     isAIGenerated?: boolean;
-  }>,
+  }>;
   analyticsData: Array<{
     reach: number;
     likes: number;
     comments: number;
     shares: number;
     publishedTime?: string;
-  }>,
-) {
+  }>;
+}) {
   if (!openai) {
     throw new Error("OpenAI API not initialized");
   }
 
-  // ✅ プロンプトビルダーを使用（PDCA - Check）
+  const userProfile = aiContext.userProfile ?? null;
+  const latestPlan = aiContext.latestPlan ?? null;
+  const references: AIReference[] = [...aiContext.references];
+
   let systemPrompt: string;
 
   if (userProfile) {
     systemPrompt = buildAnalysisPrompt(userProfile, "instagram");
 
-    // 運用計画の参照
     if (latestPlan) {
       const planType = (latestPlan.planType as string) || "AI生成";
       const strategy = (latestPlan.generatedStrategy as string) || "";
@@ -181,7 +163,6 @@ async function runAIDiagnosis(
 この運用計画に対する進捗と改善点を評価してください。`;
     }
 
-    // 投稿データの参照
     if (recentPosts.length > 0) {
       const aiGeneratedCount = recentPosts.filter((p) => p.isAIGenerated).length;
       systemPrompt += `
@@ -252,6 +233,43 @@ async function runAIDiagnosis(
 
   const aiResponse = chatCompletion.choices[0].message.content || "";
 
+  const generationReferences: AIReference[] = [...references];
+  if (recentPosts.length > 0) {
+    generationReferences.push({
+      id: `recent-posts-${recentPosts.length}`,
+      sourceType: "analytics",
+      label: "最近の投稿",
+      summary: `${recentPosts.length}件 / AI生成 ${recentPosts.filter((p) => p.isAIGenerated).length}件`,
+    });
+  }
+  if (analyticsData.length > 0) {
+    const totalReach = analyticsData.reduce((sum, a) => sum + a.reach, 0);
+    generationReferences.push({
+      id: `analytics-${analyticsData.length}`,
+      sourceType: "analytics",
+      label: "最新パフォーマンス",
+      summary: `データ${analyticsData.length}件 / リーチ${totalReach.toLocaleString()}`,
+    });
+  }
+
+  const generationPayload: AIGenerationResponse = {
+    draft: {
+      title: "AI診断レポート",
+      body: aiResponse.trim(),
+      hashtags: [],
+    },
+    insights: [],
+    aiInsights: [],
+    imageHints: [],
+    references: generationReferences,
+    metadata: {
+      model: "gpt-4o-mini",
+      generatedAt: new Date().toISOString(),
+      promptVersion: "instagram-ai-diagnosis:v1",
+    },
+    rawText: aiResponse,
+  };
+
   return {
     success: true,
     diagnosis: aiResponse,
@@ -261,5 +279,6 @@ async function runAIDiagnosis(
       hasPlan: latestPlan ? true : false,
       timestamp: new Date().toISOString(),
     },
+    generation: generationPayload,
   };
 }

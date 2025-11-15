@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import type { WriteResult } from "firebase-admin/firestore";
 
 // 特定の投稿取得
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -108,8 +109,48 @@ export async function DELETE(
       return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
     }
 
+    const postData = docSnap.data();
+
     // 投稿を削除
     await docRef.delete();
+
+    // 投稿に紐づくフィードバックとアクションログを削除
+    try {
+      const cleanupTasks: Array<Promise<WriteResult[] | void>> = [];
+
+      // ai_post_feedback の削除
+      const feedbackSnapshot = await adminDb
+        .collection("ai_post_feedback")
+        .where("postId", "==", postId)
+        .get();
+
+      if (!feedbackSnapshot.empty) {
+        const batch = adminDb.batch();
+        feedbackSnapshot.forEach((feedbackDoc) => batch.delete(feedbackDoc.ref));
+        cleanupTasks.push(batch.commit());
+        console.log(`Deleted ${feedbackSnapshot.size} feedback records for post ${postId}`);
+      }
+
+      // ai_action_logs の削除（フォーカスエリアに postId を含むエントリ）
+      if (postData?.userId) {
+        const actionSnapshot = await adminDb
+          .collection("ai_action_logs")
+          .where("userId", "==", postData.userId)
+          .where("focusArea", "==", `learning-${postId}`)
+          .get();
+
+        if (!actionSnapshot.empty) {
+          const batch = adminDb.batch();
+          actionSnapshot.forEach((actionDoc) => batch.delete(actionDoc.ref));
+          cleanupTasks.push(batch.commit());
+          console.log(`Deleted ${actionSnapshot.size} action logs for post ${postId}`);
+        }
+      }
+
+      await Promise.all(cleanupTasks);
+    } catch (cleanupError) {
+      console.error("⚠️ Cleanup error after post deletion:", cleanupError);
+    }
 
     console.log("Post deleted successfully:", postId);
     return NextResponse.json({

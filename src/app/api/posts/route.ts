@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
 import { checkAndCreateMonthlyReportNotification } from "../../../lib/monthly-report-notifications";
 import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
+import type { AIReference } from "@/types/ai";
 
 // 投稿データの型定義
+interface SnapshotReference {
+  id: string;
+  status: "gold" | "negative" | "normal";
+  score?: number;
+  title?: string;
+  postType?: string;
+  summary?: string;
+  metrics?: Record<string, unknown>;
+}
+
 interface PostData {
   id?: string;
   userId: string;
@@ -14,8 +25,8 @@ interface PostData {
   scheduledDate?: string;
   scheduledTime?: string;
   status: "draft" | "scheduled" | "published";
-  imageUrl?: string | null; // 画像URL
-  imageData?: string | null; // Base64画像データ（一時保存用）
+  imageUrl?: string | null;
+  imageData?: string | null;
   analytics?: {
     likes: number;
     comments: number;
@@ -24,6 +35,8 @@ interface PostData {
     engagementRate: number;
     publishedAt: Date;
   };
+  snapshotReferences?: SnapshotReference[];
+  generationReferences?: AIReference[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +63,8 @@ export async function POST(request: NextRequest) {
       imageUrl,
       imageData,
       analytics,
+      snapshotReferences,
+      generationReferences,
     } = body;
 
     // 投稿タイプのデバッグログ
@@ -76,6 +91,10 @@ export async function POST(request: NextRequest) {
       imageUrl: imageUrl || null,
       imageData: imageData || null,
       analytics: analytics || null,
+      snapshotReferences: Array.isArray(snapshotReferences) ? snapshotReferences : [],
+      generationReferences: Array.isArray(generationReferences)
+        ? generationReferences.slice(0, 8)
+        : [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };

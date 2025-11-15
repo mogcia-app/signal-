@@ -20,10 +20,14 @@ if (!serviceAccount.clientEmail || !serviceAccount.privateKey) {
   );
 }
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-  projectId: serviceAccount.projectId,
-});
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+    projectId: serviceAccount.projectId,
+  });
+} else {
+  console.log("[firebase-admin] reusing existing app");
+}
 
 console.log("[firebase-admin] initialized", serviceAccount.projectId);
 

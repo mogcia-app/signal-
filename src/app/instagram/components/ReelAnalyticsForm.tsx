@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Heart, MessageCircle, Share, Save, ThumbsUp, ThumbsDown, Edit3, CheckCircle, X, Plus, Trash2 } from "lucide-react";
 import { InputData } from "./types";
@@ -20,6 +20,9 @@ interface ReelAnalyticsFormProps {
     hashtags: string[];
     postType: "feed" | "reel" | "story";
   } | null;
+  aiInsightsSection?: ReactNode;
+  aiInsightsTitle?: string;
+  aiInsightsDescription?: string;
 }
 
 const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
@@ -28,6 +31,9 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
   onSave,
   isLoading,
   postData,
+  aiInsightsSection,
+  aiInsightsTitle = "AI分析（リールまとめ）",
+  aiInsightsDescription,
 }) => {
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [sentiment, setSentiment] = useState<"satisfied" | "dissatisfied" | null>(null);
@@ -38,6 +44,32 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
     onChange({
       ...data,
       [field]: value,
+    });
+  };
+
+  const handleAudienceGenderChange = (field: keyof InputData["audience"]["gender"], value: string) => {
+    onChange({
+      ...data,
+      audience: {
+        ...data.audience,
+        gender: {
+          ...data.audience.gender,
+          [field]: value,
+        },
+      },
+    });
+  };
+
+  const handleAudienceAgeChange = (field: keyof InputData["audience"]["age"], value: string) => {
+    onChange({
+      ...data,
+      audience: {
+        ...data.audience,
+        age: {
+          ...data.audience.age,
+          [field]: value,
+        },
+      },
     });
   };
 
@@ -356,6 +388,20 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
                 placeholder="0"
               />
             </div>
+            <div>
+              <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
+                <Plus className="w-4 h-4 mr-2 text-[#ff8a15]" />
+                フォロワー増加数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.followerIncrease}
+                onChange={(e) => handleInputChange("followerIncrease", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
+              />
+            </div>
           </div>
         </div>
 
@@ -420,6 +466,57 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
                   placeholder="0"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* オーディエンス分析入力 */}
+        <div className="p-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">オーディエンス分析</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {["male", "female", "other"].map((key) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {key === "male" ? "男性 (%)" : key === "female" ? "女性 (%)" : "その他 (%)"}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={data.audience.gender[key as keyof InputData["audience"]["gender"]]}
+                    onChange={(e) =>
+                      handleAudienceGenderChange(
+                        key as keyof InputData["audience"]["gender"],
+                        e.target.value,
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.keys(data.audience.age).map((key) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{key} (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={data.audience.age[key as keyof InputData["audience"]["age"]]}
+                    onChange={(e) =>
+                      handleAudienceAgeChange(key as keyof InputData["audience"]["age"], e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -544,29 +641,56 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
         {/* 再生時間 */}
         <div className="p-4 border-t border-gray-200">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">再生時間</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">再生時間</label>
-              <input
-                type="number"
-                min="0"
-                value={data.reelPlayTime}
-                onChange={(e) => handleInputChange("reelPlayTime", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">平均再生時間</label>
-              <input
-                type="number"
-                min="0"
-                value={data.reelAvgPlayTime}
-                onChange={(e) => handleInputChange("reelAvgPlayTime", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="0"
-              />
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(["reelPlayTime", "reelAvgPlayTime"] as Array<keyof InputData>).map((field) => {
+              const totalSeconds = Number(data[field]) || 0;
+              const hours = Math.floor(totalSeconds / 3600);
+              const minutes = Math.floor((totalSeconds % 3600) / 60);
+              const seconds = totalSeconds % 60;
+              return (
+              <div key={field}>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  {field === "reelPlayTime" ? "再生時間" : "平均再生時間"}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={hours}
+                    onChange={(e) => {
+                      const h = Math.max(0, Number(e.target.value));
+                      handleInputChange(field, String(h * 3600 + minutes * 60 + seconds));
+                    }}
+                    className="w-1/3 px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="時"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={minutes}
+                    onChange={(e) => {
+                      const m = Math.max(0, Math.min(59, Number(e.target.value)));
+                      handleInputChange(field, String(hours * 3600 + m * 60 + seconds));
+                    }}
+                    className="w-1/3 px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="分"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={seconds}
+                    onChange={(e) => {
+                      const s = Math.max(0, Math.min(59, Number(e.target.value)));
+                      handleInputChange(field, String(hours * 3600 + minutes * 60 + s));
+                    }}
+                    className="w-1/3 px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="秒"
+                  />
+                </div>
+              </div>
+            )})}
           </div>
         </div>
 
@@ -693,6 +817,20 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
             </div>
           </div>
         </div>
+
+        {/* AI分析セクション */}
+        {aiInsightsSection ? (
+          <div className="p-4 border-t border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+              <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
+              {aiInsightsTitle}
+            </h3>
+            {aiInsightsDescription ? (
+              <p className="text-xs text-gray-500 mb-3">{aiInsightsDescription}</p>
+            ) : null}
+            <div className="bg-white">{aiInsightsSection}</div>
+          </div>
+        ) : null}
 
         {/* 保存ボタン */}
         <div className="flex justify-end pt-4">

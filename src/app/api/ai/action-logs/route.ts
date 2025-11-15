@@ -71,19 +71,15 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Math.max(Number(limitParam) || 20, 1), 100);
 
     const db = getAdminDb();
-    let query = db
+    const baseQuery = db
       .collection("ai_action_logs")
       .where("userId", "==", userId)
       .orderBy("updatedAt", "desc")
-      .limit(limit);
+      .limit(limit * 2);
 
-    if (period) {
-      query = query.where("focusArea", "==", period);
-    }
+    const snapshot = await baseQuery.get();
 
-    const snapshot = await query.get();
-
-    const logs = snapshot.docs.map((doc) => {
+    let logs = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -98,6 +94,12 @@ export async function GET(request: NextRequest) {
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
       };
     });
+
+    if (period) {
+      logs = logs.filter((log) => log.focusArea === period);
+    }
+
+    logs = logs.slice(0, limit);
 
     return NextResponse.json({ success: true, data: logs });
   } catch (error) {

@@ -10,6 +10,7 @@ interface CurrentPlanCardProps {
   showEditButton?: boolean;
   snsType?: "instagram" | "x" | "tiktok" | "youtube";
   actualFollowers?: number; // 分析データから取得した実際のフォロワー数
+  containerClassName?: string;
 }
 
 export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
@@ -18,6 +19,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   showEditButton = true,
   snsType = "instagram",
   actualFollowers,
+  containerClassName,
 }) => {
   // 計画が存在しない場合
   if (!planData) {
@@ -86,8 +88,11 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   const simulationResult = planData.simulationResult as Record<string, unknown> | null;
   const hasSimulation = simulationResult && typeof simulationResult === "object";
 
+  const containerClasses =
+    containerClassName || "bg-white rounded-none border border-gray-200 shadow-sm mb-4";
+
   return (
-    <div className="bg-white rounded-none border border-gray-200 shadow-sm mb-4">
+    <div className={containerClasses}>
       {/* ヘッダー */}
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <h3 className="font-semibold text-black flex items-center">

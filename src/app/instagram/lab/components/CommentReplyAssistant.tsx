@@ -111,8 +111,8 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
   };
 
   return (
-    <div className="bg-white border border-orange-200 shadow-sm">
-      <div className="border-b border-orange-100 px-4 py-3">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+      <div className="border-b border-slate-100 px-4 py-3 rounded-t-xl">
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <MessageCircleReply className="w-4 h-4 text-orange-500" />
           コメント返信アシスト
