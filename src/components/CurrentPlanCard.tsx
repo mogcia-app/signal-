@@ -54,32 +54,50 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
 
   // フォームデータから値を取得（プランページと同じ形式）
   const formData = planData.formData as Record<string, unknown> | undefined;
+
+  const safeNumber = (value: unknown, fallback?: number): number | undefined => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim() !== "") {
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  };
+
   const formCurrentFollowers = formData?.currentFollowers
-    ? parseInt(String(formData.currentFollowers), 10)
+    ? safeNumber(formData.currentFollowers)
     : null;
-  const formFollowerGain = formData?.followerGain
-    ? parseInt(String(formData.followerGain), 10)
-    : null;
+  const formFollowerGain = formData?.followerGain ? safeNumber(formData.followerGain) : null;
   const formGoalCategory = formData?.goalCategory ? String(formData.goalCategory) : null;
   const formTargetAudience = formData?.targetAudience ? String(formData.targetAudience) : null;
 
   // formDataがあればそれを使用、なければplanDataの直接プロパティを使用
-  const currentFollowers = formCurrentFollowers ?? (planData.currentFollowers || 0);
+  const currentFollowers =
+    formCurrentFollowers ?? safeNumber(planData.currentFollowers, 0) ?? 0;
   const followerGain =
-    formFollowerGain ?? (planData.targetFollowers || 0) - (planData.currentFollowers || 0);
+    formFollowerGain ??
+    Math.max(
+      0,
+      (safeNumber(planData.targetFollowers, 0) ?? 0) -
+        (safeNumber(planData.currentFollowers, 0) ?? 0),
+    );
   const targetFollowers = formData
     ? currentFollowers + followerGain
-    : planData.targetFollowers || 0;
+    : safeNumber(planData.targetFollowers, 0) ?? 0;
   const strategies = planData.strategies || [];
   const postCategories = planData.postCategories || [];
 
   // 新しい達成度計算: 現在のフォロワー数 = 0%, 目標フォロワー数 = 100%
   // actualFollowersが提供されている場合はそれを使用、そうでなければ計画の現在フォロワー数を使用
   const planActualFollowers =
-    typeof planData.actualFollowers === "number" ? planData.actualFollowers : undefined;
+    planData.actualFollowers !== undefined ? safeNumber(planData.actualFollowers) : undefined;
   const planAnalyticsGain =
-    typeof planData.analyticsFollowerIncrease === "number"
-      ? planData.analyticsFollowerIncrease
+    planData.analyticsFollowerIncrease !== undefined
+      ? safeNumber(planData.analyticsFollowerIncrease)
       : undefined;
   const computedActualFollowers =
     planActualFollowers ??
@@ -87,12 +105,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   const displayFollowers =
     actualFollowers ?? computedActualFollowers ?? currentFollowers;
 
-  // フォロワー増加数を基準に達成度を計算
-  const followerIncrease = displayFollowers - currentFollowers;
-  const targetIncrease = targetFollowers - currentFollowers;
-  const progressPercentage =
-    targetIncrease > 0 ? Math.min((followerIncrease / targetIncrease) * 100, 100) : 0;
-  const remainingFollowers = Math.max(0, targetFollowers - displayFollowers);
+  const followerIncrease = Math.max(0, displayFollowers - currentFollowers);
 
   // シミュレーション結果
   const simulationResult = planData.simulationResult as Record<string, unknown> | null;
@@ -121,28 +134,26 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
 
       {/* コンテンツ */}
       <div className="p-6 space-y-4">
-        {/* フォロワー目標進捗 */}
-        <div>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-black">フォロワー目標</span>
-            <span className="font-medium text-black">
-              {displayFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
+        {/* フォロワー情報 */}
+        <div className="border border-dashed border-slate-300 bg-slate-50 px-4 py-3 space-y-1">
+          <p className="text-sm font-semibold text-slate-900 flex items-center justify-between">
+            <span>現在のフォロワー</span>
+            <span>
+              {displayFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}人
             </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-none h-2.5">
-            <div
-              className="bg-gradient-to-r from-[#ff8a15] to-orange-600 h-2.5 rounded-none transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-black mt-1">
-            <span>{progressPercentage.toFixed(1)}% 達成</span>
-            <span>残り {remainingFollowers.toLocaleString()}人</span>
-          </div>
-          <div className="flex justify-between text-[11px] text-black mt-0.5">
-            <span>開始値: {currentFollowers.toLocaleString()}人</span>
-            <span>増加: +{Math.max(0, followerIncrease).toLocaleString()}人</span>
-          </div>
+          </p>
+          <p className="text-xs text-slate-600">
+            累計 +{followerIncrease.toLocaleString()}人（開始値 {currentFollowers.toLocaleString()}人）
+          </p>
+          <p className="text-[11px] text-slate-500">
+            詳細な内訳は KPI コンソール（KPI タブ）で確認できます。
+          </p>
+          <a
+            href="/instagram/monthly-report?view=metrics#kpi-console"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#ff8a15] hover:text-orange-600"
+          >
+            KPIコンソールを開く →
+          </a>
         </div>
 
         {/* グリッド情報 */}

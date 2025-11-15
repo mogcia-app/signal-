@@ -35,19 +35,27 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   }
 
   // 安全にアクセス
-  const currentFollowers = planData.currentFollowers || 0;
-  const analyticsFollowerIncrease =
-    typeof planData.analyticsFollowerIncrease === "number"
-      ? planData.analyticsFollowerIncrease
-      : 0;
+  const safeNumber = (value: unknown, fallback = 0) => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim() !== "") {
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  };
+
+  const currentFollowers = safeNumber(planData.currentFollowers, 0);
+  const analyticsFollowerIncrease = safeNumber(planData.analyticsFollowerIncrease, 0);
   const actualFollowers =
-    typeof planData.actualFollowers === "number"
-      ? planData.actualFollowers
+    planData.actualFollowers !== undefined
+      ? safeNumber(planData.actualFollowers, currentFollowers + analyticsFollowerIncrease)
       : currentFollowers + analyticsFollowerIncrease;
-  const targetFollowers = planData.targetFollowers || 0;
+  const targetFollowers = safeNumber(planData.targetFollowers, 0);
   const strategies = planData.strategies || [];
-  const progressPercentage =
-    targetFollowers > 0 ? Math.min((actualFollowers / targetFollowers) * 100, 100) : 0;
 
   // シミュレーション結果があるか確認
   const hasSimulation = planData.simulationResult && typeof planData.simulationResult === "object";
@@ -60,24 +68,27 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
       </div>
 
       <div className="p-6">
-        {/* フォロワー目標進捗 */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">フォロワー目標</span>
-            <span className="text-sm text-black">
-              {actualFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}
+        {/* フォロワー情報 */}
+        <div className="mb-6 border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700 space-y-1">
+          <div className="flex items-center justify-between font-semibold text-gray-900">
+            <span>現在のフォロワー</span>
+            <span>
+              {actualFollowers.toLocaleString()} / {targetFollowers.toLocaleString()}人
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-black mt-1">
-            <span>{progressPercentage.toFixed(1)}% 達成</span>
-            <span>残り {Math.max(0, targetFollowers - actualFollowers).toLocaleString()}人</span>
-          </div>
+          <p className="text-xs">
+            累計 +{Math.max(0, actualFollowers - currentFollowers).toLocaleString()}人（開始値{" "}
+            {currentFollowers.toLocaleString()}人）
+          </p>
+          <p className="text-[11px] text-gray-500">
+            詳細な増減は KPI コンソール（/instagram/monthly-report の KPI タブ）で確認できます。
+          </p>
+          <a
+            href="/instagram/monthly-report?view=metrics#kpi-console"
+            className="text-[11px] font-semibold text-blue-600 hover:underline inline-flex items-center gap-1"
+          >
+            KPIコンソールを開く →
+          </a>
         </div>
 
         {/* 計画詳細 */}

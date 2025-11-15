@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
+import { syncPlanFollowerProgress } from "../../../lib/plans/sync-follower-progress";
 
 // 計画データの型定義（統一版）
 interface PlanData {
@@ -129,6 +130,7 @@ export async function GET(request: NextRequest) {
       rateLimit: { key: "plan-list", limit: 30, windowSeconds: 60 },
       auditEventName: "plan_list",
     });
+    await syncPlanFollowerProgress(uid);
     const { searchParams } = new URL(request.url);
     const snsType = searchParams.get("snsType"); // instagram, x, tiktok
     const status = searchParams.get("status"); // active, archived, expired

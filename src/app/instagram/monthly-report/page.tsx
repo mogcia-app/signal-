@@ -4,8 +4,6 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import SNSLayout from "../../../components/sns-layout";
 import { useAuth } from "../../../contexts/auth-context";
 import { usePlanData } from "../../../hooks/usePlanData";
-import { CurrentPlanCard } from "../../../components/CurrentPlanCard";
-import { ChevronDown } from "lucide-react";
 import type { AIActionLog, AIReference } from "@/types/ai";
 import type { ABTestResultTag } from "@/types/ab-test";
 import { actionLogsApi } from "@/lib/api";
@@ -42,6 +40,7 @@ import {
   type FeedbackSentimentSummary,
 } from "./components/feedback-sentiment-card";
 import { TimeSlotHeatmap } from "./components/time-slot-heatmap";
+import { PlanGoalsSection } from "./components/plan-goals-section";
 
 type SnapshotReference = {
   id: string;
@@ -218,8 +217,15 @@ export default function InstagramMonthlyReportPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7) // YYYY-MM形式
   );
-  const [isPlanCardOpen, setIsPlanCardOpen] = useState(false);
   const { planData } = usePlanData("instagram", { effectiveMonth: selectedMonth });
+  const planContextMeta = useMemo(() => {
+    const form = planData?.formData as Record<string, unknown> | undefined;
+    return {
+      targetAudience: (form?.targetAudience as string) || planData?.targetAudience || null,
+      brandConcept: (form?.brandConcept as string) || null,
+      tone: (form?.tone as string) || null,
+    };
+  }, [planData]);
   // BFF API連携の状態
   const [accountScore, setAccountScore] = useState<Record<string, unknown> | null>(null);
   const [dailyScores, setDailyScores] = useState<Record<string, unknown> | null>(null);
@@ -672,35 +678,7 @@ export default function InstagramMonthlyReportPage() {
           accountScore={accountScore}
           pdcaMetrics={pdcaMetrics}
         />
-        <div className="bg-white rounded-none border border-gray-200 shadow-sm mb-6">
-          <button
-            type="button"
-            onClick={() => setIsPlanCardOpen((prev) => !prev)}
-            className="w-full flex items-center justify-between px-5 py-4 text-left"
-          >
-            <div>
-              <p className="text-sm font-semibold text-gray-900">現在の運用計画</p>
-              <p className="text-xs text-gray-500 mt-1">
-                AI提案の前に今月の計画を軽く確認できます
-              </p>
-            </div>
-            <ChevronDown
-              className={`w-5 h-5 text-gray-500 transition-transform ${
-                isPlanCardOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-          {isPlanCardOpen && (
-            <div className="border-t border-gray-200 px-4 py-4">
-              <CurrentPlanCard
-                planData={planData}
-                variant="detailed"
-                snsType="instagram"
-                containerClassName="bg-transparent border-none shadow-none mb-0"
-              />
-            </div>
-          )}
-        </div>
+        <PlanGoalsSection planData={planData} reportSummary={reportSummary} />
 
         {activeView === "ai" ? (
           <>
@@ -741,6 +719,7 @@ export default function InstagramMonthlyReportPage() {
               isLoading={actionLogsLoading}
               errorMessage={actionLogsError}
               onActionLogged={handleActionLogUpdate}
+              planContext={planContextMeta}
             />
             <PostDeepDiveSection
               posts={reportSummary?.postDeepDive ?? reportSummary?.posts}

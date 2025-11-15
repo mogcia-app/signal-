@@ -5,6 +5,86 @@ import { ArrowUpRight, Loader2, Target } from "lucide-react";
 import { actionLogsApi } from "@/lib/api";
 import type { AIActionLog } from "@/types/ai";
 
+type PlanContextHint = {
+  targetAudience?: string | null;
+  brandConcept?: string | null;
+  tone?: string | null;
+};
+
+type ActionTemplate = "photos" | "video" | "hashtag" | "engagement" | "campaign" | "default";
+
+const ACTION_TEMPLATE_MAP: Array<{ keyword: RegExp; template: ActionTemplate }> = [
+  { keyword: /写真|フォト|ギャラリー/i, template: "photos" },
+  { keyword: /動画|リール|ムービー|ショート/i, template: "video" },
+  { keyword: /ハッシュタグ|タグ|#|キーワード/i, template: "hashtag" },
+  { keyword: /保存|コメント|エンゲージ|反応|顧客|コミュニケーション/i, template: "engagement" },
+  { keyword: /キャンペーン|告知|お知らせ|LP|申込|応募/i, template: "campaign" },
+];
+
+function getActionTemplate(title: string): ActionTemplate {
+  const match = ACTION_TEMPLATE_MAP.find((item) => item.keyword.test(title));
+  return match ? match.template : "default";
+}
+
+function getAudienceLabel(context?: PlanContextHint) {
+  return context?.targetAudience && context.targetAudience !== "未設定"
+    ? context.targetAudience
+    : "想定オーディエンス";
+}
+
+function getBrandLabel(context?: PlanContextHint) {
+  return context?.brandConcept && context.brandConcept.trim().length > 0
+    ? context.brandConcept
+    : "ブランド";
+}
+
+function getToneLabel(context?: PlanContextHint) {
+  return context?.tone && context.tone.trim().length > 0 ? context.tone : "";
+}
+
+function buildFallbackReason(title: string, context?: PlanContextHint) {
+  const template = getActionTemplate(title);
+  const audience = getAudienceLabel(context);
+  const brand = getBrandLabel(context);
+  const describeVoice = getToneLabel(context) ? `${context?.tone}トーンで` : "";
+
+  switch (template) {
+    case "photos":
+      return `${brand} のフォト投稿は「撮影シーン → ひとことコメント → CTA」の流れにすると ${audience} に刺さりやすく、保存率を測りやすくなります。`;
+    case "video":
+      return `リール施策は冒頭3秒でベネフィットを映し、${describeVoice || "自然体で"}CTAを字幕にも入れると、完走率が上がり次月のアクションが計測しやすくなります。`;
+    case "hashtag":
+      return `ハッシュタグ改善は「ブランド専用タグ + 競合タグ + 課題ワード」の3層構成にすると ${audience} への到達が安定します。`;
+    case "engagement":
+      return `保存やコメントを増やしたいときは、本文末に「あなたの○○を教えてください」など答えやすい問いを必ず入れ、${brand} らしい共感パターンを蓄積しましょう。`;
+    case "campaign":
+      return `キャンペーン/告知系は「◯日まで」「先着◯名」などの制限を書き、CTAボタンの前にベネフィットを並べると、${audience} の行動率が安定します。`;
+    default:
+      return `このアクションはAIが学習中です。Labで実験した内容を分析ページに登録すると、来月の優先度がより精密になります。`;
+  }
+}
+
+function buildFallbackRecommendation(title: string, context?: PlanContextHint) {
+  const template = getActionTemplate(title);
+  const audience = getAudienceLabel(context);
+  const brand = getBrandLabel(context);
+
+  switch (template) {
+    case "photos":
+      return `1) 週間で最も反応が良かった写真を選定\n2) キャプション冒頭に撮影理由を一文で\n3) CTAに「アルバム保存」や「詳しくはプロフィール」など行動を記述`;
+    case "video":
+      return `1) 開始3秒で結論を表示\n2) ${audience} の課題→解決策をテロップ化\n3) エンドカードに「${brand} の世界観をもっと見る」などのCTAを配置`;
+    case "hashtag":
+      return `1) ブランド固有タグを固定化\n2) 競合が伸びているタグを3つまで追加\n3) ${audience} の悩みワード(例: #◯◯で悩む)を1つ入れてABテスト`;
+    case "engagement":
+      return `1) 投稿末尾に「教えてください」「○○派？」など質問を入れる\n2) 保存したくなるチェックリストを載せる\n3) コメントに返信テンプレを用意し24h以内に返す`;
+    case "campaign":
+      return `1) 見出しに「◯月◯日まで」など締切を明記\n2) CTAボタン前にベネフィットを箇条書き\n3) プロフィールリンクにキャンペーンLPを固定`;
+    default:
+      return `1) LabでAI提案を再生成\n2) 分析ページに結果を登録\n3) KPIコンソールで差分を確認して次の優先度を更新`;
+  }
+}
+
 export type NextMonthFocusAction = {
   id: string;
   title: string;
@@ -22,6 +102,11 @@ interface NextMonthFocusActionsProps {
   onActionLogged?: (log: AIActionLog) => void;
   isLoading?: boolean;
   errorMessage?: string | null;
+  planContext?: {
+    targetAudience?: string | null;
+    brandConcept?: string | null;
+    tone?: string | null;
+  };
 }
 
 export function NextMonthFocusActions({
@@ -32,6 +117,7 @@ export function NextMonthFocusActions({
   onActionLogged,
   isLoading = false,
   errorMessage,
+  planContext,
 }: NextMonthFocusActionsProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -126,6 +212,15 @@ export function NextMonthFocusActions({
                 })
               : null;
 
+          const reasonText =
+            action.reason && action.reason.trim().length > 0
+              ? action.reason
+              : buildFallbackReason(action.title, planContext);
+          const recommendationText =
+            action.recommendedAction && action.recommendedAction.trim().length > 0
+              ? action.recommendedAction
+              : buildFallbackRecommendation(action.title, planContext);
+
           return (
             <div key={action.id} className="border border-slate-200 rounded-none p-4 bg-slate-50">
               <div className="flex items-start gap-3 mb-2">
@@ -137,9 +232,11 @@ export function NextMonthFocusActions({
                   <p className="text-[11px] text-slate-500">フォーカスKPI: {action.focusKPI}</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 mb-2">{action.reason}</p>
+              <p className="text-xs text-slate-600 mb-2 whitespace-pre-line">{reasonText}</p>
               <div className="text-sm text-slate-800 bg-white border border-slate-200 rounded-none p-3">
-                {action.recommendedAction}
+                <pre className="whitespace-pre-wrap font-sans text-sm text-slate-800 m-0">
+                  {recommendationText}
+                </pre>
               </div>
               {action.referenceIds?.length ? (
                 <p className="text-[11px] text-slate-500 mt-2">
