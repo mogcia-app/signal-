@@ -168,8 +168,6 @@ interface AIAnalysisResult {
     watchouts: string[];
     planReflection?: PlanReflection | null;
   };
-  insights: string[];
-  recommendations: string[];
   summary: string;
   generation?: AIGenerationResponse | null;
   masterContext: {
@@ -318,15 +316,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   const generationInsightBlocks = useMemo<AIInsightBlock[]>(() => {
     const generation = analysisResult?.generation;
     if (!generation) {return [];}
-    if (generation.aiInsights?.length) {
-      return generation.aiInsights;
-    }
-    return (generation.insights ?? []).map((text, index) => ({
-      title: `Insight ${index + 1}`,
-      description: text,
-      action: undefined,
-      referenceIds: undefined,
-    }));
+    return generation.aiInsights?.length ? generation.aiInsights : [];
   }, [analysisResult?.generation]);
 
   const hasAnalysisData = useMemo(() => {

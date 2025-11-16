@@ -3083,7 +3083,18 @@ async function performAIAnalysis(
       : generateFallbackActionPlans(alerts, postTypeHighlights);
 
   const periodRange = getPeriodRange(period, date);
-  const analyzedInPeriod = totalPosts;
+  // 分析済み件数を集計（posts/postDeepDive の analyticsSummary 有無でカウント）
+  const analyzedPostsCount =
+    Array.isArray((reportSummary as any)?.postDeepDive)
+      ? ((reportSummary as any).postDeepDive as Array<{ analyticsSummary?: unknown }>).filter(
+          (p) => !!p && !!(p as any).analyticsSummary
+        ).length
+      : Array.isArray((reportSummary as any)?.posts)
+        ? ((reportSummary as any).posts as Array<{ analyticsSummary?: unknown }>).filter(
+            (p) => !!p && !!(p as any).analyticsSummary
+          ).length
+        : 0;
+  const analyzedInPeriod = analyzedPostsCount;
 
   const feedbackInPeriod = feedbackDocs.filter((doc) => {
     if (!periodRange) {
@@ -3426,13 +3437,6 @@ ${
     : "ビジネス情報未設定"
 }
 
-【Instagram運用データ】
-期間: ${period === "weekly" ? "週次" : "月次"}
-投稿数: ${analyzedPostsForPeriod}件、いいね: ${totalLikes}件、コメント: ${totalComments}件、シェア: ${totalShares}件
-リーチ: ${totalReach}人、フォロワー増加: ${totals.totalFollowerIncrease || 0}人
-投稿タイプ: ${reportSummary?.postTypeStats?.map((stat) => `${stat.label}${stat.count}件`).join("、") || "なし"}
-最適時間: ${reportSummary?.bestTimeSlot?.label || "不明"}
-
 【投稿シミュレーション進捗】
 必要本数: ${plannedPostsPerPeriod}件 / 実績: ${postedThisPeriod}件 / 分析済み: ${analyzedCount}件 / 未登録: ${unregisteredCount}件 / 残り: ${remainingToGoal}件
 
@@ -3442,6 +3446,8 @@ ${
 - 来月の最優先アクションを1つだけ提示する（冗長に列挙しない）
 - 正の値が存在する場合は「ゼロ/見られない/難しい」など矛盾する表現は使わない
 - 見出しや箇条書きではなく自然文で書く
+- 文章は最大3文・1段落。数値は最大1つまで（読みやすさ優先）
+- 「投稿」という語の繰り返しや作業指示の羅列は避け、総括→示唆→最優先アクションの順で簡潔に
 
 【比較】
 いいね: ${(changes.likesChange ?? 0) >= 0 ? "+" : ""}${(changes.likesChange ?? 0).toFixed(1)}%、
@@ -3513,20 +3519,9 @@ ${
     (totals.totalShares || 0) +
     (totals.totalSaves || 0);
   const hasEngagement = totalEngagementCount > 0 || (engagementRate || 0) > 0;
-  const insightMessages = [
-    `投稿頻度${analyzedPostsForPeriod}件で${analyzedPostsForPeriod > 10 ? "適切" : "増加推奨"}`,
-    hasEngagement
-      ? `エンゲージメント合計${totalEngagementCount.toLocaleString()}で関心を獲得`
-      : "エンゲージメントの母数拡大に向けて構成最適化が必要",
-    hasFollowerGain
-      ? `フォロワーは+${(totals.totalFollowerIncrease || 0).toLocaleString()}人で前進`
-      : "フォロワー増に向け導線と訴求の強化が必要",
-  ];
-  const recommendationMessages = [
-    "投稿頻度を週3-4回に増やす",
-    "夕方18-20時の投稿でエンゲージメント向上",
-    "リール投稿を増やしてリーチ拡大",
-  ];
+  // 固定テンプレの洞察/推奨は廃止（出力のテンプレ感を防ぎ、LLM+参照データに委ねる）
+  const insightMessages: string[] = [];
+  const recommendationMessages: string[] = [];
 
   try {
     const feedbackStats = masterContext?.feedbackStats;
@@ -3586,7 +3581,7 @@ ${patternLines.length > 0 ? `投稿パターン: ${patternLines.join(" / ")}` : 
         body: aiResponse.trim(),
         hashtags: [],
       },
-      insights: insightMessages,
+      insights: [],
       aiInsights: aiInsightBlocks,
       imageHints: [],
       priority: topPriorityPlan
@@ -3657,7 +3652,7 @@ ${patternLines.length > 0 ? `投稿パターン: ${patternLines.join(" / ")}` : 
         body: overview.summary || "AI分析を実行中です。しばらくお待ちください。",
         hashtags: [],
       },
-      insights: insightMessages,
+      insights: [],
       aiInsights: [],
       imageHints: [],
       references: analysisReferences,
