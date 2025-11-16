@@ -544,16 +544,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                             ? "運用計画が未設定のため、振り返りはまだ表示できません。"
                             : "AIによる振り返りを生成できませんでした。計画と実績を手動で確認してください。"}
                       </p>
-                      {planReflection.nextSteps?.length ? (
-                        <div className="mt-4">
-                          <h4 className="text-xs font-semibold text-gray-600 mb-2">来月のアクション提案</h4>
-                          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                            {planReflection.nextSteps.map((step, index) => (
-                              <li key={`plan-next-${index}`}>{step}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
+                      {/* 来月のアクション提案リストは、1行のAIアドバイスに集約するため非表示 */}
                     </>
                   ) : (
                     <p className="text-sm text-gray-600">
