@@ -3436,6 +3436,13 @@ ${
 【投稿シミュレーション進捗】
 必要本数: ${plannedPostsPerPeriod}件 / 実績: ${postedThisPeriod}件 / 分析済み: ${analyzedCount}件 / 未登録: ${unregisteredCount}件 / 残り: ${remainingToGoal}件
 
+【要約ルール】
+- 冒頭に120-180文字の「今月のまとめ」を1段落で書く
+- 必ず「分析済み${analyzedPostsForPeriod}件」を明記し、正の指標（フォロワー増/ER/リーチのうち存在するもの）を簡潔に触れる
+- 来月の最優先アクションを1つだけ提示する（冗長に列挙しない）
+- 正の値が存在する場合は「ゼロ/見られない/難しい」など矛盾する表現は使わない
+- 見出しや箇条書きではなく自然文で書く
+
 【比較】
 いいね: ${(changes.likesChange ?? 0) >= 0 ? "+" : ""}${(changes.likesChange ?? 0).toFixed(1)}%、
 コメント: ${(changes.commentsChange ?? 0) >= 0 ? "+" : ""}${(changes.commentsChange ?? 0).toFixed(1)}%、

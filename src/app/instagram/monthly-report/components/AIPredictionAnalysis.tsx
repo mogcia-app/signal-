@@ -425,21 +425,12 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
               </div>
             ) : analysisResult ? (
               <div className="space-y-6">
-                {analysisResult.overview?.summary?.trim().length ? (
-                  <div className="border border-gray-200 bg-gray-50 rounded-none p-6">
-                    <h3 className="text-base font-semibold text-black mb-2">
-                      今月のまとめ
-                    </h3>
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {analysisResult.overview.summary}
-                    </p>
-                  </div>
-                ) : null}
+                {/* 今月のまとめは非表示 */}
 
                 {analysisResult?.generation?.draft && (
                   <div className="border border-gray-200 rounded-none p-6 bg-white">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-base font-semibold text-black">AI提案ハイライト</h3>
+                      <h3 className="text-base font-semibold text-black">今月のまとめ</h3>
                       {analysisResult.generation.priority?.focus &&
                         analysisResult.generation.priority.level && (
                           <span
@@ -508,52 +499,9 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   </div>
                 )}
 
-                {analysisResult.overview?.highlights?.length ? (
-                  <div className="border border-gray-200 rounded-none p-6">
-                    <h3 className="text-base font-semibold text-black mb-4">
-                      先月との比較ハイライト
-                    </h3>
-                    <ul className="space-y-3">
-                      {analysisResult.overview.highlights.map((highlight, index) => {
-                        const isPositive = highlight.change.trim().startsWith("+");
-                        const changeColor = isPositive ? "text-emerald-600" : "text-red-600";
-                        return (
-                          <li
-                            key={`${highlight.label}-${index}`}
-                            className="flex items-center justify-between border border-dashed border-gray-200 rounded-none p-3 bg-white"
-                          >
-                            <div>
-                              <p className="text-sm font-semibold text-gray-800">{highlight.label}</p>
-                              {highlight.context && (
-                                <p className="text-xs text-gray-500">{highlight.context}</p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm text-gray-700">{highlight.value}</p>
-                              <p className={`text-xs font-semibold ${changeColor}`}>{highlight.change}</p>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                ) : null}
+                {/* 先月との比較ハイライトは非表示 */}
 
-                {analysisResult.overview?.watchouts?.length ? (
-                  <div className="border border-gray-200 rounded-none p-6 bg-white">
-                    <h3 className="text-base font-semibold text-black mb-3">AI注目ポイント</h3>
-                    <ul className="space-y-2">
-                      {analysisResult.overview.watchouts.map((item, index) => (
-                        <li key={index} className="text-sm text-gray-700 leading-relaxed">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-xs text-gray-500 mt-3">
-                      詳細は下部の各セクションで確認できます。
-                    </p>
-                  </div>
-                ) : null}
+                {/* AI注目ポイントは非表示 */}
 
                 <div className="border border-gray-200 rounded-none p-6 bg-white">
                   <h3 className="text-base font-semibold text-black mb-3">運用計画の振り返り</h3>
