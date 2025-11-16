@@ -369,7 +369,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                 <Brain className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-black">AIまとめ</h2>
+                <h2 className="text-lg font-semibold text-black">今月の振り返り</h2>
               </div>
             </div>
 
@@ -388,7 +388,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   ) : (
                     <>
                       <Brain className="w-4 h-4" />
-                      <span>AI分析を実行</span>
+                      <span>今月の振り返りを見る</span>
                     </>
                   )}
                 </button>
@@ -622,8 +622,8 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
             ) : (
               <div className="text-center py-8 text-black">
                 <Brain className="w-16 h-16 mx-auto mb-4 text-black" />
-                <p className="text-lg">AI分析を開始してください</p>
-                <p className="text-sm mt-2">「AI分析を実行」ボタンをクリックして分析を開始します</p>
+                <p className="text-lg">今月の振り返りを表示できます</p>
+                <p className="text-sm mt-2">「今月の振り返りを見る」ボタンをクリックして内容を確認してください</p>
               </div>
             )}
           </div>
