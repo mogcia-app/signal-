@@ -739,16 +739,18 @@ export default function InstagramMonthlyReportPage() {
 
   // 運用計画の投稿シミュレーション進捗（Planカードと同等の情報を運用計画の振り返りにも表示）
   const planSimulationSummary = useMemo(() => {
-    if (!planData) {
+    if (!planData || !reportSummary) {
       return null;
     }
 
-    // PlanGoalsSection と同じロジックで必要本数を算出
+    // PlanGoalsSection と同じロジックで必要本数・実績・分析済みを算出し、
+    // 「運用計画の振り返り」カード側と数字を完全に揃える
     const formData = planData.formData as Record<string, unknown> | undefined;
     const simulationResult = planData.simulationResult as
       | (Record<string, unknown> & { monthlyPostCount?: unknown })
       | null
       | undefined;
+
     const safeNumberLocal = (value: unknown, fallback = 0) => {
       if (typeof value === "number" && Number.isFinite(value)) {
         return value;
@@ -776,12 +778,59 @@ export default function InstagramMonthlyReportPage() {
       return null;
     }
 
-    // 実績・分析済み・未登録は unifiedTotalPosts / pdcaMetrics を利用
-    const actualPosts = unifiedTotalPosts;
-    const analyzedPosts =
-      typeof pdcaMetrics?.analyzedPosts === "number" && Number.isFinite(pdcaMetrics?.analyzedPosts)
-        ? Math.max(0, Math.round(pdcaMetrics!.analyzedPosts))
-        : 0;
+    // 実績・分析済み・未登録も PlanGoalsSection と同じロジックを再利用する
+    const reportPosts: Array<{
+      analyticsSummary?: {
+        likes?: number;
+        comments?: number;
+        shares?: number;
+        reach?: number;
+        saves?: number;
+        followerIncrease?: number;
+        engagementRate?: number;
+      } | null;
+    }> = Array.isArray(reportSummary.postDeepDive)
+      ? (reportSummary.postDeepDive as Array<{
+          analyticsSummary?: {
+            likes?: number;
+            comments?: number;
+            shares?: number;
+            reach?: number;
+            saves?: number;
+            followerIncrease?: number;
+            engagementRate?: number;
+          } | null;
+        }>)
+      : Array.isArray(reportSummary.posts)
+        ? (reportSummary.posts as Array<{
+            analyticsSummary?: {
+              likes?: number;
+              comments?: number;
+              shares?: number;
+              reach?: number;
+              saves?: number;
+              followerIncrease?: number;
+              engagementRate?: number;
+            } | null;
+          }>)
+        : [];
+
+    const trackedPostsRaw =
+      typeof reportSummary.totals?.totalPosts === "number"
+        ? reportSummary.totals.totalPosts || 0
+        : reportPosts.length;
+    const actualPosts = Math.max(0, Math.round(trackedPostsRaw));
+
+    const analyzedPosts = reportPosts.filter((post) => {
+      const summary = post.analyticsSummary;
+      if (!summary) {
+        return false;
+      }
+      return Object.values(summary).some(
+        (value) => typeof value === "number" && Number.isFinite(value),
+      );
+    }).length;
+
     const unregisteredPosts = Math.max(0, actualPosts - analyzedPosts);
     const remainingToGoal = Math.max(0, requiredPerMonth - actualPosts);
 
