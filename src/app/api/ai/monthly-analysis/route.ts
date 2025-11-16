@@ -2830,11 +2830,20 @@ async function performAIAnalysis(
     : 0;
   const feedDerivedPosts = derivePostCountFromContentStats(summaryExtras?.contentPerformance?.feed);
   const reelDerivedPosts = derivePostCountFromContentStats(summaryExtras?.contentPerformance?.reel);
+  // KPI分解（posts）がある場合も考慮
+  const kpiPosts =
+    Array.isArray((reportSummary as any)?.kpiBreakdowns)
+      ? Number(
+          ((reportSummary as any).kpiBreakdowns as Array<{ key?: string; value?: unknown }>)
+            .find((k) => k?.key === "posts")?.value ?? 0
+        )
+      : 0;
   const inferredPostCount = Math.max(
     totalPosts,
     postDeepDiveCount,
     postsCollectionCount,
-    feedDerivedPosts + reelDerivedPosts
+    feedDerivedPosts + reelDerivedPosts,
+    kpiPosts
   );
   totalPosts = inferredPostCount;
   totals.totalPosts = totalPosts;
@@ -3121,6 +3130,28 @@ async function performAIAnalysis(
 
   const periodLabel = period === "weekly" ? "週次" : "月次";
 
+  // 追加: 投稿シミュレーション進捗（必要本数・実績・分析済み・未登録・残数）
+  const plannedPostsPerPeriod = pdcaMetrics?.plannedPosts ?? 0;
+  const postedThisPeriod = totalPosts; // 推定/集計済みの投稿数
+  const analyzedCount = pdcaMetrics?.analyzedPosts ?? 0;
+  const unregisteredCount = Math.max(0, postedThisPeriod - analyzedCount);
+  const remainingToGoal = Math.max(0, plannedPostsPerPeriod - postedThisPeriod);
+  if (plannedPostsPerPeriod > 0 || postedThisPeriod > 0 || analyzedCount > 0) {
+    analysisReferences.push({
+      id: `simulation-progress-${period}-${date}`,
+      sourceType: "analytics",
+      label: "投稿シミュレーション進捗",
+      summary: `必要${plannedPostsPerPeriod}件 / 実績${postedThisPeriod}件 / 分析${analyzedCount}件 / 未登録${unregisteredCount}件 / 残り${remainingToGoal}件`,
+      metadata: {
+        plannedPostsPerPeriod,
+        postedThisPeriod,
+        analyzedCount,
+        unregisteredCount,
+        remainingToGoal,
+      },
+    });
+  }
+
   analysisReferences.push({
     id: `report-${period}-${date}`,
     sourceType: "analytics",
@@ -3199,7 +3230,8 @@ async function performAIAnalysis(
   const postsArrayCount =
     (Array.isArray((reportSummary as any)?.posts) ? ((reportSummary as any).posts as unknown[]).length : 0) +
     (Array.isArray((reportSummary as any)?.postDeepDive) ? ((reportSummary as any).postDeepDive as unknown[]).length : 0);
-  const lowDataMode = totalPosts === 0 && (postTypeCountSum > 0 || postsArrayCount > 0 || totalReach > 0);
+  // 低データ判定は「投稿は0だが、他のKPIが存在する」ケースに限定
+  const lowDataMode = totalPosts === 0 && totalReach > 0;
 
   let prompt = `Instagram分析データを基に、簡潔に分析してください。
 
@@ -3226,6 +3258,9 @@ ${
 投稿タイプ: ${reportSummary?.postTypeStats?.map((stat) => `${stat.label}${stat.count}件`).join("、") || "なし"}
 最適時間: ${reportSummary?.bestTimeSlot?.label || "不明"}
 
+【投稿シミュレーション進捗】
+必要本数: ${plannedPostsPerPeriod}件 / 実績: ${postedThisPeriod}件 / 分析済み: ${analyzedCount}件 / 未登録: ${unregisteredCount}件 / 残り: ${remainingToGoal}件
+
 【比較】
 いいね: ${(changes.likesChange ?? 0) >= 0 ? "+" : ""}${(changes.likesChange ?? 0).toFixed(1)}%、
 コメント: ${(changes.commentsChange ?? 0) >= 0 ? "+" : ""}${(changes.commentsChange ?? 0).toFixed(1)}%、
@@ -3236,6 +3271,7 @@ ${
   if (lowDataMode) {
     prompt += `
 登録済みの分析データが一部のみ存在します。ビジネス情報と利用可能なKPIから簡潔に所見をまとめてください。絶対に「投稿が全くない」と断定しないこと。
+投稿シミュレーション進捗とKPI分解/ドリルダウンを前提に、残数・推奨ペース・優先フォーマット/テーマを具体化してください。
 
 【禁止事項】
 「###」「-」「*」などの記号、箇条書きや見出し、JSON形式やMarkdown形式を使わない。すべて自然な日本語の文章で書く。
@@ -3246,17 +3282,17 @@ ${
 `;
   } else if (totalPosts === 0) {
     prompt += `
-投稿数がゼロの場合でも、ビジネス情報に基づいて実践的な提案を行う。すべて自然な日本語の文章で簡潔に答える。
+ビジネス情報・投稿シミュレーション進捗・KPI分解/ドリルダウンに基づいて実践的な提案を行う。すべて自然な日本語の文章で簡潔に答える。否定的な断定（例: 投稿が全くない）は避ける。
 
 【禁止事項】
 「###」「-」「*」などの記号、箇条書きや見出し、JSON形式やMarkdown形式を使わない。すべて自然な日本語の文章で書く。
 
 次の3つを提供:
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（80文字以内）
-   現状認識と、週1-2回投稿した場合の期待効果の根拠を含める
+   現状認識と、残り本数に応じた実行ペース/優先テーマの示唆を含める
 
 2. 次へのステップ（各60文字以内の自然な文章を3つ）
-   具体的な投稿テーマ、ターゲット市場に合わせたコンテンツ例、実践可能なアクションを含める
+   具体的な投稿テーマ、ターゲット市場に合わせたコンテンツ例、実践可能なアクション（期日/頻度）を含める
 
 3. 具体的なアドバイス（各60文字以内の自然な文章を2つ）
 `;
@@ -3267,7 +3303,7 @@ ${
 
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（100文字以内、フォロワー増加予測の根拠を含む）
 2. 次へのステップ（各30文字以内の自然な文章を3つ）
-3. 詳細インサイト（各30文字以内の自然な文章を3つ）
+3. 詳細インサイト（各30文字以内の自然な文章を3つ、KPI分解/ドリルダウンや投稿シミュレーション進捗の示唆を含める）
 `;
   }
 
