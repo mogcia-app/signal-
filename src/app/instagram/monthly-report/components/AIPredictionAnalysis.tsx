@@ -5,11 +5,19 @@ import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
 import type { AIGenerationResponse } from "@/types/ai";
 
+interface PlanHighlightItem {
+  type: "focus" | "content";
+  label: string;
+  comment: string;
+}
+
 interface AIPredictionAnalysisProps {
   monthlyReview: Record<string, unknown> | null;
   selectedMonth: string;
   /** 今月の目標サマリー（運用計画から生成された安定テキスト） */
   planSummaryText?: string | null;
+  /** 運用計画から生成された具体的なフォーカス/投稿内容のハイライト */
+  planHighlights?: PlanHighlightItem[];
   onPdcaMetricsUpdate?: (metrics: AIAnalysisResult["pdcaMetrics"] | null) => void;
   onAlertsUpdate?: (alerts: AIAnalysisAlert[] | null) => void;
   onPostTypeHighlightsUpdate?: (
@@ -191,6 +199,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   monthlyReview,
   selectedMonth,
   planSummaryText,
+  planHighlights,
   onPdcaMetricsUpdate,
   onAlertsUpdate,
   onPostTypeHighlightsUpdate,
@@ -415,6 +424,52 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     <p className="text-xs text-gray-500 mb-2">
                       {planSummaryText}
                     </p>
+                  )}
+                  {Array.isArray(planHighlights) && planHighlights.length > 0 && (
+                    <div className="mt-2 mb-2 space-y-2">
+                      <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                        {planHighlights
+                          .filter((item) => item.type === "focus")
+                          .slice(0, 3)
+                          .map((item) => (
+                            <span
+                              key={`focus-${item.label}`}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50"
+                            >
+                              取り組みたいこと: {item.label}
+                            </span>
+                          ))}
+                        {planHighlights
+                          .filter((item) => item.type === "content")
+                          .slice(0, 3)
+                          .map((item) => (
+                            <span
+                              key={`content-${item.label}`}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full border border-sky-200 bg-sky-50"
+                            >
+                              投稿したい内容: {item.label}
+                            </span>
+                          ))}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {planHighlights.slice(0, 4).map((item) => (
+                          <div
+                            key={`${item.type}-${item.label}`}
+                            className="border border-dashed border-slate-200 rounded-none p-3 bg-slate-50"
+                          >
+                            <p className="text-[11px] font-semibold text-slate-700 mb-1">
+                              {item.type === "focus" ? "取り組みたいこと" : "投稿したい内容"}
+                            </p>
+                            <p className="text-xs font-semibold text-slate-900 mb-1">
+                              {item.label}
+                            </p>
+                            <p className="text-xs text-slate-600 whitespace-pre-line">
+                              {item.comment}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                   {planReflection ? (
                     <>

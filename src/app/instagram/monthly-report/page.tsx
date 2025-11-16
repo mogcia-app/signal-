@@ -226,31 +226,6 @@ export default function InstagramMonthlyReportPage() {
       tone: (form?.tone as string) || null,
     };
   }, [planData]);
-  const planSummaryText = useMemo(() => {
-    if (!planData) {
-      return null;
-    }
-    const form = planData.formData as Record<string, unknown> | undefined;
-    const targetAudience =
-      (form?.targetAudience as string) || planData.targetAudience || "";
-    const goalCategoryKey =
-      (form?.goalCategory as string) || (planData as any).category || "follower";
-    const goalLabelMap: Record<string, string> = {
-      follower: "フォロワー獲得",
-      engagement: "エンゲージメント強化",
-      like: "いいね増加",
-      save: "保存率向上",
-      reach: "リーチ拡大",
-      impressions: "インプレッション増加",
-      branding: "ブランド認知",
-      profile: "プロフィール誘導",
-    };
-    const goalLabel = goalLabelMap[goalCategoryKey] || "アカウント成長";
-    if (targetAudience && targetAudience !== "未設定") {
-      return `今月は「${targetAudience}」に向けて、${goalLabel}を狙ったInstagram運用を行う計画です。`;
-    }
-    return `今月は${goalLabel}にフォーカスしたInstagram運用を行う計画です。`;
-  }, [planData]);
   // BFF API連携の状態
   const [accountScore, setAccountScore] = useState<Record<string, unknown> | null>(null);
   const [dailyScores, setDailyScores] = useState<Record<string, unknown> | null>(null);
@@ -373,6 +348,82 @@ export default function InstagramMonthlyReportPage() {
     kpiBreakdowns?: KPIBreakdown[];
     feedbackSentiment?: FeedbackSentimentSummary;
   } | null>(null);
+
+  const planHighlights = useMemo(() => {
+    if (!planData) {
+      return [];
+    }
+    const form = planData.formData as Record<string, unknown> | undefined;
+    const strategies = Array.isArray(planData.strategies) ? planData.strategies : [];
+    const postThemes = Array.isArray(planData.postCategories) ? planData.postCategories : [];
+    const targetAudience =
+      (form?.targetAudience as string) || planData.targetAudience || "フォロワー";
+
+    const focusItems = strategies.slice(0, 3).map((s) => ({
+      type: "focus" as const,
+      label: s,
+      comment: `「${s}」は今月の優先テーマです。${targetAudience}が具体的なイメージを持てるように、ビフォー/アフターや現場の一言を添えた投稿を1–2本から試してみましょう。`,
+    }));
+
+    const contentItems = postThemes.slice(0, 3).map((t) => ({
+      type: "content" as const,
+      label: t,
+      comment: `「${t}」の投稿は、今月のターゲットと相性が良い領域です。写真やリールで「一場面＋ひと言コメント」をセットにすると、保存したくなる情報量と温度感を両立できます。`,
+    }));
+
+    return [...focusItems, ...contentItems];
+  }, [planData]);
+
+  const planSummaryText = useMemo(() => {
+    if (!planData) {
+      return null;
+    }
+    const form = planData.formData as Record<string, unknown> | undefined;
+    const targetAudience =
+      (form?.targetAudience as string) || planData.targetAudience || "";
+    const goalCategoryKey =
+      (form?.goalCategory as string) || (planData as any).category || "follower";
+    const goalLabelMap: Record<string, string> = {
+      follower: "フォロワー獲得",
+      engagement: "エンゲージメント強化",
+      like: "いいね増加",
+      save: "保存率向上",
+      reach: "リーチ拡大",
+      impressions: "インプレッション増加",
+      branding: "ブランド認知",
+      profile: "プロフィール誘導",
+    };
+    const goalLabel = goalLabelMap[goalCategoryKey] || "アカウント成長";
+
+    const followerKpi = reportSummary?.kpiBreakdowns?.find(
+      (k) => k.key === "followers"
+    );
+    const followerDelta =
+      typeof followerKpi?.value === "number" ? followerKpi.value : undefined;
+
+    const plannedPosts = pdcaMetrics?.plannedPosts;
+    const analyzedPosts = pdcaMetrics?.analyzedPosts;
+
+    const parts: string[] = [];
+    if (targetAudience && targetAudience !== "未設定") {
+      parts.push(`今月は「${targetAudience}」に向けて、${goalLabel}を狙ったInstagram運用を行う計画です。`);
+    } else {
+      parts.push(`今月は${goalLabel}にフォーカスしたInstagram運用を行う計画です。`);
+    }
+
+    if (typeof followerDelta === "number") {
+      parts.push(`フォロワーは今月おおよそ+${followerDelta}人を目安に伸ばす想定です。`);
+    }
+
+    if (typeof plannedPosts === "number" && typeof analyzedPosts === "number") {
+      const remaining = Math.max(0, plannedPosts - analyzedPosts);
+      parts.push(
+        `投稿シミュレーション上は約${plannedPosts}本を目安にしており、そのうち${analyzedPosts}本が分析済みです（残り${remaining}本）。`
+      );
+    }
+
+    return parts.join(" ");
+  }, [planData, reportSummary, pdcaMetrics]);
 
   // BFFサマリーデータを取得
   const fetchReportSummary = useCallback(
@@ -732,6 +783,7 @@ export default function InstagramMonthlyReportPage() {
               monthlyReview={monthlyReview}
               selectedMonth={selectedMonth}
               planSummaryText={planSummaryText}
+              planHighlights={planHighlights}
               onPdcaMetricsUpdate={(metrics) => {
                 setPdcaMetrics(metrics ?? null);
               }}
