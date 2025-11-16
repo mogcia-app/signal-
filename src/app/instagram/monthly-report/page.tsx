@@ -23,7 +23,6 @@ import {
 import { RiskAlerts } from "./components/risk-alerts";
 import { PostTypeInsights } from "./components/PostTypeInsights";
 import { authFetch } from "../../../utils/authFetch";
-import { SnapshotReferenceSection } from "./components/snapshot-reference-section";
 import { ContentPerformanceSection } from "./components/content-performance-section";
 import { AudienceBreakdownSection } from "./components/audience-breakdown-section";
 import {
@@ -226,6 +225,31 @@ export default function InstagramMonthlyReportPage() {
       brandConcept: (form?.brandConcept as string) || null,
       tone: (form?.tone as string) || null,
     };
+  }, [planData]);
+  const planSummaryText = useMemo(() => {
+    if (!planData) {
+      return null;
+    }
+    const form = planData.formData as Record<string, unknown> | undefined;
+    const targetAudience =
+      (form?.targetAudience as string) || planData.targetAudience || "";
+    const goalCategoryKey =
+      (form?.goalCategory as string) || (planData as any).category || "follower";
+    const goalLabelMap: Record<string, string> = {
+      follower: "フォロワー獲得",
+      engagement: "エンゲージメント強化",
+      like: "いいね増加",
+      save: "保存率向上",
+      reach: "リーチ拡大",
+      impressions: "インプレッション増加",
+      branding: "ブランド認知",
+      profile: "プロフィール誘導",
+    };
+    const goalLabel = goalLabelMap[goalCategoryKey] || "アカウント成長";
+    if (targetAudience && targetAudience !== "未設定") {
+      return `今月は「${targetAudience}」に向けて、${goalLabel}を狙ったInstagram運用を行う計画です。`;
+    }
+    return `今月は${goalLabel}にフォーカスしたInstagram運用を行う計画です。`;
   }, [planData]);
   // BFF API連携の状態
   const [accountScore, setAccountScore] = useState<Record<string, unknown> | null>(null);
@@ -707,6 +731,7 @@ export default function InstagramMonthlyReportPage() {
             <AIPredictionAnalysis
               monthlyReview={monthlyReview}
               selectedMonth={selectedMonth}
+              planSummaryText={planSummaryText}
               onPdcaMetricsUpdate={(metrics) => {
                 setPdcaMetrics(metrics ?? null);
               }}
@@ -720,7 +745,6 @@ export default function InstagramMonthlyReportPage() {
 
             <RiskAlerts alerts={aiAlerts} />
             <PostTypeInsights highlights={postTypeHighlights} unifiedTotalPosts={unifiedTotalPosts} />
-            <SnapshotReferenceSection posts={reportSummary?.posts} unifiedTotalPosts={unifiedTotalPosts} />
             <NextMonthFocusActions
               actions={reportSummary?.nextMonthFocusActions}
               userId={user?.uid ?? undefined}
