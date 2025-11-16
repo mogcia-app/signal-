@@ -3,8 +3,7 @@ import Link from "next/link";
 import { Brain, Loader2, Lightbulb, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
-import type { AIGenerationResponse, AIInsightBlock } from "@/types/ai";
-import { AIReferenceBadge } from "@/components/AIReferenceBadge";
+import type { AIGenerationResponse } from "@/types/ai";
 
 interface AIPredictionAnalysisProps {
   monthlyReview: Record<string, unknown> | null;
@@ -308,16 +307,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   }, [analysisResult?.actionPlans]);
 
   const planReflection = analysisResult?.overview?.planReflection ?? null;
-  const generationReferences = useMemo(
-    () =>
-      analysisResult?.generation?.references?.filter((ref) => ref.sourceType !== "snapshot") ?? [],
-    [analysisResult?.generation]
-  );
-  const generationInsightBlocks = useMemo<AIInsightBlock[]>(() => {
-    const generation = analysisResult?.generation;
-    if (!generation) {return [];}
-    return generation.aiInsights?.length ? generation.aiInsights : [];
-  }, [analysisResult?.generation]);
 
   const hasAnalysisData = useMemo(() => {
     if (!analysisResult) {
@@ -439,39 +428,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                     <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
                       {analysisResult.generation.draft.body}
                     </p>
-                    {generationInsightBlocks.length > 0 ? (
-                      <ul className="mt-4 space-y-2">
-                        {generationInsightBlocks.slice(0, 4).map((insight, index) => (
-                          <li
-                            key={`ai-generation-insight-${index}`}
-                            className="text-xs text-gray-600 flex items-start gap-2"
-                          >
-                            <span className="text-gray-400 mt-0.5">•</span>
-                            <span className="flex-1">
-                              <span className="font-semibold text-gray-800 block">{insight.title}</span>
-                              {insight.description ? (
-                                <span className="text-gray-600 block mt-0.5">{insight.description}</span>
-                              ) : null}
-                              {insight.action ? (
-                                <span className="text-gray-500 block mt-0.5">
-                                  推奨アクション: {insight.action}
-                                </span>
-                              ) : null}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    {generationReferences.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-[11px] font-semibold text-gray-500 mb-1">参照データ</p>
-                        <div className="flex flex-wrap gap-2">
-                          {generationReferences.map((ref) => (
-                            <AIReferenceBadge key={ref.id} reference={ref} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Link
                         href={LAB_DEFAULT_LINK}
