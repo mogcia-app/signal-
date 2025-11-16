@@ -739,21 +739,48 @@ export default function InstagramMonthlyReportPage() {
 
   // 運用計画の投稿シミュレーション進捗（Planカードと同等の情報を運用計画の振り返りにも表示）
   const planSimulationSummary = useMemo(() => {
-    if (!pdcaMetrics) {
+    if (!planData) {
       return null;
     }
-    const requiredPerMonth =
-      typeof pdcaMetrics.plannedPosts === "number" && Number.isFinite(pdcaMetrics.plannedPosts)
-        ? Math.max(0, Math.round(pdcaMetrics.plannedPosts))
-        : 0;
+
+    // PlanGoalsSection と同じロジックで必要本数を算出
+    const formData = planData.formData as Record<string, unknown> | undefined;
+    const simulationResult = planData.simulationResult as
+      | (Record<string, unknown> & { monthlyPostCount?: unknown })
+      | null
+      | undefined;
+    const safeNumberLocal = (value: unknown, fallback = 0) => {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        return value;
+      }
+      if (typeof value === "string" && value.trim() !== "") {
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isNaN(parsed)) {
+          return parsed;
+        }
+      }
+      return fallback;
+    };
+
+    const simulationMonthlyPosts = safeNumberLocal(simulationResult?.monthlyPostCount, 0);
+    const feedFreq = safeNumberLocal(formData?.feedFreq, 0);
+    const reelFreq = safeNumberLocal(formData?.reelFreq, 0);
+    const storyFreq = safeNumberLocal(formData?.storyFreq, 0);
+    const freqBasedMonthlyPosts = (feedFreq + reelFreq + storyFreq) * 4;
+    const requiredPerMonth = Math.max(
+      0,
+      Math.round(simulationMonthlyPosts || freqBasedMonthlyPosts || 0),
+    );
+
     if (requiredPerMonth === 0) {
       return null;
     }
 
+    // 実績・分析済み・未登録は unifiedTotalPosts / pdcaMetrics を利用
     const actualPosts = unifiedTotalPosts;
     const analyzedPosts =
-      typeof pdcaMetrics.analyzedPosts === "number" && Number.isFinite(pdcaMetrics.analyzedPosts)
-        ? Math.max(0, Math.round(pdcaMetrics.analyzedPosts))
+      typeof pdcaMetrics?.analyzedPosts === "number" && Number.isFinite(pdcaMetrics?.analyzedPosts)
+        ? Math.max(0, Math.round(pdcaMetrics!.analyzedPosts))
         : 0;
     const unregisteredPosts = Math.max(0, actualPosts - analyzedPosts);
     const remainingToGoal = Math.max(0, requiredPerMonth - actualPosts);
@@ -765,7 +792,7 @@ export default function InstagramMonthlyReportPage() {
       unregisteredPosts,
       remainingToGoal,
     };
-  }, [pdcaMetrics, unifiedTotalPosts]);
+  }, [planData, unifiedTotalPosts, pdcaMetrics]);
 
   // 月の表示名を取得
   const getMonthDisplayName = (monthStr: string) => {
