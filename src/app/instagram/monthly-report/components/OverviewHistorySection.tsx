@@ -79,20 +79,42 @@ export const OverviewHistorySection: React.FC<OverviewHistorySectionProps> = ({
         const result = await response.json();
 
         if (result.success) {
+          const bannedPhrases = [
+            "投稿が確認できません",
+            "投稿が全くない",
+            "成長の機会を逃しています",
+            "フォロワー増加の可能性が低い",
+          ];
+          const containsBanned = (text: string) =>
+            bannedPhrases.some((p) => text.includes(p));
+
           const normalizedHistory = Array.isArray(result.data)
-            ? result.data.map((entry: any) => ({
-                id: String(entry.id || ""),
-                summary: String(entry.overview?.summary || ""),
-                highlights: Array.isArray(entry.overview?.highlights)
-                  ? entry.overview.highlights
-                  : [],
-                watchouts: Array.isArray(entry.overview?.watchouts)
-                  ? entry.overview.watchouts
-                  : [],
-                date: String(entry.date || ""),
-                period: entry.period === "weekly" ? "weekly" : "monthly",
-                createdAt: typeof entry.createdAt === "string" ? entry.createdAt : null,
-              }))
+            ? result.data
+                .map((entry: any) => {
+                  const genSummary =
+                    entry?.generation?.draft?.body ||
+                    entry?.generation?.rawText ||
+                    "";
+                  const overviewSummary = entry?.overview?.summary || "";
+                  const summary = String(genSummary || overviewSummary || "");
+                  const highlights = Array.isArray(entry?.overview?.highlights)
+                    ? entry.overview.highlights
+                    : [];
+                  const rawWatchouts: string[] = Array.isArray(entry?.overview?.watchouts)
+                    ? entry.overview.watchouts
+                    : [];
+                  const watchouts = rawWatchouts.filter((w) => !containsBanned(w));
+                  return {
+                    id: String(entry.id || ""),
+                    summary,
+                    highlights,
+                    watchouts,
+                    date: String(entry.date || ""),
+                    period: entry.period === "weekly" ? "weekly" : "monthly",
+                    createdAt: typeof entry.createdAt === "string" ? entry.createdAt : null,
+                  } as OverviewHistoryEntry;
+                })
+                .filter((e: OverviewHistoryEntry) => e.summary.trim().length > 0)
             : [];
 
           setHistory(normalizedHistory);

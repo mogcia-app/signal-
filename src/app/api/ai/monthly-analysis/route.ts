@@ -2811,6 +2811,13 @@ async function performAIAnalysis(
   const totalShares = totals.totalShares || 0;
   const totalReach = totals.totalReach || 0;
   let totalPosts = totals.totalPosts || 0;
+  // 総合エンゲージメント（総和）を明示的に計算して totals に追加
+  const totalEngagement =
+    (totals.totalLikes || 0) +
+    (totals.totalComments || 0) +
+    (totals.totalShares || 0) +
+    (totals.totalSaves || 0);
+  (totals as any).totalEngagement = totalEngagement;
   const summaryExtras = reportSummary as
     | {
         postDeepDive?: unknown[];
@@ -2954,7 +2961,8 @@ async function performAIAnalysis(
     alerts.push(alert);
   };
 
-  if (totalPosts === 0) {
+  // 投稿ゼロアラート: 実データがゼロのときのみ
+  if (totalPosts === 0 && (totals.totalReach || 0) === 0) {
     pushAlert({
       id: "no-posts",
       metric: "投稿数",
@@ -2984,11 +2992,15 @@ async function performAIAnalysis(
     });
   }
 
-  if (engagementRate < 1 && totalPosts > 0) {
+  // ER低下アラート: データが十分なときのみ（分析済み3件以上相当）
+  if (engagementRate < 1 && totalPosts >= 3 && (totals.totalReach || 0) > 0) {
     pushAlert({
       id: "low-engagement",
       metric: "エンゲージメント率",
-      message: "エンゲージメント率が1%未満です。CTAやコンテンツの改善を検討してください。",
+      message:
+        (totals as any)?.totalEngagement > 0
+          ? "エンゲージメントは得られていますが効率が低めです。CTAや導線の調整を検討してください。"
+          : "エンゲージメントがまだ十分ではありません。導入/構成の最適化を試してください。",
       severity: "info",
       value: engagementRate,
     });
@@ -3244,6 +3256,9 @@ async function performAIAnalysis(
     planContext,
   });
 
+  // 分析済み件数（表示/ハイライト用）
+  const analyzedPostsForPeriod = pdcaMetrics?.analyzedPosts ?? 0;
+
   const overview =
     aiOverview ||
     generateFallbackOverview(
@@ -3254,13 +3269,145 @@ async function performAIAnalysis(
       planContext
     );
 
+  // ハイライトの「投稿数」は分析入力済み件数ベースに置換（前月比は不明な場合は "—"）
+  if (overview && Array.isArray(overview.highlights) && typeof analyzedPostsForPeriod === "number") {
+    const nextHighlights = overview.highlights.slice();
+    const idx = nextHighlights.findIndex((h) => h.label === "投稿数");
+    const postHighlight = {
+      label: "投稿数",
+      value: `${analyzedPostsForPeriod.toLocaleString()}件`,
+      change:
+        typeof (reportSummary?.changes?.postsChange) === "number"
+          ? `${(reportSummary!.changes!.postsChange! >= 0 ? "+" : "")}${reportSummary!.changes!.postsChange!.toFixed(1)}%`
+          : "—",
+    };
+    if (idx >= 0) {
+      nextHighlights[idx] = postHighlight;
+    } else {
+      nextHighlights.unshift(postHighlight);
+    }
+    overview.highlights = nextHighlights;
+  }
+
+  // ハイライトの「フォロワー」を進捗表示に調整（例: +12 / 35人）
+  if (overview && Array.isArray(overview.highlights)) {
+    const nextHighlights = overview.highlights.slice();
+    const idxFollower = nextHighlights.findIndex((h) => h.label === "フォロワー増減" || h.label === "フォロワー数");
+    const currentIncrease = totals.totalFollowerIncrease || 0;
+    const targetFollowers = planSummary?.targetFollowers ?? 0;
+    const currentFollowersBase = planSummary?.currentFollowers ?? 0;
+    const monthlyGoalDelta = Math.max(0, targetFollowers - currentFollowersBase);
+    const followerValue =
+      monthlyGoalDelta > 0
+        ? `${currentIncrease.toLocaleString()}人 / ${monthlyGoalDelta.toLocaleString()}人`
+        : `${currentIncrease.toLocaleString()}人`;
+    const followerChangeText =
+      typeof reportSummary?.changes?.followerChange === "number"
+        ? `${(reportSummary!.changes!.followerChange! >= 0 ? "+" : "")}${reportSummary!.changes!.followerChange!.toFixed(1)}%`
+        : "—";
+    const followerHighlight = {
+      label: "フォロワー増加",
+      value: followerValue,
+      change: followerChangeText,
+    };
+    if (idxFollower >= 0) {
+      nextHighlights[idxFollower] = followerHighlight;
+    } else {
+      nextHighlights.push(followerHighlight);
+    }
+    overview.highlights = nextHighlights;
+  }
+
+  // AI注目ポイント（watchouts）をデータ整合的に再構築
+  if (overview) {
+    const newWatchouts: string[] = [];
+    const er = engagementRate || 0;
+    const totalEng = (totals as any)?.totalEngagement || 0;
+    const followerInc = totals.totalFollowerIncrease || 0;
+    // エンゲージメントが完全にゼロの場合のみ注意喚起
+    if (er === 0 && totalEng === 0) {
+      newWatchouts.push("エンゲージメントの反応がまだ見られません。構成と導入の最適化を検討してください。");
+    }
+    // フォロワー増がゼロ以下の場合のみ注意喚起
+    if (followerInc <= 0) {
+      newWatchouts.push("フォロワーの純増が確認できません。プロフィール導線と訴求の見直しが有効です。");
+    }
+    // 投稿計画に対する進捗
+    if (typeof pdcaMetrics?.plannedPosts === "number") {
+      const remain = Math.max(0, (pdcaMetrics?.plannedPosts ?? 0) - analyzedPostsForPeriod);
+      if (remain > 0) {
+        newWatchouts.push(`計画に対して残り${remain}件の分析済み投稿が必要です。`);
+      }
+    }
+    // ひとつも無ければ既存を踏襲、あれば置換
+    if (newWatchouts.length > 0) {
+      overview.watchouts = newWatchouts.slice(0, 3);
+    }
+  }
+
+  // 運用計画の振り返り（planReflection）を進捗ベースで上書き
+  if (overview) {
+    const checkpoints: Array<{ label: string; target: string; actual: string; status: "met" | "partial" | "missed" | "no_data" }> = [];
+    let worst: "met" | "partial" | "missed" | "no_data" = "met";
+    const applyWorst = (s: typeof worst) => {
+      const order = { met: 0, partial: 1, missed: 2, no_data: 3 };
+      if (order[s] > order[worst]) { worst = s; }
+    };
+    // フォロワー目標
+    const targetFollowers = planSummary?.targetFollowers ?? 0;
+    const currentFollowersBase = planSummary?.currentFollowers ?? 0;
+    const monthlyGoalDelta = Math.max(0, targetFollowers - currentFollowersBase);
+    if (monthlyGoalDelta > 0) {
+      const inc = totals.totalFollowerIncrease || 0;
+      const status: "met" | "partial" | "missed" =
+        inc >= monthlyGoalDelta ? "met" : inc > 0 ? "partial" : "missed";
+      applyWorst(status);
+      checkpoints.push({
+        label: "フォロワー増加",
+        target: `${monthlyGoalDelta.toLocaleString()}人`,
+        actual: `${inc.toLocaleString()}人`,
+        status,
+      });
+    }
+    // 投稿頻度（分析済み）目標
+    if (typeof pdcaMetrics?.plannedPosts === "number" && pdcaMetrics.plannedPosts > 0) {
+      const planned = pdcaMetrics.plannedPosts;
+      const actual = analyzedPostsForPeriod;
+      const status: "met" | "partial" | "missed" =
+        actual >= planned ? "met" : actual > 0 ? "partial" : "missed";
+      applyWorst(status);
+      checkpoints.push({
+        label: "投稿頻度（分析済み）",
+        target: `${planned.toLocaleString()}件`,
+        actual: `${actual.toLocaleString()}件`,
+        status,
+      });
+    }
+    if (checkpoints.length > 0) {
+      const summaryText =
+        worst === "met"
+          ? "計画に沿って進捗しています。来月は伸びた要素の再現に注力しましょう。"
+          : worst === "partial"
+            ? "おおむね前進しています。残りの未達分を計画的に埋めていきましょう。"
+            : "未達の項目があります。優先順位を見直し、実行ペースと導線を調整しましょう。";
+      overview.planReflection = {
+        summary: summaryText,
+        status: worst === "met" ? "on_track" : worst === "partial" ? "at_risk" : "off_track",
+        checkpoints,
+        nextSteps: [
+          "来月に向けて優先KPIを1つに絞り、実行本数と導線を明確化する",
+          "好調パターンの再現と、未達要因の1点改善を同時に進める",
+        ],
+      };
+    }
+  }
+
   // プロンプトを構築（学習段階に応じて最適化）
   const postsArrayCount =
     (Array.isArray((reportSummary as any)?.posts) ? ((reportSummary as any).posts as unknown[]).length : 0) +
     (Array.isArray((reportSummary as any)?.postDeepDive) ? ((reportSummary as any).postDeepDive as unknown[]).length : 0);
   // 低データ判定は「投稿は0だが、他のKPIが存在する」ケースに限定
   const lowDataMode = totalPosts === 0 && totalReach > 0;
-
   let prompt = `Instagram分析データを基に、簡潔に分析してください。
 
 【御社専用AI設定】
@@ -3281,7 +3428,7 @@ ${
 
 【Instagram運用データ】
 期間: ${period === "weekly" ? "週次" : "月次"}
-投稿数: ${totalPosts}件、いいね: ${totalLikes}件、コメント: ${totalComments}件、シェア: ${totalShares}件
+投稿数: ${analyzedPostsForPeriod}件、いいね: ${totalLikes}件、コメント: ${totalComments}件、シェア: ${totalShares}件
 リーチ: ${totalReach}人、フォロワー増加: ${totals.totalFollowerIncrease || 0}人
 投稿タイプ: ${reportSummary?.postTypeStats?.map((stat) => `${stat.label}${stat.count}件`).join("、") || "なし"}
 最適時間: ${reportSummary?.bestTimeSlot?.label || "不明"}
@@ -3306,6 +3453,7 @@ ${
 以下の表現は禁止し、必ず前向きな言い換えを行う:
 「投稿がない」「投稿ゼロ」「全くない」「停滞」「できていない」
 例) 「投稿がない」→「残り${remainingToGoal}件の実行で目標に近づきます」
+数値と矛盾する表現は禁止。たとえばフォロワー増加が正のときは「増加が見込めない/機会を活かせない」などと書かない。
 
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（100文字以内、現状の実績に基づく）
 2. 次へのステップ（各30文字以内の自然な文章を3つ）
@@ -3320,6 +3468,7 @@ ${
 以下の表現は禁止し、必ず前向きな言い換えを行う:
 「投稿がない」「投稿ゼロ」「全くない」「停滞」「できていない」
 例) 「投稿がない」→「残り${remainingToGoal}件を今月の実行目安に設定します」
+数値と矛盾する表現は禁止。たとえばフォロワー増加が正のときは「増加が見込めない/機会を活かせない」などと書かない。
 
 次の3つを提供:
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（80文字以内）
@@ -3336,6 +3485,7 @@ ${
 「###」「-」「*」などの記号、箇条書きや見出し、JSON形式やMarkdown形式を使わない。すべて自然な日本語の文章で書く。
 以下の表現は禁止し、必ず前向きな言い換えを行う:
 「投稿がない」「投稿ゼロ」「全くない」「停滞」「できていない」
+数値と矛盾する表現は禁止。たとえばフォロワー増加が正のときは「増加が見込めない/機会を活かせない」などと書かない。
 
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（100文字以内、フォロワー増加予測の根拠を含む）
 2. 次へのステップ（各30文字以内の自然な文章を3つ）
@@ -3349,10 +3499,21 @@ ${
 過去の学習データを活用し、簡潔で的確な分析を提供してください。`;
   }
 
+  const hasFollowerGain = (totals.totalFollowerIncrease || 0) > 0;
+  const totalEngagementCount =
+    (totals.totalLikes || 0) +
+    (totals.totalComments || 0) +
+    (totals.totalShares || 0) +
+    (totals.totalSaves || 0);
+  const hasEngagement = totalEngagementCount > 0 || (engagementRate || 0) > 0;
   const insightMessages = [
-    `投稿頻度${totalPosts}件で${totalPosts > 10 ? "適切" : "増加推奨"}`,
-    `リーチ数${totalReach.toLocaleString()}で${totalReach > 1000 ? "順調" : "拡大が必要"}`,
-    "定期的な投稿でフォロワーとの関係を構築",
+    `投稿頻度${analyzedPostsForPeriod}件で${analyzedPostsForPeriod > 10 ? "適切" : "増加推奨"}`,
+    hasEngagement
+      ? `エンゲージメント合計${totalEngagementCount.toLocaleString()}で関心を獲得`
+      : "エンゲージメントの母数拡大に向けて構成最適化が必要",
+    hasFollowerGain
+      ? `フォロワーは+${(totals.totalFollowerIncrease || 0).toLocaleString()}人で前進`
+      : "フォロワー増に向け導線と訴求の強化が必要",
   ];
   const recommendationMessages = [
     "投稿頻度を週3-4回に増やす",

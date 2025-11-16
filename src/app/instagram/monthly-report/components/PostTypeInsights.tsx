@@ -6,6 +6,7 @@ import { AIAnalysisPostTypeHighlight } from "./AIPredictionAnalysis";
 
 interface PostTypeInsightsProps {
   highlights: AIAnalysisPostTypeHighlight[];
+  unifiedTotalPosts?: number;
 }
 
 const statusConfig = {
@@ -32,8 +33,12 @@ const statusConfig = {
   },
 } as const;
 
-export const PostTypeInsights: React.FC<PostTypeInsightsProps> = ({ highlights }) => {
+export const PostTypeInsights: React.FC<PostTypeInsightsProps> = ({ highlights, unifiedTotalPosts }) => {
   if (!highlights || highlights.length === 0) {
+    // 投稿自体はあるが、タイプ別インサイトが抽出されなかった場合は非表示
+    if ((unifiedTotalPosts ?? 0) > 0) {
+      return null;
+    }
     return (
       <div className="bg-white rounded-none shadow-sm border border-gray-200 p-6 mb-6 mt-4">
         <div className="flex items-center justify-between mb-4">

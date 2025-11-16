@@ -22,7 +22,6 @@ import {
 } from "./components/AIPredictionAnalysis";
 import { RiskAlerts } from "./components/risk-alerts";
 import { PostTypeInsights } from "./components/PostTypeInsights";
-import { OverviewHistorySection } from "./components/OverviewHistorySection";
 import { authFetch } from "../../../utils/authFetch";
 import { SnapshotReferenceSection } from "./components/snapshot-reference-section";
 import { ContentPerformanceSection } from "./components/content-performance-section";
@@ -250,8 +249,7 @@ export default function InstagramMonthlyReportPage() {
   } | null>(null);
   const [aiAlerts, setAiAlerts] = useState<AIAnalysisAlert[]>([]);
   const [postTypeHighlights, setPostTypeHighlights] = useState<AIAnalysisPostTypeHighlight[]>([]);
-  const [hasRequestedAi, setHasRequestedAi] = useState(false);
-  const [overviewHistoryRefreshKey, setOverviewHistoryRefreshKey] = useState(0);
+  // 履歴セクションは削除
   const [actionLogs, setActionLogs] = useState<AIActionLog[]>([]);
   const [actionLogsLoading, setActionLogsLoading] = useState(false);
   const [actionLogsError, setActionLogsError] = useState<string | null>(null);
@@ -716,24 +714,12 @@ export default function InstagramMonthlyReportPage() {
               onPostTypeHighlightsUpdate={(highlights) =>
                 setPostTypeHighlights(highlights ?? [])
               }
-              onLoadingChange={(loading) => {
-                if (loading) {
-                  setHasRequestedAi(true);
-                }
-              }}
-              onOverviewUpdated={() => {
-                setOverviewHistoryRefreshKey((prev) => prev + 1);
-              }}
-            />
-            <OverviewHistorySection
-              period="monthly"
-              refreshKey={overviewHistoryRefreshKey}
-              hasRequested={hasRequestedAi}
-              containerClassName="mt-4"
+              onLoadingChange={undefined}
+              onOverviewUpdated={undefined}
             />
 
             <RiskAlerts alerts={aiAlerts} />
-            <PostTypeInsights highlights={postTypeHighlights} />
+            <PostTypeInsights highlights={postTypeHighlights} unifiedTotalPosts={unifiedTotalPosts} />
             <SnapshotReferenceSection posts={reportSummary?.posts} unifiedTotalPosts={unifiedTotalPosts} />
             <NextMonthFocusActions
               actions={reportSummary?.nextMonthFocusActions}
