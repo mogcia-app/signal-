@@ -11,6 +11,14 @@ interface PlanHighlightItem {
   comment: string;
 }
 
+interface PlanSimulationSummary {
+  requiredPerMonth: number;
+  actualPosts: number;
+  analyzedPosts: number;
+  unregisteredPosts: number;
+  remainingToGoal: number;
+}
+
 interface AIPredictionAnalysisProps {
   monthlyReview: Record<string, unknown> | null;
   selectedMonth: string;
@@ -18,6 +26,8 @@ interface AIPredictionAnalysisProps {
   planSummaryText?: string | null;
   /** 運用計画から生成された具体的なフォーカス/投稿内容のハイライト */
   planHighlights?: PlanHighlightItem[];
+  /** Plan＆KPIコンソールから計算された投稿シミュレーション進捗サマリー */
+  planSimulationSummary?: PlanSimulationSummary | null;
   onPdcaMetricsUpdate?: (metrics: AIAnalysisResult["pdcaMetrics"] | null) => void;
   onAlertsUpdate?: (alerts: AIAnalysisAlert[] | null) => void;
   onPostTypeHighlightsUpdate?: (
@@ -200,6 +210,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   selectedMonth,
   planSummaryText,
   planHighlights,
+  planSimulationSummary,
   onPdcaMetricsUpdate,
   onAlertsUpdate,
   onPostTypeHighlightsUpdate,
@@ -425,6 +436,43 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                       {planSummaryText}
                     </p>
                   )}
+                  {planSimulationSummary && planSimulationSummary.requiredPerMonth > 0 && (
+                    <div className="mt-2 mb-3 border border-dashed border-slate-200 bg-slate-50 p-3">
+                      <p className="text-[11px] font-semibold text-slate-700 mb-2">
+                        投稿シミュレーション進捗
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-700">
+                        <div>
+                          <p className="text-[10px] text-slate-500">Planで必要</p>
+                          <p className="font-semibold">
+                            {planSimulationSummary.requiredPerMonth}件 / 月
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500">今月の投稿実績</p>
+                          <p className="font-semibold">
+                            {planSimulationSummary.actualPosts}件
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500">分析入力済み</p>
+                          <p className="font-semibold">
+                            {planSimulationSummary.analyzedPosts}件
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-500">未登録</p>
+                          <p className="font-semibold">
+                            {planSimulationSummary.unregisteredPosts}件
+                          </p>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[11px] text-slate-600">
+                        あと {planSimulationSummary.remainingToGoal}件でシミュレーション目標に到達。
+                        分析データ化済みは {planSimulationSummary.analyzedPosts}件です。
+                      </p>
+                    </div>
+                  )}
                   {Array.isArray(planHighlights) && planHighlights.length > 0 && (
                     <div className="mt-2 mb-2 space-y-2">
                       <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
@@ -496,38 +544,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                             ? "運用計画が未設定のため、振り返りはまだ表示できません。"
                             : "AIによる振り返りを生成できませんでした。計画と実績を手動で確認してください。"}
                       </p>
-                      {planReflection.checkpoints?.length ? (
-                        <div className="mt-4">
-                          <h4 className="text-xs font-semibold text-gray-600 mb-2">チェックポイント</h4>
-                          <ul className="space-y-2">
-                            {planReflection.checkpoints.map((checkpoint, index) => (
-                              <li
-                                key={`${checkpoint.label}-${index}`}
-                                className="border border-dashed border-gray-200 rounded-none p-3 bg-gray-50 text-sm text-gray-700"
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-semibold text-gray-800">{checkpoint.label}</span>
-                                  <span
-                                    className={`px-2 py-0.5 text-[11px] font-semibold rounded-none ${checkpointStatusBadges[checkpoint.status]}`}
-                                  >
-                                    {checkpointStatusLabels[checkpoint.status] ?? "未設定"}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
-                                  <div className="bg-white border border-gray-200 rounded-none p-2">
-                                    <p className="font-semibold text-gray-700 mb-1">計画</p>
-                                    <p>{checkpoint.target}</p>
-                                  </div>
-                                  <div className="bg-white border border-gray-200 rounded-none p-2">
-                                    <p className="font-semibold text-gray-700 mb-1">実績</p>
-                                    <p>{checkpoint.actual}</p>
-                                  </div>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
                       {planReflection.nextSteps?.length ? (
                         <div className="mt-4">
                           <h4 className="text-xs font-semibold text-gray-600 mb-2">来月のアクション提案</h4>

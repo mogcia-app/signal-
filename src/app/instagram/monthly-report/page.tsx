@@ -737,6 +737,36 @@ export default function InstagramMonthlyReportPage() {
     return Math.max(totalsCount, deepDiveCount, postsCount, feedCount, reelCount);
   }, [reportSummary]);
 
+  // 運用計画の投稿シミュレーション進捗（Planカードと同等の情報を運用計画の振り返りにも表示）
+  const planSimulationSummary = useMemo(() => {
+    if (!pdcaMetrics) {
+      return null;
+    }
+    const requiredPerMonth =
+      typeof pdcaMetrics.plannedPosts === "number" && Number.isFinite(pdcaMetrics.plannedPosts)
+        ? Math.max(0, Math.round(pdcaMetrics.plannedPosts))
+        : 0;
+    if (requiredPerMonth === 0) {
+      return null;
+    }
+
+    const actualPosts = unifiedTotalPosts;
+    const analyzedPosts =
+      typeof pdcaMetrics.analyzedPosts === "number" && Number.isFinite(pdcaMetrics.analyzedPosts)
+        ? Math.max(0, Math.round(pdcaMetrics.analyzedPosts))
+        : 0;
+    const unregisteredPosts = Math.max(0, actualPosts - analyzedPosts);
+    const remainingToGoal = Math.max(0, requiredPerMonth - actualPosts);
+
+    return {
+      requiredPerMonth,
+      actualPosts,
+      analyzedPosts,
+      unregisteredPosts,
+      remainingToGoal,
+    };
+  }, [pdcaMetrics, unifiedTotalPosts]);
+
   // 月の表示名を取得
   const getMonthDisplayName = (monthStr: string) => {
     const date = new Date(monthStr + "-01");
@@ -783,6 +813,7 @@ export default function InstagramMonthlyReportPage() {
               monthlyReview={monthlyReview}
               selectedMonth={selectedMonth}
               planSummaryText={planSummaryText}
+              planSimulationSummary={planSimulationSummary}
               planHighlights={planHighlights}
               onPdcaMetricsUpdate={(metrics) => {
                 setPdcaMetrics(metrics ?? null);
