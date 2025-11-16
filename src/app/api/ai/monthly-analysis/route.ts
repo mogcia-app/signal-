@@ -2850,6 +2850,9 @@ async function performAIAnalysis(
   }
   const engagementRate = totals.avgEngagementRate || 0;
   const postTypeStats = reportSummary?.postTypeStats || [];
+  const postTypeCountSum = Array.isArray(postTypeStats)
+    ? postTypeStats.reduce((sum, item) => sum + (typeof item?.count === "number" ? item.count : 0), 0)
+    : 0;
   const dataPointCount =
     (reportSummary?.totals?.totalPosts || 0) +
     (reportSummary?.hashtagStats?.length || 0) +
@@ -3193,6 +3196,11 @@ async function performAIAnalysis(
     );
 
   // プロンプトを構築（学習段階に応じて最適化）
+  const postsArrayCount =
+    (Array.isArray((reportSummary as any)?.posts) ? ((reportSummary as any).posts as unknown[]).length : 0) +
+    (Array.isArray((reportSummary as any)?.postDeepDive) ? ((reportSummary as any).postDeepDive as unknown[]).length : 0);
+  const lowDataMode = totalPosts === 0 && (postTypeCountSum > 0 || postsArrayCount > 0 || totalReach > 0);
+
   let prompt = `Instagram分析データを基に、簡潔に分析してください。
 
 【御社専用AI設定】
@@ -3223,10 +3231,21 @@ ${
 コメント: ${(changes.commentsChange ?? 0) >= 0 ? "+" : ""}${(changes.commentsChange ?? 0).toFixed(1)}%、
 リーチ: ${(changes.reachChange ?? 0) >= 0 ? "+" : ""}${(changes.reachChange ?? 0).toFixed(1)}%
 
-【回答形式】
-${
-  totalPosts === 0
-    ? `
+【回答形式】`;
+
+  if (lowDataMode) {
+    prompt += `
+登録済みの分析データが一部のみ存在します。ビジネス情報と利用可能なKPIから簡潔に所見をまとめてください。絶対に「投稿が全くない」と断定しないこと。
+
+【禁止事項】
+「###」「-」「*」などの記号、箇条書きや見出し、JSON形式やMarkdown形式を使わない。すべて自然な日本語の文章で書く。
+
+1. ${period === "weekly" ? "今週" : "今月"}のまとめ（100文字以内、現状の実績に基づく）
+2. 次へのステップ（各30文字以内の自然な文章を3つ）
+3. 詳細インサイト（各30文字以内の自然な文章を3つ）
+`;
+  } else if (totalPosts === 0) {
+    prompt += `
 投稿数がゼロの場合でも、ビジネス情報に基づいて実践的な提案を行う。すべて自然な日本語の文章で簡潔に答える。
 
 【禁止事項】
@@ -3234,24 +3253,23 @@ ${
 
 次の3つを提供:
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（80文字以内）
-   投稿ゼロの現状認識、ビジネス目標に基づいた投稿の重要性、週1-2回の投稿で期待できるフォロワー増加予測の根拠を含める
+   現状認識と、週1-2回投稿した場合の期待効果の根拠を含める
 
 2. 次へのステップ（各60文字以内の自然な文章を3つ）
    具体的な投稿テーマ、ターゲット市場に合わせたコンテンツ例、実践可能なアクションを含める
 
 3. 具体的なアドバイス（各60文字以内の自然な文章を2つ）
-
-重要: データがない場合でも、ビジネス情報（業種、ターゲット市場、目標）を活用して実践的な提案を行う。
-`
-    : `
+`;
+  } else {
+    prompt += `
 【禁止事項】
 「###」「-」「*」などの記号、箇条書きや見出し、JSON形式やMarkdown形式を使わない。すべて自然な日本語の文章で書く。
 
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（100文字以内、フォロワー増加予測の根拠を含む）
 2. 次へのステップ（各30文字以内の自然な文章を3つ）
 3. 詳細インサイト（各30文字以内の自然な文章を3つ）
-`
-}`;
+`;
+  }
 
   // 学習段階に応じてプロンプトを最適化
   if (isOptimized && ragHitRate > 0.7) {
