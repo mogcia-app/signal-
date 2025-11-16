@@ -8,6 +8,8 @@ import type { AIGenerationResponse } from "@/types/ai";
 interface AIPredictionAnalysisProps {
   monthlyReview: Record<string, unknown> | null;
   selectedMonth: string;
+  /** 今月の目標サマリー（運用計画から生成された安定テキスト） */
+  planSummaryText?: string | null;
   onPdcaMetricsUpdate?: (metrics: AIAnalysisResult["pdcaMetrics"] | null) => void;
   onAlertsUpdate?: (alerts: AIAnalysisAlert[] | null) => void;
   onPostTypeHighlightsUpdate?: (
@@ -188,6 +190,7 @@ interface AIAnalysisResult {
 export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   monthlyReview,
   selectedMonth,
+  planSummaryText,
   onPdcaMetricsUpdate,
   onAlertsUpdate,
   onPostTypeHighlightsUpdate,
@@ -407,9 +410,20 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                 {/* 今月のまとめカードは表示しない */}
 
                 <div className="border border-gray-200 rounded-none p-6 bg-white">
-                  <h3 className="text-base font-semibold text-black mb-3">運用計画の振り返り</h3>
+                  <h3 className="text-base font-semibold text-black mb-1">運用計画の振り返り</h3>
+                  {planSummaryText && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      {planSummaryText}
+                    </p>
+                  )}
                   {planReflection ? (
                     <>
+                      {Array.isArray(planReflection.nextSteps) &&
+                        planReflection.nextSteps.length > 0 && (
+                          <p className="text-xs text-amber-700 mb-2">
+                            AIアドバイス: {planReflection.nextSteps[0]}
+                          </p>
+                        )}
                       <div className="flex items-center gap-3">
                         <span
                           className={`px-3 py-1 text-xs font-semibold rounded-none ${planStatusMeta[planReflection.status]?.badge ?? planStatusMeta.at_risk.badge}`}
