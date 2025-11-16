@@ -40,6 +40,7 @@ type PatternHighlights = {
 interface PostDeepDiveSectionProps {
   posts?: ReportPost[];
   patternHighlights?: PatternHighlights;
+  unifiedTotalPosts?: number; // total posts derived/augmented by AI or summary
 }
 
 const badgeConfig: Record<
@@ -97,12 +98,18 @@ function MetricCell({ label, value }: { label: string; value?: number }) {
   );
 }
 
-export function PostDeepDiveSection({ posts, patternHighlights }: PostDeepDiveSectionProps) {
+export function PostDeepDiveSection({ posts, patternHighlights, unifiedTotalPosts }: PostDeepDiveSectionProps) {
   const postsToShow = posts?.slice(0, 4) ?? [];
   const hasPatternHighlights =
     (patternHighlights?.gold && patternHighlights.gold.length > 0) ||
     (patternHighlights?.negative && patternHighlights.negative.length > 0);
 
+  // If AI/summary says total posts are zero, hide the section entirely
+  if ((unifiedTotalPosts ?? 0) === 0) {
+    return null;
+  }
+
+  // If there are posts (per unified count) but none to show and no highlights, render a friendly empty state
   if (postsToShow.length === 0 && !hasPatternHighlights) {
     return null;
   }
@@ -122,7 +129,7 @@ export function PostDeepDiveSection({ posts, patternHighlights }: PostDeepDiveSe
         <div className="lg:col-span-2 space-y-4">
           {postsToShow.length === 0 ? (
             <div className="border border-dashed border-slate-200 bg-slate-50/40 p-6 text-sm text-slate-500">
-              今月まだ分析済みの投稿がありません。分析を登録するとここに実績が並びます。
+              投稿は存在しますが、深掘り対象となる投稿がまだありません。
             </div>
           ) : (
             postsToShow.map((post) => {

@@ -83,6 +83,7 @@ type FeedPerformanceStats = {
   totalInteractionCount: number;
   avgReachFollowerPercent: number;
   avgInteractionFollowerPercent: number;
+  totalPosts?: number;
   reachSources: {
     profile: number;
     feed: number;
@@ -109,6 +110,7 @@ type ReelPerformanceStats = {
   totalInteractionCount: number;
   avgReachFollowerPercent: number;
   avgInteractionFollowerPercent: number;
+  totalPosts?: number;
   reachSources: {
     profile: number;
     reel: number;
@@ -566,18 +568,30 @@ export default function InstagramMonthlyReportPage() {
         if (!cancelled) {
           if (result?.success) {
             const logs: AIActionLog[] = Array.isArray(result.data)
-              ? result.data.map((entry: any) => ({
-                  id: String(entry.id ?? `${user.uid}_${entry.actionId ?? "unknown"}`),
-                  actionId: String(entry.actionId ?? ""),
-                  title: entry.title ?? "",
-                  focusArea: entry.focusArea ?? focusAreaForNextMonth,
-                  applied: Boolean(entry.applied),
-                  resultDelta:
-                    typeof entry.resultDelta === "number" ? Number(entry.resultDelta) : null,
-                  feedback: entry.feedback ?? "",
-                  createdAt: typeof entry.createdAt === "string" ? entry.createdAt : null,
-                  updatedAt: typeof entry.updatedAt === "string" ? entry.updatedAt : null,
-                }))
+              ? result.data.map((entry: unknown) => {
+                  const e = entry as {
+                    id?: unknown;
+                    actionId?: unknown;
+                    title?: unknown;
+                    focusArea?: unknown;
+                    applied?: unknown;
+                    resultDelta?: unknown;
+                    feedback?: unknown;
+                    createdAt?: unknown;
+                    updatedAt?: unknown;
+                  };
+                  return {
+                    id: String(e.id ?? `${user.uid}_${(e.actionId as string | undefined) ?? "unknown"}`),
+                    actionId: String(e.actionId ?? ""),
+                    title: (e.title as string) ?? "",
+                    focusArea: (e.focusArea as string) ?? focusAreaForNextMonth,
+                    applied: Boolean(e.applied),
+                    resultDelta: typeof e.resultDelta === "number" ? Number(e.resultDelta) : null,
+                    feedback: (e.feedback as string) ?? "",
+                    createdAt: typeof e.createdAt === "string" ? (e.createdAt as string) : null,
+                    updatedAt: typeof e.updatedAt === "string" ? (e.updatedAt as string) : null,
+                  };
+                })
               : [];
             setActionLogs(logs);
           } else {
@@ -639,6 +653,16 @@ export default function InstagramMonthlyReportPage() {
     engagementRateChange: 0,
     postsChange: 0,
   };
+
+  // 統一 totalPosts（AI補完やサマリー派生値を考慮）
+  const unifiedTotalPosts = useMemo(() => {
+    const totalsCount = reportSummary?.totals?.totalPosts ?? 0;
+    const deepDiveCount = Array.isArray(reportSummary?.postDeepDive) ? reportSummary?.postDeepDive.length : 0;
+    const postsCount = Array.isArray(reportSummary?.posts) ? reportSummary?.posts.length : 0;
+    const feedCount = reportSummary?.contentPerformance?.feed?.totalPosts ?? 0;
+    const reelCount = reportSummary?.contentPerformance?.reel?.totalPosts ?? 0;
+    return Math.max(totalsCount, deepDiveCount, postsCount, feedCount, reelCount);
+  }, [reportSummary]);
 
   // 月の表示名を取得
   const getMonthDisplayName = (monthStr: string) => {
@@ -710,7 +734,7 @@ export default function InstagramMonthlyReportPage() {
 
             <RiskAlerts alerts={aiAlerts} />
             <PostTypeInsights highlights={postTypeHighlights} />
-            <SnapshotReferenceSection posts={reportSummary?.posts} />
+            <SnapshotReferenceSection posts={reportSummary?.posts} unifiedTotalPosts={unifiedTotalPosts} />
             <NextMonthFocusActions
               actions={reportSummary?.nextMonthFocusActions}
               userId={user?.uid ?? undefined}
@@ -724,6 +748,7 @@ export default function InstagramMonthlyReportPage() {
             <PostDeepDiveSection
               posts={reportSummary?.postDeepDive ?? reportSummary?.posts}
               patternHighlights={reportSummary?.patternHighlights}
+              unifiedTotalPosts={unifiedTotalPosts}
             />
             {reportSummary?.abTestSummaries && reportSummary.abTestSummaries.length > 0 && (
               <div className="bg-white border border-slate-200 rounded-none p-6 shadow-sm mb-6">

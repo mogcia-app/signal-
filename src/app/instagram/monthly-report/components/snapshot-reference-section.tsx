@@ -27,6 +27,7 @@ type ReportPost = {
 
 interface SnapshotReferenceSectionProps {
   posts?: ReportPost[];
+  unifiedTotalPosts?: number; // total posts derived/augmented by AI or summary
 }
 
 const statusConfig: Record<
@@ -50,7 +51,7 @@ const statusConfig: Record<
   },
 };
 
-export function SnapshotReferenceSection({ posts }: SnapshotReferenceSectionProps) {
+export function SnapshotReferenceSection({ posts, unifiedTotalPosts }: SnapshotReferenceSectionProps) {
   const references = useMemo(() => {
     const map = new Map<
       string,
@@ -91,9 +92,13 @@ export function SnapshotReferenceSection({ posts }: SnapshotReferenceSectionProp
         </div>
       </div>
 
-      {references.length === 0 ? (
+      {(unifiedTotalPosts ?? 0) === 0 ? (
         <div className="py-8 text-center text-sm text-slate-500 border border-dashed border-slate-200 rounded-none bg-slate-50/50">
           まだ参照可能な投稿がありません。投稿の分析が蓄積されるとここに表示されます。
+        </div>
+      ) : references.length === 0 ? (
+        <div className="py-8 text-center text-sm text-slate-500 border border-dashed border-slate-200 rounded-none bg-slate-50/50">
+          投稿はありますが、今月は参照対象がありません。
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
