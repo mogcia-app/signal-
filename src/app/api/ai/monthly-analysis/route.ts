@@ -2847,6 +2847,34 @@ async function performAIAnalysis(
   );
   totalPosts = inferredPostCount;
   totals.totalPosts = totalPosts;
+
+  // 追加: BFF直集計（Firestoreから当月投稿数を直接カウント）を最優先で採用
+  try {
+    if (userId && period === "monthly" && typeof date === "string" && /^\d{4}-\d{2}$/.test(date)) {
+      const [y, m] = date.split("-");
+      const year = Number(y);
+      const monthIndex = Number(m) - 1;
+      if (!Number.isNaN(year) && !Number.isNaN(monthIndex)) {
+        const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
+        const end = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0));
+        const startTs = admin.firestore.Timestamp.fromDate(start);
+        const endTs = admin.firestore.Timestamp.fromDate(end);
+        const postsSnap = await getAdminDb()
+          .collection("posts")
+          .where("userId", "==", userId)
+          .where("createdAt", ">=", startTs)
+          .where("createdAt", "<", endTs)
+          .get();
+        const directCount = postsSnap.size;
+        if (directCount > 0) {
+          totalPosts = Math.max(totalPosts, directCount);
+          totals.totalPosts = totalPosts;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("⚠️ 直集計(totalPosts)に失敗しましたが継続します:", e);
+  }
   if (totalPosts === 0) {
     const postSamples = [
       ...(Array.isArray(summaryExtras?.postDeepDive) ? summaryExtras.postDeepDive : []),
@@ -3275,6 +3303,9 @@ ${
 
 【禁止事項】
 「###」「-」「*」などの記号、箇条書きや見出し、JSON形式やMarkdown形式を使わない。すべて自然な日本語の文章で書く。
+以下の表現は禁止し、必ず前向きな言い換えを行う:
+「投稿がない」「投稿ゼロ」「全くない」「停滞」「できていない」
+例) 「投稿がない」→「残り${remainingToGoal}件の実行で目標に近づきます」
 
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（100文字以内、現状の実績に基づく）
 2. 次へのステップ（各30文字以内の自然な文章を3つ）
@@ -3286,6 +3317,9 @@ ${
 
 【禁止事項】
 「###」「-」「*」などの記号、箇条書きや見出し、JSON形式やMarkdown形式を使わない。すべて自然な日本語の文章で書く。
+以下の表現は禁止し、必ず前向きな言い換えを行う:
+「投稿がない」「投稿ゼロ」「全くない」「停滞」「できていない」
+例) 「投稿がない」→「残り${remainingToGoal}件を今月の実行目安に設定します」
 
 次の3つを提供:
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（80文字以内）
@@ -3300,6 +3334,8 @@ ${
     prompt += `
 【禁止事項】
 「###」「-」「*」などの記号、箇条書きや見出し、JSON形式やMarkdown形式を使わない。すべて自然な日本語の文章で書く。
+以下の表現は禁止し、必ず前向きな言い換えを行う:
+「投稿がない」「投稿ゼロ」「全くない」「停滞」「できていない」
 
 1. ${period === "weekly" ? "今週" : "今月"}のまとめ（100文字以内、フォロワー増加予測の根拠を含む）
 2. 次へのステップ（各30文字以内の自然な文章を3つ）
