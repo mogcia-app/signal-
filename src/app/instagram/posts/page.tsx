@@ -711,7 +711,7 @@ export default function InstagramPostsPage() {
         customTitle="投稿一覧"
         customDescription="作成した投稿の詳細表示・管理・削除・分析を行えます"
       >
-        <div className="max-w-7xl mx-auto p-4 sm:p-6">
+        <div className="w-full p-4 sm:p-6">
           {/* 統計表示 */}
           <PostStats scheduledPosts={scheduledPosts} unanalyzedPosts={unanalyzedPosts} />
 

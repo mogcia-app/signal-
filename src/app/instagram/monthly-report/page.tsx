@@ -911,7 +911,7 @@ export default function InstagramMonthlyReportPage() {
 
   return (
     <SNSLayout customTitle="月次レポート" customDescription="月次のパフォーマンス分析とレポート">
-      <div className="max-w-7xl mx-auto p-6 bg-white min-h-screen">
+      <div className="w-full p-6 bg-white min-h-screen">
         {/* ヘッダー */}
         <ReportHeader
           selectedMonth={selectedMonth}

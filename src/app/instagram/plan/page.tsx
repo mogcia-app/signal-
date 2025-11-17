@@ -260,7 +260,7 @@ export default function InstagramPlanPage() {
         customTitle="Instagram 運用計画"
         customDescription="強みを活かす、実行可能なSNS計画を立てましょう"
       >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* 計画期間切れアラート */}
         {isPlanExpired && planEndDate && (
           <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
