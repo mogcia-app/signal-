@@ -3129,7 +3129,32 @@ async function performAIAnalysis(
     return Boolean(data.applied);
   }).length;
 
-  const plannedMonthlyPosts = scheduleStats?.monthlyPosts ?? 0;
+  // 計画投稿数を取得: 運用計画（Plan）のシミュレーション結果を優先、なければスケジュールから
+  let plannedMonthlyPosts = 0;
+  
+  // 1. 運用計画（Plan）のシミュレーション結果から取得を試みる
+  if (planSummary?.formData) {
+    const formData = planSummary.formData;
+    const simulationResult = formData.simulationResult as Record<string, unknown> | undefined;
+    if (simulationResult && typeof simulationResult.monthlyPostCount === "number") {
+      plannedMonthlyPosts = Math.max(0, Math.round(simulationResult.monthlyPostCount));
+    } else {
+      // シミュレーション結果がない場合、投稿頻度から計算
+      const feedFreq = typeof formData.feedFreq === "number" ? formData.feedFreq : 0;
+      const reelFreq = typeof formData.reelFreq === "number" ? formData.reelFreq : 0;
+      const storyFreq = typeof formData.storyFreq === "number" ? formData.storyFreq : 0;
+      const freqBasedMonthlyPosts = (feedFreq + reelFreq + storyFreq) * 4;
+      if (freqBasedMonthlyPosts > 0) {
+        plannedMonthlyPosts = Math.max(0, Math.round(freqBasedMonthlyPosts));
+      }
+    }
+  }
+  
+  // 2. 運用計画から取得できない場合、スケジュールから取得（フォールバック）
+  if (plannedMonthlyPosts === 0) {
+    plannedMonthlyPosts = scheduleStats?.monthlyPosts ?? 0;
+  }
+  
   let plannedPostsForPeriod =
     period === "weekly"
       ? plannedMonthlyPosts > 0
