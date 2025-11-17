@@ -256,9 +256,58 @@ export default function InstagramMonthlyReportPage() {
   const handleActionLogUpdate = useCallback((log: AIActionLog) => {
     setActionLogs((prev) => {
       const remaining = prev.filter((item) => item.actionId !== log.actionId);
-      return [log, ...remaining];
+      const updated = [log, ...remaining];
+      
+      // pdcaMetricsを再計算（改善反映率を更新）
+      if (pdcaMetrics) {
+        // 既存のログを確認して、appliedの変更を検出
+        const oldLog = prev.find((item) => item.actionId === log.actionId);
+        const wasApplied = oldLog?.applied ?? false;
+        const isApplied = log.applied ?? false;
+        const isNewLog = !oldLog; // 新規作成されたログかどうか
+        
+        // 新規作成されたログでappliedがtrueの場合、actionCountも増やす
+        let newActionCount = pdcaMetrics.actionCount;
+        if (isNewLog && isApplied) {
+          newActionCount += 1;
+        }
+        
+        // appliedの状態が変わった場合のみ更新
+        if (wasApplied !== isApplied || isNewLog) {
+          let newActionAppliedCount = pdcaMetrics.actionAppliedCount;
+          if (isApplied && !wasApplied) {
+            // チェックをオンにした場合
+            newActionAppliedCount += 1;
+          } else if (!isApplied && wasApplied) {
+            // チェックをオフにした場合
+            newActionAppliedCount = Math.max(0, newActionAppliedCount - 1);
+          }
+          
+          const adoptionRate = newActionCount > 0 
+            ? Math.min(1, Math.max(0, newActionAppliedCount / newActionCount))
+            : 0;
+          
+          // loopScoreも再計算
+          const loopScore = Math.min(1, Math.max(0, (
+            pdcaMetrics.planScore + 
+            pdcaMetrics.executionRate + 
+            pdcaMetrics.feedbackCoverage + 
+            adoptionRate
+          ) / 4));
+          
+          setPdcaMetrics({
+            ...pdcaMetrics,
+            actionCount: newActionCount,
+            actionAppliedCount: newActionAppliedCount,
+            adoptionRate,
+            loopScore,
+          });
+        }
+      }
+      
+      return updated;
     });
-  }, []);
+  }, [pdcaMetrics]);
 
   // BFFサマリーデータ
   const [reportSummary, setReportSummary] = useState<{
