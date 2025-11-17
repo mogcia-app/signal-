@@ -83,15 +83,6 @@ export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
             </div>
             <div className="text-xs text-gray-600 space-y-1">
               <p>{pdcaStatus.description}</p>
-              {pdcaMetrics.plannedPosts > 0 ? (
-                <p>
-                  運用計画の目標 {pdcaMetrics.plannedPosts}件 / 分析済み {pdcaMetrics.analyzedPosts}件
-                </p>
-              ) : (
-                <p>
-                  分析済み投稿数 {pdcaMetrics.analyzedPosts}件
-                </p>
-              )}
             </div>
           </div>
           <div className="border border-gray-200 bg-white rounded-none p-4 flex flex-col gap-3 h-full">
@@ -103,15 +94,6 @@ export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
             </div>
             <div className="text-xs text-gray-600 space-y-1 mt-4">
               <p>投稿分析・ハッシュタグ・アクションの蓄積状況です</p>
-              {pdcaMetrics.analyzedPosts > 0 ? (
-                <p>
-                  分析済み投稿 {pdcaMetrics.analyzedPosts}件に対して、振り返りデータが{pdcaMetrics.feedbackCount.toLocaleString()}件蓄積されています
-                </p>
-              ) : (
-                <p>
-                  振り返りデータが{pdcaMetrics.feedbackCount.toLocaleString()}件蓄積されています（投稿分析データはまだ登録されていません）
-                </p>
-              )}
             </div>
           </div>
           <div className="border border-gray-200 bg-white rounded-none p-4 flex flex-col gap-3 h-full">
