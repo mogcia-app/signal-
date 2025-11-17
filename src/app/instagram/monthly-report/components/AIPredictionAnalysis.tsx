@@ -220,7 +220,24 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
 }) => {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
-  const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null);
+  
+  // ローカルストレージから分析結果を復元
+  const getStoredAnalysisResult = useCallback((month: string) => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = localStorage.getItem(`monthly-analysis-result-${month}`);
+      if (stored) {
+        return JSON.parse(stored) as AIAnalysisResult;
+      }
+    } catch {
+      // パースエラーは無視
+    }
+    return null;
+  }, []);
+
+  const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(() =>
+    getStoredAnalysisResult(selectedMonth)
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -301,11 +318,21 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
     }
   }, [selectedMonth]);
 
-  // 月が変わったら展開状態を復元
+  // 月が変わったら展開状態と分析結果を復元
   useEffect(() => {
-    const stored = getStoredExpandedState(selectedMonth);
-    setIsExpanded(stored);
-  }, [selectedMonth, getStoredExpandedState]);
+    const storedExpanded = getStoredExpandedState(selectedMonth);
+    setIsExpanded(storedExpanded);
+    const storedResult = getStoredAnalysisResult(selectedMonth);
+    if (storedResult) {
+      setAnalysisResult(storedResult);
+      // 復元した分析結果のコールバックも実行
+      onPdcaMetricsUpdate?.(storedResult?.pdcaMetrics ?? null);
+      onAlertsUpdate?.(storedResult?.alerts ?? null);
+      onPostTypeHighlightsUpdate?.(storedResult?.postTypeHighlights ?? null);
+    } else {
+      setAnalysisResult(null);
+    }
+  }, [selectedMonth, getStoredExpandedState, getStoredAnalysisResult, onPdcaMetricsUpdate, onAlertsUpdate, onPostTypeHighlightsUpdate]);
   // AI分析を実行
   const fetchAIAnalysis = useCallback(
     async (expandOnComplete: boolean = true) => {
@@ -343,6 +370,17 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
 
       if (result.success) {
         setAnalysisResult(result.data);
+        // 分析結果をローカルストレージに保存
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(
+              `monthly-analysis-result-${selectedMonth}`,
+              JSON.stringify(result.data)
+            );
+          } catch {
+            // ストレージエラーは無視
+          }
+        }
         onPdcaMetricsUpdate?.(result.data?.pdcaMetrics ?? null);
         onAlertsUpdate?.(result.data?.alerts ?? null);
         onPostTypeHighlightsUpdate?.(result.data?.postTypeHighlights ?? null);

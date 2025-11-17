@@ -2552,7 +2552,7 @@ ${payload}
     "nextSteps": [
       "来月に向けた具体的アクション（60文字以内）"
     ],
-    "planStrategyReview": "計画の「取り組みたいこと」と「投稿したい内容」を総合的に評価した総評（150-200文字）。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめる"
+    "planStrategyReview": "計画の「取り組みたいこと」と「投稿したい内容」を総合的に評価した総評（3行程度、200-300文字）。専門用語を避け、分かりやすい言葉で書く。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめる。具体的な改善提案も含める"
   ]
 }
 
@@ -2563,7 +2563,7 @@ ${payload}
 - planReflection.checkpointsは最大3件、nextStepsは最大3件
 - 運用計画データが存在しない場合は、statusを"no_plan"にし、checkpointsとnextStepsを空配列にする
 - 運用計画がある場合は、目標と実績の差分を簡潔にまとめ、statusを適切に設定する（達成:on_track, 一部未達:at_risk, 未達:off_track）
-- planReflection.planStrategyReviewは必須フィールドです。planContext.planSummaryにstrategies（取り組みたいこと）とpostCategories（投稿したい内容）が含まれている場合は、それらを参照して今月の実績や傾向とどう整合しているかを総合的に評価してください。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめてください（150-200文字）。計画データがない場合やstrategies/postCategoriesが空の場合は空文字列にしてください
+- planReflection.planStrategyReviewは必須フィールドです。planContext.planSummaryにstrategies（取り組みたいこと）とpostCategories（投稿したい内容）が含まれている場合は、それらを参照して今月の実績や傾向とどう整合しているかを総合的に評価してください。専門用語や難しい表現を避け、誰でも理解できる分かりやすい言葉で書いてください。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめ、具体的な改善提案も含めてください（3行程度、200-300文字）。計画データがない場合やstrategies/postCategoriesが空の場合は空文字列にしてください
 - JSON以外の文字は出力しない`;
 
     const response = await callOpenAI(prompt);
