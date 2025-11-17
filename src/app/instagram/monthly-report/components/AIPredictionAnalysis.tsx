@@ -514,11 +514,6 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
 
                 <div className="border border-gray-200 rounded-none p-6 bg-white">
                   <h3 className="text-base font-semibold text-black mb-1">運用計画の振り返り</h3>
-                  {planSummaryText && (
-                    <p className="text-xs text-gray-500 mb-2">
-                      {planSummaryText}
-                    </p>
-                  )}
                   {planSimulationSummary && planSimulationSummary.requiredPerMonth > 0 && (
                     <div className="mt-2 mb-3 border border-dashed border-slate-200 bg-slate-50 p-3">
                       <p className="text-[11px] font-semibold text-slate-700 mb-2">

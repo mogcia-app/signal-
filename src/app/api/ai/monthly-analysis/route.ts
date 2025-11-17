@@ -2563,7 +2563,7 @@ ${payload}
 - planReflection.checkpointsは最大3件、nextStepsは最大3件
 - 運用計画データが存在しない場合は、statusを"no_plan"にし、checkpointsとnextStepsを空配列にする
 - 運用計画がある場合は、目標と実績の差分を簡潔にまとめ、statusを適切に設定する（達成:on_track, 一部未達:at_risk, 未達:off_track）
-- planReflection.planStrategyReviewは、計画の「取り組みたいこと」（strategies）と「投稿したい内容」（postCategories）を参照し、それらが今月の実績や傾向とどう整合しているかを総合的に評価する。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめる（150-200文字）。計画データがない場合は空文字列にする
+- planReflection.planStrategyReviewは必須フィールドです。planContext.planSummaryにstrategies（取り組みたいこと）とpostCategories（投稿したい内容）が含まれている場合は、それらを参照して今月の実績や傾向とどう整合しているかを総合的に評価してください。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめてください（150-200文字）。計画データがない場合やstrategies/postCategoriesが空の場合は空文字列にしてください
 - JSON以外の文字は出力しない`;
 
     const response = await callOpenAI(prompt);
@@ -3410,6 +3410,8 @@ async function performAIAnalysis(
           : worst === "partial"
             ? "おおむね前進しています。残りの未達分を計画的に埋めていきましょう。"
             : "未達の項目があります。優先順位を見直し、実行ペースと導線を調整しましょう。";
+      // 既存の planReflection があれば planStrategyReview を保持
+      const existingPlanStrategyReview = overview.planReflection?.planStrategyReview;
       overview.planReflection = {
         summary: summaryText,
         status: worst === "met" ? "on_track" : worst === "partial" ? "at_risk" : "off_track",
@@ -3418,6 +3420,7 @@ async function performAIAnalysis(
           "来月に向けて優先KPIを1つに絞り、実行本数と導線を明確化する",
           "好調パターンの再現と、未達要因の1点改善を同時に進める",
         ],
+        planStrategyReview: existingPlanStrategyReview,
       };
     }
   }
