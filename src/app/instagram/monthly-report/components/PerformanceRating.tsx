@@ -65,7 +65,7 @@ export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
         </div>
       </div>
       {pdcaMetrics ? (
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="border border-gray-200 bg-white rounded-none p-4 flex flex-col gap-3 h-full">
             <div className="flex items-center justify-between">
               <span
@@ -94,18 +94,6 @@ export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
             </div>
             <div className="text-xs text-gray-600 space-y-1 mt-4">
               <p>投稿分析・ハッシュタグ・アクションの蓄積状況です</p>
-            </div>
-          </div>
-          <div className="border border-gray-200 bg-white rounded-none p-4 flex flex-col gap-3 h-full">
-            <div>
-              <p className="text-xs text-gray-600">改善反映率</p>
-              <p className="mt-4 text-3xl font-semibold text-slate-900">{adoptionRatePercent}%</p>
-            </div>
-            <div className="text-xs text-gray-600 space-y-1 mt-4">
-              <p>AI提案を実行し、改善につながった割合です</p>
-              <p>
-                実行 {pdcaMetrics.actionAppliedCount}件 / 提案 {pdcaMetrics.actionCount}件
-              </p>
             </div>
           </div>
         </div>
