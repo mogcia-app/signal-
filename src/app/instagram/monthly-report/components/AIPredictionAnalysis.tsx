@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Brain, Loader2, Lightbulb, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../../../contexts/auth-context";
@@ -81,6 +81,7 @@ interface PlanReflection {
   status: PlanReflectionStatus;
   checkpoints: PlanCheckpoint[];
   nextSteps: string[];
+  planStrategyReview?: string; // 計画の「取り組みたいこと」「投稿したい内容」に対する総評
 }
 
 interface AIPdcaMetrics {
@@ -222,8 +223,89 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
   const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // ローカルストレージから展開状態を復元
+  const getStoredExpandedState = useCallback((month: string) => {
+    if (typeof window === "undefined") return false;
+    try {
+      const stored = localStorage.getItem(`monthly-reflection-expanded-${month}`);
+      return stored === "true";
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const [isExpanded, setIsExpanded] = useState(() => getStoredExpandedState(selectedMonth));
   const [isActionPlanExpanded, setIsActionPlanExpanded] = useState(false);
+
+  // 実行済みアクションプランをローカルストレージから復元
+  const getStoredCompletedActionPlans = useCallback((month: string) => {
+    if (typeof window === "undefined") return new Set<string>();
+    try {
+      const stored = localStorage.getItem(`completed-action-plans-${month}`);
+      if (stored) {
+        const ids = JSON.parse(stored) as string[];
+        return new Set(ids);
+      }
+    } catch {
+      // パースエラーは無視
+    }
+    return new Set<string>();
+  }, []);
+
+  const [completedActionPlans, setCompletedActionPlans] = useState<Set<string>>(() =>
+    getStoredCompletedActionPlans(selectedMonth)
+  );
+
+  // 実行済みアクションプランをローカルストレージに保存
+  const toggleActionPlanCompleted = useCallback(
+    (planId: string) => {
+      setCompletedActionPlans((prev) => {
+        const next = new Set(prev);
+        if (next.has(planId)) {
+          next.delete(planId);
+        } else {
+          next.add(planId);
+        }
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(
+              `completed-action-plans-${selectedMonth}`,
+              JSON.stringify(Array.from(next))
+            );
+          } catch {
+            // ストレージエラーは無視
+          }
+        }
+        return next;
+      });
+    },
+    [selectedMonth]
+  );
+
+  // 月が変わったら実行済みアクションプランを復元
+  useEffect(() => {
+    const stored = getStoredCompletedActionPlans(selectedMonth);
+    setCompletedActionPlans(stored);
+  }, [selectedMonth, getStoredCompletedActionPlans]);
+
+  // 展開状態をローカルストレージに保存
+  const setExpandedWithStorage = useCallback((expanded: boolean) => {
+    setIsExpanded(expanded);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(`monthly-reflection-expanded-${selectedMonth}`, String(expanded));
+      } catch {
+        // ストレージエラーは無視
+      }
+    }
+  }, [selectedMonth]);
+
+  // 月が変わったら展開状態を復元
+  useEffect(() => {
+    const stored = getStoredExpandedState(selectedMonth);
+    setIsExpanded(stored);
+  }, [selectedMonth, getStoredExpandedState]);
   // AI分析を実行
   const fetchAIAnalysis = useCallback(
     async (expandOnComplete: boolean = true) => {
@@ -267,7 +349,7 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
         onLoadingChange?.(false);
         onOverviewUpdated?.();
         if (expandOnComplete) {
-          setIsExpanded(true);
+          setExpandedWithStorage(true);
         }
         console.log("✅ AI分析完了:", result.data);
       } else {
@@ -298,18 +380,19 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
       onPostTypeHighlightsUpdate,
       onLoadingChange,
       onOverviewUpdated,
+      setExpandedWithStorage,
     ]
   );
 
   // AI分析実行ボタンのハンドラー
   const handleRunAnalysis = () => {
-    setIsExpanded(true);
+    setExpandedWithStorage(true);
     fetchAIAnalysis(true);
   };
 
   // 分析結果を閉じる
   const handleCloseAnalysis = () => {
-    setIsExpanded(false);
+    setExpandedWithStorage(false);
   };
 
   const sortedActionPlans = useMemo(() => {
@@ -473,83 +556,13 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                       </p>
                     </div>
                   )}
-                  {Array.isArray(planHighlights) && planHighlights.length > 0 && (
-                    <div className="mt-2 mb-2 space-y-2">
-                      <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
-                        {planHighlights
-                          .filter((item) => item.type === "focus")
-                          .slice(0, 3)
-                          .map((item) => (
-                            <span
-                              key={`focus-${item.label}`}
-                              className="inline-flex items-center px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50"
-                            >
-                              取り組みたいこと: {item.label}
-                            </span>
-                          ))}
-                        {planHighlights
-                          .filter((item) => item.type === "content")
-                          .slice(0, 3)
-                          .map((item) => (
-                            <span
-                              key={`content-${item.label}`}
-                              className="inline-flex items-center px-2 py-0.5 rounded-full border border-sky-200 bg-sky-50"
-                            >
-                              投稿したい内容: {item.label}
-                            </span>
-                          ))}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {planHighlights.slice(0, 4).map((item) => (
-                          <div
-                            key={`${item.type}-${item.label}`}
-                            className="border border-dashed border-slate-200 rounded-none p-3 bg-slate-50"
-                          >
-                            <p className="text-[11px] font-semibold text-slate-700 mb-1">
-                              {item.type === "focus" ? "取り組みたいこと" : "投稿したい内容"}
-                            </p>
-                            <p className="text-xs font-semibold text-slate-900 mb-1">
-                              {item.label}
-                            </p>
-                            <p className="text-xs text-slate-600 whitespace-pre-line">
-                              {item.comment}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {planReflection ? (
-                    <>
-                      {Array.isArray(planReflection.nextSteps) &&
-                        planReflection.nextSteps.length > 0 && (
-                          <p className="text-xs text-amber-700 mb-2">
-                            AIアドバイス: {planReflection.nextSteps[0]}
-                          </p>
-                        )}
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`px-3 py-1 text-xs font-semibold rounded-none ${planStatusMeta[planReflection.status]?.badge ?? planStatusMeta.at_risk.badge}`}
-                        >
-                          {planStatusMeta[planReflection.status]?.label ?? planStatusMeta.at_risk.label}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {planStatusMeta[planReflection.status]?.description ?? ""}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-700 leading-relaxed mt-3">
-                        {planReflection.summary && planReflection.summary.trim().length > 0
-                          ? planReflection.summary
-                          : planReflection.status === "no_plan"
-                            ? "運用計画が未設定のため、振り返りはまだ表示できません。"
-                            : "AIによる振り返りを生成できませんでした。計画と実績を手動で確認してください。"}
+                  {planReflection?.planStrategyReview && planReflection.planStrategyReview.trim().length > 0 && (
+                    <div className="mt-3 mb-2 border border-dashed border-slate-200 rounded-none p-4 bg-slate-50">
+                      <p className="text-[11px] font-semibold text-slate-700 mb-2">計画の総評</p>
+                      <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+                        {planReflection.planStrategyReview}
                       </p>
-                      {/* 来月のアクション提案リストは、1行のAIアドバイスに集約するため非表示 */}
-                    </>
-                  ) : (
-                    <p className="text-sm text-gray-600">
-                      投稿とフィードバックが蓄積されると、運用計画に対する振り返りが表示されます。
-                    </p>
+                    </div>
                   )}
                 </div>
 
@@ -577,13 +590,37 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                       <div className="mt-6 space-y-4">
                         {sortedActionPlans.map((plan) => {
                           const style = priorityStyles[plan.priority];
+                          const isCompleted = completedActionPlans.has(plan.id);
                           return (
-                            <div key={plan.id} className="border border-gray-200 rounded-none p-5 bg-gray-50">
+                            <div
+                              key={plan.id}
+                              className={`border border-gray-200 rounded-none p-5 ${
+                                isCompleted ? "bg-gray-100 opacity-75" : "bg-gray-50"
+                              }`}
+                            >
                               <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center space-x-3">
-                                  <Lightbulb className="w-5 h-5 text-orange-500" />
-                                  <div>
-                                    <div className="text-sm font-semibold text-gray-800">{plan.title}</div>
+                                <div className="flex items-center space-x-3 flex-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleActionPlanCompleted(plan.id)}
+                                    className="flex-shrink-0 mt-0.5"
+                                    aria-label={isCompleted ? "実行済みを解除" : "実行済みにする"}
+                                  >
+                                    {isCompleted ? (
+                                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                    ) : (
+                                      <div className="w-5 h-5 border-2 border-gray-300 rounded-full hover:border-emerald-500 transition-colors" />
+                                    )}
+                                  </button>
+                                  <Lightbulb className={`w-5 h-5 ${isCompleted ? "text-gray-400" : "text-orange-500"}`} />
+                                  <div className="flex-1">
+                                    <div
+                                      className={`text-sm font-semibold ${
+                                        isCompleted ? "text-gray-500 line-through" : "text-gray-800"
+                                      }`}
+                                    >
+                                      {plan.title}
+                                    </div>
                                     <div className="text-xs text-gray-500">{plan.focusArea}</div>
                                   </div>
                                 </div>
@@ -592,11 +629,21 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                                 </span>
                               </div>
 
-                              <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap">{plan.description}</p>
+                              <p
+                                className={`text-sm mb-3 whitespace-pre-wrap ${
+                                  isCompleted ? "text-gray-500" : "text-gray-700"
+                                }`}
+                              >
+                                {plan.description}
+                              </p>
 
                               <div className="flex items-center space-x-2 mb-3">
-                                <ArrowUpRight className={`w-4 h-4 ${style.text}`} />
-                                <span className={`text-xs font-medium ${style.text}`}>{plan.expectedImpact}</span>
+                                <ArrowUpRight className={`w-4 h-4 ${isCompleted ? "text-gray-400" : style.text}`} />
+                                <span
+                                  className={`text-xs font-medium ${isCompleted ? "text-gray-500" : style.text}`}
+                                >
+                                  {plan.expectedImpact}
+                                </span>
                               </div>
 
                               <div className="border border-dashed border-gray-300 rounded-none p-3 bg-white">

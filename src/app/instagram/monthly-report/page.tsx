@@ -38,7 +38,6 @@ import {
   type FeedbackSentimentSummary,
 } from "./components/feedback-sentiment-card";
 import { TimeSlotHeatmap } from "./components/time-slot-heatmap";
-import { PlanGoalsSection } from "./components/plan-goals-section";
 
 type SnapshotReference = {
   id: string;
@@ -881,7 +880,6 @@ export default function InstagramMonthlyReportPage() {
           accountScore={accountScore}
           pdcaMetrics={pdcaMetrics}
         />
-        <PlanGoalsSection planData={planData} reportSummary={reportSummary} />
 
         {activeView === "ai" ? (
           <>

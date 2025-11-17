@@ -1791,6 +1791,7 @@ interface PlanReflection {
   status: PlanReflectionStatus;
   checkpoints: PlanCheckpoint[];
   nextSteps: string[];
+  planStrategyReview?: string; // 計画の「取り組みたいこと」「投稿したい内容」に対する総評
 }
 
 interface PDCAMetrics {
@@ -2550,7 +2551,8 @@ ${payload}
     ],
     "nextSteps": [
       "来月に向けた具体的アクション（60文字以内）"
-    ]
+    ],
+    "planStrategyReview": "計画の「取り組みたいこと」と「投稿したい内容」を総合的に評価した総評（150-200文字）。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめる"
   ]
 }
 
@@ -2561,6 +2563,7 @@ ${payload}
 - planReflection.checkpointsは最大3件、nextStepsは最大3件
 - 運用計画データが存在しない場合は、statusを"no_plan"にし、checkpointsとnextStepsを空配列にする
 - 運用計画がある場合は、目標と実績の差分を簡潔にまとめ、statusを適切に設定する（達成:on_track, 一部未達:at_risk, 未達:off_track）
+- planReflection.planStrategyReviewは、計画の「取り組みたいこと」（strategies）と「投稿したい内容」（postCategories）を参照し、それらが今月の実績や傾向とどう整合しているかを総合的に評価する。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめる（150-200文字）。計画データがない場合は空文字列にする
 - JSON以外の文字は出力しない`;
 
     const response = await callOpenAI(prompt);
@@ -2692,11 +2695,17 @@ ${payload}
       const summaryValue =
         typeof rawPlanReflection.summary === "string" ? rawPlanReflection.summary.trim() : "";
 
+      const planStrategyReviewValue =
+        typeof rawPlanReflection.planStrategyReview === "string"
+          ? rawPlanReflection.planStrategyReview.trim()
+          : undefined;
+
       planReflection = {
         summary: summaryValue || (status === "no_plan" ? "運用計画が未設定のため振り返りはありません。" : ""),
         status,
         checkpoints,
         nextSteps,
+        planStrategyReview: planStrategyReviewValue,
       };
     }
 

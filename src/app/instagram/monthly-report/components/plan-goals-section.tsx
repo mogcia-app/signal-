@@ -163,13 +163,7 @@ export function PlanGoalsSection({ planData, reportSummary }: PlanGoalsSectionPr
   if (!planData) {
     return (
       <div className="bg-white border border-slate-200 rounded-none p-6 shadow-sm mb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">今月の目標サマリー</p>
-            <p className="text-xs text-slate-500 mt-1">
-              運用計画が設定されていません。まずはプランを作成しましょう。
-            </p>
-          </div>
+        <div className="flex items-start justify-end">
           <Link
             href="/instagram/plan"
             className="text-xs font-semibold text-white bg-[#ff8a15] px-3 py-1.5 hover:bg-orange-600 transition-colors"
@@ -177,6 +171,9 @@ export function PlanGoalsSection({ planData, reportSummary }: PlanGoalsSectionPr
             プランを作成
           </Link>
         </div>
+        <p className="text-xs text-slate-500 mt-4">
+          運用計画が設定されていません。まずはプランを作成しましょう。
+        </p>
       </div>
     );
   }
@@ -478,13 +475,7 @@ export function PlanGoalsSection({ planData, reportSummary }: PlanGoalsSectionPr
 
   return (
     <div className="bg-white border border-slate-200 rounded-none p-6 shadow-sm mb-6">
-      <div className="flex items-start justify-between mb-4 gap-4">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">今月の目標サマリー</p>
-          <p className="text-xs text-slate-500">
-            計画と実績を突き合わせて、目標の達成状況を確認できます。
-          </p>
-        </div>
+      <div className="flex items-start justify-end mb-4 gap-4">
         <Link
           href="/instagram/plan"
           className="text-xs font-semibold text-[#ff8a15] border border-[#ff8a15]/30 px-3 py-1.5 hover:bg-[#ff8a15]/10 transition-colors"
