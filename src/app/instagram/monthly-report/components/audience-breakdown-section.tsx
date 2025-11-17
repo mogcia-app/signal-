@@ -70,38 +70,42 @@ const AudienceCard: React.FC<{
           <div className="text-xs text-gray-700 space-y-1">
             <p className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-[#6366F1]" />
-              男性 {breakdown.gender.male ?? 0}%
+              男性 {typeof breakdown.gender.male === "number" ? breakdown.gender.male.toFixed(1) : "0"}%
             </p>
             <p className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-[#EC4899]" />
-              女性 {breakdown.gender.female ?? 0}%
+              女性 {typeof breakdown.gender.female === "number" ? breakdown.gender.female.toFixed(1) : "0"}%
             </p>
             <p className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-[#475569]" />
-              その他 {breakdown.gender.other ?? 0}%
+              その他 {typeof breakdown.gender.other === "number" ? breakdown.gender.other.toFixed(1) : "0"}%
             </p>
           </div>
         </div>
       ) : null}
       {breakdown.age ? (
         <div className="space-y-2">
-          {(["18-24", "25-34", "35-44", "45-54"] as const).map((bucket, index) => (
-            <div key={bucket}>
-              <div className="flex items-center justify-between text-[11px] text-gray-600 mb-1">
-                <span>{bucket}</span>
-                <span>{breakdown.age?.[bucket] ?? 0}%</span>
+          {(["18-24", "25-34", "35-44", "45-54"] as const).map((bucket, index) => {
+            const ageValue = breakdown.age?.[bucket] ?? 0;
+            const displayValue = typeof ageValue === "number" ? ageValue.toFixed(1) : "0";
+            return (
+              <div key={bucket}>
+                <div className="flex items-center justify-between text-[11px] text-gray-600 mb-1">
+                  <span>{bucket}</span>
+                  <span>{displayValue}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                  <div
+                    className="h-2 rounded-full"
+                    style={{
+                      width: `${Math.min(100, typeof ageValue === "number" ? ageValue : 0)}%`,
+                      backgroundColor: COLORS[index],
+                    }}
+                  />
+                </div>
               </div>
-              <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                <div
-                  className="h-2 rounded-full"
-                  style={{
-                    width: `${Math.min(100, breakdown.age?.[bucket] ?? 0)}%`,
-                    backgroundColor: COLORS[index],
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : null}
     </div>

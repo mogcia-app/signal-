@@ -1171,39 +1171,31 @@ function calculateTimeSlotAnalysis(analytics: AnalyticsData[]) {
 // 投稿タイプ別統計を計算
 function calculatePostTypeStats(analytics: AnalyticsData[], posts: PostData[]) {
   // analyticsから投稿タイプを集計（categoryフィールドを使用）
+  // analyticsに存在する投稿のみをカウント（analyticsで削除されたものはカウントしない）
+  // postsから追加でカウントしないことで、analyticsで削除された投稿がカウントされないようにする
   const feedCount = analytics.filter((data) => data.category === "feed").length;
   const reelCount = analytics.filter((data) => data.category === "reel").length;
   const storyCount = analytics.filter((data) => data.category === "story").length;
-
-  // postsからの集計（後方互換性のため）
-  const postsFeedCount = posts.filter((post) => post.postType === "feed").length;
-  const postsReelCount = posts.filter((post) => post.postType === "reel").length;
-  const postsStoryCount = posts.filter((post) => post.postType === "story").length;
-
-  // analyticsとpostsの合計
-  const totalFeed = feedCount + postsFeedCount;
-  const totalReel = reelCount + postsReelCount;
-  const totalStory = storyCount + postsStoryCount;
-  const total = totalFeed + totalReel + totalStory;
+  const total = feedCount + reelCount + storyCount;
 
   return [
     {
       type: "feed",
-      count: totalFeed,
+      count: feedCount,
       label: "📸 フィード",
       color: "from-blue-400 to-blue-600",
       bg: "from-blue-50 to-blue-100",
     },
     {
       type: "reel",
-      count: totalReel,
+      count: reelCount,
       label: "🎬 リール",
       color: "from-purple-400 to-purple-600",
       bg: "from-purple-50 to-purple-100",
     },
     {
       type: "story",
-      count: totalStory,
+      count: storyCount,
       label: "📱 ストーリーズ",
       color: "from-pink-400 to-pink-600",
       bg: "from-pink-50 to-pink-100",
@@ -1531,9 +1523,28 @@ export async function GET(request: NextRequest) {
       previousAnalyticsLength: previousAnalytics.length,
     });
 
-    // 投稿数も正確に計算
-    currentTotals.totalPosts = postsWithAnalytics.length;
-    previousTotals.totalPosts = previousPosts.length;
+    // 投稿数も正確に計算（analyticsに存在する投稿のみをカウント）
+    // analyticsで削除された投稿はpostsに残っていてもカウントしない
+    const currentAnalyticsPostIds = new Set(
+      currentAnalytics
+        .filter((entry) => typeof entry.postId === "string" && entry.postId)
+        .map((entry) => entry.postId as string)
+    );
+    const previousAnalyticsPostIds = new Set(
+      previousAnalytics
+        .filter((entry) => typeof entry.postId === "string" && entry.postId)
+        .map((entry) => entry.postId as string)
+    );
+    
+    // analyticsに存在する投稿のみをカウント
+    // postIdがないanalyticsデータも1件としてカウント
+    const currentPostsCount = currentAnalyticsPostIds.size + 
+      currentAnalytics.filter((entry) => !entry.postId || typeof entry.postId !== "string").length;
+    const previousPostsCount = previousAnalyticsPostIds.size + 
+      previousAnalytics.filter((entry) => !entry.postId || typeof entry.postId !== "string").length;
+    
+    currentTotals.totalPosts = currentPostsCount;
+    previousTotals.totalPosts = previousPostsCount;
 
     console.log("📊 投稿数上書き後:", {
       currentTotalsPosts: currentTotals.totalPosts,
