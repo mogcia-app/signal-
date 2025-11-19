@@ -238,22 +238,18 @@ export function NextMonthFocusActions({
                   <p className="text-[11px] text-slate-500">フォーカスKPI: {action.focusKPI}</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 mb-2 whitespace-pre-line">
-                {String(reasonText || "")
-                  .replace(/<[^>]*>/g, "")
-                  .replace(/&lt;/g, "<")
-                  .replace(/&gt;/g, ">")
-                  .replace(/&amp;/g, "&")}
-              </p>
-              <div className="text-sm text-slate-800 bg-white border border-slate-200 rounded-none p-3">
-                <pre className="whitespace-pre-wrap font-sans text-sm text-slate-800 m-0">
-                  {String(recommendationText || "")
-                    .replace(/<[^>]*>/g, "")
-                    .replace(/&lt;/g, "<")
-                    .replace(/&gt;/g, ">")
-                    .replace(/&amp;/g, "&")}
-                </pre>
-              </div>
+              <p
+                className="text-xs text-slate-600 mb-2 whitespace-pre-line"
+                dangerouslySetInnerHTML={{
+                  __html: String(reasonText || ""),
+                }}
+              />
+              <div
+                className="text-sm text-slate-800 bg-white border border-slate-200 rounded-none p-3"
+                dangerouslySetInnerHTML={{
+                  __html: String(recommendationText || ""),
+                }}
+              />
               {action.referenceIds?.length ? (
                 <p className="text-[11px] text-slate-500 mt-2">
                   参考投稿: {action.referenceIds.join(", ")}

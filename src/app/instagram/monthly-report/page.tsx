@@ -909,6 +909,43 @@ export default function InstagramMonthlyReportPage() {
 
   // アクセス制御画面（削除）
 
+  // デバッグ用：HTMLタグが含まれるデータを検出
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasHtmlTags = (str: string | null | undefined): boolean => {
+        if (!str || typeof str !== "string") return false;
+        return /<[^>]*>/.test(str);
+      };
+
+      // reportSummary内のすべての文字列データをチェック
+      if (reportSummary) {
+        const checkObject = (obj: unknown, path = ""): void => {
+          if (!obj || typeof obj !== "object") return;
+          
+          for (const [key, value] of Object.entries(obj)) {
+            const currentPath = path ? `${path}.${key}` : key;
+            
+            if (typeof value === "string" && hasHtmlTags(value)) {
+              console.warn(`[HTMLタグ検出] ${currentPath}:`, value);
+            } else if (Array.isArray(value)) {
+              value.forEach((item, index) => {
+                if (typeof item === "string" && hasHtmlTags(item)) {
+                  console.warn(`[HTMLタグ検出] ${currentPath}[${index}]:`, item);
+                } else if (typeof item === "object" && item !== null) {
+                  checkObject(item, `${currentPath}[${index}]`);
+                }
+              });
+            } else if (typeof value === "object" && value !== null) {
+              checkObject(value, currentPath);
+            }
+          }
+        };
+
+        checkObject(reportSummary, "reportSummary");
+      }
+    }
+  }, [reportSummary]);
+
   return (
     <SNSLayout customTitle="月次レポート" customDescription="月次のパフォーマンス分析とレポート">
       <div className="w-full p-6 bg-white min-h-screen">

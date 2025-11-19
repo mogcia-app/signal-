@@ -203,13 +203,12 @@ export const OverviewHistorySection: React.FC<OverviewHistorySectionProps> = ({
                   </p>
                 )}
               </div>
-              <p className="text-sm text-gray-700 line-clamp-3">
-                {String(entry.summary || "")
-                  .replace(/<[^>]*>/g, "")
-                  .replace(/&lt;/g, "<")
-                  .replace(/&gt;/g, ">")
-                  .replace(/&amp;/g, "&")}
-              </p>
+              <p
+                className="text-sm text-gray-700 line-clamp-3"
+                dangerouslySetInnerHTML={{
+                  __html: String(entry.summary || ""),
+                }}
+              />
               {entry.highlights?.length ? (
                 <ul className="space-y-1">
                   {entry.highlights.slice(0, 2).map((highlight, idx) => (
@@ -217,20 +216,17 @@ export const OverviewHistorySection: React.FC<OverviewHistorySectionProps> = ({
                       key={`${entry.id}-highlight-${idx}`}
                       className="flex items-center justify-between text-xs text-gray-600"
                     >
-                      <span>
-                        {String(highlight.label || "")
-                          .replace(/<[^>]*>/g, "")
-                          .replace(/&lt;/g, "<")
-                          .replace(/&gt;/g, ">")
-                          .replace(/&amp;/g, "&")}
-                      </span>
-                      <span className="font-semibold">
-                        {String(highlight.change || "")
-                          .replace(/<[^>]*>/g, "")
-                          .replace(/&lt;/g, "<")
-                          .replace(/&gt;/g, ">")
-                          .replace(/&amp;/g, "&")}
-                      </span>
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: String(highlight.label || ""),
+                        }}
+                      />
+                      <span
+                        className="font-semibold"
+                        dangerouslySetInnerHTML={{
+                          __html: String(highlight.change || ""),
+                        }}
+                      />
                     </li>
                   ))}
                 </ul>

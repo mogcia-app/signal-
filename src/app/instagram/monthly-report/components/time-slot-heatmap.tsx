@@ -84,7 +84,12 @@ export function TimeSlotHeatmap({ data }: TimeSlotHeatmapProps) {
             {slotData.map((slot) => (
               <tr key={slot.label} className="border-t border-slate-100">
                 <td className="px-3 py-3 align-top">
-                  <p className="text-sm font-semibold text-slate-900">{slot.label}</p>
+                  <p
+                    className="text-sm font-semibold text-slate-900"
+                    dangerouslySetInnerHTML={{
+                      __html: String(slot.label || ""),
+                    }}
+                  />
                   <p className="text-[11px] text-slate-500">
                     投稿数 {slot.postsInRange} / 平均ER {(slot.avgEngagement || 0).toFixed(1)} pt
                   </p>

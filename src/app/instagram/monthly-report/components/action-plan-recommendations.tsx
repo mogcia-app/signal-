@@ -155,13 +155,12 @@ export const ActionPlanRecommendations: React.FC<ActionPlanRecommendationsProps>
 
                 <div className="flex items-center space-x-2 mb-3">
                   <ArrowUpRight className={`w-4 h-4 ${style.text}`} />
-                  <span className={`text-xs font-medium ${style.text}`}>
-                    {String(plan.expectedImpact || "")
-                      .replace(/<[^>]*>/g, "")
-                      .replace(/&lt;/g, "<")
-                      .replace(/&gt;/g, ">")
-                      .replace(/&amp;/g, "&")}
-                  </span>
+                  <span
+                    className={`text-xs font-medium ${style.text}`}
+                    dangerouslySetInnerHTML={{
+                      __html: String(plan.expectedImpact || ""),
+                    }}
+                  />
                 </div>
 
                 <div className="border border-dashed border-gray-300 rounded-none p-3 bg-white">

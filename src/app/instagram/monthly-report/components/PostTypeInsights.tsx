@@ -91,23 +91,31 @@ export const PostTypeInsights: React.FC<PostTypeInsightsProps> = ({ highlights, 
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center space-x-2 text-sm font-semibold text-gray-700">
                   {config.icon}
-                  <span>{highlight.label}</span>
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: String(highlight.label || ""),
+                    }}
+                  />
                 </span>
                 <span className="text-xs text-gray-500">{config.label}</span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-base font-semibold text-black">{highlight.label}</span>
+                <span
+                  className="text-base font-semibold text-black"
+                  dangerouslySetInnerHTML={{
+                    __html: String(highlight.label || ""),
+                  }}
+                />
                 <span className={`${config.text} text-sm`}>
                   {highlight.percentage}% ({highlight.count}件)
                 </span>
               </div>
-              <p className={`text-sm ${config.text}`}>
-                {String(highlight.message || "")
-                  .replace(/<[^>]*>/g, "")
-                  .replace(/&lt;/g, "<")
-                  .replace(/&gt;/g, ">")
-                  .replace(/&amp;/g, "&")}
-              </p>
+              <p
+                className={`text-sm ${config.text}`}
+                dangerouslySetInnerHTML={{
+                  __html: String(highlight.message || ""),
+                }}
+              />
             </div>
           );
         })}

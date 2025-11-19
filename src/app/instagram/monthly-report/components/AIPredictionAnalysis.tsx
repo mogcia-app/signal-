@@ -5,15 +5,6 @@ import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
 import type { AIGenerationResponse } from "@/types/ai";
 
-// HTMLタグをサニタイズするヘルパー関数（React error #418対応）
-const sanitizeHtml = (text: string | undefined | null): string => {
-  if (!text) return "";
-  return String(text)
-    .replace(/<[^>]*>/g, "") // HTMLタグを削除
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
-};
 
 interface PlanHighlightItem {
   type: "focus" | "content";
@@ -602,9 +593,12 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   {planReflection?.planStrategyReview && planReflection.planStrategyReview.trim().length > 0 && (
                     <div className="mt-3 mb-2 border border-dashed border-slate-200 rounded-none p-4 bg-slate-50">
                       <p className="text-[11px] font-semibold text-slate-700 mb-2">計画の総評</p>
-                      <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
-                        {sanitizeHtml(planReflection.planStrategyReview)}
-                      </div>
+                      <div
+                        className="text-sm text-slate-800 leading-relaxed whitespace-pre-line"
+                        dangerouslySetInnerHTML={{
+                          __html: String(planReflection.planStrategyReview || ""),
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -662,7 +656,11 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                                         isCompleted ? "text-gray-500 line-through" : "text-gray-800"
                                       }`}
                                     >
-                                      {sanitizeHtml(plan.title)}
+                                      <span
+                                        dangerouslySetInnerHTML={{
+                                          __html: String(plan.title || ""),
+                                        }}
+                                      />
                                     </div>
                                     <div className="text-xs text-gray-500">{plan.focusArea}</div>
                                   </div>
@@ -677,7 +675,11 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                                   isCompleted ? "text-gray-500" : "text-gray-700"
                                 }`}
                               >
-                                {sanitizeHtml(plan.description)}
+                                <span
+                                  dangerouslySetInnerHTML={{
+                                    __html: String(plan.description || ""),
+                                  }}
+                                />
                               </p>
 
                               <div className="flex items-center space-x-2 mb-3">
@@ -685,7 +687,11 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                                 <span
                                   className={`text-xs font-medium ${isCompleted ? "text-gray-500" : style.text}`}
                                 >
-                                  {sanitizeHtml(plan.expectedImpact)}
+                                  <span
+                                    dangerouslySetInnerHTML={{
+                                      __html: String(plan.expectedImpact || ""),
+                                    }}
+                                  />
                                 </span>
                               </div>
 
@@ -695,7 +701,11 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                                   {plan.recommendedActions.map((action, index) => (
                                     <li key={`${plan.id}-action-${index}`} className="flex items-start space-x-2 text-sm text-gray-700">
                                       <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
-                                      <span>{sanitizeHtml(action)}</span>
+                                      <span
+                                        dangerouslySetInnerHTML={{
+                                          __html: String(action || ""),
+                                        }}
+                                      />
                                     </li>
                                   ))}
                                 </ul>

@@ -507,8 +507,13 @@ export function PlanGoalsSection({ planData, reportSummary }: PlanGoalsSectionPr
           </div>
           {topPersona ? (
             <p className="text-xs text-slate-600">
-              今月もっとも反応が良かったのは「{topPersona.segment}」
-              （{topPersona.status === "gold" ? "好調" : "伸び悩み"}）。投稿 Deep Dive と学習ダッシュボードで詳細を確認できます。
+              今月もっとも反応が良かったのは「
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: String(topPersona.segment || ""),
+                }}
+              />
+              」（{topPersona.status === "gold" ? "好調" : "伸び悩み"}）。投稿 Deep Dive と学習ダッシュボードで詳細を確認できます。
             </p>
           ) : (
             <p className="text-xs text-slate-500">今月のペルソナ別反応はまだ十分ではありません。</p>
@@ -605,13 +610,12 @@ export function PlanGoalsSection({ planData, reportSummary }: PlanGoalsSectionPr
                         label={insight.tone === "good" ? "AI評価:良好" : "AI観測中"}
                       />
                     </div>
-                    <p className="text-xs text-slate-600">
-                      {String(insight.comment || "")
-                        .replace(/<[^>]*>/g, "")
-                        .replace(/&lt;/g, "<")
-                        .replace(/&gt;/g, ">")
-                        .replace(/&amp;/g, "&")}
-                    </p>
+                    <p
+                      className="text-xs text-slate-600"
+                      dangerouslySetInnerHTML={{
+                        __html: String(insight.comment || ""),
+                      }}
+                    />
                   </div>
                 );
               })}
@@ -650,13 +654,12 @@ export function PlanGoalsSection({ planData, reportSummary }: PlanGoalsSectionPr
                         }
                       />
                     </div>
-                    <p className="text-xs text-slate-600">
-                      {String(insight.comment || "")
-                        .replace(/<[^>]*>/g, "")
-                        .replace(/&lt;/g, "<")
-                        .replace(/&gt;/g, ">")
-                        .replace(/&amp;/g, "&")}
-                    </p>
+                    <p
+                      className="text-xs text-slate-600"
+                      dangerouslySetInnerHTML={{
+                        __html: String(insight.comment || ""),
+                      }}
+                    />
                   </div>
                 );
               })}
