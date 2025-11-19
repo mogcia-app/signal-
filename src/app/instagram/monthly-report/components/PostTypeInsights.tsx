@@ -101,7 +101,13 @@ export const PostTypeInsights: React.FC<PostTypeInsightsProps> = ({ highlights, 
                   {highlight.percentage}% ({highlight.count}件)
                 </span>
               </div>
-              <p className={`text-sm ${config.text}`}>{highlight.message}</p>
+              <p className={`text-sm ${config.text}`}>
+                {String(highlight.message || "")
+                  .replace(/<[^>]*>/g, "")
+                  .replace(/&lt;/g, "<")
+                  .replace(/&gt;/g, ">")
+                  .replace(/&amp;/g, "&")}
+              </p>
             </div>
           );
         })}

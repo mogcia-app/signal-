@@ -203,7 +203,13 @@ export const OverviewHistorySection: React.FC<OverviewHistorySectionProps> = ({
                   </p>
                 )}
               </div>
-              <p className="text-sm text-gray-700 line-clamp-3">{entry.summary}</p>
+              <p className="text-sm text-gray-700 line-clamp-3">
+                {String(entry.summary || "")
+                  .replace(/<[^>]*>/g, "")
+                  .replace(/&lt;/g, "<")
+                  .replace(/&gt;/g, ">")
+                  .replace(/&amp;/g, "&")}
+              </p>
               {entry.highlights?.length ? (
                 <ul className="space-y-1">
                   {entry.highlights.slice(0, 2).map((highlight, idx) => (

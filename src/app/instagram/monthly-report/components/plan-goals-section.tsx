@@ -605,7 +605,13 @@ export function PlanGoalsSection({ planData, reportSummary }: PlanGoalsSectionPr
                         label={insight.tone === "good" ? "AI評価:良好" : "AI観測中"}
                       />
                     </div>
-                    <p className="text-xs text-slate-600">{insight.comment}</p>
+                    <p className="text-xs text-slate-600">
+                      {String(insight.comment || "")
+                        .replace(/<[^>]*>/g, "")
+                        .replace(/&lt;/g, "<")
+                        .replace(/&gt;/g, ">")
+                        .replace(/&amp;/g, "&")}
+                    </p>
                   </div>
                 );
               })}
@@ -644,7 +650,13 @@ export function PlanGoalsSection({ planData, reportSummary }: PlanGoalsSectionPr
                         }
                       />
                     </div>
-                    <p className="text-xs text-slate-600">{insight.comment}</p>
+                    <p className="text-xs text-slate-600">
+                      {String(insight.comment || "")
+                        .replace(/<[^>]*>/g, "")
+                        .replace(/&lt;/g, "<")
+                        .replace(/&gt;/g, ">")
+                        .replace(/&amp;/g, "&")}
+                    </p>
                   </div>
                 );
               })}

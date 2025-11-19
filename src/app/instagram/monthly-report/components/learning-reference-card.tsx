@@ -168,7 +168,13 @@ export function LearningReferenceCard({ learningContext }: LearningReferenceCard
                     <p className="font-semibold">
                       {reference.label || sourceTypeLabel[reference.sourceType]}
                     </p>
-                    <p className="text-[11px] text-slate-500">{reference.summary}</p>
+                    <p className="text-[11px] text-slate-500">
+                      {String(reference.summary || "")
+                        .replace(/<[^>]*>/g, "")
+                        .replace(/&lt;/g, "<")
+                        .replace(/&gt;/g, ">")
+                        .replace(/&amp;/g, "&")}
+                    </p>
                   </div>
                 </div>
               ))}

@@ -297,7 +297,13 @@ export function PostDeepDiveSection({ posts, patternHighlights, unifiedTotalPost
                       <Sparkles className="w-3.5 h-3.5" />
                       成功パターン
                     </p>
-                    <p className="text-slate-600 mt-1">{reference.summary}</p>
+                    <p className="text-slate-600 mt-1">
+                      {String(reference.summary || "")
+                        .replace(/<[^>]*>/g, "")
+                        .replace(/&lt;/g, "<")
+                        .replace(/&gt;/g, ">")
+                        .replace(/&amp;/g, "&")}
+                    </p>
                   </div>
                 ))}
                 {(patternHighlights?.negative || []).slice(0, 3).map((reference) => (
@@ -306,7 +312,13 @@ export function PostDeepDiveSection({ posts, patternHighlights, unifiedTotalPost
                       <TrendingDown className="w-3.5 h-3.5" />
                       改善ポイント
                     </p>
-                    <p className="text-slate-600 mt-1">{reference.summary}</p>
+                    <p className="text-slate-600 mt-1">
+                      {String(reference.summary || "")
+                        .replace(/<[^>]*>/g, "")
+                        .replace(/&lt;/g, "<")
+                        .replace(/&gt;/g, ">")
+                        .replace(/&amp;/g, "&")}
+                    </p>
                   </div>
                 ))}
               </div>

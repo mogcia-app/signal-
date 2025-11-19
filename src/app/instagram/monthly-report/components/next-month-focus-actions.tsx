@@ -228,14 +228,30 @@ export function NextMonthFocusActions({
                   <ArrowUpRight className="h-4 w-4 text-slate-500" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{action.title}</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {String(action.title || "")
+                      .replace(/<[^>]*>/g, "")
+                      .replace(/&lt;/g, "<")
+                      .replace(/&gt;/g, ">")
+                      .replace(/&amp;/g, "&")}
+                  </p>
                   <p className="text-[11px] text-slate-500">フォーカスKPI: {action.focusKPI}</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 mb-2 whitespace-pre-line">{reasonText}</p>
+              <p className="text-xs text-slate-600 mb-2 whitespace-pre-line">
+                {String(reasonText || "")
+                  .replace(/<[^>]*>/g, "")
+                  .replace(/&lt;/g, "<")
+                  .replace(/&gt;/g, ">")
+                  .replace(/&amp;/g, "&")}
+              </p>
               <div className="text-sm text-slate-800 bg-white border border-slate-200 rounded-none p-3">
                 <pre className="whitespace-pre-wrap font-sans text-sm text-slate-800 m-0">
-                  {recommendationText}
+                  {String(recommendationText || "")
+                    .replace(/<[^>]*>/g, "")
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">")
+                    .replace(/&amp;/g, "&")}
                 </pre>
               </div>
               {action.referenceIds?.length ? (
