@@ -2516,6 +2516,38 @@ async function generateAIOverview(
       topHashtags: Record<string, number>;
     };
     planContext?: PlanContextPayload;
+    reachSourceAnalysis?: {
+      sources?: {
+        posts?: number;
+        profile?: number;
+        explore?: number;
+        search?: number;
+        other?: number;
+      };
+      followers?: {
+        followers?: number;
+        nonFollowers?: number;
+      };
+    };
+    contentPerformance?: {
+      feed?: {
+        totalProfileVisits?: number;
+        totalReachedAccounts?: number;
+        totalReach?: number;
+      } | null;
+      reel?: {
+        totalReachedAccounts?: number;
+        totalReach?: number;
+      } | null;
+    };
+    postDeepDive?: Array<{
+      title?: string;
+      analyticsSummary?: {
+        reach?: number;
+        saves?: number;
+        engagementRate?: number;
+      } | null;
+    }>;
   }
 ): Promise<AnalysisOverview | null> {
   try {
@@ -2532,10 +2564,10 @@ async function generateAIOverview(
 ⸻
 
 🔹 アカウント全体の動き
-	•	閲覧数：{数値}人（totals.totalReachから取得）
-	•	フォロワー外リーチ率：{数値}％（利用可能なデータから計算。reachSourceAnalysisが利用可能な場合はそれを使用、そうでない場合はtotalsから推定）
-	•	総リーチ数：{数値}（totals.totalReachから取得）
-	•	プロフィールアクティビティ：{数値}（前月比{変化率}％）（利用可能なデータから取得、previousTotalsと比較して変化率を計算）
+	•	閲覧数：{数値}人（context.totals.totalReachから取得。KPIコンソールの「閲覧数総数」と同じ値）
+	•	フォロワー外リーチ率：{数値}％（context.reachSourceAnalysis.followers.nonFollowersとcontext.reachSourceAnalysis.followers.followersから計算。nonFollowers / (followers + nonFollowers) * 100。データがない場合は計算できない）
+	•	総リーチ数：{数値}（context.totals.totalReachから取得。閲覧数と同じ値）
+	•	プロフィールアクティビティ：{数値}（前月比{変化率}％）（context.contentPerformance.feed.totalProfileVisitsから取得。前月比はcontext.previousTotalsと比較して計算。データがない場合は「データ未取得」と記載）
 
 {全体的な評価コメント（2-3文）}
 
@@ -2602,7 +2634,7 @@ ${payload}
     "nextSteps": [
       "来月に向けた具体的アクション（60文字以内）"
     ],
-    "planStrategyReview": "以下の形式で出力してください:\n\n${planStrategyReviewTemplate}\n\n実績データ（totals.totalReach、totals.totalFollowerIncrease、totals.totalProfileVisitsなど）を必ず確認し、正確な数値を記載してください。計画の「取り組みたいこと」と「投稿したい内容」を踏まえつつ、実績と整合性のある評価を行ってください。"
+    "planStrategyReview": "以下の形式で出力してください:\n\n${planStrategyReviewTemplate}\n\n【重要】データ取得の指示（KPIコンソールのデータを参照）:\n- 閲覧数: context.totals.totalReach の値をそのまま使用（KPIコンソールの「閲覧数総数」と同じ値）。数値が存在する場合は必ずその数値を記載し、0の場合は0と記載\n- フォロワー外リーチ率: context.reachSourceAnalysis.followers.nonFollowers と context.reachSourceAnalysis.followers.followers が存在する場合、nonFollowers / (followers + nonFollowers) * 100 で計算。データがない場合は計算できないので「データ未取得」と記載\n- 総リーチ数: context.totals.totalReach の値をそのまま使用（閲覧数と同じ値）。数値が存在する場合は必ずその数値を記載し、0の場合は0と記載\n- プロフィールアクティビティ: context.contentPerformance.feed.totalProfileVisits の値を使用。前月比は context.previousTotals と比較して計算（前月の値がない場合は「前月比なし」と記載）。データがない場合は「データ未取得」と記載\n\n【重要】context.totals には以下のKPIコンソールのデータが含まれています:\n- context.totals.totalLikes: いいね総数\n- context.totals.totalComments: コメント総数\n- context.totals.totalShares: シェア総数\n- context.totals.totalReach: 閲覧数総数\n- context.totals.totalFollowerIncrease: フォロワー増加数\n\nこれらのデータを必ず確認し、正確な数値を記載してください。データが0の場合は0と記載し、「データ未取得」とは書かないでください。計画の「取り組みたいこと」と「投稿したい内容」を踏まえつつ、実績と整合性のある評価を行ってください。"
   ]
 }
 
@@ -2615,12 +2647,16 @@ ${payload}
 - 運用計画がある場合は、目標と実績の差分を簡潔にまとめ、statusを適切に設定する（達成:on_track, 一部未達:at_risk, 未達:off_track）
 - planReflection.planStrategyReviewは必須フィールドです。上記の形式に従って、以下の内容を含めてください：
   1. 📊 Instagram運用レポート（${currentMonth}総括）の見出し
-  2. 🔹 アカウント全体の動き：実績データ（totals.totalReach、totals.totalFollowerIncrease、totals.totalProfileVisitsなど）から正確な数値を抽出し、前月比も計算して記載。フォロワー外リーチ率は利用可能なデータから計算（reachSourceAnalysisが利用可能な場合はそれを使用、そうでない場合はtotalsから推定）
-  3. 🔹 コンテンツ別の傾向：postTypeStatsから投稿タイプ別の割合と、もっとも閲覧されたコンテンツ（postDeepDiveやpostsから最高リーチの投稿）を特定
+  2. 🔹 アカウント全体の動き：
+     - 閲覧数: context.totals.totalReach の値をそのまま使用（KPIコンソールの「閲覧数総数」と同じ値）。数値が存在する場合は必ずその数値を記載し、0の場合は0と記載
+     - フォロワー外リーチ率: context.reachSourceAnalysis.followers.nonFollowers と context.reachSourceAnalysis.followers.followers から計算（nonFollowers / (followers + nonFollowers) * 100）。データがない場合は「データ未取得」
+     - 総リーチ数: context.totals.totalReach の値をそのまま使用（閲覧数と同じ値）。数値が存在する場合は必ずその数値を記載し、0の場合は0と記載
+     - プロフィールアクティビティ: context.contentPerformance.feed.totalProfileVisits から取得。前月比は context.previousTotals と比較して計算（前月の値がない場合は「前月比なし」と記載）。データがない場合は「データ未取得」
+  3. 🔹 コンテンツ別の傾向：context.postTypeHighlights または context 内の postTypeStats から投稿タイプ別の割合と、context.postDeepDive から最高リーチの投稿を特定
   4. 💡 総評：${currentMonth}の全体的な評価と、計画の「取り組みたいこと」「投稿したい内容」との整合性を評価（2-3文）
   5. 📈 ${nextMonth}に向けた提案：具体的なアクションプランを3つ提示（各提案はタイトルと説明、具体的なアクションを含む）
   
-  実績データ（totals、changes、postTypeStats、postDeepDiveなど）を必ず確認し、正確な数値を記載してください。フォロワー増加が正の値の場合は「増加が見込めない」などと書かないでください。計画データがない場合やstrategies/postCategoriesが空の場合は、実績データのみに基づいて総評を作成してください
+  【重要】context.totals にはKPIコンソールのデータが含まれています（totalLikes、totalComments、totalShares、totalReach、totalFollowerIncreaseなど）。これらのデータを必ず確認し、正確な数値を記載してください。データが0の場合は0と記載し、「データ未取得」とは書かないでください。実績データ（context.totals、context.changes、context.postTypeHighlights、context.postDeepDive、context.reachSourceAnalysis、context.contentPerformanceなど）を必ず確認し、正確な数値を記載してください。フォロワー増加が正の値の場合は「増加が見込めない」などと書かないでください。計画データがない場合やstrategies/postCategoriesが空の場合は、実績データのみに基づいて総評を作成してください
 - 【重要】planStrategyReviewを書く際は、必ず実績データ（totals.totalFollowerIncrease、totals.totalLikes、totals.totalReachなど）を確認してください。フォロワー増加が正の値（増加している）場合は「フォロワー増加につながらない」「増加が見込めない」などと書かないでください。実績データと矛盾する表現は絶対に避けてください。実績が好調な場合はそれを正しく評価し、改善が必要な場合のみ改善提案をしてください
 - JSON以外の文字は出力しない`;
 
@@ -3357,6 +3393,9 @@ async function performAIAnalysis(
         }
       : undefined,
     planContext,
+    reachSourceAnalysis: (reportSummary as any)?.reachSourceAnalysis,
+    contentPerformance: (reportSummary as any)?.contentPerformance,
+    postDeepDive: (reportSummary as any)?.postDeepDive || (reportSummary as any)?.posts,
   });
 
   // 分析済み件数（表示/ハイライト用）
