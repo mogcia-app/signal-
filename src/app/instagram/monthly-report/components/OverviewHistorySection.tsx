@@ -217,14 +217,32 @@ export const OverviewHistorySection: React.FC<OverviewHistorySectionProps> = ({
                       key={`${entry.id}-highlight-${idx}`}
                       className="flex items-center justify-between text-xs text-gray-600"
                     >
-                      <span>{highlight.label}</span>
-                      <span className="font-semibold">{highlight.change}</span>
+                      <span>
+                        {String(highlight.label || "")
+                          .replace(/<[^>]*>/g, "")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&")}
+                      </span>
+                      <span className="font-semibold">
+                        {String(highlight.change || "")
+                          .replace(/<[^>]*>/g, "")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&")}
+                      </span>
                     </li>
                   ))}
                 </ul>
               ) : null}
               {entry.watchouts?.length ? (
-                <p className="text-xs text-gray-500">{entry.watchouts[0]}</p>
+                <p className="text-xs text-gray-500">
+                  {String(entry.watchouts[0] || "")
+                    .replace(/<[^>]*>/g, "")
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">")
+                    .replace(/&amp;/g, "&")}
+                </p>
               ) : null}
             </div>
           ))}

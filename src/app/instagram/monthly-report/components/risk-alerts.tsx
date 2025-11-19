@@ -65,7 +65,13 @@ export const RiskAlerts: React.FC<RiskAlertsProps> = ({ alerts }) => {
                   <span className="text-xs text-gray-500">{alert.metric}</span>
                 </div>
               </div>
-              <p className={`text-sm ${config.text}`}>{alert.message}</p>
+              <p className={`text-sm ${config.text}`}>
+                {String(alert.message || "")
+                  .replace(/<[^>]*>/g, "")
+                  .replace(/&lt;/g, "<")
+                  .replace(/&gt;/g, ">")
+                  .replace(/&amp;/g, "&")}
+              </p>
               {(typeof alert.change === "number" || typeof alert.value === "number") && (
                 <p className="text-xs text-gray-600 mt-2">
                   {typeof alert.change === "number"

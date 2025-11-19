@@ -1000,7 +1000,10 @@ export default function InstagramMonthlyReportPage() {
                         </span>
                       </div>
                       {test.summary ? (
-                        <p className="text-xs text-slate-600 mb-3">{test.summary}</p>
+                        <p
+                          className="text-xs text-slate-600 mb-3"
+                          dangerouslySetInnerHTML={{ __html: test.summary }}
+                        />
                       ) : null}
                       {test.variants && test.variants.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
@@ -1015,7 +1018,12 @@ export default function InstagramMonthlyReportPage() {
                                     : "border-slate-200 bg-white"
                               }`}
                             >
-                              <p className="font-semibold text-slate-900">{variant.label}</p>
+                              <p
+                                className="font-semibold text-slate-900"
+                                dangerouslySetInnerHTML={{
+                                  __html: String(variant.label || ""),
+                                }}
+                              />
                               <p className="text-[11px] text-slate-500 mb-2">
                                 {variant.result === "win"
                                   ? "勝者"
@@ -1065,10 +1073,20 @@ export default function InstagramMonthlyReportPage() {
                       className="border border-slate-200 rounded-md p-4 bg-slate-50/70"
                     >
                       <p className="text-xs text-slate-500 mb-1">
-                        {persona.type === "gender" ? "性別" : "年代"}・投稿: {persona.postTitle}
+                        {persona.type === "gender" ? "性別" : "年代"}・投稿:{" "}
+                        <span
+                          dangerouslySetInnerHTML={{
+                            __html: String(persona.postTitle || ""),
+                          }}
+                        />
                       </p>
                       <p className="text-sm font-semibold text-slate-900">
-                        {persona.segment} ({persona.value?.toFixed(1)}%)
+                        <span
+                          dangerouslySetInnerHTML={{
+                            __html: String(persona.segment || ""),
+                          }}
+                        />{" "}
+                        ({persona.value?.toFixed(1)}%)
                       </p>
                       {typeof persona.delta === "number" && (
                         <p

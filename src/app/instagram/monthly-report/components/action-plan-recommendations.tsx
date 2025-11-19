@@ -130,7 +130,13 @@ export const ActionPlanRecommendations: React.FC<ActionPlanRecommendationsProps>
                   <div className="flex items-center space-x-3">
                     <Lightbulb className="w-5 h-5 text-orange-500" />
                     <div>
-                      <div className="text-sm font-semibold text-gray-800">{plan.title}</div>
+                      <div className="text-sm font-semibold text-gray-800">
+                        {String(plan.title || "")
+                          .replace(/<[^>]*>/g, "")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&")}
+                      </div>
                       <div className="text-xs text-gray-500">{plan.focusArea}</div>
                     </div>
                   </div>
@@ -139,11 +145,23 @@ export const ActionPlanRecommendations: React.FC<ActionPlanRecommendationsProps>
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap">{plan.description}</p>
+                <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap">
+                  {String(plan.description || "")
+                    .replace(/<[^>]*>/g, "")
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">")
+                    .replace(/&amp;/g, "&")}
+                </p>
 
                 <div className="flex items-center space-x-2 mb-3">
                   <ArrowUpRight className={`w-4 h-4 ${style.text}`} />
-                  <span className={`text-xs font-medium ${style.text}`}>{plan.expectedImpact}</span>
+                  <span className={`text-xs font-medium ${style.text}`}>
+                    {String(plan.expectedImpact || "")
+                      .replace(/<[^>]*>/g, "")
+                      .replace(/&lt;/g, "<")
+                      .replace(/&gt;/g, ">")
+                      .replace(/&amp;/g, "&")}
+                  </span>
                 </div>
 
                 <div className="border border-dashed border-gray-300 rounded-none p-3 bg-white">
@@ -152,7 +170,13 @@ export const ActionPlanRecommendations: React.FC<ActionPlanRecommendationsProps>
                     {plan.recommendedActions.map((action, index) => (
                       <li key={index} className="flex items-start space-x-2 text-sm text-gray-700">
                         <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                        <span>{action}</span>
+                        <span>
+                          {String(action || "")
+                            .replace(/<[^>]*>/g, "")
+                            .replace(/&lt;/g, "<")
+                            .replace(/&gt;/g, ">")
+                            .replace(/&amp;/g, "&")}
+                        </span>
                       </li>
                     ))}
                   </ul>

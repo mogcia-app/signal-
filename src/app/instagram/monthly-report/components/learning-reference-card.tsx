@@ -202,7 +202,13 @@ export function LearningReferenceCard({ learningContext }: LearningReferenceCard
                       ? "改善ポイント"
                       : "参考投稿"}
                 </p>
-                <p className="text-[11px] text-slate-500">{reference.summary}</p>
+                <p className="text-[11px] text-slate-500">
+                  {String(reference.summary || "")
+                    .replace(/<[^>]*>/g, "")
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">")
+                    .replace(/&amp;/g, "&")}
+                </p>
               </div>
             ))}
           </div>

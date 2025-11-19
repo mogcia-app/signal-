@@ -98,10 +98,18 @@ function CommentList({
         const labHref = getLabEditorHref(comment.postType || "feed", comment.postId);
         return (
           <div key={`${title}-${comment.postId}-${comment.comment.slice(0, 10)}`}>
-            <p className="text-sm font-semibold text-slate-900">{comment.title || "投稿"}</p>
-            <p className="text-xs text-slate-600 mt-1 line-clamp-3 whitespace-pre-wrap">
-              “{comment.comment}”
-            </p>
+            <p
+              className="text-sm font-semibold text-slate-900"
+              dangerouslySetInnerHTML={{
+                __html: String(comment.title || "投稿"),
+              }}
+            />
+            <p
+              className="text-xs text-slate-600 mt-1 line-clamp-3 whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{
+                __html: `"${String(comment.comment || "").replace(/"/g, "&quot;")}"`,
+              }}
+            />
             <div className="flex items-center gap-2 mt-2">
               {labHref && (
                 <Link
@@ -154,7 +162,12 @@ export function FeedbackSentimentCard({ summary }: FeedbackSentimentCardProps) {
       >
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-sm font-semibold text-slate-900">{post.title || "投稿"}</p>
+            <p
+              className="text-sm font-semibold text-slate-900"
+              dangerouslySetInnerHTML={{
+                __html: String(post.title || "投稿"),
+              }}
+            />
             <p className="text-[11px] text-slate-500">
               {post.positive}件ポジ / {post.negative}件ネガ
             </p>
@@ -170,9 +183,12 @@ export function FeedbackSentimentCard({ summary }: FeedbackSentimentCardProps) {
           </span>
         </div>
         {post.lastComment && (
-          <p className="text-[11px] text-slate-600 line-clamp-2 whitespace-pre-wrap">
-            “{post.lastComment}”
-          </p>
+          <p
+            className="text-[11px] text-slate-600 line-clamp-2 whitespace-pre-wrap"
+            dangerouslySetInnerHTML={{
+              __html: `"${String(post.lastComment || "").replace(/"/g, "&quot;")}"`,
+            }}
+          />
         )}
         <div className="flex items-center gap-2">
           {labHref && (
