@@ -153,9 +153,12 @@ export function PostDeepDiveSection({ posts, patternHighlights, unifiedTotalPost
                       <p className="text-xs text-slate-500">
                         {postTypeLabel[post.postType]}・{formatDateLabel(post.createdAt)}
                       </p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {post.title || "無題の投稿"}
-                      </p>
+                      <p
+                        className="text-sm font-semibold text-slate-900"
+                        dangerouslySetInnerHTML={{
+                          __html: String(post.title || "無題の投稿"),
+                        }}
+                      />
                     </div>
                     {snapshotRefs.length > 0 && (
                       <div className="flex flex-wrap justify-end gap-1">

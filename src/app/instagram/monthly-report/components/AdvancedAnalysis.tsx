@@ -99,7 +99,12 @@ export const AdvancedAnalysis: React.FC<AdvancedAnalysisProps> = ({ reportSummar
                 <h4 className="font-semibold text-green-900">おすすめ投稿時間</h4>
               </div>
               <p className="text-sm text-green-800">
-                <span className="font-medium">{bestTimeSlot.label}</span>
+                <span
+                  className="font-medium"
+                  dangerouslySetInnerHTML={{
+                    __html: String(bestTimeSlot.label || ""),
+                  }}
+                />
                 が最もエンゲージメントが高い時間帯です。 平均{" "}
                 <span className="font-bold">{Math.round(bestTimeSlot.avgEngagement)}</span>{" "}
                 エンゲージを記録しています。

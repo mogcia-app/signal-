@@ -120,16 +120,23 @@ export function SnapshotReferenceSection({ posts, unifiedTotalPosts }: SnapshotR
                         : "フィード"}
                   </span>
                 </div>
-                <p className="text-sm font-semibold text-slate-900 line-clamp-2">
-                  {reference.sourcePostTitle || "無題の投稿"}
-                </p>
+                <p
+                  className="text-sm font-semibold text-slate-900 line-clamp-2"
+                  dangerouslySetInnerHTML={{
+                    __html: String(reference.sourcePostTitle || "無題の投稿"),
+                  }}
+                />
                 <p className="text-xs text-slate-500 mt-1">{reference.createdAtLabel}</p>
-                <p className="text-xs text-slate-600 mt-2">
-                  {reference.summary ||
-                    `ER ${reference.metrics?.engagementRate ?? "-"}% / 保存率 ${
-                      reference.metrics?.saveRate ?? "-"
-                    }%`}
-                </p>
+                <p
+                  className="text-xs text-slate-600 mt-2"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      reference.summary ||
+                      `ER ${reference.metrics?.engagementRate ?? "-"}% / 保存率 ${
+                        reference.metrics?.saveRate ?? "-"
+                      }%`,
+                  }}
+                />
                 {structureTags && structureTags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {structureTags.slice(0, 4).map((tag) => (

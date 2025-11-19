@@ -178,9 +178,12 @@ export function KPIDrilldownSection({ breakdowns }: KPIDrilldownSectionProps) {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <p className="text-sm font-semibold text-slate-900">
-                                {post.title || "無題の投稿"}
-                              </p>
+                              <p
+                                className="text-sm font-semibold text-slate-900"
+                                dangerouslySetInnerHTML={{
+                                  __html: String(post.title || "無題の投稿"),
+                                }}
+                              />
                               <p className="text-[11px] text-slate-500">
                                 {post.value.toLocaleString()}件
                               </p>

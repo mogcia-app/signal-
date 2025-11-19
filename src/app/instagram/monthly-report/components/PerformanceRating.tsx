@@ -82,7 +82,11 @@ export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
               <p className="text-3xl font-semibold text-slate-900">{loopScorePercent}%</p>
             </div>
             <div className="text-xs text-gray-600 space-y-1">
-              <p>{pdcaStatus.description}</p>
+              <p
+                dangerouslySetInnerHTML={{
+                  __html: String(pdcaStatus.description || ""),
+                }}
+              />
             </div>
           </div>
           <div className="border border-gray-200 bg-white rounded-none p-4 flex flex-col gap-3 h-full">
