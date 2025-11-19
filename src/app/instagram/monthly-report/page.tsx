@@ -920,13 +920,45 @@ export default function InstagramMonthlyReportPage() {
       // グローバルスコープに公開（ブラウザのコンソールで使用可能）
       (window as any).hasHtmlTags = hasHtmlTags;
 
-      // React error #418のエラーハンドリング（簡易版 - イベントをブロックしない）
+      // React error #418のエラーハンドリング（詳細版 - 発生箇所を特定）
       const originalError = window.onerror;
       const originalUnhandledRejection = window.onunhandledrejection;
       
       window.onerror = (message, source, lineno, colno, error) => {
         if (typeof message === "string" && message.includes("418")) {
-          console.error("[React Error #418 検出]", { message, source, lineno, colno, error });
+          console.error("=".repeat(60));
+          console.error("🚨 [React Error #418 検出]");
+          console.error("メッセージ:", message);
+          console.error("ソース:", source);
+          console.error("行番号:", lineno, "列番号:", colno);
+          console.error("エラー:", error);
+          console.error("スタック:", error?.stack);
+          
+          // エラー発生時にDOMを検査
+          setTimeout(() => {
+            console.error("🔍 [DOM検査開始]");
+            const allElements = document.querySelectorAll("*");
+            let foundCount = 0;
+            allElements.forEach((el, index) => {
+              // textContentにHTMLタグが含まれているかチェック
+              if (el.textContent && hasHtmlTags(el.textContent)) {
+                foundCount++;
+                if (foundCount <= 10) { // 最初の10個だけ表示
+                  console.error(`[問題要素 #${foundCount}]`, {
+                    tagName: el.tagName,
+                    className: el.className,
+                    id: el.id,
+                    textContent: el.textContent.substring(0, 150),
+                    innerHTML: (el as HTMLElement).innerHTML?.substring(0, 150),
+                    parentElement: el.parentElement?.tagName,
+                    parentClassName: el.parentElement?.className,
+                  });
+                }
+              }
+            });
+            console.error(`[DOM検査完了] ${foundCount}個の要素にHTMLタグが検出されました`);
+          }, 500);
+          console.error("=".repeat(60));
         }
         // 元のエラーハンドラーを呼び出し、イベントの伝播を妨げない
         if (originalError) {
