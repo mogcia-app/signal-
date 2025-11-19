@@ -670,9 +670,12 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                                     />
                                   </div>
                                 </div>
-                                <span className={`px-3 py-1 text-xs font-semibold rounded-none ${style.badge}`}>
-                                  {style.label}
-                                </span>
+                                <span
+                                  className={`px-3 py-1 text-xs font-semibold rounded-none ${style.badge}`}
+                                  dangerouslySetInnerHTML={{
+                                    __html: String(style.label || ""),
+                                  }}
+                                />
                               </div>
 
                               <p

@@ -73,9 +73,12 @@ export function TimeSlotHeatmap({ data }: TimeSlotHeatmapProps) {
               <th className="text-left px-3 py-2 font-semibold">時間帯</th>
               {Object.entries(postTypeMeta).map(([key, meta]) => (
                 <th key={key} className="text-left px-3 py-2 font-semibold">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${meta.badge}`}>
-                    {meta.label}
-                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${meta.badge}`}
+                    dangerouslySetInnerHTML={{
+                      __html: String(meta.label || ""),
+                    }}
+                  />
                 </th>
               ))}
             </tr>

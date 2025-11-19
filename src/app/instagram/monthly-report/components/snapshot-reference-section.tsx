@@ -110,7 +110,11 @@ export function SnapshotReferenceSection({ posts, unifiedTotalPosts }: SnapshotR
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
                     {config.icon}
-                    <span>{config.label}</span>
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: String(config.label || ""),
+                      }}
+                    />
                   </div>
                   <span className={`text-[11px] px-2 py-0.5 rounded-full border ${config.badgeClass}`}>
                     {reference.sourcePostType === "reel"

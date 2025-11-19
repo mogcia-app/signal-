@@ -145,9 +145,12 @@ export const ActionPlanRecommendations: React.FC<ActionPlanRecommendationsProps>
                       />
                     </div>
                   </div>
-                  <span className={`px-3 py-1 text-xs font-semibold rounded-none ${style.badge}`}>
-                    {style.label}
-                  </span>
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-none ${style.badge}`}
+                    dangerouslySetInnerHTML={{
+                      __html: String(style.label || ""),
+                    }}
+                  />
                 </div>
 
                 <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap">

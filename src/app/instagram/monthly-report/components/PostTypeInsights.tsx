@@ -97,7 +97,12 @@ export const PostTypeInsights: React.FC<PostTypeInsightsProps> = ({ highlights, 
                     }}
                   />
                 </span>
-                <span className="text-xs text-gray-500">{config.label}</span>
+                <span
+                  className="text-xs text-gray-500"
+                  dangerouslySetInnerHTML={{
+                    __html: String(config.label || ""),
+                  }}
+                />
               </div>
               <div className="flex items-baseline justify-between">
                 <span

@@ -60,7 +60,11 @@ export const RiskAlerts: React.FC<RiskAlertsProps> = ({ alerts }) => {
                 <div className="flex items-center space-x-2">
                   <span className="inline-flex items-center space-x-2 px-2 py-1 bg-white border border-gray-200 rounded-none text-xs font-semibold text-gray-700">
                     {config.icon}
-                    <span>{config.label}</span>
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: String(config.label || ""),
+                      }}
+                    />
                   </span>
                   <span
                     className="text-xs text-gray-500"

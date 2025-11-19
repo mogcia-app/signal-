@@ -202,9 +202,10 @@ export function KPIDrilldownSection({ breakdowns }: KPIDrilldownSectionProps) {
                             {post.status && (
                               <span
                                 className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}
-                              >
-                                {statusMeta.label}
-                              </span>
+                                dangerouslySetInnerHTML={{
+                                  __html: String(statusMeta.label || ""),
+                                }}
+                              />
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-3">
