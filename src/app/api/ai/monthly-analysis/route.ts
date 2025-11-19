@@ -2519,8 +2519,58 @@ async function generateAIOverview(
   }
 ): Promise<AnalysisOverview | null> {
   try {
+    // 月の情報を取得
+    const currentDate = new Date(context.date + "-01");
+    const currentMonth = currentDate.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
+    const nextMonthDate = new Date(currentDate);
+    nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+    const nextMonth = nextMonthDate.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
+    
     const payload = JSON.stringify(context, null, 2);
+    const planStrategyReviewTemplate = `📊 Instagram運用レポート（${currentMonth}総括）
+
+⸻
+
+🔹 アカウント全体の動き
+	•	閲覧数：{数値}人（totals.totalReachから取得）
+	•	フォロワー外リーチ率：{数値}％（利用可能なデータから計算。reachSourceAnalysisが利用可能な場合はそれを使用、そうでない場合はtotalsから推定）
+	•	総リーチ数：{数値}（totals.totalReachから取得）
+	•	プロフィールアクティビティ：{数値}（前月比{変化率}％）（利用可能なデータから取得、previousTotalsと比較して変化率を計算）
+
+{全体的な評価コメント（2-3文）}
+
+⸻
+
+🔹 コンテンツ別の傾向
+	•	{投稿タイプ}が最も多く見られ（全体の{割合}％）、
+次いで{投稿タイプ}、最後に{投稿タイプ}が続きます。（postTypeStatsから取得）
+	•	もっとも閲覧されたコンテンツは「{投稿タイトル}」投稿で、{数値}回再生／閲覧。（postDeepDiveやpostsから最高リーチの投稿を特定）
+{傾向の説明（1-2文）}
+
+⸻
+
+💡 総評
+
+${currentMonth}は全体的に{評価}で、
+特に{強調ポイント}が目立つ結果でした。
+また、{具体的な傾向}が高い反応を得ており、
+アカウントの方向性がしっかり定まりつつあります。
+
+⸻
+
+📈 ${nextMonth}に向けた提案
+	1.	{提案1のタイトル}
+　{提案1の説明}
+　→ {具体的なアクション}
+	2.	{提案2のタイトル}
+　{提案2の説明}
+	3.	{提案3のタイトル}
+　{提案3の説明}`;
+
     const prompt = `以下のInstagram運用データを分析し、要約と重要指標を生成してください。必ずJSONのみを出力し、余計なテキストは含めないでください。
+
+現在の月: ${currentMonth}
+来月: ${nextMonth}
 
 分析データ:
 ${payload}
@@ -2552,7 +2602,7 @@ ${payload}
     "nextSteps": [
       "来月に向けた具体的アクション（60文字以内）"
     ],
-    "planStrategyReview": "計画の「取り組みたいこと」と「投稿したい内容」を総合的に評価した総評（3行程度、200-300文字）。専門用語を避け、分かりやすい言葉で書く。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめる。具体的な改善提案も含める"
+    "planStrategyReview": "以下の形式で出力してください:\n\n${planStrategyReviewTemplate}\n\n実績データ（totals.totalReach、totals.totalFollowerIncrease、totals.totalProfileVisitsなど）を必ず確認し、正確な数値を記載してください。計画の「取り組みたいこと」と「投稿したい内容」を踏まえつつ、実績と整合性のある評価を行ってください。"
   ]
 }
 
@@ -2563,7 +2613,14 @@ ${payload}
 - planReflection.checkpointsは最大3件、nextStepsは最大3件
 - 運用計画データが存在しない場合は、statusを"no_plan"にし、checkpointsとnextStepsを空配列にする
 - 運用計画がある場合は、目標と実績の差分を簡潔にまとめ、statusを適切に設定する（達成:on_track, 一部未達:at_risk, 未達:off_track）
-- planReflection.planStrategyReviewは必須フィールドです。planContext.planSummaryにstrategies（取り組みたいこと）とpostCategories（投稿したい内容）が含まれている場合は、それらを参照して今月の実績や傾向とどう整合しているかを総合的に評価してください。専門用語や難しい表現を避け、誰でも理解できる分かりやすい言葉で書いてください。各項目を個別に列挙せず、全体の方向性や優先順位、実現可能性を自然な文章でまとめ、具体的な改善提案も含めてください（3行程度、200-300文字）。計画データがない場合やstrategies/postCategoriesが空の場合は空文字列にしてください
+- planReflection.planStrategyReviewは必須フィールドです。上記の形式に従って、以下の内容を含めてください：
+  1. 📊 Instagram運用レポート（${currentMonth}総括）の見出し
+  2. 🔹 アカウント全体の動き：実績データ（totals.totalReach、totals.totalFollowerIncrease、totals.totalProfileVisitsなど）から正確な数値を抽出し、前月比も計算して記載。フォロワー外リーチ率は利用可能なデータから計算（reachSourceAnalysisが利用可能な場合はそれを使用、そうでない場合はtotalsから推定）
+  3. 🔹 コンテンツ別の傾向：postTypeStatsから投稿タイプ別の割合と、もっとも閲覧されたコンテンツ（postDeepDiveやpostsから最高リーチの投稿）を特定
+  4. 💡 総評：${currentMonth}の全体的な評価と、計画の「取り組みたいこと」「投稿したい内容」との整合性を評価（2-3文）
+  5. 📈 ${nextMonth}に向けた提案：具体的なアクションプランを3つ提示（各提案はタイトルと説明、具体的なアクションを含む）
+  
+  実績データ（totals、changes、postTypeStats、postDeepDiveなど）を必ず確認し、正確な数値を記載してください。フォロワー増加が正の値の場合は「増加が見込めない」などと書かないでください。計画データがない場合やstrategies/postCategoriesが空の場合は、実績データのみに基づいて総評を作成してください
 - 【重要】planStrategyReviewを書く際は、必ず実績データ（totals.totalFollowerIncrease、totals.totalLikes、totals.totalReachなど）を確認してください。フォロワー増加が正の値（増加している）場合は「フォロワー増加につながらない」「増加が見込めない」などと書かないでください。実績データと矛盾する表現は絶対に避けてください。実績が好調な場合はそれを正しく評価し、改善が必要な場合のみ改善提案をしてください
 - JSON以外の文字は出力しない`;
 
