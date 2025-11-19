@@ -2634,7 +2634,7 @@ ${payload}
     "nextSteps": [
       "来月に向けた具体的アクション（60文字以内）"
     ],
-    "planStrategyReview": "以下の形式で出力してください:\n\n${planStrategyReviewTemplate}\n\n【重要】データ取得の指示（KPIコンソールのデータを参照）:\n- 閲覧数: context.totals.totalReach の値をそのまま使用（KPIコンソールの「閲覧数総数」と同じ値）。数値が存在する場合は必ずその数値を記載し、0の場合は0と記載\n- フォロワー外リーチ率: context.reachSourceAnalysis.followers.nonFollowers と context.reachSourceAnalysis.followers.followers が存在する場合、nonFollowers / (followers + nonFollowers) * 100 で計算。データがない場合は計算できないので「データ未取得」と記載\n- 総リーチ数: context.totals.totalReach の値をそのまま使用（閲覧数と同じ値）。数値が存在する場合は必ずその数値を記載し、0の場合は0と記載\n- プロフィールアクティビティ: context.contentPerformance.feed.totalProfileVisits の値を使用。前月比は context.previousTotals と比較して計算（前月の値がない場合は「前月比なし」と記載）。データがない場合は「データ未取得」と記載\n\n【重要】context.totals には以下のKPIコンソールのデータが含まれています:\n- context.totals.totalLikes: いいね総数\n- context.totals.totalComments: コメント総数\n- context.totals.totalShares: シェア総数\n- context.totals.totalReach: 閲覧数総数\n- context.totals.totalFollowerIncrease: フォロワー増加数\n\nこれらのデータを必ず確認し、正確な数値を記載してください。データが0の場合は0と記載し、「データ未取得」とは書かないでください。計画の「取り組みたいこと」と「投稿したい内容」を踏まえつつ、実績と整合性のある評価を行ってください。"
+    "planStrategyReview": "【必須】以下の形式で出力してください。必ずこのフィールドに値を設定してください:\n\n${planStrategyReviewTemplate}\n\nデータ取得方法:\n- 閲覧数・総リーチ数: context.totals.totalReach（KPIコンソールの「閲覧数総数」と同じ）\n- フォロワー外リーチ率: context.reachSourceAnalysis.followers から計算（データがない場合は「データ未取得」）\n- プロフィールアクティビティ: context.contentPerformance.feed.totalProfileVisits（データがない場合は「データ未取得」）\n- context.totals にはKPIコンソールのデータ（totalLikes、totalComments、totalShares、totalReach、totalFollowerIncrease）が含まれています\n\n必ず実績データを確認し、正確な数値を記載してください。"
   ]
 }
 
@@ -2792,14 +2792,20 @@ ${payload}
       const planStrategyReviewValue =
         typeof rawPlanReflection.planStrategyReview === "string"
           ? rawPlanReflection.planStrategyReview.trim()
-          : undefined;
+          : "";
+      
+      // planStrategyReviewが空の場合は、デフォルトメッセージを設定
+      const finalPlanStrategyReview = planStrategyReviewValue || 
+        (status === "no_plan" 
+          ? "運用計画が未設定のため、総評を生成できませんでした。" 
+          : "総評の生成に失敗しました。実績データを確認してください。");
 
       planReflection = {
         summary: summaryValue || (status === "no_plan" ? "運用計画が未設定のため振り返りはありません。" : ""),
         status,
         checkpoints,
         nextSteps,
-        planStrategyReview: planStrategyReviewValue,
+        planStrategyReview: finalPlanStrategyReview,
       };
     }
 
@@ -2811,6 +2817,7 @@ ${payload}
           status: "at_risk",
           checkpoints: [],
           nextSteps: ["投稿数とフォロワー推移を確認し、来月の打ち手を再定義しましょう。"],
+          planStrategyReview: "総評の生成に失敗しました。実績データを確認してください。",
         };
       } else if (context.planContext) {
         planReflection = {
@@ -2818,8 +2825,17 @@ ${payload}
           status: "no_plan",
           checkpoints: [],
           nextSteps: ["まずは運用計画を作成して目標を明確にしましょう。"],
+          planStrategyReview: "運用計画が未設定のため、総評を生成できませんでした。",
         };
       }
+    }
+    
+    // planReflectionが存在するがplanStrategyReviewがない場合のフォールバック
+    if (planReflection && !planReflection.planStrategyReview) {
+      planReflection.planStrategyReview = 
+        planReflection.status === "no_plan"
+          ? "運用計画が未設定のため、総評を生成できませんでした。"
+          : "総評の生成に失敗しました。実績データを確認してください。";
     }
 
     return {
