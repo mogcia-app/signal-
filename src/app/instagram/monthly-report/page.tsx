@@ -923,42 +923,68 @@ export default function InstagramMonthlyReportPage() {
       // React error #418のエラーハンドリング（詳細版 - 発生箇所を特定）
       const originalError = window.onerror;
       const originalUnhandledRejection = window.onunhandledrejection;
+      const originalConsoleError = console.error;
       
       window.onerror = (message, source, lineno, colno, error) => {
-        if (typeof message === "string" && message.includes("418")) {
-          console.error("=".repeat(60));
-          console.error("🚨 [React Error #418 検出]");
-          console.error("メッセージ:", message);
-          console.error("ソース:", source);
-          console.error("行番号:", lineno, "列番号:", colno);
-          console.error("エラー:", error);
-          console.error("スタック:", error?.stack);
+        const messageStr = String(message || "");
+        const errorStr = error?.toString() || "";
+        const stackStr = error?.stack || "";
+        const sourceStr = String(source || "");
+        
+        // React error #418を検出（メッセージ、エラー、スタック、ソースのいずれかに418が含まれているか）
+        const is418Error = messageStr.includes("418") || errorStr.includes("418") || 
+                          stackStr.includes("418") || sourceStr.includes("418") ||
+                          messageStr.includes("HTML") || errorStr.includes("HTML") ||
+                          stackStr.includes("HTML") || sourceStr.includes("HTML") ||
+                          messageStr.includes("Minified React error");
+        
+        // すべてのエラーを一時的にログに記録（デバッグ用）
+        if (messageStr || errorStr) {
+          originalConsoleError("[すべてのエラーを記録]", {
+            message: messageStr,
+            source: sourceStr,
+            lineno,
+            colno,
+            error: errorStr,
+            stack: stackStr.substring(0, 500),
+          });
+        }
+        
+        if (is418Error) {
+          originalConsoleError("=".repeat(60));
+          originalConsoleError("🚨 [React Error #418 検出]");
+          originalConsoleError("メッセージ:", message);
+          originalConsoleError("ソース:", source);
+          originalConsoleError("行番号:", lineno, "列番号:", colno);
+          originalConsoleError("エラー:", error);
+          originalConsoleError("スタック:", error?.stack);
           
           // エラー発生時にDOMを検査
           setTimeout(() => {
-            console.error("🔍 [DOM検査開始]");
+            originalConsoleError("🔍 [DOM検査開始]");
             const allElements = document.querySelectorAll("*");
             let foundCount = 0;
-            allElements.forEach((el, index) => {
+            allElements.forEach((el) => {
               // textContentにHTMLタグが含まれているかチェック
               if (el.textContent && hasHtmlTags(el.textContent)) {
                 foundCount++;
-                if (foundCount <= 10) { // 最初の10個だけ表示
-                  console.error(`[問題要素 #${foundCount}]`, {
+                if (foundCount <= 20) { // 最初の20個だけ表示
+                  originalConsoleError(`[問題要素 #${foundCount}]`, {
                     tagName: el.tagName,
                     className: el.className,
                     id: el.id,
-                    textContent: el.textContent.substring(0, 150),
-                    innerHTML: (el as HTMLElement).innerHTML?.substring(0, 150),
+                    textContent: el.textContent.substring(0, 200),
+                    innerHTML: (el as HTMLElement).innerHTML?.substring(0, 200),
                     parentElement: el.parentElement?.tagName,
                     parentClassName: el.parentElement?.className,
+                    parentId: el.parentElement?.id,
                   });
                 }
               }
             });
-            console.error(`[DOM検査完了] ${foundCount}個の要素にHTMLタグが検出されました`);
+            originalConsoleError(`[DOM検査完了] ${foundCount}個の要素にHTMLタグが検出されました`);
           }, 500);
-          console.error("=".repeat(60));
+          originalConsoleError("=".repeat(60));
         }
         // 元のエラーハンドラーを呼び出し、イベントの伝播を妨げない
         if (originalError) {
@@ -966,6 +992,18 @@ export default function InstagramMonthlyReportPage() {
         }
         return false;
       };
+      
+      // すべてのエラーをログに記録（デバッグ用）
+      console.error = ((...args: unknown[]) => {
+        const argsStr = args.map(a => String(a)).join(" ");
+        if (argsStr.includes("418") || argsStr.includes("HTML")) {
+          originalConsoleError("=".repeat(60));
+          originalConsoleError("🚨 [Console Error - React #418関連]");
+          originalConsoleError(...args);
+          originalConsoleError("=".repeat(60));
+        }
+        originalConsoleError.apply(console, args);
+      }) as typeof console.error;
 
       window.onunhandledrejection = ((event: PromiseRejectionEvent) => {
         if (event.reason && typeof event.reason === "object" && "message" in event.reason) {
@@ -1020,6 +1058,7 @@ export default function InstagramMonthlyReportPage() {
       return () => {
         window.onerror = originalError;
         window.onunhandledrejection = originalUnhandledRejection;
+        console.error = originalConsoleError;
       };
     }
   }, [reportSummary]);
