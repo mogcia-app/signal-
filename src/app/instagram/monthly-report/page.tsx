@@ -917,6 +917,9 @@ export default function InstagramMonthlyReportPage() {
         return /<[^>]*>/.test(str);
       };
 
+      // グローバルスコープに公開（ブラウザのコンソールで使用可能）
+      (window as any).hasHtmlTags = hasHtmlTags;
+
       // reportSummary内のすべての文字列データをチェック
       if (reportSummary) {
         const checkObject = (obj: unknown, path = ""): void => {
@@ -941,7 +944,11 @@ export default function InstagramMonthlyReportPage() {
           }
         };
 
+        console.log("[デバッグ] reportSummaryをチェック中...", reportSummary);
         checkObject(reportSummary, "reportSummary");
+        console.log("[デバッグ] チェック完了");
+      } else {
+        console.log("[デバッグ] reportSummaryがnullです");
       }
     }
   }, [reportSummary]);
