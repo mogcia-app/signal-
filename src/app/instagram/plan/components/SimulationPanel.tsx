@@ -351,17 +351,20 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                 <div>
                   <p className="text-sm text-orange-700 font-semibold mb-1">📊 現実的成長</p>
                   <p className="text-3xl font-bold text-orange-900 mb-1">
-                    {growthData.realisticFinal.toLocaleString()}
+                    {growthData.realisticFinal.toLocaleString()}人
                   </p>
-                  <p className="text-sm text-orange-600 font-medium">
-                    +
+                  <p className="text-sm text-orange-600 font-medium mb-1">
+                    +{(growthData.realisticFinal - currentFollowers).toLocaleString()}人増加
+                  </p>
+                  <p className="text-xs text-orange-500">
+                    (
                     {currentFollowers > 0
                       ? (
                           ((growthData.realisticFinal - currentFollowers) / currentFollowers) *
                           100
                         ).toFixed(1)
                       : "0"}
-                    % 増加
+                    % 増加率)
                   </p>
                 </div>
                 <Target className="w-10 h-10 text-orange-600" />
@@ -373,17 +376,20 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                 <div>
                   <p className="text-sm text-amber-700 font-semibold mb-1">🎯 あなたの目標</p>
                   <p className="text-3xl font-bold text-amber-900 mb-1">
-                    {growthData.userTargetFinal.toLocaleString()}
+                    {growthData.userTargetFinal.toLocaleString()}人
                   </p>
-                  <p className="text-sm text-amber-600 font-medium">
-                    +
+                  <p className="text-sm text-amber-600 font-medium mb-1">
+                    +{(growthData.userTargetFinal - currentFollowers).toLocaleString()}人増加
+                  </p>
+                  <p className="text-xs text-amber-500">
+                    (
                     {currentFollowers > 0
                       ? (
                           ((growthData.userTargetFinal - currentFollowers) / currentFollowers) *
                           100
                         ).toFixed(1)
                       : "0"}
-                    % 増加
+                    % 増加率)
                   </p>
                 </div>
                 <AlertTriangle className="w-10 h-10 text-amber-600" />
@@ -443,153 +449,10 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
         </div>
       </div>
 
-      {/* 代替案セクション（非常に困難な場合のみ表示） */}
-      {result?.alternativeOptions && (
+      {/* その他の成長戦略セクション（代替案がある場合のみ表示） */}
+      {result?.alternativeOptions?.otherStrategies && result.alternativeOptions.otherStrategies.length > 0 && (
         <div className="mt-6 bg-white">
           <div className="p-6">
-            <div className="flex items-center mb-4">
-              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-red-900">🎯 より現実的な目標案</h3>
-                <p className="text-sm text-red-700 mt-1">
-                  目標達成が非常に困難です。以下の代替案をご検討ください
-                </p>
-              </div>
-            </div>
-
-            {/* なぜ困難なのか */}
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-red-800 font-medium">
-                ⚠️ {result.alternativeOptions.whyDifficult}
-              </p>
-            </div>
-
-            {/* 代替案カード */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* 現実的な目標 */}
-              <div className="bg-green-50 border-2 border-green-300 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-lg font-bold text-green-900">✅ 現実的な目標</h4>
-                  <span className="px-3 py-1 bg-green-200 text-green-800 text-xs rounded-full font-bold">
-                    推奨
-                  </span>
-                </div>
-                <div className="mb-4">
-                  <div className="text-2xl font-bold text-green-900 mb-1">
-                    +{result.alternativeOptions.realistic.followerGain.toLocaleString()}人
-                  </div>
-                  <div className="text-sm text-green-700">
-                    目標: {result.alternativeOptions.realistic.targetFollowers.toLocaleString()}人
-                  </div>
-                  <div className="text-xs text-green-600 mt-1">
-                    月間成長率: {result.alternativeOptions.realistic.monthlyGrowthRate}%
-                  </div>
-                </div>
-                <p className="text-sm text-green-800 mb-3">
-                  {result.alternativeOptions.realistic.recommendation}
-                </p>
-                <div className="border-t border-green-200 pt-3">
-                  <div className="text-xs font-semibold text-green-700 mb-1">メリット</div>
-                  <ul className="text-xs text-green-600 space-y-1">
-                    {result.alternativeOptions.realistic.pros.map((pro, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="mr-1">✓</span>
-                        <span>{pro}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* 挑戦的な目標 */}
-              <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-lg font-bold text-orange-900">🚀 挑戦的な目標</h4>
-                  <span className="px-3 py-1 bg-orange-200 text-orange-800 text-xs rounded-full font-bold">
-                    可能
-                  </span>
-                </div>
-                <div className="mb-4">
-                  <div className="text-2xl font-bold text-orange-900 mb-1">
-                    +{result.alternativeOptions.moderate.followerGain.toLocaleString()}人
-                  </div>
-                  <div className="text-sm text-orange-700">
-                    目標: {result.alternativeOptions.moderate.targetFollowers.toLocaleString()}人
-                  </div>
-                  <div className="text-xs text-orange-600 mt-1">
-                    月間成長率: {result.alternativeOptions.moderate.monthlyGrowthRate}%
-                  </div>
-                </div>
-                <p className="text-sm text-orange-800 mb-3">
-                  {result.alternativeOptions.moderate.recommendation}
-                </p>
-                <div className="border-t border-orange-200 pt-3">
-                  <div className="text-xs font-semibold text-orange-700 mb-1">メリット</div>
-                  <ul className="text-xs text-orange-600 space-y-1">
-                    {result.alternativeOptions.moderate.pros.map((pro, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="mr-1">✓</span>
-                        <span>{pro}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* 段階的アプローチ */}
-            <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-5 mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-bold text-blue-900">📈 段階的アプローチ</h4>
-                <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs rounded-full font-bold">
-                  段階的
-                </span>
-              </div>
-              <p className="text-sm text-blue-800 mb-4">
-                {result.alternativeOptions.phased.recommendation}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <div className="text-xs font-semibold text-blue-700 mb-2">第一段階</div>
-                  <div className="text-xl font-bold text-blue-900 mb-1">
-                    +{result.alternativeOptions.phased.phase1.followerGain.toLocaleString()}人
-                  </div>
-                  <div className="text-sm text-blue-700">
-                    目標: {result.alternativeOptions.phased.phase1.targetFollowers.toLocaleString()}
-                    人
-                  </div>
-                  <div className="text-xs text-blue-600 mt-1">
-                    {result.alternativeOptions.phased.phase1.description}
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <div className="text-xs font-semibold text-blue-700 mb-2">第二段階</div>
-                  <div className="text-xl font-bold text-blue-900 mb-1">
-                    +{result.alternativeOptions.phased.phase2.followerGain.toLocaleString()}人
-                  </div>
-                  <div className="text-sm text-blue-700">
-                    目標: {result.alternativeOptions.phased.phase2.targetFollowers.toLocaleString()}
-                    人
-                  </div>
-                  <div className="text-xs text-blue-600 mt-1">
-                    {result.alternativeOptions.phased.phase2.description}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-blue-200">
-                <div className="text-xs font-semibold text-blue-700">期間延長案</div>
-                <div className="text-sm text-blue-900 font-bold mt-1">
-                  期間を{result.alternativeOptions.extendedPeriod.period}に延長
-                </div>
-                <p className="text-xs text-blue-700 mt-2">
-                  {result.alternativeOptions.extendedPeriod.recommendation}
-                </p>
-              </div>
-            </div>
-
-            {/* その他の戦略 */}
             <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-5">
               <h4 className="text-lg font-bold text-purple-900 mb-4">💡 その他の成長戦略</h4>
               <div className="space-y-3">

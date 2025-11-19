@@ -372,7 +372,15 @@ function generateGraphData(currentFollowers: number, followerGain: number, planP
   const isMonthly = planPeriod.includes("月");
   const totalWeeks = isMonthly ? parseInt(planPeriod) * 4 : parseInt(planPeriod);
 
-  const realisticWeeklyGrowthRate = 0.02; // 2% per week (現実的)
+  // 現実的な成長率を計算（月間3-5%を基準）
+  const monthlyGrowthRate = 0.04; // 月間4%（現実的）
+  const weeklyGrowthRate = monthlyGrowthRate / 4; // 週間約1%
+  
+  // 現実的な最終フォロワー数を計算（月間成長率から）
+  const periodMultiplier = getPeriodMultiplier(planPeriod);
+  const realisticTotalGain = currentFollowers * monthlyGrowthRate * periodMultiplier;
+  const realisticFinalFollowers = currentFollowers + realisticTotalGain;
+  
   const userTargetWeeklyGrowthRate =
     currentFollowers > 0 ? followerGain / (totalWeeks * currentFollowers) : 0;
 
@@ -388,20 +396,24 @@ function generateGraphData(currentFollowers: number, followerGain: number, planP
     });
 
     if (week < totalWeeks) {
-      realisticFollowers *= 1 + realisticWeeklyGrowthRate;
+      // 現実的成長：線形に段階的に増加（複利ではなく）
+      const realisticWeeklyGain = realisticTotalGain / totalWeeks;
+      realisticFollowers = currentFollowers + (realisticWeeklyGain * (week + 1));
+      
+      // ユーザーの目標：線形に目標まで到達
       userTargetFollowers = currentFollowers + (followerGain * (week + 1)) / totalWeeks;
     }
   }
 
   return {
     data,
-    realisticFinal: Math.round(realisticFollowers),
+    realisticFinal: Math.round(realisticFinalFollowers),
     userTargetFinal: targetFollowers,
     isRealistic:
-      userTargetWeeklyGrowthRate <= realisticWeeklyGrowthRate * 1.5 &&
+      userTargetWeeklyGrowthRate <= weeklyGrowthRate * 1.5 &&
       !isNaN(userTargetWeeklyGrowthRate),
     growthRateComparison: {
-      realistic: realisticWeeklyGrowthRate * 100,
+      realistic: weeklyGrowthRate * 100,
       userTarget: isNaN(userTargetWeeklyGrowthRate) ? 0 : userTargetWeeklyGrowthRate * 100,
     },
   };

@@ -592,9 +592,13 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
                   {planReflection?.planStrategyReview && planReflection.planStrategyReview.trim().length > 0 && (
                     <div className="mt-3 mb-2 border border-dashed border-slate-200 rounded-none p-4 bg-slate-50">
                       <p className="text-[11px] font-semibold text-slate-700 mb-2">計画の総評</p>
-                      <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
-                        {planReflection.planStrategyReview}
-                      </p>
+                      <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+                        {planReflection.planStrategyReview
+                          .replace(/<[^>]*>/g, "") // HTMLタグを削除（React 19対応）
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&")}
+                      </div>
                     </div>
                   )}
                 </div>
