@@ -235,7 +235,14 @@ export function NextMonthFocusActions({
                       .replace(/&gt;/g, ">")
                       .replace(/&amp;/g, "&")}
                   </p>
-                  <p className="text-[11px] text-slate-500">フォーカスKPI: {action.focusKPI}</p>
+                  <p className="text-[11px] text-slate-500">
+                    フォーカスKPI:{" "}
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: String(action.focusKPI || ""),
+                      }}
+                    />
+                  </p>
                 </div>
               </div>
               <p

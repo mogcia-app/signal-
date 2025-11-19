@@ -62,7 +62,12 @@ export const RiskAlerts: React.FC<RiskAlertsProps> = ({ alerts }) => {
                     {config.icon}
                     <span>{config.label}</span>
                   </span>
-                  <span className="text-xs text-gray-500">{alert.metric}</span>
+                  <span
+                    className="text-xs text-gray-500"
+                    dangerouslySetInnerHTML={{
+                      __html: String(alert.metric || ""),
+                    }}
+                  />
                 </div>
               </div>
               <p

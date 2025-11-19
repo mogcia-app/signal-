@@ -134,7 +134,11 @@ export function LearningReferenceCard({ learningContext }: LearningReferenceCard
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-indigo-200 text-indigo-700 text-[11px]"
                     >
                       <Award className="w-3.5 h-3.5" />
-                      {badge.title}
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: String(badge.title || ""),
+                        }}
+                      />
                     </span>
                   ))}
                 </div>

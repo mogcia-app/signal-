@@ -70,9 +70,10 @@ export const PerformanceRating: React.FC<PerformanceRatingProps> = ({
             <div className="flex items-center justify-between">
               <span
                 className={`inline-flex items-center px-2 py-1 text-[11px] font-semibold rounded-none ${pdcaStatus.badge}`}
-              >
-                {pdcaStatus.label}
-              </span>
+                dangerouslySetInnerHTML={{
+                  __html: String(pdcaStatus.label || ""),
+                }}
+              />
               <span className="text-xs text-gray-500">
                 計画: {pdcaMetrics.planExists ? "作成済み" : "未設定"}
               </span>

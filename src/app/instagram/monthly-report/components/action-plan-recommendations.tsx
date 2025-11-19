@@ -137,7 +137,12 @@ export const ActionPlanRecommendations: React.FC<ActionPlanRecommendationsProps>
                           .replace(/&gt;/g, ">")
                           .replace(/&amp;/g, "&")}
                       </div>
-                      <div className="text-xs text-gray-500">{plan.focusArea}</div>
+                      <div
+                        className="text-xs text-gray-500"
+                        dangerouslySetInnerHTML={{
+                          __html: String(plan.focusArea || ""),
+                        }}
+                      />
                     </div>
                   </div>
                   <span className={`px-3 py-1 text-xs font-semibold rounded-none ${style.badge}`}>

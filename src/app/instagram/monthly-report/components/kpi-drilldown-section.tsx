@@ -102,9 +102,12 @@ export function KPIDrilldownSection({ breakdowns }: KPIDrilldownSectionProps) {
             <div key={item.key} className="border border-slate-200 rounded-none p-5 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    {item.label}
-                  </p>
+                  <p
+                    className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
+                    dangerouslySetInnerHTML={{
+                      __html: String(item.label || ""),
+                    }}
+                  />
                   <p className="text-2xl font-semibold text-slate-900 mt-1">
                     {formatValue(item.value, item.unit)}
                   </p>
@@ -117,16 +120,20 @@ export function KPIDrilldownSection({ breakdowns }: KPIDrilldownSectionProps) {
                 {changeMeta && (
                   <span
                     className={`text-xs font-semibold px-2 py-1 rounded-full border ${changeMeta.className}`}
-                  >
-                    {changeMeta.formatted}
-                  </span>
+                    dangerouslySetInnerHTML={{
+                      __html: String(changeMeta.formatted || ""),
+                    }}
+                  />
                 )}
               </div>
 
               {item.insight && (
-                <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-none p-3">
-                  {item.insight}
-                </div>
+                <div
+                  className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-none p-3"
+                  dangerouslySetInnerHTML={{
+                    __html: String(item.insight || ""),
+                  }}
+                />
               )}
 
               {item.segments && item.segments.length > 0 && (
