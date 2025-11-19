@@ -413,26 +413,51 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                       <div className="flex items-center justify-center mb-2">
                         <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2" />
                         <span className="font-semibold text-yellow-800">
-                          {result.onePointAdvice.title}
+                          {result.onePointAdvice.title
+                            ?.replace(/<[^>]*>/g, "")
+                            .replace(/&lt;/g, "<")
+                            .replace(/&gt;/g, ">")
+                            .replace(/&amp;/g, "&") || ""}
                         </span>
                       </div>
-                      <p className="text-sm text-yellow-700">{result.onePointAdvice.message}</p>
+                      <p className="text-sm text-yellow-700">
+                        {result.onePointAdvice.message
+                          ?.replace(/<[^>]*>/g, "")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&") || ""}
+                      </p>
                     </div>
                   ) : (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <div className="flex items-center justify-center mb-2">
                         <span className="text-green-600 mr-2">✅</span>
                         <span className="font-semibold text-green-800">
-                          {result.onePointAdvice.title}
+                          {result.onePointAdvice.title
+                            ?.replace(/<[^>]*>/g, "")
+                            .replace(/&lt;/g, "<")
+                            .replace(/&gt;/g, ">")
+                            .replace(/&amp;/g, "&") || ""}
                         </span>
                       </div>
-                      <p className="text-sm text-green-700">{result.onePointAdvice.message}</p>
+                      <p className="text-sm text-green-700">
+                        {result.onePointAdvice.message
+                          ?.replace(/<[^>]*>/g, "")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&") || ""}
+                      </p>
                     </div>
                   )}
 
                   <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
                     <p className="text-sm text-orange-800 font-medium">
-                      💡 {result.onePointAdvice.advice}
+                      💡{" "}
+                      {result.onePointAdvice.advice
+                        ?.replace(/<[^>]*>/g, "")
+                        .replace(/&lt;/g, "<")
+                        .replace(/&gt;/g, ">")
+                        .replace(/&amp;/g, "&") || ""}
                     </p>
                   </div>
                 </>
@@ -459,7 +484,13 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                 {result.alternativeOptions.otherStrategies.map((strategy, idx) => (
                   <div key={idx} className="bg-white rounded-lg p-4 border border-purple-200">
                     <div className="flex items-start justify-between mb-2">
-                      <h5 className="font-bold text-purple-900">{strategy.title}</h5>
+                      <h5 className="font-bold text-purple-900">
+                        {strategy.title
+                          ?.replace(/<[^>]*>/g, "")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&") || ""}
+                      </h5>
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${
                           strategy.feasibility === "realistic"
@@ -470,10 +501,28 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                         {strategy.feasibility === "realistic" ? "現実的" : "困難"}
                       </span>
                     </div>
-                    <p className="text-sm text-purple-700 mb-2">{strategy.description}</p>
+                    <p className="text-sm text-purple-700 mb-2">
+                      {strategy.description
+                        ?.replace(/<[^>]*>/g, "")
+                        .replace(/&lt;/g, "<")
+                        .replace(/&gt;/g, ">")
+                        .replace(/&amp;/g, "&") || ""}
+                    </p>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-purple-600">{strategy.estimatedBoost}</span>
-                      <span className="text-purple-900 font-semibold">{strategy.cost}</span>
+                      <span className="text-purple-600">
+                        {strategy.estimatedBoost
+                          ?.replace(/<[^>]*>/g, "")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&") || ""}
+                      </span>
+                      <span className="text-purple-900 font-semibold">
+                        {strategy.cost
+                          ?.replace(/<[^>]*>/g, "")
+                          .replace(/&lt;/g, "<")
+                          .replace(/&gt;/g, ">")
+                          .replace(/&amp;/g, "&") || ""}
+                      </span>
                     </div>
                   </div>
                 ))}
