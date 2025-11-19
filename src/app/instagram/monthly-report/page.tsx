@@ -920,8 +920,28 @@ export default function InstagramMonthlyReportPage() {
       // グローバルスコープに公開（ブラウザのコンソールで使用可能）
       (window as any).hasHtmlTags = hasHtmlTags;
 
+      // React error #418のエラーハンドリング
+      const originalError = window.onerror;
+      window.onerror = (message, source, lineno, colno, error) => {
+        if (typeof message === "string" && message.includes("418")) {
+          console.error("[React Error #418 検出]", {
+            message,
+            source,
+            lineno,
+            colno,
+            error,
+            stack: error?.stack,
+          });
+        }
+        if (originalError) {
+          return originalError(message, source, lineno, colno, error);
+        }
+        return false;
+      };
+
       // reportSummary内のすべての文字列データをチェック
       if (reportSummary) {
+        const htmlTagPaths: string[] = [];
         const checkObject = (obj: unknown, path = ""): void => {
           if (!obj || typeof obj !== "object") return;
           
@@ -929,11 +949,14 @@ export default function InstagramMonthlyReportPage() {
             const currentPath = path ? `${path}.${key}` : key;
             
             if (typeof value === "string" && hasHtmlTags(value)) {
-              console.warn(`[HTMLタグ検出] ${currentPath}:`, value);
+              htmlTagPaths.push(currentPath);
+              console.warn(`[HTMLタグ検出] ${currentPath}:`, value.substring(0, 100));
             } else if (Array.isArray(value)) {
               value.forEach((item, index) => {
                 if (typeof item === "string" && hasHtmlTags(item)) {
-                  console.warn(`[HTMLタグ検出] ${currentPath}[${index}]:`, item);
+                  const arrayPath = `${currentPath}[${index}]`;
+                  htmlTagPaths.push(arrayPath);
+                  console.warn(`[HTMLタグ検出] ${arrayPath}:`, item.substring(0, 100));
                 } else if (typeof item === "object" && item !== null) {
                   checkObject(item, `${currentPath}[${index}]`);
                 }
@@ -944,12 +967,22 @@ export default function InstagramMonthlyReportPage() {
           }
         };
 
-        console.log("[デバッグ] reportSummaryをチェック中...", reportSummary);
+        console.log("[デバッグ] reportSummaryをチェック中...");
         checkObject(reportSummary, "reportSummary");
+        if (htmlTagPaths.length > 0) {
+          console.error(`[警告] ${htmlTagPaths.length}個のHTMLタグが検出されました:`, htmlTagPaths);
+        } else {
+          console.log("[デバッグ] HTMLタグは検出されませんでした");
+        }
         console.log("[デバッグ] チェック完了");
       } else {
         console.log("[デバッグ] reportSummaryがnullです");
       }
+
+      // クリーンアップ
+      return () => {
+        window.onerror = originalError;
+      };
     }
   }, [reportSummary]);
 
@@ -1025,9 +1058,19 @@ export default function InstagramMonthlyReportPage() {
                     <div key={test.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50/70">
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{test.name}</p>
+                          <p
+                            className="text-sm font-semibold text-slate-900"
+                            dangerouslySetInnerHTML={{
+                              __html: String(test.name || ""),
+                            }}
+                          />
                           <p className="text-[11px] text-slate-500">
-                            KPI: {test.primaryMetric || "未設定"}
+                            KPI:{" "}
+                            <span
+                              dangerouslySetInnerHTML={{
+                                __html: String(test.primaryMetric || "未設定"),
+                              }}
+                            />
                             {test.completedAt
                               ? ` / 完了: ${new Date(test.completedAt).toLocaleDateString("ja-JP")}`
                               : ""}

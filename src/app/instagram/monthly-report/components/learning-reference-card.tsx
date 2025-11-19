@@ -165,9 +165,12 @@ export function LearningReferenceCard({ learningContext }: LearningReferenceCard
                 >
                   <div className="mt-0.5">{sourceIconMap[reference.sourceType]}</div>
                   <div className="text-xs text-slate-700">
-                    <p className="font-semibold">
-                      {reference.label || sourceTypeLabel[reference.sourceType]}
-                    </p>
+                    <p
+                      className="font-semibold"
+                      dangerouslySetInnerHTML={{
+                        __html: String(reference.label || sourceTypeLabel[reference.sourceType] || ""),
+                      }}
+                    />
                     <p className="text-[11px] text-slate-500">
                       {String(reference.summary || "")
                         .replace(/<[^>]*>/g, "")
