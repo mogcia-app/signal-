@@ -909,7 +909,7 @@ export default function InstagramMonthlyReportPage() {
 
   // アクセス制御画面（削除）
 
-  // デバッグ用：HTMLタグが含まれるデータを検出
+  // デバッグ用：HTMLタグが含まれるデータを検出 + React Error Boundary
   useEffect(() => {
     if (typeof window !== "undefined") {
       const hasHtmlTags = (str: string | null | undefined): boolean => {
@@ -920,24 +920,58 @@ export default function InstagramMonthlyReportPage() {
       // グローバルスコープに公開（ブラウザのコンソールで使用可能）
       (window as any).hasHtmlTags = hasHtmlTags;
 
-      // React error #418のエラーハンドリング
+      // React error #418のエラーハンドリング（より詳細に）
       const originalError = window.onerror;
+      const originalUnhandledRejection = window.onunhandledrejection;
+      
       window.onerror = (message, source, lineno, colno, error) => {
         if (typeof message === "string" && message.includes("418")) {
-          console.error("[React Error #418 検出]", {
-            message,
-            source,
-            lineno,
-            colno,
-            error,
-            stack: error?.stack,
-          });
+          console.error("=".repeat(50));
+          console.error("[React Error #418 検出 - 詳細情報]");
+          console.error("メッセージ:", message);
+          console.error("ソース:", source);
+          console.error("行番号:", lineno);
+          console.error("列番号:", colno);
+          console.error("エラーオブジェクト:", error);
+          console.error("スタックトレース:", error?.stack);
+          console.error("=".repeat(50));
+          
+          // DOMを検査して、HTMLタグが含まれている可能性のある要素を探す
+          setTimeout(() => {
+            const allElements = document.querySelectorAll("*");
+            console.log("[デバッグ] DOM要素を検査中...", allElements.length, "個の要素");
+            allElements.forEach((el, index) => {
+              if (el.children.length === 0 && el.textContent) {
+                const text = el.textContent;
+                if (hasHtmlTags(text)) {
+                  console.warn(`[DOM検査] 要素 #${index} にHTMLタグが含まれています:`, {
+                    tagName: el.tagName,
+                    className: el.className,
+                    textContent: text.substring(0, 100),
+                    innerHTML: (el as HTMLElement).innerHTML?.substring(0, 100),
+                  });
+                }
+              }
+            });
+          }, 1000);
         }
         if (originalError) {
           return originalError(message, source, lineno, colno, error);
         }
         return false;
       };
+
+      window.onunhandledrejection = ((event: PromiseRejectionEvent) => {
+        if (event.reason && typeof event.reason === "object" && "message" in event.reason) {
+          const message = String(event.reason.message);
+          if (message.includes("418")) {
+            console.error("[Unhandled Rejection] React Error #418:", event.reason);
+          }
+        }
+        if (originalUnhandledRejection) {
+          return originalUnhandledRejection.call(window, event);
+        }
+      }) as typeof window.onunhandledrejection;
 
       // reportSummary内のすべての文字列データをチェック
       if (reportSummary) {
@@ -950,13 +984,13 @@ export default function InstagramMonthlyReportPage() {
             
             if (typeof value === "string" && hasHtmlTags(value)) {
               htmlTagPaths.push(currentPath);
-              console.warn(`[HTMLタグ検出] ${currentPath}:`, value.substring(0, 100));
+              console.warn(`[HTMLタグ検出] ${currentPath}:`, value.substring(0, 200));
             } else if (Array.isArray(value)) {
               value.forEach((item, index) => {
                 if (typeof item === "string" && hasHtmlTags(item)) {
                   const arrayPath = `${currentPath}[${index}]`;
                   htmlTagPaths.push(arrayPath);
-                  console.warn(`[HTMLタグ検出] ${arrayPath}:`, item.substring(0, 100));
+                  console.warn(`[HTMLタグ検出] ${arrayPath}:`, item.substring(0, 200));
                 } else if (typeof item === "object" && item !== null) {
                   checkObject(item, `${currentPath}[${index}]`);
                 }
@@ -967,7 +1001,7 @@ export default function InstagramMonthlyReportPage() {
           }
         };
 
-        console.log("[デバッグ] reportSummaryをチェック中...");
+        console.log("[デバッグ] reportSummaryをチェック中...", reportSummary);
         checkObject(reportSummary, "reportSummary");
         if (htmlTagPaths.length > 0) {
           console.error(`[警告] ${htmlTagPaths.length}個のHTMLタグが検出されました:`, htmlTagPaths);
@@ -982,6 +1016,7 @@ export default function InstagramMonthlyReportPage() {
       // クリーンアップ
       return () => {
         window.onerror = originalError;
+        window.onunhandledrejection = originalUnhandledRejection;
       };
     }
   }, [reportSummary]);
