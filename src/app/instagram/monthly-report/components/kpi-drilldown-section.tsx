@@ -138,7 +138,11 @@ export function KPIDrilldownSection({ breakdowns }: KPIDrilldownSectionProps) {
                     return (
                       <div key={`${item.key}-${segment.label}`}>
                         <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                          <span>{segment.label}</span>
+                          <span
+                            dangerouslySetInnerHTML={{
+                              __html: String(segment.label || ""),
+                            }}
+                          />
                           <span>{segment.value.toLocaleString()}件</span>
                         </div>
                         <div className="h-2 bg-[#ff8a15] rounded-full overflow-hidden">

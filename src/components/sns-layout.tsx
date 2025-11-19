@@ -61,9 +61,12 @@ export default function SNSLayout({
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-black truncate">
-                {userProfile?.name || user?.email || "ユーザー"}
-              </div>
+              <div
+                className="text-sm font-semibold text-black truncate"
+                dangerouslySetInnerHTML={{
+                  __html: String(userProfile?.name || user?.email || "ユーザー").replace(/</g, "&lt;").replace(/>/g, "&gt;"),
+                }}
+              />
             </div>
           </div>
         </div>
