@@ -909,7 +909,7 @@ export default function InstagramMonthlyReportPage() {
 
   // アクセス制御画面（削除）
 
-  // デバッグ用：HTMLタグが含まれるデータを検出 + React Error Boundary
+  // デバッグ用：HTMLタグが含まれるデータを検出（簡易版 - サイドバーのクリックを妨げないように）
   useEffect(() => {
     if (typeof window !== "undefined") {
       const hasHtmlTags = (str: string | null | undefined): boolean => {
@@ -920,43 +920,17 @@ export default function InstagramMonthlyReportPage() {
       // グローバルスコープに公開（ブラウザのコンソールで使用可能）
       (window as any).hasHtmlTags = hasHtmlTags;
 
-      // React error #418のエラーハンドリング（より詳細に）
+      // React error #418のエラーハンドリング（簡易版 - イベントをブロックしない）
       const originalError = window.onerror;
       const originalUnhandledRejection = window.onunhandledrejection;
       
       window.onerror = (message, source, lineno, colno, error) => {
         if (typeof message === "string" && message.includes("418")) {
-          console.error("=".repeat(50));
-          console.error("[React Error #418 検出 - 詳細情報]");
-          console.error("メッセージ:", message);
-          console.error("ソース:", source);
-          console.error("行番号:", lineno);
-          console.error("列番号:", colno);
-          console.error("エラーオブジェクト:", error);
-          console.error("スタックトレース:", error?.stack);
-          console.error("=".repeat(50));
-          
-          // DOMを検査して、HTMLタグが含まれている可能性のある要素を探す
-          setTimeout(() => {
-            const allElements = document.querySelectorAll("*");
-            console.log("[デバッグ] DOM要素を検査中...", allElements.length, "個の要素");
-            allElements.forEach((el, index) => {
-              if (el.children.length === 0 && el.textContent) {
-                const text = el.textContent;
-                if (hasHtmlTags(text)) {
-                  console.warn(`[DOM検査] 要素 #${index} にHTMLタグが含まれています:`, {
-                    tagName: el.tagName,
-                    className: el.className,
-                    textContent: text.substring(0, 100),
-                    innerHTML: (el as HTMLElement).innerHTML?.substring(0, 100),
-                  });
-                }
-              }
-            });
-          }, 1000);
+          console.error("[React Error #418 検出]", { message, source, lineno, colno, error });
         }
+        // 元のエラーハンドラーを呼び出し、イベントの伝播を妨げない
         if (originalError) {
-          return originalError(message, source, lineno, colno, error);
+          return originalError.call(window, message, source, lineno, colno, error);
         }
         return false;
       };
@@ -973,44 +947,41 @@ export default function InstagramMonthlyReportPage() {
         }
       }) as typeof window.onunhandledrejection;
 
-      // reportSummary内のすべての文字列データをチェック
+      // reportSummary内のすべての文字列データをチェック（非同期で実行してクリックを妨げない）
       if (reportSummary) {
-        const htmlTagPaths: string[] = [];
-        const checkObject = (obj: unknown, path = ""): void => {
-          if (!obj || typeof obj !== "object") return;
-          
-          for (const [key, value] of Object.entries(obj)) {
-            const currentPath = path ? `${path}.${key}` : key;
+        // 次のフレームで実行して、クリックイベントを妨げない
+        requestAnimationFrame(() => {
+          const htmlTagPaths: string[] = [];
+          const checkObject = (obj: unknown, path = ""): void => {
+            if (!obj || typeof obj !== "object") return;
             
-            if (typeof value === "string" && hasHtmlTags(value)) {
-              htmlTagPaths.push(currentPath);
-              console.warn(`[HTMLタグ検出] ${currentPath}:`, value.substring(0, 200));
-            } else if (Array.isArray(value)) {
-              value.forEach((item, index) => {
-                if (typeof item === "string" && hasHtmlTags(item)) {
-                  const arrayPath = `${currentPath}[${index}]`;
-                  htmlTagPaths.push(arrayPath);
-                  console.warn(`[HTMLタグ検出] ${arrayPath}:`, item.substring(0, 200));
-                } else if (typeof item === "object" && item !== null) {
-                  checkObject(item, `${currentPath}[${index}]`);
-                }
-              });
-            } else if (typeof value === "object" && value !== null) {
-              checkObject(value, currentPath);
+            for (const [key, value] of Object.entries(obj)) {
+              const currentPath = path ? `${path}.${key}` : key;
+              
+              if (typeof value === "string" && hasHtmlTags(value)) {
+                htmlTagPaths.push(currentPath);
+                console.warn(`[HTMLタグ検出] ${currentPath}:`, value.substring(0, 200));
+              } else if (Array.isArray(value)) {
+                value.forEach((item, index) => {
+                  if (typeof item === "string" && hasHtmlTags(item)) {
+                    const arrayPath = `${currentPath}[${index}]`;
+                    htmlTagPaths.push(arrayPath);
+                    console.warn(`[HTMLタグ検出] ${arrayPath}:`, item.substring(0, 200));
+                  } else if (typeof item === "object" && item !== null) {
+                    checkObject(item, `${currentPath}[${index}]`);
+                  }
+                });
+              } else if (typeof value === "object" && value !== null) {
+                checkObject(value, currentPath);
+              }
             }
-          }
-        };
+          };
 
-        console.log("[デバッグ] reportSummaryをチェック中...", reportSummary);
-        checkObject(reportSummary, "reportSummary");
-        if (htmlTagPaths.length > 0) {
-          console.error(`[警告] ${htmlTagPaths.length}個のHTMLタグが検出されました:`, htmlTagPaths);
-        } else {
-          console.log("[デバッグ] HTMLタグは検出されませんでした");
-        }
-        console.log("[デバッグ] チェック完了");
-      } else {
-        console.log("[デバッグ] reportSummaryがnullです");
+          checkObject(reportSummary, "reportSummary");
+          if (htmlTagPaths.length > 0) {
+            console.error(`[警告] ${htmlTagPaths.length}個のHTMLタグが検出されました:`, htmlTagPaths);
+          }
+        });
       }
 
       // クリーンアップ
