@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { notify } from "../../lib/ui/notifications";
+import { authFetch } from "../../utils/authFetch";
 import {
   CheckCircle,
   ArrowRight,
@@ -37,6 +38,7 @@ export default function OnboardingPage() {
     description: "",
     targetMarket: [] as string[],
     catchphrase: "",
+    initialFollowers: "",
   });
   const [customIndustry, setCustomIndustry] = useState("");
 
@@ -86,6 +88,7 @@ export default function OnboardingPage() {
             ? [userProfile.businessInfo.targetMarket]
             : [],
         catchphrase: userProfile.businessInfo.catchphrase || "",
+        initialFollowers: userProfile.businessInfo.initialFollowers?.toString() || "",
       });
       setGoals(userProfile.businessInfo.goals || []);
       setChallenges(userProfile.businessInfo.challenges || []);
@@ -288,6 +291,10 @@ export default function OnboardingPage() {
           ? customIndustry.trim()
           : businessInfo.industry;
 
+      const initialFollowersNum = businessInfo.initialFollowers
+        ? parseInt(businessInfo.initialFollowers, 10)
+        : undefined;
+
       await updateDoc(userDocRef, {
         businessInfo: {
           ...businessInfo,
@@ -295,12 +302,35 @@ export default function OnboardingPage() {
           goals,
           challenges,
           productsOrServices,
+          initialFollowers: initialFollowersNum,
         },
         snsAISettings,
         setupRequired: false,
         status: "active",
         updatedAt: new Date().toISOString(),
       });
+
+      // フォロワー数が入力されている場合、follower_countsに保存
+      if (initialFollowersNum && initialFollowersNum > 0) {
+        try {
+          const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+          await authFetch("/api/follower-counts", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              followers: initialFollowersNum,
+              month: currentMonth,
+              snsType: "instagram",
+              source: "onboarding",
+            }),
+          });
+        } catch (error) {
+          console.error("フォロワー数の保存に失敗しました:", error);
+          // エラーが発生してもオンボーディングは完了とする
+        }
+      }
 
       console.log("✅ Onboarding completed successfully");
       notify({
@@ -687,6 +717,27 @@ export default function OnboardingPage() {
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={3}
                       />
+                    </div>
+
+                    {/* 利用開始日時点のフォロワー数 */}
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        👥 利用開始日時点のフォロワー数
+                        <span className="ml-2 text-xs text-gray-500">（計画作成時に自動表示されます）</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={businessInfo.initialFollowers}
+                        onChange={(e) =>
+                          setBusinessInfo({ ...businessInfo, initialFollowers: e.target.value })
+                        }
+                        placeholder="例: 1000"
+                        min="0"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Instagramアカウントの現在のフォロワー数を入力してください
+                      </p>
                     </div>
 
                     {/* 商品・サービス・政策情報 */}
@@ -1298,6 +1349,16 @@ export default function OnboardingPage() {
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">事業内容</label>
                     <p className="text-black">{businessInfo.description || "未設定"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      👥 利用開始日時点のフォロワー数
+                    </label>
+                    <p className="text-black">
+                      {businessInfo.initialFollowers
+                        ? `${parseInt(businessInfo.initialFollowers, 10).toLocaleString()}人`
+                        : "未設定"}
+                    </p>
                   </div>
                 </div>
 

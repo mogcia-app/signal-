@@ -85,6 +85,41 @@ export default function InstagramPlanPage() {
     }
   }, [fetchAnalytics, isAuthReady]);
 
+  // URLパラメータから初期値を設定（初回のみ）
+  useEffect(() => {
+    if (typeof window === "undefined" || !isAuthReady) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const currentFollowers = params.get("currentFollowers");
+    const followerGain = params.get("followerGain");
+    const planPeriod = params.get("planPeriod");
+    const monthlyPostCount = params.get("monthlyPostCount");
+
+    if (currentFollowers || followerGain || planPeriod) {
+      // フォームデータを直接更新（usePlanFormのsetFormDataを使う）
+      if (currentFollowers) {
+        handleInputChange({
+          target: { name: "currentFollowers", value: currentFollowers },
+        } as React.ChangeEvent<HTMLInputElement>);
+      }
+      if (followerGain) {
+        handleInputChange({
+          target: { name: "followerGain", value: followerGain },
+        } as React.ChangeEvent<HTMLInputElement>);
+      }
+      if (planPeriod) {
+        handleInputChange({
+          target: { name: "planPeriod", value: planPeriod },
+        } as React.ChangeEvent<HTMLSelectElement>);
+      }
+
+      // URLパラメータをクリア（再読み込み時に再度設定されないように）
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthReady]); // 初回のみ実行
+
   // シミュレーション実行ハンドラー
   const handleRunSimulation = async () => {
     if (!user) {

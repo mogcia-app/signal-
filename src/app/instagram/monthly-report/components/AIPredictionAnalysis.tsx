@@ -370,6 +370,38 @@ export const AIPredictionAnalysis: React.FC<AIPredictionAnalysisProps> = ({
       const result = await response.json();
 
       if (result.success) {
+        // APIレスポンスにHTMLタグが含まれているかチェック
+        const checkForHtmlTags = (obj: unknown, path = ""): string[] => {
+          const htmlTagPaths: string[] = [];
+          if (!obj || typeof obj !== "object") return htmlTagPaths;
+          
+          for (const [key, value] of Object.entries(obj)) {
+            const currentPath = path ? `${path}.${key}` : key;
+            
+            if (typeof value === "string" && /<[^>]*>/.test(value)) {
+              htmlTagPaths.push(currentPath);
+              console.warn(`[AI分析API] HTMLタグ検出: ${currentPath}`, value.substring(0, 200));
+            } else if (Array.isArray(value)) {
+              value.forEach((item, index) => {
+                if (typeof item === "string" && /<[^>]*>/.test(item)) {
+                  htmlTagPaths.push(`${currentPath}[${index}]`);
+                  console.warn(`[AI分析API] HTMLタグ検出: ${currentPath}[${index}]`, item.substring(0, 200));
+                } else if (typeof item === "object" && item !== null) {
+                  htmlTagPaths.push(...checkForHtmlTags(item, `${currentPath}[${index}]`));
+                }
+              });
+            } else if (typeof value === "object" && value !== null) {
+              htmlTagPaths.push(...checkForHtmlTags(value, currentPath));
+            }
+          }
+          return htmlTagPaths;
+        };
+        
+        const htmlTagPaths = checkForHtmlTags(result.data, "aiAnalysis");
+        if (htmlTagPaths.length > 0) {
+          console.error(`[警告] AI分析APIレスポンスに${htmlTagPaths.length}個のHTMLタグが含まれています:`, htmlTagPaths);
+        }
+        
         setAnalysisResult(result.data);
         // 分析結果をローカルストレージに保存
         if (typeof window !== "undefined") {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { Grid3x3 } from "lucide-react";
 
 type TimeSlotEntry = {
   label: string;
@@ -20,12 +21,11 @@ interface TimeSlotHeatmapProps {
 }
 
 const postTypeMeta: Record<
-  "feed" | "reel" | "story",
+  "feed" | "reel",
   { label: string; badge: string }
 > = {
   feed: { label: "フィード", badge: "bg-blue-50 text-blue-700 border border-blue-200" },
   reel: { label: "リール", badge: "bg-purple-50 text-purple-700 border border-purple-200" },
-  story: { label: "ストーリーズ", badge: "bg-pink-50 text-pink-700 border border-pink-200" },
 };
 
 export function TimeSlotHeatmap({ data }: TimeSlotHeatmapProps) {
@@ -44,9 +44,19 @@ export function TimeSlotHeatmap({ data }: TimeSlotHeatmapProps) {
 
   if (slotData.length === 0) {
     return (
-      <div className="bg-white border border-slate-200 rounded-none p-6 shadow-sm">
-        <p className="text-sm font-semibold text-slate-900 mb-1">時間帯 × コンテンツタイプ</p>
-        <p className="text-xs text-slate-500 mb-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+        <div className="flex items-center mb-4">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
+            <Grid3x3 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">時間帯 × コンテンツタイプ</h2>
+            <p className="text-xs text-gray-600 mt-0.5">
+              どの時間帯・投稿タイプが最もエンゲージメントを獲得したかを可視化します
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500">
           まだ十分な投稿データがないため、ヒートマップを表示できません。
         </p>
       </div>
@@ -54,17 +64,22 @@ export function TimeSlotHeatmap({ data }: TimeSlotHeatmapProps) {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-none p-6 shadow-sm">
-      <div className="flex items-start sm:items-center justify-between gap-4 mb-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+      <div className="flex items-center mb-4">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
+          <Grid3x3 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        </div>
         <div>
-          <p className="text-sm font-semibold text-slate-900">時間帯 × コンテンツタイプ</p>
-          <p className="text-xs text-slate-500">
-            どの時間帯・投稿タイプが最もエンゲージメントを獲得したかを可視化します。
-          </p>
-          <p className="text-[10px] text-slate-500 mt-1">
-            「平均ER」は Signal 独自指標で、各投稿の「いいね + コメント + シェア」を合算した平均値です。
+          <h2 className="text-base font-semibold text-gray-900">時間帯 × コンテンツタイプ</h2>
+          <p className="text-xs text-gray-600 mt-0.5">
+            どの時間帯・投稿タイプが最もエンゲージメントを獲得したかを可視化します
           </p>
         </div>
+      </div>
+      <div className="mb-3">
+        <p className="text-[10px] text-gray-500">
+          「平均ER」は Signal 独自指標で、各投稿の「いいね + コメント + シェア」を合算した平均値です。
+        </p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-xs">

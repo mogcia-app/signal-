@@ -43,11 +43,11 @@ export default function SNSLayout({
       <div className="w-full lg:w-64 bg-white shadow-lg flex-shrink-0">
         {/* ロゴ・ブランディング */}
         <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
-          <div className="flex items-center">
+          <Link href="/home" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
             <div className="text-2xl font-bold text-black">
               Signal<span style={{ color: "#FF8A15" }}>.</span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* ユーザー情報 */}
@@ -218,15 +218,26 @@ export default function SNSLayout({
               <span>投稿一覧</span>
             </Link>
             <Link
-              href="/instagram/monthly-report"
+              href="/instagram/report"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                pathname === "/instagram/monthly-report"
+                pathname === "/instagram/report"
                   ? "bg-orange-100 text-orange-800 font-medium"
                   : "text-black hover:bg-gray-100"
               }`}
             >
               <span>📈</span>
               <span>月次レポート</span>
+            </Link>
+            <Link
+              href="/instagram/kpi"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname === "/instagram/kpi"
+                  ? "bg-orange-100 text-orange-800 font-medium"
+                  : "text-black hover:bg-gray-100"
+              }`}
+            >
+              <span>🎯</span>
+              <span>KPIコンソール</span>
             </Link>
             <Link
               href="/learning"

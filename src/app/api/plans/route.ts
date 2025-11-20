@@ -61,18 +61,56 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // バリデーション
-    if (!body.targetFollowers || !body.currentFollowers) {
-      return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
+    if (!body.targetFollowers) {
+      return NextResponse.json({ error: "目標フォロワー数は必須です" }, { status: 400 });
+    }
+
+    const snsType = body.snsType || "instagram";
+
+    // currentFollowersが指定されていない場合、follower_countsから最新の値を取得
+    let currentFollowersValue = body.currentFollowers
+      ? parseInt(body.currentFollowers, 10)
+      : null;
+
+    if (!currentFollowersValue) {
+      // follower_countsから最新の値を取得
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const followerCountSnapshot = await adminDb
+        .collection("follower_counts")
+        .where("userId", "==", userId)
+        .where("snsType", "==", snsType)
+        .orderBy("updatedAt", "desc")
+        .limit(1)
+        .get();
+
+      if (!followerCountSnapshot.empty) {
+        currentFollowersValue = followerCountSnapshot.docs[0].data().followers;
+      } else {
+        // follower_countsにデータがない場合、usersコレクションのinitialFollowersを取得
+        const userDoc = await adminDb.collection("users").doc(userId).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          currentFollowersValue =
+            userData?.businessInfo?.initialFollowers || null;
+        }
+      }
+
+      if (!currentFollowersValue) {
+        return NextResponse.json(
+          { error: "フォロワー数が取得できませんでした。ホームページでフォロワー数を入力してください。" },
+          { status: 400 }
+        );
+      }
     }
 
     const planData: Omit<PlanData, "id"> = {
       userId,
-      snsType: body.snsType || "instagram",
+      snsType,
       status: body.status || "active",
       title: body.title || "Instagram成長計画",
       targetFollowers: parseInt(body.targetFollowers),
-      currentFollowers: parseInt(body.currentFollowers),
-      actualFollowers: parseInt(body.currentFollowers),
+      currentFollowers: currentFollowersValue,
+      actualFollowers: currentFollowersValue,
       analyticsFollowerIncrease: 0,
       planPeriod: body.planPeriod || "6ヶ月",
       targetAudience: body.targetAudience || "未設定",

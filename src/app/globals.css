@@ -47,6 +47,92 @@ body {
   fill: #ff8a15;
 }
 
+/* 月次振り返りのスタイル */
+.monthly-review-content {
+  font-size: 0.9375rem;
+  line-height: 1.8;
+}
+
+.monthly-review-content h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-top: 2.5rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(to right, #fff7ed, #ffedd5);
+  border-left: 4px solid #f97316;
+  border-radius: 0.5rem;
+}
+
+.monthly-review-content h2:first-child {
+  margin-top: 0;
+}
+
+.monthly-review-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.monthly-review-content ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.75rem 0;
+}
+
+.monthly-review-content li {
+  margin: 0.625rem 0;
+  padding-left: 1.75rem;
+  position: relative;
+  line-height: 1.8;
+  color: #4b5563;
+}
+
+.monthly-review-content li::before {
+  content: "•";
+  position: absolute;
+  left: 0.75rem;
+  color: #f97316;
+  font-weight: bold;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.monthly-review-content p {
+  margin: 1rem 0;
+  line-height: 1.8;
+  color: #4b5563;
+}
+
+.monthly-review-content p:first-child {
+  margin-top: 0;
+}
+
+.monthly-review-content br {
+  display: block;
+  content: "";
+  margin: 0.5rem 0;
+}
+
+.monthly-review-content hr {
+  display: none;
+}
+
+/* セクション間のスペーシング */
+.monthly-review-content > * + h2 {
+  margin-top: 2.5rem;
+}
+
+/* セクションごとのスタイル */
+.monthly-review-content > div {
+  margin-bottom: 1.5rem;
+}
+
 .react-calendar-heatmap text {
   font-size: 10px;
   fill: #6b7280;

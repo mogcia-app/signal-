@@ -29,9 +29,9 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       setLoginSuccess(true);
-      // 2秒後にフィード（ラボ）に遷移
+      // 2秒後にホームに遷移
       setTimeout(() => {
-        router.push("/instagram/lab/feed");
+        router.push("/home");
       }, 2000);
     } catch (error: unknown) {
       // 契約期間切れのエラーの場合
@@ -65,7 +65,7 @@ export default function LoginPage() {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-3">
               ログイン成功！
             </h2>
-            <p className="text-black text-lg">ダッシュボードに移動しています...</p>
+            <p className="text-black text-lg">Signal.へようこそ</p>
             <div className="mt-8">
               <div className="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-500 mx-auto"></div>
             </div>

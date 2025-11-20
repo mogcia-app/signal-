@@ -19,6 +19,7 @@ export interface BusinessInfo {
   goals: string[]; // 目標
   challenges: string[]; // 課題
   productsOrServices?: ProductOrService[]; // 商品・サービス・政策情報
+  initialFollowers?: number; // 利用開始日時点のフォロワー数
 }
 
 export interface BillingInfo {
