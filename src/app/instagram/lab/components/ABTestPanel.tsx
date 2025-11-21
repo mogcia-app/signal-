@@ -12,7 +12,7 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({ onRegister, onCustomRe
 
   return (
     <div className="mb-6 border border-slate-200 rounded-xl bg-white overflow-hidden">
-      <details open className="group">
+      <details className="group">
         <summary className="flex items-center justify-between px-5 py-4 text-left cursor-pointer select-none">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-slate-900/80 rounded-lg flex items-center justify-center">

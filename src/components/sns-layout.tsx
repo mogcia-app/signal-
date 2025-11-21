@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
+import { Menu, X } from "lucide-react";
 
 interface SNSLayoutProps {
   children: ReactNode;
@@ -24,9 +25,27 @@ export default function SNSLayout({
   const pathname = usePathname();
   const [isLabExpanded, setIsLabExpanded] = useState(false);
   const [isAnalyticsExpanded, setIsAnalyticsExpanded] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
+
+  // パスが変更されたらサイドバーを閉じる（スマホ用）
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [pathname]);
+
+  // サイドバーが開いているときはbodyのスクロールを無効化
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isSidebarOpen]);
 
   const handleSignOut = async () => {
     try {
@@ -39,15 +58,44 @@ export default function SNSLayout({
 
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row">
+      {/* ハンバーガーメニューボタン（スマホのみ表示） */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
+        aria-label="メニューを開く"
+      >
+        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* オーバーレイ（スマホのみ、サイドバーが開いているとき表示） */}
+      {isSidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* サイドバー */}
-      <div className="w-full lg:w-64 bg-white shadow-lg flex-shrink-0">
+      <div
+        className={`fixed lg:static inset-y-0 left-0 w-64 bg-white shadow-lg flex-shrink-0 z-40 transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        } overflow-y-auto`}
+      >
         {/* ロゴ・ブランディング */}
-        <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-3 border-b border-gray-200 flex items-center justify-between">
           <Link href="/home" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
             <div className="text-2xl font-bold text-black">
               Signal<span style={{ color: "#FF8A15" }}>.</span>
             </div>
           </Link>
+          {/* 閉じるボタン（スマホのみ表示） */}
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden p-1 text-gray-600 hover:text-gray-900"
+            aria-label="メニューを閉じる"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* ユーザー情報 */}
@@ -339,9 +387,9 @@ export default function SNSLayout({
       </div>
 
       {/* メインコンテンツエリア */}
-      <div className="flex-1">
+      <div className="flex-1 lg:ml-0">
         {/* タイトルセクション */}
-        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 lg:pt-3 pt-16">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

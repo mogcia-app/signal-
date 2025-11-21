@@ -4,7 +4,7 @@ import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { buildAIContext } from "@/lib/ai/context";
-import { AIGenerationResponse } from "@/types/ai";
+import { AIGenerationResponse, SnapshotReference, AIReference } from "@/types/ai";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -56,12 +56,39 @@ export async function POST(request: NextRequest) {
     let { prompt } = body;
     const { postType, planData, scheduledDate, scheduledTime, action = "generatePost" } = body;
 
-    const {
-      userProfile,
-      latestPlan,
-      snapshotReferences,
-      references: aiReferences,
-    } = await buildAIContext(userId, { snapshotLimit: 3, includeMasterContext: true });
+    let userProfile: Awaited<ReturnType<typeof buildAIContext>>["userProfile"];
+    let latestPlan: Awaited<ReturnType<typeof buildAIContext>>["latestPlan"];
+    let snapshotReferences: SnapshotReference[];
+    let aiReferences: AIReference[];
+    
+    try {
+      const contextResult = await buildAIContext(userId, { snapshotLimit: 3, includeMasterContext: true });
+      userProfile = contextResult.userProfile;
+      latestPlan = contextResult.latestPlan;
+      snapshotReferences = contextResult.snapshotReferences;
+      aiReferences = contextResult.references;
+    } catch (contextError) {
+      console.error("AIコンテキスト構築エラー:", contextError);
+      // コンテキスト構築に失敗しても、planDataがあれば続行
+      if (!planData) {
+        return NextResponse.json(
+          { error: "ユーザー情報の取得に失敗しました。運用計画データが必要です。" },
+          { status: 500 }
+        );
+      }
+      userProfile = null;
+      latestPlan = null;
+      snapshotReferences = [] as SnapshotReference[];
+      aiReferences = [] as AIReference[];
+    }
+
+    // planDataの検証（自動生成の場合）
+    if (body.autoGenerate && !planData && !latestPlan) {
+      return NextResponse.json(
+        { error: "自動生成には運用計画データが必要です。運用計画ページで計画を作成してください。" },
+        { status: 400 }
+      );
+    }
 
     const planContext = latestPlan ?? planData ?? null;
 
@@ -156,7 +183,12 @@ export async function POST(request: NextRequest) {
 
     // OpenAI APIキーのチェック
     if (!openai) {
-      return NextResponse.json({ error: "OpenAI APIキーが設定されていません" }, { status: 500 });
+      return NextResponse.json(
+        { 
+          error: "OpenAI APIキーが設定されていません。管理者にお問い合わせください。",
+        },
+        { status: 500 }
+      );
     }
 
     // 自動生成の場合、テーマを自動選択
@@ -309,21 +341,48 @@ ${snapshotSummary}`;
 
 ${userProfile ? "上記のクライアント情報と運用計画に基づいて、効果的な投稿文を作成してください。" : "上記の運用計画とAIペルソナに基づいて、効果的な投稿文を作成してください。"}`;
 
-    const chatCompletion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: userPrompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
+    let chatCompletion;
+    try {
+      chatCompletion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: userPrompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+    } catch (openaiError: unknown) {
+      console.error("OpenAI API呼び出しエラー:", openaiError);
+      
+      // OpenAI APIキーエラーの場合
+      if (openaiError instanceof Error) {
+        if (openaiError.message.includes("API key") || openaiError.message.includes("401")) {
+          return NextResponse.json(
+            { 
+              error: "OpenAI APIキーの設定に問題があります。管理者にお問い合わせください。",
+              details: process.env.NODE_ENV === "development" ? openaiError.message : undefined,
+            },
+            { status: 500 }
+          );
+        }
+        if (openaiError.message.includes("rate limit") || openaiError.message.includes("429")) {
+          return NextResponse.json(
+            { error: "APIの利用制限に達しました。しばらく待ってから再度お試しください。" },
+            { status: 429 }
+          );
+        }
+      }
+      
+      // その他のOpenAIエラー
+      throw openaiError;
+    }
 
     const aiResponse = chatCompletion.choices[0].message.content;
 
@@ -416,7 +475,24 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
     });
   } catch (error) {
     console.error("AI投稿文生成エラー:", error);
+    
+    // エラーの詳細をログに記録
+    if (error instanceof Error) {
+      console.error("エラーメッセージ:", error.message);
+      console.error("エラースタック:", error.stack);
+    }
+    
+    // より詳細なエラーメッセージを返す
+    const errorMessage = error instanceof Error ? error.message : "不明なエラーが発生しました";
     const { status, body } = buildErrorResponse(error);
-    return NextResponse.json(body, { status });
+    
+    return NextResponse.json(
+      {
+        ...body,
+        error: errorMessage,
+        details: process.env.NODE_ENV === "development" ? String(error) : undefined,
+      },
+      { status }
+    );
   }
 }

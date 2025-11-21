@@ -122,6 +122,16 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           .trim()
       : "";
 
+  // 投稿文からハッシュタグを除去する関数（リール用）
+  const removeHashtagsFromContent = (text: string): string => {
+    // ハッシュタグパターン: #で始まり、英数字、日本語、アンダースコアが続く文字列
+    // 投稿文全体からハッシュタグを除去（最後だけでなく、文中のハッシュタグも除去）
+    return text
+      .replace(/#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g, "")
+      .replace(/\s+/g, " ") // 連続するスペースを1つに
+      .trim();
+  };
+
   const normalizeGeneratedHashtags = (tags?: string[]) =>
     (tags ?? [])
       .map((tag) => tag.replace(/^#+-*/, "").replace(/^-+/, "").trim())
@@ -160,7 +170,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       draft?.hashtags && draft.hashtags.length > 0 ? draft.hashtags : payload.hashtags ?? [];
 
     const cleanTitle = cleanGeneratedText(finalTitleRaw);
-    const cleanContent = cleanGeneratedText(finalContentRaw);
+    let cleanContent = cleanGeneratedText(finalContentRaw);
+    
+    // リールの場合、投稿文からハッシュタグを除去
+    if (postType === "reel" && cleanContent) {
+      cleanContent = removeHashtagsFromContent(cleanContent);
+    }
+    
     const cleanedHashtags = normalizeGeneratedHashtags(finalHashtagsRaw);
 
     if (cleanTitle) {
@@ -503,10 +519,25 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         }),
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        console.error("レスポンスのJSON解析エラー:", jsonError);
+        const errorText = await response.text().catch(() => "レスポンスの読み取りに失敗しました");
+        throw new Error(`サーバーエラーが発生しました: ${response.status} ${response.statusText} - ${errorText}`);
+      }
 
       if (!response.ok) {
-        throw new Error(result.error || "自動生成に失敗しました");
+        const errorMessage = result?.error || result?.message || `自動生成に失敗しました（${response.status}）`;
+        console.error("自動生成APIエラー:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          details: result?.details,
+          fullResult: result,
+        });
+        throw new Error(errorMessage);
       }
 
       if (result.success && result.data) {
@@ -535,9 +566,28 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       }
     } catch (error) {
       console.error("自動生成エラー:", error);
-      showToast(
-        `自動生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "自動生成に失敗しました";
+      
+      // エラーメッセージをユーザーフレンドリーに変換
+      let userFriendlyMessage = errorMessage;
+      if (errorMessage.includes("Internal server error") || errorMessage.includes("500")) {
+        userFriendlyMessage = "サーバーエラーが発生しました。しばらく待ってから再度お試しください。";
+      } else if (errorMessage.includes("運用計画")) {
+        userFriendlyMessage = "運用計画が設定されていません。運用計画ページで計画を作成してください。";
+      } else if (errorMessage.includes("APIキー") || errorMessage.includes("API key") || errorMessage.includes("OpenAI")) {
+        userFriendlyMessage = "AI機能の設定に問題があります。管理者にお問い合わせください。";
+      } else if (errorMessage.includes("rate limit") || errorMessage.includes("429")) {
+        userFriendlyMessage = "APIの利用制限に達しました。しばらく待ってから再度お試しください。";
+      } else if (errorMessage.includes("401")) {
+        userFriendlyMessage = "認証エラーが発生しました。ページを再読み込みしてください。";
+      }
+      
+      showToast(userFriendlyMessage);
     } finally {
       setIsAutoGenerating(false);
     }
