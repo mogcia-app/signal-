@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { AuthGuard } from "../../../components/auth-guard";
 import { useAuth } from "../../../contexts/auth-context";
 import FeedAnalyticsForm from "../../instagram/components/FeedAnalyticsForm";
-import FeedAnalyticsAIInsights from "../components/FeedAnalyticsAIInsights";
 import SNSLayout from "../../../components/sns-layout";
 import { CheckCircle, RefreshCw, X } from "lucide-react";
 import type { InputData as FeedInputData, CommentThread } from "../../instagram/components/types";
@@ -730,9 +729,6 @@ function AnalyticsFeedContent() {
             onSave={handleSaveAnalytics}
             isLoading={isLoading}
             postData={postData}
-            aiInsightsSection={
-              <FeedAnalyticsAIInsights analyticsData={analyticsData} isLoading={isLoading} />
-            }
           />
         </div>
       </SNSLayout>

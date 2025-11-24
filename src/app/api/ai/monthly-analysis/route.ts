@@ -201,6 +201,9 @@ function buildLearningAchievements(params: {
     ragHitRate,
   } = params;
 
+  // デバッグログ: フィードバック多様性バッジの計算値を確認
+  console.log(`[LearningBadge] フィードバック多様性: ポジティブ重み=${positiveFeedbackWeight}, ネガティブ重み=${negativeFeedbackWeight}, 最小値=${Math.min(positiveFeedbackWeight, negativeFeedbackWeight)}`);
+
   const adoptionPercent = Math.round(actionAdoptionRate * 100);
   const actionImpact = Math.max(0, Number(averageResultDelta.toFixed(1)));
   const balancedWeight = Math.min(positiveFeedbackWeight, negativeFeedbackWeight);
@@ -305,7 +308,7 @@ function buildLearningAchievements(params: {
     {
       id: "feedback-balance",
       title: "フィードバック多様性",
-      description: "ポジティブ・ネガティブの両面でフィードバックを集めましょう。",
+      description: "ポジティブ・ネガティブの両面でフィードバックを集めましょう。両方の重みの最小値がポイントになります。",
       icon: "scale",
       current: Number(balancedWeight.toFixed(1)),
       target: 15,
@@ -314,7 +317,11 @@ function buildLearningAchievements(params: {
       condition:
         balancedWeight >= 15
           ? "多面的なフィードバックが集まっています"
-          : `あと${Math.max(0, 15 - balancedWeight).toFixed(1)}ポイントで達成`,
+          : negativeFeedbackWeight === 0
+            ? "ネガティブフィードバックを追加するとポイントが増えます"
+            : positiveFeedbackWeight === 0
+              ? "ポジティブフィードバックを追加するとポイントが増えます"
+              : `あと${Math.max(0, 15 - balancedWeight).toFixed(1)}ポイントで達成（現在: ポジ${positiveFeedbackWeight.toFixed(1)}pt / ネガ${negativeFeedbackWeight.toFixed(1)}pt）`,
       shortcuts: [{ label: "フィードバックを入力", href: "/analytics/feed" }],
     },
     {
@@ -1153,8 +1160,19 @@ export async function getMasterContext(
 
     const feedbackAggregates = aggregateFeedbackData(feedbackSnapshot);
 
-    const analyticsRecords: AnalyticsRecord[] = analyticsSnapshot.docs.map((doc) => {
+    // analyticsコレクション（分析済みデータ）のみを使用
+    // 重複除去: 同じpostIdの最新レコードのみ保持
+    const postIdToAnalyticsRecord = new Map<string, AnalyticsRecord>();
+    
+    for (const doc of analyticsSnapshot.docs) {
       const data = doc.data() || {};
+      const postId = typeof data.postId === "string" && data.postId.length > 0 ? data.postId : null;
+      
+      // postIdがない場合はスキップ（分析データとして不完全）
+      if (!postId) {
+        continue;
+      }
+      
       const publishedAtRaw = data.publishedAt;
       const publishedAt =
         publishedAtRaw && typeof publishedAtRaw === "object" && typeof publishedAtRaw.toDate === "function"
@@ -1163,9 +1181,9 @@ export async function getMasterContext(
             ? new Date(publishedAtRaw)
             : null;
 
-      return {
+      const record: AnalyticsRecord = {
         id: doc.id,
-        postId: typeof data.postId === "string" && data.postId.length > 0 ? data.postId : null,
+        postId,
         title: typeof data.title === "string" ? data.title : "",
         content: typeof data.content === "string" ? data.content : "",
         hashtags: ensureArray<string>(data.hashtags),
@@ -1183,7 +1201,16 @@ export async function getMasterContext(
             : null,
         sentimentMemo: typeof data.sentimentMemo === "string" ? data.sentimentMemo : "",
       };
-    });
+
+      // 重複除去: 同じpostIdが既にある場合、publishedAtが新しい方を保持
+      const existing = postIdToAnalyticsRecord.get(postId);
+      if (!existing || (publishedAt && existing.publishedAt && publishedAt > existing.publishedAt)) {
+        postIdToAnalyticsRecord.set(postId, record);
+      }
+    }
+
+    // analyticsコレクションに存在するデータ（分析済み）のみを使用
+    const analyticsRecords: AnalyticsRecord[] = Array.from(postIdToAnalyticsRecord.values());
 
     const baselineMetrics = computeBaselineMetrics(analyticsRecords);
 
@@ -1484,6 +1511,9 @@ export async function getMasterContext(
       }
       weightTotal += weight;
     });
+    
+    // デバッグログ: フィードバックの集計結果を確認
+    console.log(`[MasterContext] フィードバック集計: 総数=${feedbackSnapshot.size}, ポジティブ重み=${positiveWeight}, ネガティブ重み=${negativeWeight}, 総重み=${weightTotal}`);
     const feedbackPositiveRate = weightTotal > 0 ? positiveWeight / weightTotal : 0;
     const averageFeedbackWeight = feedbackCount > 0 ? weightTotal / feedbackCount : 0;
 

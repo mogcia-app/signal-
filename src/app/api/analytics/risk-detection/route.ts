@@ -54,26 +54,15 @@ export async function GET(request: NextRequest) {
     const startTimestamp = admin.firestore.Timestamp.fromDate(start);
     const endTimestamp = admin.firestore.Timestamp.fromDate(end);
 
-    // 必要なデータを取得（並列）
-    const [postsSnapshot, analyticsSnapshot] = await Promise.all([
-      // 期間内の投稿を取得
-      adminDb
-        .collection("posts")
-        .where("userId", "==", uid)
-        .where("createdAt", ">=", startTimestamp)
-        .where("createdAt", "<=", endTimestamp)
-        .get(),
+    // 必要なデータを取得 - analyticsコレクション（分析済みデータ）のみを使用
+    const analyticsSnapshot = await adminDb
+      .collection("analytics")
+      .where("userId", "==", uid)
+      .where("publishedAt", ">=", startTimestamp)
+      .where("publishedAt", "<=", endTimestamp)
+      .get();
 
-      // 期間内の分析データを取得
-      adminDb
-        .collection("analytics")
-        .where("userId", "==", uid)
-        .where("publishedAt", ">=", startTimestamp)
-        .where("publishedAt", "<=", endTimestamp)
-        .get(),
-    ]);
-
-    const postCount = postsSnapshot.docs.length;
+    const analyzedCount = analyticsSnapshot.docs.length;
 
     // 投稿と分析データをpostIdで紐付け
     const analyticsByPostId = new Map<string, any>();
@@ -105,7 +94,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 前月のデータを取得（比較用）
+    // 前月のデータを取得（比較用）- analyticsコレクション（分析済みデータ）のみを使用
     const prevMonth = new Date(start);
     prevMonth.setMonth(prevMonth.getMonth() - 1);
     const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
@@ -113,22 +102,13 @@ export async function GET(request: NextRequest) {
     const prevStartTimestamp = admin.firestore.Timestamp.fromDate(prevStart);
     const prevEndTimestamp = admin.firestore.Timestamp.fromDate(prevEnd);
 
-    const [prevPostsSnapshot, prevAnalyticsSnapshot] = await Promise.all([
-      adminDb
-        .collection("posts")
-        .where("userId", "==", uid)
-        .where("createdAt", ">=", prevStartTimestamp)
-        .where("createdAt", "<=", prevEndTimestamp)
-        .get(),
-      adminDb
-        .collection("analytics")
-        .where("userId", "==", uid)
-        .where("publishedAt", ">=", prevStartTimestamp)
-        .where("publishedAt", "<=", prevEndTimestamp)
-        .get(),
-    ]);
+    const prevAnalyticsSnapshot = await adminDb
+      .collection("analytics")
+      .where("userId", "==", uid)
+      .where("publishedAt", ">=", prevStartTimestamp)
+      .where("publishedAt", "<=", prevEndTimestamp)
+      .get();
 
-    const prevPostCount = prevPostsSnapshot.docs.length;
     const prevAnalyticsByPostId = new Map<string, any>();
     prevAnalyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
@@ -140,6 +120,8 @@ export async function GET(request: NextRequest) {
         }
       }
     });
+
+    const prevAnalyzedCount = prevAnalyticsByPostId.size;
 
     let prevTotalLikes = 0;
     let prevTotalReach = 0;
@@ -204,8 +186,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. 投稿頻度の急激な減少（-50%以上）
-    if (prevPostCount > 0 && postCount > 0) {
-      const postCountChange = ((postCount - prevPostCount) / prevPostCount) * 100;
+    if (prevAnalyzedCount > 0 && analyzedCount > 0) {
+      const postCountChange = ((analyzedCount - prevAnalyzedCount) / prevAnalyzedCount) * 100;
       if (postCountChange <= -50) {
         alerts.push({
           id: "post-frequency-decrease",
@@ -218,7 +200,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 5. 投稿がない場合
-    if (postCount === 0 && prevPostCount > 0) {
+    if (analyzedCount === 0 && prevAnalyzedCount > 0) {
       alerts.push({
         id: "no-posts",
         severity: "critical",
@@ -229,7 +211,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 6. 分析データがない場合
-    if (analyticsByPostId.size === 0 && postCount > 0) {
+    if (analyticsByPostId.size === 0 && analyzedCount > 0) {
       alerts.push({
         id: "no-analytics",
         severity: "info",
@@ -240,12 +222,12 @@ export async function GET(request: NextRequest) {
     }
 
     // 7. リーチ数が極端に低い場合（投稿があるのにリーチが100未満）
-    if (postCount > 0 && totalReach > 0 && totalReach < 100) {
+    if (analyzedCount > 0 && totalReach > 0 && totalReach < 100) {
       alerts.push({
         id: "low-reach",
         severity: "warning",
         metric: "リーチ数",
-        message: `投稿数${postCount}件に対してリーチ数が${totalReach}と低いです。ハッシュタグの見直しや投稿タイミングの最適化を検討してください。`,
+        message: `分析済み投稿数${analyzedCount}件に対してリーチ数が${totalReach}と低いです。ハッシュタグの見直しや投稿タイミングの最適化を検討してください。`,
         value: totalReach,
       });
     }

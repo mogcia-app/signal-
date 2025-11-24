@@ -93,12 +93,21 @@ export async function POST(request: NextRequest) {
         return post.createdAt >= startDate && post.createdAt <= endDate;
       });
 
-    // フォロワー数を取得（performance-score APIと同じロジック）
+    // フォロワー数を取得（最新のデータを取得）
     const currentMonth = `${year}-${String(month).padStart(2, "0")}`;
     const prevMonth = new Date(year, month - 2, 1);
     const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
 
-    // 今月と前月のデータを並行取得
+    // 最新のフォロワー数を取得（updatedAtでソートして最新のものを取得）
+    const latestFollowerSnapshot = await adminDb
+      .collection("follower_counts")
+      .where("userId", "==", uid)
+      .where("snsType", "==", "instagram")
+      .orderBy("updatedAt", "desc")
+      .limit(1)
+      .get();
+
+    // 今月と前月のデータを取得（月初の値を計算するため）
     const [currentMonthSnapshot, prevMonthSnapshot] = await Promise.all([
       adminDb
         .collection("follower_counts")
@@ -119,59 +128,30 @@ export async function POST(request: NextRequest) {
     let currentFollowers = 0;
     let startFollowers = 0;
 
+    // 最新のフォロワー数を取得（updatedAtでソートした最新の値）
+    if (!latestFollowerSnapshot.empty) {
+      const latestData = latestFollowerSnapshot.docs[0].data();
+      currentFollowers = latestData.followers || 0;
+    }
+
+    // 月初の値を取得（優先順位: 今月のstartFollowers → 前月のfollowers → initialFollowers）
     if (!currentMonthSnapshot.empty) {
       const currentData = currentMonthSnapshot.docs[0].data();
-      currentFollowers = currentData.followers || 0;
-
-      // 月初の値を取得（優先順位: startFollowers → 前月のfollowers → initialFollowers）
       if (currentData.startFollowers) {
         startFollowers = currentData.startFollowers;
       } else if (!prevMonthSnapshot.empty) {
         startFollowers = prevMonthSnapshot.docs[0].data().followers || 0;
-      } else {
-        // initialFollowersを取得
-        const userDoc = await adminDb.collection("users").doc(uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          startFollowers = userData?.businessInfo?.initialFollowers || 0;
-        }
       }
-    } else {
-      // 今月のデータがない場合、最新のデータを取得
-      const allFollowerSnapshot = await adminDb
-        .collection("follower_counts")
-        .where("userId", "==", uid)
-        .get();
+    } else if (!prevMonthSnapshot.empty) {
+      startFollowers = prevMonthSnapshot.docs[0].data().followers || 0;
+    }
 
-      const instagramFollowers = allFollowerSnapshot.docs
-        .map((doc) => {
-          const docData = doc.data();
-          return {
-            id: doc.id,
-            ...docData,
-            month: docData.month || "",
-            updatedAt: docData.updatedAt?.toDate?.() || new Date(docData.updatedAt || 0),
-            snsType: docData.snsType || "",
-            followers: docData.followers || 0,
-            startFollowers: docData.startFollowers || 0,
-          };
-        })
-        .filter((data) => data.snsType === "instagram")
-        .sort((a, b) => {
-          if (a.month && b.month) {
-            return b.month.localeCompare(a.month);
-          }
-          return b.updatedAt.getTime() - a.updatedAt.getTime();
-        });
-
-      if (instagramFollowers.length > 0) {
-        currentFollowers = instagramFollowers[0].followers || 0;
-        startFollowers = instagramFollowers[0].startFollowers || 0;
-
-        // startFollowersが0の場合、前月のfollowersを取得
-        if (startFollowers === 0 && !prevMonthSnapshot.empty) {
-          startFollowers = prevMonthSnapshot.docs[0].data().followers || 0;
-        }
+    // startFollowersがまだ0の場合、initialFollowersを取得
+    if (startFollowers === 0) {
+      const userDoc = await adminDb.collection("users").doc(uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        startFollowers = userData?.businessInfo?.initialFollowers || 0;
       }
     }
 
@@ -212,16 +192,11 @@ export async function POST(request: NextRequest) {
       console.log("Calculated follower increase:", followerIncrease, "from", currentFollowers, "-", startFollowers);
     }
     
-    // 現在のトータルフォロワー数を計算（利用開始時のフォロワー数 + 増加数）
-    let totalCurrentFollowers = currentFollowers;
+    // 現在のフォロワー数（今月末のフォロワー数）を使用
+    // currentFollowersは既に今月末のフォロワー数なので、そのまま使用
+    const totalCurrentFollowers = currentFollowers;
     const userDoc = await adminDb.collection("users").doc(uid).get();
-    if (userDoc.exists) {
-      const userData = userDoc.data();
-      const initialFollowers = userData?.businessInfo?.initialFollowers || 0;
-      // 利用開始時のフォロワー数 + 増加数 = 現在のトータルフォロワー数
-      totalCurrentFollowers = initialFollowers + followerIncrease;
-      console.log("Total current followers:", totalCurrentFollowers, "=", initialFollowers, "+", followerIncrease);
-    }
+    const initialFollowers = userDoc.exists ? (userDoc.data()?.businessInfo?.initialFollowers || 0) : 0;
     
     const actualPostCount = posts.length;
 
@@ -273,8 +248,13 @@ export async function POST(request: NextRequest) {
         const prompt = `あなたはInstagram運用の専門家です。以下の今月の実績データとKPI分解データを基に、来月の現実的なKPI目標を提案してください。
 
 【今月の実績】
-- 現在のトータルフォロワー数: ${totalCurrentFollowers}人（利用開始時: ${userDoc.exists ? (userDoc.data()?.businessInfo?.initialFollowers || 0) : 0}人 + 増加数: ${followerIncrease}人）
+- 現在のフォロワー数: ${totalCurrentFollowers}人（利用開始時: ${initialFollowers}人、今月の増加数: ${followerIncrease}人）
 - フォロワー増加数: ${followerIncrease}人
+${(() => {
+  const startFollowers = totalCurrentFollowers - followerIncrease;
+  const increaseRate = startFollowers > 0 ? ((followerIncrease / startFollowers) * 100).toFixed(1) : "0.0";
+  return `- フォロワー増加率: ${increaseRate}%（今月の増加数 ÷ 月初のフォロワー数）`;
+})()}
 - 投稿数: ${actualPostCount}件
 - 総リーチ数: ${totalReach}人
 - 総いいね数: ${totalLikes}件

@@ -105,7 +105,16 @@ function calculatePerformanceScore(params: {
   const postsPerWeek = postCount / 4; // 月4週として計算
   const consistencyScore = Math.min(10, postsPerWeek * 3.33);
 
-  const totalScore = Math.round(engagementScore + growthScore + qualityScore + consistencyScore);
+  // スコア内訳を先に計算（丸めた値）
+  const breakdown = {
+    engagement: Math.round(engagementScore),
+    growth: Math.round(growthScore),
+    quality: Math.round(qualityScore),
+    consistency: Math.round(consistencyScore),
+  };
+
+  // スコア内訳の合計を総スコアとする（一致を保証）
+  const totalScore = breakdown.engagement + breakdown.growth + breakdown.quality + breakdown.consistency;
 
   // ランク評価
   let rating: "S" | "A" | "B" | "C" | "D" | "F";
@@ -143,12 +152,7 @@ function calculatePerformanceScore(params: {
     rating,
     label,
     color,
-    breakdown: {
-      engagement: Math.round(engagementScore),
-      growth: Math.round(growthScore),
-      quality: Math.round(qualityScore),
-      consistency: Math.round(consistencyScore),
-    },
+    breakdown,
     kpis: {
       totalLikes,
       totalReach,

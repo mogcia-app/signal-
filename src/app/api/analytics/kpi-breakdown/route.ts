@@ -453,18 +453,72 @@ function calculateHashtagStats(posts: PostWithAnalytics[]): Array<{ hashtag: str
 
       // hashtagsが配列か文字列かを判定
       if (Array.isArray(post.hashtags)) {
-        hashtagsArray = post.hashtags;
+        // 配列の場合、各要素が文字列として結合されている可能性があるため、各要素を分割
+        post.hashtags.forEach((item) => {
+          if (typeof item === "string") {
+            // 文字列の場合は分割処理を実行
+            let text = item.trim();
+            const hashtagPattern = /#([^\s#,]+)/g;
+            const matches = [...text.matchAll(hashtagPattern)];
+            
+            if (matches.length > 1) {
+              // 複数の#で始まるハッシュタグ
+              matches.forEach((match) => {
+                const tag = match[1].trim();
+                if (tag) hashtagsArray.push(tag);
+              });
+            } else {
+              // 最初に#が1つだけ付いている場合
+              text = text.replace(/^#+/, "").trim();
+              text.split(/[\s,]+/).forEach((tag) => {
+                const cleanedTag = tag.replace(/^#+/, "").trim();
+                if (cleanedTag) hashtagsArray.push(cleanedTag);
+              });
+            }
+          } else {
+            // 既に個別のハッシュタグとして保存されている場合
+            hashtagsArray.push(String(item).replace(/^#+/, "").trim());
+          }
+        });
+        hashtagsArray = hashtagsArray.filter((tag) => tag);
       } else if (typeof post.hashtags === "string") {
-        // 文字列の場合はカンマ区切りで分割
-        hashtagsArray = post.hashtags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter((tag) => tag);
+        // 文字列の場合は、カンマ、スペース、またはハッシュタグ記号（#）で分割
+        // 例: "#老人ホーム ひだまり デイサービス" → ["老人ホーム", "ひだまり", "デイサービス"]
+        // 例: "#老人ホーム,#ひだまり,#デイサービス" → ["老人ホーム", "ひだまり", "デイサービス"]
+        let text = post.hashtags.trim();
+        
+        // パターン1: 複数の#で始まるハッシュタグを個別に抽出（#の後に続く文字列を取得）
+        // 例: "#老人ホーム #ひだまり #デイサービス" → ["老人ホーム", "ひだまり", "デイサービス"]
+        const hashtagPattern = /#([^\s#,]+)/g;
+        const matches = [...text.matchAll(hashtagPattern)];
+        
+        // 複数の#で始まるハッシュタグが見つかった場合（2つ以上）
+        if (matches.length > 1) {
+          hashtagsArray = matches.map((match) => match[1].trim()).filter((tag) => tag);
+        } else {
+          // パターン2: 最初に#が1つだけ付いている場合（例: "#老人ホーム ひだまり デイサービス"）
+          // 最初の#を削除してから、スペースまたはカンマで分割
+          text = text.replace(/^#+/, "").trim();
+          // スペースまたはカンマで分割（連続するスペース/カンマも1つの区切りとして扱う）
+          hashtagsArray = text
+            .split(/[\s,]+/)
+            .map((tag) => tag.replace(/^#+/, "").trim())
+            .filter((tag) => tag.length > 0);
+        }
+        
+        // デバッグログ（開発環境のみ）
+        if (process.env.NODE_ENV === "development" && hashtagsArray.length > 0) {
+          console.log(`[HashtagStats] Original: "${post.hashtags}", Parsed:`, hashtagsArray);
+        }
       }
 
       if (hashtagsArray.length > 0) {
         hashtagsArray.forEach((hashtag) => {
-          hashtagCounts[hashtag] = (hashtagCounts[hashtag] || 0) + 1;
+          // ハッシュタグを正規化（先頭の#を削除、小文字に変換など）
+          const normalizedHashtag = hashtag.replace(/^#+/, "").trim();
+          if (normalizedHashtag) {
+            hashtagCounts[normalizedHashtag] = (hashtagCounts[normalizedHashtag] || 0) + 1;
+          }
         });
       }
     }
@@ -647,43 +701,7 @@ export async function GET(request: NextRequest) {
     const previousStartTimestamp = admin.firestore.Timestamp.fromDate(previousStartDate);
     const previousEndTimestamp = admin.firestore.Timestamp.fromDate(previousEndDate);
 
-    // 投稿データを取得（全件取得してからフィルタリング）
-    const postsSnapshot = await adminDb
-      .collection("posts")
-      .where("userId", "==", uid)
-      .get();
-
-    const posts = postsSnapshot.docs
-      .map((doc) => {
-        const data = doc.data();
-        const createdAt = data.createdAt
-          ? data.createdAt instanceof admin.firestore.Timestamp
-            ? data.createdAt.toDate()
-            : typeof data.createdAt === "string"
-              ? new Date(data.createdAt)
-              : new Date()
-          : new Date();
-        
-        return {
-          id: doc.id,
-          title: data.title || "無題の投稿",
-          postType: (data.postType || "feed") as "feed" | "reel" | "story",
-          hashtags: data.hashtags || [],
-          createdAt,
-        };
-      })
-      .filter((post) => {
-        const postMonth = post.createdAt.toISOString().slice(0, 7);
-        return postMonth === date;
-      })
-      .map((post) => ({
-        id: post.id,
-        title: post.title,
-        postType: post.postType,
-        hashtags: post.hashtags,
-      }));
-
-    // 分析データを取得（期間でフィルタリング）
+    // 分析データを取得（期間でフィルタリング）- 分析済みデータのみを使用
     const analyticsSnapshot = await adminDb
       .collection("analytics")
       .where("userId", "==", uid)
@@ -691,7 +709,7 @@ export async function GET(request: NextRequest) {
       .where("publishedAt", "<=", endTimestamp)
       .get();
 
-    // 投稿IDごとに最新の分析データを保持
+    // 投稿IDごとに最新の分析データを保持（重複除去）
     const analyticsByPostId = new Map<string, any>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
@@ -716,7 +734,20 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 投稿と分析データをリンク
+    // analyticsコレクション（分析済みデータ）から投稿情報を構築
+    const posts: Array<{
+      id: string;
+      title: string;
+      postType: "feed" | "reel" | "story";
+      hashtags: string[];
+    }> = Array.from(analyticsByPostId.entries()).map(([postId, analyticsData]) => ({
+      id: postId,
+      title: analyticsData.title || "無題の投稿",
+      postType: (analyticsData.category || analyticsData.postType || "feed") as "feed" | "reel" | "story",
+      hashtags: analyticsData.hashtags || [],
+    }));
+
+    // 投稿と分析データをリンク（analyticsコレクションのデータのみを使用）
     const postsWithAnalytics: PostWithAnalytics[] = posts.map((post) => {
       const analytics = analyticsByPostId.get(post.id);
       return {

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { History } from "lucide-react";
+import { History, HelpCircle } from "lucide-react";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import { getLabEditorHref, getAnalyticsHref } from "@/utils/links";
 import type { PatternSignal, PostInsight } from "../types";
 import type { AIActionLog } from "@/types/ai";
 import { renderSignificanceBadge } from "../utils";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface PostDeepDiveSectionProps {
   signals: PatternSignal[];
@@ -78,6 +79,14 @@ export function PostDeepDiveSection({
           <p className="mt-2 text-sm text-gray-600">
             投稿ごとの指標やクラスタ比較を深掘りし、AIが導き出した強み・改善点・次の一手を確認できます。
           </p>
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-none text-xs text-blue-800">
+            <p className="font-semibold mb-1">📊 このセクションの見方</p>
+            <ul className="space-y-1 list-disc list-inside ml-2">
+              <li><strong>指標の強み</strong>: この投稿が平均と比べてどの指標が優れているかを表示</li>
+              <li><strong>クラスタと類似投稿</strong>: 似た特徴を持つ投稿群との比較結果</li>
+              <li><strong>AIサマリー</strong>: 投稿の強み・改善点・次のアクションをAIが分析</li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -122,10 +131,22 @@ export function PostDeepDiveSection({
                   </div>
                 </div>
                 <div className="text-right space-y-1 text-xs text-gray-500">
-                  <div>
-                    クラスタ: <span className="font-semibold text-gray-700">{cluster.label}</span>
+                  <div className="flex items-center justify-end gap-1">
+                    <span>クラスタ:</span>
+                    <span className="font-semibold text-gray-700">{cluster.label}</span>
+                    <InfoTooltip text="この投稿が属するクラスタ（似た特徴を持つ投稿グループ）の名前です。" />
                   </div>
-                  <div>同クラスタ比較: {Math.round((signal.comparisons?.clusterPerformanceDiff ?? 0) * 100)}%</div>
+                  <div className="flex items-center justify-end gap-1">
+                    <span>同クラスタ比較:</span>
+                    <span className={`font-semibold ${
+                      (signal.comparisons?.clusterPerformanceDiff ?? 0) > 0 ? "text-emerald-600" : 
+                      (signal.comparisons?.clusterPerformanceDiff ?? 0) < 0 ? "text-red-600" : "text-gray-700"
+                    }`}>
+                      {Math.round((signal.comparisons?.clusterPerformanceDiff ?? 0) * 100) > 0 ? "+" : ""}
+                      {Math.round((signal.comparisons?.clusterPerformanceDiff ?? 0) * 100)}%
+                    </span>
+                    <InfoTooltip text="同じクラスタ内の他の投稿と比べて、この投稿のパフォーマンスが何%高い（または低い）かを示します。プラスは良い結果、マイナスは改善の余地があることを示します。" />
+                  </div>
                   <div className="flex flex-wrap gap-2 justify-end">
                     {signal.postId ? (
                       <>
@@ -164,37 +185,64 @@ export function PostDeepDiveSection({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 text-xs text-gray-600">
                 <div className="border border-dashed border-gray-200 rounded-none p-3 bg-gray-50">
-                  <p className="font-semibold text-gray-700 mb-2">指標の強み</p>
-                  {renderSignificanceBadge("リーチ差分", comparisons.reachDiff, significance.reach)}
-                  {renderSignificanceBadge("エンゲージ差分", comparisons.engagementRateDiff, significance.engagement)}
-                  {renderSignificanceBadge("保存率差分", comparisons.savesRateDiff, significance.savesRate)}
+                  <div className="flex items-center gap-1 mb-2">
+                    <p className="font-semibold text-gray-700">指標の強み</p>
+                    <InfoTooltip text="この投稿が過去の平均と比べて、どの指標が優れているかを表示します。「平均よりも高い」は良い結果、「平均より低い」は改善の余地があることを示します。" />
+                  </div>
+                  <div className="space-y-2">
+                    {renderSignificanceBadge("リーチ差分", comparisons.reachDiff, significance.reach)}
+                    {renderSignificanceBadge("エンゲージ差分", comparisons.engagementRateDiff, significance.engagement)}
+                    {renderSignificanceBadge("保存率差分", comparisons.savesRateDiff, significance.savesRate)}
+                  </div>
                 </div>
                 <div className="border border-dashed border-gray-200 rounded-none p-3 bg-gray-50">
-                  <p className="font-semibold text-gray-700 mb-2">クラスタと類似投稿</p>
-                  <p className="mb-1">
-                    ベースライン: {cluster.baselinePerformance.toFixed(2)} / 現在: {metrics.totalEngagement}
-                  </p>
+                  <div className="flex items-center gap-1 mb-2">
+                    <p className="font-semibold text-gray-700">クラスタと類似投稿</p>
+                    <InfoTooltip text="クラスタとは、似た特徴（ハッシュタグ、投稿タイプ、テーマなど）を持つ投稿のグループです。同じクラスタ内の投稿と比較することで、この投稿の相対的なパフォーマンスがわかります。" />
+                  </div>
+                  <div className="mb-2 p-2 bg-white border border-gray-200 rounded-none">
+                    <p className="text-[10px] text-gray-500 mb-1">クラスタ平均 vs この投稿</p>
+                    <p className="text-xs">
+                      <span className="font-semibold">平均: {cluster.baselinePerformance.toFixed(2)}</span> / 
+                      <span className="font-semibold text-blue-600"> この投稿: {metrics.totalEngagement}</span>
+                    </p>
+                  </div>
                   {cluster.similarPosts.length ? (
-                    <ul className="space-y-1 list-disc list-inside">
-                      {cluster.similarPosts.map((similar) => (
-                        <li key={`${signal.postId}-similar-${similar.postId}`}>
-                          {similar.title} ({similar.performanceScore.toFixed(2)})
-                        </li>
-                      ))}
-                    </ul>
+                    <div>
+                      <p className="text-[10px] text-gray-500 mb-1">類似投稿（パフォーマンス順）</p>
+                      <ul className="space-y-1 list-disc list-inside text-[11px]">
+                        {cluster.similarPosts.slice(0, 3).map((similar) => (
+                          <li key={`${signal.postId}-similar-${similar.postId}`}>
+                            <span className="font-medium">{similar.title}</span> 
+                            <span className="text-gray-500"> (スコア: {similar.performanceScore.toFixed(2)})</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : (
-                    <p className="text-gray-500">類似投稿はまだありません。</p>
+                    <p className="text-gray-500 text-[11px]">類似投稿はまだありません。データが蓄積されると表示されます。</p>
                   )}
                 </div>
                 <div className="border border-dashed border-gray-200 rounded-none p-3 bg-gray-50">
-                  <p className="font-semibold text-gray-700 mb-2">AIサマリー</p>
-                  <p className="text-gray-600 mb-2">
-                    {insight?.summary ?? "AI要約を生成するには、まずフィードバックと分析データを蓄積してください。"}
-                  </p>
+                  <div className="flex items-center gap-1 mb-2">
+                    <p className="font-semibold text-gray-700">AIサマリー</p>
+                    <InfoTooltip text="この投稿のデータとフィードバックを分析し、AIが強み・改善点・次のアクションを提案します。「AIサマリーを生成」ボタンで最新の分析を取得できます。" />
+                  </div>
+                  {insight?.summary ? (
+                    <div className="mb-3 p-2 bg-white border border-gray-200 rounded-none">
+                      <p className="text-gray-700 text-[11px] leading-relaxed">{insight.summary}</p>
+                    </div>
+                  ) : (
+                    <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-none">
+                      <p className="text-yellow-800 text-[11px]">
+                        AI要約を生成するには、まずフィードバックと分析データを蓄積してください。
+                      </p>
+                    </div>
+                  )}
                   {insight?.strengths?.length ? (
-                    <div className="mb-2">
-                      <p className="font-semibold text-gray-700">強み</p>
-                      <ul className="list-disc list-inside text-gray-600">
+                    <div className="mb-2 p-2 bg-emerald-50 border border-emerald-200 rounded-none">
+                      <p className="font-semibold text-emerald-800 text-[11px] mb-1">✅ 強み</p>
+                      <ul className="list-disc list-inside text-emerald-700 text-[11px] space-y-0.5">
                         {insight.strengths.map((item, idx) => (
                           <li key={`${signal.postId}-strength-${idx}`}>{item}</li>
                         ))}
@@ -202,9 +250,9 @@ export function PostDeepDiveSection({
                     </div>
                   ) : null}
                   {insight?.improvements?.length ? (
-                    <div className="mb-2">
-                      <p className="font-semibold text-gray-700">改善ポイント</p>
-                      <ul className="list-disc list-inside text-gray-600">
+                    <div className="mb-2 p-2 bg-orange-50 border border-orange-200 rounded-none">
+                      <p className="font-semibold text-orange-800 text-[11px] mb-1">🔧 改善ポイント</p>
+                      <ul className="list-disc list-inside text-orange-700 text-[11px] space-y-0.5">
                         {insight.improvements.map((item, idx) => (
                           <li key={`${signal.postId}-improve-${idx}`}>{item}</li>
                         ))}

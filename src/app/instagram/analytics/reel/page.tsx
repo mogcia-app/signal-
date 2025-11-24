@@ -8,7 +8,6 @@ import ReelAnalyticsForm from "../../components/ReelAnalyticsForm";
 import SNSLayout from "../../../../components/sns-layout";
 import { CheckCircle, RefreshCw, X } from "lucide-react";
 import type { CommentThread } from "../../components/types";
-import FeedAnalyticsAIInsights from "../../../analytics/components/FeedAnalyticsAIInsights";
 import { authFetch } from "../../../../utils/authFetch";
 
 // オーディエンス分析データの型定義
@@ -801,18 +800,6 @@ function AnalyticsReelContent() {
             onSave={handleSaveAnalytics}
             isLoading={isLoading}
             postData={postData}
-            aiInsightsSection={
-              <FeedAnalyticsAIInsights
-                analyticsData={analyticsData}
-                isLoading={isLoading}
-                targetCategory="reel"
-                title="AI分析（リールまとめ）"
-                description="入力済みのリール分析データとコメントログをもとに、AIがリール投稿の傾向と改善ポイントを抽出します。"
-                emptyMessage="リール投稿の分析データがまだありません。データを保存するとAI分析が利用できます。"
-              />
-            }
-            aiInsightsTitle="AI分析（リールまとめ）"
-            aiInsightsDescription="入力済みのリール分析データとコメントログをもとに、AIがリール投稿の傾向と改善ポイントを抽出します。"
           />
         </div>
       </SNSLayout>

@@ -114,9 +114,25 @@ export async function DELETE(
     // 投稿を削除
     await docRef.delete();
 
-    // 投稿に紐づくフィードバックとアクションログを削除
+    // 投稿に紐づくデータを削除（analytics、フィードバック、アクションログ）
     try {
       const cleanupTasks: Array<Promise<WriteResult[] | void>> = [];
+
+      // analyticsコレクションから削除（postIdで紐づく分析データ）
+      if (postData?.userId) {
+        const analyticsSnapshot = await adminDb
+          .collection("analytics")
+          .where("userId", "==", postData.userId)
+          .where("postId", "==", postId)
+          .get();
+
+        if (!analyticsSnapshot.empty) {
+          const batch = adminDb.batch();
+          analyticsSnapshot.forEach((analyticsDoc) => batch.delete(analyticsDoc.ref));
+          cleanupTasks.push(batch.commit());
+          console.log(`Deleted ${analyticsSnapshot.size} analytics records for post ${postId}`);
+        }
+      }
 
       // ai_post_feedback の削除
       const feedbackSnapshot = await adminDb

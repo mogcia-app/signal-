@@ -72,17 +72,9 @@ export async function GET(request: NextRequest) {
     const startTimestamp = admin.firestore.Timestamp.fromDate(start);
     const endTimestamp = admin.firestore.Timestamp.fromDate(end);
 
-    // 必要なデータを取得（並列）
-    const [postsSnapshot, analyticsSnapshot, plansSnapshot] = await Promise.all([
-      // 期間内の投稿を取得
-      adminDb
-        .collection("posts")
-        .where("userId", "==", uid)
-        .where("createdAt", ">=", startTimestamp)
-        .where("createdAt", "<=", endTimestamp)
-        .get(),
-
-      // 期間内の分析データを取得
+    // 必要なデータを取得（並列）- analyticsコレクション（分析済みデータ）のみを使用
+    const [analyticsSnapshot, plansSnapshot] = await Promise.all([
+      // 期間内の分析データを取得（分析済みデータのみ）
       adminDb
         .collection("analytics")
         .where("userId", "==", uid)
@@ -100,11 +92,7 @@ export async function GET(request: NextRequest) {
         .get(),
     ]);
 
-    const postCount = postsSnapshot.docs.length;
-    const analyzedCount = analyticsSnapshot.docs.length;
-    const hasPlan = !plansSnapshot.empty;
-
-    // 投稿と分析データをpostIdで紐付け
+    // 投稿と分析データをpostIdで紐付け（重複除去: 同じpostIdの最新レコードのみ保持）
     const analyticsByPostId = new Map<string, any>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
@@ -116,6 +104,9 @@ export async function GET(request: NextRequest) {
         }
       }
     });
+
+    const analyzedCount = analyticsByPostId.size; // 分析済み投稿数
+    const hasPlan = !plansSnapshot.empty;
 
     // KPIを集計（提供されている場合はそれを使用、そうでない場合は計算）
     let totalLikes = useProvidedKpis ? providedKpis.totalLikes! : 0;
@@ -142,16 +133,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 投稿タイプ別の統計を計算
+    // 投稿タイプ別の統計を計算（analyticsコレクションのデータのみを使用）
     const postTypeStats: Record<string, { count: number; totalReach: number }> = {};
 
-    postsSnapshot.docs.forEach((doc) => {
-      const postData = doc.data();
-      const postId = doc.id;
-      const postType = postData.postType || postData.type || "unknown";
-
-      const analytics = analyticsByPostId.get(postId);
-      const reach = analytics?.reach || 0;
+    analyticsByPostId.forEach((analytics, postId) => {
+      const postType = analytics.category || analytics.postType || "unknown";
+      const reach = analytics.reach || 0;
 
       if (!postTypeStats[postType]) {
         postTypeStats[postType] = { count: 0, totalReach: 0 };
@@ -227,12 +214,12 @@ export async function GET(request: NextRequest) {
     const nextMonth = getNextMonthName(date);
     const currentMonth = getMonthName(date);
     
-    if (openai && (postCount > 0 || analyzedCount > 0)) {
+    if (openai && analyzedCount > 0) {
       try {
 
         // まず振り返りの内容を簡易生成（提案の根拠として使用）
         const reviewSummary = `今月（${currentMonth}）の振り返り：
-- 投稿数: ${postCount}件、分析済み数: ${analyzedCount}件
+- 分析済み投稿数: ${analyzedCount}件
 - リーチ数: ${totalReach.toLocaleString()}人${reachChangeText}
 - いいね数: ${totalLikes.toLocaleString()}、コメント数: ${totalComments.toLocaleString()}、保存数: ${totalSaves.toLocaleString()}
 - フォロワー増減: ${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}
@@ -317,7 +304,7 @@ ${reviewSummary}
         actionPlans = [
           {
             title: "投稿頻度の維持",
-            description: `${getMonthName(date)}は${postCount}件の投稿がありました。${nextMonth}は安定した投稿頻度を維持するため、ここを注力しましょう。`,
+            description: `${getMonthName(date)}は${analyzedCount}件の分析済み投稿がありました。${nextMonth}は安定した投稿頻度を維持するため、ここを注力しましょう。`,
             action: "週間投稿スケジュールを設定する",
           },
           {

@@ -67,24 +67,16 @@ export async function GET(request: NextRequest) {
     const startTimestamp = admin.firestore.Timestamp.fromDate(start);
     const endTimestamp = admin.firestore.Timestamp.fromDate(end);
 
-    // 必要なデータを取得（並列）
-    const [postsSnapshot, analyticsSnapshot, snapshotsSnapshot] = await Promise.all([
-      // 期間内の投稿を取得
-      adminDb
-        .collection("posts")
-        .where("userId", "==", uid)
-        .where("createdAt", ">=", startTimestamp)
-        .where("createdAt", "<=", endTimestamp)
-        .orderBy("createdAt", "desc")
-        .limit(10)
-        .get(),
-
-      // 期間内の分析データを取得
+    // 必要なデータを取得（並列）- analyticsコレクション（分析済みデータ）のみを使用
+    const [analyticsSnapshot, snapshotsSnapshot] = await Promise.all([
+      // 期間内の分析データを取得（分析済みデータのみ）
       adminDb
         .collection("analytics")
         .where("userId", "==", uid)
         .where("publishedAt", ">=", startTimestamp)
         .where("publishedAt", "<=", endTimestamp)
+        .orderBy("publishedAt", "desc")
+        .limit(10)
         .get(),
 
       // スナップショット参照を取得
@@ -96,7 +88,7 @@ export async function GET(request: NextRequest) {
         .get(),
     ]);
 
-    // 投稿と分析データをpostIdで紐付け
+    // 投稿と分析データをpostIdで紐付け（重複除去: 同じpostIdの最新レコードのみ保持）
     const analyticsByPostId = new Map<string, any>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
@@ -126,11 +118,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 投稿データを整形
-    const posts: PostDeepDiveData[] = postsSnapshot.docs.map((doc) => {
-      const postData = doc.data();
-      const postId = doc.id;
-      const analytics = analyticsByPostId.get(postId);
+    // analyticsコレクション（分析済みデータ）から投稿データを整形
+    const posts: PostDeepDiveData[] = Array.from(analyticsByPostId.entries()).map(([postId, analytics]) => {
       const snapshots = snapshotsByPostId.get(postId) || [];
 
       // エンゲージメント率を計算
@@ -139,23 +128,27 @@ export async function GET(request: NextRequest) {
         engagementRate = ((analytics.likes || 0) + (analytics.comments || 0)) / analytics.reach * 100;
       }
 
+      const publishedAt = analytics.publishedAt
+        ? analytics.publishedAt instanceof admin.firestore.Timestamp
+          ? analytics.publishedAt.toDate()
+          : typeof analytics.publishedAt === "string"
+            ? new Date(analytics.publishedAt)
+            : new Date()
+        : new Date();
+
       return {
         id: postId,
-        title: postData.title || postData.caption?.substring(0, 50) || "タイトルなし",
-        postType: postData.postType || postData.type || "feed",
-        createdAt: postData.createdAt instanceof admin.firestore.Timestamp
-          ? postData.createdAt.toDate()
-          : new Date(postData.createdAt),
-        analyticsSummary: analytics
-          ? {
-              likes: analytics.likes || 0,
-              comments: analytics.comments || 0,
-              saves: analytics.saves || 0,
-              reach: analytics.reach || 0,
-              followerIncrease: analytics.followerIncrease || 0,
-              engagementRate,
-            }
-          : undefined,
+        title: analytics.title || analytics.caption?.substring(0, 50) || "タイトルなし",
+        postType: (analytics.category || analytics.postType || "feed") as "feed" | "reel" | "story",
+        createdAt: publishedAt,
+        analyticsSummary: {
+          likes: analytics.likes || 0,
+          comments: analytics.comments || 0,
+          saves: analytics.saves || 0,
+          reach: analytics.reach || 0,
+          followerIncrease: analytics.followerIncrease || 0,
+          engagementRate,
+        },
         snapshotReferences: snapshots.length > 0 ? snapshots : undefined,
       };
     });

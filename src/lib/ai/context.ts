@@ -190,13 +190,53 @@ export async function fetchSnapshotReferences(
       } as SnapshotReference;
     });
 
-    const gold = snapshots.filter((snapshot) => snapshot.status === "gold").slice(0, limit);
-    const negative = snapshots.filter((snapshot) => snapshot.status === "negative").slice(0, limit);
+    // analyticsコレクション（分析済みデータ）に存在する投稿のみをフィルタリング
+    const postIdsWithSnapshots = snapshots
+      .map((s) => s.postId)
+      .filter((id): id is string => Boolean(id));
+    
+    const analyzedPostIds = new Set<string>();
+    if (postIdsWithSnapshots.length > 0) {
+      // バッチでanalyticsコレクションに存在するか確認（Firestoreの制限: 10件ずつ）
+      const batchSize = 10;
+      for (let i = 0; i < postIdsWithSnapshots.length; i += batchSize) {
+        const batch = postIdsWithSnapshots.slice(i, i + batchSize);
+        try {
+          // analyticsコレクションでpostIdが存在するか確認
+          const analyticsQueries = await Promise.all(
+            batch.map((postId) =>
+              adminDb
+                .collection("analytics")
+                .where("postId", "==", postId)
+                .limit(1)
+                .get()
+            )
+          );
+          analyticsQueries.forEach((querySnapshot, index) => {
+            if (!querySnapshot.empty) {
+              analyzedPostIds.add(batch[index]);
+            }
+          });
+        } catch (error) {
+          console.error("スナップショット参照のanalytics確認エラー:", error);
+          // エラーが発生した場合は、すべての投稿を有効とみなす（フォールバック）
+          batch.forEach((postId) => analyzedPostIds.add(postId));
+        }
+      }
+    }
+
+    // analyticsコレクションに存在する投稿（分析済み）のスナップショットのみを抽出
+    const validSnapshots = snapshots.filter(
+      (snapshot) => !snapshot.postId || analyzedPostIds.has(snapshot.postId)
+    );
+
+    const gold = validSnapshots.filter((snapshot) => snapshot.status === "gold").slice(0, limit);
+    const negative = validSnapshots.filter((snapshot) => snapshot.status === "negative").slice(0, limit);
 
     const remaining = limit - gold.length;
     const normalFallback =
       remaining > 0
-        ? snapshots.filter((snapshot) => snapshot.status === "normal").slice(0, remaining)
+        ? validSnapshots.filter((snapshot) => snapshot.status === "normal").slice(0, remaining)
         : [];
 
     return [...gold, ...negative, ...normalFallback];

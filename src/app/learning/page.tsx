@@ -490,6 +490,18 @@ export default function LearningDashboardPage() {
     }
   };
 
+  // フィードバック多様性バッジの詳細説明を生成
+  const getFeedbackBalanceDetail = (badge: LearningBadge) => {
+    // 最新のタイムラインポイントからフィードバック情報を取得
+    const latestPoint = displayedTimeline.length > 0 ? displayedTimeline[displayedTimeline.length - 1] : null;
+    if (latestPoint) {
+      const positiveCount = Math.round(latestPoint.positiveRatePercent * latestPoint.feedbackCount / 100);
+      const negativeCount = latestPoint.feedbackCount - positiveCount;
+      return `最新${resolvedTimelineMode === "weekly" ? "週" : "月"}: ポジティブ${positiveCount}件 / ネガティブ${negativeCount}件（両方の最小値がポイントになります）`;
+    }
+    return null;
+  };
+
   const goldSignals = useMemo(
     () =>
       (patternInsights?.signals ?? [])
@@ -616,6 +628,17 @@ const goldSampleSignals = useMemo(() => {
                           </span>
                         </div>
                         <p className="text-xs text-gray-600 mt-1">{badge.description}</p>
+                        {badge.id === "feedback-balance" && (
+                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-none">
+                            <p className="text-[10px] text-blue-800 font-semibold mb-1">💡 計算方法</p>
+                            <p className="text-[10px] text-blue-700">
+                              ポジティブとネガティブのフィードバック重みの「最小値」がポイントになります。
+                              {getFeedbackBalanceDetail(badge) && (
+                                <span className="block mt-1">{getFeedbackBalanceDetail(badge)}</span>
+                              )}
+                            </p>
+                          </div>
+                        )}
                         <div className="mt-3">
                           <div className="h-2 w-full bg-white border border-gray-200">
                             <div
@@ -771,14 +794,45 @@ const goldSampleSignals = useMemo(() => {
                     </p>
                   </div>
                   <div className="border border-gray-200 bg-gray-50 rounded-none p-4">
-                    <p className="text-xs text-gray-500 mb-1">AI提案の採用状況</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-xs text-gray-500">AI提案の採用状況</p>
+                      <InfoTooltip text="月次レポートや投稿ディープダイブセクションで「実行した」にチェックを入れると、ここに採用として記録されます。詳細は「フィードバック & アクション履歴」セクションで確認できます。" />
+                    </div>
                     <p className="text-2xl font-semibold text-gray-800">
                       {latestTimelinePoint.appliedCount}
                       <span className="text-sm font-normal text-gray-500 ml-1">件採用</span>
                     </p>
                     <p className="text-xs text-gray-500 mt-2">
-                      採用率 {latestTimelinePoint.adoptionRatePercent.toFixed(1)}%
+                      採用率 {latestTimelinePoint.adoptionRatePercent.toFixed(1)}% 
+                      {latestTimelinePoint.actionCount > 0 && (
+                        <span className="ml-1">({latestTimelinePoint.actionCount}件中)</span>
+                      )}
                     </p>
+                    {latestTimelinePoint.appliedCount === 0 && latestTimelinePoint.actionCount === 0 && (
+                      <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-none">
+                        <p className="text-[10px] text-blue-800 mb-1">
+                          💡 採用を記録するには
+                        </p>
+                        <ul className="text-[10px] text-blue-700 space-y-0.5 list-disc list-inside">
+                          <li>月次レポートのアクションプランで「実行した」にチェック</li>
+                          <li>投稿ディープダイブの「次のアクション」でチェック</li>
+                        </ul>
+                        <Link
+                          href="/instagram/monthly-report"
+                          className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold mt-1 inline-block"
+                        >
+                          月次レポートを見る →
+                        </Link>
+                      </div>
+                    )}
+                    {latestTimelinePoint.appliedCount > 0 && (
+                      <Link
+                        href="#history-section"
+                        className="text-[10px] text-gray-600 hover:text-gray-800 mt-2 inline-block"
+                      >
+                        採用された提案の詳細を見る →
+                      </Link>
+                    )}
                   </div>
                   <div className="border border-gray-200 bg-gray-50 rounded-none p-4">
                     <p className="text-xs text-gray-500 mb-1">対象期間</p>
@@ -824,12 +878,14 @@ const goldSampleSignals = useMemo(() => {
           error={contextError}
         />
 
-        <HistorySection
-          feedbackHistory={feedbackHistory}
-          actionHistory={actionHistory}
-          isLoading={isHistoryLoading}
-          error={historyError}
-        />
+        <div id="history-section">
+          <HistorySection
+            feedbackHistory={feedbackHistory}
+            actionHistory={actionHistory}
+            isLoading={isHistoryLoading}
+            error={historyError}
+          />
+        </div>
 
       </div>
     </SNSLayout>

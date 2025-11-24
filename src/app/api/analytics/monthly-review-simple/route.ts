@@ -154,17 +154,9 @@ export async function GET(request: NextRequest) {
     const startTimestamp = admin.firestore.Timestamp.fromDate(start);
     const endTimestamp = admin.firestore.Timestamp.fromDate(end);
 
-    // 必要なデータを取得（並列）
-    const [postsSnapshot, analyticsSnapshot, plansSnapshot] = await Promise.all([
-      // 期間内の投稿を取得
-      adminDb
-        .collection("posts")
-        .where("userId", "==", uid)
-        .where("createdAt", ">=", startTimestamp)
-        .where("createdAt", "<=", endTimestamp)
-        .get(),
-
-      // 期間内の分析データを取得
+    // 必要なデータを取得（並列）- analyticsコレクション（分析済みデータ）のみを使用
+    const [analyticsSnapshot, plansSnapshot] = await Promise.all([
+      // 期間内の分析データを取得（分析済みデータのみ）
       adminDb
         .collection("analytics")
         .where("userId", "==", uid)
@@ -182,7 +174,6 @@ export async function GET(request: NextRequest) {
         .get(),
     ]);
 
-    const postCount = postsSnapshot.docs.length;
     const analyzedCount = analyticsSnapshot.docs.length;
     const hasPlan = !plansSnapshot.empty;
 
@@ -224,18 +215,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 投稿タイプ別の統計を計算
+    // 投稿タイプ別の統計を計算（analyticsコレクションのデータのみを使用）
     const postTypeStats: Record<string, { count: number; totalReach: number; labels: string[] }> = {};
     const postReachMap = new Map<string, { reach: number; title: string; type: string }>();
 
-    postsSnapshot.docs.forEach((doc) => {
-      const postData = doc.data();
-      const postId = doc.id;
-      const postType = postData.postType || postData.type || "unknown";
-      const postTitle = postData.title || postData.caption?.substring(0, 50) || "タイトルなし";
-      
-      const analytics = analyticsByPostId.get(postId);
-      const reach = analytics?.reach || 0;
+    analyticsByPostId.forEach((analytics, postId) => {
+      const postType = analytics.category || analytics.postType || "unknown";
+      const postTitle = analytics.title || analytics.caption?.substring(0, 50) || "タイトルなし";
+      const reach = analytics.reach || 0;
 
       if (!postTypeStats[postType]) {
         postTypeStats[postType] = { count: 0, totalReach: 0, labels: [] };
@@ -377,7 +364,7 @@ export async function GET(request: NextRequest) {
 
     // AI生成（シンプルなプロンプト）
     let reviewText = "";
-    if (openai && (postCount > 0 || analyzedCount > 0)) {
+    if (openai && analyzedCount > 0) {
       try {
         const currentMonth = getMonthName(date);
         const nextMonth = getNextMonthName(date);
@@ -385,8 +372,7 @@ export async function GET(request: NextRequest) {
         const prompt = `以下のInstagram運用データを基に、${currentMonth}の振り返りを以下の形式で出力してください。
 
 【データ】
-- 投稿数: ${postCount}件
-- 分析済み数: ${analyzedCount}件
+- 分析済み投稿数: ${analyzedCount}件
 - いいね数: ${totalLikes.toLocaleString()}
 - リーチ数: ${totalReach.toLocaleString()}${reachChangeText}
 - コメント数: ${totalComments.toLocaleString()}
@@ -519,8 +505,7 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
             const proposalPrompt = `以下のInstagram運用データを基に、${getNextMonthName(date)}に向けた具体的なアクションプランを3つ生成してください。
 
 【データ】
-- 投稿数: ${postCount}件
-- 分析済み数: ${analyzedCount}件
+- 分析済み投稿数: ${analyzedCount}件
 - いいね数: ${totalLikes.toLocaleString()}
 - リーチ数: ${totalReach.toLocaleString()}${prevTotalReach > 0 ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）` : ""}
 - コメント数: ${totalComments.toLocaleString()}
@@ -586,7 +571,7 @@ ${postTypeArray.length > 0
 	•	コメント数：${totalComments.toLocaleString()}
 	•	保存数：${totalSaves.toLocaleString()}${currentFollowers > 0 ? `\n	•	フォロワー数：${currentFollowers.toLocaleString()}（${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}）` : totalFollowerIncrease !== 0 ? `\n	•	フォロワー増減：${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}` : ""}
 
-${postCount > 0 
+${analyzedCount > 0 
   ? `${totalReach > 0 
     ? `リーチ数${totalReach.toLocaleString()}人、いいね数${totalLikes.toLocaleString()}件を達成しました。${reachChangeText ? `前月比で${reachChange >= 0 ? "増加" : "減少"}しており、${reachChange >= 0 ? "順調に成長" : "改善の余地"}が見られます。` : ""}${totalSaves > 0 ? `保存数${totalSaves.toLocaleString()}件も獲得しており、` : ""}${totalComments > 0 ? `コメント${totalComments.toLocaleString()}件もあり、` : ""}フォロワーとのエンゲージメントが良好です。` 
     : "投稿データを蓄積中です。"}` 
@@ -649,7 +634,6 @@ ${getMonthName(date)}のデータがまだありません。投稿を開始し�
         review: reviewText,
         actionPlans,
         hasPlan,
-        postCount,
         analyzedCount,
       },
     });

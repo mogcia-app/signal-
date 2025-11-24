@@ -72,14 +72,14 @@ export async function GET(request: NextRequest) {
     const startTimestamp = admin.firestore.Timestamp.fromDate(start);
     const endTimestamp = admin.firestore.Timestamp.fromDate(end);
 
-    // 必要なデータを取得（並列）
-    const [postsSnapshot, feedbackSnapshot, snapshotsSnapshot] = await Promise.all([
-      // 期間内の投稿を取得
+    // 必要なデータを取得（並列）- analyticsコレクション（分析済みデータ）のみを使用
+    const [analyticsSnapshot, feedbackSnapshot, snapshotsSnapshot] = await Promise.all([
+      // 期間内の分析データを取得（分析済みデータのみ）
       adminDb
-        .collection("posts")
+        .collection("analytics")
         .where("userId", "==", uid)
-        .where("createdAt", ">=", startTimestamp)
-        .where("createdAt", "<=", endTimestamp)
+        .where("publishedAt", ">=", startTimestamp)
+        .where("publishedAt", "<=", endTimestamp)
         .get(),
 
       // フィードバックデータを取得
@@ -99,20 +99,28 @@ export async function GET(request: NextRequest) {
         .get(),
     ]);
 
-    // 投稿マップを作成
-    const postsMap = new Map(
-      postsSnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return [
-          doc.id,
-          {
-            id: doc.id,
+    // 投稿マップを作成（analyticsコレクションから）
+    const postsMap = new Map<string, { id: string; title: string; postType: "feed" | "reel" | "story" }>();
+    const analyticsByPostId = new Map<string, any>();
+    analyticsSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const postId = data.postId;
+      if (postId) {
+        // 重複除去: 同じpostIdの最新レコードのみ保持
+        const existing = analyticsByPostId.get(postId);
+        if (!existing || (data.publishedAt && existing.publishedAt && data.publishedAt > existing.publishedAt)) {
+          analyticsByPostId.set(postId, data);
+          const rawPostType = data.category || data.postType || "feed";
+          const postType: "feed" | "reel" | "story" =
+            rawPostType === "reel" || rawPostType === "story" ? rawPostType : "feed";
+          postsMap.set(postId, {
+            id: postId,
             title: data.title || data.caption?.substring(0, 50) || "タイトルなし",
-            postType: data.postType || data.type || "feed",
-          },
-        ];
-      })
-    );
+            postType,
+          });
+        }
+      }
+    });
 
     // スナップショットステータスマップを作成
     const snapshotStatusMap = new Map<string, "gold" | "negative" | "normal">();

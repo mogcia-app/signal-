@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import { MessageCircle, Target } from "lucide-react";
+import { InfoTooltip } from "./InfoTooltip";
 import type { FeedbackEntry } from "../types";
 import type { AIActionLog } from "@/types/ai";
 import { formatDateTime } from "../utils";
@@ -74,7 +76,10 @@ export function HistorySection({ feedbackHistory, actionHistory, isLoading, erro
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">アクション実行ログ</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-gray-800">アクション実行ログ</h3>
+              <InfoTooltip text="月次レポートの「次月のアクションプラン」や投稿ディープダイブの「次のアクション」でチェックを入れたAI提案がここに記録されます。「フォーカス」は提案の出所を示します（例: next-month-2025-11 = 2025年11月の月次レポート）。" />
+            </div>
             {actionHistory.length === 0 ? (
               <EmptyStateCard
                 icon={Target}
@@ -85,27 +90,67 @@ export function HistorySection({ feedbackHistory, actionHistory, isLoading, erro
               />
             ) : (
               <ul className="space-y-3">
-                {actionHistory.map((entry) => (
-                  <li key={`action-${entry.id}`} className="border border-gray-200 bg-white rounded-none p-3 text-xs text-gray-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-gray-800">{entry.title}</span>
-                      <span className="text-[11px] text-gray-500">{formatDateTime(entry.updatedAt)}</span>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-1">フォーカス: {entry.focusArea}</p>
-                    <p className="text-xs text-gray-600 mb-1">
-                      採用状況:{" "}
-                      <span className={entry.applied ? "text-emerald-600 font-semibold" : "text-slate-600"}>
-                        {entry.applied ? "実行済み" : "検討中"}
-                      </span>
-                      {typeof entry.resultDelta === "number"
-                        ? ` / 効果: ${entry.resultDelta > 0 ? "+" : ""}${entry.resultDelta.toFixed(1)}%`
-                        : ""}
-                    </p>
-                    {entry.feedback ? (
-                      <p className="text-xs text-gray-700 whitespace-pre-wrap">メモ: {entry.feedback}</p>
-                    ) : null}
-                  </li>
-                ))}
+                {actionHistory.map((entry) => {
+                  // focusAreaから出所を判定
+                  const getFocusAreaLabel = (focusArea: string | undefined) => {
+                    if (!focusArea) {
+                      return "不明";
+                    }
+                    if (focusArea.startsWith("next-month-")) {
+                      const monthMatch = focusArea.match(/next-month-(\d{4})-(\d{2})/);
+                      if (monthMatch) {
+                        const [, year, month] = monthMatch;
+                        return `${year}年${parseInt(month)}月の月次レポート`;
+                      }
+                      return "月次レポート";
+                    }
+                    if (focusArea.startsWith("learning-")) {
+                      return "投稿ディープダイブ";
+                    }
+                    return focusArea;
+                  };
+
+                  const focusAreaLabel = getFocusAreaLabel(entry.focusArea);
+                  const isFromMonthlyReport = entry.focusArea?.startsWith("next-month-") ?? false;
+
+                  return (
+                    <li key={`action-${entry.id}`} className="border border-gray-200 bg-white rounded-none p-3 text-xs text-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-gray-800">{entry.title}</span>
+                        <span className="text-[11px] text-gray-500">{formatDateTime(entry.updatedAt)}</span>
+                      </div>
+                      <div className="mb-2 p-2 bg-gray-50 border border-gray-200 rounded-none">
+                        <p className="text-[10px] text-gray-500 mb-1">出所</p>
+                        <p className="text-xs text-gray-700 font-medium">
+                          {focusAreaLabel}
+                          {isFromMonthlyReport && (
+                            <Link
+                              href="/instagram/monthly-report"
+                              className="ml-2 text-blue-600 hover:text-blue-800 text-[10px] underline"
+                            >
+                              月次レポートを見る →
+                            </Link>
+                          )}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-1">
+                        採用状況:{" "}
+                        <span className={entry.applied ? "text-emerald-600 font-semibold" : "text-slate-600"}>
+                          {entry.applied ? "✅ 実行済み" : "⏳ 検討中"}
+                        </span>
+                        {typeof entry.resultDelta === "number"
+                          ? ` / 効果: ${entry.resultDelta > 0 ? "+" : ""}${entry.resultDelta.toFixed(1)}%`
+                          : ""}
+                      </p>
+                      {entry.feedback ? (
+                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-none">
+                          <p className="text-[10px] text-blue-700 font-semibold mb-1">📝 メモ</p>
+                          <p className="text-xs text-blue-800 whitespace-pre-wrap">{entry.feedback}</p>
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
