@@ -10,6 +10,8 @@ interface FollowerCount {
   startFollowers?: number; // 月初のフォロワー数（オプション）
   month: string; // YYYY-MM形式
   source: "manual" | "onboarding"; // 手動入力 or オンボーディング
+  profileVisits?: number; // プロフィールへのアクセス数（投稿に紐づかない全体の数値）
+  externalLinkTaps?: number; // 外部リンクタップ数（投稿に紐づかない全体の数値）
   createdAt: admin.firestore.Timestamp;
   updatedAt: admin.firestore.Timestamp;
 }
@@ -55,8 +57,11 @@ export async function GET(request: NextRequest) {
         userId: data.userId,
         snsType: data.snsType,
         followers: data.followers,
+        startFollowers: data.startFollowers || data.followers,
         month: data.month,
         source: data.source,
+        profileVisits: data.profileVisits || 0,
+        externalLinkTaps: data.externalLinkTaps || 0,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
       },
@@ -84,7 +89,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { followers, month, snsType = "instagram", source = "manual" } = body;
+    const { followers, month, snsType = "instagram", source = "manual", profileVisits, externalLinkTaps } = body;
 
     if (!followers || typeof followers !== "number" || followers < 0) {
       return NextResponse.json(
@@ -122,6 +127,12 @@ export async function POST(request: NextRequest) {
         source,
         updatedAt: now,
       };
+      if (profileVisits !== undefined) {
+        updateData.profileVisits = profileVisits;
+      }
+      if (externalLinkTaps !== undefined) {
+        updateData.externalLinkTaps = externalLinkTaps;
+      }
       if (!existingData.startFollowers) {
         updateData.startFollowers = existingData.followers; // 最初の値を月初として保存
       }
@@ -138,6 +149,8 @@ export async function POST(request: NextRequest) {
         startFollowers: followers, // 月初の値としても保存
         month,
         source,
+        profileVisits: profileVisits || 0,
+        externalLinkTaps: externalLinkTaps || 0,
         createdAt: now,
         updatedAt: now,
       };
@@ -156,6 +169,8 @@ export async function POST(request: NextRequest) {
         followers: data?.followers,
         month: data?.month,
         source: data?.source,
+        profileVisits: data?.profileVisits || 0,
+        externalLinkTaps: data?.externalLinkTaps || 0,
         createdAt: data?.createdAt?.toDate?.()?.toISOString() || data?.createdAt,
         updatedAt: data?.updatedAt?.toDate?.()?.toISOString() || data?.updatedAt,
       },

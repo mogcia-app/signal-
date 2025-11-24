@@ -118,6 +118,11 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                       Signalでは「いいね + コメント + シェア + 保存」を独自に合算した値です
                     </p>
                   )}
+                  {item.key === "total_interaction" && (
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      フィード・リール合わせた総合インタラクション数（いいね + 保存 + コメント + シェアの合計）です
+                    </p>
+                  )}
                 </div>
                 {changeMeta && (
                   <span
@@ -144,7 +149,13 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                       <div key={`${item.key}-${segment.label}`}>
                         <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
                           <span>{segment.label}</span>
-                          <span>{segment.value.toLocaleString()}件</span>
+                          <span>
+                            {item.key === "current_followers"
+                              ? segment.value > 0
+                                ? `+${segment.value.toLocaleString()}人`
+                                : `${segment.value.toLocaleString()}人`
+                              : `${segment.value.toLocaleString()}件`}
+                          </span>
                         </div>
                         <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
                           <div

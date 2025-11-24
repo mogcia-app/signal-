@@ -18,7 +18,7 @@ interface KPIBreakdownTopPost {
 }
 
 export interface KPIBreakdown {
-  key: "reach" | "saves" | "followers" | "engagement";
+  key: "reach" | "saves" | "followers" | "engagement" | "total_interaction" | "external_links" | "profile_visits" | "current_followers";
   label: string;
   value: number;
   unit?: "count" | "percent";
@@ -65,6 +65,7 @@ interface PostWithAnalytics {
     reachSourceOther?: number;
     reachedAccounts?: number;
     profileVisits?: number;
+    externalLinkTaps?: number; // 外部リンクタップ数（フィード専用）
     // リール専用
     reelReachFollowerPercent?: number;
     reelInteractionCount?: number;
@@ -106,6 +107,7 @@ export interface FeedStats {
   };
   totalReachedAccounts: number;
   totalProfileVisits: number;
+  totalExternalLinkTaps: number;
 }
 
 export interface ReelStats {
@@ -195,6 +197,9 @@ function buildKpiBreakdowns(params: {
     totalReach: number;
     totalSaves: number;
     totalFollowerIncrease: number;
+    totalInteraction: number;
+    totalExternalLinkTaps: number;
+    totalProfileVisits: number;
   };
   previousTotals: {
     totalLikes: number;
@@ -203,12 +208,26 @@ function buildKpiBreakdowns(params: {
     totalReach: number;
     totalSaves: number;
     totalFollowerIncrease: number;
+    totalInteraction: number;
+    totalExternalLinkTaps: number;
+    totalProfileVisits: number;
   };
   changes: {
     reachChange: number;
     savesChange: number;
     followerChange: number;
+    totalInteractionChange: number;
+    externalLinkTapsChange: number;
+    profileVisitsChange: number;
   };
+  profileVisitsFromPosts: number; // 投稿からのプロフィール閲覧数
+  profileVisitsFromOther: number; // その他からのプロフィール閲覧数
+  currentFollowers: number; // 現在のフォロワー数
+  previousCurrentFollowers: number; // 前期間の現在のフォロワー数
+  startFollowers: number; // 月初のフォロワー数
+  followerIncreaseFromReel: number; // リールからの増加数
+  followerIncreaseFromFeed: number; // フィードからの増加数
+  followerIncreaseFromOther: number; // その他からの増加数
   reachSourceAnalysis: {
     sources: {
       posts: number;
@@ -285,15 +304,18 @@ function buildKpiBreakdowns(params: {
     insight: summarizeSegments(savesSegments, savesValue),
   };
 
-  // フォロワー増減
-  const followerSegmentsRaw = posts.reduce<Record<string, number>>((acc, post) => {
+  // リール・フィードの合計いいね数
+  const likesSegmentsRaw = posts.reduce<Record<string, number>>((acc, post) => {
     const type = post.postType || "feed";
-    const gain = post.analyticsSummary?.followerIncrease || 0;
-    acc[type] = (acc[type] || 0) + gain;
+    // リールとフィードのみを集計
+    if (type === "reel" || type === "feed") {
+      const likes = post.analyticsSummary?.likes || 0;
+      acc[type] = (acc[type] || 0) + likes;
+    }
     return acc;
   }, {});
 
-  const followerSegments: KPIBreakdownSegment[] = Object.entries(followerSegmentsRaw)
+  const likesSegments: KPIBreakdownSegment[] = Object.entries(likesSegmentsRaw)
     .map(([type, value]) => ({
       label: typeLabelMap[type] || type,
       value,
@@ -301,20 +323,29 @@ function buildKpiBreakdowns(params: {
     .filter((segment) => segment.value !== 0)
     .sort((a, b) => b.value - a.value);
 
-  const followerValue = totals.totalFollowerIncrease || 0;
+  // リールとフィードのいいね数の合計
+  const likesValue = (totals.totalLikes || 0);
+  const previousLikesValue = (previousTotals.totalLikes || 0);
+  const likesChange =
+    previousLikesValue === 0
+      ? likesValue > 0
+        ? 100
+        : 0
+      : ((likesValue - previousLikesValue) / previousLikesValue) * 100;
+
   const followerBreakdown: KPIBreakdown = {
     key: "followers",
-    label: "フォロワー増減",
-    value: followerValue,
+    label: "リール・フィードの合計いいね数",
+    value: likesValue,
     unit: "count",
-    changePct: changes.followerChange ?? 0,
-    segments: followerSegments,
+    changePct: likesChange,
+    segments: likesSegments,
     topPosts: buildTopPosts(
-      posts,
-      (summary) => summary?.followerIncrease || 0,
+      posts.filter((post) => post.postType === "reel" || post.postType === "feed"),
+      (summary) => summary?.likes || 0,
       snapshotStatusMap
     ),
-    insight: summarizeSegments(followerSegments, followerValue),
+    insight: summarizeSegments(likesSegments, likesValue),
   };
 
   // エンゲージメント
@@ -358,7 +389,158 @@ function buildKpiBreakdowns(params: {
     insight: summarizeSegments(engagementSegments, engagementValue),
   };
 
-  return [reachBreakdown, savesBreakdown, followerBreakdown, engagementBreakdown];
+  // 総合インタラクション数（フィード+リール合わせた、いいね+保存+コメント+シェアのトータル）
+  const totalInteractionValue = params.totals.totalInteraction || 0;
+  const previousTotalInteractionValue = params.previousTotals.totalInteraction || 0;
+  const totalInteractionChange =
+    previousTotalInteractionValue === 0
+      ? totalInteractionValue > 0
+        ? 100
+        : 0
+      : ((totalInteractionValue - previousTotalInteractionValue) / previousTotalInteractionValue) * 100;
+
+  const totalInteractionByType = posts.reduce<Record<string, number>>((acc, post) => {
+    const type = post.postType || "feed";
+    const summary = post.analyticsSummary;
+    if (!summary) return acc;
+    const interaction = (summary.likes || 0) + (summary.saves || 0) + (summary.comments || 0) + (summary.shares || 0);
+    acc[type] = (acc[type] || 0) + interaction;
+    return acc;
+  }, {});
+
+  const totalInteractionSegments: KPIBreakdownSegment[] = Object.entries(totalInteractionByType)
+    .map(([type, value]) => ({
+      label: typeLabelMap[type] || type,
+      value,
+    }))
+    .filter((segment) => segment.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const totalInteractionBreakdown: KPIBreakdown = {
+    key: "total_interaction",
+    label: "総合インタラクション数",
+    value: totalInteractionValue,
+    unit: "count",
+    changePct: totalInteractionChange,
+    segments: totalInteractionSegments,
+    topPosts: buildTopPosts(
+      posts,
+      (summary) =>
+        (summary?.likes || 0) + (summary?.saves || 0) + (summary?.comments || 0) + (summary?.shares || 0),
+      snapshotStatusMap
+    ),
+    insight: summarizeSegments(totalInteractionSegments, totalInteractionValue),
+  };
+
+  // 外部リンク数（フィードのみ）
+  const externalLinkTapsValue = params.totals.totalExternalLinkTaps || 0;
+  const previousExternalLinkTapsValue = params.previousTotals.totalExternalLinkTaps || 0;
+  const externalLinkTapsChange =
+    previousExternalLinkTapsValue === 0
+      ? externalLinkTapsValue > 0
+        ? 100
+        : 0
+      : ((externalLinkTapsValue - previousExternalLinkTapsValue) / previousExternalLinkTapsValue) * 100;
+
+  const externalLinkTapsBreakdown: KPIBreakdown = {
+    key: "external_links",
+    label: "外部リンク数",
+    value: externalLinkTapsValue,
+    unit: "count",
+    changePct: externalLinkTapsChange,
+    segments: [],
+    topPosts: buildTopPosts(
+      posts.filter((post) => post.postType === "feed"),
+      (summary) => summary?.externalLinkTaps || 0,
+      snapshotStatusMap
+    ),
+    insight: undefined,
+  };
+
+  // プロフィール閲覧数（投稿からの閲覧数 + その他からの取得）
+  const profileVisitsValue = params.totals.totalProfileVisits || 0;
+  const previousProfileVisitsValue = params.previousTotals.totalProfileVisits || 0;
+  const profileVisitsChange =
+    previousProfileVisitsValue === 0
+      ? profileVisitsValue > 0
+        ? 100
+        : 0
+      : ((profileVisitsValue - previousProfileVisitsValue) / previousProfileVisitsValue) * 100;
+
+  const profileVisitsSegments: KPIBreakdownSegment[] = [
+    { label: "投稿からの閲覧数", value: params.profileVisitsFromPosts || 0 },
+    { label: "その他からの取得", value: params.profileVisitsFromOther || 0 },
+  ].filter((segment) => segment.value > 0);
+
+  const profileVisitsBreakdown: KPIBreakdown = {
+    key: "profile_visits",
+    label: "プロフィール閲覧数",
+    value: profileVisitsValue,
+    unit: "count",
+    changePct: profileVisitsChange,
+    segments: profileVisitsSegments,
+    topPosts: buildTopPosts(
+      posts,
+      (summary) => summary?.profileVisits || 0,
+      snapshotStatusMap
+    ),
+    insight: summarizeSegments(profileVisitsSegments, profileVisitsValue),
+  };
+
+  // 現在のフォロワー数（月初 + 増減数の合計）
+  const currentFollowersValue = params.currentFollowers || 0;
+  const previousCurrentFollowersValue = params.previousCurrentFollowers || 0;
+  const currentFollowersChange =
+    previousCurrentFollowersValue === 0
+      ? currentFollowersValue > 0
+        ? 100
+        : 0
+      : ((currentFollowersValue - previousCurrentFollowersValue) / previousCurrentFollowersValue) * 100;
+
+  // フォロワー数の内訳を表示
+  // 1. リールから = 分析ページで入力されたリール投稿のfollowerIncreaseの合計
+  // 2. フィードから = 分析ページで入力されたフィード投稿のfollowerIncreaseの合計
+  // 3. その他から = /homeで入力された値、または計算値
+  const currentFollowersSegments: KPIBreakdownSegment[] = [
+    { label: "リールから", value: params.followerIncreaseFromReel || 0 },
+    { label: "フィードから", value: params.followerIncreaseFromFeed || 0 },
+    { label: "その他から", value: params.followerIncreaseFromOther || 0 },
+  ].filter((segment) => segment.value !== 0 && !isNaN(segment.value));
+
+  const totalFollowerIncrease = 
+    (params.followerIncreaseFromReel || 0) + 
+    (params.followerIncreaseFromFeed || 0) + 
+    (params.followerIncreaseFromOther || 0);
+
+  // フォロワー数の表示値は、増加数の合計とする（現在のフォロワー数ではなく）
+  // これにより、valueとsegmentsの整合性が取れる
+  const currentFollowersBreakdown: KPIBreakdown = {
+    key: "current_followers",
+    label: "フォロワー数",
+    value: totalFollowerIncrease, // 増加数の合計を表示
+    unit: "count",
+    changePct: currentFollowersChange,
+    segments: currentFollowersSegments.length > 0 ? currentFollowersSegments : undefined,
+    topPosts: buildTopPosts(
+      posts,
+      (summary) => summary?.followerIncrease || 0,
+      snapshotStatusMap
+    ),
+    insight: currentFollowersSegments.length > 0 
+      ? summarizeSegments(currentFollowersSegments, totalFollowerIncrease)
+      : undefined,
+  };
+
+  return [
+    reachBreakdown,
+    savesBreakdown,
+    followerBreakdown,
+    engagementBreakdown,
+    totalInteractionBreakdown,
+    externalLinkTapsBreakdown,
+    profileVisitsBreakdown,
+    currentFollowersBreakdown,
+  ];
 }
 
 // 投稿時間分析を計算
@@ -550,6 +732,7 @@ function calculateFeedStats(postsWithAnalytics: PostWithAnalytics[]): FeedStats 
   const totalInteractionCount = feedPosts.reduce((sum, post) => sum + safeNumber(post.analyticsSummary?.interactionCount), 0);
   const totalProfileVisits = feedPosts.reduce((sum, post) => sum + safeNumber(post.analyticsSummary?.profileVisits), 0);
   const totalReachedAccounts = feedPosts.reduce((sum, post) => sum + safeNumber(post.analyticsSummary?.reachedAccounts), 0);
+  const totalExternalLinkTaps = feedPosts.reduce((sum, post) => sum + safeNumber(post.analyticsSummary?.externalLinkTaps), 0);
 
   const avgReachFollowerPercent =
     feedPosts.reduce((sum, post) => sum + safeNumber(post.analyticsSummary?.reachFollowerPercent), 0) / feedPosts.length;
@@ -577,6 +760,7 @@ function calculateFeedStats(postsWithAnalytics: PostWithAnalytics[]): FeedStats 
     reachSources,
     totalReachedAccounts,
     totalProfileVisits,
+    totalExternalLinkTaps,
   };
 }
 
@@ -772,6 +956,7 @@ export async function GET(request: NextRequest) {
               reachSourceOther: analytics.reachSourceOther || 0,
               reachedAccounts: analytics.reachedAccounts || 0,
               profileVisits: analytics.profileVisits || 0,
+              externalLinkTaps: analytics.externalLinkTaps || 0,
               // リール専用
               reelReachFollowerPercent: analytics.reelReachFollowerPercent || 0,
               reelInteractionCount: analytics.reelInteractionCount || 0,
@@ -831,7 +1016,20 @@ export async function GET(request: NextRequest) {
       totalShares: postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.shares || 0), 0),
       totalReach: postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.reach || 0), 0),
       totalSaves: postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.saves || 0), 0),
-      totalFollowerIncrease: postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0),
+      // totalFollowerIncreaseは後で計算（follower_countsから取得した値を使用）
+      totalFollowerIncrease: 0, // 一時的に0、後で更新
+      // 総合インタラクション数（フィード+リール合わせた、いいね+保存+コメント+シェアのトータル）
+      totalInteraction: postsWithAnalytics.reduce((sum, post) => {
+        const summary = post.analyticsSummary;
+        if (!summary) return sum;
+        return sum + (summary.likes || 0) + (summary.saves || 0) + (summary.comments || 0) + (summary.shares || 0);
+      }, 0),
+      // 外部リンク数（フィードのみ）
+      totalExternalLinkTaps: postsWithAnalytics
+        .filter((post) => post.postType === "feed")
+        .reduce((sum, post) => sum + (post.analyticsSummary?.externalLinkTaps || 0), 0),
+      // プロフィール閲覧数（投稿からの閲覧数 + その他からの取得）
+      totalProfileVisits: postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.profileVisits || 0), 0),
     };
 
     const previousTotals = {
@@ -840,7 +1038,18 @@ export async function GET(request: NextRequest) {
       totalShares: Array.from(previousAnalyticsByPostId.values()).reduce((sum, data) => sum + (data.shares || 0), 0),
       totalReach: Array.from(previousAnalyticsByPostId.values()).reduce((sum, data) => sum + (data.reach || 0), 0),
       totalSaves: Array.from(previousAnalyticsByPostId.values()).reduce((sum, data) => sum + (data.saves || 0), 0),
-      totalFollowerIncrease: Array.from(previousAnalyticsByPostId.values()).reduce((sum, data) => sum + (data.followerIncrease || 0), 0),
+      // totalFollowerIncreaseは後で計算（follower_countsから取得した値を使用）
+      totalFollowerIncrease: 0, // 一時的に0、後で更新
+      // 前期間の総合インタラクション数
+      totalInteraction: Array.from(previousAnalyticsByPostId.values()).reduce((sum, data) => {
+        return sum + (data.likes || 0) + (data.saves || 0) + (data.comments || 0) + (data.shares || 0);
+      }, 0),
+      // 前期間の外部リンク数（フィードのみ）
+      totalExternalLinkTaps: Array.from(previousAnalyticsByPostId.values())
+        .filter((data) => (data.category || data.postType) === "feed")
+        .reduce((sum, data) => sum + (data.externalLinkTaps || 0), 0),
+      // 前期間のプロフィール閲覧数（投稿からの閲覧数のみ、その他からの取得は後で追加）
+      totalProfileVisits: Array.from(previousAnalyticsByPostId.values()).reduce((sum, data) => sum + (data.profileVisits || 0), 0),
     };
 
     // 変化率を計算
@@ -863,6 +1072,24 @@ export async function GET(request: NextRequest) {
             ? (totals.totalFollowerIncrease > 0 ? 100 : -100)
             : 0
           : ((totals.totalFollowerIncrease - previousTotals.totalFollowerIncrease) / Math.abs(previousTotals.totalFollowerIncrease)) * 100,
+      totalInteractionChange:
+        previousTotals.totalInteraction === 0
+          ? totals.totalInteraction > 0
+            ? 100
+            : 0
+          : ((totals.totalInteraction - previousTotals.totalInteraction) / previousTotals.totalInteraction) * 100,
+      externalLinkTapsChange:
+        previousTotals.totalExternalLinkTaps === 0
+          ? totals.totalExternalLinkTaps > 0
+            ? 100
+            : 0
+          : ((totals.totalExternalLinkTaps - previousTotals.totalExternalLinkTaps) / previousTotals.totalExternalLinkTaps) * 100,
+      profileVisitsChange:
+        previousTotals.totalProfileVisits === 0
+          ? totals.totalProfileVisits > 0
+            ? 100
+            : 0
+          : ((totals.totalProfileVisits - previousTotals.totalProfileVisits) / previousTotals.totalProfileVisits) * 100,
     };
 
     // リーチソース分析
@@ -875,6 +1102,73 @@ export async function GET(request: NextRequest) {
         other: 0,
       },
     };
+
+    // オンボーディングの初期値を取得（startFollowersとして使用）
+    let initialFollowers = 0;
+    try {
+      const userDoc = await adminDb.collection("users").doc(uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        initialFollowers = userData?.businessInfo?.initialFollowers || 0;
+      }
+    } catch (err) {
+      console.error("ユーザー情報取得エラー:", err);
+    }
+
+    // follower_countsからプロフィールアクセス数と外部リンクタップ数を取得（投稿に紐づかない全体の数値）
+    const followerCountSnapshot = await adminDb
+      .collection("follower_counts")
+      .where("userId", "==", uid)
+      .where("snsType", "==", "instagram")
+      .where("month", "==", date)
+      .limit(1)
+      .get();
+
+    let profileVisitsFromHome = 0;
+    let externalLinkTapsFromHome = 0;
+    let currentFollowers = 0;
+    let startFollowers = 0;
+    if (!followerCountSnapshot.empty) {
+      const followerCountData = followerCountSnapshot.docs[0].data();
+      profileVisitsFromHome = followerCountData.profileVisits || 0;
+      externalLinkTapsFromHome = followerCountData.externalLinkTaps || 0;
+      currentFollowers = followerCountData.followers || 0;
+      startFollowers = followerCountData.startFollowers || followerCountData.followers || 0;
+    }
+
+    // プロフィール閲覧数に投稿に紐づかない全体の数値を追加
+    totals.totalProfileVisits += profileVisitsFromHome;
+    totals.totalExternalLinkTaps += externalLinkTapsFromHome;
+
+    // 前期間のfollower_countsからも取得
+    const previousFollowerCountSnapshot = await adminDb
+      .collection("follower_counts")
+      .where("userId", "==", uid)
+      .where("snsType", "==", "instagram")
+      .where("month", "==", `${year}-${String(month - 1).padStart(2, "0")}`)
+      .limit(1)
+      .get();
+
+    let previousProfileVisitsFromHome = 0;
+    let previousExternalLinkTapsFromHome = 0;
+    let previousCurrentFollowers = 0;
+    let previousStartFollowers = 0;
+    if (!previousFollowerCountSnapshot.empty) {
+      const previousFollowerCountData = previousFollowerCountSnapshot.docs[0].data();
+      previousProfileVisitsFromHome = previousFollowerCountData.profileVisits || 0;
+      previousExternalLinkTapsFromHome = previousFollowerCountData.externalLinkTaps || 0;
+      previousCurrentFollowers = previousFollowerCountData.followers || 0;
+      previousStartFollowers = previousFollowerCountData.startFollowers || previousFollowerCountData.followers || 0;
+    }
+
+    // 前期間のプロフィール閲覧数に投稿に紐づかない全体の数値を追加
+    previousTotals.totalProfileVisits += previousProfileVisitsFromHome;
+    previousTotals.totalExternalLinkTaps += previousExternalLinkTapsFromHome;
+    
+    // 前期間のフォロワー増加数を計算（前期間の現在のフォロワー数 - 前期間の月初のフォロワー数）
+    // 前期間もオンボーディングの初期値を使用（同じユーザーなので）
+    const previousActualStartFollowers = initialFollowers > 0 ? initialFollowers : previousStartFollowers;
+    previousTotals.totalFollowerIncrease = previousCurrentFollowers - previousActualStartFollowers;
 
     // スナップショット参照を取得（ステータス判定用）
     const snapshotRefsSnapshot = await adminDb
@@ -891,14 +1185,75 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // プロフィール閲覧数の内訳を計算
+    const profileVisitsFromPosts = postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.profileVisits || 0), 0);
+    const profileVisitsFromOther = profileVisitsFromHome;
+
+    // フォロワー数の内訳を計算
+    // 1. startFollowers = オンボーディングの初期値（user.businessInfo.initialFollowers）
+    // 2. followerIncreaseFromPosts = 分析ページで入力された各投稿のfollowerIncreaseの合計（リール+フィード）
+    // 3. followerIncreaseFromOther = /homeで入力された値、または計算値（currentFollowers - startFollowers - followerIncreaseFromPosts）
+    
+    // startFollowersはオンボーディングの初期値を使用（なければfollower_countsのstartFollowersを使用）
+    const actualStartFollowers = initialFollowers > 0 ? initialFollowers : startFollowers;
+    
+    // 分析ページで入力された各投稿のfollowerIncreaseの合計を計算（リール+フィード）
+    const followerIncreaseFromReel = postsWithAnalytics
+      .filter((post) => post.postType === "reel")
+      .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
+    const followerIncreaseFromFeed = postsWithAnalytics
+      .filter((post) => post.postType === "feed")
+      .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
+    const followerIncreaseFromPosts = followerIncreaseFromReel + followerIncreaseFromFeed;
+    
+    // その他からの増加数 = 現在のフォロワー数 - 月初のフォロワー数 - 投稿からの増加数
+    const totalIncrease = currentFollowers - actualStartFollowers;
+    // その他からの増加数が負の値になる場合は、投稿からの増加数が過大評価されている可能性がある
+    // その場合は、その他からの増加数を0にして、投稿からの増加数のみを表示
+    const followerIncreaseFromOther = Math.max(0, totalIncrease - followerIncreaseFromPosts);
+    
+    // totalsのtotalFollowerIncreaseを更新
+    totals.totalFollowerIncrease = totalIncrease;
+    
+    // デバッグログ
+    if (process.env.NODE_ENV === "development") {
+      console.log("[フォロワー数内訳計算]", {
+        initialFollowers,
+        startFollowers,
+        actualStartFollowers,
+        currentFollowers,
+        totalIncrease,
+        followerIncreaseFromReel,
+        followerIncreaseFromFeed,
+        followerIncreaseFromPosts,
+        followerIncreaseFromOther,
+        totalsTotalFollowerIncrease: totals.totalFollowerIncrease,
+        previousTotalsTotalFollowerIncrease: previousTotals.totalFollowerIncrease,
+        note: "startFollowers = オンボーディングの初期値、followerIncreaseFromPosts = 分析ページの合計、followerIncreaseFromOther = その他",
+      });
+    }
+
     // KPI分解を構築
     const kpiBreakdowns = buildKpiBreakdowns({
       totals,
       previousTotals,
-      changes,
+      changes: {
+        ...changes,
+        totalInteractionChange: changes.totalInteractionChange,
+        externalLinkTapsChange: changes.externalLinkTapsChange,
+        profileVisitsChange: changes.profileVisitsChange,
+      },
       reachSourceAnalysis,
       posts: postsWithAnalytics,
       snapshotStatusMap,
+      profileVisitsFromPosts,
+      profileVisitsFromOther,
+      currentFollowers,
+      previousCurrentFollowers,
+      startFollowers: actualStartFollowers,
+      followerIncreaseFromReel,
+      followerIncreaseFromFeed,
+      followerIncreaseFromOther,
     });
 
     // 時間帯分析を計算

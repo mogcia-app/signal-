@@ -127,6 +127,7 @@ function createDefaultInputData(): FeedInputData {
     reachedAccounts: "",
     profileVisits: "",
     profileFollows: "",
+    externalLinkTaps: "",
     reelReachFollowerPercent: "",
     reelInteractionCount: "",
     reelInteractionFollowerPercent: "",
@@ -326,6 +327,7 @@ function AnalyticsFeedContent() {
             reachedAccounts: number;
             profileVisits: number;
             profileFollows: number;
+            externalLinkTaps: number;
             reelReachFollowerPercent: number;
             reelInteractionCount: number;
             reelInteractionFollowerPercent: number;
@@ -378,6 +380,7 @@ function AnalyticsFeedContent() {
             reachedAccounts: item.reachedAccounts || 0,
             profileVisits: item.profileVisits || 0,
             profileFollows: item.profileFollows || 0,
+            externalLinkTaps: item.externalLinkTaps || 0,
             // リール専用フィールド
             reelReachFollowerPercent: item.reelReachFollowerPercent || 0,
             reelInteractionCount: item.reelInteractionCount || 0,
@@ -554,6 +557,7 @@ function AnalyticsFeedContent() {
           reachedAccounts: parseInt(inputData.reachedAccounts) || 0,
           profileVisits: parseInt(inputData.profileVisits) || 0,
           profileFollows: parseInt(inputData.profileFollows) || 0,
+          externalLinkTaps: parseInt(inputData.externalLinkTaps) || 0,
           audience: {
             gender: {
               male: parseFloat(inputData.audience.gender.male) || 0,

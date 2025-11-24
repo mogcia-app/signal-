@@ -63,7 +63,10 @@ export const MonthlyGoalsCard: React.FC<MonthlyGoalsCardProps> = ({
     targetFollowers && currentFollowers
       ? Math.min(100, Math.round((currentFollowers / targetFollowers) * 100))
       : 0;
-  const followerIncrease = targetFollowers && currentFollowers ? targetFollowers - currentFollowers : 0;
+  // 目標に達するために必要な増加数（目標を超えている場合は0）
+  const followerIncrease = targetFollowers && currentFollowers 
+    ? Math.max(0, targetFollowers - currentFollowers)
+    : 0;
 
   // 投稿目標の達成率
   const postsProgress =
@@ -100,16 +103,21 @@ export const MonthlyGoalsCard: React.FC<MonthlyGoalsCardProps> = ({
                 {currentFollowers?.toLocaleString() || 0} / {targetFollowers.toLocaleString()}人
               </span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
+            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2 overflow-hidden">
               <div
-                className={`h-1.5 rounded-full transition-all ${
-                  followerProgress >= 100 ? "bg-orange-500" : "bg-orange-200"
-                }`}
-                style={{ width: `${Math.min(100, followerProgress)}%` }}
+                className="h-1.5 rounded-full transition-all"
+                style={{ 
+                  width: `${Math.min(100, followerProgress)}%`,
+                  background: followerProgress >= 100 
+                    ? "linear-gradient(to right, #f97316, #ea580c)"
+                    : `linear-gradient(to right, #fed7aa ${Math.max(0, followerProgress - 20)}%, #fb923c ${followerProgress}%, #ea580c)`
+                }}
               />
             </div>
             <p className="text-xs text-gray-400">
-              あと {followerIncrease > 0 ? followerIncrease.toLocaleString() : 0}人で目標達成
+              {followerProgress >= 100 
+                ? "🎉 目標達成！" 
+                : `あと ${followerIncrease.toLocaleString()}人で目標達成`}
             </p>
           </div>
         )}
@@ -123,12 +131,15 @@ export const MonthlyGoalsCard: React.FC<MonthlyGoalsCardProps> = ({
                 {actualPosts || 0} / {targetPosts}件
               </span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
+            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2 overflow-hidden">
               <div
-                className={`h-1.5 rounded-full transition-all ${
-                  postsProgress >= 100 ? "bg-orange-500" : "bg-orange-200"
-                }`}
-                style={{ width: `${Math.min(100, postsProgress)}%` }}
+                className="h-1.5 rounded-full transition-all"
+                style={{ 
+                  width: `${Math.min(100, postsProgress)}%`,
+                  background: postsProgress >= 100 
+                    ? "linear-gradient(to right, #f97316, #ea580c)"
+                    : `linear-gradient(to right, #fed7aa ${Math.max(0, postsProgress - 20)}%, #fb923c ${postsProgress}%, #ea580c)`
+                }}
               />
             </div>
             <p className="text-xs text-gray-400">

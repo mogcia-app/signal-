@@ -30,6 +30,12 @@ interface NextMonthGoalProposal {
     targetValue: number;
     reasoning: string;
   }>;
+  actionGoals: Array<{
+    title: string;
+    description: string;
+    priority: "high" | "medium" | "low";
+    kpiKey?: string;
+  }>;
   reasoning: string;
 }
 
@@ -395,6 +401,41 @@ export const GoalAchievementComponent: React.FC<GoalAchievementProps> = ({
                             <p className="text-xs text-gray-500">{kpi.reasoning}</p>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+                  {aiProposal.actionGoals && aiProposal.actionGoals.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-purple-200">
+                      <p className="text-xs font-semibold text-gray-900 mb-2">行動目標</p>
+                      <div className="space-y-2">
+                        {aiProposal.actionGoals.map((action, index) => {
+                          const priorityConfig = {
+                            high: {
+                              label: "高",
+                              className: "bg-red-50 text-red-700 border-red-200",
+                            },
+                            medium: {
+                              label: "中",
+                              className: "bg-amber-50 text-amber-700 border-amber-200",
+                            },
+                            low: {
+                              label: "低",
+                              className: "bg-blue-50 text-blue-700 border-blue-200",
+                            },
+                          };
+                          const priority = priorityConfig[action.priority] || priorityConfig.medium;
+                          return (
+                            <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                              <div className="flex items-start justify-between mb-2">
+                                <h4 className="text-xs font-semibold text-gray-900 flex-1">{action.title}</h4>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${priority.className} flex-shrink-0 ml-2`}>
+                                  {priority.label}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600 leading-relaxed">{action.description}</p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

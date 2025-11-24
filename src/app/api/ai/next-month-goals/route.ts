@@ -30,6 +30,12 @@ interface NextMonthGoalProposal {
     targetValue: number;
     reasoning: string;
   }>;
+  actionGoals: Array<{
+    title: string;
+    description: string;
+    priority: "high" | "medium" | "low";
+    kpiKey?: string; // 関連するKPIキー（オプション）
+  }>;
   reasoning: string;
 }
 
@@ -267,7 +273,13 @@ ${kpiSummary.map((kpi) => `- ${kpi.label}: ${kpi.value.toLocaleString()}${kpi.un
 【伸びていないKPI】
 ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValue.toLocaleString()} (前月比: ${kpi.changePct > 0 ? "+" : ""}${kpi.changePct.toFixed(1)}%)`).join("\n") : "特にありません"}
 
-以下のJSON形式で回答してください。伸びていないKPIを重点的に改善する目標を設定してください。
+以下のJSON形式で回答してください。伸びていないKPIを重点的に改善する目標を設定し、数値目標だけでなく、具体的な行動目標も提案してください。
+
+【重要】行動目標は、数値目標を達成するための具体的なアクションを提案してください。例えば：
+- 「週3回の投稿頻度を維持し、ハッシュタグ戦略を見直す」
+- 「既存フォロワーとのエンゲージメントを高めるため、ストーリーズを毎日更新する」
+- 「コメントへの返信を24時間以内に行い、コミュニティ形成を強化する」
+
 {
   "currentFollowers": ${totalCurrentFollowers},
   "targetFollowers": [来月の目標フォロワー数（現在のトータルフォロワー数から現実的に増やせる数）],
@@ -289,6 +301,20 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
       "reasoning": "[なぜこの目標を設定したかの理由]"
     }
   ],
+  "actionGoals": [
+    {
+      "title": "[行動目標のタイトル（例：投稿頻度の最適化）]",
+      "description": "[具体的な行動内容（例：週3回の投稿頻度を維持し、ハッシュタグ戦略を見直す）]",
+      "priority": "high",
+      "kpiKey": "reach"
+    },
+    {
+      "title": "[行動目標のタイトル（例：エンゲージメント向上）]",
+      "description": "[具体的な行動内容（例：ストーリーズを毎日更新し、コメントへの返信を24時間以内に行う）]",
+      "priority": "medium",
+      "kpiKey": "engagement"
+    }
+  ],
   "reasoning": "[全体的な目標設定の理由を2-3文で説明]"
 }`;
 
@@ -298,7 +324,7 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
             {
               role: "system",
               content:
-                "あなたはInstagram運用の専門家です。KPI分解データを分析し、伸びていない部分を重点的に改善する目標を提案してください。JSON形式で必ず回答してください。",
+                "あなたはInstagram運用の専門家です。KPI分解データを分析し、伸びていない部分を重点的に改善する目標を提案してください。数値目標だけでなく、具体的な行動目標も必ず含めてください。行動目標は、ユーザーが実際に実行できる具体的なアクションを提案してください。JSON形式で必ず回答してください。",
             },
             {
               role: "user",
@@ -307,7 +333,7 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
           ],
           response_format: { type: "json_object" },
           temperature: 0.7,
-          max_tokens: 1000,
+          max_tokens: 2000,
         });
 
         const responseText = completion.choices[0]?.message?.content || "{}";
@@ -345,6 +371,20 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
               reasoning: "エンゲージメントを20%向上させることを目標にします。",
             },
           ],
+          actionGoals: [
+            {
+              title: "投稿頻度の最適化",
+              description: "週3回の投稿頻度を維持し、ハッシュタグ戦略を見直してリーチ数を向上させます。",
+              priority: "high",
+              kpiKey: "reach",
+            },
+            {
+              title: "エンゲージメント向上",
+              description: "ストーリーズを毎日更新し、コメントへの返信を24時間以内に行い、コミュニティ形成を強化します。",
+              priority: "medium",
+              kpiKey: "engagement",
+            },
+          ],
           reasoning: `今月は${followerIncrease}人のフォロワー増加を達成しました。来月は${suggestedGain}人の増加を目標に設定することをおすすめします。`,
         };
       }
@@ -374,6 +414,20 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
             currentValue: totalLikes + totalComments + totalSaves,
             targetValue: Math.floor((totalLikes + totalComments + totalSaves) * 1.2),
             reasoning: "エンゲージメントを20%向上させることを目標にします。",
+          },
+        ],
+        actionGoals: [
+          {
+            title: "投稿頻度の最適化",
+            description: "週3回の投稿頻度を維持し、ハッシュタグ戦略を見直してリーチ数を向上させます。",
+            priority: "high",
+            kpiKey: "reach",
+          },
+          {
+            title: "エンゲージメント向上",
+            description: "ストーリーズを毎日更新し、コメントへの返信を24時間以内に行い、コミュニティ形成を強化します。",
+            priority: "medium",
+            kpiKey: "engagement",
           },
         ],
         reasoning: `今月は${followerIncrease}人のフォロワー増加を達成しました。来月は${suggestedGain}人の増加を目標に設定することをおすすめします。`,

@@ -7,12 +7,13 @@ import { authFetch } from "../../utils/authFetch";
 import { notify } from "../../lib/ui/notifications";
 import { Users, Loader2, Lightbulb, ArrowRight } from "lucide-react";
 import { KPISummaryCard } from "./components/KPISummaryCard";
-import { MonthlyGoalsCard } from "./components/MonthlyGoalsCard";
 
 export default function HomePage() {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
   const [currentFollowers, setCurrentFollowers] = useState<string>("");
+  const [profileVisits, setProfileVisits] = useState<string>("");
+  const [externalLinkTaps, setExternalLinkTaps] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -29,12 +30,6 @@ export default function HomePage() {
   const [kpiBreakdowns, setKpiBreakdowns] = useState<any[]>([]);
   const [isLoadingKPI, setIsLoadingKPI] = useState(false);
 
-  // 今月の目標
-  const [targetFollowers, setTargetFollowers] = useState<number | undefined>();
-  const [currentFollowersForGoals, setCurrentFollowersForGoals] = useState<number | undefined>();
-  const [targetPosts, setTargetPosts] = useState<number | undefined>();
-  const [actualPosts, setActualPosts] = useState<number | undefined>();
-  const [isLoadingGoals, setIsLoadingGoals] = useState(false);
 
   // 現在の月を取得
   const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
@@ -61,7 +56,7 @@ export default function HomePage() {
     }
   }, [isAuthReady, currentMonth]);
 
-  // フォロワー数を保存
+  // フォロワー数・プロフィールアクセス数・外部リンクタップ数を保存
   const saveFollowerCount = async () => {
     if (!currentFollowers || parseInt(currentFollowers, 10) < 0) {
       notify({
@@ -83,6 +78,8 @@ export default function HomePage() {
           month: currentMonth,
           snsType: "instagram",
           source: "manual",
+          profileVisits: profileVisits ? parseInt(profileVisits, 10) : undefined,
+          externalLinkTaps: externalLinkTaps ? parseInt(externalLinkTaps, 10) : undefined,
         }),
       });
 
@@ -92,17 +89,21 @@ export default function HomePage() {
           setLastUpdated(result.data.updatedAt);
           notify({
             type: "success",
-            message: "フォロワー数を保存しました",
+            message: "データを保存しました",
           });
+          // 入力欄をクリア
+          setCurrentFollowers("");
+          setProfileVisits("");
+          setExternalLinkTaps("");
         }
       } else {
         throw new Error("保存に失敗しました");
       }
     } catch (err) {
-      console.error("フォロワー数保存エラー:", err);
+      console.error("データ保存エラー:", err);
       notify({
         type: "error",
-        message: "フォロワー数の保存に失敗しました",
+        message: "データの保存に失敗しました",
       });
     } finally {
       setIsSaving(false);
@@ -153,216 +154,21 @@ export default function HomePage() {
     }
   }, [isAuthReady, currentMonth]);
 
-  // 今月の目標を取得
-  const fetchMonthlyGoals = useCallback(async () => {
-    if (!isAuthReady) return;
-
-    setIsLoadingGoals(true);
-    try {
-      // 現在のフォロワー数を取得（/homeで入力された数字）
-      let homeFollowersValue: number | undefined;
-      try {
-        const followerResponse = await authFetch(`/api/follower-counts?month=${currentMonth}&snsType=instagram`);
-        if (followerResponse.ok) {
-          const followerResult = await followerResponse.json();
-          console.log("フォロワー数取得結果:", { 
-            success: followerResult.success, 
-            data: followerResult.data,
-            currentMonth 
-          });
-          if (followerResult.success && followerResult.data) {
-            homeFollowersValue = followerResult.data.followers;
-            console.log("フォロワー数（follower_countsから）:", homeFollowersValue);
-          } else {
-            // データがない場合は、オンボーディングの初期値を取得
-            console.log("follower_countsにデータがないため、初期値を取得します");
-            const userProfileResponse = await authFetch("/api/user/profile");
-            if (userProfileResponse.ok) {
-              const userProfile = await userProfileResponse.json();
-              if (userProfile.data?.businessInfo?.initialFollowers) {
-                homeFollowersValue = userProfile.data.businessInfo.initialFollowers;
-                console.log("フォロワー数（初期値から）:", homeFollowersValue);
-              }
-            }
-          }
-        } else {
-          const errorText = await followerResponse.text();
-          console.error("フォロワー数取得エラー:", followerResponse.status, errorText);
-        }
-      } catch (followerErr) {
-        console.error("フォロワー数取得例外:", followerErr);
-      }
-
-      // 分析ページで入力されたフォロワー増加数の合計を取得
-      // （KPI分解APIから取得するため、後でKPI分解APIを呼び出す際に一緒に取得する）
-      let analyticsFollowerIncrease: number = 0;
-
-      // 合計を計算
-      const currentFollowersValue = (homeFollowersValue || 0) + analyticsFollowerIncrease;
-      console.log("最終的なcurrentFollowersValue（合計）:", {
-        homeFollowers: homeFollowersValue || 0,
-        analyticsIncrease: analyticsFollowerIncrease,
-        total: currentFollowersValue
-      });
-
-      // 計画を取得
-      let planResponse;
-      try {
-        const planUrl = `/api/plans?snsType=instagram&status=active&effectiveMonth=${encodeURIComponent(currentMonth)}&limit=1`;
-        planResponse = await authFetch(planUrl);
-      } catch (planErr) {
-        console.error("計画取得例外:", planErr);
-        setIsLoadingGoals(false);
-        return;
-      }
-
-      if (planResponse.ok) {
-        const planResult = await planResponse.json();
-        if (planResult.success && planResult.plans && planResult.plans.length > 0) {
-          const plan = planResult.plans[0];
-          
-          // 目標フォロワー数を設定
-          if (plan.targetFollowers) {
-            setTargetFollowers(plan.targetFollowers);
-          }
-          
-          // シミュレーション結果から月間投稿数を取得
-          let targetPostsValue: number | undefined;
-          if (plan.simulationResult?.monthlyPostCount) {
-            targetPostsValue = plan.simulationResult.monthlyPostCount;
-          } else if (plan.formData?.monthlyPosts) {
-            const monthlyPostsValue = typeof plan.formData.monthlyPosts === "string" 
-              ? parseInt(plan.formData.monthlyPosts, 10)
-              : plan.formData.monthlyPosts;
-            if (!isNaN(monthlyPostsValue)) {
-              targetPostsValue = monthlyPostsValue;
-            }
-          }
-
-          // KPI分解APIから目標達成度を取得（投稿数の実績も含む）
-          // また、分析ページで入力されたフォロワー増加数の合計も取得
-          let analyticsFollowerIncrease: number = 0;
-          try {
-            if (!currentMonth) {
-              console.error("currentMonthが設定されていません");
-              return;
-            }
-            const kpiUrl = `/api/analytics/kpi-breakdown?date=${encodeURIComponent(currentMonth)}`;
-            console.log("KPI分解API呼び出し:", { currentMonth, kpiUrl });
-            const kpiResponse = await authFetch(kpiUrl);
-            if (kpiResponse.ok) {
-              const kpiResult = await kpiResponse.json();
-              if (kpiResult.success && kpiResult.data) {
-                // 分析ページで入力されたフォロワー増加数の合計を取得
-                const followerBreakdown = kpiResult.data.breakdowns?.find((b: any) => b.key === "followers");
-                if (followerBreakdown) {
-                  analyticsFollowerIncrease = followerBreakdown.value || 0;
-                  console.log("分析ページのフォロワー増加数合計:", analyticsFollowerIncrease);
-                }
-
-                // 投稿数の実績を取得
-                if (kpiResult.data.goalAchievements) {
-                  const goalAchievements = kpiResult.data.goalAchievements;
-                  const postsGoal = goalAchievements.find((g: any) => g.key === "posts");
-                  if (postsGoal) {
-                    setActualPosts(postsGoal.actual);
-                    // 目標投稿数が設定されていない場合、goalAchievementsから取得
-                    if (!targetPostsValue && postsGoal.target) {
-                      targetPostsValue = postsGoal.target;
-                    }
-                  }
-                }
-              }
-            } else {
-              const errorText = await kpiResponse.text();
-              console.error("KPI分解取得エラー:", {
-                status: kpiResponse.status,
-                statusText: kpiResponse.statusText,
-                error: errorText,
-                url: kpiUrl,
-                currentMonth
-              });
-            }
-          } catch (kpiErr) {
-            console.error("KPI分解取得例外:", kpiErr);
-          }
-
-          // /homeで入力された数字と分析ページで入力された数字を足し合わせる
-          const totalFollowersValue = (homeFollowersValue || 0) + analyticsFollowerIncrease;
-          console.log("フォロワー数合計:", {
-            homeFollowers: homeFollowersValue || 0,
-            analyticsIncrease: analyticsFollowerIncrease,
-            total: totalFollowersValue
-          });
-
-          // 現在のフォロワー数を設定（目標表示用）
-          setCurrentFollowersForGoals(totalFollowersValue);
-          // フォロワー数入力セクション用には設定しない（/homeで入力された値のみを使用）
-
-          // 目標投稿数を設定
-          if (targetPostsValue) {
-            setTargetPosts(targetPostsValue);
-          }
-        } else {
-          // 計画が存在しない場合、状態をリセット
-          setTargetFollowers(undefined);
-          setTargetPosts(undefined);
-          setActualPosts(undefined);
-        }
-      } else {
-        // 計画取得が失敗した場合
-        let errorText = "";
-        try {
-          errorText = await planResponse.text();
-        } catch (e) {
-          errorText = "エラーレスポンスの読み取りに失敗しました";
-        }
-        console.error("計画取得エラー:", {
-          status: planResponse.status,
-          statusText: planResponse.statusText,
-          error: errorText,
-          url: `/api/plans?snsType=instagram&status=active&effectiveMonth=${currentMonth}&limit=1`
-        });
-        // 400エラーの場合は、パラメータの問題の可能性がある
-        if (planResponse.status === 400) {
-          console.error("400エラー: リクエストパラメータを確認してください", {
-            currentMonth,
-            encodedMonth: encodeURIComponent(currentMonth),
-            url: `/api/plans?snsType=instagram&status=active&effectiveMonth=${encodeURIComponent(currentMonth)}&limit=1`
-          });
-        }
-      }
-    } catch (err) {
-      console.error("今月の目標取得エラー:", err);
-    } finally {
-      setIsLoadingGoals(false);
-    }
-  }, [isAuthReady, currentMonth]);
 
   useEffect(() => {
     if (isAuthReady) {
       fetchFollowerCount();
       fetchActionPlans();
       fetchKPISummary();
-      fetchMonthlyGoals();
     }
-  }, [isAuthReady, fetchFollowerCount, fetchActionPlans, fetchKPISummary, fetchMonthlyGoals]);
+  }, [isAuthReady, fetchFollowerCount, fetchActionPlans, fetchKPISummary]);
 
   return (
-    <SNSLayout customTitle="ホーム" customDescription="今月の目標とKPIサマリー">
+    <SNSLayout customTitle="ホーム" customDescription="KPIサマリー">
       <div className="w-full p-6 sm:p-8 bg-gray-50 min-h-screen">
 
         {/* KPIサマリーカード */}
         <KPISummaryCard breakdowns={kpiBreakdowns} isLoading={isLoadingKPI} />
-
-        {/* 今月の目標 */}
-        <MonthlyGoalsCard
-          targetFollowers={targetFollowers}
-          currentFollowers={currentFollowersForGoals}
-          targetPosts={targetPosts}
-          actualPosts={actualPosts}
-          isLoading={isLoadingGoals}
-        />
 
         {/* フォロワー数入力セクション */}
         <div className="bg-white rounded-xl p-6 mb-6 border border-gray-100 shadow-sm">
@@ -418,6 +224,37 @@ export default function HomePage() {
               )}
             </div>
           )}
+
+          {/* プロフィールアクセス数と外部リンクタップ数の入力欄 */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <label className="block text-xs font-medium text-gray-500 mb-3">
+              プロフィールへのアクセス数（投稿に紐づかない全体の数値）
+            </label>
+            <input
+              type="number"
+              value={profileVisits}
+              onChange={(e) => setProfileVisits(e.target.value)}
+              placeholder="プロフィールアクセス数を入力"
+              min="0"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all mb-3"
+              disabled={isSaving}
+            />
+            <label className="block text-xs font-medium text-gray-500 mb-3">
+              外部リンクタップ数（投稿に紐づかない全体の数値）
+            </label>
+            <input
+              type="number"
+              value={externalLinkTaps}
+              onChange={(e) => setExternalLinkTaps(e.target.value)}
+              placeholder="外部リンクタップ数を入力"
+              min="0"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+              disabled={isSaving}
+            />
+            <p className="text-xs text-gray-400 mt-3">
+              ※ インスタの分析で「投稿に紐づかない」プロフィール閲覧や外部リンクタップがある場合に入力してください
+            </p>
+          </div>
         </div>
 
 

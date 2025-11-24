@@ -669,6 +669,19 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
                 placeholder="0"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                外部リンクタップ数
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={data.externalLinkTaps || ""}
+                onChange={(e) => handleInputChange("externalLinkTaps", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
+              />
+            </div>
           </div>
         </div>
 

@@ -71,6 +71,7 @@ export interface AnalyticsData {
   reachedAccounts?: number;
   profileVisits?: number;
   profileFollows?: number;
+  externalLinkTaps?: number; // 外部リンクタップ数（フィード専用）
   // リール専用フィールド
   reelReachFollowerPercent?: number;
   reelInteractionCount?: number;
@@ -140,6 +141,7 @@ export interface InputData {
   reachedAccounts: string; // リーチしたアカウント
   profileVisits: string; // プロフィールアクセス数
   profileFollows: string; // フォロー数
+  externalLinkTaps: string; // 外部リンクタップ数（フィード専用）
   // リール専用フィールド
   reelReachFollowerPercent: string; // 閲覧数・フォロワー%
   reelInteractionCount: string; // インタラクション数

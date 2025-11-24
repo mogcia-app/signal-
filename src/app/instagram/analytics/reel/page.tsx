@@ -126,6 +126,7 @@ const createDefaultReelInputData = () => ({
   reachedAccounts: "",
   profileVisits: "",
   profileFollows: "",
+  externalLinkTaps: "",
   reelReachFollowerPercent: "",
   reelInteractionCount: "",
   reelInteractionFollowerPercent: "",
@@ -685,6 +686,7 @@ function AnalyticsReelContent() {
         reachedAccounts: "",
         profileVisits: "",
         profileFollows: "",
+        externalLinkTaps: "",
         // リール専用フィールド
         reelReachFollowerPercent: "",
         reelInteractionCount: "",
