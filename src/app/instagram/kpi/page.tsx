@@ -140,8 +140,6 @@ export default function InstagramKPIPage() {
         <GoalAchievementComponent
           goalAchievements={goalAchievements}
           isLoading={isLoading}
-          currentDate={selectedMonth}
-          kpiBreakdowns={breakdowns}
         />
 
         {/* フィード/リール統計サマリー */}

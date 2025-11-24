@@ -16,6 +16,8 @@ export default function HomePage() {
   const [externalLinkTaps, setExternalLinkTaps] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingProfileVisits, setIsSavingProfileVisits] = useState(false);
+  const [isSavingExternalLinkTaps, setIsSavingExternalLinkTaps] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   interface ActionPlan {
     title: string;
@@ -56,7 +58,7 @@ export default function HomePage() {
     }
   }, [isAuthReady, currentMonth]);
 
-  // フォロワー数・プロフィールアクセス数・外部リンクタップ数を保存
+  // フォロワー数を保存
   const saveFollowerCount = async () => {
     if (!currentFollowers || parseInt(currentFollowers, 10) < 0) {
       notify({
@@ -78,8 +80,6 @@ export default function HomePage() {
           month: currentMonth,
           snsType: "instagram",
           source: "manual",
-          profileVisits: profileVisits ? parseInt(profileVisits, 10) : undefined,
-          externalLinkTaps: externalLinkTaps ? parseInt(externalLinkTaps, 10) : undefined,
         }),
       });
 
@@ -89,12 +89,10 @@ export default function HomePage() {
           setLastUpdated(result.data.updatedAt);
           notify({
             type: "success",
-            message: "データを保存しました",
+            message: "フォロワー数を保存しました",
           });
           // 入力欄をクリア
           setCurrentFollowers("");
-          setProfileVisits("");
-          setExternalLinkTaps("");
         }
       } else {
         throw new Error("保存に失敗しました");
@@ -107,6 +105,134 @@ export default function HomePage() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // プロフィールアクセス数を保存
+  const saveProfileVisits = async () => {
+    if (!profileVisits || parseInt(profileVisits, 10) < 0) {
+      notify({
+        type: "error",
+        message: "プロフィールアクセス数は0以上の数値を入力してください",
+      });
+      return;
+    }
+
+    setIsSavingProfileVisits(true);
+    try {
+      // 既存のデータを取得（なければ作成）
+      const getResponse = await authFetch(`/api/follower-counts?month=${currentMonth}&snsType=instagram`);
+      let followers = 0;
+      let existingExternalLinkTaps: number | undefined = undefined;
+      if (getResponse.ok) {
+        const getResult = await getResponse.json();
+        if (getResult.success && getResult.data) {
+          followers = getResult.data.followers;
+          existingExternalLinkTaps = getResult.data.externalLinkTaps;
+        }
+      }
+
+      const response = await authFetch("/api/follower-counts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          followers: followers, // 既存のフォロワー数を維持
+          month: currentMonth,
+          snsType: "instagram",
+          source: "manual",
+          profileVisits: parseInt(profileVisits, 10),
+          externalLinkTaps: existingExternalLinkTaps, // 既存の外部リンクタップ数を維持
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setLastUpdated(result.data.updatedAt);
+          notify({
+            type: "success",
+            message: "プロフィールアクセス数を保存しました",
+          });
+          // 入力欄をクリア
+          setProfileVisits("");
+        }
+      } else {
+        throw new Error("保存に失敗しました");
+      }
+    } catch (err) {
+      console.error("データ保存エラー:", err);
+      notify({
+        type: "error",
+        message: "データの保存に失敗しました",
+      });
+    } finally {
+      setIsSavingProfileVisits(false);
+    }
+  };
+
+  // 外部リンクタップ数を保存
+  const saveExternalLinkTaps = async () => {
+    if (!externalLinkTaps || parseInt(externalLinkTaps, 10) < 0) {
+      notify({
+        type: "error",
+        message: "外部リンクタップ数は0以上の数値を入力してください",
+      });
+      return;
+    }
+
+    setIsSavingExternalLinkTaps(true);
+    try {
+      // 既存のデータを取得（なければ作成）
+      const getResponse = await authFetch(`/api/follower-counts?month=${currentMonth}&snsType=instagram`);
+      let followers = 0;
+      let existingProfileVisits: number | undefined = undefined;
+      if (getResponse.ok) {
+        const getResult = await getResponse.json();
+        if (getResult.success && getResult.data) {
+          followers = getResult.data.followers;
+          existingProfileVisits = getResult.data.profileVisits;
+        }
+      }
+
+      const response = await authFetch("/api/follower-counts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          followers: followers, // 既存のフォロワー数を維持
+          month: currentMonth,
+          snsType: "instagram",
+          source: "manual",
+          profileVisits: existingProfileVisits, // 既存のプロフィールアクセス数を維持
+          externalLinkTaps: parseInt(externalLinkTaps, 10),
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setLastUpdated(result.data.updatedAt);
+          notify({
+            type: "success",
+            message: "外部リンクタップ数を保存しました",
+          });
+          // 入力欄をクリア
+          setExternalLinkTaps("");
+        }
+      } else {
+        throw new Error("保存に失敗しました");
+      }
+    } catch (err) {
+      console.error("データ保存エラー:", err);
+      notify({
+        type: "error",
+        message: "データの保存に失敗しました",
+      });
+    } finally {
+      setIsSavingExternalLinkTaps(false);
     }
   };
 
@@ -170,15 +296,15 @@ export default function HomePage() {
         {/* KPIサマリーカード */}
         <KPISummaryCard breakdowns={kpiBreakdowns} isLoading={isLoadingKPI} />
 
-        {/* フォロワー数入力セクション */}
+        {/* アカウント指標入力セクション */}
         <div className="bg-white rounded-xl p-6 mb-6 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center border border-orange-100">
               <Users className="w-5 h-5 text-orange-600" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">現在のフォロワー数</h2>
-              <p className="text-xs text-gray-500 mt-0.5">月間のフォロワー数を記録</p>
+              <h2 className="text-base font-semibold text-gray-900">アカウント指標</h2>
+              <p className="text-xs text-gray-500 mt-0.5">フォロワー数やプロフィールアクセス数などを記録</p>
             </div>
           </div>
 
@@ -230,28 +356,60 @@ export default function HomePage() {
             <label className="block text-xs font-medium text-gray-500 mb-3">
               プロフィールへのアクセス数（投稿に紐づかない全体の数値）
             </label>
-            <input
-              type="number"
-              value={profileVisits}
-              onChange={(e) => setProfileVisits(e.target.value)}
-              placeholder="プロフィールアクセス数を入力"
-              min="0"
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all mb-3"
-              disabled={isSaving}
-            />
+            <div className="flex gap-3 mb-4">
+              <input
+                type="number"
+                value={profileVisits}
+                onChange={(e) => setProfileVisits(e.target.value)}
+                placeholder="プロフィールアクセス数を入力"
+                min="0"
+                className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                disabled={isSavingProfileVisits}
+              />
+              <button
+                onClick={saveProfileVisits}
+                disabled={isSavingProfileVisits || !profileVisits}
+                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              >
+                {isSavingProfileVisits ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                    保存中
+                  </>
+                ) : (
+                  "保存"
+                )}
+              </button>
+            </div>
             <label className="block text-xs font-medium text-gray-500 mb-3">
               外部リンクタップ数（投稿に紐づかない全体の数値）
             </label>
-            <input
-              type="number"
-              value={externalLinkTaps}
-              onChange={(e) => setExternalLinkTaps(e.target.value)}
-              placeholder="外部リンクタップ数を入力"
-              min="0"
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
-              disabled={isSaving}
-            />
-            <p className="text-xs text-gray-400 mt-3">
+            <div className="flex gap-3 mb-3">
+              <input
+                type="number"
+                value={externalLinkTaps}
+                onChange={(e) => setExternalLinkTaps(e.target.value)}
+                placeholder="外部リンクタップ数を入力"
+                min="0"
+                className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                disabled={isSavingExternalLinkTaps}
+              />
+              <button
+                onClick={saveExternalLinkTaps}
+                disabled={isSavingExternalLinkTaps || !externalLinkTaps}
+                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              >
+                {isSavingExternalLinkTaps ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                    保存中
+                  </>
+                ) : (
+                  "保存"
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400">
               ※ インスタの分析で「投稿に紐づかない」プロフィール閲覧や外部リンクタップがある場合に入力してください
             </p>
           </div>

@@ -398,13 +398,13 @@ export default function ReelLabPage() {
                     >
                       <div className="space-y-2">
                         {daySchedule.posts.map((post, postIndex: number) => (
-                          <div
-                            key={postIndex}
-                            className="bg-white bg-opacity-80 p-2 text-sm text-gray-800"
-                          >
-                            {post.emoji} {post.title}
-                            <div className="text-xs text-gray-600 mt-1">{post.description}</div>
-                          </div>
+                            <div
+                              key={postIndex}
+                              className="bg-white bg-opacity-80 p-2 text-sm text-gray-800"
+                            >
+                              {post.emoji} {post.title}
+                              <div className="text-xs text-gray-600 mt-1">{post.description}</div>
+                            </div>
                         ))}
                       </div>
                     </div>

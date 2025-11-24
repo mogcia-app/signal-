@@ -10,6 +10,7 @@ interface KPISummaryCardProps {
     label: string;
     value: number;
     changePct?: number;
+    unit?: "count" | "percent";
     segments?: Array<{
       label: string;
       value: number;
@@ -17,6 +18,13 @@ interface KPISummaryCardProps {
     }>;
   }>;
   isLoading?: boolean;
+}
+
+function formatValue(value: number, unit?: "count" | "percent") {
+  if (unit === "percent") {
+    return `${value.toFixed(1)}%`;
+  }
+  return Number.isFinite(value) ? value.toLocaleString() : "-";
 }
 
 export const KPISummaryCard: React.FC<KPISummaryCardProps> = ({
@@ -34,20 +42,30 @@ export const KPISummaryCard: React.FC<KPISummaryCardProps> = ({
     );
   }
 
-  // 主要KPIを抽出
-  const reachKPI = breakdowns.find((kpi) => kpi.key === "reach");
-  const engagementKPI = breakdowns.find((kpi) => kpi.key === "engagement");
+  if (!breakdowns || breakdowns.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="text-center py-12 text-gray-500">
+          <p className="text-sm">KPIデータがありません</p>
+        </div>
+      </div>
+    );
+  }
 
-  // いいね数をエンゲージメントのセグメントから取得
-  const likesSegment = engagementKPI?.segments?.find((seg) => seg.label === "いいね");
-  const likesValue = likesSegment?.value || 0;
-  const likesChangePct = engagementKPI?.changePct;
-
-  // エンゲージメント率を計算（リーチ数に対するエンゲージメントの割合）
-  const engagementRate =
-    reachKPI && reachKPI.value > 0 && engagementKPI
-      ? ((engagementKPI.value / reachKPI.value) * 100).toFixed(1)
-      : "0.0";
+  // カードの背景色をKPIごとに設定
+  const getCardColor = (key: string) => {
+    const colorMap: Record<string, { bg: string; border: string }> = {
+      reach: { bg: "bg-blue-50", border: "border-blue-100" },
+      engagement: { bg: "bg-pink-50", border: "border-pink-100" },
+      saves: { bg: "bg-purple-50", border: "border-purple-100" },
+      followers: { bg: "bg-green-50", border: "border-green-100" },
+      total_interaction: { bg: "bg-orange-50", border: "border-orange-100" },
+      external_links: { bg: "bg-cyan-50", border: "border-cyan-100" },
+      profile_visits: { bg: "bg-indigo-50", border: "border-indigo-100" },
+      current_followers: { bg: "bg-emerald-50", border: "border-emerald-100" },
+    };
+    return colorMap[key] || { bg: "bg-gray-50", border: "border-gray-100" };
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
@@ -58,7 +76,7 @@ export const KPISummaryCard: React.FC<KPISummaryCardProps> = ({
           </div>
           <div>
             <h2 className="text-base font-semibold text-gray-900">今月のKPIサマリー</h2>
-            <p className="text-xs text-gray-500 mt-0.5">主要指標の今月の実績</p>
+            <p className="text-xs text-gray-500 mt-0.5">KPIドリルダウンの各指標の数値</p>
           </div>
         </div>
         <Link
@@ -70,85 +88,38 @@ export const KPISummaryCard: React.FC<KPISummaryCardProps> = ({
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* リーチ数 */}
-        {reachKPI && (
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500">リーチ数</span>
-              {reachKPI.changePct !== undefined && (
-                <div
-                  className={`flex items-center gap-1 text-xs font-semibold ${
-                    reachKPI.changePct >= 0 ? "text-orange-600" : "text-red-500"
-                  }`}
-                >
-                  {reachKPI.changePct >= 0 ? (
-                    <TrendingUp className="w-3 h-3" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3" />
-                  )}
-                  {reachKPI.changePct > 0 ? "+" : ""}
-                  {reachKPI.changePct.toFixed(1)}%
-                </div>
-              )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {breakdowns.map((kpi) => {
+          const colors = getCardColor(kpi.key);
+          return (
+            <div
+              key={kpi.key}
+              className={`${colors.bg} ${colors.border} border rounded-lg p-4`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-gray-500">{kpi.label}</span>
+                {kpi.changePct !== undefined && !Number.isNaN(kpi.changePct) && (
+                  <div
+                    className={`flex items-center gap-1 text-xs font-semibold ${
+                      kpi.changePct >= 0 ? "text-orange-600" : "text-red-500"
+                    }`}
+                  >
+                    {kpi.changePct >= 0 ? (
+                      <TrendingUp className="w-3 h-3" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3" />
+                    )}
+                    {kpi.changePct > 0 ? "+" : ""}
+                    {kpi.changePct.toFixed(1)}%
+                  </div>
+                )}
+              </div>
+              <p className="text-xl font-bold text-gray-900">
+                {formatValue(kpi.value, kpi.unit)}
+              </p>
             </div>
-            <p className="text-xl font-bold text-gray-900">
-              {reachKPI.value.toLocaleString()}
-            </p>
-          </div>
-        )}
-
-        {/* いいね数 */}
-        {engagementKPI && (
-          <div className="bg-pink-50 border border-pink-100 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500">いいね数</span>
-              {likesChangePct !== undefined && (
-                <div
-                  className={`flex items-center gap-1 text-xs font-semibold ${
-                    likesChangePct >= 0 ? "text-orange-600" : "text-red-500"
-                  }`}
-                >
-                  {likesChangePct >= 0 ? (
-                    <TrendingUp className="w-3 h-3" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3" />
-                  )}
-                  {likesChangePct > 0 ? "+" : ""}
-                  {likesChangePct.toFixed(1)}%
-                </div>
-              )}
-            </div>
-            <p className="text-xl font-bold text-gray-900">
-              {likesValue.toLocaleString()}
-            </p>
-          </div>
-        )}
-
-        {/* エンゲージメント率 */}
-        {engagementKPI && reachKPI && (
-          <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500">エンゲージメント率</span>
-              {engagementKPI.changePct !== undefined && (
-                <div
-                  className={`flex items-center gap-1 text-xs font-semibold ${
-                    engagementKPI.changePct >= 0 ? "text-orange-600" : "text-red-500"
-                  }`}
-                >
-                  {engagementKPI.changePct >= 0 ? (
-                    <TrendingUp className="w-3 h-3" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3" />
-                  )}
-                  {engagementKPI.changePct > 0 ? "+" : ""}
-                  {engagementKPI.changePct.toFixed(1)}%
-                </div>
-              )}
-            </div>
-            <p className="text-xl font-bold text-gray-900">{engagementRate}%</p>
-          </div>
-        )}
+          );
+        })}
       </div>
     </div>
   );

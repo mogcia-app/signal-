@@ -332,148 +332,151 @@ export default function InstagramPlanPage() {
         {/* 運用計画実行中 */}
         {(loadedPlanId ||
           (formData.planPeriod && formData.currentFollowers && formData.followerGain)) && (
-          <div className="mb-6 bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <span className="text-2xl">📋</span>
-                </div>
-                <div className="ml-3 flex-1">
-                  <h3 className="text-lg font-semibold text-black">
-                    {loadedPlanId ? "運用計画実行中" : "Instagram運用計画"}
-                  </h3>
-                  <p className="text-sm text-black mt-1">
+          <div className="mb-8 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <h3 className="text-xl font-light text-gray-900 tracking-tight mb-2">
+                  {loadedPlanId ? "運用計画実行中" : "Instagram運用計画"}
+                </h3>
+                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <span>
                     {planStartDate && planEndDate
-                      ? `期間: ${planStartDate.toLocaleDateString("ja-JP")} 〜 ${planEndDate.toLocaleDateString("ja-JP")}`
+                      ? `${planStartDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })} 〜 ${planEndDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}`
                       : `期間: ${formData.planPeriod}`}
-                  </p>
+                  </span>
                   {planStartDate && planEndDate && (
-                    <p className="text-xs text-[#FF8A15] font-medium mt-1">
-                      残り{" "}
-                      {Math.ceil(
+                    <span className="text-orange-600 font-medium">
+                      残り {Math.ceil(
                         (planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-                      )}{" "}
-                      日
-                    </p>
+                      )} 日
+                    </span>
                   )}
-
-                  {/* 計画の詳細表示 */}
-                  <div className="mt-3 space-y-3">
-                    {/* 目標 */}
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">目標:</span>
-                      <span className="ml-2 text-black">
-                        {formData.currentFollowers && formData.followerGain
-                          ? `現在${formData.currentFollowers}人 → ${parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人`
-                          : "未設定"}
-                      </span>
-                    </div>
-
-                    {/* 重視する指標 */}
-                    {formData.goalCategory && (
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-700">KPI:</span>
-                        <span className="ml-2 text-black">
-                          {formData.goalCategory === "follower"
-                            ? "フォロワー獲得"
-                            : formData.goalCategory === "engagement"
-                              ? "エンゲージ促進"
-                              : formData.goalCategory === "like"
-                                ? "いいねを増やす"
-                                : formData.goalCategory === "save"
-                                  ? "保存率向上"
-                                  : formData.goalCategory === "reach"
-                                    ? "リーチを増やす"
-                                    : formData.goalCategory === "impressions"
-                                      ? "インプレッションを増やす"
-                                      : formData.goalCategory === "branding"
-                                        ? "ブランド認知を広める"
-                                        : formData.goalCategory === "profile"
-                                          ? "プロフィール誘導"
-                                          : formData.goalCategory === "other"
-                                            ? formData.otherGoal || "その他"
-                                            : formData.goalCategory}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* ターゲット層 */}
-                    {formData.targetAudience && (
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-700">ターゲット層:</span>
-                        <span className="ml-2 text-black">{formData.targetAudience}</span>
-                      </div>
-                    )}
-
-                    {/* 取り組みたいこと */}
-                    {selectedStrategies.length > 0 && (
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-700">取り組みたいこと:</span>
-                        <div className="ml-2 mt-1 flex flex-wrap gap-1">
-                          {selectedStrategies.map((strategy, index) => (
-                            <span
-                              key={index}
-                              className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full"
-                            >
-                              {strategy}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 投稿したい内容 */}
-                    {selectedCategories.length > 0 && (
-                      <div className="text-sm">
-                        <span className="font-medium text-gray-700">投稿したい内容:</span>
-                        <div className="ml-2 mt-1 flex flex-wrap gap-1">
-                          {selectedCategories.map((category, index) => (
-                            <span
-                              key={index}
-                              className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full"
-                            >
-                              {category}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handleEditCurrentPlan}
-                  className="p-2 text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded-md transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
                   title="編集"
                 >
-                  ✏️
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
                 </button>
                 <button
                   onClick={handleDeleteCurrentPlan}
-                  className="p-2 text-gray-600 hover:bg-gray-100 hover:text-red-600 rounded-md transition-colors"
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-colors"
                   title="削除"
                 >
-                  🗑️
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
                 {!loadedPlanId && (
                   <button
                     onClick={handleSavePlan}
                     disabled={isSaving}
-                    className="p-2 text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+                    className="p-2 text-gray-400 hover:text-green-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
                     title="保存"
                   >
-                    💾
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
                   </button>
                 )}
                 <button
                   onClick={resetPlan}
-                  className="p-2 text-gray-600 hover:bg-gray-100 hover:text-orange-600 rounded-md transition-colors"
+                  className="p-2 text-gray-400 hover:text-orange-600 hover:bg-gray-50 rounded-md transition-colors"
                   title="再設定"
                 >
-                  🔄
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
                 </button>
               </div>
+            </div>
+
+            {/* 計画の詳細表示 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
+              {/* 目標 */}
+              <div>
+                <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">目標</div>
+                <div className="text-base font-light text-gray-900">
+                  {formData.currentFollowers && formData.followerGain
+                    ? `${parseInt(formData.currentFollowers).toLocaleString()}人 → ${(parseInt(formData.currentFollowers) + parseInt(formData.followerGain)).toLocaleString()}人`
+                    : "未設定"}
+                </div>
+              </div>
+
+              {/* 重視する指標 */}
+              {formData.goalCategory && (
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">KPI</div>
+                  <div className="text-base font-light text-gray-900">
+                    {formData.goalCategory === "follower"
+                      ? "フォロワー獲得"
+                      : formData.goalCategory === "engagement"
+                        ? "エンゲージ促進"
+                        : formData.goalCategory === "like"
+                          ? "いいねを増やす"
+                          : formData.goalCategory === "save"
+                            ? "保存率向上"
+                            : formData.goalCategory === "reach"
+                              ? "リーチを増やす"
+                              : formData.goalCategory === "impressions"
+                                ? "インプレッションを増やす"
+                                : formData.goalCategory === "branding"
+                                  ? "ブランド認知を広める"
+                                  : formData.goalCategory === "profile"
+                                    ? "プロフィール誘導"
+                                    : formData.goalCategory === "other"
+                                      ? formData.otherGoal || "その他"
+                                      : formData.goalCategory}
+                  </div>
+                </div>
+              )}
+
+              {/* ターゲット層 */}
+              {formData.targetAudience && (
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">ターゲット層</div>
+                  <div className="text-base font-light text-gray-900">{formData.targetAudience}</div>
+                </div>
+              )}
+
+              {/* 取り組みたいこと */}
+              {selectedStrategies.length > 0 && (
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">取り組みたいこと</div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedStrategies.map((strategy, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-md"
+                      >
+                        {strategy}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 投稿したい内容 */}
+              {selectedCategories.length > 0 && (
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">投稿したい内容</div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCategories.map((category, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-md"
+                      >
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -636,11 +636,18 @@ async function generateAISimulationAdvice(
   const openaiApiKey = process.env.OPENAI_API_KEY;
 
   if (!openaiApiKey) {
-    console.warn("OpenAI API key not configured, falling back to template advice");
+    if (process.env.NODE_ENV === "development") {
+      console.warn("OpenAI API key not configured, falling back to template advice");
+      console.log("🔧 改善ポイント生成: 自社ロジック（テンプレート）を使用");
+    }
     return {
       mainAdvice: generateMainAdvice(strategyValues, goalCategory, followerGain),
       improvementTips: generateImprovementTips(strategyValues, hashtagStrategy, postCategories),
     };
+  }
+  
+  if (process.env.NODE_ENV === "development") {
+    console.log("🤖 改善ポイント生成: OpenAI APIを使用");
   }
 
   // ユーザープロファイルを取得
@@ -688,11 +695,17 @@ async function generateAISimulationAdvice(
     }
 
     // シミュレーション専用のアドバイスリクエスト
+    const postsPerWeek = simulationResult.postsPerWeek as { reel: number; feed: number; story: number };
     const userPrompt = `
 以下の2つのセクションで、簡潔で実用的なアドバイスを生成してください：
 
 【メインアドバイス】
 - 1つの文章で、目標達成に向けた最も重要な戦略を提示してください
+- **必ず以下の実際の投稿頻度を反映してください**：
+  - リール: 週${postsPerWeek.reel}回
+  - フィード: 週${postsPerWeek.feed}回
+  - ストーリー: 毎日
+- これらの数値を正確に使用してください
 - 具体的な数値やアクションを含めてください
 - 長さは50-80文字程度にしてください
 
@@ -738,8 +751,8 @@ async function generateAISimulationAdvice(
     // AIレスポンスを解析
     const mainAdviceMatch = aiResponse.match(/メインアドバイス[:：]\s*(.+?)(?:\n|$)/i);
     const mainAdvice = mainAdviceMatch
-      ? mainAdviceMatch[1].trim()
-      : generateMainAdvice(strategyValues, goalCategory, followerGain);
+      ? (process.env.NODE_ENV === "development" && console.log("✅ メインアドバイス生成: AI生成成功"), mainAdviceMatch[1].trim())
+      : (process.env.NODE_ENV === "development" && console.log("⚠️ メインアドバイス生成: AIレスポンスが空のため、自社ロジック（テンプレート）にフォールバック"), generateMainAdvice(strategyValues, goalCategory, followerGain));
 
     const tipsMatch = aiResponse.match(/改善提案[:：]\s*([\s\S]+?)(?:\n\n|\nメイン|$)/i);
     let improvementTips: string[] = [];
@@ -757,12 +770,22 @@ async function generateAISimulationAdvice(
 
     // 提案が不足している場合はフォールバックを使用
     if (improvementTips.length === 0) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("⚠️ 改善ポイント生成: AIレスポンスが空のため、自社ロジック（テンプレート）にフォールバック");
+      }
       improvementTips = generateImprovementTips(strategyValues, hashtagStrategy, postCategories);
+    } else {
+      if (process.env.NODE_ENV === "development") {
+        console.log(`✅ 改善ポイント生成: AI生成成功（${improvementTips.length}個の提案）`);
+      }
     }
 
     return { mainAdvice, improvementTips };
   } catch (error) {
     console.error("AIアドバイス生成エラー:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.log("⚠️ 改善ポイント生成: エラー発生のため、自社ロジック（テンプレート）にフォールバック");
+    }
     // フォールバック: テンプレートアドバイスを使用
     return {
       mainAdvice: generateMainAdvice(strategyValues, goalCategory, followerGain),

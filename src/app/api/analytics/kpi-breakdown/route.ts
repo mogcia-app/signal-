@@ -222,12 +222,15 @@ function buildKpiBreakdowns(params: {
   };
   profileVisitsFromPosts: number; // 投稿からのプロフィール閲覧数
   profileVisitsFromOther: number; // その他からのプロフィール閲覧数
-  currentFollowers: number; // 現在のフォロワー数
-  previousCurrentFollowers: number; // 前期間の現在のフォロワー数
-  startFollowers: number; // 月初のフォロワー数
+  externalLinkTapsFromPosts: number; // 投稿からの外部リンク数
+  externalLinkTapsFromOther: number; // その他からの外部リンク数
+  currentFollowers: number; // /homeで入力された値（その他からの増加数）
+  previousCurrentFollowers: number; // 前期間の/homeで入力された値（その他からの増加数）
   followerIncreaseFromReel: number; // リールからの増加数
   followerIncreaseFromFeed: number; // フィードからの増加数
   followerIncreaseFromOther: number; // その他からの増加数
+  isFirstMonth?: boolean; // 初月かどうか
+  initialFollowers?: number; // ツール利用開始時のフォロワー数
   reachSourceAnalysis: {
     sources: {
       posts: number;
@@ -432,7 +435,7 @@ function buildKpiBreakdowns(params: {
     insight: summarizeSegments(totalInteractionSegments, totalInteractionValue),
   };
 
-  // 外部リンク数（フィードのみ）
+  // 外部リンク数（投稿からの外部リンク数 + その他からの外部リンク数）
   const externalLinkTapsValue = params.totals.totalExternalLinkTaps || 0;
   const previousExternalLinkTapsValue = params.previousTotals.totalExternalLinkTaps || 0;
   const externalLinkTapsChange =
@@ -442,19 +445,38 @@ function buildKpiBreakdowns(params: {
         : 0
       : ((externalLinkTapsValue - previousExternalLinkTapsValue) / previousExternalLinkTapsValue) * 100;
 
+  // 外部リンク数の内訳を表示
+  // 1. 投稿から = フィード投稿のexternalLinkTapsの合計
+  // 2. その他から = /homeで入力された値（externalLinkTapsFromOther）
+  const externalLinkTapsSegments: KPIBreakdownSegment[] = [];
+  if (params.externalLinkTapsFromPosts && params.externalLinkTapsFromPosts > 0) {
+    externalLinkTapsSegments.push({
+      label: "投稿から",
+      value: params.externalLinkTapsFromPosts,
+    });
+  }
+  if (params.externalLinkTapsFromOther && params.externalLinkTapsFromOther > 0) {
+    externalLinkTapsSegments.push({
+      label: "その他から",
+      value: params.externalLinkTapsFromOther,
+    });
+  }
+
   const externalLinkTapsBreakdown: KPIBreakdown = {
     key: "external_links",
     label: "外部リンク数",
     value: externalLinkTapsValue,
     unit: "count",
     changePct: externalLinkTapsChange,
-    segments: [],
+    segments: externalLinkTapsSegments.length > 0 ? externalLinkTapsSegments : undefined,
     topPosts: buildTopPosts(
       posts.filter((post) => post.postType === "feed"),
       (summary) => summary?.externalLinkTaps || 0,
       snapshotStatusMap
     ),
-    insight: undefined,
+    insight: externalLinkTapsSegments.length > 0 
+      ? summarizeSegments(externalLinkTapsSegments, externalLinkTapsValue)
+      : undefined,
   };
 
   // プロフィール閲覧数（投稿からの閲覧数 + その他からの取得）
@@ -487,30 +509,52 @@ function buildKpiBreakdowns(params: {
     insight: summarizeSegments(profileVisitsSegments, profileVisitsValue),
   };
 
-  // 現在のフォロワー数（月初 + 増減数の合計）
-  const currentFollowersValue = params.currentFollowers || 0;
-  const previousCurrentFollowersValue = params.previousCurrentFollowers || 0;
+  // フォロワー数の合計増加数の変化率を計算
+  // totals.totalFollowerIncrease = 今月の合計増加数（投稿からの増加 + その他からの増加）
+  // previousTotals.totalFollowerIncrease = 前期間の合計増加数
   const currentFollowersChange =
-    previousCurrentFollowersValue === 0
-      ? currentFollowersValue > 0
+    previousTotals.totalFollowerIncrease === 0
+      ? totals.totalFollowerIncrease > 0
         ? 100
         : 0
-      : ((currentFollowersValue - previousCurrentFollowersValue) / previousCurrentFollowersValue) * 100;
+      : ((totals.totalFollowerIncrease - previousTotals.totalFollowerIncrease) / Math.abs(previousTotals.totalFollowerIncrease)) * 100;
 
   // フォロワー数の内訳を表示
-  // 1. リールから = 分析ページで入力されたリール投稿のfollowerIncreaseの合計
-  // 2. フィードから = 分析ページで入力されたフィード投稿のfollowerIncreaseの合計
-  // 3. その他から = /homeで入力された値、または計算値
-  const currentFollowersSegments: KPIBreakdownSegment[] = [
-    { label: "リールから", value: params.followerIncreaseFromReel || 0 },
-    { label: "フィードから", value: params.followerIncreaseFromFeed || 0 },
-    { label: "その他から", value: params.followerIncreaseFromOther || 0 },
-  ].filter((segment) => segment.value !== 0 && !isNaN(segment.value));
+  // 初月の場合：ツール利用開始時 + リールから + フィードから + その他から
+  // 翌月以降：リールから + フィードから + その他から
+  const currentFollowersSegments: KPIBreakdownSegment[] = [];
+  
+  // 初月の場合、ツール利用開始時のフォロワー数をセグメントに追加
+  if (params.isFirstMonth && params.initialFollowers && params.initialFollowers > 0) {
+    currentFollowersSegments.push({
+      label: "ツール利用開始時",
+      value: params.initialFollowers,
+    });
+  }
+  
+  // リール、フィード、その他からの増加数を追加
+  if (params.followerIncreaseFromReel && params.followerIncreaseFromReel > 0) {
+    currentFollowersSegments.push({
+      label: "リールから",
+      value: params.followerIncreaseFromReel,
+    });
+  }
+  if (params.followerIncreaseFromFeed && params.followerIncreaseFromFeed > 0) {
+    currentFollowersSegments.push({
+      label: "フィードから",
+      value: params.followerIncreaseFromFeed,
+    });
+  }
+  if (params.followerIncreaseFromOther && params.followerIncreaseFromOther > 0) {
+    currentFollowersSegments.push({
+      label: "その他から",
+      value: params.followerIncreaseFromOther,
+    });
+  }
 
-  const totalFollowerIncrease = 
-    (params.followerIncreaseFromReel || 0) + 
-    (params.followerIncreaseFromFeed || 0) + 
-    (params.followerIncreaseFromOther || 0);
+  // 合計増加数の計算
+  // totals.totalFollowerIncreaseには既に計算済みの値が入っている（初月の場合はツール利用開始時のフォロワー数を含む）
+  const totalFollowerIncrease = params.totals.totalFollowerIncrease;
 
   // フォロワー数の表示値は、増加数の合計とする（現在のフォロワー数ではなく）
   // これにより、valueとsegmentsの整合性が取れる
@@ -1165,10 +1209,16 @@ export async function GET(request: NextRequest) {
     previousTotals.totalProfileVisits += previousProfileVisitsFromHome;
     previousTotals.totalExternalLinkTaps += previousExternalLinkTapsFromHome;
     
-    // 前期間のフォロワー増加数を計算（前期間の現在のフォロワー数 - 前期間の月初のフォロワー数）
-    // 前期間もオンボーディングの初期値を使用（同じユーザーなので）
-    const previousActualStartFollowers = initialFollowers > 0 ? initialFollowers : previousStartFollowers;
-    previousTotals.totalFollowerIncrease = previousCurrentFollowers - previousActualStartFollowers;
+    // 前期間のフォロワー増加数を計算（投稿からの増加数 + その他からの増加数）
+    // 前期間の投稿からの増加数を計算
+    const previousFollowerIncreaseFromPosts = Array.from(previousAnalyticsByPostId.values()).reduce(
+      (sum, data) => sum + (data.followerIncrease || 0),
+      0
+    );
+    // 前期間のその他からの増加数 = /homeで入力された値（previousCurrentFollowers）
+    const previousFollowerIncreaseFromOther = previousCurrentFollowers || 0;
+    // 前期間の合計増加数 = 投稿からの増加数 + その他からの増加数（足し算）
+    previousTotals.totalFollowerIncrease = previousFollowerIncreaseFromPosts + previousFollowerIncreaseFromOther;
 
     // スナップショット参照を取得（ステータス判定用）
     const snapshotRefsSnapshot = await adminDb
@@ -1189,13 +1239,15 @@ export async function GET(request: NextRequest) {
     const profileVisitsFromPosts = postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.profileVisits || 0), 0);
     const profileVisitsFromOther = profileVisitsFromHome;
 
+    // 外部リンク数の内訳を計算
+    const externalLinkTapsFromPosts = postsWithAnalytics
+      .filter((post) => post.postType === "feed")
+      .reduce((sum, post) => sum + (post.analyticsSummary?.externalLinkTaps || 0), 0);
+    const externalLinkTapsFromOther = externalLinkTapsFromHome;
+
     // フォロワー数の内訳を計算
-    // 1. startFollowers = オンボーディングの初期値（user.businessInfo.initialFollowers）
-    // 2. followerIncreaseFromPosts = 分析ページで入力された各投稿のfollowerIncreaseの合計（リール+フィード）
-    // 3. followerIncreaseFromOther = /homeで入力された値、または計算値（currentFollowers - startFollowers - followerIncreaseFromPosts）
-    
-    // startFollowersはオンボーディングの初期値を使用（なければfollower_countsのstartFollowersを使用）
-    const actualStartFollowers = initialFollowers > 0 ? initialFollowers : startFollowers;
+    // 初月かどうかを判定（前期間のfollower_countsが存在しない、または前期間のanalyticsデータが存在しない場合）
+    const isFirstMonth = previousFollowerCountSnapshot.empty && previousAnalyticsByPostId.size === 0;
     
     // 分析ページで入力された各投稿のfollowerIncreaseの合計を計算（リール+フィード）
     const followerIncreaseFromReel = postsWithAnalytics
@@ -1206,30 +1258,40 @@ export async function GET(request: NextRequest) {
       .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
     const followerIncreaseFromPosts = followerIncreaseFromReel + followerIncreaseFromFeed;
     
-    // その他からの増加数 = 現在のフォロワー数 - 月初のフォロワー数 - 投稿からの増加数
-    const totalIncrease = currentFollowers - actualStartFollowers;
-    // その他からの増加数が負の値になる場合は、投稿からの増加数が過大評価されている可能性がある
-    // その場合は、その他からの増加数を0にして、投稿からの増加数のみを表示
-    const followerIncreaseFromOther = Math.max(0, totalIncrease - followerIncreaseFromPosts);
+    // /homeで入力された値（currentFollowers）は「その他からの増加数」を表す
+    const followerIncreaseFromOther = currentFollowers || 0;
+    
+    // 合計増加数の計算
+    // 初月の場合：ツール利用開始時のフォロワー数 + 投稿からの増加数 + その他からの増加数
+    // 翌月以降：投稿からの増加数 + その他からの増加数
+    let totalFollowerIncrease: number;
+    if (isFirstMonth && initialFollowers > 0) {
+      // 初月：ツール利用開始時のフォロワー数を含めた絶対値
+      totalFollowerIncrease = initialFollowers + followerIncreaseFromPosts + followerIncreaseFromOther;
+    } else {
+      // 翌月以降：増加数のみ
+      totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
+    }
     
     // totalsのtotalFollowerIncreaseを更新
-    totals.totalFollowerIncrease = totalIncrease;
+    totals.totalFollowerIncrease = totalFollowerIncrease;
     
     // デバッグログ
     if (process.env.NODE_ENV === "development") {
       console.log("[フォロワー数内訳計算]", {
+        isFirstMonth,
         initialFollowers,
-        startFollowers,
-        actualStartFollowers,
         currentFollowers,
-        totalIncrease,
         followerIncreaseFromReel,
         followerIncreaseFromFeed,
         followerIncreaseFromPosts,
         followerIncreaseFromOther,
+        totalFollowerIncrease,
         totalsTotalFollowerIncrease: totals.totalFollowerIncrease,
         previousTotalsTotalFollowerIncrease: previousTotals.totalFollowerIncrease,
-        note: "startFollowers = オンボーディングの初期値、followerIncreaseFromPosts = 分析ページの合計、followerIncreaseFromOther = その他",
+        note: isFirstMonth 
+          ? "初月：ツール利用開始時のフォロワー数 + 投稿からの増加 + その他からの増加"
+          : "翌月以降：投稿からの増加 + その他からの増加",
       });
     }
 
@@ -1248,12 +1310,15 @@ export async function GET(request: NextRequest) {
       snapshotStatusMap,
       profileVisitsFromPosts,
       profileVisitsFromOther,
+      externalLinkTapsFromPosts,
+      externalLinkTapsFromOther,
       currentFollowers,
       previousCurrentFollowers,
-      startFollowers: actualStartFollowers,
       followerIncreaseFromReel,
       followerIncreaseFromFeed,
       followerIncreaseFromOther,
+      isFirstMonth,
+      initialFollowers,
     });
 
     // 時間帯分析を計算

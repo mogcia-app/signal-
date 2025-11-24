@@ -1,16 +1,10 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { SimulationResult, PlanFormData } from "../types/plan";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
-import { TrendingUp, AlertTriangle, Target } from "lucide-react";
+import { AlertTriangle, Target, TrendingDown, Lightbulb, Calendar } from "lucide-react";
+import { useAuth } from "../../../../contexts/auth-context";
+import { authFetch } from "../../../../utils/authFetch";
 
 interface SimulationPanelProps {
   result: SimulationResult | null;
@@ -18,9 +12,20 @@ interface SimulationPanelProps {
   onRunSimulation?: () => void;
   isSimulating?: boolean;
   simulationError?: string;
-  hasActivePlan?: boolean; // 保存された計画があるかどうか
+  hasActivePlan?: boolean;
   onSave?: () => void;
   isSaving?: boolean;
+}
+
+interface PreviousMonthData {
+  followerIncrease: number;
+  totalPosts: number;
+  lowKPIs: Array<{
+    key: string;
+    label: string;
+    value: number;
+    changePct?: number;
+  }>;
 }
 
 export const SimulationPanel: React.FC<SimulationPanelProps> = ({
@@ -33,17 +38,285 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   onSave,
   isSaving = false,
 }) => {
-  const currentFollowers = parseInt(formData.currentFollowers, 10) || 0;
-  const targetFollowers = currentFollowers + parseInt(formData.followerGain, 10);
+  const { user } = useAuth();
+  const [previousMonthData, setPreviousMonthData] = useState<PreviousMonthData | null>(null);
+  const [isLoadingPreviousMonth, setIsLoadingPreviousMonth] = useState(false);
 
-  // APIから取得したデータを使用
-  const growthData = result?.graphData || {
-    data: [],
-    realisticFinal: 0,
-    userTargetFinal: 0,
-    isRealistic: true,
-    growthRateComparison: { realistic: 0, userTarget: 0 },
+  // 期間に基づく固定日数を取得
+  const getPeriodDays = (planPeriod: string): number => {
+    switch (planPeriod) {
+      case "1ヶ月":
+        return 31;
+      case "3ヶ月":
+        return 90;
+      case "6ヶ月":
+        return 180;
+      case "1年":
+        return 365;
+      default:
+        return 31;
+    }
   };
+
+  // 期間と残り日数を計算（固定値を使用）
+  const periodInfo = useMemo(() => {
+    if (!result) return null;
+
+    const periodMultiplier = getPeriodMultiplier(formData.planPeriod);
+    const daysRemaining = getPeriodDays(formData.planPeriod);
+    
+    // 表示用の日付（現在の日付を使用、ただし計算には使わない）
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setDate(1);
+    
+    const targetDate = new Date(now);
+    switch (formData.planPeriod) {
+      case "1ヶ月":
+        targetDate.setMonth(targetDate.getMonth() + 1);
+        break;
+      case "3ヶ月":
+        targetDate.setMonth(targetDate.getMonth() + 3);
+        break;
+      case "6ヶ月":
+        targetDate.setMonth(targetDate.getMonth() + 6);
+        break;
+      case "1年":
+        targetDate.setFullYear(targetDate.getFullYear() + 1);
+        break;
+      default:
+        targetDate.setMonth(targetDate.getMonth() + 1);
+    }
+    targetDate.setDate(1);
+
+    return {
+      startDate,
+      targetDate,
+      daysRemaining,
+      periodMultiplier,
+    };
+  }, [result, formData.planPeriod]);
+
+  // 1日あたりの必要ペースを計算
+  const dailyPace = useMemo(() => {
+    if (!result || !periodInfo) return 0;
+    const followerGain = parseInt(formData.followerGain, 10);
+    return periodInfo.daysRemaining > 0 ? Math.ceil(followerGain / periodInfo.daysRemaining) : followerGain;
+  }, [result, periodInfo, formData.followerGain]);
+
+  // 投稿頻度を分かりやすい形式に変換
+  const formatPostFrequency = (postsPerWeek: number) => {
+    if (postsPerWeek === 0) return "投稿なし";
+    if (postsPerWeek === 1) return "週1回";
+    if (postsPerWeek === 2) return "週2回";
+    if (postsPerWeek === 3) return "週3回";
+    if (postsPerWeek === 4) return "週4回";
+    if (postsPerWeek === 5) return "週5回";
+    if (postsPerWeek === 6) return "週6回";
+    if (postsPerWeek >= 7) return "毎日";
+    // 小数点がある場合（例：0.5回/週）
+    return `週${postsPerWeek}回`;
+  };
+
+  // 期間に基づく週数を取得
+  const getWeeksForPeriod = (planPeriod: string): number => {
+    switch (planPeriod) {
+      case "1ヶ月":
+        return 4;
+      case "3ヶ月":
+        return 12;
+      case "6ヶ月":
+        return 24;
+      case "1年":
+        return 52;
+      default:
+        return 4;
+    }
+  };
+
+  // 投稿内訳を残り日数で計算
+  const postBreakdown = useMemo(() => {
+    if (!result || !periodInfo) return null;
+
+    const daysRemaining = periodInfo.daysRemaining;
+    const weeksRemaining = getWeeksForPeriod(formData.planPeriod);
+    
+    // 期間全体の投稿数
+    const reelTotal = Math.round(result.postsPerWeek.reel * weeksRemaining);
+    const feedTotal = Math.round(result.postsPerWeek.feed * weeksRemaining);
+    const storyTotal = daysRemaining;
+    
+    // 1週間分の予測増加数
+    const reelWeeklyExpected = `${result.postsPerWeek.reel * 4}〜${result.postsPerWeek.reel * 7}人`;
+    const feedWeeklyExpected = `${result.postsPerWeek.feed * 1}〜${result.postsPerWeek.feed * 3}人`;
+    const storyWeeklyExpected = `2〜8人`; // 毎日1回 × 7日 = 0.3×7〜1.2×7 ≈ 2〜8人
+    
+    return {
+      reel: {
+        frequency: formatPostFrequency(result.postsPerWeek.reel),
+        countTotal: reelTotal,
+        effect: "4〜7人",
+        expected: reelWeeklyExpected,
+      },
+      feed: {
+        frequency: formatPostFrequency(result.postsPerWeek.feed),
+        countTotal: feedTotal,
+        effect: "1〜3人",
+        expected: feedWeeklyExpected,
+      },
+      story: {
+        frequency: "毎日",
+        countTotal: storyTotal,
+        effect: "0.3〜1.2人",
+        expected: storyWeeklyExpected,
+      },
+    };
+  }, [result, periodInfo]);
+
+  // 合計期待値を計算
+  const totalExpected = useMemo(() => {
+    if (!postBreakdown) return { min: 0, max: 0 };
+    
+    const reelMin = parseInt(postBreakdown.reel.expected.split("〜")[0]);
+    const reelMax = parseInt(postBreakdown.reel.expected.split("〜")[1].replace("人", ""));
+    const feedMin = parseInt(postBreakdown.feed.expected.split("〜")[0]);
+    const feedMax = parseInt(postBreakdown.feed.expected.split("〜")[1].replace("人", ""));
+    const storyMin = parseInt(postBreakdown.story.expected.split("〜")[0]);
+    const storyMax = parseInt(postBreakdown.story.expected.split("〜")[1].replace("人", ""));
+
+    return {
+      min: reelMin + feedMin + storyMin,
+      max: reelMax + feedMax + storyMax,
+    };
+  }, [postBreakdown]);
+
+  // 目標到達率を判定（5段階）
+  const goalAchievementRate = useMemo(() => {
+    if (!totalExpected) return { label: "不明", showAdSuggestion: false };
+    const target = parseInt(formData.followerGain, 10);
+    
+    // 達成率を計算（最小値と最大値の平均で判定）
+    const avgExpected = (totalExpected.min + totalExpected.max) / 2;
+    const achievementRate = (avgExpected / target) * 100;
+    
+    if (totalExpected.min >= target) {
+      // 最小値でも目標を超える → 達成可能
+      return { label: "達成可能", showAdSuggestion: false };
+    } else if (totalExpected.max >= target && achievementRate >= 80) {
+      // 最大値で目標を超え、達成率80%以上 → 頑張れば達成可能
+      return { label: "頑張れば達成可能", showAdSuggestion: true };
+    } else if (achievementRate >= 60) {
+      // 達成率60%以上 → やや困難
+      return { label: "やや困難", showAdSuggestion: true };
+    } else if (achievementRate >= 30) {
+      // 達成率30%以上 → 困難
+      return { label: "困難", showAdSuggestion: true };
+    } else {
+      // 達成率30%未満 → 非常に困難
+      return { label: "非常に困難", showAdSuggestion: true };
+    }
+  }, [totalExpected, formData.followerGain]);
+
+  // 先月のデータを取得
+  useEffect(() => {
+    const fetchPreviousMonthData = async () => {
+      if (!user) return;
+
+      setIsLoadingPreviousMonth(true);
+      try {
+        const now = new Date();
+        const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const previousMonthStr = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, "0")}`;
+
+        const kpiResponse = await authFetch(
+          `/api/analytics/kpi-breakdown?date=${encodeURIComponent(previousMonthStr)}`
+        );
+        const kpiResult = await kpiResponse.json();
+
+        if (kpiResult.success && kpiResult.data) {
+          const breakdowns = kpiResult.data.breakdowns || [];
+          
+          const followerBreakdown = breakdowns.find((b: any) => b.key === "current_followers");
+          const followerIncrease = followerBreakdown?.value || 0;
+
+          const lowKPIs = breakdowns
+            .filter((b: any) => {
+              if (b.key === "current_followers") return false;
+              if (b.changePct === undefined || isNaN(b.changePct)) return false;
+              return b.changePct < 0 || (b.changePct < 10 && b.value > 0);
+            })
+            .sort((a: any, b: any) => {
+              const aChange = a.changePct || 0;
+              const bChange = b.changePct || 0;
+              return aChange - bChange;
+            })
+            .slice(0, 2);
+
+          const analyticsResponse = await authFetch(`/api/analytics`);
+          const analyticsResult = await analyticsResponse.json();
+          const analytics = analyticsResult.analytics || analyticsResult.data || [];
+          
+          const previousMonthStart = new Date(previousMonth.getFullYear(), previousMonth.getMonth(), 1);
+          const previousMonthEnd = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0, 23, 59, 59);
+          
+          const totalPosts = analytics.filter((item: any) => {
+            if (!item.publishedAt) return false;
+            const publishedAt = item.publishedAt instanceof Date 
+              ? item.publishedAt 
+              : new Date(item.publishedAt);
+            return publishedAt >= previousMonthStart && publishedAt <= previousMonthEnd;
+          }).length;
+
+          setPreviousMonthData({
+            followerIncrease,
+            totalPosts,
+            lowKPIs,
+          });
+        }
+      } catch (error) {
+        console.error("先月のデータ取得エラー:", error);
+      } finally {
+        setIsLoadingPreviousMonth(false);
+      }
+    };
+
+    fetchPreviousMonthData();
+  }, [user]);
+
+  // 期間乗数を取得
+  function getPeriodMultiplier(planPeriod: string): number {
+    switch (planPeriod) {
+      case "1ヶ月":
+        return 1;
+      case "3ヶ月":
+        return 3;
+      case "6ヶ月":
+        return 6;
+      case "1年":
+        return 12;
+      default:
+        return 1;
+    }
+  }
+
+  // 難易度のラベルを取得
+  const getDifficultyLabel = (level: string) => {
+    switch (level) {
+      case "very_realistic":
+        return "非常に現実的";
+      case "realistic":
+        return "現実的";
+      case "moderate":
+        return "挑戦的";
+      case "challenging":
+        return "困難";
+      case "very_challenging":
+        return "非常に困難";
+      default:
+        return "高め";
+    }
+  };
+
   // 結果がない場合は初期表示
   if (!result) {
     return (
@@ -82,480 +355,257 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   }
 
   return (
-    <section className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center">
-          <span className="mr-2">📊</span>目標達成シミュレーション
-        </h3>
-        {onRunSimulation && (
-          <button
-            onClick={onRunSimulation}
-            disabled={isSimulating}
-            className="text-sm bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
-          >
-            {isSimulating ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                実行中...
-              </>
-            ) : (
-              <>
-                <span className="mr-2">🔄</span>
-                再度シミュレーション実行
-              </>
-            )}
-          </button>
-        )}
-      </div>
-
-      {simulationError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-red-600 text-sm">{simulationError}</p>
-        </div>
-      )}
-
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <div className="space-y-4">
-          {/* メイン目標（横長） */}
-          <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-            <div className="text-2xl font-bold text-blue-900 mb-1">
-              {parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人
-            </div>
-            <div className="text-sm text-blue-700 mb-2">目標フォロワー数</div>
-            <div className="text-xs text-blue-600 mb-2">
-              現在 {parseInt(formData.currentFollowers)}人 → 目標{" "}
-              {parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人（+
-              {formData.followerGain}人）
-            </div>
-            <div className="text-sm text-blue-800 font-medium">
-              📅 達成期限：{result.targetDate}
-            </div>
-            <div className="text-xs text-blue-500 mt-2">
-              ※ シミュレーション結果は参考値です。実際の成果は個人差があります。
-            </div>
-          </div>
-
-          {/* サブKPI（2つ並び） */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-white rounded-md">
-              <div className="text-xl font-bold text-black mb-1">{result.monthlyTarget}人/月</div>
-              <div className="text-sm text-black">月間目標</div>
-            </div>
-            <div className="text-center p-4 bg-white rounded-md">
-              <div className="text-xl font-bold text-black flex items-center justify-center space-x-2 mb-1">
-                <span>{result.weeklyTarget}人/週</span>
-                <span
-                  className={`px-2 py-1 text-xs rounded-full ${
-                    result.feasibilityLevel === "very_realistic"
-                      ? "bg-blue-100 text-blue-800"
-                      : result.feasibilityLevel === "realistic"
-                        ? "bg-green-100 text-green-800"
-                        : result.feasibilityLevel === "moderate"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : result.feasibilityLevel === "challenging"
-                            ? "bg-orange-100 text-orange-800"
-                            : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {result.feasibilityBadge}
-                </span>
-              </div>
-              <div className="text-sm text-black">週間目標</div>
-            </div>
-          </div>
-
-          {/* 投稿計画テーブル */}
-          <div className="bg-white rounded-md overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-3 py-2 text-left">投稿タイプ</th>
-                  <th className="px-3 py-2 text-center">週間必要数</th>
-                  <th className="px-3 py-2 text-center">フォロワー効果</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-gray-200">
-                  <td className="px-3 py-2">リール</td>
-                  <td className="px-3 py-2 text-center font-medium">
-                    {result.postsPerWeek.reel}回
-                  </td>
-                  <td className="px-3 py-2 text-center text-green-600">+3人/投稿</td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="px-3 py-2">フィード</td>
-                  <td className="px-3 py-2 text-center font-medium">
-                    {result.postsPerWeek.feed}回
-                  </td>
-                  <td className="px-3 py-2 text-center text-blue-600">+2人/投稿</td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="px-3 py-2">ストーリー</td>
-                  <td className="px-3 py-2 text-center font-medium">
-                    {result.postsPerWeek.story}回
-                  </td>
-                  <td className="px-3 py-2 text-center text-purple-600">+1人/投稿</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* 投稿負荷情報 */}
-          <div className="bg-gray-100 p-4 rounded-md text-center">
-            <div className="text-lg font-bold text-black mb-1">
-              {result.monthlyPostCount}投稿/月
-            </div>
-            <div className="text-sm text-black">📊 {result.workloadMessage}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* フォロワー増加推移予測 */}
-      <div className="mt-6 bg-white">
-        {/* ヘッダー */}
-        <div className="p-6">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-600 to-amber-600 rounded-lg flex items-center justify-center mr-3">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-black">📈 フォロワー増加推移予測</h3>
-              <p className="text-sm text-black mt-1">現実的な成長曲線と目標の比較分析</p>
-            </div>
-          </div>
-        </div>
-
-        {/* コンテンツ */}
-        <div className="px-6 pb-6">
-          {/* 現在の設定表示 */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <p className="text-sm text-black mb-1">現在の設定</p>
-              <p className="text-lg font-semibold text-black">
-                現在: {currentFollowers.toLocaleString()}人 → 目標:{" "}
-                {targetFollowers.toLocaleString()}人
-              </p>
-              <p className="text-xs text-black mt-1">左カラムの計画フォームで設定を変更できます</p>
-            </div>
-          </div>
-
-          {/* グラフ */}
-          <div className="h-96 mb-6 bg-white rounded-2xl p-6 border border-gray-100">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={growthData.data}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-              >
-                <defs>
-                  <linearGradient id="realisticGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#F97316" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="#F97316" stopOpacity={0.1} />
-                  </linearGradient>
-                  <linearGradient id="targetGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="#F59E0B" stopOpacity={0.1} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="2 8" stroke="#94a3b8" strokeOpacity={0.3} />
-                <XAxis
-                  dataKey="week"
-                  tick={{ fontSize: 12, fill: "#64748b", fontWeight: 500 }}
-                  interval="preserveStartEnd"
-                  tickLine={{ stroke: "transparent" }}
-                  axisLine={{ stroke: "transparent" }}
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: "#64748b", fontWeight: 500 }}
-                  tickFormatter={(value) => value.toLocaleString()}
-                  tickLine={{ stroke: "transparent" }}
-                  axisLine={{ stroke: "transparent" }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(255, 255, 255, 0.95)",
-                    border: "none",
-                    borderRadius: "12px",
-                    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-                    backdropFilter: "blur(10px)",
-                  }}
-                  formatter={(value: number, name: string) => [
-                    value.toLocaleString(),
-                    {
-                      realistic: "現実的成長",
-                      userTarget: "あなたの目標",
-                    }[name] || name,
-                  ]}
-                  labelFormatter={(label) => `${label}`}
-                />
-                <Legend
-                  wrapperStyle={{ paddingTop: "20px" }}
-                  formatter={(value) => {
-                    const legendMap: { [key: string]: string } = {
-                      realistic: "現実的成長",
-                      userTarget: "あなたの目標",
-                    };
-                    return legendMap[value] || value;
-                  }}
-                />
-
-                {/* 現実的成長 */}
-                <Line
-                  type="monotone"
-                  dataKey="realistic"
-                  stroke="url(#realisticGradient)"
-                  strokeWidth={3}
-                  dot={{
-                    fill: "#F97316",
-                    strokeWidth: 2,
-                    r: 5,
-                    filter: "drop-shadow(0 2px 4px rgba(249, 115, 22, 0.3))",
-                  }}
-                  activeDot={{
-                    r: 8,
-                    stroke: "#F97316",
-                    strokeWidth: 2,
-                    fill: "white",
-                    filter: "drop-shadow(0 4px 8px rgba(249, 115, 22, 0.4))",
-                  }}
-                />
-
-                {/* ユーザーの目標 */}
-                <Line
-                  type="monotone"
-                  dataKey="userTarget"
-                  stroke="url(#targetGradient)"
-                  strokeWidth={3}
-                  strokeDasharray="8 4"
-                  dot={{
-                    fill: "#F59E0B",
-                    strokeWidth: 2,
-                    r: 5,
-                    filter: "drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3))",
-                  }}
-                  activeDot={{
-                    r: 8,
-                    stroke: "#F59E0B",
-                    strokeWidth: 2,
-                    fill: "white",
-                    filter: "drop-shadow(0 4px 8px rgba(245, 158, 11, 0.4))",
-                  }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* 統計情報 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-xl border border-orange-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-orange-700 font-semibold mb-1">📊 現実的成長</p>
-                  <p className="text-3xl font-bold text-orange-900 mb-1">
-                    {growthData.realisticFinal.toLocaleString()}人
-                  </p>
-                  <p className="text-sm text-orange-600 font-medium mb-1">
-                    +{(growthData.realisticFinal - currentFollowers).toLocaleString()}人増加
-                  </p>
-                  <p className="text-xs text-orange-500">
-                    (
-                    {currentFollowers > 0
-                      ? (
-                          ((growthData.realisticFinal - currentFollowers) / currentFollowers) *
-                          100
-                        ).toFixed(1)
-                      : "0"}
-                    % 増加率)
-                  </p>
-                </div>
-                <Target className="w-10 h-10 text-orange-600" />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-5 rounded-xl border border-amber-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-amber-700 font-semibold mb-1">🎯 あなたの目標</p>
-                  <p className="text-3xl font-bold text-amber-900 mb-1">
-                    {growthData.userTargetFinal.toLocaleString()}人
-                  </p>
-                  <p className="text-sm text-amber-600 font-medium mb-1">
-                    +{(growthData.userTargetFinal - currentFollowers).toLocaleString()}人増加
-                  </p>
-                  <p className="text-xs text-amber-500">
-                    (
-                    {currentFollowers > 0
-                      ? (
-                          ((growthData.userTargetFinal - currentFollowers) / currentFollowers) *
-                          100
-                        ).toFixed(1)
-                      : "0"}
-                    % 増加率)
-                  </p>
-                </div>
-                <AlertTriangle className="w-10 h-10 text-amber-600" />
-              </div>
-            </div>
-          </div>
-
-          {/* ポイントアドバイス */}
-          <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 rounded-xl border border-orange-100">
-            <h4 className="font-bold text-black mb-4 flex items-center">
-              <span className="mr-2">💡</span>
-              ポイントアドバイス
-            </h4>
-
-            {/* ワンポイントアドバイス */}
-            <div className="text-center">
-              {result?.onePointAdvice ? (
+    <section className="p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-2xl font-light text-gray-900 tracking-tight">
+            目標達成シミュレーション
+          </h3>
+          {onRunSimulation && (
+            <button
+              onClick={onRunSimulation}
+              disabled={isSimulating}
+              className="text-sm bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-md font-medium transition-all duration-200 flex items-center shadow-sm"
+            >
+              {isSimulating ? (
                 <>
-                  {result.onePointAdvice.type === "warning" ? (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <div className="flex items-center justify-center mb-2">
-                        <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2" />
-                        <span className="font-semibold text-yellow-800">
-                          {result.onePointAdvice.title
-                            ?.replace(/<[^>]*>/g, "")
-                            .replace(/&lt;/g, "<")
-                            .replace(/&gt;/g, ">")
-                            .replace(/&amp;/g, "&") || ""}
-                        </span>
-                      </div>
-                      <p className="text-sm text-yellow-700">
-                        {result.onePointAdvice.message
-                          ?.replace(/<[^>]*>/g, "")
-                          .replace(/&lt;/g, "<")
-                          .replace(/&gt;/g, ">")
-                          .replace(/&amp;/g, "&") || ""}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center justify-center mb-2">
-                        <span className="text-green-600 mr-2">✅</span>
-                        <span className="font-semibold text-green-800">
-                          {result.onePointAdvice.title
-                            ?.replace(/<[^>]*>/g, "")
-                            .replace(/&lt;/g, "<")
-                            .replace(/&gt;/g, ">")
-                            .replace(/&amp;/g, "&") || ""}
-                        </span>
-                      </div>
-                      <p className="text-sm text-green-700">
-                        {result.onePointAdvice.message
-                          ?.replace(/<[^>]*>/g, "")
-                          .replace(/&lt;/g, "<")
-                          .replace(/&gt;/g, ">")
-                          .replace(/&amp;/g, "&") || ""}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-sm text-orange-800 font-medium">
-                      💡{" "}
-                      {result.onePointAdvice.advice
-                        ?.replace(/<[^>]*>/g, "")
-                        .replace(/&lt;/g, "<")
-                        .replace(/&gt;/g, ">")
-                        .replace(/&amp;/g, "&") || ""}
-                    </p>
-                  </div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  実行中...
                 </>
               ) : (
-                <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                  <p className="text-sm text-orange-800 font-medium">
-                    💡
-                    エンゲージメント向上に特化した戦略で、ターゲット層に刺さるコンテンツを継続的に投稿することが成功の鍵です。
-                  </p>
-                </div>
+                <>
+                  <span className="mr-2">↻</span>
+                  再実行
+                </>
               )}
+            </button>
+          )}
+        </div>
+
+        {simulationError && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-md">
+            <p className="text-red-700 text-sm">{simulationError}</p>
+          </div>
+        )}
+
+        <div className="space-y-5">
+        {/* 期間表示 */}
+        {periodInfo && (
+          <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+            <div className="flex items-center text-sm text-gray-600">
+              <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+              <span>
+                期間：{periodInfo.startDate.toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })} → {periodInfo.targetDate.toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* 現在→目標 */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <div className="text-center">
+            <div className="text-2xl font-light text-gray-900 mb-1">
+              {parseInt(formData.currentFollowers).toLocaleString()}人
+            </div>
+            <div className="text-sm text-gray-500 mb-4">現在のフォロワー数</div>
+            <div className="flex items-center justify-center space-x-2 text-gray-400 mb-4">
+              <div className="h-px bg-gray-300 flex-1"></div>
+              <span className="text-xs">目標</span>
+              <div className="h-px bg-gray-300 flex-1"></div>
+            </div>
+            <div className="text-2xl font-light text-orange-600 mb-1">
+              {parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人
+            </div>
+            <div className="text-sm text-orange-600 font-medium">
+              +{parseInt(formData.followerGain)}人必要
             </div>
           </div>
         </div>
-      </div>
 
-      {/* その他の成長戦略セクション（代替案がある場合のみ表示） */}
-      {result?.alternativeOptions?.otherStrategies && result.alternativeOptions.otherStrategies.length > 0 && (
-        <div className="mt-6 bg-white">
-          <div className="p-6">
-            <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-5">
-              <h4 className="text-lg font-bold text-purple-900 mb-4">💡 その他の成長戦略</h4>
-              <div className="space-y-3">
-                {result.alternativeOptions.otherStrategies.map((strategy, idx) => (
-                  <div key={idx} className="bg-white rounded-lg p-4 border border-purple-200">
-                    <div className="flex items-start justify-between mb-2">
-                      <h5 className="font-bold text-purple-900">
-                        {strategy.title
-                          ?.replace(/<[^>]*>/g, "")
-                          .replace(/&lt;/g, "<")
-                          .replace(/&gt;/g, ">")
-                          .replace(/&amp;/g, "&") || ""}
-                      </h5>
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          strategy.feasibility === "realistic"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-orange-100 text-orange-800"
-                        }`}
-                      >
-                        {strategy.feasibility === "realistic" ? "現実的" : "困難"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-purple-700 mb-2">
-                      {strategy.description
-                        ?.replace(/<[^>]*>/g, "")
-                        .replace(/&lt;/g, "<")
-                        .replace(/&gt;/g, ">")
-                        .replace(/&amp;/g, "&") || ""}
-                    </p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-purple-600">
-                        {strategy.estimatedBoost
-                          ?.replace(/<[^>]*>/g, "")
-                          .replace(/&lt;/g, "<")
-                          .replace(/&gt;/g, ">")
-                          .replace(/&amp;/g, "&") || ""}
-                      </span>
-                      <span className="text-purple-900 font-semibold">
-                        {strategy.cost
-                          ?.replace(/<[^>]*>/g, "")
-                          .replace(/&lt;/g, "<")
-                          .replace(/&gt;/g, ">")
-                          .replace(/&amp;/g, "&") || ""}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+        {/* 先月の実績 */}
+        {isLoadingPreviousMonth ? (
+          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center shadow-sm">
+            <p className="text-sm text-gray-400">先月のデータを読み込み中...</p>
+          </div>
+        ) : previousMonthData ? (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+              先月の実績
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border-l-2 border-gray-300 pl-4">
+                <div className="text-xs text-gray-500 mb-1">フォロワー増加数</div>
+                <div className="text-xl font-light text-gray-900">
+                  +{previousMonthData.followerIncrease.toLocaleString()}人
+                </div>
+              </div>
+              <div className="border-l-2 border-gray-300 pl-4">
+                <div className="text-xs text-gray-500 mb-1">トータル投稿数</div>
+                <div className="text-xl font-light text-gray-900">
+                  {previousMonthData.totalPosts}投稿
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        ) : null}
 
-      {/* 保存ボタン */}
-      {result && onSave && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <button
-            onClick={onSave}
-            disabled={isSaving}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
-          >
-            {isSaving ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                保存中...
-              </>
-            ) : (
-              <>
-                💾{" "}
-                {hasActivePlan
-                  ? "このシュミレーションを更新する"
-                  : "このシュミレーションを保存する"}
-              </>
+        {/* 達成可能性評価 */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-5">
+            達成可能性評価
+          </h4>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+              <span className="text-sm text-gray-600">達成難易度</span>
+              <span className="text-base font-medium text-orange-600">{getDifficultyLabel(result.feasibilityLevel)}</span>
+            </div>
+            {periodInfo && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  残り <span className="font-medium text-orange-600">{periodInfo.daysRemaining}日</span> で <span className="font-medium text-orange-600">+{parseInt(formData.followerGain)}人</span> の増加が必要です。
+                </p>
+                <p className="text-sm text-gray-500">
+                  1日あたり <span className="font-medium text-orange-600">+{dailyPace}人</span> のペースで成長を維持する必要があります。
+                </p>
+              </div>
             )}
-          </button>
+          </div>
         </div>
-      )}
+
+        {/* KPIに基づく成長戦略 */}
+        {result.mainAdvice && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+              成長戦略
+            </h4>
+            <div className="border-l-2 border-gray-900 pl-4">
+              <p className="text-sm font-light text-gray-900 leading-relaxed">
+                {result.mainAdvice}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 投稿計画 */}
+        {postBreakdown && periodInfo && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div className="mb-5">
+              <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
+                投稿計画
+              </h4>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                この投稿計画は、Signal.の独自ロジックで計算された最低限の投稿数を示しています。
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">投稿タイプ</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">投稿数</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">予測増加数</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr>
+                    <td className="px-4 py-4 text-sm text-gray-900">リール</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
+                      {postBreakdown.reel.frequency}
+                    </td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.reel.expected}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 text-sm text-gray-900">フィード投稿</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
+                      {postBreakdown.feed.frequency}
+                    </td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.feed.expected}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 text-sm text-gray-900">ストーリー</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
+                      {postBreakdown.story.frequency}
+                    </td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.story.expected}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">
+                  {periodInfo && periodInfo.daysRemaining >= 28 
+                    ? "今月の目標投稿数" 
+                    : `残り期間の目標投稿数（残り${periodInfo?.daysRemaining || 0}日間）`}
+                </span>
+                <span className="text-xl font-light text-orange-600">
+                  {postBreakdown.reel.countTotal + postBreakdown.feed.countTotal + postBreakdown.story.countTotal}投稿
+                </span>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                リール {postBreakdown.reel.countTotal}投稿 + フィード {postBreakdown.feed.countTotal}投稿 + ストーリー {postBreakdown.story.countTotal}回
+              </div>
+            </div>
+            {goalAchievementRate.showAdSuggestion && (
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <h5 className="text-sm font-medium text-gray-700 mb-3">広告予算の投入</h5>
+                <p className="text-sm text-gray-600 leading-relaxed mb-2">
+                  Instagram広告を活用して、オーガニックな成長を補完します。月1-2万円程度の予算で成長ペースを加速できます。
+                </p>
+                <p className="text-sm font-medium text-orange-600">
+                  月間+10-20%の成長促進
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 先月の課題 */}
+        {previousMonthData && previousMonthData.lowKPIs.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+              先月の課題
+            </h4>
+            <div className="space-y-3">
+              {previousMonthData.lowKPIs.map((kpi) => (
+                <div key={kpi.key} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                  <span className="text-sm text-gray-700">{kpi.label}</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {kpi.changePct !== undefined && kpi.changePct < 0
+                      ? `${kpi.changePct.toFixed(1)}%`
+                      : kpi.value.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 保存ボタン */}
+        {onSave && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-md font-medium transition-all duration-200 flex items-center justify-center shadow-sm"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                  保存中...
+                </>
+              ) : (
+                <>
+                  {hasActivePlan
+                    ? "シミュレーションを更新"
+                    : "シミュレーションを保存"}
+                </>
+              )}
+            </button>
+          </div>
+        )}
+        </div>
+      </div>
     </section>
   );
 };

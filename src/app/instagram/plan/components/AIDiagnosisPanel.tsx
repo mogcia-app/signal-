@@ -139,191 +139,160 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   };
 
   return (
-    <section className="p-6">
-      <h3 className="text-lg font-semibold mb-2 flex items-center">
-        <span className="mr-2">🤖</span>AIによる投稿戦略アドバイス
-      </h3>
-      <p className="text-sm text-black mb-4">目標や施策をもとに、AIが最適な方向性を提案します。</p>
+    <section className="p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h3 className="text-2xl font-light text-gray-900 tracking-tight mb-2">
+            AIによる投稿戦略アドバイス
+          </h3>
+          <p className="text-sm text-gray-500">目標や施策をもとに、AIが最適な方向性を提案します。</p>
+        </div>
 
-      {/* 診断ボタン（常に表示、生成済みの場合はテキスト変更） */}
-      <button
-        onClick={handleStartDiagnosis}
-        disabled={isLoading || strategyState.isLoading}
-        className="w-full bg-[#ff8a15] hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium py-3 px-6 rounded-md transition-colors mb-4 relative overflow-hidden group"
-      >
-        <span className="relative z-10 flex items-center justify-center">
+        {/* 診断ボタン（常に表示、生成済みの場合はテキスト変更） */}
+        <button
+          onClick={handleStartDiagnosis}
+          disabled={isLoading || strategyState.isLoading}
+          className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-md transition-all duration-200 mb-6 shadow-sm flex items-center justify-center"
+        >
           {isLoading || strategyState.isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              AI戦略生成中...
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+              生成中...
             </>
           ) : generatedStrategy ? (
-            "🔄 AI戦略を再生成する"
+            "再生成"
           ) : (
-            "▶ 診断を開始する"
+            "診断を開始"
           )}
-        </span>
-        <span className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
-      </button>
+        </button>
 
-      {/* エラー表示 */}
-      {strategyState.error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{strategyState.error}</p>
-        </div>
-      )}
-
-      {/* ローディング表示 */}
-      {(isLoading || strategyState.isLoading) && (
-        <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-[#ff8a15] rounded-lg p-8 text-center animate-pulse">
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <svg
-              className="animate-spin h-12 w-12 text-[#ff8a15]"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <p className="text-lg font-semibold text-[#ff8a15]">🤖 AI戦略を生成中...</p>
-            <p className="text-sm text-black">あなたのビジネスに最適な戦略を分析しています</p>
+        {/* エラー表示 */}
+        {strategyState.error && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-md">
+            <p className="text-sm text-red-700">{strategyState.error}</p>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 診断出力エリア（generatedStrategyがあれば常に表示） */}
-      {generatedStrategy && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-lg">提案内容</h4>
-            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-              AI生成済み
-            </span>
+        {/* ローディング表示 */}
+        {(isLoading || strategyState.isLoading) && (
+          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center shadow-sm">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-900"></div>
+              <p className="text-sm font-medium text-gray-700">AI戦略を生成中</p>
+              <p className="text-xs text-gray-500">あなたのビジネスに最適な戦略を分析しています</p>
+            </div>
           </div>
+        )}
 
-          {generatedStrategy ? (
-            <div className="space-y-3">
-              {/* セクション別にアコーディオン表示 */}
-              {parseStrategyIntoSections(generatedStrategy).map((section) => {
-                const isExpanded = expandedSections.includes(section.id);
-                const colorClasses = {
-                  blue: "bg-blue-50 border-blue-200 text-blue-800",
-                  purple: "bg-purple-50 border-purple-200 text-purple-800",
-                  green: "bg-green-50 border-green-200 text-green-800",
-                  yellow: "bg-yellow-50 border-yellow-200 text-yellow-800",
-                  pink: "bg-pink-50 border-pink-200 text-pink-800",
-                  indigo: "bg-indigo-50 border-indigo-200 text-indigo-800",
-                  red: "bg-red-50 border-red-200 text-red-800",
-                  cyan: "bg-cyan-50 border-cyan-200 text-cyan-800",
-                };
-                const colorClass =
-                  colorClasses[section.color as keyof typeof colorClasses] || colorClasses.blue;
+        {/* 診断出力エリア（generatedStrategyがあれば常に表示） */}
+        {generatedStrategy && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide">提案内容</h4>
+              <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                AI生成済み
+              </span>
+            </div>
 
-                return (
-                  <div key={section.id} className={`border rounded-lg ${colorClass}`}>
-                    {/* セクションヘッダー（クリックで展開/折りたたみ） */}
-                    <button
-                      onClick={() => toggleSection(section.id)}
-                      className="w-full px-4 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
-                    >
-                      <div className="flex items-center">
-                        <span className="text-xl mr-2">{section.icon}</span>
-                        <span className="font-semibold text-sm">{section.title}</span>
-                      </div>
-                      {isExpanded ? (
-                        <ChevronUp className="w-5 h-5" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5" />
-                      )}
-                    </button>
+            {generatedStrategy ? (
+              <div className="space-y-3">
+                {/* セクション別にアコーディオン表示 */}
+                {parseStrategyIntoSections(generatedStrategy).map((section) => {
+                  const isExpanded = expandedSections.includes(section.id);
 
-                    {/* セクションコンテンツ */}
-                    {isExpanded && (
-                      <div className="px-4 pb-4 border-t border-gray-200">
-                        <div className="pt-3 text-sm text-black leading-relaxed whitespace-pre-wrap">
-                          {cleanMarkdown(section.content)}
+                  return (
+                    <div key={section.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                      {/* セクションヘッダー（クリックで展開/折りたたみ） */}
+                      <button
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium text-gray-900">{section.title.replace(/[①②③④]/g, "").trim()}</span>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        )}
+                      </button>
 
-              {/* 全て展開/折りたたみボタン */}
-              <div className="flex gap-2 pt-2">
-                <button
-                  onClick={() => setExpandedSections([0, 1, 2, 3])}
-                  className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-black py-2 px-3 rounded-md transition-colors"
-                >
-                  📖 全て展開
-                </button>
-                <button
-                  onClick={() => setExpandedSections([])}
-                  className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-black py-2 px-3 rounded-md transition-colors"
-                >
-                  📕 全て折りたたむ
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-gray-400 mb-2">
-                <svg
-                  className="w-12 h-12 mx-auto"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
-                </svg>
-              </div>
-              <p className="text-black text-sm">
-                「診断を開始する」ボタンを押してAI戦略を生成してください
-              </p>
-            </div>
-          )}
+                      {/* セクションコンテンツ */}
+                      {isExpanded && (
+                        <div className="px-6 pb-6 border-t border-gray-100">
+                          <div className="pt-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                            {cleanMarkdown(section.content)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
-          {generatedStrategy && (
-            <div className="pt-4 space-y-3">
-              <button
-                className="w-full bg-[#ff8a15] hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-md transition-colors"
-                onClick={() => {
-                  onSaveAdvice();
-                  setSaveMessage("✅ AI戦略を保存しました！");
-                  // 3秒後にメッセージを非表示
-                  setTimeout(() => {
-                    setSaveMessage("");
-                  }, 3000);
-                }}
-              >
-                この戦略を保存する
-              </button>
-              {saveMessage && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-md text-center">
-                  <p className="text-sm text-green-700 font-medium">{saveMessage}</p>
+                {/* 全て展開/折りたたみボタン */}
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setExpandedSections([0, 1, 2, 3])}
+                    className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md transition-colors font-medium"
+                  >
+                    全て展開
+                  </button>
+                  <button
+                    onClick={() => setExpandedSections([])}
+                    className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-md transition-colors font-medium"
+                  >
+                    全て折りたたむ
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-lg p-12 text-center shadow-sm">
+                <div className="text-gray-400 mb-3">
+                  <svg
+                    className="w-12 h-12 mx-auto"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-600">
+                  「診断を開始」ボタンを押してAI戦略を生成してください
+                </p>
+              </div>
+            )}
+
+            {generatedStrategy && (
+              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <button
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-6 rounded-md transition-all duration-200 shadow-sm"
+                  onClick={() => {
+                    onSaveAdvice();
+                    setSaveMessage("AI戦略を保存しました");
+                    // 3秒後にメッセージを非表示
+                    setTimeout(() => {
+                      setSaveMessage("");
+                    }, 3000);
+                  }}
+                >
+                  この戦略を保存
+                </button>
+                {saveMessage && (
+                  <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md text-center">
+                    <p className="text-sm text-gray-700 font-medium">{saveMessage}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 };
