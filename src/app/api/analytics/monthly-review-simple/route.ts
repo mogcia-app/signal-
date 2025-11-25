@@ -585,8 +585,6 @@ export async function GET(request: NextRequest) {
 - コメント数: ${totalComments.toLocaleString()}
 - 保存数: ${totalSaves.toLocaleString()}
 - シェア数: ${totalShares.toLocaleString()}
-- 利用開始時のフォロワー数: ${initialFollowers.toLocaleString()}人
-- 今月のフォロワー増加数: ${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}人
 ${hasPlan ? `- 運用計画: ${planInfo?.title || "あり"}` : "- 運用計画: 未設定"}
 ${businessInfoText}
 ${aiSettingsText}
@@ -608,14 +606,14 @@ ${topPostInfo}
 	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
 	•	いいね数：${totalLikes.toLocaleString()}
 	•	コメント数：${totalComments.toLocaleString()}
-	•	保存数：${totalSaves.toLocaleString()}${currentTotalFollowers > 0 ? `\n	•	フォロワー数：${currentTotalFollowers.toLocaleString()}人` : ""}
+	•	保存数：${totalSaves.toLocaleString()}
 
 {全体的な評価コメント（2-3文）。以下の点を含めてください：
 - リーチ数やいいね数の具体的な数値とその意味
 - 前月比がある場合は、その変化率と評価（増加している場合は「前月比で○％増加し、順調に成長しています」など）
-- フォロワー増減がある場合は、評価コメントで「今月は+○人増加しました」という形式で簡潔に言及してください。テンプレート部分で既に「フォロワー数：○人」と表示されているので、評価コメントでは重複せず、増加の意味や評価に焦点を当ててください。
 - 保存数やコメント数が0でない場合は、それらも言及
-- 数値だけを羅列するのではなく、自然な文章で説明してください}
+- 数値だけを羅列するのではなく、自然な文章で説明してください
+}
 
 ⸻
 
@@ -669,7 +667,6 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
 - 投稿タイプ別の統計や最も閲覧された投稿の情報を必ず反映してください
 - 前月比がある場合は、その変化を評価コメントに含めてください
 - 提案はデータに基づいた具体的な内容にしてください
-- フォロワー数の表示について：テンプレート部分で既に「フォロワー数：○人」と表示されているので、評価コメントでは「今月は+○人増加しました」という形式で簡潔に言及し、増加の意味や評価に焦点を当ててください。
 - 数値だけを羅列するのではなく、自然で読みやすい日本語の文章で説明してください
 - テンプレートの{評価}や{強調ポイント}などのプレースホルダーをそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください
 - 文章は簡潔で分かりやすく、専門用語を使いすぎないでください
@@ -684,7 +681,7 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
             {
               role: "system",
               content:
-                "あなたはInstagram運用の専門家です。データに基づいて自然で読みやすい日本語で振り返りを提供します。数値だけを羅列するのではなく、具体的な数値とその意味を自然な文章で説明してください。テンプレートのプレースホルダー（{評価}など）をそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください。必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。提案は必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください。凡庸な例ではなく、具体的な商品・サービス名や業種に基づいた提案をしてください。フォロワー数について：テンプレート部分で既に「フォロワー数：○人」と表示されているので、評価コメントでは「今月は+○人増加しました」という形式で簡潔に言及し、増加の意味や評価に焦点を当ててください。",
+                "あなたはInstagram運用の専門家です。データに基づいて自然で読みやすい日本語で振り返りを提供します。数値だけを羅列するのではなく、具体的な数値とその意味を自然な文章で説明してください。テンプレートのプレースホルダー（{評価}など）をそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください。必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。提案は必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください。凡庸な例ではなく、具体的な商品・サービス名や業種に基づいた提案をしてください。",
             },
             {
               role: "user",
@@ -721,7 +718,6 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
 - リーチ数: ${totalReach.toLocaleString()}${prevTotalReach > 0 ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）` : ""}
 - コメント数: ${totalComments.toLocaleString()}
 - 保存数: ${totalSaves.toLocaleString()}
-- フォロワー増減: ${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}
 ${businessInfoText}
 ${aiSettingsText}
 
@@ -782,11 +778,11 @@ ${postTypeArray.length > 0
 	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
 	•	いいね数：${totalLikes.toLocaleString()}
 	•	コメント数：${totalComments.toLocaleString()}
-	•	保存数：${totalSaves.toLocaleString()}${currentTotalFollowers > 0 ? `\n	•	フォロワー数：${currentTotalFollowers.toLocaleString()}人` : ""}
+	•	保存数：${totalSaves.toLocaleString()}
 
 ${analyzedCount > 0 
   ? `${totalReach > 0 
-    ? `リーチ数${totalReach.toLocaleString()}人、いいね数${totalLikes.toLocaleString()}件を達成しました。${reachChangeText ? `前月比で${reachChange >= 0 ? "増加" : "減少"}しており、${reachChange >= 0 ? "順調に成長" : "改善の余地"}が見られます。` : ""}${totalSaves > 0 ? `保存数${totalSaves.toLocaleString()}件も獲得しており、` : ""}${totalComments > 0 ? `コメント${totalComments.toLocaleString()}件もあり、` : ""}フォロワーとのエンゲージメントが良好です。` 
+    ? `リーチ数${totalReach.toLocaleString()}人、いいね数${totalLikes.toLocaleString()}件を達成しました。${reachChangeText ? `前月比で${reachChange >= 0 ? "増加" : "減少"}しており、${reachChange >= 0 ? "順調に成長" : "改善の余地"}が見られます。` : ""}${totalSaves > 0 ? `保存数${totalSaves.toLocaleString()}件も獲得しており、` : ""}${totalComments > 0 ? `コメント${totalComments.toLocaleString()}件もあり、` : ""}エンゲージメントが良好です。` 
     : "投稿データを蓄積中です。"}` 
   : "投稿データがまだありません。"}
 

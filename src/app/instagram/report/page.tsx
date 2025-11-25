@@ -159,11 +159,11 @@ export default function InstagramReportPage() {
           kpis={performanceScore?.kpis || null}
         />
 
-        {/* 投稿ディープダイブ */}
-        <PostDeepDive selectedMonth={selectedMonth} />
-
         {/* フィードバック感情トラッキング */}
         <FeedbackSentiment selectedMonth={selectedMonth} />
+
+        {/* 投稿ディープダイブ */}
+        <PostDeepDive selectedMonth={selectedMonth} />
 
         {/* AI学習リファレンス */}
         <AILearningReferences selectedMonth={selectedMonth} />
