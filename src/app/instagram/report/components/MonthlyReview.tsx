@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { Brain, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState, useCallback, useEffect } from "react";
+import { Brain, Loader2, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
 
@@ -30,7 +30,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
   const [error, setError] = useState<string | null>(null);
   const [reviewData, setReviewData] = useState<MonthlyReviewData | null>(null);
 
-  const fetchReview = useCallback(async () => {
+  const fetchReview = useCallback(async (regenerate = false) => {
     if (!user) return;
 
     setIsLoading(true);
@@ -39,6 +39,9 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
     try {
       // KPIデータをクエリパラメータとして渡す
       const params = new URLSearchParams({ date: selectedMonth });
+      if (regenerate) {
+        params.append("regenerate", "true");
+      }
       if (kpis) {
         params.append("totalLikes", kpis.totalLikes.toString());
         params.append("totalReach", kpis.totalReach.toString());
@@ -55,7 +58,10 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
         const result = await response.json();
         if (result.success && result.data) {
           setReviewData(result.data);
-          setIsExpanded(true);
+          // データがある場合は自動的に展開
+          if (result.data.review) {
+            setIsExpanded(true);
+          }
         } else {
           setError("データの取得に失敗しました");
         }
@@ -71,12 +77,19 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
     }
   }, [user, selectedMonth, kpis]);
 
-  const handleToggle = () => {
-    if (!isExpanded && !reviewData) {
-      fetchReview();
-    } else {
-      setIsExpanded(!isExpanded);
+  // ページ読み込み時に保存されたデータを取得
+  useEffect(() => {
+    if (user && selectedMonth) {
+      fetchReview(false);
     }
+  }, [user, selectedMonth, fetchReview]);
+
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleRegenerate = () => {
+    fetchReview(true);
   };
 
   return (
@@ -95,28 +108,24 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
           </div>
         </div>
 
-        <button
-          onClick={handleToggle}
-          disabled={isLoading}
-          className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span className="hidden sm:inline text-xs">分析中...</span>
-            </>
-          ) : isExpanded ? (
-            <>
-              <ChevronUp className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-xs">閉じる</span>
-            </>
-          ) : (
-            <>
-              <Brain className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-xs">振り返りを見る</span>
-            </>
-          )}
-        </button>
+        {reviewData && (
+          <button
+            onClick={handleToggle}
+            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs">閉じる</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs">開く</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* コンテンツ */}
@@ -134,7 +143,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
                 <div className="flex-1">
                   <p className="text-xs font-medium text-red-800 mb-1.5">{error}</p>
                   <button
-                    onClick={fetchReview}
+                    onClick={() => fetchReview(false)}
                     className="text-xs text-red-600 hover:text-red-800 underline font-medium"
                   >
                     再試行
@@ -165,8 +174,43 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
                         <p className="text-sm">振り返りデータがありません</p>
                       </div>
                     )}
+
+                    {/* 再提案するボタン */}
+                    <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={handleRegenerate}
+                        disabled={isLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+                        <span>再提案する</span>
+                      </button>
+                    </div>
             </div>
           ) : null}
+        </div>
+      )}
+
+      {/* データがない場合の生成ボタン */}
+      {!reviewData && !isLoading && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <button
+            onClick={() => fetchReview(false)}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center space-x-1.5 px-3 py-2 text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>分析中...</span>
+              </>
+            ) : (
+              <>
+                <Brain className="w-4 h-4" />
+                <span>振り返りを生成</span>
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>

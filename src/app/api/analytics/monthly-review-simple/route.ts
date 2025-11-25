@@ -149,13 +149,34 @@ export async function GET(request: NextRequest) {
 
     const useProvidedKpis = Object.values(providedKpis).every((v) => v !== null);
 
+    // 保存されたレビューを取得（存在する場合）
+    const savedReviewDoc = await adminDb
+      .collection("monthly_reviews")
+      .doc(`${uid}_${date}`)
+      .get();
+
+    // 保存されたデータがある場合、それを返す（再生成フラグがない限り）
+    const forceRegenerate = searchParams.get("regenerate") === "true";
+    if (savedReviewDoc.exists && !forceRegenerate) {
+      const savedData = savedReviewDoc.data();
+      return NextResponse.json({
+        success: true,
+        data: {
+          review: savedData?.review || "",
+          actionPlans: savedData?.actionPlans || [],
+          hasPlan: savedData?.hasPlan || false,
+          analyzedCount: savedData?.analyzedCount || 0,
+        },
+      });
+    }
+
     // 月の範囲を計算
     const { start, end } = getMonthRange(date);
     const startTimestamp = admin.firestore.Timestamp.fromDate(start);
     const endTimestamp = admin.firestore.Timestamp.fromDate(end);
 
     // 必要なデータを取得（並列）- analyticsコレクション（分析済みデータ）のみを使用
-    const [analyticsSnapshot, plansSnapshot] = await Promise.all([
+    const [analyticsSnapshot, plansSnapshot, userDoc] = await Promise.all([
       // 期間内の分析データを取得（分析済みデータのみ）
       adminDb
         .collection("analytics")
@@ -172,6 +193,9 @@ export async function GET(request: NextRequest) {
         .where("status", "==", "active")
         .limit(1)
         .get(),
+
+      // ユーザー情報（ビジネス情報とAI設定を取得）
+      adminDb.collection("users").doc(uid).get(),
     ]);
 
     const analyzedCount = analyticsSnapshot.docs.length;
@@ -362,6 +386,60 @@ export async function GET(request: NextRequest) {
       ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）`
       : "";
 
+    // ユーザーのビジネス情報とAI設定を取得
+    let businessInfoText = "";
+    let aiSettingsText = "";
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      const businessInfo = userData?.businessInfo || {};
+      const snsAISettings = userData?.snsAISettings?.instagram || {};
+
+      // ビジネス情報を構築
+      const businessInfoParts: string[] = [];
+      if (businessInfo.industry) businessInfoParts.push(`業種: ${businessInfo.industry}`);
+      if (businessInfo.companySize) businessInfoParts.push(`会社規模: ${businessInfo.companySize}`);
+      if (businessInfo.businessType) businessInfoParts.push(`事業形態: ${businessInfo.businessType}`);
+      if (businessInfo.description) businessInfoParts.push(`事業内容: ${businessInfo.description}`);
+      if (businessInfo.catchphrase) businessInfoParts.push(`キャッチコピー: ${businessInfo.catchphrase}`);
+      if (Array.isArray(businessInfo.targetMarket) && businessInfo.targetMarket.length > 0) {
+        businessInfoParts.push(`ターゲット市場: ${businessInfo.targetMarket.join("、")}`);
+      }
+      if (Array.isArray(businessInfo.productsOrServices) && businessInfo.productsOrServices.length > 0) {
+        const productsText = businessInfo.productsOrServices
+          .map((p: { name?: string; details?: string }) => {
+            if (p.details) {
+              return `${p.name}（${p.details}）`;
+            }
+            return p.name;
+          })
+          .filter(Boolean)
+          .join("、");
+        if (productsText) businessInfoParts.push(`商品・サービス: ${productsText}`);
+      }
+      if (Array.isArray(businessInfo.goals) && businessInfo.goals.length > 0) {
+        businessInfoParts.push(`目標: ${businessInfo.goals.join("、")}`);
+      }
+      if (Array.isArray(businessInfo.challenges) && businessInfo.challenges.length > 0) {
+        businessInfoParts.push(`課題: ${businessInfo.challenges.join("、")}`);
+      }
+
+      if (businessInfoParts.length > 0) {
+        businessInfoText = `\n【ビジネス情報】\n${businessInfoParts.join("\n")}`;
+      }
+
+      // AI設定を構築
+      const aiSettingsParts: string[] = [];
+      if (snsAISettings.tone) aiSettingsParts.push(`トーン: ${snsAISettings.tone}`);
+      if (snsAISettings.manner) aiSettingsParts.push(`マナー・ルール: ${snsAISettings.manner}`);
+      if (snsAISettings.goals) aiSettingsParts.push(`Instagram運用の目標: ${snsAISettings.goals}`);
+      if (snsAISettings.motivation) aiSettingsParts.push(`運用動機: ${snsAISettings.motivation}`);
+      if (snsAISettings.additionalInfo) aiSettingsParts.push(`その他参考情報: ${snsAISettings.additionalInfo}`);
+
+      if (aiSettingsParts.length > 0) {
+        aiSettingsText = `\n【Instagram AI設定】\n${aiSettingsParts.join("\n")}`;
+      }
+    }
+
     // AI生成（シンプルなプロンプト）
     let reviewText = "";
     if (openai && analyzedCount > 0) {
@@ -381,6 +459,8 @@ export async function GET(request: NextRequest) {
 - フォロワー増減: ${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}
 - 現在のフォロワー数: ${currentFollowers.toLocaleString()}
 ${hasPlan ? `- 運用計画: ${planInfo?.title || "あり"}` : "- 運用計画: 未設定"}
+${businessInfoText}
+${aiSettingsText}
 
 【投稿タイプ別の統計】
 ${postTypeInfo}
@@ -450,7 +530,8 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
 - 提案は、これまでの分析を踏まえた具体的なアクションプランにしてください
 - 同じ投稿名や数値を繰り返し言及しないでください
 - 「来月はこうしようね」という親しみやすいトーンで書いてください
-- **この「📈 ${nextMonth}に向けた提案」セクションは必須です。必ず含めてください。**}
+- **この「📈 ${nextMonth}に向けた提案」セクションは必須です。必ず含めてください。**
+- **重要：提案は必ず「ビジネス情報」と「Instagram AI設定」を参照してください。業種、商品・サービス、ターゲット市場、目標、課題、キャッチコピーなどの具体的な情報を活用して、そのビジネスに特化した提案をしてください。凡庸な例（「役立つ情報や美しい風景」など）ではなく、そのビジネスの具体的な商品・サービス名や業種に基づいた提案をしてください。**
 
 
 【重要】
@@ -465,7 +546,8 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
 - 文章は簡潔で分かりやすく、専門用語を使いすぎないでください
 - **重複を避ける：同じ投稿名、同じ数値、同じ情報を複数のセクションで繰り返し言及しないでください。各セクションで異なる視点や情報を提供してください**
 - 「コンテンツ別の傾向」で最も閲覧された投稿を紹介したら、「総評」では別の視点（全体の評価、今後の展望など）に焦点を当ててください
-- **重要：必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。**`;
+- **重要：必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。**
+- **最重要：提案セクションでは、必ず「ビジネス情報」と「Instagram AI設定」を参照してください。業種、商品・サービス、ターゲット市場、目標、課題、キャッチコピーなどの具体的な情報を活用し、そのビジネスに特化した提案をしてください。凡庸な例（「役立つ情報や美しい風景」など）ではなく、そのビジネスの具体的な商品・サービス名や業種に基づいた提案をしてください。例えば、美容・健康業種なら「カット」「カラー」などの具体的なサービス名を、飲食業種なら「ランチセット」「ディナーコース」などの具体的なメニュー名を使用してください。**`;
 
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
@@ -473,7 +555,7 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
             {
               role: "system",
               content:
-                "あなたはInstagram運用の専門家です。データに基づいて自然で読みやすい日本語で振り返りを提供します。数値だけを羅列するのではなく、具体的な数値とその意味を自然な文章で説明してください。テンプレートのプレースホルダー（{評価}など）をそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください。必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。",
+                "あなたはInstagram運用の専門家です。データに基づいて自然で読みやすい日本語で振り返りを提供します。数値だけを羅列するのではなく、具体的な数値とその意味を自然な文章で説明してください。テンプレートのプレースホルダー（{評価}など）をそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください。必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。提案は必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください。凡庸な例ではなく、具体的な商品・サービス名や業種に基づいた提案をしてください。",
             },
             {
               role: "user",
@@ -511,6 +593,8 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
 - コメント数: ${totalComments.toLocaleString()}
 - 保存数: ${totalSaves.toLocaleString()}
 - フォロワー増減: ${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}
+${businessInfoText}
+${aiSettingsText}
 
 【投稿タイプ別の統計】
 ${postTypeArray.length > 0
@@ -536,7 +620,7 @@ ${postTypeArray.length > 0
               messages: [
                 {
                   role: "system",
-                  content: "あなたはInstagram運用の専門家です。データに基づいて具体的なアクションプランを提供します。",
+                  content: "あなたはInstagram運用の専門家です。データに基づいて具体的なアクションプランを提供します。必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください。凡庸な例ではなく、具体的な商品・サービス名や業種に基づいた提案をしてください。",
                 },
                 {
                   role: "user",
@@ -625,6 +709,29 @@ ${getMonthName(date)}のデータがまだありません。投稿を開始し�
         if (hasProposalSection) {
           console.log("📋 提案セクションを含む部分:", reviewText.match(/📈[\s\S]{0,500}/)?.[0]);
         }
+      }
+    }
+
+    // 生成されたレビューをFirestoreに保存
+    if (reviewText) {
+      try {
+        const reviewDocRef = adminDb
+          .collection("monthly_reviews")
+          .doc(`${uid}_${date}`);
+        
+        await reviewDocRef.set({
+          userId: uid,
+          month: date,
+          review: reviewText,
+          actionPlans,
+          hasPlan,
+          analyzedCount,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (saveError) {
+        console.error("レビュー保存エラー:", saveError);
+        // 保存エラーは無視してレスポンスを返す
       }
     }
 

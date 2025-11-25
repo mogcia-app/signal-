@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { Lightbulb, Loader2, ArrowRight } from "lucide-react";
+import React, { useState, useCallback, useEffect } from "react";
+import { Lightbulb, Loader2, ArrowRight, RefreshCw } from "lucide-react";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
 
@@ -29,7 +29,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
   const [error, setError] = useState<string | null>(null);
   const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
 
-  const fetchActionPlans = useCallback(async () => {
+  const fetchActionPlans = useCallback(async (regenerate = false) => {
     if (!user) return;
 
     setIsLoading(true);
@@ -38,6 +38,9 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
     try {
       // KPIデータをクエリパラメータとして渡す
       const params = new URLSearchParams({ date: selectedMonth });
+      if (regenerate) {
+        params.append("regenerate", "true");
+      }
       if (kpis) {
         params.append("totalLikes", kpis.totalLikes.toString());
         params.append("totalReach", kpis.totalReach.toString());
@@ -52,7 +55,10 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
         const result = await response.json();
         if (result.success && result.data?.actionPlans) {
           setActionPlans(result.data.actionPlans);
-          setIsExpanded(true);
+          // データがある場合は自動的に展開
+          if (result.data.actionPlans.length > 0) {
+            setIsExpanded(true);
+          }
         } else {
           setError("データの取得に失敗しました");
         }
@@ -68,12 +74,19 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
     }
   }, [user, selectedMonth, kpis]);
 
-  const handleToggle = () => {
-    if (!isExpanded && actionPlans.length === 0) {
-      fetchActionPlans();
-    } else {
-      setIsExpanded(!isExpanded);
+  // ページ読み込み時に保存されたデータを取得
+  useEffect(() => {
+    if (user && selectedMonth) {
+      fetchActionPlans(false);
     }
+  }, [user, selectedMonth, fetchActionPlans]);
+
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleRegenerate = () => {
+    fetchActionPlans(true);
   };
 
   return (
@@ -92,27 +105,18 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
           </div>
         </div>
 
-        <button
-          onClick={handleToggle}
-          disabled={isLoading}
-          className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span className="hidden sm:inline text-xs">生成中...</span>
-            </>
-          ) : isExpanded ? (
-            <>
+        {actionPlans.length > 0 && (
+          <button
+            onClick={handleToggle}
+            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+          >
+            {isExpanded ? (
               <span className="hidden sm:inline text-xs">閉じる</span>
-            </>
-          ) : (
-            <>
-              <Lightbulb className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-xs">アクションプランを見る</span>
-            </>
-          )}
-        </button>
+            ) : (
+              <span className="hidden sm:inline text-xs">開く</span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* コンテンツ */}
@@ -130,7 +134,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                 <div className="flex-1">
                   <p className="text-xs font-medium text-red-800 mb-1.5">{error}</p>
                   <button
-                    onClick={fetchActionPlans}
+                    onClick={() => fetchActionPlans(false)}
                     className="text-xs text-red-600 hover:text-red-800 underline font-medium"
                   >
                     再試行
@@ -165,6 +169,43 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
               <p className="text-xs">アクションプランがありません</p>
             </div>
           )}
+
+          {/* 再提案するボタン */}
+          {actionPlans.length > 0 && (
+            <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
+              <button
+                onClick={handleRegenerate}
+                disabled={isLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+                <span>再提案する</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* データがない場合の生成ボタン */}
+      {actionPlans.length === 0 && !isLoading && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <button
+            onClick={() => fetchActionPlans(false)}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center space-x-1.5 px-3 py-2 text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>生成中...</span>
+              </>
+            ) : (
+              <>
+                <Lightbulb className="w-4 h-4" />
+                <span>アクションプランを生成</span>
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>

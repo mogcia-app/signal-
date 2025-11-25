@@ -290,7 +290,7 @@ export default function HomePage() {
   }, [isAuthReady, fetchFollowerCount, fetchActionPlans, fetchKPISummary]);
 
   return (
-    <SNSLayout customTitle="ホーム" customDescription="KPIサマリー">
+    <SNSLayout customTitle="ホーム" customDescription="アカウント指標とKPIサマリーを確認・管理">
       <div className="w-full p-6 sm:p-8 bg-gray-50 min-h-screen">
 
         {/* KPIサマリーカード */}

@@ -279,16 +279,20 @@ export async function GET(request: NextRequest) {
     const totalSaves = validAnalyticsData.reduce((sum, data) => sum + (data.saves || 0), 0);
     const totalComments = validAnalyticsData.reduce((sum, data) => sum + data.comments, 0);
 
-    // フォロワー増加数はfollower_countsから計算（月初と月末の差分）
-    let totalFollowerIncrease = 0;
+    // フォロワー増加数の計算（kpi-breakdownと同じロジック）
+    // 1. analyticsのfollowerIncreaseの合計を計算
+    const followerIncreaseFromPosts = validAnalyticsData.reduce(
+      (sum, data) => sum + (data.followerIncrease || 0),
+      0
+    );
 
-    // 前月を計算
+    // 2. 前月を計算
     const [yearStr, monthStr] = date.split("-").map(Number);
     const prevMonth = new Date(yearStr, monthStr - 2, 1);
     const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
 
-    // 当月と前月のデータを取得
-    const [currentMonthSnapshot, prevMonthSnapshot] = await Promise.all([
+    // 3. 当月と前月のデータを取得
+    const [currentMonthSnapshot, prevMonthSnapshot, userDoc] = await Promise.all([
       // 当月のデータ
       adminDb
         .collection("follower_counts")
@@ -305,29 +309,35 @@ export async function GET(request: NextRequest) {
         .where("month", "==", prevMonthStr)
         .limit(1)
         .get(),
+      // ユーザー情報（initialFollowers取得用）
+      adminDb.collection("users").doc(uid).get(),
     ]);
 
+    // 4. homeで入力された値（その他からの増加数）を取得
+    let followerIncreaseFromOther = 0;
     if (!currentMonthSnapshot.empty) {
       const currentData = currentMonthSnapshot.docs[0].data();
-      const endMonthFollowers = currentData.followers; // 月末の値
-      let startMonthFollowers: number | null = null;
+      followerIncreaseFromOther = currentData.followers || 0;
+    }
 
-      // 月初の値を取得（優先順位: startFollowers → 前月のfollowers → initialFollowers）
-      if (currentData.startFollowers) {
-        startMonthFollowers = currentData.startFollowers;
-      } else if (!prevMonthSnapshot.empty) {
-        startMonthFollowers = prevMonthSnapshot.docs[0].data().followers;
-      } else {
-        const userDoc = await adminDb.collection("users").doc(uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          startMonthFollowers = userData?.businessInfo?.initialFollowers || 0;
-        }
-      }
+    // 5. 初回ログイン月の判定（前月のデータが存在しない場合）
+    const isFirstMonth = prevMonthSnapshot.empty;
 
-      if (startMonthFollowers !== null) {
-        totalFollowerIncrease = endMonthFollowers - startMonthFollowers;
-      }
+    // 6. initialFollowersを取得
+    let initialFollowers = 0;
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      initialFollowers = userData?.businessInfo?.initialFollowers || 0;
+    }
+
+    // 7. 合計増加数の計算
+    // 初回ログイン月：ツール利用開始時のフォロワー数 + 投稿からの増加数 + その他からの増加数
+    // 2ヶ月目以降：投稿からの増加数 + その他からの増加数
+    let totalFollowerIncrease: number;
+    if (isFirstMonth && initialFollowers > 0) {
+      totalFollowerIncrease = initialFollowers + followerIncreaseFromPosts + followerIncreaseFromOther;
+    } else {
+      totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
     }
 
     // スコアを計算

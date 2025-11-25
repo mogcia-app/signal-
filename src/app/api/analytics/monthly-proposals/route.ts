@@ -67,6 +67,28 @@ export async function GET(request: NextRequest) {
 
     const useProvidedKpis = Object.values(providedKpis).every((v) => v !== null);
 
+    // 保存されたアクションプランを取得（存在する場合）
+    const savedReviewDoc = await adminDb
+      .collection("monthly_reviews")
+      .doc(`${uid}_${date}`)
+      .get();
+
+    // 保存されたデータがある場合、アクションプランを返す（再生成フラグがない限り）
+    const forceRegenerate = searchParams.get("regenerate") === "true";
+    if (savedReviewDoc.exists && !forceRegenerate) {
+      const savedData = savedReviewDoc.data();
+      if (savedData?.actionPlans && Array.isArray(savedData.actionPlans) && savedData.actionPlans.length > 0) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            actionPlans: savedData.actionPlans,
+            month: date,
+            nextMonthName: getNextMonthName(date),
+          },
+        });
+      }
+    }
+
     // 月の範囲を計算
     const { start, end } = getMonthRange(date);
     const startTimestamp = admin.firestore.Timestamp.fromDate(start);
@@ -318,6 +340,25 @@ ${reviewSummary}
             action: `${postTypeArray.length > 0 ? `${postTypeArray[0].label}の投稿を継続する` : "投稿タイプのバランスを改善する"}`,
           },
         ];
+      }
+    }
+
+    // 生成されたアクションプランをFirestoreに保存（monthly_reviewsに保存）
+    if (actionPlans.length > 0) {
+      try {
+        const reviewDocRef = adminDb
+          .collection("monthly_reviews")
+          .doc(`${uid}_${date}`);
+        
+        await reviewDocRef.set({
+          userId: uid,
+          month: date,
+          actionPlans,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (saveError) {
+        console.error("アクションプラン保存エラー:", saveError);
+        // 保存エラーは無視してレスポンスを返す
       }
     }
 
