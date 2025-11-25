@@ -201,6 +201,13 @@ export async function GET(request: NextRequest) {
     const analyzedCount = analyticsSnapshot.docs.length;
     const hasPlan = !plansSnapshot.empty;
 
+    // initialFollowersを取得（フォロワー数計算で使用）
+    let initialFollowers = 0;
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      initialFollowers = userData?.businessInfo?.initialFollowers || 0;
+    }
+
     // 投稿と分析データをpostIdで紐付け
     const analyticsByPostId = new Map<string, any>();
     analyticsSnapshot.docs.forEach((doc) => {
@@ -232,6 +239,55 @@ export async function GET(request: NextRequest) {
         totalShares += data.shares || 0;
         totalFollowerIncrease += data.followerIncrease || 0;
       });
+
+      // フォロワー増加数の計算（performance-scoreと同じロジック）
+      // 1. analyticsのfollowerIncreaseの合計を計算（上記で既に計算済み）
+      const followerIncreaseFromPosts = totalFollowerIncrease;
+
+      // 2. 前月を計算
+      const [yearStr, monthStr] = date.split("-").map(Number);
+      const prevMonth = new Date(yearStr, monthStr - 2, 1);
+      const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+
+      // 3. 当月と前月のデータを取得
+      const [currentMonthSnapshot, prevMonthSnapshot] = await Promise.all([
+        // 当月のデータ
+        adminDb
+          .collection("follower_counts")
+          .where("userId", "==", uid)
+          .where("snsType", "==", "instagram")
+          .where("month", "==", date)
+          .limit(1)
+          .get(),
+        // 前月のデータ
+        adminDb
+          .collection("follower_counts")
+          .where("userId", "==", uid)
+          .where("snsType", "==", "instagram")
+          .where("month", "==", prevMonthStr)
+          .limit(1)
+          .get(),
+      ]);
+
+      // 4. homeで入力された値（その他からの増加数）を取得
+      let followerIncreaseFromOther = 0;
+      if (!currentMonthSnapshot.empty) {
+        const currentData = currentMonthSnapshot.docs[0].data();
+        followerIncreaseFromOther = currentData.followers || 0;
+      }
+
+      // 5. 初回ログイン月の判定（前月のデータが存在しない場合）
+      const isFirstMonth = prevMonthSnapshot.empty;
+
+      // 6. initialFollowersを取得（既に取得済み）
+      // 7. 合計増加数の計算
+      // 初回ログイン月：ツール利用開始時のフォロワー数 + 投稿からの増加数 + その他からの増加数
+      // 2ヶ月目以降：投稿からの増加数 + その他からの増加数
+      if (isFirstMonth && initialFollowers > 0) {
+        totalFollowerIncrease = initialFollowers + followerIncreaseFromPosts + followerIncreaseFromOther;
+      } else {
+        totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
+      }
     } else {
       // KPIデータが提供されている場合でも、シェア数は計算が必要
       analyticsByPostId.forEach((data) => {
@@ -456,8 +512,8 @@ export async function GET(request: NextRequest) {
 - コメント数: ${totalComments.toLocaleString()}
 - 保存数: ${totalSaves.toLocaleString()}
 - シェア数: ${totalShares.toLocaleString()}
-- フォロワー増減: ${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}
-- 現在のフォロワー数: ${currentFollowers.toLocaleString()}
+- 利用開始時のフォロワー数: ${initialFollowers.toLocaleString()}人
+- 今月のフォロワー増加数: ${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}人
 ${hasPlan ? `- 運用計画: ${planInfo?.title || "あり"}` : "- 運用計画: 未設定"}
 ${businessInfoText}
 ${aiSettingsText}
@@ -479,12 +535,12 @@ ${topPostInfo}
 	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
 	•	いいね数：${totalLikes.toLocaleString()}
 	•	コメント数：${totalComments.toLocaleString()}
-	•	保存数：${totalSaves.toLocaleString()}${currentFollowers > 0 ? `\n	•	フォロワー数：${currentFollowers.toLocaleString()}（${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}）` : totalFollowerIncrease !== 0 ? `\n	•	フォロワー増減：${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}` : ""}
+	•	保存数：${totalSaves.toLocaleString()}${initialFollowers > 0 || totalFollowerIncrease !== 0 ? `\n	•	フォロワー数：${initialFollowers > 0 ? `利用開始時は${initialFollowers.toLocaleString()}人でしたが、` : ""}${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}` : ""}
 
 {全体的な評価コメント（2-3文）。以下の点を含めてください：
 - リーチ数やいいね数の具体的な数値とその意味
 - 前月比がある場合は、その変化率と評価（増加している場合は「前月比で○％増加し、順調に成長しています」など）
-- フォロワー増減がある場合は、その数値と評価
+- フォロワー増減がある場合は、「利用開始時は○人でしたが、+○人」という形式で表示してください。増加数のみを表示し、利用開始時のフォロワー数と増加数を合計して表示しないでください。
 - 保存数やコメント数が0でない場合は、それらも言及
 - 数値だけを羅列するのではなく、自然な文章で説明してください}
 
@@ -540,7 +596,7 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
 - 投稿タイプ別の統計や最も閲覧された投稿の情報を必ず反映してください
 - 前月比がある場合は、その変化を評価コメントに含めてください
 - 提案はデータに基づいた具体的な内容にしてください
-- フォロワー数が0の場合は、フォロワー数の行を表示せず、フォロワー増減のみ表示してください
+- フォロワー数の表示は「利用開始時は○人でしたが、+○人」という形式にしてください。利用開始時のフォロワー数と今月の増加数を合計して表示しないでください。増加数のみを表示してください。
 - 数値だけを羅列するのではなく、自然で読みやすい日本語の文章で説明してください
 - テンプレートの{評価}や{強調ポイント}などのプレースホルダーをそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください
 - 文章は簡潔で分かりやすく、専門用語を使いすぎないでください
@@ -555,7 +611,7 @@ ${currentMonth}は全体的に{評価（好調/順調/改善の余地ありな�
             {
               role: "system",
               content:
-                "あなたはInstagram運用の専門家です。データに基づいて自然で読みやすい日本語で振り返りを提供します。数値だけを羅列するのではなく、具体的な数値とその意味を自然な文章で説明してください。テンプレートのプレースホルダー（{評価}など）をそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください。必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。提案は必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください。凡庸な例ではなく、具体的な商品・サービス名や業種に基づいた提案をしてください。",
+                "あなたはInstagram運用の専門家です。データに基づいて自然で読みやすい日本語で振り返りを提供します。数値だけを羅列するのではなく、具体的な数値とその意味を自然な文章で説明してください。テンプレートのプレースホルダー（{評価}など）をそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください。必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。提案は必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください。凡庸な例ではなく、具体的な商品・サービス名や業種に基づいた提案をしてください。フォロワー数の表示は「利用開始時は○人でしたが、+○人」という形式にしてください。増加数のみを表示し、利用開始時のフォロワー数と増加数を合計して表示しないでください。",
             },
             {
               role: "user",
@@ -653,7 +709,7 @@ ${postTypeArray.length > 0
 	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
 	•	いいね数：${totalLikes.toLocaleString()}
 	•	コメント数：${totalComments.toLocaleString()}
-	•	保存数：${totalSaves.toLocaleString()}${currentFollowers > 0 ? `\n	•	フォロワー数：${currentFollowers.toLocaleString()}（${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}）` : totalFollowerIncrease !== 0 ? `\n	•	フォロワー増減：${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}` : ""}
+	•	保存数：${totalSaves.toLocaleString()}${initialFollowers > 0 || totalFollowerIncrease !== 0 ? `\n	•	フォロワー数：${initialFollowers > 0 ? `利用開始時は${initialFollowers.toLocaleString()}人でしたが、` : ""}${totalFollowerIncrease >= 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}` : ""}
 
 ${analyzedCount > 0 
   ? `${totalReach > 0 
