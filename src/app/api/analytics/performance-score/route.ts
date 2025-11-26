@@ -47,9 +47,10 @@ function calculatePerformanceScore(params: {
   totalReach: number;
   totalSaves: number;
   totalComments: number;
+  totalFollowerIncrease: number;
   analyticsData: AnalyticsData[];
 }): PerformanceScoreResult {
-  const { postCount, analyzedCount, hasPlan, totalLikes, totalReach, totalSaves, totalComments, analyticsData } = params;
+  const { postCount, analyzedCount, hasPlan, totalLikes, totalReach, totalSaves, totalComments, totalFollowerIncrease, analyticsData } = params;
 
   if (analyticsData.length === 0) {
     return {
@@ -91,10 +92,7 @@ function calculatePerformanceScore(params: {
   const engagementScore = Math.min(50, avgEngagementRate * 10);
 
   // 成長スコア (25%)
-  const totalFollowerIncrease = analyticsData.reduce(
-    (sum, data) => sum + (data.followerIncrease || 0),
-    0
-  );
+  // totalFollowerIncreaseは既に計算済み（analytics + homeのデータを含む）
   const growthScore = Math.min(25, totalFollowerIncrease * 0.05);
 
   // 投稿品質スコア (15%)
@@ -349,6 +347,7 @@ export async function GET(request: NextRequest) {
       totalReach,
       totalSaves,
       totalComments,
+      totalFollowerIncrease,
       analyticsData: validAnalyticsData,
     });
 

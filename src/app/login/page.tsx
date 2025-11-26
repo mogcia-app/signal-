@@ -183,6 +183,20 @@ export default function LoginPage() {
               </button>
             </div>
 
+            {/* パスワードを忘れた場合 */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  // パスワードリセットページに遷移（実装が必要な場合は追加）
+                  alert("パスワードリセット機能は管理者にお問い合わせください。");
+                }}
+                className="text-sm text-orange-600 hover:text-orange-700 underline transition-colors"
+              >
+                パスワードを忘れた場合
+              </button>
+            </div>
+
             {/* 注意事項 */}
             <div className="text-center">
               <p className="text-sm text-black bg-orange-50 rounded-lg p-3 border border-orange-100">

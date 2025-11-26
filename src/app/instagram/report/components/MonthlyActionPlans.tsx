@@ -5,6 +5,21 @@ import { Lightbulb, Loader2, ArrowRight, RefreshCw } from "lucide-react";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
 
+// マークダウン記法を削除する関数
+const removeMarkdown = (text: string): string => {
+  if (!text) return text;
+  return text
+    .replace(/\*\*/g, "") // **太字**
+    .replace(/\*/g, "") // *斜体*
+    .replace(/__/g, "") // __太字__
+    .replace(/_/g, "") // _斜体_
+    .replace(/#{1,6}\s/g, "") // # 見出し
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1") // [リンクテキスト](URL)
+    .replace(/`([^`]+)`/g, "$1") // `コード`
+    .replace(/~~/g, "") // ~~取り消し線~~
+    .trim();
+};
+
 interface MonthlyActionPlansProps {
   selectedMonth: string;
   kpis?: {
@@ -150,15 +165,15 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                     className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-3 sm:p-4 border border-orange-200 shadow-sm"
                   >
                     <h3 className="text-sm font-semibold text-gray-900 mb-1.5">
-                      {index + 1}. {plan.title}
+                      {index + 1}. {removeMarkdown(plan.title)}
                     </h3>
                     {plan.description && (
-                      <p className="text-xs text-gray-700 mb-2 leading-relaxed">{plan.description}</p>
+                      <p className="text-xs text-gray-700 mb-2 leading-relaxed">{removeMarkdown(plan.description)}</p>
                     )}
                     {plan.action && (
                       <div className="flex items-start gap-2 mt-2 pt-2 border-t border-orange-200">
                         <ArrowRight className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs font-medium text-gray-900">{plan.action}</p>
+                        <p className="text-xs font-medium text-gray-900">{removeMarkdown(plan.action)}</p>
                       </div>
                     )}
                   </div>

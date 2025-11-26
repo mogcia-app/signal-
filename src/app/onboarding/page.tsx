@@ -19,6 +19,11 @@ import {
   Edit2,
   Save,
   X,
+  Eye,
+  EyeOff,
+  Lock,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import SNSLayout from "../../components/sns-layout";
 
@@ -73,6 +78,17 @@ export default function OnboardingPage() {
     >
   >({});
   const [customFeature, setCustomFeature] = useState("");
+
+  // パスワード変更
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
+  const [passwordChangeError, setPasswordChangeError] = useState("");
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
 
   // ユーザープロファイルからデータを読み込む
   useEffect(() => {
@@ -1516,6 +1532,206 @@ export default function OnboardingPage() {
               </div>
             </div>
           )}
+
+          {/* パスワード変更セクション */}
+          <div className="mt-8 bg-white border border-gray-200 p-6">
+            <h3 className="text-lg font-bold text-black mb-4">パスワード変更</h3>
+
+            {passwordChangeSuccess && (
+              <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-3">
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-green-700">
+                  パスワードが正常に変更されました
+                </div>
+              </div>
+            )}
+
+            {passwordChangeError && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-red-700">{passwordChangeError}</div>
+              </div>
+            )}
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setPasswordChangeError("");
+                setPasswordChangeSuccess(false);
+
+                // バリデーション
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                  setPasswordChangeError("すべてのフィールドを入力してください");
+                  return;
+                }
+
+                if (newPassword.length < 8) {
+                  setPasswordChangeError("新しいパスワードは8文字以上である必要があります");
+                  return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                  setPasswordChangeError("新しいパスワードと確認用パスワードが一致しません");
+                  return;
+                }
+
+                if (currentPassword === newPassword) {
+                  setPasswordChangeError("新しいパスワードは現在のパスワードと異なる必要があります");
+                  return;
+                }
+
+                setPasswordChangeLoading(true);
+
+                try {
+                  // 現在のパスワードで再認証
+                  const { signInWithEmailAndPassword, updatePassword } = await import("firebase/auth");
+                  const { auth } = await import("../../lib/firebase");
+
+                  if (!user || !user.email) {
+                    throw new Error("ユーザー情報を取得できませんでした");
+                  }
+
+                  // 現在のパスワードで再認証
+                  await signInWithEmailAndPassword(auth, user.email, currentPassword);
+
+                  // パスワードを変更
+                  if (auth.currentUser) {
+                    await updatePassword(auth.currentUser, newPassword);
+                  }
+
+                  setPasswordChangeSuccess(true);
+                  setCurrentPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+
+                  // 3秒後に成功メッセージを消す
+                  setTimeout(() => {
+                    setPasswordChangeSuccess(false);
+                  }, 3000);
+                } catch (error: any) {
+                  console.error("パスワード変更エラー:", error);
+                  
+                  if (error.code === "auth/wrong-password") {
+                    setPasswordChangeError("現在のパスワードが正しくありません");
+                  } else if (error.code === "auth/weak-password") {
+                    setPasswordChangeError("パスワードが弱すぎます。より強力なパスワードを設定してください");
+                  } else if (error.code === "auth/requires-recent-login") {
+                    setPasswordChangeError("セキュリティのため、再度ログインしてからパスワードを変更してください");
+                  } else {
+                    setPasswordChangeError(error.message || "パスワードの変更に失敗しました");
+                  }
+                } finally {
+                  setPasswordChangeLoading(false);
+                }
+              }}
+              className="space-y-4"
+            >
+              {/* 現在のパスワード */}
+              <div>
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  現在のパスワード
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="currentPassword"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="現在のパスワードを入力"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* 新しいパスワード */}
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  新しいパスワード
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="新しいパスワードを入力（8文字以上）"
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">8文字以上で入力してください</p>
+              </div>
+
+              {/* 確認用パスワード */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  新しいパスワード（確認）
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="新しいパスワードを再度入力"
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* 送信ボタン */}
+              <div>
+                <button
+                  type="submit"
+                  disabled={passwordChangeLoading}
+                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg text-white bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {passwordChangeLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      変更中...
+                    </>
+                  ) : (
+                    "パスワードを変更"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </SNSLayout>

@@ -5,8 +5,24 @@ import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
 import { authFetch } from "../../utils/authFetch";
 import { notify } from "../../lib/ui/notifications";
-import { Users, Loader2, Lightbulb, ArrowRight } from "lucide-react";
+import { Users, Loader2, Lightbulb, ArrowRight, Check } from "lucide-react";
 import { KPISummaryCard } from "./components/KPISummaryCard";
+import { actionLogsApi } from "@/lib/api";
+
+// マークダウン記法を削除する関数
+const removeMarkdown = (text: string): string => {
+  if (!text) return text;
+  return text
+    .replace(/\*\*/g, "") // **太字**
+    .replace(/\*/g, "") // *斜体*
+    .replace(/__/g, "") // __太字__
+    .replace(/_/g, "") // _斜体_
+    .replace(/#{1,6}\s/g, "") // # 見出し
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1") // [リンクテキスト](URL)
+    .replace(/`([^`]+)`/g, "$1") // `コード`
+    .replace(/~~/g, "") // ~~取り消し線~~
+    .trim();
+};
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -27,6 +43,8 @@ export default function HomePage() {
 
   const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
   const [isLoadingActionPlans, setIsLoadingActionPlans] = useState(false);
+  const [actionLogMap, setActionLogMap] = useState<Map<string, { applied: boolean }>>(new Map());
+  const [actionLogPendingIds, setActionLogPendingIds] = useState<Set<string>>(new Set());
 
   // KPIサマリー
   const [kpiBreakdowns, setKpiBreakdowns] = useState<any[]>([]);
@@ -238,11 +256,14 @@ export default function HomePage() {
 
   // アクションプランを取得（独立したAPIから）
   const fetchActionPlans = useCallback(async () => {
-    if (!isAuthReady) return;
+    if (!isAuthReady || !user?.uid) return;
 
     setIsLoadingActionPlans(true);
     try {
-      const response = await authFetch(`/api/analytics/monthly-proposals?date=${currentMonth}`);
+      const [response, actionLogsResponse] = await Promise.all([
+        authFetch(`/api/analytics/monthly-proposals?date=${currentMonth}`),
+        actionLogsApi.list(user.uid, { limit: 100 }),
+      ]);
 
       if (response.ok) {
         const result = await response.json();
@@ -250,12 +271,23 @@ export default function HomePage() {
           setActionPlans(result.data.actionPlans);
         }
       }
+
+      // アクションログを取得してマップに保存
+      if (actionLogsResponse.success && Array.isArray(actionLogsResponse.data)) {
+        const logMap = new Map<string, { applied: boolean }>();
+        actionLogsResponse.data.forEach((log: any) => {
+          if (log.actionId && typeof log.applied === "boolean") {
+            logMap.set(log.actionId, { applied: log.applied });
+          }
+        });
+        setActionLogMap(logMap);
+      }
     } catch (err) {
       console.error("アクションプラン取得エラー:", err);
     } finally {
       setIsLoadingActionPlans(false);
     }
-  }, [isAuthReady, currentMonth]);
+  }, [isAuthReady, currentMonth, user?.uid]);
 
   // KPIサマリーを取得
   const fetchKPISummary = useCallback(async () => {
@@ -444,25 +476,87 @@ export default function HomePage() {
             </div>
           ) : actionPlans.length > 0 ? (
             <div className="space-y-3">
-              {actionPlans.map((plan, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-100"
-                >
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1.5">
-                    {index + 1}. {plan.title}
-                  </h3>
-                  {plan.description && (
-                    <p className="text-xs text-gray-600 mb-2 leading-relaxed">{plan.description}</p>
-                  )}
-                  {plan.action && (
-                    <div className="flex items-start gap-2 mt-2 pt-2 border-t border-gray-100">
-                      <ArrowRight className="w-3.5 h-3.5 text-orange-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-gray-600 leading-relaxed">{plan.action}</p>
+              {actionPlans.map((plan, index) => {
+                const actionId = `home-action-plan-${currentMonth}-${index}`;
+                const isChecked = actionLogMap.get(actionId)?.applied ?? false;
+                const isPending = actionLogPendingIds.has(actionId);
+
+                const handleToggle = async () => {
+                  if (!user?.uid || isPending) return;
+
+                  const newApplied = !isChecked;
+                  setActionLogPendingIds((prev) => new Set(prev).add(actionId));
+
+                  try {
+                    await actionLogsApi.upsert({
+                      userId: user.uid,
+                      actionId,
+                      title: plan.title,
+                      focusArea: `next-month-${currentMonth}`,
+                      applied: newApplied,
+                    });
+
+                    setActionLogMap((prev) => {
+                      const newMap = new Map(prev);
+                      newMap.set(actionId, { applied: newApplied });
+                      return newMap;
+                    });
+
+                    // 成功通知
+                    notify({
+                      type: "success",
+                      message: newApplied ? "アクションプランを採用しました" : "アクションプランの採用を解除しました",
+                    });
+                  } catch (error) {
+                    console.error("アクションログ保存エラー:", error);
+                    notify({
+                      type: "error",
+                      message: "チェック状態の保存に失敗しました",
+                    });
+                  } finally {
+                    setActionLogPendingIds((prev) => {
+                      const newSet = new Set(prev);
+                      newSet.delete(actionId);
+                      return newSet;
+                    });
+                  }
+                };
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-gray-50 rounded-lg p-4 border border-gray-100"
+                  >
+                    <div className="flex items-start gap-3">
+                      <button
+                        onClick={handleToggle}
+                        disabled={isPending}
+                        className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                          isChecked
+                            ? "bg-orange-600 border-orange-600"
+                            : "bg-white border-gray-300 hover:border-orange-400"
+                        } ${isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        {isChecked && <Check className="w-3 h-3 text-white" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1.5">
+                          {index + 1}. {removeMarkdown(plan.title)}
+                        </h3>
+                        {plan.description && (
+                          <p className="text-xs text-gray-600 mb-2 leading-relaxed">{removeMarkdown(plan.description)}</p>
+                        )}
+                        {plan.action && (
+                          <div className="flex items-start gap-2 mt-2 pt-2 border-t border-gray-100">
+                            <ArrowRight className="w-3.5 h-3.5 text-orange-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-gray-600 leading-relaxed">{removeMarkdown(plan.action)}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12 text-gray-400">

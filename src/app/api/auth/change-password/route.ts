@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminAuth } from "../../../../lib/firebase-admin";
+import { requireAuthContext, buildErrorResponse } from "../../../../lib/server/auth-context";
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "change-password", limit: 5, windowSeconds: 300 },
+      auditEventName: "change_password",
+    });
+
     const body = await request.json();
-    const { currentPassword, newPassword } = body;
+    const { newPassword } = body;
 
     // バリデーション
-    if (!currentPassword || !newPassword) {
+    if (!newPassword) {
       return NextResponse.json(
         {
           success: false,
-          error: "現在のパスワードと新しいパスワードが必要です",
+          error: "新しいパスワードが必要です",
         },
         { status: 400 }
       );
@@ -26,43 +34,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 実際の実装では、Firebase Authを使用してパスワードを変更
-    // const user = await auth.currentUser;
-    // if (!user) {
-    //   return NextResponse.json(
-    //     { success: false, error: 'ユーザーが認証されていません' },
-    //     { status: 401 }
-    //   );
-    // }
+    // Firebase Admin SDKを使用してパスワードを変更
+    try {
+      await adminAuth.updateUser(uid, {
+        password: newPassword,
+      });
 
-    // // 現在のパスワードを確認
-    // const credential = EmailAuthProvider.credential(user.email!, currentPassword);
-    // try {
-    //   await reauthenticateWithCredential(user, credential);
-    // } catch (error) {
-    //   return NextResponse.json(
-    //     { success: false, error: '現在のパスワードが正しくありません' },
-    //     { status: 400 }
-    //   );
-    // }
+      return NextResponse.json({
+        success: true,
+        message: "パスワードが正常に変更されました",
+      });
+    } catch (error: any) {
+      console.error("パスワード変更エラー:", error);
+      
+      if (error.code === "auth/weak-password") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "パスワードが弱すぎます。より強力なパスワードを設定してください",
+          },
+          { status: 400 }
+        );
+      }
 
-    // // パスワードを変更
-    // await updatePassword(user, newPassword);
-
-    // モックレスポンス
-    return NextResponse.json({
-      success: true,
-      message: "パスワードが正常に変更されました",
-    });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "パスワードの変更に失敗しました",
+          details: error.message || "Unknown error",
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("パスワード変更エラー:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "パスワードの変更に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

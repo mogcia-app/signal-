@@ -269,10 +269,8 @@ export default function LearningDashboardPage() {
       try {
         const params = new URLSearchParams({
           userId: user.uid,
+          forceRefresh: "1", // 常に最新データを取得
         });
-        if (refreshKey > 0) {
-          params.set("forceRefresh", "1");
-        }
 
         const response = await authFetch(`/api/ai/master-context?${params.toString()}`);
 
@@ -818,7 +816,7 @@ const goldSampleSignals = useMemo(() => {
                           <li>投稿ディープダイブの「次のアクション」でチェック</li>
                         </ul>
                         <Link
-                          href="/instagram/monthly-report"
+                          href="/instagram/report"
                           className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold mt-1 inline-block"
                         >
                           月次レポートを見る →

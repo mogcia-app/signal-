@@ -184,7 +184,7 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
     { type: "positive" as const, value: summary.positive },
     { type: "negative" as const, value: summary.negative },
     { type: "neutral" as const, value: summary.neutral },
-  ];
+  ].filter((item) => item.value > 0); // 0の場合は表示しない
 
   const posts = summary.posts ?? [];
   const positiveLeaders = posts.filter((post) => post.score >= 0).slice(0, 3);
@@ -327,7 +327,7 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
                   );
                 })}
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className={`grid gap-3 ${sentimentTotals.length === 3 ? "grid-cols-3" : sentimentTotals.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
                 {sentimentTotals.map((item) => (
                   <div key={`legend-${item.type}`} className="flex items-center gap-2 text-xs">
                     {sentimentMeta[item.type].icon}

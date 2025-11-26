@@ -86,7 +86,7 @@ export function HistorySection({ feedbackHistory, actionHistory, isLoading, erro
                 align="left"
                 title="アクション実行ログがまだありません"
                 description="AI提案カードから「実行した」ログを残すと、提案の採用状況がここに集計されます。"
-                actions={[{ label: "AI提案を見る", href: "/instagram/monthly-report" }]}
+                actions={[{ label: "AI提案を見る", href: "/instagram/report" }]}
               />
             ) : (
               <ul className="space-y-3">
@@ -125,7 +125,7 @@ export function HistorySection({ feedbackHistory, actionHistory, isLoading, erro
                           {focusAreaLabel}
                           {isFromMonthlyReport && (
                             <Link
-                              href="/instagram/monthly-report"
+                              href="/instagram/report"
                               className="ml-2 text-blue-600 hover:text-blue-800 text-[10px] underline"
                             >
                               月次レポートを見る →

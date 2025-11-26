@@ -247,6 +247,32 @@ export const usePlanForm = () => {
     setSimulationResult(result);
   };
 
+  // シミュレーション結果をplanに保存する関数
+  const updateSimulationResultInPlan = async (result: SimulationResult | null) => {
+    if (!isAuthReady || !loadedPlanId || !result) {
+      return;
+    }
+
+    try {
+      // 既存のplanのsimulationResultを更新
+      const response = await authFetch(`/api/plans/${loadedPlanId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          simulationResult: result,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("シミュレーション結果の更新に失敗しました");
+        return;
+      }
+
+      console.log("シミュレーション結果をplanに保存しました");
+    } catch (error) {
+      console.error("シミュレーション結果更新エラー:", error);
+    }
+  };
+
   // ✅ 保存された計画を読み込む
   const loadSavedPlan = useCallback(async () => {
     if (!isAuthReady) {return;}
@@ -385,6 +411,7 @@ export const usePlanForm = () => {
     validateForm,
     savePlan,
     setSimulationResultData,
+    updateSimulationResultInPlan,
     loadSavedPlan,
     resetPlan,
   };

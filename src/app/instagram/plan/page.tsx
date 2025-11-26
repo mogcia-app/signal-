@@ -46,6 +46,7 @@ export default function InstagramPlanPage() {
     handleCategoryToggle,
     savePlan,
     setSimulationResultData,
+    updateSimulationResultInPlan,
     resetPlan,
     simulationResult: savedSimulationResult, // 保存されたシミュレーション結果
   } = usePlanForm();
@@ -169,12 +170,16 @@ export default function InstagramPlanPage() {
     await runSimulation(requestData);
   };
 
-  // 新しくシミュレーションを実行した結果をusePlanFormにも設定
+  // 新しくシミュレーションを実行した結果をusePlanFormにも設定し、planに保存
   React.useEffect(() => {
     if (newSimulationResult) {
       setSimulationResultData(newSimulationResult);
+      // 既存のplanがある場合は、simulationResultを更新
+      if (loadedPlanId) {
+        updateSimulationResultInPlan(newSimulationResult);
+      }
     }
-  }, [newSimulationResult, setSimulationResultData]);
+  }, [newSimulationResult, setSimulationResultData, updateSimulationResultInPlan, loadedPlanId]);
 
   // 現在の計画編集
   const handleEditCurrentPlan = () => {
