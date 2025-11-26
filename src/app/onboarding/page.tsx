@@ -6,8 +6,8 @@ import { useUserProfile } from "../../hooks/useUserProfile";
 import { useRouter } from "next/navigation";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
-import { notify } from "../../lib/ui/notifications";
 import { authFetch } from "../../utils/authFetch";
+import { notify } from "../../lib/ui/notifications";
 import {
   CheckCircle,
   ArrowRight,

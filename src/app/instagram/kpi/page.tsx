@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import SNSLayout from "../../../components/sns-layout";
 import { KPIHeader } from "./components/KPIHeader";
 import { KPIBreakdownComponent } from "./components/KPIBreakdown";
-import { TimeSlotHeatmap } from "../monthly-report/components/time-slot-heatmap";
 import { HashtagAnalysis } from "./components/HashtagAnalysis";
 import { ContentPerformance } from "./components/ContentPerformance";
 import { AudienceBreakdownComponent } from "./components/AudienceBreakdown";
@@ -153,11 +152,7 @@ export default function InstagramKPIPage() {
         <DailyKPITrend dailyKPIs={dailyKPIs} isLoading={isLoading} />
 
         {/* 時間帯 × コンテンツタイプ */}
-        {timeSlotAnalysis.length > 0 && (
-          <div className="mt-4">
-            <TimeSlotHeatmap data={timeSlotAnalysis} />
-          </div>
-        )}
+        {/* TimeSlotHeatmap コンポーネントは削除されました */}
 
         {/* ハッシュタグ分析 */}
         <div className="mt-4">

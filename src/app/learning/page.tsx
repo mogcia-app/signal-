@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import SNSLayout from "../../components/sns-layout";
-import { LearningReferenceCard } from "../instagram/monthly-report/components/learning-reference-card";
 import { EmptyStateCard } from "../../components/ui/empty-state-card";
 import { useAuth } from "../../contexts/auth-context";
 import { authFetch } from "../../utils/authFetch";
@@ -577,7 +576,7 @@ const goldSampleSignals = useMemo(() => {
           </div>
         </section>
 
-        <LearningReferenceCard learningContext={sharedLearningContext} />
+        {/* LearningReferenceCard コンポーネントは削除されました */}
 
         <section className="border border-gray-200 bg-white rounded-none p-6">
           <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
@@ -737,7 +736,7 @@ const goldSampleSignals = useMemo(() => {
               description={timelineEmptyDescription}
               actions={[
                 { label: "投稿を分析する", href: "/analytics/feed" },
-                { label: "AI提案を実行", href: "/instagram/monthly-report" },
+                { label: "AI提案を実行", href: "/instagram/report" },
               ]}
             />
           ) : (

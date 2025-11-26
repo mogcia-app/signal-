@@ -43,29 +43,7 @@ export default function CommonHeader({ unreadCount = 0 }: CommonHeaderProps) {
 
           {/* 共通メニュー */}
           <nav className="hidden md:flex items-center space-x-1">
-            <Link
-              href="/guide"
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-            >
-              <span className="text-lg">📖</span>
-              <span>使い方ガイド</span>
-            </Link>
-
-            <Link
-              href="/dashboard"
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-            >
-              <span className="text-lg">👤</span>
-              <span>マイアカウント</span>
-            </Link>
-
-            <Link
-              href="/terms"
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-            >
-              <span className="text-lg">📄</span>
-              <span>利用規約</span>
-            </Link>
+            {/* ガイドページは削除されました */}
           </nav>
 
           {/* ユーザー情報 */}
@@ -98,13 +76,14 @@ export default function CommonHeader({ unreadCount = 0 }: CommonHeaderProps) {
         {/* モバイルメニュー */}
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link
+            {/* ガイドページは削除されました */}
+            {/* <Link
               href="/guide"
               className="flex items-center space-x-3 px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg"
             >
               <span className="text-lg">📖</span>
               <span>使い方ガイド</span>
-            </Link>
+            </Link> */}
 
             <Link
               href="/my-account"

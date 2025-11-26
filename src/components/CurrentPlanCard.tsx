@@ -149,7 +149,7 @@ export const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
             詳細な内訳は KPI コンソール（KPI タブ）で確認できます。
           </p>
           <a
-            href="/instagram/monthly-report?view=metrics#kpi-console"
+            href="/instagram/kpi"
             className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#ff8a15] hover:text-orange-600"
           >
             KPIコンソールを開く →

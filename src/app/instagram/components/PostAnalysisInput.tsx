@@ -116,11 +116,11 @@ export default function PostAnalysisInput({ onDataSaved }: PostAnalysisInputProp
 
   // 投稿分析データの保存
   const handleManualPostSubmit = async () => {
-    if (!user?.uid) {
-      console.error("User not authenticated");
-      notify({ type: "error", message: "ログインが必要です" });
-      return;
-    }
+      if (!user?.uid) {
+        console.error("User not authenticated");
+        notify({ type: "error", message: "ログインが必要です" });
+        return;
+      }
 
     try {
       const analyticsData = {

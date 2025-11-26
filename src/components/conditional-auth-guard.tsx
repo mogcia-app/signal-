@@ -7,7 +7,6 @@ import { AuthGuard } from "./auth-guard";
 const PUBLIC_PATHS = [
   "/login",
   "/terms",
-  "/guide",
   "/test-sentry",
 ];
 

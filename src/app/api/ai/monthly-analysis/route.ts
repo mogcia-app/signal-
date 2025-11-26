@@ -303,7 +303,7 @@ function buildLearningAchievements(params: {
         actionImpact >= 5
           ? "平均効果が+5ptを突破しました"
           : `あと${Math.max(0, 5 - actionImpact).toFixed(1)}ptで達成`,
-      shortcuts: [{ label: "翌月アクションを見る", href: "/instagram/monthly-report" }],
+      shortcuts: [{ label: "翌月アクションを見る", href: "/instagram/report" }],
     },
     {
       id: "feedback-balance",
@@ -382,7 +382,7 @@ function buildLearningAchievements(params: {
         personaResonanceSegments >= 2
           ? "共鳴セグメントが可視化されています"
           : `あと${Math.max(0, 2 - personaResonanceSegments)}セグメントで達成`,
-      shortcuts: [{ label: "オーディエンス分析を見る", href: "/instagram/monthly-report" }],
+      shortcuts: [{ label: "オーディエンス分析を見る", href: "/instagram/report" }],
     },
     {
       id: "rag-pilot",

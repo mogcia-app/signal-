@@ -4,10 +4,10 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
 import { authFetch } from "../../utils/authFetch";
-import { notify } from "../../lib/ui/notifications";
 import { Users, Loader2, Lightbulb, ArrowRight, Check } from "lucide-react";
 import { KPISummaryCard } from "./components/KPISummaryCard";
 import { actionLogsApi } from "@/lib/api";
+import { notify } from "../../lib/ui/notifications";
 
 // マークダウン記法を削除する関数
 const removeMarkdown = (text: string): string => {
@@ -79,10 +79,7 @@ export default function HomePage() {
   // フォロワー数を保存
   const saveFollowerCount = async () => {
     if (!currentFollowers || parseInt(currentFollowers, 10) < 0) {
-      notify({
-        type: "error",
-        message: "フォロワー数は0以上の数値を入力してください",
-      });
+      notify({ type: "error", message: "フォロワー数は0以上の数値を入力してください" });
       return;
     }
 
@@ -105,10 +102,7 @@ export default function HomePage() {
         const result = await response.json();
         if (result.success) {
           setLastUpdated(result.data.updatedAt);
-          notify({
-            type: "success",
-            message: "フォロワー数を保存しました",
-          });
+          notify({ type: "success", message: "フォロワー数を保存しました" });
           // 入力欄をクリア
           setCurrentFollowers("");
         }
@@ -117,10 +111,7 @@ export default function HomePage() {
       }
     } catch (err) {
       console.error("データ保存エラー:", err);
-      notify({
-        type: "error",
-        message: "データの保存に失敗しました",
-      });
+      notify({ type: "error", message: "データの保存に失敗しました" });
     } finally {
       setIsSaving(false);
     }
@@ -129,10 +120,7 @@ export default function HomePage() {
   // プロフィールアクセス数を保存
   const saveProfileVisits = async () => {
     if (!profileVisits || parseInt(profileVisits, 10) < 0) {
-      notify({
-        type: "error",
-        message: "プロフィールアクセス数は0以上の数値を入力してください",
-      });
+      notify({ type: "error", message: "プロフィールアクセス数は0以上の数値を入力してください" });
       return;
     }
 
@@ -169,10 +157,7 @@ export default function HomePage() {
         const result = await response.json();
         if (result.success) {
           setLastUpdated(result.data.updatedAt);
-          notify({
-            type: "success",
-            message: "プロフィールアクセス数を保存しました",
-          });
+          notify({ type: "success", message: "プロフィールアクセス数を保存しました" });
           // 入力欄をクリア
           setProfileVisits("");
         }
@@ -181,10 +166,7 @@ export default function HomePage() {
       }
     } catch (err) {
       console.error("データ保存エラー:", err);
-      notify({
-        type: "error",
-        message: "データの保存に失敗しました",
-      });
+      notify({ type: "error", message: "データの保存に失敗しました" });
     } finally {
       setIsSavingProfileVisits(false);
     }
@@ -193,10 +175,6 @@ export default function HomePage() {
   // 外部リンクタップ数を保存
   const saveExternalLinkTaps = async () => {
     if (!externalLinkTaps || parseInt(externalLinkTaps, 10) < 0) {
-      notify({
-        type: "error",
-        message: "外部リンクタップ数は0以上の数値を入力してください",
-      });
       return;
     }
 
@@ -233,10 +211,7 @@ export default function HomePage() {
         const result = await response.json();
         if (result.success) {
           setLastUpdated(result.data.updatedAt);
-          notify({
-            type: "success",
-            message: "外部リンクタップ数を保存しました",
-          });
+          notify({ type: "success", message: "外部リンクタップ数を保存しました" });
           // 入力欄をクリア
           setExternalLinkTaps("");
         }
@@ -245,10 +220,7 @@ export default function HomePage() {
       }
     } catch (err) {
       console.error("データ保存エラー:", err);
-      notify({
-        type: "error",
-        message: "データの保存に失敗しました",
-      });
+      notify({ type: "error", message: "データの保存に失敗しました" });
     } finally {
       setIsSavingExternalLinkTaps(false);
     }
@@ -509,10 +481,7 @@ export default function HomePage() {
                     });
                   } catch (error) {
                     console.error("アクションログ保存エラー:", error);
-                    notify({
-                      type: "error",
-                      message: "チェック状態の保存に失敗しました",
-                    });
+                    notify({ type: "error", message: "チェック状態の保存に失敗しました" });
                   } finally {
                     setActionLogPendingIds((prev) => {
                       const newSet = new Set(prev);

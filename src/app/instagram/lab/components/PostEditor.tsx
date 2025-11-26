@@ -815,7 +815,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   学習ダッシュボードで根拠を見る
                 </Link>
                 <Link
-                  href="/instagram/monthly-report"
+                  href="/instagram/report"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[11px] font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1 rounded-none hover:bg-slate-50 transition-colors"

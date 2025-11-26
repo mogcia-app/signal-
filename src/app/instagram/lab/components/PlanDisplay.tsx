@@ -81,10 +81,10 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
             {currentFollowers.toLocaleString()}人）
           </p>
           <p className="text-[11px] text-gray-500">
-            詳細な増減は KPI コンソール（/instagram/monthly-report の KPI タブ）で確認できます。
+            詳細な増減は KPI コンソール（/instagram/kpi）で確認できます。
           </p>
           <a
-            href="/instagram/monthly-report?view=metrics#kpi-console"
+            href="/instagram/kpi"
             className="text-[11px] font-semibold text-blue-600 hover:underline inline-flex items-center gap-1"
           >
             KPIコンソールを開く →

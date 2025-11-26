@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
-import { checkAndCreateMonthlyReportNotification } from "../../../lib/monthly-report-notifications";
 import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
 import type { AIReference } from "@/types/ai";
 
@@ -111,15 +110,7 @@ export async function POST(request: NextRequest) {
       userId: postData.userId,
     });
 
-    // 月次レポート通知をチェック・作成
-    try {
-      const notificationCreated = await checkAndCreateMonthlyReportNotification(userId);
-      if (notificationCreated) {
-        console.log("✅ 月次レポート通知を作成しました");
-      }
-    } catch (notificationError) {
-      console.error("⚠️ 月次レポート通知作成エラー（投稿保存は成功）:", notificationError);
-    }
+    // 通知機能は削除されました
 
     return NextResponse.json({
       id: docRef.id,

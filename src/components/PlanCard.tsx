@@ -162,10 +162,10 @@ export const PlanCard: React.FC<PlanCardProps> = ({
               累計 +{followerIncrease.toLocaleString()}人（開始値 {currentFollowers.toLocaleString()}人）
             </p>
             <p className="text-[11px] text-gray-500">
-              詳細は KPI コンソール（/instagram/monthly-report の KPI タブ）で確認できます。
+              詳細は KPI コンソール（/instagram/kpi）で確認できます。
             </p>
             <a
-              href="/instagram/monthly-report?view=metrics#kpi-console"
+              href="/instagram/kpi"
               className="text-[11px] font-semibold text-blue-600 hover:underline inline-flex items-center gap-1"
             >
               KPIコンソールを開く →
