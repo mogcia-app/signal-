@@ -60,7 +60,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
           setReviewData(result.data);
           // データがある場合は自動的に展開
           if (result.data.review) {
-            setIsExpanded(true);
+          setIsExpanded(true);
           }
         } else {
           setError("データの取得に失敗しました");
@@ -85,7 +85,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
   }, [user, selectedMonth, fetchReview]);
 
   const handleToggle = () => {
-    setIsExpanded(!isExpanded);
+      setIsExpanded(!isExpanded);
   };
 
   const handleRegenerate = () => {
@@ -109,22 +109,22 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
         </div>
 
         {reviewData && (
-          <button
-            onClick={handleToggle}
+        <button
+          onClick={handleToggle}
             className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
-          >
+        >
             {isExpanded ? (
-              <>
-                <ChevronUp className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-xs">閉じる</span>
-              </>
-            ) : (
-              <>
+            <>
+              <ChevronUp className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-xs">閉じる</span>
+            </>
+          ) : (
+            <>
                 <ChevronDown className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline text-xs">開く</span>
-              </>
-            )}
-          </button>
+            </>
+          )}
+        </button>
         )}
       </div>
 

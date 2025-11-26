@@ -325,10 +325,10 @@ export async function GET(request: NextRequest) {
 
     // 6. initialFollowersを取得
     let initialFollowers = 0;
-    if (userDoc.exists) {
-      const userData = userDoc.data();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
       initialFollowers = userData?.businessInfo?.initialFollowers || 0;
-    }
+        }
 
     // 7. 合計増加数の計算
     // 初回ログイン月：ツール利用開始時のフォロワー数 + 投稿からの増加数 + その他からの増加数
