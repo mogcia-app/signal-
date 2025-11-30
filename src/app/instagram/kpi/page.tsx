@@ -17,8 +17,13 @@ export default function InstagramKPIPage() {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
   
-  // 現在の月を取得する関数
-  const getCurrentMonth = () => new Date().toISOString().slice(0, 7); // YYYY-MM形式
+  // 現在の月を取得する関数（ローカルタイムゾーンを使用）
+  const getCurrentMonth = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`; // YYYY-MM形式
+  };
   
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
   const [breakdowns, setBreakdowns] = useState<KPIBreakdown[]>([]);
@@ -137,11 +142,20 @@ export default function InstagramKPIPage() {
     };
     window.addEventListener("focus", handleFocus);
 
-    // 1時間ごとにチェック（月が変わるのは1日0時なので、1時間ごとで十分）
-    const interval = setInterval(checkMonthChange, 60 * 60 * 1000);
+    // ページが表示されている時（visibilitychange）にもチェック
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkMonthChange();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // 5分ごとにチェック（月が変わるのは1日0時なので、より頻繁にチェック）
+    const interval = setInterval(checkMonthChange, 5 * 60 * 1000);
 
     return () => {
       window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(interval);
     };
   }, [selectedMonth]);
