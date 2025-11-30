@@ -642,6 +642,44 @@ service cloud.firestore {
 
 ---
 
+## 🆕 **追加トラブルシューティング**
+
+### **問題9: Firebase Functions デプロイエラー（Node.js 18廃止）**
+
+#### エラー内容（2025年11月）
+
+```
+Error: Runtime Node.js 18 was decommissioned on 2025-10-30. 
+To deploy you must first upgrade your runtime version.
+```
+
+#### 原因
+
+- Node.js 18のランタイムが2025年10月30日に廃止された
+- Firebase FunctionsはNode.js 20以上が必要になった
+
+#### 解決策
+
+`functions/package.json` の `engines.node` を更新:
+
+```json
+{
+  "engines": {
+    "node": "20"  // "18" から "20" に変更
+  }
+}
+```
+
+#### 修正ファイル
+
+- `functions/package.json`
+
+#### 参考
+
+- [Firebase Functions Node.js バージョン](https://firebase.google.com/docs/functions/manage-functions#set_nodejs_version)
+
+---
+
 ## 🎉 **総括**
 
 複雑な認証・権限エラーに直面したが、根本原因を特定し、Firebase Admin SDK への完全移行により、セキュリティを確保しながら全ての問題を解決できた。

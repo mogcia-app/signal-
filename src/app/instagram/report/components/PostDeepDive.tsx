@@ -169,12 +169,12 @@ export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth }) => 
               </div>
             </div>
           ) : posts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {posts.map((post) => {
                 const analytics = post.analyticsSummary;
                 const snapshotRefs = post.snapshotReferences || [];
                 return (
-                  <div key={post.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                  <div key={post.id} className="border border-gray-200 rounded-lg p-2.5 sm:p-3 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1">
                         <p className="text-xs text-gray-500">
@@ -200,14 +200,14 @@ export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth }) => 
                       )}
                     </div>
                     {analytics ? (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <MetricCell label="いいね" value={analytics.likes} />
                         <MetricCell label="保存" value={analytics.saves} />
                         <MetricCell label="リーチ" value={analytics.reach} />
                         <MetricCell label="フォロワー増加" value={analytics.followerIncrease} />
                         <div>
                           <p className="text-xs text-gray-500">エンゲージメント率</p>
-                          <p className="text-sm font-semibold text-gray-900">
+                          <p className="text-xs sm:text-sm font-semibold text-gray-900">
                             {typeof analytics.engagementRate === "number"
                               ? `${analytics.engagementRate.toFixed(1)}%`
                               : "-"}

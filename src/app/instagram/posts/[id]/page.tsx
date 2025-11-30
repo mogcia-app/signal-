@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../../../contexts/auth-context";
@@ -18,6 +18,9 @@ import {
   Save,
   BarChart3,
   RefreshCw,
+  TrendingUp,
+  Users,
+  Tag,
 } from "lucide-react";
 
 interface PostData {
@@ -179,6 +182,126 @@ export default function PostDetailPage() {
   const [summaryTab, setSummaryTab] = useState<"saved" | "latest">("saved");
   const [resettingAnalytics, setResettingAnalytics] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [autoGenerateScheduled, setAutoGenerateScheduled] = useState(false);
+
+  const handleGenerateInsight = useCallback(async () => {
+    if (!user?.uid || !postId) {
+      return;
+    }
+    setInsightError(null);
+    setIsGeneratingInsight(true);
+    try {
+      const response = await authFetch("/api/ai/post-insight", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          postId: String(postId),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`投稿AIサマリーAPIエラー: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "投稿AIサマリーの生成に失敗しました");
+      }
+
+      const insightData = result.data;
+      setPostInsight(insightData);
+
+      // 生成したサマリーを保存
+      try {
+        const saveResponse = await authFetch("/api/ai/post-summaries", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            postId: String(postId),
+            summary: insightData.summary,
+            insights: insightData.strengths || [],
+            recommendedActions: insightData.nextActions || [],
+            category: post?.postType || "feed",
+            postTitle: post?.title || "",
+            postHashtags: post?.hashtags || [],
+            postPublishedAt: postAnalytics?.publishedAt?.toISOString() || null,
+          }),
+        });
+
+        if (saveResponse.ok) {
+          const saveResult = await saveResponse.json();
+          if (saveResult.success) {
+            // 保存成功時はsavedSummaryも更新
+            setSavedSummary({
+              summary: insightData.summary,
+              insights: insightData.strengths || [],
+              recommendedActions: insightData.nextActions || [],
+              category: post?.postType || "feed",
+              generatedAt: new Date().toISOString(),
+              postTitle: post?.title || "",
+            });
+          }
+        }
+      } catch (saveErr) {
+        console.error("AIサマリー保存エラー:", saveErr);
+        // 保存に失敗しても生成は成功しているので続行
+      }
+    } catch (err) {
+      console.error("投稿AIサマリー生成エラー:", err);
+      setInsightError(err instanceof Error ? err.message : "投稿AIサマリーの生成に失敗しました");
+    } finally {
+      setIsGeneratingInsight(false);
+    }
+  }, [user?.uid, postId, post, postAnalytics]);
+
+  // 分析データ保存後、一定時間経過したら自動でAIサマリーを生成
+  useEffect(() => {
+    if (!user?.uid || !postId || !postAnalytics || postInsight || savedSummary || autoGenerateScheduled) {
+      return;
+    }
+
+    // 分析データの作成日時を取得
+    const analyticsCreatedAt = postAnalytics.createdAt;
+    if (!analyticsCreatedAt) {
+      return;
+    }
+
+    const createdAt = analyticsCreatedAt instanceof Date 
+      ? analyticsCreatedAt 
+      : new Date(analyticsCreatedAt);
+    
+    const now = new Date();
+    const timeSinceCreation = now.getTime() - createdAt.getTime();
+    const minutesSinceCreation = timeSinceCreation / (1000 * 60);
+
+    // 分析データ保存後5分経過している場合、自動生成
+    const AUTO_GENERATE_DELAY_MINUTES = 5;
+    
+    if (minutesSinceCreation >= AUTO_GENERATE_DELAY_MINUTES) {
+      // すぐに生成
+      setAutoGenerateScheduled(true);
+      handleGenerateInsight();
+    } else {
+      // 残り時間を計算してタイマーを設定
+      const remainingMinutes = AUTO_GENERATE_DELAY_MINUTES - minutesSinceCreation;
+      const remainingMs = remainingMinutes * 60 * 1000;
+      
+      setAutoGenerateScheduled(true);
+      const timer = setTimeout(() => {
+        handleGenerateInsight();
+      }, remainingMs);
+
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [postAnalytics, postInsight, savedSummary, user?.uid, postId, autoGenerateScheduled, handleGenerateInsight]);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -303,6 +426,15 @@ export default function PostDetailPage() {
   useEffect(() => {
     if (savedSummary) {
       setSummaryTab("saved");
+      // 保存されたサマリーがある場合、postInsightも設定（リロード時に復元）
+      if (!postInsight) {
+        setPostInsight({
+          summary: savedSummary.summary,
+          strengths: savedSummary.insights || [],
+          improvements: [],
+          nextActions: savedSummary.recommendedActions || [],
+        });
+      }
     } else if (postInsight) {
       setSummaryTab("latest");
     }
@@ -385,42 +517,6 @@ export default function PostDetailPage() {
   const removeHashtagsFromContent = (content: string): string => {
     const hashtagRegex = /#[\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+/g;
     return content.replace(hashtagRegex, "").trim();
-  };
-
-  const handleGenerateInsight = async () => {
-    if (!user?.uid || !postId) {
-      return;
-    }
-    setInsightError(null);
-    setIsGeneratingInsight(true);
-    try {
-      const response = await authFetch("/api/ai/post-insight", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          postId: String(postId),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`投稿AIサマリーAPIエラー: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || "投稿AIサマリーの生成に失敗しました");
-      }
-
-      setPostInsight(result.data);
-    } catch (err) {
-      console.error("投稿AIサマリー生成エラー:", err);
-      setInsightError(err instanceof Error ? err.message : "投稿AIサマリーの生成に失敗しました");
-    } finally {
-      setIsGeneratingInsight(false);
-    }
   };
 
   const handleResetAnalytics = async () => {
@@ -763,26 +859,6 @@ export default function PostDetailPage() {
               </div>
             )}
 
-            {/* メタ情報 */}
-            <div className="border-t border-orange-200 pt-6 mt-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">メタ情報</h3>
-              <div className="bg-orange-50 p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">作成日:</span>
-                    <span className="ml-2 font-medium text-gray-700">
-                      {formatDate(post.createdAt)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">更新日:</span>
-                    <span className="ml-2 font-medium text-gray-700">
-                      {formatDate(post.updatedAt)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -838,7 +914,7 @@ export default function PostDetailPage() {
                       {postAnalytics.saves.toLocaleString()}
                     </p>
                   </div>
-                  <div className="border border-gray-200 bg-gray-50 p-3 rounded-none col-span-2 md:col-span-1">
+                  <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
                     <p className="text-xs text-gray-500 flex items-center gap-1">
                       <EyeIcon className="w-3 h-3" />
                       リーチ
@@ -847,6 +923,51 @@ export default function PostDetailPage() {
                       {postAnalytics.reach.toLocaleString()}
                     </p>
                   </div>
+                  {postAnalytics.followerIncrease !== undefined && (
+                    <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        フォロワー増加
+                      </p>
+                      <p className="text-lg font-semibold text-gray-800">
+                        {postAnalytics.followerIncrease > 0 ? "+" : ""}
+                        {postAnalytics.followerIncrease.toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                  {postAnalytics.interactionCount !== undefined && (
+                    <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <BarChart3 className="w-3 h-3" />
+                        インタラクション
+                      </p>
+                      <p className="text-lg font-semibold text-gray-800">
+                        {postAnalytics.interactionCount.toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                  {postAnalytics.reachFollowerPercent !== undefined && (
+                    <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        リーチ/フォロワー率
+                      </p>
+                      <p className="text-lg font-semibold text-gray-800">
+                        {postAnalytics.reachFollowerPercent.toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
+                  {postAnalytics.interactionFollowerPercent !== undefined && (
+                    <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <BarChart3 className="w-3 h-3" />
+                        インタラクション/フォロワー率
+                      </p>
+                      <p className="text-lg font-semibold text-gray-800">
+                        {postAnalytics.interactionFollowerPercent.toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-gray-600">
@@ -873,24 +994,15 @@ export default function PostDetailPage() {
                       <p className="text-gray-500">この投稿には満足度フィードバックがまだありません。</p>
                     )}
                   </div>
-                  <div className="border border-dashed border-gray-200 bg-gray-50 p-3">
-                    <p className="font-semibold text-gray-600 mb-2 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      投稿日時（分析）
-                    </p>
-                    <p className="text-gray-700">
-                      {postAnalytics.publishedAt
-                        ? postAnalytics.publishedAt.toLocaleDateString("ja-JP", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
-                        : "記録なし"}
-                    </p>
-                    <p className="text-gray-500">
-                      {postAnalytics.publishedTime || "時刻の記録はありません"}
-                    </p>
-                  </div>
+                  {postAnalytics.category && (
+                    <div className="border border-dashed border-gray-200 bg-gray-50 p-3">
+                      <p className="font-semibold text-gray-600 mb-2 flex items-center gap-1">
+                        <Tag className="w-3 h-3" />
+                        カテゴリー
+                      </p>
+                      <p className="text-gray-700">{postAnalytics.category}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div>

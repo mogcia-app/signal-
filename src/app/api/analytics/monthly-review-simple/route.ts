@@ -419,6 +419,128 @@ export async function GET(request: NextRequest) {
       topPost = sortedPosts[0];
     }
 
+    // 投稿ごとのAIサマリーを取得して集計
+    const postSummaries: Array<{
+      postId: string;
+      summary: string;
+      strengths: string[];
+      improvements: string[];
+      recommendedActions: string[];
+      reach: number;
+    }> = [];
+
+    if (analyticsByPostId.size > 0) {
+      const postIds = Array.from(analyticsByPostId.keys());
+      const summaryPromises = postIds.map(async (postId) => {
+        try {
+          const docId = `${uid}_${postId}`;
+          const summaryDoc = await adminDb.collection("ai_post_summaries").doc(docId).get();
+          if (summaryDoc.exists) {
+            const summaryData = summaryDoc.data();
+            const analytics = analyticsByPostId.get(postId);
+            return {
+              postId,
+              summary: summaryData?.summary || "",
+              strengths: Array.isArray(summaryData?.insights) ? summaryData.insights : [],
+              improvements: [],
+              recommendedActions: Array.isArray(summaryData?.recommendedActions) ? summaryData.recommendedActions : [],
+              reach: analytics?.reach || 0,
+            };
+          }
+        } catch (error) {
+          console.error(`AIサマリー取得エラー (postId: ${postId}):`, error);
+        }
+        return null;
+      });
+
+      const summaries = await Promise.all(summaryPromises);
+      summaries.forEach((summary) => {
+        if (summary) {
+          postSummaries.push(summary);
+        }
+      });
+    }
+
+    // AIサマリーを集計
+    const allStrengths: string[] = [];
+    const allRecommendedActions: string[] = [];
+    const highPerformanceStrengths: string[] = [];
+    const lowPerformanceImprovements: string[] = [];
+
+    if (postSummaries.length > 0) {
+      // リーチ数でソートして、上位・下位を判定
+      const sortedByReach = [...postSummaries].sort((a, b) => b.reach - a.reach);
+      const top30Percent = Math.ceil(sortedByReach.length * 0.3);
+      const bottom30Percent = Math.ceil(sortedByReach.length * 0.3);
+
+      postSummaries.forEach((summary) => {
+        allStrengths.push(...summary.strengths);
+        allRecommendedActions.push(...summary.recommendedActions);
+
+        // 高パフォーマンス投稿の強みを抽出
+        const isHighPerformance = sortedByReach.slice(0, top30Percent).some((p) => p.postId === summary.postId);
+        if (isHighPerformance) {
+          highPerformanceStrengths.push(...summary.strengths);
+        }
+
+        // 低パフォーマンス投稿の改善点を抽出（improvementsがない場合はstrengthsの逆を考える）
+        const isLowPerformance = sortedByReach.slice(-bottom30Percent).some((p) => p.postId === summary.postId);
+        if (isLowPerformance && summary.strengths.length === 0) {
+          // 強みがない場合は改善が必要
+          lowPerformanceImprovements.push("エンゲージメントの向上が必要");
+        }
+      });
+    }
+
+    // 頻出する強み・推奨アクションを抽出（出現回数でソート）
+    const strengthFrequency = new Map<string, number>();
+    allStrengths.forEach((strength) => {
+      strengthFrequency.set(strength, (strengthFrequency.get(strength) || 0) + 1);
+    });
+    const topStrengths = Array.from(strengthFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([strength]) => strength);
+
+    const actionFrequency = new Map<string, number>();
+    allRecommendedActions.forEach((action) => {
+      actionFrequency.set(action, (actionFrequency.get(action) || 0) + 1);
+    });
+    const topActions = Array.from(actionFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([action]) => action);
+
+    const highPerformanceStrengthFrequency = new Map<string, number>();
+    highPerformanceStrengths.forEach((strength) => {
+      highPerformanceStrengthFrequency.set(strength, (highPerformanceStrengthFrequency.get(strength) || 0) + 1);
+    });
+    const topHighPerformanceStrengths = Array.from(highPerformanceStrengthFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([strength]) => strength);
+
+    // AIサマリー集計結果を文字列化
+    let postSummaryInsights = "";
+    if (postSummaries.length > 0) {
+      const insightsParts: string[] = [];
+      insightsParts.push(`投稿ごとのAI分析結果（${postSummaries.length}件の投稿から抽出）:`);
+      
+      if (topStrengths.length > 0) {
+        insightsParts.push(`- 頻出する強み: ${topStrengths.join("、")}`);
+      }
+      
+      if (topHighPerformanceStrengths.length > 0) {
+        insightsParts.push(`- 高パフォーマンス投稿の共通点: ${topHighPerformanceStrengths.join("、")}`);
+      }
+      
+      if (topActions.length > 0) {
+        insightsParts.push(`- 頻出する推奨アクション: ${topActions.join("、")}`);
+      }
+
+      postSummaryInsights = insightsParts.join("\n");
+    }
+
     // 前月のデータを取得（前月比計算用）
     const prevMonth = new Date(start);
     prevMonth.setMonth(prevMonth.getMonth() - 1);
@@ -610,26 +732,32 @@ ${postTypeInfo}
 【最も閲覧された投稿】
 ${topPostInfo}
 
+${postSummaryInsights ? `\n【投稿ごとのAI分析結果の集計】\n${postSummaryInsights}` : ""}
+
 【出力形式】
-必ず以下の4つのセクションを全て含めてください。最後の「📈 ${nextMonth}に向けた提案」セクションは必須です。
+必ず以下のセクションを全て含めてください。最後の「📈 ${nextMonth}に向けた提案」セクションは必須です。
+${postSummaryInsights ? "「📋 今月の投稿別強み・改善・施策まとめ」セクションも含めてください。" : ""}
 
 📊 Instagram運用レポート（${currentMonth}総括）
 
 ⸻
 
-🔹 アカウント全体の動き
+📈 月次トータル数字
 	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
 	•	いいね数：${totalLikes.toLocaleString()}
-	•	コメント数：${totalComments.toLocaleString()}
 	•	保存数：${totalSaves.toLocaleString()}
+	•	コメント数：${totalComments.toLocaleString()}
+
+⸻
+
+🔹 アカウント全体の動き
 
 {全体的な評価コメント（2-3文）。以下の点を含めてください：
-- リーチ数やいいね数の具体的な数値とその意味を自然な文章で説明
+- 上記の「📈 月次トータル数字」セクションで既に数値を表示しているので、ここでは数値を繰り返し羅列せず、その数値の意味や評価を自然な文章で説明してください
 - 前月比がある場合は、その変化率と評価（増加している場合は「前月比で○％増加しています」など）
-- 保存数やコメント数が0でない場合は、それらも言及
 - 数値だけを羅列するのではなく、読み手が理解しやすい自然な文章で説明してください
 - 「これは、ブランドの認知度を高めるために重要な要素であり」のような硬い表現は避け、もっと自然な表現にしてください
-- 「リーチ数が10,590人、いいね数が201という数値を記録しました」のような自然な表現を心がけてください
+- 「リーチ数やいいね数が順調に伸びており、エンゲージメントも良好です」のような自然な表現を心がけてください
 }
 
 ⸻
@@ -646,6 +774,33 @@ ${topPostInfo}
 - 「視覚的なコンテンツが受け入れられていることがわかりますが」のような硬い表現は避け、もっと自然な表現にしてください
 - 「画像投稿が全体の79％を占めていることから、視覚的なアプローチが効果的であることが証明されました」のような自然な表現を心がけてください
 }
+
+⸻
+
+${postSummaryInsights ? `📋 今月の投稿別強み・改善・施策まとめ
+
+{投稿ごとのAI分析結果を基に、以下の3つの観点でまとめてください：
+
+1. **今月の強み**
+   - 頻出する強みや高パフォーマンス投稿の共通点を2-3個挙げてください
+   - 「【投稿ごとのAI分析結果の集計】」セクションの「頻出する強み」と「高パフォーマンス投稿の共通点」を参考にしてください
+   - 具体的で実践的な内容にしてください
+
+2. **改善が必要な点**
+   - 低パフォーマンス投稿の傾向や改善が必要な点を2-3個挙げてください
+   - 数値だけを羅列せず、自然な文章で説明してください
+
+3. **今月の施策まとめ**
+   - 頻出する推奨アクションを2-3個挙げてください
+   - 「【投稿ごとのAI分析結果の集計】」セクションの「頻出する推奨アクション」を参考にしてください
+   - 実際に取り組んだ施策や効果的だった施策をまとめてください
+
+注意：
+- 箇条書きで簡潔にまとめてください
+- 各項目は1-2文で説明してください
+- 「【投稿ごとのAI分析結果の集計】」セクションの情報を必ず活用してください
+- 自然な日本語で、読みやすい文章にしてください
+}` : ""}
 
 ⸻
 
@@ -824,11 +979,15 @@ ${postTypeArray.length > 0
 
 ⸻
 
-🔹 アカウント全体の動き
+📈 月次トータル数字
 	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
 	•	いいね数：${totalLikes.toLocaleString()}
-	•	コメント数：${totalComments.toLocaleString()}
 	•	保存数：${totalSaves.toLocaleString()}
+	•	コメント数：${totalComments.toLocaleString()}
+
+⸻
+
+🔹 アカウント全体の動き
 
 ${analyzedCount > 0 
   ? `${totalReach > 0 
@@ -857,6 +1016,14 @@ ${getMonthName(date)}の運用を振り返ると、${totalReach > 0
     } else {
       // データがない場合のフォールバック
       reviewText = `📊 Instagram運用レポート（${getMonthName(date)}総括）
+
+⸻
+
+📈 月次トータル数字
+	•	閲覧数：0人
+	•	いいね数：0
+	•	保存数：0
+	•	コメント数：0
 
 ⸻
 

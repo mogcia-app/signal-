@@ -107,16 +107,16 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="h-64 sm:h-80 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+        <div className="h-56 sm:h-64 md:h-80 w-full overflow-x-auto">
+          <ResponsiveContainer width="100%" height="100%" minWidth={300}>
             <AreaChart
               data={filteredData}
               margin={{
                 top: 10,
                 right: 10,
-                left: 0,
-                bottom: 10,
+                left: -10,
+                bottom: filteredData.length > 14 ? 60 : 30,
               }}
             >
               <defs>
@@ -137,13 +137,14 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
               <XAxis
                 dataKey="label"
                 stroke="#6b7280"
-                fontSize={11}
+                fontSize={10}
                 tickLine={false}
                 axisLine={false}
                 interval={interval}
                 angle={filteredData.length > 14 ? -45 : 0}
                 textAnchor={filteredData.length > 14 ? "end" : "middle"}
                 height={filteredData.length > 14 ? 60 : 30}
+                tick={{ fontSize: 10 }}
               />
               <YAxis
                 stroke="#6b7280"

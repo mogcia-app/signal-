@@ -113,7 +113,7 @@ export default function InstagramKPIPage() {
 
   return (
     <SNSLayout customTitle="KPIコンソール" customDescription="主要KPIを要素ごとに分解し、何が伸びたか／落ちたかを素早く把握できます">
-      <div className="w-full p-3 sm:p-4 bg-white min-h-screen max-w-7xl mx-auto">
+      <div className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 bg-white min-h-screen max-w-7xl mx-auto">
         {/* ヘッダー */}
         <KPIHeader
           selectedMonth={selectedMonth}

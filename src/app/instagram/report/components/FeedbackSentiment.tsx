@@ -287,20 +287,20 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
         ) : (
           <>
             {/* 統計サマリー */}
-            <div className="grid grid-cols-3 gap-3 text-center mb-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center mb-3 sm:mb-4">
               <div>
                 <p className="text-xs text-gray-500">フィードバック総数</p>
-                <p className="text-base font-semibold text-gray-900">{summary.total.toLocaleString()}</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">{summary.total.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">ポジティブ比率</p>
-                <p className="text-base font-semibold text-emerald-700">
+                <p className="text-sm sm:text-base font-semibold text-emerald-700">
                   {formatPercent(summary.positiveRate)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">コメント付き</p>
-                <p className="text-base font-semibold text-gray-900">
+                <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
                   {summary.withCommentCount.toLocaleString()}
                   <span className="text-xs text-gray-500 ml-1">
                     ({formatPercent(commentCoverage)})
@@ -341,7 +341,7 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
             </div>
 
             {/* コメントハイライト */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 sm:mb-4">
               <CommentList
                 title="好評コメント"
                 comments={summary.commentHighlights?.positive ?? []}
@@ -353,7 +353,7 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
             </div>
 
             {/* 投稿別フィードバック */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Smile className="w-4 h-4 text-emerald-600" />

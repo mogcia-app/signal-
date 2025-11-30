@@ -72,3 +72,57 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  const { uid } = await requireAuthContext(request);
+  const body = await request.json();
+
+  const { userId, postId, summary, insights, recommendedActions, category, postTitle, postHashtags, postPublishedAt } = body;
+
+  if (userId !== uid) {
+    return NextResponse.json({ success: false, error: "権限がありません" }, { status: 403 });
+  }
+
+  if (!userId || !postId || !summary) {
+    return NextResponse.json(
+      { success: false, error: "userId, postId, summary は必須です" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const db = getAdminDb();
+    const docId = `${userId}_${postId}`;
+    const now = new Date().toISOString();
+
+    const summaryData: PostSummaryRecord = {
+      userId,
+      postId,
+      category: category || "feed",
+      postTitle: postTitle || undefined,
+      summary,
+      insights: Array.isArray(insights) ? insights : [],
+      recommendedActions: Array.isArray(recommendedActions) ? recommendedActions : [],
+      generatedAt: now,
+      postHashtags: Array.isArray(postHashtags) ? postHashtags : undefined,
+      postPublishedAt: postPublishedAt || null,
+      updatedAt: now,
+    };
+
+    await db.collection("ai_post_summaries").doc(docId).set(summaryData, { merge: true });
+
+    return NextResponse.json({
+      success: true,
+      data: summaryData,
+    });
+  } catch (error) {
+    console.error("投稿AIサマリー保存エラー:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "投稿AIサマリーの保存に失敗しました",
+      },
+      { status: 500 },
+    );
+  }
+}
+

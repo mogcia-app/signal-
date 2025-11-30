@@ -159,15 +159,15 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* マスターコンテキスト */}
             {masterContext ? (
-              <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+              <div className="border border-gray-200 rounded-lg p-2.5 sm:p-3 space-y-2">
                 <p className="text-xs font-semibold text-gray-700 flex items-center gap-2">
                   <Brain className="w-4 h-4 text-gray-500" />
                   マスターコンテキスト
                 </p>
-                <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm text-gray-700">
                   <div>
                     <p className="text-xs text-gray-500">フェーズ</p>
                     <p className="font-semibold text-gray-900">
@@ -221,7 +221,7 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
             )}
 
             {/* 参照データログ */}
-            <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div className="border border-gray-200 rounded-lg p-2.5 sm:p-3 md:p-4 space-y-2 sm:space-y-3">
               <p className="text-xs font-semibold text-gray-700 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-gray-500" />
                 参照データログ
@@ -256,12 +256,12 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
 
         {/* 引用された投稿スナップショット */}
         {!isLoading && !error && snapshotRefs.length > 0 && (
-          <div className="mt-4 border border-gray-200 rounded-lg p-4">
+          <div className="mt-3 sm:mt-4 border border-gray-200 rounded-lg p-2.5 sm:p-3 md:p-4">
             <p className="text-xs font-semibold text-gray-700 flex items-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               引用された投稿スナップショット
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
               {snapshotRefs.map((reference) => (
                 <div
                   key={`learning-snapshot-${reference.id}`}

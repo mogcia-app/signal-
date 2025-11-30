@@ -43,17 +43,17 @@ const formatSeconds = (seconds: number) => {
 const StatGrid: React.FC<{
   items: Array<{ label: string; value: string; icon: React.ReactNode }>;
 }> = ({ items }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2 sm:gap-2 md:gap-3">
     {items.map((item) => (
       <div
         key={item.label}
-        className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 flex items-center justify-between"
+        className="bg-white border border-gray-200 rounded-lg p-2 sm:p-2.5 md:p-3 flex items-center justify-between"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-500 truncate">{item.label}</p>
-          <p className="text-lg sm:text-xl font-semibold text-gray-900 truncate">{item.value}</p>
+          <p className="text-[10px] sm:text-xs text-gray-500 truncate">{item.label}</p>
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-gray-900 break-all">{item.value}</p>
         </div>
-        <div className="flex-shrink-0 ml-2">{item.icon}</div>
+        <div className="flex-shrink-0 ml-1 sm:ml-2">{item.icon}</div>
       </div>
     ))}
   </div>
@@ -86,7 +86,7 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 mb-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4">
       {/* フィード統計サマリー */}
       {feedStats ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
@@ -106,54 +106,54 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
                 {
                   label: "総いいね",
                   value: formatNumber(feedStats.totalLikes),
-                  icon: <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />,
+                  icon: <Heart className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-500" />,
                 },
                 {
                   label: "総コメント",
                   value: formatNumber(feedStats.totalComments),
-                  icon: <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />,
+                  icon: <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-500" />,
                 },
                 {
                   label: "総シェア",
                   value: formatNumber(feedStats.totalShares),
-                  icon: <Share className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />,
+                  icon: <Share className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-500" />,
                 },
                 {
                   label: "総リーチ",
                   value: formatNumber(feedStats.totalReach),
-                  icon: <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />,
+                  icon: <Eye className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-500" />,
                 },
                 {
                   label: "総保存",
                   value: formatNumber(feedStats.totalSaves),
-                  icon: <Save className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />,
+                  icon: <Save className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-500" />,
                 },
                 {
                   label: "フォロワー増加",
                   value: formatNumber(feedStats.totalFollowerIncrease),
-                  icon: <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />,
+                  icon: <Users className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-500" />,
                 },
               ]}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">総インタラクション数</p>
-                <p className="text-xl font-semibold text-gray-900">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">総インタラクション数</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900 break-all">
                   {formatNumber(feedStats.totalInteractionCount)}
                 </p>
-                <p className="text-xs text-gray-500 mt-3">平均閲覧フォロワー%</p>
-                <p className="text-base font-semibold text-gray-900">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">平均閲覧フォロワー%</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900">
                   {formatPercent(feedStats.avgReachFollowerPercent)}
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">平均インタラクションフォロワー%</p>
-                <p className="text-xl font-semibold text-gray-900">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">平均インタラクションフォロワー%</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900">
                   {formatPercent(feedStats.avgInteractionFollowerPercent)}
                 </p>
-                <p className="text-xs text-gray-500 mt-3">プロフィールアクセス</p>
-                <p className="text-base font-semibold text-gray-900">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">プロフィールアクセス</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
                   {formatNumber(feedStats.totalProfileVisits)}
                 </p>
               </div>
@@ -169,9 +169,9 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
                   { label: "検索", value: feedStats.reachSources.search },
                   { label: "その他", value: feedStats.reachSources.other },
                 ].map((source) => (
-                  <div key={source.label} className="bg-white border border-gray-200 rounded-lg p-2">
-                    <p className="text-xs text-gray-500">{source.label}</p>
-                    <p className="text-base font-semibold text-gray-900">
+                  <div key={source.label} className="bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2">
+                    <p className="text-[10px] sm:text-xs text-gray-500">{source.label}</p>
+                    <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
                       {formatNumber(source.value)}
                     </p>
                   </div>
@@ -179,14 +179,14 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               </div>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500">リーチしたアカウント</p>
-                <p className="text-xl font-semibold text-gray-900">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-gray-500">リーチしたアカウント</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900 break-all">
                   {formatNumber(feedStats.totalReachedAccounts)}
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-blue-500 flex-shrink-0" />
+              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 flex-shrink-0 ml-2" />
             </div>
           </div>
         </div>
@@ -211,73 +211,73 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
                 {
                   label: "総いいね",
                   value: formatNumber(reelStats.totalLikes),
-                  icon: <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />,
+                  icon: <Heart className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-500" />,
                 },
                 {
                   label: "総コメント",
                   value: formatNumber(reelStats.totalComments),
-                  icon: <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />,
+                  icon: <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-500" />,
                 },
                 {
                   label: "総シェア",
                   value: formatNumber(reelStats.totalShares),
-                  icon: <Share className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />,
+                  icon: <Share className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-500" />,
                 },
                 {
                   label: "総リーチ",
                   value: formatNumber(reelStats.totalReach),
-                  icon: <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />,
+                  icon: <Eye className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-500" />,
                 },
                 {
                   label: "総保存",
                   value: formatNumber(reelStats.totalSaves),
-                  icon: <Save className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />,
+                  icon: <Save className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-500" />,
                 },
                 {
                   label: "フォロワー増加",
                   value: formatNumber(reelStats.totalFollowerIncrease),
-                  icon: <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />,
+                  icon: <Users className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-500" />,
                 },
               ]}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">総インタラクション数</p>
-                <p className="text-xl font-semibold text-gray-900">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">総インタラクション数</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900 break-all">
                   {formatNumber(reelStats.totalInteractionCount)}
                 </p>
-                <p className="text-xs text-gray-500 mt-3">平均閲覧フォロワー%</p>
-                <p className="text-base font-semibold text-gray-900">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">平均閲覧フォロワー%</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900">
                   {formatPercent(reelStats.avgReachFollowerPercent)}
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">平均インタラクションフォロワー%</p>
-                <p className="text-xl font-semibold text-gray-900">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">平均インタラクションフォロワー%</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900">
                   {formatPercent(reelStats.avgInteractionFollowerPercent)}
                 </p>
-                <p className="text-xs text-gray-500 mt-3">平均再生時間</p>
-                <p className="text-base font-semibold text-gray-900">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">平均再生時間</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900">
                   {formatSeconds(reelStats.avgPlayTimeSeconds)}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <p className="text-xs text-gray-500">合計再生時間</p>
-                <p className="text-xl font-semibold text-gray-900">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-gray-500">合計再生時間</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900">
                   {formatSeconds(reelStats.totalPlayTimeSeconds)}
                 </p>
               </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <p className="text-xs text-gray-500">平均スキップ率</p>
-                <p className="text-xl font-semibold text-gray-900">
+              <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3">
+                <p className="text-[10px] sm:text-xs text-gray-500">平均スキップ率</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900">
                   {formatPercent(reelStats.avgSkipRate)}
                 </p>
-                <p className="text-xs text-gray-500 mt-2">ノーマルスキップ率</p>
-                <p className="text-base font-semibold text-gray-900">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-2">ノーマルスキップ率</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900">
                   {formatPercent(reelStats.avgNormalSkipRate)}
                 </p>
               </div>
@@ -293,9 +293,9 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
                   { label: "検索", value: reelStats.reachSources.search },
                   { label: "その他", value: reelStats.reachSources.other },
                 ].map((source) => (
-                  <div key={source.label} className="bg-white border border-gray-200 rounded-lg p-2">
-                    <p className="text-xs text-gray-500">{source.label}</p>
-                    <p className="text-base font-semibold text-gray-900">
+                  <div key={source.label} className="bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2">
+                    <p className="text-[10px] sm:text-xs text-gray-500">{source.label}</p>
+                    <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
                       {formatNumber(source.value)}
                     </p>
                   </div>
@@ -303,14 +303,14 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               </div>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500">リーチしたアカウント</p>
-                <p className="text-xl font-semibold text-gray-900">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-gray-500">リーチしたアカウント</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900 break-all">
                   {formatNumber(reelStats.totalReachedAccounts)}
                 </p>
               </div>
-              <Clock className="w-8 h-8 text-purple-500 flex-shrink-0" />
+              <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500 flex-shrink-0 ml-2" />
             </div>
           </div>
         </div>

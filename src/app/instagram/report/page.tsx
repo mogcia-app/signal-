@@ -7,6 +7,7 @@ import { PerformanceScore } from "./components/PerformanceScore";
 import { MonthlyReview } from "./components/MonthlyReview";
 import { MonthlyActionPlans } from "./components/MonthlyActionPlans";
 import { RiskDetection } from "./components/RiskDetection";
+import { PostSummaryInsights } from "./components/PostSummaryInsights";
 import { PostDeepDive } from "./components/PostDeepDive";
 import { AILearningReferences } from "./components/AILearningReferences";
 import { FeedbackSentiment } from "./components/FeedbackSentiment";
@@ -98,7 +99,7 @@ export default function InstagramReportPage() {
 
   return (
     <SNSLayout customTitle="月次レポート" customDescription="月次のパフォーマンス分析とレポート">
-      <div className="w-full p-3 sm:p-4 bg-white min-h-screen max-w-7xl mx-auto">
+      <div className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 bg-white min-h-screen max-w-7xl mx-auto">
         {/* ヘッダー */}
         <ReportHeader
           selectedMonth={selectedMonth}
@@ -158,6 +159,9 @@ export default function InstagramReportPage() {
           selectedMonth={selectedMonth} 
           kpis={performanceScore?.kpis || null}
         />
+
+        {/* 今月の投稿別強み・改善・施策まとめ */}
+        <PostSummaryInsights selectedMonth={selectedMonth} />
 
         {/* フィードバック感情トラッキング */}
         <FeedbackSentiment selectedMonth={selectedMonth} />

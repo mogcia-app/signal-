@@ -109,16 +109,16 @@ export const GoalAchievementComponent: React.FC<GoalAchievementProps> = ({
                   </span>
                 </div>
 
-                <div className="mt-3">
+                <div className="mt-2 sm:mt-3">
                   <div className="flex items-baseline justify-between mb-2">
                     <span className="text-xs text-gray-600">達成率</span>
-                    <span className={`text-lg font-bold ${statusConfig.color}`}>
+                    <span className={`text-base sm:text-lg font-bold ${statusConfig.color}`}>
                       {goal.achievementRate}%
                     </span>
                   </div>
 
                   {/* プログレスバー */}
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2 sm:mb-3">
                     <div
                       className={`h-2 rounded-full transition-all ${
                         goal.achievementRate >= 100
@@ -129,17 +129,17 @@ export const GoalAchievementComponent: React.FC<GoalAchievementProps> = ({
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs">
                     <div>
                       <span className="text-gray-600">実績: </span>
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-gray-900 break-all">
                         {goal.actual.toLocaleString()}
                         {goal.unit}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-600">目標: </span>
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-gray-900 break-all">
                         {goal.target.toLocaleString()}
                         {goal.unit}
                       </span>

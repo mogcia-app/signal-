@@ -422,33 +422,6 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
           </div>
         </div>
 
-        {/* 先月の実績 */}
-        {isLoadingPreviousMonth ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center shadow-sm">
-            <p className="text-sm text-gray-400">先月のデータを読み込み中...</p>
-          </div>
-        ) : previousMonthData ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
-              先月の実績
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="border-l-2 border-gray-300 pl-4">
-                <div className="text-xs text-gray-500 mb-1">フォロワー増加数</div>
-                <div className="text-xl font-light text-gray-900">
-                  +{previousMonthData.followerIncrease.toLocaleString()}人
-                </div>
-              </div>
-              <div className="border-l-2 border-gray-300 pl-4">
-                <div className="text-xs text-gray-500 mb-1">トータル投稿数</div>
-                <div className="text-xl font-light text-gray-900">
-                  {previousMonthData.totalPosts}投稿
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
         {/* 達成可能性評価 */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-5">

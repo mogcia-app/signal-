@@ -295,47 +295,47 @@ export default function HomePage() {
 
   return (
     <SNSLayout customTitle="ホーム" customDescription="アカウント指標とKPIサマリーを確認・管理">
-      <div className="w-full p-6 sm:p-8 bg-gray-50 min-h-screen">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 bg-gray-50 min-h-screen">
 
         {/* KPIサマリーカード */}
         <KPISummaryCard breakdowns={kpiBreakdowns} isLoading={isLoadingKPI} />
 
         {/* アカウント指標入力セクション */}
-        <div className="bg-white rounded-xl p-6 mb-6 border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center border border-orange-100">
-              <Users className="w-5 h-5 text-orange-600" />
+        <div className="bg-white rounded-xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-50 rounded-lg flex items-center justify-center border border-orange-100 flex-shrink-0">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">アカウント指標</h2>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm sm:text-base font-semibold text-gray-900">アカウント指標</h2>
               <p className="text-xs text-gray-500 mt-0.5">フォロワー数やプロフィールアクセス数などを記録</p>
             </div>
           </div>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8 sm:py-12">
               <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
               <p className="ml-3 text-sm text-gray-500">読み込み中...</p>
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-3">
+              <label className="block text-xs font-medium text-gray-500 mb-2 sm:mb-3">
                 {currentMonth}のフォロワー数
               </label>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <input
                   type="number"
                   value={currentFollowers}
                   onChange={(e) => setCurrentFollowers(e.target.value)}
                   placeholder="フォロワー数を入力"
                   min="0"
-                  className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                   disabled={isSaving}
                 />
                 <button
                   onClick={saveFollowerCount}
                   disabled={isSaving || !currentFollowers}
-                  className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                 >
                   {isSaving ? (
                     <>
@@ -348,7 +348,7 @@ export default function HomePage() {
                 </button>
               </div>
               {lastUpdated && (
-                <p className="text-xs text-gray-400 mt-3">
+                <p className="text-xs text-gray-400 mt-2 sm:mt-3">
                   最終更新: {new Date(lastUpdated).toLocaleString("ja-JP")}
                 </p>
               )}
@@ -356,24 +356,24 @@ export default function HomePage() {
           )}
 
           {/* プロフィールアクセス数と外部リンクタップ数の入力欄 */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <label className="block text-xs font-medium text-gray-500 mb-3">
+          <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+            <label className="block text-xs font-medium text-gray-500 mb-2 sm:mb-3">
               プロフィールへのアクセス数（投稿に紐づかない全体の数値）
             </label>
-            <div className="flex gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-3 sm:mb-4">
               <input
                 type="number"
                 value={profileVisits}
                 onChange={(e) => setProfileVisits(e.target.value)}
                 placeholder="プロフィールアクセス数を入力"
                 min="0"
-                className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                 disabled={isSavingProfileVisits}
               />
               <button
                 onClick={saveProfileVisits}
                 disabled={isSavingProfileVisits || !profileVisits}
-                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 {isSavingProfileVisits ? (
                   <>
@@ -385,23 +385,23 @@ export default function HomePage() {
                 )}
               </button>
             </div>
-            <label className="block text-xs font-medium text-gray-500 mb-3">
+            <label className="block text-xs font-medium text-gray-500 mb-2 sm:mb-3">
               外部リンクタップ数（投稿に紐づかない全体の数値）
             </label>
-            <div className="flex gap-3 mb-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-2 sm:mb-3">
               <input
                 type="number"
                 value={externalLinkTaps}
                 onChange={(e) => setExternalLinkTaps(e.target.value)}
                 placeholder="外部リンクタップ数を入力"
                 min="0"
-                className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                 disabled={isSavingExternalLinkTaps}
               />
               <button
                 onClick={saveExternalLinkTaps}
                 disabled={isSavingExternalLinkTaps || !externalLinkTaps}
-                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 {isSavingExternalLinkTaps ? (
                   <>
@@ -421,20 +421,20 @@ export default function HomePage() {
 
 
         {/* 今月のアクションプラン */}
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center border border-orange-100">
-                <Lightbulb className="w-5 h-5 text-orange-600" />
+        <div className="bg-white rounded-xl p-3 sm:p-4 md:p-6 border border-gray-100 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-50 rounded-lg flex items-center justify-center border border-orange-100 flex-shrink-0">
+                <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
               </div>
-              <div>
-                <h2 className="text-base font-semibold text-gray-900">今月のアクションプラン</h2>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm sm:text-base font-semibold text-gray-900">今月のアクションプラン</h2>
                 <p className="text-xs text-gray-500 mt-0.5">AIが提案する改善アクション</p>
               </div>
             </div>
             <a
               href="/instagram/report"
-              className="text-xs text-gray-600 hover:text-orange-600 font-medium flex items-center gap-1 transition-colors"
+              className="text-xs text-gray-600 hover:text-orange-600 font-medium flex items-center gap-1 transition-colors self-start sm:self-auto"
             >
               詳細を見る
               <ArrowRight className="w-3.5 h-3.5" />
@@ -442,12 +442,12 @@ export default function HomePage() {
           </div>
 
           {isLoadingActionPlans ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8 sm:py-12">
               <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
               <p className="ml-3 text-sm text-gray-500">読み込み中...</p>
             </div>
           ) : actionPlans.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {actionPlans.map((plan, index) => {
                 const actionId = `home-action-plan-${currentMonth}-${index}`;
                 const isChecked = actionLogMap.get(actionId)?.applied ?? false;
@@ -494,9 +494,9 @@ export default function HomePage() {
                 return (
                   <div
                     key={index}
-                    className="bg-gray-50 rounded-lg p-4 border border-gray-100"
+                    className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-100"
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       <button
                         onClick={handleToggle}
                         disabled={isPending}
@@ -509,15 +509,15 @@ export default function HomePage() {
                         {isChecked && <Check className="w-3 h-3 text-white" />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1.5">
+                        <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-1.5">
                           {index + 1}. {removeMarkdown(plan.title)}
                         </h3>
                         {plan.description && (
-                          <p className="text-xs text-gray-600 mb-2 leading-relaxed">{removeMarkdown(plan.description)}</p>
+                          <p className="text-xs text-gray-600 mb-1.5 sm:mb-2 leading-relaxed">{removeMarkdown(plan.description)}</p>
                         )}
                         {plan.action && (
-                          <div className="flex items-start gap-2 mt-2 pt-2 border-t border-gray-100">
-                            <ArrowRight className="w-3.5 h-3.5 text-orange-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex items-start gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-gray-100">
+                            <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-600 mt-0.5 flex-shrink-0" />
                             <p className="text-xs text-gray-600 leading-relaxed">{removeMarkdown(plan.action)}</p>
                           </div>
                         )}
@@ -528,7 +528,7 @@ export default function HomePage() {
               })}
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-8 sm:py-12 text-gray-400">
               <p className="text-sm">アクションプランがありません</p>
               <p className="text-xs mt-1">月次レポートページで生成できます</p>
             </div>

@@ -97,20 +97,20 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
           <h2 className="text-base font-semibold text-gray-900">KPI 分解とドリルダウン</h2>
         </div>
       </div>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {breakdowns.map((item) => {
           const changeMeta = formatChange(item.changePct);
           const segmentTotal =
             item.segments?.reduce((sum, segment) => sum + Math.max(segment.value, 0), 0) || 0;
 
           return (
-            <div key={item.key} className="border border-gray-200 rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
+            <div key={item.key} className="border border-gray-200 rounded-lg p-2.5 sm:p-3 md:p-4 space-y-2 sm:space-y-3 md:space-y-4">
+              <div className="flex items-start justify-between gap-2 sm:gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     {item.label}
                   </p>
-                  <p className="text-xl sm:text-2xl font-semibold text-gray-900 mt-1">
+                  <p className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mt-1 break-all">
                     {formatValue(item.value, item.unit)}
                   </p>
                   {item.key === "engagement" && (
@@ -126,7 +126,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                 </div>
                 {changeMeta && (
                   <span
-                    className={`text-xs font-semibold px-2 py-1 rounded-full border ${changeMeta.className}`}
+                    className={`text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border flex-shrink-0 ${changeMeta.className}`}
                   >
                     {changeMeta.formatted}
                   </span>
@@ -186,42 +186,42 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                       return (
                         <div
                           key={`${item.key}-${post.postId}`}
-                          className="border border-gray-200 rounded-lg p-2 sm:p-3 bg-gray-50"
+                          className="border border-gray-200 rounded-lg p-2 sm:p-2.5 md:p-3 bg-gray-50"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                                 {post.title || "無題の投稿"}
                               </p>
-                              <p className="text-[11px] text-gray-500 mt-0.5">
+                              <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">
                                 {post.value.toLocaleString()}件
                               </p>
                             </div>
                             {post.status && (
                               <span
-                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className} flex-shrink-0`}
+                                className={`text-[9px] sm:text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-full border ${statusMeta.className} flex-shrink-0`}
                               >
                                 {statusMeta.label}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
                             {labHref && (
                               <Link
                                 href={labHref}
-                                className="text-[11px] font-semibold text-gray-700 border border-gray-300 bg-white px-2 py-1 rounded hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
+                                className="text-[10px] sm:text-[11px] font-semibold text-gray-700 border border-gray-300 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
                               >
                                 Labで開く
-                                <ExternalLink className="w-3 h-3" />
+                                <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                               </Link>
                             )}
                             {analyticsHref && (
                               <Link
                                 href={analyticsHref}
-                                className="text-[11px] font-semibold text-gray-700 border border-gray-300 bg-white px-2 py-1 rounded hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
+                                className="text-[10px] sm:text-[11px] font-semibold text-gray-700 border border-gray-300 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
                               >
                                 分析
-                                <ExternalLink className="w-3 h-3" />
+                                <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                               </Link>
                             )}
                           </div>

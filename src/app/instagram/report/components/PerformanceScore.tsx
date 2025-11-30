@@ -89,14 +89,14 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 shadow-sm relative">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-medium text-gray-700">エンゲージメント</p>
-                <div className="relative group">
+                  <div className="relative group">
                   <Info className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors cursor-help" />
-                  <div className="absolute bottom-full right-0 mb-2 w-56 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                  <div className="absolute bottom-full left-0 sm:left-auto sm:right-0 mb-2 w-48 sm:w-56 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
                     <div className="font-semibold mb-1">エンゲージメントスコア</div>
                     <div className="text-gray-300">
                       いいね、コメント、シェアの合計をリーチ数で割ったエンゲージメント率に基づいて評価します。最大50点。
                     </div>
-                    <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                    <div className="absolute top-full left-4 sm:left-auto sm:right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                   </div>
                 </div>
               </div>
@@ -110,12 +110,12 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
                 <p className="text-xs font-medium text-gray-700">成長</p>
                 <div className="relative group">
                   <Info className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors cursor-help" />
-                  <div className="absolute bottom-full right-0 mb-2 w-56 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                  <div className="absolute bottom-full left-0 sm:left-auto sm:right-0 mb-2 w-48 sm:w-56 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
                     <div className="font-semibold mb-1">成長スコア</div>
                     <div className="text-gray-300">
                       期間内の全投稿によるフォロワー増加数の合計に基づいて評価します。最大25点。
                     </div>
-                    <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                    <div className="absolute top-full left-4 sm:left-auto sm:right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                   </div>
                 </div>
               </div>
@@ -129,12 +129,12 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
                 <p className="text-xs font-medium text-gray-700">品質</p>
                 <div className="relative group">
                   <Info className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors cursor-help" />
-                  <div className="absolute bottom-full right-0 mb-2 w-56 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                  <div className="absolute bottom-full left-0 sm:left-auto sm:right-0 mb-2 w-48 sm:w-56 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
                     <div className="font-semibold mb-1">品質スコア</div>
                     <div className="text-gray-300">
                       期間内の全投稿の平均リーチ数に基づいて評価します。最大15点。
                     </div>
-                    <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                    <div className="absolute top-full left-4 sm:left-auto sm:right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                   </div>
                 </div>
               </div>
@@ -148,12 +148,12 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
                 <p className="text-xs font-medium text-gray-700">一貫性</p>
                 <div className="relative group">
                   <Info className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors cursor-help" />
-                  <div className="absolute bottom-full right-0 mb-2 w-56 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                  <div className="absolute bottom-full left-0 sm:left-auto sm:right-0 mb-2 w-48 sm:w-56 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
                     <div className="font-semibold mb-1">一貫性スコア</div>
                     <div className="text-gray-300">
                       週間投稿数（月間投稿数 ÷ 4）に基づいて評価します。最大10点。
                     </div>
-                    <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                    <div className="absolute top-full left-4 sm:left-auto sm:right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                   </div>
                 </div>
               </div>
@@ -168,34 +168,34 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
       {/* KPI表示 */}
       <div className="mb-4">
         <h3 className="text-xs font-semibold text-gray-700 mb-2">主要KPI</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200 shadow-sm">
-            <p className="text-xs font-medium text-orange-700 mb-1">いいね数</p>
-            <p className="text-base sm:text-lg font-bold text-orange-900">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2 md:gap-3">
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-2 sm:p-3 border border-orange-200 shadow-sm">
+            <p className="text-xs font-medium text-orange-700 mb-0.5 sm:mb-1">いいね数</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-orange-900 break-all">
               {kpis.totalLikes.toLocaleString()}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200 shadow-sm">
-            <p className="text-xs font-medium text-blue-700 mb-1">リーチ数</p>
-            <p className="text-base sm:text-lg font-bold text-blue-900">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2 sm:p-3 border border-blue-200 shadow-sm">
+            <p className="text-xs font-medium text-blue-700 mb-0.5 sm:mb-1">リーチ数</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 break-all">
               {kpis.totalReach.toLocaleString()}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200 shadow-sm">
-            <p className="text-xs font-medium text-green-700 mb-1">保存数</p>
-            <p className="text-base sm:text-lg font-bold text-green-900">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-2 sm:p-3 border border-green-200 shadow-sm">
+            <p className="text-xs font-medium text-green-700 mb-0.5 sm:mb-1">保存数</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-green-900 break-all">
               {kpis.totalSaves.toLocaleString()}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200 shadow-sm">
-            <p className="text-xs font-medium text-purple-700 mb-1">コメント数</p>
-            <p className="text-base sm:text-lg font-bold text-purple-900">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2 sm:p-3 border border-purple-200 shadow-sm">
+            <p className="text-xs font-medium text-purple-700 mb-0.5 sm:mb-1">コメント数</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-purple-900 break-all">
               {kpis.totalComments.toLocaleString()}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-3 border border-pink-200 shadow-sm">
-            <p className="text-xs font-medium text-pink-700 mb-1">フォロワー増減</p>
-            <p className={`text-base sm:text-lg font-bold ${
+          <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-2 sm:p-3 border border-pink-200 shadow-sm">
+            <p className="text-xs font-medium text-pink-700 mb-0.5 sm:mb-1">フォロワー増減</p>
+            <p className={`text-sm sm:text-base md:text-lg font-bold break-all ${
               kpis.totalFollowerIncrease >= 0 ? "text-pink-900" : "text-red-600"
             }`}>
               {kpis.totalFollowerIncrease >= 0 ? "+" : ""}
@@ -206,20 +206,20 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
       </div>
 
       {/* メトリクス表示 */}
-      <div className="pt-4 border-t border-gray-200">
+      <div className="pt-3 sm:pt-4 border-t border-gray-200">
         <h3 className="text-xs font-semibold text-gray-700 mb-2">基本情報</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-            <p className="text-xs font-medium text-gray-600 mb-1">投稿数</p>
-            <p className="text-base font-bold text-gray-900">{metrics.postCount}件</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2 md:gap-3">
+          <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+            <p className="text-xs font-medium text-gray-600 mb-0.5 sm:mb-1">投稿数</p>
+            <p className="text-sm sm:text-base font-bold text-gray-900">{metrics.postCount}件</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-            <p className="text-xs font-medium text-gray-600 mb-1">分析済み数</p>
-            <p className="text-base font-bold text-gray-900">{metrics.analyzedCount}件</p>
+          <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+            <p className="text-xs font-medium text-gray-600 mb-0.5 sm:mb-1">分析済み数</p>
+            <p className="text-sm sm:text-base font-bold text-gray-900">{metrics.analyzedCount}件</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-            <p className="text-xs font-medium text-gray-600 mb-1">運用計画</p>
-            <p className="text-base font-bold">
+          <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+            <p className="text-xs font-medium text-gray-600 mb-0.5 sm:mb-1">運用計画</p>
+            <p className="text-sm sm:text-base font-bold">
               {metrics.hasPlan ? (
                 <span className="text-green-600">作成済み</span>
               ) : (
