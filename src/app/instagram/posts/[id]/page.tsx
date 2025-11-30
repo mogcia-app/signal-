@@ -1181,17 +1181,6 @@ export default function PostDetailPage() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-xs text-gray-500">
                           <span className="font-semibold text-gray-600">保存済みAIまとめ</span>
-                          {savedSummary.generatedAt ? (
-                            <span>
-                              生成日時:{" "}
-                              {new Date(savedSummary.generatedAt).toLocaleString("ja-JP", {
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          ) : null}
                         </div>
                         <p className="text-sm text-gray-700">{savedSummary.summary}</p>
                         {savedSummary.insights?.length ? (

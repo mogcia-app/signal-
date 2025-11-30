@@ -172,8 +172,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     const cleanTitle = cleanGeneratedText(finalTitleRaw);
     let cleanContent = cleanGeneratedText(finalContentRaw);
     
-    // リールの場合、投稿文からハッシュタグを除去
-    if (postType === "reel" && cleanContent) {
+    // すべての投稿タイプで、投稿文からハッシュタグを除去
+    if (cleanContent) {
       cleanContent = removeHashtagsFromContent(cleanContent);
     }
     
