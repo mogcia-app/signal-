@@ -51,8 +51,11 @@ export default function HomePage() {
   const [isLoadingKPI, setIsLoadingKPI] = useState(false);
 
 
-  // 現在の月を取得
-  const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
+  // 現在の月を取得する関数
+  const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
+  
+  // 現在の月をstateで管理（自動更新のため）
+  const [currentMonth, setCurrentMonth] = useState<string>(getCurrentMonth());
 
   // フォロワー数を取得
   const fetchFollowerCount = useCallback(async () => {
@@ -292,6 +295,33 @@ export default function HomePage() {
       fetchKPISummary();
     }
   }, [isAuthReady, fetchFollowerCount, fetchActionPlans, fetchKPISummary]);
+
+  // 月が変わったら自動的に現在の月に更新
+  useEffect(() => {
+    const checkMonthChange = () => {
+      const newCurrentMonth = getCurrentMonth();
+      if (currentMonth !== newCurrentMonth) {
+        setCurrentMonth(newCurrentMonth);
+      }
+    };
+
+    // 初回チェック
+    checkMonthChange();
+
+    // ページがフォーカスされた時にチェック
+    const handleFocus = () => {
+      checkMonthChange();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    // 1時間ごとにチェック（月が変わるのは1日0時なので、1時間ごとで十分）
+    const interval = setInterval(checkMonthChange, 60 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, [currentMonth]);
 
   return (
     <SNSLayout customTitle="ホーム" customDescription="アカウント指標とKPIサマリーを確認・管理">

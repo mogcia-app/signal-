@@ -46,27 +46,39 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
         const start = new Date(yearStr, monthStr - 1, 1);
         const end = new Date(yearStr, monthStr, 0, 23, 59, 59);
 
-        // その月のanalyticsデータを取得してpostIdを抽出
-        const analyticsResponse = await authFetch(
-          `/api/analytics?userId=${user.uid}`
+        // 投稿一覧を取得
+        const postsResponse = await authFetch(
+          `/api/posts?userId=${user.uid}`
         );
-        if (!analyticsResponse.ok) {
-          throw new Error("Analyticsデータの取得に失敗しました");
+        if (!postsResponse.ok) {
+          throw new Error("投稿データの取得に失敗しました");
         }
-        const analyticsResult = await analyticsResponse.json();
-        const analytics = analyticsResult.analytics || analyticsResult.data || [];
+        const postsResult = await postsResponse.json();
+        const posts = postsResult.posts || [];
 
-        // 選択された月の投稿IDを抽出
+        // 選択された月の投稿IDを抽出（scheduledDateまたはcreatedAtで判定）
         const postIdsInMonth = new Set<string>();
-        analytics.forEach((item: any) => {
-          if (!item.publishedAt || !item.postId) return;
-          const publishedAt = item.publishedAt instanceof Date
-            ? item.publishedAt
-            : new Date(item.publishedAt);
-          if (publishedAt >= start && publishedAt <= end) {
-            postIdsInMonth.add(item.postId);
+        posts.forEach((post: any) => {
+          let dateToCheck: Date | null = null;
+          
+          // scheduledDateがある場合はそれを使用
+          if (post.scheduledDate) {
+            dateToCheck = new Date(post.scheduledDate);
+          } 
+          // createdAtがある場合はそれを使用
+          else if (post.createdAt) {
+            dateToCheck = post.createdAt instanceof Date
+              ? post.createdAt
+              : new Date(post.createdAt);
+          }
+          
+          if (dateToCheck && dateToCheck >= start && dateToCheck <= end) {
+            postIdsInMonth.add(post.id);
           }
         });
+
+        console.log("選択月の投稿ID:", Array.from(postIdsInMonth));
+        console.log("投稿ID数:", postIdsInMonth.size);
 
         if (postIdsInMonth.size === 0) {
           setInsights(null);
@@ -74,19 +86,38 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
           return;
         }
 
+        // analyticsデータも取得（リーチ数の取得用）
+        const analyticsResponse = await authFetch(
+          `/api/analytics?userId=${user.uid}`
+        );
+        const analytics = analyticsResponse.ok
+          ? (await analyticsResponse.json()).analytics || (await analyticsResponse.json()).data || []
+          : [];
+
         // 各投稿のAIサマリーを取得
         const summaryPromises = Array.from(postIdsInMonth).map(async (postId) => {
           try {
-            const docId = `${user.uid}_${postId}`;
             const response = await authFetch(
               `/api/ai/post-summaries?userId=${user.uid}&postId=${postId}`
             );
-            if (!response.ok) return null;
+            if (!response.ok) {
+              console.log(`AIサマリー取得失敗 (postId: ${postId}):`, response.status);
+              return null;
+            }
             const result = await response.json();
-            if (!result.success || !result.data) return null;
+            if (!result.success || !result.data) {
+              console.log(`AIサマリーデータなし (postId: ${postId}):`, result);
+              return null;
+            }
 
             const summaryData = result.data;
             const analyticsItem = analytics.find((a: any) => a.postId === postId);
+            console.log(`AIサマリー取得成功 (postId: ${postId}):`, {
+              hasSummary: !!summaryData.summary,
+              strengthsCount: Array.isArray(summaryData.insights) ? summaryData.insights.length : 0,
+              actionsCount: Array.isArray(summaryData.recommendedActions) ? summaryData.recommendedActions.length : 0,
+            });
+            
             return {
               postId,
               summary: summaryData.summary || "",
@@ -106,6 +137,8 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
         const summaries = (await Promise.all(summaryPromises)).filter(
           (s): s is PostSummaryData => s !== null
         );
+
+        console.log("取得できたAIサマリー数:", summaries.length);
 
         if (summaries.length === 0) {
           setInsights(null);

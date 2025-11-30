@@ -16,9 +16,11 @@ import type { KPIBreakdown, TimeSlotEntry, FeedStats, ReelStats, AudienceBreakdo
 export default function InstagramKPIPage() {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
-  const [selectedMonth, setSelectedMonth] = useState<string>(
-    new Date().toISOString().slice(0, 7) // YYYY-MM形式
-  );
+  
+  // 現在の月を取得する関数
+  const getCurrentMonth = () => new Date().toISOString().slice(0, 7); // YYYY-MM形式
+  
+  const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
   const [breakdowns, setBreakdowns] = useState<KPIBreakdown[]>([]);
   const [timeSlotAnalysis, setTimeSlotAnalysis] = useState<TimeSlotEntry[]>([]);
   const [hashtagStats, setHashtagStats] = useState<Array<{ hashtag: string; count: number }>>([]);
@@ -110,6 +112,39 @@ export default function InstagramKPIPage() {
       fetchKPIBreakdown(selectedMonth);
     }
   }, [isAuthReady, selectedMonth, fetchKPIBreakdown]);
+
+  // 月が変わったら自動的に現在の月に更新（過去の月を選択している場合はスキップ）
+  useEffect(() => {
+    const checkMonthChange = () => {
+      const currentMonth = getCurrentMonth();
+      // 選択された月が現在の月より古い（過去）場合は、自動更新をスキップ
+      // 過去の月のデータを見ている場合は、そのまま維持する
+      if (selectedMonth < currentMonth) {
+        return;
+      }
+      // 選択された月が現在の月と同じか未来の場合は、現在の月に更新
+      if (selectedMonth !== currentMonth) {
+        setSelectedMonth(currentMonth);
+      }
+    };
+
+    // 初回チェック
+    checkMonthChange();
+
+    // ページがフォーカスされた時にチェック
+    const handleFocus = () => {
+      checkMonthChange();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    // 1時間ごとにチェック（月が変わるのは1日0時なので、1時間ごとで十分）
+    const interval = setInterval(checkMonthChange, 60 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, [selectedMonth]);
 
   return (
     <SNSLayout customTitle="KPIコンソール" customDescription="主要KPIを要素ごとに分解し、何が伸びたか／落ちたかを素早く把握できます">
