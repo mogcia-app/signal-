@@ -1,0 +1,68 @@
+name: Dependency Update Check
+
+on:
+  schedule:
+    # 毎週月曜日の午前9時（JST）に実行
+    - cron: '0 0 * * 1'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check for outdated packages
+        id: outdated
+        run: |
+          echo "Checking for outdated packages..."
+          npm outdated --json > outdated-packages.json || echo '{}' > outdated-packages.json
+          
+          # 主要パッケージの確認
+          echo "## Outdated Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Current | Wanted | Latest |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # react, react-dom, next のバージョン確認
+          npm list react react-dom next --depth=0 >> $GITHUB_STEP_SUMMARY || true
+      
+      - name: Upload outdated packages report
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-packages
+          path: outdated-packages.json
+          retention-days: 7
+      
+      - name: Check React version
+        run: |
+          REACT_VERSION=$(npm list react --depth=0 | grep react@ | sed 's/.*react@//' | sed 's/ .*//')
+          echo "Current React version: $REACT_VERSION"
+          echo "react_version=$REACT_VERSION" >> $GITHUB_ENV
+      
+      - name: Check Next.js version
+        run: |
+          NEXT_VERSION=$(npm list next --depth=0 | grep next@ | sed 's/.*next@//' | sed 's/ .*//')
+          echo "Current Next.js version: $NEXT_VERSION"
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_ENV
+      
+      - name: Generate report
+        run: |
+          echo "## 📦 Dependency Update Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- React: ${{ env.react_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Next.js: ${{ env.next_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Run \`npm outdated\` locally to see all outdated packages." >> $GITHUB_STEP_SUMMARY
+
+

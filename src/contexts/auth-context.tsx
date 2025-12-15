@@ -8,7 +8,7 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, DocumentReference } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import { UserProfile } from "../types/user";
 import { checkUserContract } from "../lib/auth";
@@ -37,46 +37,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ユーザードキュメントを作成または更新する関数
   const ensureUserDocument = async (user: User) => {
     const userDocRef = doc(db, "users", user.uid);
-    const userDoc = await getDoc(userDocRef);
-
-    if (!userDoc.exists()) {
-      // ユーザードキュメントが存在しない場合、デフォルト値で作成
-      const defaultUserProfile: Omit<UserProfile, "id"> & { setupRequired?: boolean } = {
-        email: user.email || "",
-        name: user.displayName || "ユーザー",
-        role: "user",
-        isActive: true,
-        snsCount: 1,
-        usageType: "solo",
-        contractType: "trial",
-        contractSNS: ["instagram"],
-        snsAISettings: {},
-        businessInfo: {
-          industry: "",
-          companySize: "",
-          businessType: "",
-          description: "",
-          targetMarket: "",
-          goals: [],
-          challenges: [],
-        },
-        status: "pending_setup",
-        setupRequired: true,
-        contractStartDate: new Date().toISOString(),
-        contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        billingInfo: {
-          paymentMethod: "none",
-          nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 0,
-        },
-        notes: "新規ユーザー - 初期設定待ち",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      await setDoc(userDocRef, defaultUserProfile);
-      console.log("✅ User document created in Firestore:", user.uid);
+    
+    try {
+      // まず存在確認を試みる
+      const userDoc = await getDoc(userDocRef);
+      
+      if (!userDoc.exists()) {
+        // ユーザードキュメントが存在しない場合、デフォルト値で作成
+        await createUserDocument(userDocRef, user);
+      }
+    } catch (error: any) {
+      // 権限エラーが発生した場合（新規ユーザーでドキュメントが存在しない場合など）
+      // 直接作成を試みる（create権限はルールで許可されている）
+      if (error.code === 'permission-denied') {
+        try {
+          await createUserDocument(userDocRef, user);
+        } catch (createError) {
+          console.error("🔐 Error creating user document:", createError);
+          throw createError;
+        }
+      } else {
+        console.error("🔐 Error ensuring user document:", error);
+        throw error;
+      }
     }
+  };
+
+  // ユーザードキュメント作成のヘルパー関数
+  const createUserDocument = async (userDocRef: DocumentReference, user: User) => {
+    const defaultUserProfile: Omit<UserProfile, "id"> & { setupRequired?: boolean } = {
+      email: user.email || "",
+      name: user.displayName || "ユーザー",
+      role: "user",
+      isActive: true,
+      snsCount: 1,
+      usageType: "solo",
+      contractType: "trial",
+      contractSNS: ["instagram"],
+      snsAISettings: {},
+      businessInfo: {
+        industry: "",
+        companySize: "",
+        businessType: "",
+        description: "",
+        targetMarket: "",
+        goals: [],
+        challenges: [],
+      },
+      status: "pending_setup",
+      setupRequired: true,
+      contractStartDate: new Date().toISOString(),
+      contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      billingInfo: {
+        paymentMethod: "none",
+        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        amount: 0,
+      },
+      notes: "新規ユーザー - 初期設定待ち",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await setDoc(userDocRef, defaultUserProfile);
+    console.log("✅ User document created in Firestore:", user.uid);
   };
 
   useEffect(() => {

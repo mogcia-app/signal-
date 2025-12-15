@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
-import { ChevronRight, ExternalLink, Loader2, PieChart } from "lucide-react";
+import { ChevronRight, ExternalLink, Loader2, PieChart, AlertCircle } from "lucide-react";
 import { getLabEditorHref, getAnalyticsHref } from "@/utils/links";
 import type { KPIBreakdown } from "@/app/api/analytics/kpi-breakdown/route";
 
@@ -56,6 +56,27 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
   isLoading,
   error,
 }) => {
+  // 最も値が低いKPI項目を特定（来月強化すべきもの）
+  const lowestKPIKey = useMemo(() => {
+    if (!breakdowns || breakdowns.length === 0) return null;
+    
+    // 比較可能なKPI項目のみを対象（単位が同じもの同士で比較）
+    const comparableKPIs = breakdowns.filter(
+      (item) => item.value !== undefined && item.value !== null && Number.isFinite(item.value)
+    );
+    
+    if (comparableKPIs.length === 0) return null;
+    
+    // 値が最も低いKPI項目を特定
+    const lowest = comparableKPIs.reduce((min, current) => {
+      // パーセンテージの場合はそのまま、カウントの場合は正規化が必要かもしれないが、
+      // とりあえず生の値で比較（必要に応じて調整可能）
+      return current.value < min.value ? current : min;
+    });
+    
+    return lowest.key;
+  }, [breakdowns]);
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -102,14 +123,32 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
           const changeMeta = formatChange(item.changePct);
           const segmentTotal =
             item.segments?.reduce((sum, segment) => sum + Math.max(segment.value, 0), 0) || 0;
+          
+          // このKPI項目が最も低い値かどうか
+          const isLowestKPI = item.key === lowestKPIKey;
 
           return (
-            <div key={item.key} className="border border-gray-200 rounded-lg p-2.5 sm:p-3 md:p-4 space-y-2 sm:space-y-3 md:space-y-4">
+            <div 
+              key={item.key} 
+              className={`border rounded-lg p-2.5 sm:p-3 md:p-4 space-y-2 sm:space-y-3 md:space-y-4 ${
+                isLowestKPI 
+                  ? "border-red-300 bg-red-50/40" 
+                  : "border-gray-200"
+              }`}
+            >
               <div className="flex items-start justify-between gap-2 sm:gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    {item.label}
-                  </p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      {item.label}
+                    </p>
+                    {isLowestKPI && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-300">
+                        <AlertCircle className="w-3 h-3" />
+                        来月強化
+                      </span>
+                    )}
+                  </div>
                   <p className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mt-1 break-all">
                     {formatValue(item.value, item.unit)}
                   </p>
