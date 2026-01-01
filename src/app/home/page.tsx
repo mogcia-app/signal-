@@ -234,14 +234,22 @@ export default function HomePage() {
     }
   };
 
-  // アクションプランを取得（独立したAPIから）
+  // 先月の月を取得する関数
+  const getLastMonth = useCallback(() => {
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+
+  // アクションプランを取得（先月のレポートまとめから）
   const fetchActionPlans = useCallback(async () => {
     if (!isAuthReady || !user?.uid) return;
 
     setIsLoadingActionPlans(true);
     try {
+      const lastMonth = getLastMonth();
       const [response, actionLogsResponse] = await Promise.all([
-        authFetch(`/api/analytics/monthly-proposals?date=${currentMonth}`),
+        authFetch(`/api/analytics/monthly-proposals?date=${lastMonth}`),
         actionLogsApi.list(user.uid, { limit: 100 }),
       ]);
 
@@ -267,7 +275,7 @@ export default function HomePage() {
     } finally {
       setIsLoadingActionPlans(false);
     }
-  }, [isAuthReady, currentMonth, user?.uid]);
+  }, [isAuthReady, user?.uid, getLastMonth]);
 
   // KPIサマリーを取得
   const fetchKPISummary = useCallback(async () => {
@@ -463,8 +471,7 @@ export default function HomePage() {
           </div>
         </div>
 
-
-        {/* 今月のアクションプラン */}
+        {/* 今月のアクションプラン（先月のレポートまとめから） */}
         <div className="bg-white rounded-xl p-3 sm:p-4 md:p-6 border border-gray-100 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -473,7 +480,7 @@ export default function HomePage() {
               </div>
               <div className="min-w-0 flex-1">
                 <h2 className="text-sm sm:text-base font-semibold text-gray-900">今月のアクションプラン</h2>
-                <p className="text-xs text-gray-500 mt-0.5">AIが提案する改善アクション</p>
+                <p className="text-xs text-gray-500 mt-0.5">改善点の見える化：今月すべき具体的なアクション</p>
               </div>
             </div>
             <a
@@ -493,7 +500,8 @@ export default function HomePage() {
           ) : actionPlans.length > 0 ? (
             <div className="space-y-2 sm:space-y-3">
               {actionPlans.map((plan, index) => {
-                const actionId = `home-action-plan-${currentMonth}-${index}`;
+                const lastMonth = getLastMonth();
+                const actionId = `home-action-plan-${lastMonth}-${index}`;
                 const isChecked = actionLogMap.get(actionId)?.applied ?? false;
                 const isPending = actionLogPendingIds.has(actionId);
 
@@ -508,7 +516,7 @@ export default function HomePage() {
                       userId: user.uid,
                       actionId,
                       title: plan.title,
-                      focusArea: `next-month-${currentMonth}`,
+                      focusArea: `next-month-${lastMonth}`,
                       applied: newApplied,
                     });
 
@@ -578,6 +586,7 @@ export default function HomePage() {
             </div>
           )}
         </div>
+
       </div>
     </SNSLayout>
   );

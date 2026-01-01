@@ -771,26 +771,151 @@ function deriveSentimentScore(
   };
 }
 
+/**
+ * 再現可能性スコアを計算
+ * 次も再現できる行動・構造があったかを評価
+ */
+function calculateReproducibilityScore(
+  record: AnalyticsRecord,
+  aggregate: FeedbackAggregate | undefined,
+  allRecords: AnalyticsRecord[]
+): number {
+  let score = 0;
+  const factors: string[] = [];
+
+  // 1. フィードバックで「再現したい」という意見があるか
+  if (aggregate) {
+    const positiveRatio = aggregate.positiveWeight / Math.max(1, aggregate.positiveWeight + aggregate.negativeWeight);
+    if (positiveRatio >= 0.7) {
+      score += 0.3;
+      factors.push("フィードバックで再現希望が高い");
+    }
+    // コメントに「また見たい」「参考になる」などのキーワードがあるか
+    const reproductionKeywords = ["また", "参考", "真似", "活用", "使いたい", "良い", "素晴らしい"];
+    const hasReproductionComment = aggregate.comments.some((comment) =>
+      reproductionKeywords.some((keyword) => comment.includes(keyword))
+    );
+    if (hasReproductionComment) {
+      score += 0.2;
+      factors.push("再現を希望するコメントがある");
+    }
+  }
+
+  // 2. 類似投稿との一貫性（同じカテゴリ、同じハッシュタグパターンで成功しているか）
+  const sameCategoryRecords = allRecords.filter(
+    (r) => r.category === record.category && r.id !== record.id
+  );
+  if (sameCategoryRecords.length > 0) {
+    const avgER = sameCategoryRecords.reduce((sum, r) => {
+      const er = calculateEngagementRate(r);
+      return sum + er;
+    }, 0) / sameCategoryRecords.length;
+    const currentER = calculateEngagementRate(record);
+    if (currentER >= avgER * 0.9) {
+      // 同じカテゴリで平均的な成果を出している = 再現可能なパターン
+      score += 0.2;
+      factors.push("同じ投稿タイプで一貫した成果");
+    }
+  }
+
+  // 3. 特定の構造が識別できるか（ハッシュタグパターン、テーマなど）
+  const hashtags = ensureArray<string>(record.hashtags);
+  if (hashtags.length >= 3) {
+    // ハッシュタグが適切に設定されている = 構造化されている
+    score += 0.15;
+    factors.push("構造化されたハッシュタグパターン");
+  }
+
+  // 4. タイトルやコンテンツが明確なテーマを持っているか
+  if (record.title && record.title.length >= 10) {
+    score += 0.15;
+    factors.push("明確なテーマ・構造");
+  }
+
+  return Math.min(1, score);
+}
+
+/**
+ * 改善可能性スコアを計算
+ * 改善すれば変えられる要因が特定できたかを評価
+ */
+function calculateImprovabilityScore(
+  record: AnalyticsRecord,
+  aggregate: FeedbackAggregate | undefined,
+  baseline: ReturnType<typeof computeBaselineMetrics>
+): number {
+  let score = 0;
+  const factors: string[] = [];
+
+  // 1. フィードバックで改善点が指摘されているか
+  if (aggregate) {
+    const negativeRatio = aggregate.negativeWeight / Math.max(1, aggregate.positiveWeight + aggregate.negativeWeight);
+    if (negativeRatio >= 0.3) {
+      score += 0.3;
+      factors.push("フィードバックで改善点が指摘されている");
+    }
+    // コメントに改善を促すキーワードがあるか
+    const improvementKeywords = ["改善", "もっと", "違う", "変えて", "違和感", "分かりにくい"];
+    const hasImprovementComment = aggregate.comments.some((comment) =>
+      improvementKeywords.some((keyword) => comment.includes(keyword))
+    );
+    if (hasImprovementComment) {
+      score += 0.2;
+      factors.push("改善を促すコメントがある");
+    }
+  }
+
+  // 2. 数値が低いが、改善可能な要因が特定できるか
+  const engagementRate = calculateEngagementRate(record);
+  const isBelowAverage = baseline.avgEngagement > 0 && engagementRate < baseline.avgEngagement * 0.8;
+  
+  if (isBelowAverage) {
+    // 改善可能な要因をチェック
+    const hashtags = ensureArray<string>(record.hashtags);
+    if (hashtags.length < 3) {
+      score += 0.2;
+      factors.push("ハッシュタグが少ない（改善可能）");
+    }
+    if (!record.title || record.title.length < 10) {
+      score += 0.15;
+      factors.push("タイトルが不明確（改善可能）");
+    }
+    if (record.category === "feed" && engagementRate < baseline.avgEngagement * 0.7) {
+      score += 0.15;
+      factors.push("投稿タイプの見直しが必要");
+    }
+  }
+
+  // 3. 構造的な問題が特定できるか
+  const hashtags = ensureArray<string>(record.hashtags);
+  if (hashtags.length === 0) {
+    score += 0.2;
+    factors.push("ハッシュタグ未設定（改善可能）");
+  }
+
+  return Math.min(1, score);
+}
+
 function evaluatePostPerformance(
   record: AnalyticsRecord,
   baseline: ReturnType<typeof computeBaselineMetrics>,
-  aggregate: FeedbackAggregate | undefined
+  aggregate: FeedbackAggregate | undefined,
+  allRecords: AnalyticsRecord[] = []
 ): PostLearningSignal | null {
   const engagementRate = calculateEngagementRate(record);
+  
+  // 従来のKPIスコア（参考用に保持）
   const components: number[] = [];
-
   if (baseline.avgReach > 0) {
     components.push(record.reach / baseline.avgReach);
   } else if (record.reach > 0) {
     components.push(1);
   }
-
   if (baseline.avgEngagement > 0) {
     components.push(engagementRate / baseline.avgEngagement);
   } else if (engagementRate > 0) {
     components.push(1);
   }
-
   if (baseline.avgFollowerIncrease > 0 && record.followerIncrease >= 0) {
     components.push(
       record.followerIncrease === 0 && baseline.avgFollowerIncrease === 0
@@ -798,7 +923,6 @@ function evaluatePostPerformance(
         : (record.followerIncrease + 0.01) / (baseline.avgFollowerIncrease + 0.01)
     );
   }
-
   const kpiScore =
     components.length > 0
       ? Number(
@@ -809,26 +933,41 @@ function evaluatePostPerformance(
         )
       : 0;
 
-  const highKpi =
-    kpiScore >= 1.1 ||
-    (baseline.avgEngagement > 0 && engagementRate >= baseline.avgEngagement * 1.3) ||
-    (baseline.avgReach > 0 && record.reach >= baseline.avgReach * 1.3) ||
-    record.followerIncrease > 0;
-
-  const lowKpi =
-    (kpiScore > 0 && kpiScore <= 0.85) ||
-    (baseline.avgEngagement > 0 && engagementRate <= baseline.avgEngagement * 0.7) ||
-    (baseline.avgReach > 0 && record.reach <= baseline.avgReach * 0.7);
-
+  // 新しい評価ロジック：再現可能性と改善可能性
+  const reproducibilityScore = calculateReproducibilityScore(record, aggregate, allRecords);
+  const improvabilityScore = calculateImprovabilityScore(record, aggregate, baseline);
   const sentiment = deriveSentimentScore(aggregate, record.sentiment);
+
+  // 新しい定義に基づくタグ付け
   let tag: PostPerformanceTag = "neutral";
 
-  if (sentiment.score >= 0.65 && highKpi) {
+  // 「良かった（gold）」: 再現可能なパターンがある（数値が低くてもOK）
+  if (reproducibilityScore >= 0.5) {
     tag = "gold";
-  } else if (sentiment.score >= 0.65 && !highKpi) {
-    tag = "gray";
-  } else if (sentiment.score <= 0.4 && lowKpi) {
+  }
+  // 「ダメだった（red）」: 改善可能な要因が特定できる（数値が高くてもOK）
+  else if (improvabilityScore >= 0.5) {
     tag = "red";
+  }
+  // 従来のロジックも参考として使用（再現可能性・改善可能性が低い場合）
+  else {
+    const highKpi =
+      kpiScore >= 1.1 ||
+      (baseline.avgEngagement > 0 && engagementRate >= baseline.avgEngagement * 1.3) ||
+      (baseline.avgReach > 0 && record.reach >= baseline.avgReach * 1.3) ||
+      record.followerIncrease > 0;
+    const lowKpi =
+      (kpiScore > 0 && kpiScore <= 0.85) ||
+      (baseline.avgEngagement > 0 && engagementRate <= baseline.avgEngagement * 0.7) ||
+      (baseline.avgReach > 0 && record.reach <= baseline.avgReach * 0.7);
+
+    if (sentiment.score >= 0.65 && highKpi) {
+      tag = "gold";
+    } else if (sentiment.score >= 0.65 && !highKpi) {
+      tag = "gray";
+    } else if (sentiment.score <= 0.4 && lowKpi) {
+      tag = "red";
+    }
   }
 
   const hashtags = ensureArray<string>(record.hashtags)
@@ -1219,7 +1358,7 @@ export async function getMasterContext(
         const aggregate =
           feedbackAggregates.get(record.postId ?? record.id) ??
           (record.postId ? feedbackAggregates.get(record.postId) : undefined);
-        return evaluatePostPerformance(record, baselineMetrics, aggregate || undefined);
+        return evaluatePostPerformance(record, baselineMetrics, aggregate || undefined, analyticsRecords);
       })
       .filter((signal): signal is PostLearningSignal => Boolean(signal));
 
@@ -1271,13 +1410,31 @@ export async function getMasterContext(
       .sort((a, b) => a.kpiScore - b.kpiScore || a.sentimentScore - b.sentimentScore)
       .slice(0, 12);
 
-    const [goldSummary, graySummary, redSummary] = await Promise.all([
+    // OpenAI APIエラーが発生してもフォールバック処理で続行できるようにPromise.allSettledを使用
+    const [goldResult, grayResult, redResult] = await Promise.allSettled([
       summarizePostPatterns("gold", goldSignals),
       summarizePostPatterns("gray", graySignals),
       summarizePostPatterns("red", redSignals),
     ]);
 
     const patternSummaries: Partial<Record<PostPerformanceTag, PatternSummary>> = {};
+    
+    // 各結果を処理（エラーが発生した場合はnullを返す）
+    const goldSummary = goldResult.status === "fulfilled" ? goldResult.value : null;
+    const graySummary = grayResult.status === "fulfilled" ? grayResult.value : null;
+    const redSummary = redResult.status === "fulfilled" ? redResult.value : null;
+    
+    // エラーが発生した場合はログに記録
+    if (goldResult.status === "rejected") {
+      console.error("GOLD投稿パターン要約生成エラー:", goldResult.reason);
+    }
+    if (grayResult.status === "rejected") {
+      console.error("GRAY投稿パターン要約生成エラー:", grayResult.reason);
+    }
+    if (redResult.status === "rejected") {
+      console.error("RED投稿パターン要約生成エラー:", redResult.reason);
+    }
+    
     if (goldSummary) {
       patternSummaries.gold = goldSummary;
     }
