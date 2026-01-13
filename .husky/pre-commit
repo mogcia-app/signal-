@@ -3,12 +3,14 @@
 
 # エラーのみチェック（警告は無視）
 # エラーがある場合のみコミットをブロック
-npm run lint 2>&1 | grep -q "✖.*errors" && {
+LINT_OUTPUT=$(npm run lint 2>&1)
+ERROR_COUNT=$(echo "$LINT_OUTPUT" | grep -oE "✖ [0-9]+ problems \([0-9]+ errors" | grep -oE "[0-9]+ errors" | grep -oE "[0-9]+" || echo "0")
+if [ "$ERROR_COUNT" -gt 0 ]; then
   echo "❌ Lint errors found. Please fix them before committing."
   exit 1
-} || {
+else
   echo "✅ No lint errors found (warnings are OK for now)."
-}
+fi
 
 # フォーマットチェック（オプション - コメントアウト可能）
 # npm run format:check

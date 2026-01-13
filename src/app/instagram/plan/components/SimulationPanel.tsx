@@ -134,55 +134,102 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
     }
   };
 
+  // デフォルトの投稿頻度（すべての箇所で統一）
+  const DEFAULT_POSTS_PER_WEEK = {
+    reel: 0,
+    feed: 0,
+    story: 0,
+  };
+
   // 投稿内訳を残り日数で計算
   const postBreakdown = useMemo(() => {
     if (!result || !periodInfo) return null;
 
-    const daysRemaining = periodInfo.daysRemaining;
-    const weeksRemaining = getWeeksForPeriod(formData.planPeriod);
+    try {
+      const daysRemaining = periodInfo.daysRemaining;
+      const weeksRemaining = getWeeksForPeriod(formData.planPeriod);
+      
+      // postsPerWeekのデフォルト値を設定（各プロパティが存在しない場合も安全に処理）
+      // オプショナルチェーンとnull合体演算子を使用して安全にアクセス
+      const rawPostsPerWeek = result?.postsPerWeek;
+      
+      // 有効なオブジェクトかどうかを確認し、各プロパティが存在するかチェック
+      const postsPerWeek = (
+        rawPostsPerWeek &&
+        typeof rawPostsPerWeek === 'object' &&
+        !Array.isArray(rawPostsPerWeek) &&
+        'reel' in rawPostsPerWeek &&
+        'feed' in rawPostsPerWeek &&
+        'story' in rawPostsPerWeek
+      ) ? rawPostsPerWeek : DEFAULT_POSTS_PER_WEEK;
+      
+      // 安全にプロパティにアクセス（型チェック + デフォルト値）
+      const reelCount = typeof postsPerWeek.reel === 'number' && !isNaN(postsPerWeek.reel) 
+        ? postsPerWeek.reel 
+        : DEFAULT_POSTS_PER_WEEK.reel;
+      const feedCount = typeof postsPerWeek.feed === 'number' && !isNaN(postsPerWeek.feed)
+        ? postsPerWeek.feed
+        : DEFAULT_POSTS_PER_WEEK.feed;
+      const storyCount = typeof postsPerWeek.story === 'number' && !isNaN(postsPerWeek.story)
+        ? postsPerWeek.story
+        : DEFAULT_POSTS_PER_WEEK.story;
     
     // 期間全体の投稿数
-    const reelTotal = Math.round(result.postsPerWeek.reel * weeksRemaining);
-    const feedTotal = Math.round(result.postsPerWeek.feed * weeksRemaining);
+    const reelTotal = Math.round(reelCount * weeksRemaining);
+    const feedTotal = Math.round(feedCount * weeksRemaining);
     const storyTotal = daysRemaining;
     
     // 1週間分の予測増加数
-    const reelWeeklyExpected = `${result.postsPerWeek.reel * 4}〜${result.postsPerWeek.reel * 7}人`;
-    const feedWeeklyExpected = `${result.postsPerWeek.feed * 1}〜${result.postsPerWeek.feed * 3}人`;
+    const reelWeeklyExpected = `${reelCount * 4}〜${reelCount * 7}人`;
+    const feedWeeklyExpected = `${feedCount * 1}〜${feedCount * 3}人`;
     const storyWeeklyExpected = `2〜8人`; // 毎日1回 × 7日 = 0.3×7〜1.2×7 ≈ 2〜8人
     
-    return {
-      reel: {
-        frequency: formatPostFrequency(result.postsPerWeek.reel),
-        countTotal: reelTotal,
-        effect: "4〜7人",
-        expected: reelWeeklyExpected,
-      },
-      feed: {
-        frequency: formatPostFrequency(result.postsPerWeek.feed),
-        countTotal: feedTotal,
-        effect: "1〜3人",
-        expected: feedWeeklyExpected,
-      },
-      story: {
-        frequency: "毎日",
-        countTotal: storyTotal,
-        effect: "0.3〜1.2人",
-        expected: storyWeeklyExpected,
-      },
-    };
-  }, [result, periodInfo]);
+      return {
+        reel: {
+          frequency: formatPostFrequency(reelCount),
+          countTotal: reelTotal,
+          effect: "4〜7人",
+          expected: reelWeeklyExpected,
+        },
+        feed: {
+          frequency: formatPostFrequency(feedCount),
+          countTotal: feedTotal,
+          effect: "1〜3人",
+          expected: feedWeeklyExpected,
+        },
+        story: {
+          frequency: "毎日",
+          countTotal: storyTotal,
+          effect: "0.3〜1.2人",
+          expected: storyWeeklyExpected,
+        },
+      };
+    } catch (error) {
+      // 安全にエラーログを出力
+      try {
+        if (typeof console !== 'undefined' && console.error) {
+          console.error('Error calculating postBreakdown:', error);
+        }
+      } catch (logError) {
+        // コンソールログ自体が失敗した場合は無視
+      }
+      return null;
+    }
+  }, [result, periodInfo, formData.planPeriod]);
 
   // 合計期待値を計算
   const totalExpected = useMemo(() => {
-    if (!postBreakdown) return { min: 0, max: 0 };
+    // オプショナルチェーンで安全にアクセス
+    if (!postBreakdown?.reel?.expected || !postBreakdown?.feed?.expected || !postBreakdown?.story?.expected) {
+      return { min: 0, max: 0 };
+    }
     
-    const reelMin = parseInt(postBreakdown.reel.expected.split("〜")[0]);
-    const reelMax = parseInt(postBreakdown.reel.expected.split("〜")[1].replace("人", ""));
-    const feedMin = parseInt(postBreakdown.feed.expected.split("〜")[0]);
-    const feedMax = parseInt(postBreakdown.feed.expected.split("〜")[1].replace("人", ""));
-    const storyMin = parseInt(postBreakdown.story.expected.split("〜")[0]);
-    const storyMax = parseInt(postBreakdown.story.expected.split("〜")[1].replace("人", ""));
+    const reelMin = parseInt(postBreakdown.reel.expected.split("〜")[0]) || 0;
+    const reelMax = parseInt(postBreakdown.reel.expected.split("〜")[1]?.replace("人", "") || "0") || 0;
+    const feedMin = parseInt(postBreakdown.feed.expected.split("〜")[0]) || 0;
+    const feedMax = parseInt(postBreakdown.feed.expected.split("〜")[1]?.replace("人", "") || "0") || 0;
+    const storyMin = parseInt(postBreakdown.story.expected.split("〜")[0]) || 0;
+    const storyMax = parseInt(postBreakdown.story.expected.split("〜")[1]?.replace("人", "") || "0") || 0;
 
     return {
       min: reelMin + feedMin + storyMin,
@@ -460,7 +507,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
         )}
 
         {/* 投稿計画 */}
-        {postBreakdown && periodInfo && (
+        {postBreakdown && postBreakdown.reel && postBreakdown.feed && postBreakdown.story && periodInfo && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <div className="mb-5">
               <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
@@ -483,23 +530,23 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                   <tr>
                     <td className="px-4 py-4 text-sm text-gray-900">リール</td>
                     <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
-                      {postBreakdown.reel.frequency}
+                      {postBreakdown.reel?.frequency || "投稿なし"}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.reel.expected}</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.reel?.expected || "0人"}</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-4 text-sm text-gray-900">フィード投稿</td>
                     <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
-                      {postBreakdown.feed.frequency}
+                      {postBreakdown.feed?.frequency || "投稿なし"}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.feed.expected}</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.feed?.expected || "0人"}</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-4 text-sm text-gray-900">ストーリー</td>
                     <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
-                      {postBreakdown.story.frequency}
+                      {postBreakdown.story?.frequency || "投稿なし"}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.story.expected}</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.story?.expected || "0人"}</td>
                   </tr>
                 </tbody>
               </table>
@@ -512,11 +559,11 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                     : `残り期間の目標投稿数（残り${periodInfo?.daysRemaining || 0}日間）`}
                 </span>
                 <span className="text-xl font-light text-orange-600">
-                  {postBreakdown.reel.countTotal + postBreakdown.feed.countTotal + postBreakdown.story.countTotal}投稿
+                  {(postBreakdown.reel?.countTotal || 0) + (postBreakdown.feed?.countTotal || 0) + (postBreakdown.story?.countTotal || 0)}投稿
                 </span>
               </div>
               <div className="text-xs text-gray-400 mt-1">
-                リール {postBreakdown.reel.countTotal}投稿 + フィード {postBreakdown.feed.countTotal}投稿 + ストーリー {postBreakdown.story.countTotal}回
+                リール {postBreakdown.reel?.countTotal || 0}投稿 + フィード {postBreakdown.feed?.countTotal || 0}投稿 + ストーリー {postBreakdown.story?.countTotal || 0}回
               </div>
             </div>
             {goalAchievementRate.showAdSuggestion && (

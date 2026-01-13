@@ -122,11 +122,11 @@ export const ABTestPanel: React.FC<ABTestPanelProps> = ({
                   <div>
                     <span className="font-medium text-gray-700">投稿頻度</span>
                     <div className="text-gray-600">
-                      リール: {scenario.strategy.postsPerWeek.reel}回/週
+                      リール: {scenario.strategy?.postsPerWeek?.reel ?? 0}回/週
                       <br />
-                      フィード: {scenario.strategy.postsPerWeek.feed}回/週
+                      フィード: {scenario.strategy?.postsPerWeek?.feed ?? 0}回/週
                       <br />
-                      ストーリー: {scenario.strategy.postsPerWeek.story}回/週
+                      ストーリー: {scenario.strategy?.postsPerWeek?.story ?? 0}回/週
                     </div>
                   </div>
 

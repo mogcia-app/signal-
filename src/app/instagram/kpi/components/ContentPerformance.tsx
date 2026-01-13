@@ -287,11 +287,11 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               <p className="text-xs font-semibold text-gray-700 mb-2">閲覧ソース内訳</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { label: "プロフィール", value: reelStats.reachSources.profile },
-                  { label: "リール", value: reelStats.reachSources.reel },
-                  { label: "発見", value: reelStats.reachSources.explore },
-                  { label: "検索", value: reelStats.reachSources.search },
-                  { label: "その他", value: reelStats.reachSources.other },
+                  { label: "プロフィール", value: reelStats?.reachSources?.profile ?? 0 },
+                  { label: "リール", value: reelStats?.reachSources?.reel ?? 0 },
+                  { label: "発見", value: reelStats?.reachSources?.explore ?? 0 },
+                  { label: "検索", value: reelStats?.reachSources?.search ?? 0 },
+                  { label: "その他", value: reelStats?.reachSources?.other ?? 0 },
                 ].map((source) => (
                   <div key={source.label} className="bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2">
                     <p className="text-[10px] sm:text-xs text-gray-500">{source.label}</p>
