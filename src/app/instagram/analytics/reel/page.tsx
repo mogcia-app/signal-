@@ -286,7 +286,7 @@ function AnalyticsReelContent() {
       console.log("Simple API fetch result:", result);
 
       // simple APIの結果をAnalyticsData形式に変換
-      if (result.success && result.data) {
+      if (result.success && result.data && Array.isArray(result.data)) {
         const convertedData: AnalyticsData[] = result.data.map(
           (item: {
             id: string;
@@ -383,8 +383,8 @@ function AnalyticsReelContent() {
             reelNormalSkipRate: item.reelNormalSkipRate || 0,
             reelPlayTime: item.reelPlayTime || 0,
             reelAvgPlayTime: item.reelAvgPlayTime || 0,
-            audience: item.audience,
-            reachSource: item.reachSource,
+            audience: item.audience || {},
+            reachSource: item.reachSource || {},
             commentThreads: Array.isArray(item.commentThreads) ? item.commentThreads : [],
             sentiment: item.sentiment || null,
             sentimentMemo: item.sentimentMemo || "",

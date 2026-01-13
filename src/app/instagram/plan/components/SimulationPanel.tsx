@@ -281,7 +281,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
         const kpiResult = await kpiResponse.json();
 
         if (kpiResult.success && kpiResult.data) {
-          const breakdowns = kpiResult.data.breakdowns || [];
+          const breakdowns = Array.isArray(kpiResult.data.breakdowns) ? kpiResult.data.breakdowns : [];
           
           const followerBreakdown = breakdowns.find((b: any) => b.key === "current_followers");
           const followerIncrease = followerBreakdown?.value || 0;
