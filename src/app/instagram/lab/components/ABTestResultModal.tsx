@@ -25,19 +25,21 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
   useEffect(() => {
     if (isOpen && test) {
       setVariantDrafts(
-        test.variants.map((variant) => ({
-          ...variant,
-          metrics: {
-            impressions: variant.metrics?.impressions ?? undefined,
-            reach: variant.metrics?.reach ?? undefined,
-            saves: variant.metrics?.saves ?? undefined,
-            likes: variant.metrics?.likes ?? undefined,
-            comments: variant.metrics?.comments ?? undefined,
-            conversions: variant.metrics?.conversions ?? undefined,
-            engagementRate: variant.metrics?.engagementRate ?? undefined,
-            saveRate: variant.metrics?.saveRate ?? undefined,
-          },
-        }))
+        Array.isArray(test.variants) 
+          ? test.variants.map((variant) => ({
+            ...variant,
+            metrics: {
+              impressions: variant.metrics?.impressions ?? undefined,
+              reach: variant.metrics?.reach ?? undefined,
+              saves: variant.metrics?.saves ?? undefined,
+              likes: variant.metrics?.likes ?? undefined,
+              comments: variant.metrics?.comments ?? undefined,
+              conversions: variant.metrics?.conversions ?? undefined,
+              engagementRate: variant.metrics?.engagementRate ?? undefined,
+              saveRate: variant.metrics?.saveRate ?? undefined,
+            },
+          }))
+          : []
       );
       setWinnerKey(test.winnerVariantKey ?? undefined);
       setStatus((test.status as "running" | "completed") ?? "completed");

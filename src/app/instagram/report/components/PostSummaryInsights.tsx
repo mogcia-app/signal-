@@ -111,7 +111,9 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
             }
 
             const summaryData = result.data;
-            const analyticsItem = analytics.find((a: any) => a.postId === postId);
+            const analyticsItem = Array.isArray(analytics) 
+              ? analytics.find((a: any) => a.postId === postId)
+              : undefined;
             console.log(`AIサマリー取得成功 (postId: ${postId}):`, {
               hasSummary: !!summaryData.summary,
               strengthsCount: Array.isArray(summaryData.insights) ? summaryData.insights.length : 0,

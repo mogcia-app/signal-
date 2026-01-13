@@ -258,7 +258,7 @@ export default function PostDetailPage() {
     } finally {
       setIsGeneratingInsight(false);
     }
-  }, [user?.uid, postId, post, postAnalytics]);
+  }, [user?.uid, postId, post?.postType, post?.title, post?.hashtags, postAnalytics?.publishedAt]);
 
   // 分析データ保存後、一定時間経過したら自動でAIサマリーを生成
   useEffect(() => {
@@ -317,7 +317,9 @@ export default function PostDetailPage() {
         }
 
         const result = await response.json();
-        const foundPost = result.posts.find((p: PostData) => p.id === postId);
+        const foundPost = Array.isArray(result?.posts) 
+          ? result.posts.find((p: PostData) => p.id === postId)
+          : undefined;
 
         if (foundPost) {
           setPost(foundPost);
