@@ -111,7 +111,7 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm h-full flex flex-col">
       <div className="border-b border-slate-100 px-4 py-3 rounded-t-xl">
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <MessageCircleReply className="w-4 h-4 text-orange-500" />
@@ -122,7 +122,7 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
         </p>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 flex-1 flex flex-col">
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-2">受け取ったコメント</label>
           <textarea
@@ -176,7 +176,7 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
         ) : null}
 
         {suggestions.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1 overflow-y-auto">
             {suggestions.map((suggestion, index) => (
               <div key={`suggestion-${index}`} className="border border-gray-200 rounded p-3">
                 <div className="flex items-center justify-between gap-3 mb-2">

@@ -61,18 +61,18 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   // AI戦略をセクション別に分割（4セクション）
   const parseStrategyIntoSections = (strategy: string) => {
     const sections = [
-      { id: 0, title: "① 全体の投稿戦略", icon: "🎯", color: "blue" },
-      { id: 1, title: "② 投稿構成の方向性", icon: "📅", color: "purple" },
-      { id: 2, title: "③ カスタマージャーニー", icon: "🚀", color: "green" },
-      { id: 3, title: "④ 注意点・成功のコツ", icon: "💡", color: "yellow" },
+      { id: 0, title: "① 全体運用戦略", icon: "🎯", color: "blue" },
+      { id: 1, title: "② 投稿設計", icon: "📅", color: "purple" },
+      { id: 2, title: "③ 関係性ベースのカスタマージャーニー", icon: "🚀", color: "green" },
+      { id: 3, title: "④ 注視すべき指標", icon: "💡", color: "yellow" },
     ];
 
     // セクション区切りを検出（①、②、③、④ または ### ）
     const sectionMarkers = [
-      { pattern: /①.*?全体の投稿戦略/i, id: 0 },
-      { pattern: /②.*?投稿構成の方向性/i, id: 1 },
-      { pattern: /③.*?カスタマージャーニー/i, id: 2 },
-      { pattern: /④.*?注意点.*?成功.*?コツ/i, id: 3 },
+      { pattern: /①.*?全体運用戦略|①.*?全体の投稿戦略|①.*?全体.*?戦略/i, id: 0 },
+      { pattern: /②.*?投稿設計|②.*?投稿構成の方向性|②.*?投稿.*?構造/i, id: 1 },
+      { pattern: /③.*?関係性.*?カスタマージャーニー|③.*?カスタマージャーニー/i, id: 2 },
+      { pattern: /④.*?注視.*?指標|④.*?注意点.*?成功.*?コツ|④.*?成功.*?コツ/i, id: 3 },
     ];
 
     const parsedSections = sections.map((section) => {
@@ -139,30 +139,39 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   };
 
   return (
-    <section className="p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h3 className="text-2xl font-light text-gray-900 tracking-tight mb-2">
-            AIによる投稿戦略アドバイス
-          </h3>
-          <p className="text-sm text-gray-500">目標や施策をもとに、AIが最適な方向性を提案します。</p>
-        </div>
+    <div className="p-6">
+      <div className="mb-6">
+        <h3 className="text-xl font-light text-gray-900 tracking-tight mb-2">
+          フォロワーとの関係性を起点にした運用戦略（AI提案）
+        </h3>
+        <p className="text-sm text-gray-500">2026年のInstagramアルゴリズムに対応した、関係性設計型の戦略をAIが提案します。</p>
+      </div>
 
         {/* 診断ボタン（常に表示、生成済みの場合はテキスト変更） */}
         <button
           onClick={handleStartDiagnosis}
           disabled={isLoading || strategyState.isLoading}
-          className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-md transition-all duration-200 mb-6 shadow-sm flex items-center justify-center"
+          className="w-full bg-[#FF8A15] hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 mb-6 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
         >
           {isLoading || strategyState.isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-              生成中...
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+              <span>生成中...</span>
             </>
           ) : generatedStrategy ? (
-            "再生成"
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>再生成</span>
+            </>
           ) : (
-            "診断を開始"
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>診断を開始</span>
+            </>
           )}
         </button>
 
@@ -201,19 +210,19 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
                   const isExpanded = expandedSections.includes(section.id);
 
                   return (
-                    <div key={section.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div key={section.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                       {/* セクションヘッダー（クリックで展開/折りたたみ） */}
                       <button
                         onClick={() => toggleSection(section.id)}
-                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-lg"
                       >
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium text-gray-900">{section.title.replace(/[①②③④]/g, "").trim()}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-base font-semibold text-gray-900">{section.title.replace(/[①②③④]/g, "").trim()}</span>
                         </div>
                         {isExpanded ? (
-                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                          <ChevronUp className="w-5 h-5 text-gray-500" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                          <ChevronDown className="w-5 h-5 text-gray-500" />
                         )}
                       </button>
 
@@ -292,7 +301,6 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
             )}
           </div>
         )}
-      </div>
-    </section>
+    </div>
   );
 };

@@ -24,7 +24,6 @@ export default function SNSLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isLabExpanded, setIsLabExpanded] = useState(false);
-  const [isAnalyticsExpanded, setIsAnalyticsExpanded] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { user, signOut } = useAuth();
@@ -206,54 +205,6 @@ export default function SNSLayout({
               )}
             </div>
 
-            {/* 投稿分析 - 展開可能なサブメニュー */}
-            <div>
-              <button
-                onClick={() => setIsAnalyticsExpanded(!isAnalyticsExpanded)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg ${
-                  pathname.startsWith("/analytics")
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <span>📊</span>
-                  <span>投稿分析</span>
-                </div>
-                <span
-                  className={`transform transition-transform ${isAnalyticsExpanded ? "rotate-180" : ""}`}
-                >
-                  ▼
-                </span>
-              </button>
-
-              {isAnalyticsExpanded && (
-                <div className="ml-4 mt-1 space-y-1">
-                  <Link
-                    href="/analytics/feed"
-                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                      pathname === "/analytics/feed"
-                        ? "bg-orange-100 text-orange-800 font-medium"
-                        : "text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    <span>📸</span>
-                    <span>フィード分析</span>
-                  </Link>
-                  <Link
-                    href="/instagram/analytics/reel"
-                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                      pathname === "/instagram/analytics/reel"
-                        ? "bg-orange-100 text-orange-800 font-medium"
-                        : "text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    <span>🎬</span>
-                    <span>リール分析</span>
-                  </Link>
-                </div>
-              )}
-            </div>
             <Link
               href="/instagram/posts"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${

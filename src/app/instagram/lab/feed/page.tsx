@@ -5,7 +5,6 @@ import SNSLayout from "../../../../components/sns-layout";
 import PostEditor, { AIHintSuggestion, SnapshotReference } from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
 import CommentReplyAssistant from "../components/CommentReplyAssistant";
-import SnapshotInsights, { SnapshotInsight } from "../components/SnapshotInsights";
 import { usePlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
@@ -45,10 +44,7 @@ export default function FeedLabPage() {
   const [imageVideoSuggestions, setImageVideoSuggestions] = useState<AIHintSuggestion | null>(null);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [snapshotReferences, setSnapshotReferences] = useState<SnapshotReference[]>([]);
-  const [highlightSnapshotId, setHighlightSnapshotId] = useState<string | null>(null);
-  const [snapshotInsights, setSnapshotInsights] = useState<SnapshotInsight[]>([]);
-  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false);
-  const [snapshotError, setSnapshotError] = useState("");
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
 
   // 計画データを取得
   const { planData } = usePlanData("instagram");
@@ -118,9 +114,13 @@ export default function FeedLabPage() {
               setScheduledTime(post.scheduledTime);
             }
 
-            // 画像データを設定
+            // 画像データを設定（imageDataまたはimageUrl）
             if (post.imageData) {
               setPostImage(post.imageData);
+            } else if (post.imageUrl) {
+              // imageUrlがある場合は、Base64に変換するか、そのまま使用
+              // 注意: imageUrlは外部URLの可能性があるため、そのまま使用
+              setPostImage(post.imageUrl);
             }
 
           setSnapshotReferences(post.snapshotReferences || []);
@@ -152,7 +152,10 @@ export default function FeedLabPage() {
         const targetId = editId || postId;
         if (targetId && isAuthReady) {
           console.log("URL change detected, loading post data for ID:", targetId);
+          setEditingPostId(targetId);
           fetchPostData(targetId);
+        } else {
+          setEditingPostId(null);
         }
       }
     };
@@ -320,24 +323,6 @@ export default function FeedLabPage() {
     }
   }, [isAuthReady]);
 
-  const fetchSnapshots = useCallback(async () => {
-    if (!isAuthReady) {return;}
-    setIsLoadingSnapshots(true);
-    setSnapshotError("");
-    try {
-      const response = await authFetch("/api/analytics/snapshots?limit=60");
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data?.error || "スナップショットの取得に失敗しました");
-      }
-      setSnapshotInsights(Array.isArray(data.snapshots) ? data.snapshots : []);
-    } catch (error) {
-      console.error("スナップショット取得エラー:", error);
-      setSnapshotError(error instanceof Error ? error.message : "スナップショットの取得に失敗しました");
-    } finally {
-      setIsLoadingSnapshots(false);
-    }
-  }, [isAuthReady]);
 
   // AIヒント生成関数
   const generateImageVideoSuggestions = useCallback(
@@ -391,21 +376,13 @@ export default function FeedLabPage() {
   useEffect(() => {
     if (isAuthReady) {
       loadSavedSchedule(); // 保存されたスケジュールを読み込み
-      fetchSnapshots();
     }
-  }, [isAuthReady, loadSavedSchedule, fetchSnapshots]);
+  }, [isAuthReady, loadSavedSchedule]);
 
   if (!isMounted) {
     return null;
   }
 
-  const handleSnapshotBadgeClick = (id: string) => {
-    setHighlightSnapshotId(id);
-  };
-
-  const resolveHighlightClear = () => {
-    setHighlightSnapshotId(null);
-  };
 
   return (
     <SNSLayout
@@ -413,9 +390,9 @@ export default function FeedLabPage() {
       customDescription="Instagramフィード投稿の作成・編集"
       contentClassName="py-0 sm:py-0"
     >
-      <div className="pt-4 pb-0 space-y-4">
+      <div className="pt-4 pb-0">
         {/* フィード投稿計画提案 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-0">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4">
           <div className="flex items-center mb-6">
             <span className="text-2xl mr-3">📅</span>
             <div>
@@ -633,9 +610,9 @@ export default function FeedLabPage() {
         </div>
 
         {/* 2カラムレイアウト */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-4 [&>*:last-child]:mb-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch [&>*:last-child]:mb-0" style={{ gridAutoRows: '1fr' }}>
           {/* 左カラム: フィード投稿エディター */}
-          <div>
+          <div className="flex flex-col">
             <PostEditor
               content={postContent}
               onContentChange={setPostContent}
@@ -658,35 +635,33 @@ export default function FeedLabPage() {
               isGeneratingSuggestions={isGeneratingSuggestions}
               initialSnapshotReferences={snapshotReferences}
               onSnapshotReferencesChange={setSnapshotReferences}
-              onSnapshotReferenceClick={handleSnapshotBadgeClick}
+              editingPostId={editingPostId}
             />
           </div>
 
           {/* 右カラム: ツールパネル */}
-          <div className="space-y-6">
-            <ABTestSidebarSection currentPostTitle={postTitle} />
-            <SnapshotInsights
-              snapshots={snapshotInsights}
-              isLoading={isLoadingSnapshots}
-              error={snapshotError}
-              onRefresh={fetchSnapshots}
-              highlightId={highlightSnapshotId}
-              onHighlightClear={resolveHighlightClear}
-            />
-            <CommentReplyAssistant
-              postTitle={postTitle}
-              postContent={postContent}
-              postType={postType}
-              hashtags={selectedHashtags}
-            />
-            <ToolPanel
-              onTemplateSelect={(template) => setPostContent(template)}
-              onHashtagSelect={(hashtag) => {
-                if (!selectedHashtags.includes(hashtag)) {
-                  setSelectedHashtags([...selectedHashtags, hashtag]);
-                }
-              }}
-            />
+          <div className="flex flex-col h-full">
+            <div className="mb-6 flex-shrink-0">
+              <ABTestSidebarSection currentPostTitle={postTitle} />
+            </div>
+            <div className="flex-1 flex flex-col min-h-0">
+              <CommentReplyAssistant
+                postTitle={postTitle}
+                postContent={postContent}
+                postType={postType}
+                hashtags={selectedHashtags}
+              />
+            </div>
+            <div className="mt-6 flex-shrink-0">
+              <ToolPanel
+                onTemplateSelect={(template) => setPostContent(template)}
+                onHashtagSelect={(hashtag) => {
+                  if (!selectedHashtags.includes(hashtag)) {
+                    setSelectedHashtags([...selectedHashtags, hashtag]);
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -53,6 +53,7 @@ interface PostEditorProps {
   initialSnapshotReferences?: SnapshotReference[];
   onSnapshotReferencesChange?: (refs: SnapshotReference[]) => void;
   onSnapshotReferenceClick?: (id: string) => void;
+  editingPostId?: string | null; // 編集モード用の投稿ID
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -81,6 +82,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   initialSnapshotReferences,
   onSnapshotReferencesChange,
   onSnapshotReferenceClick,
+  editingPostId = null,
 }) => {
   const { user } = useAuth();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
@@ -177,7 +179,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       cleanContent = removeHashtagsFromContent(cleanContent);
     }
     
-    const cleanedHashtags = normalizeGeneratedHashtags(finalHashtagsRaw);
+    let cleanedHashtags = normalizeGeneratedHashtags(finalHashtagsRaw);
+    
+    // フィードとリールの場合はハッシュタグを5個までに制限
+    if (postType === "feed" || postType === "reel") {
+      cleanedHashtags = cleanedHashtags.slice(0, 5);
+    }
 
     if (cleanTitle) {
       onTitleChange?.(cleanTitle);
@@ -309,9 +316,19 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         ...postData,
         imageData: image ? `[Base64 data: ${image.length} chars]` : null,
       });
-      const result = await postsApi.create(postData);
-      console.log("投稿を保存しました:", result);
-      console.log("Post saved successfully with ID:", result.id);
+
+      let result;
+      if (editingPostId) {
+        // 編集モード: 既存の投稿を更新
+        console.log("Updating existing post:", editingPostId);
+        result = await postsApi.update(editingPostId, postData);
+        console.log("投稿を更新しました:", result);
+      } else {
+        // 新規作成モード
+        result = await postsApi.create(postData);
+        console.log("投稿を保存しました:", result);
+        console.log("Post saved successfully with ID:", result.id);
+      }
 
       // 次のアクションを即座に更新
       if (
@@ -329,7 +346,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       setShowSuccessMessage(true);
 
       // トースト通知を表示
-      setToastMessage({ message: "投稿が保存されました！", type: "success" });
+      setToastMessage({ 
+        message: editingPostId ? "投稿が更新されました！" : "投稿が保存されました！", 
+        type: "success" 
+      });
 
       // 3秒後にメッセージを非表示
       setTimeout(() => {
@@ -484,7 +504,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
   const handleHashtagAdd = (hashtag: string) => {
     if (hashtag.trim() && !hashtags.includes(hashtag)) {
-      onHashtagsChange([...hashtags, hashtag]);
+      // フィードとリールの場合はハッシュタグを5個までに制限
+      const maxHashtags = postType === "feed" || postType === "reel" ? 5 : Infinity;
+      if (hashtags.length < maxHashtags) {
+        onHashtagsChange([...hashtags, hashtag]);
+      }
     }
   };
 
@@ -692,7 +716,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col min-h-full">
         {/* ヘッダー */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -730,7 +754,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
         )}
 
-        <div className="p-6">
+        <div className="p-6 flex-1 flex flex-col min-h-0">
           {snapshotReferences.length > 0 && (
             <div className="mb-6 border border-slate-200 rounded-xl bg-slate-50/70 p-4">
               <p className="text-xs font-semibold text-slate-800 mb-2 flex items-center gap-1">
@@ -761,70 +785,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
           )}
 
-          {latestGeneration && (
-            <div className="mb-6 border border-slate-200 rounded-xl bg-white p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                  AI提案ハイライト
-                </p>
-                {latestGeneration.priority?.focus && latestGeneration.priority.level && (
-                  <span
-                    className={`text-[11px] px-2 py-1 rounded-full ${priorityBadgeStyles[latestGeneration.priority.level]}`}
-                  >
-                    {latestGeneration.priority.focus}
-                  </span>
-                )}
-              </div>
-              {generationInsightBlocks.length > 0 ? (
-                <ul className="mt-3 space-y-2 text-xs text-slate-700">
-                  {generationInsightBlocks.slice(0, 3).map((insight, index) => (
-                    <li key={`ai-insight-${index}`} className="border border-slate-100 rounded-lg bg-slate-50 px-3 py-2">
-                      <p className="font-semibold text-slate-800">{insight.title}</p>
-                      {insight.description ? (
-                        <p className="mt-1 text-slate-600 whitespace-pre-line">{insight.description}</p>
-                      ) : null}
-                      {insight.action ? (
-                        <p className="mt-1 text-slate-500">推奨アクション: {insight.action}</p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-2 text-xs text-slate-500">
-                  最新のAI提案の要点がここに表示されます。
-                </p>
-              )}
-              {nonSnapshotReferences.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-[11px] font-semibold text-slate-500 mb-1">参照データ</p>
-                  <div className="flex flex-wrap gap-2">
-                    {nonSnapshotReferences.map((ref) => (
-                      <AIReferenceBadge key={ref.id} reference={ref} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link
-                  href="/learning"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1 rounded-none hover:bg-slate-50 transition-colors"
-                >
-                  学習ダッシュボードで根拠を見る
-                </Link>
-                <Link
-                  href="/instagram/report"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1 rounded-none hover:bg-slate-50 transition-colors"
-                >
-                  月次レポートに移動
-                </Link>
-              </div>
-            </div>
-          )}
 
           {latestGeneration?.imageHints?.length ? (
             <div className="mb-6 border border-slate-200 rounded-xl bg-white p-4">
@@ -998,6 +958,28 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                         {imageVideoSuggestions.rationale}
                       </div>
                     )}
+                    {latestGeneration?.draft?.hashtagExplanations && latestGeneration.draft.hashtagExplanations.length > 0 && (
+                      <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-300 rounded">
+                        <p className="font-medium text-blue-900 mb-2 text-sm">ハッシュタグ根拠</p>
+                        <div className="space-y-2">
+                          {latestGeneration.draft.hashtagExplanations.map((explanation, index) => {
+                            const categoryLabel = explanation.category === "brand" ? "企業" : explanation.category === "trending" ? "トレンド" : "補助";
+                            const hashtagWithoutHash = explanation.hashtag.replace(/^#+/, "");
+                            // Markdown形式の装飾記号を除去
+                            const cleanReason = explanation.reason.replace(/\*\*/g, "").replace(/\*/g, "").replace(/_/g, "").trim();
+                            return (
+                              <div key={index} className="text-xs text-blue-800">
+                                <span className="font-medium">#{hashtagWithoutHash}</span>
+                                <span className="mx-2 inline-block px-1.5 py-0.5 bg-blue-100 rounded text-blue-700">
+                                  {categoryLabel}
+                                </span>
+                                <span>{cleanReason}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1014,7 +996,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 text-sm rounded-full border border-orange-200"
                 >
                   <span className="text-orange-600 mr-1">#</span>
-                  {hashtag}
+                  {hashtag.replace(/^#+/, "")}
                   <button
                     onClick={() => handleHashtagRemove(index)}
                     className="ml-2 text-orange-600 hover:text-orange-800 hover:bg-orange-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors"
@@ -1025,20 +1007,26 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               ))}
             </div>
             <div className="flex space-x-3">
-              <input
-                type="text"
-                placeholder="ハッシュタグを入力..."
-                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    const hashtag = e.currentTarget.value.trim().replace("#", "");
-                    if (hashtag) {
-                      handleHashtagAdd(hashtag);
-                      e.currentTarget.value = "";
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder={postType === "feed" || postType === "reel" ? "ハッシュタグを入力...（最大5個）" : "ハッシュタグを入力..."}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
+                  disabled={postType === "feed" || postType === "reel" ? hashtags.length >= 5 : false}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      const hashtag = e.currentTarget.value.trim().replace("#", "");
+                      if (hashtag) {
+                        handleHashtagAdd(hashtag);
+                        e.currentTarget.value = "";
+                      }
                     }
-                  }
-                }}
-              />
+                  }}
+                />
+                {(postType === "feed" || postType === "reel") && hashtags.length >= 5 && (
+                  <p className="text-xs text-gray-500 mt-1">ハッシュタグは最大5個までです</p>
+                )}
+              </div>
               <button
                 onClick={() => {
                   const input = document.querySelector(

@@ -7,7 +7,7 @@
     }
   ],
   "firestore": {
-    "rules": "firestore.rules",
+    "rules": "firestore.rules.final",
     "indexes": "firestore.indexes.json"
   },
   "emulators": {
@@ -19,7 +19,11 @@
       "port": 8080
     },
     "ui": {
-      "enabled": false
+      "enabled": true,
+      "port": 4000
+    },
+    "auth": {
+      "port": 9099
     }
   }
 }

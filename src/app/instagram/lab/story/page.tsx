@@ -39,6 +39,7 @@ export default function StoryLabPage() {
   const [scheduleError, setScheduleError] = useState("");
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
 
   // AIヒント関連の状態
   const [imageVideoSuggestions, setImageVideoSuggestions] = useState<AIHintSuggestion | null>(null);
@@ -112,9 +113,13 @@ export default function StoryLabPage() {
               setScheduledTime(post.scheduledTime);
             }
 
-            // 画像データを設定
+            // 画像データを設定（imageDataまたはimageUrl）
             if (post.imageData) {
               setPostImage(post.imageData);
+            } else if (post.imageUrl) {
+              // imageUrlがある場合は、Base64に変換するか、そのまま使用
+              // 注意: imageUrlは外部URLの可能性があるため、そのまま使用
+              setPostImage(post.imageUrl);
             }
 
             console.log("Form data set successfully");
@@ -144,7 +149,10 @@ export default function StoryLabPage() {
       const targetId = editId || postId;
       if (targetId && isAuthReady) {
         console.log("Loading post data for ID:", targetId);
+        setEditingPostId(targetId);
         fetchPostData(targetId);
+      } else {
+        setEditingPostId(null);
       }
     }
   }, [isAuthReady, fetchPostData]);
@@ -544,9 +552,9 @@ export default function StoryLabPage() {
         </div>
 
         {/* ストーリー投稿エディター */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-4 [&>*:last-child]:mb-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch [&>*:last-child]:mb-0" style={{ gridAutoRows: '1fr' }}>
           {/* 左カラム: ストーリー投稿エディター */}
-          <div>
+          <div className="flex flex-col">
             <PostEditor
               content={postContent}
               onContentChange={setPostContent}
@@ -567,26 +575,33 @@ export default function StoryLabPage() {
               imageVideoSuggestions={imageVideoSuggestions}
               onImageVideoSuggestionsGenerate={generateImageVideoSuggestions}
               isGeneratingSuggestions={isGeneratingSuggestions}
+              editingPostId={editingPostId}
             />
           </div>
 
           {/* 右カラム: ツールパネル */}
-          <div className="space-y-6">
-            <ABTestSidebarSection currentPostTitle={postTitle} />
-            <CommentReplyAssistant
-              postTitle={postTitle}
-              postContent={postContent}
-              postType={postType}
-              hashtags={selectedHashtags}
-            />
-            <ToolPanel
-              onTemplateSelect={(template) => setPostContent(template)}
-              onHashtagSelect={(hashtag) => {
-                if (!selectedHashtags.includes(hashtag)) {
-                  setSelectedHashtags([...selectedHashtags, hashtag]);
-                }
-              }}
-            />
+          <div className="flex flex-col h-full">
+            <div className="mb-6 flex-shrink-0">
+              <ABTestSidebarSection currentPostTitle={postTitle} />
+            </div>
+            <div className="flex-1 flex flex-col min-h-0">
+              <CommentReplyAssistant
+                postTitle={postTitle}
+                postContent={postContent}
+                postType={postType}
+                hashtags={selectedHashtags}
+              />
+            </div>
+            <div className="mt-6 flex-shrink-0">
+              <ToolPanel
+                onTemplateSelect={(template) => setPostContent(template)}
+                onHashtagSelect={(hashtag) => {
+                  if (!selectedHashtags.includes(hashtag)) {
+                    setSelectedHashtags([...selectedHashtags, hashtag]);
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

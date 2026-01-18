@@ -322,9 +322,18 @@ export default function OnboardingPage() {
         },
         snsAISettings,
         setupRequired: false,
-        status: "active",
         updatedAt: new Date().toISOString(),
       });
+
+      // オンボーディング完了時にstatusをactiveに更新（Admin SDK経由）
+      try {
+        await authFetch("/api/user/complete-onboarding", {
+          method: "POST",
+        });
+      } catch (error) {
+        console.error("statusの更新に失敗しました:", error);
+        // エラーが発生してもオンボーディングは完了とする
+      }
 
       // フォロワー数が入力されている場合、follower_countsに保存
       if (initialFollowersNum && initialFollowersNum > 0) {

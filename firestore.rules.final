@@ -1,0 +1,227 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ヘルパー関数
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.email.matches('.*@signalapp.jp$');
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Plans Collection
+    match /plans/{planId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    // Analytics Collection  
+    match /analytics/{analyticsId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    // Posts Collection
+    match /posts/{postId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    // AI Post Summaries Collection
+    match /ai_post_summaries/{summaryId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    // A/B Tests Collection
+    match /ab_tests/{testId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    // Follower Counts Collection
+    match /follower_counts/{countId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    // User Schedules Collection
+    // ドキュメントIDがユーザーID（uid）になっている
+    match /userSchedules/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+    }
+    
+    // Users Collection
+    // ドキュメントIDがユーザーID（uid）になっているため、userIdフィールドは不要
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // 作成: ドキュメントIDが自分のuidと一致すること（userIdフィールドは不要）
+      allow create: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+      // 更新: 自分のデータのみ（一部フィールドのみ）、または管理者
+      // 利用者が更新できるフィールドを制限: name, businessInfo, snsAISettings, setupRequired, updatedAt
+      // statusは管理者のみ変更可能（セキュリティのため）
+      // changedKeys()で変更されたフィールドのみチェック（Firestoreが自動付与するフィールドは無視）
+      allow update: if (isAuthenticated() && 
+                       request.auth.uid == userId &&
+                       request.resource.data.diff(resource.data).changedKeys()
+                         .hasOnly(['name', 'businessInfo', 'snsAISettings', 'setupRequired', 'updatedAt'])) 
+                   || isAdmin();
+      allow delete: if isAdmin();
+      
+      // Users Subcollections
+      match /postPerformanceSnapshots/{snapshotId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+    }
+    
+    // User Profiles Collection
+    // APIルートで使用されている（後方互換性のため保持）
+    match /userProfiles/{profileId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    // Notifications Collection
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // User Notifications Actions
+    match /userNotifications/{userNotificationId} {
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if isAdmin();
+    }
+    
+    // Instagram関連（後方互換性のため保持）
+    match /instagram_analytics/{analyticsId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    match /instagram_posts/{postId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    match /instagram_goal_tracking/{goalId} {
+      // 読み取り: 自分のデータのみ、または管理者
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      // 作成: userIdが必須で、自分のuidと一致すること
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      // 更新: 自分のデータのみ、かつuserIdの書き換えを禁止
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId;
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+    
+    // その他のコレクション（明示的に許可されていないものは拒否）
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

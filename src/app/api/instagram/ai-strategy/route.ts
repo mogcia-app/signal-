@@ -58,10 +58,18 @@ async function generateAIStrategy(
   try {
     const userDoc = await adminDb.collection("users").doc(userId).get();
     if (userDoc.exists) {
-      userProfile = userDoc.data() as UserProfile;
+      const userData = userDoc.data();
+      if (userData && userData.businessInfo) {
+        userProfile = userData as UserProfile;
+      } else {
+        console.warn("ユーザープロファイルにbusinessInfoが存在しません");
+      }
+    } else {
+      console.warn("ユーザードキュメントが存在しません");
     }
   } catch (error) {
-    console.warn("ユーザープロファイル取得エラー（デフォルト値を使用）:", error);
+    console.error("ユーザープロファイル取得エラー:", error);
+    throw new Error(`ユーザープロファイルの取得に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 
   // 分析データを取得（PDCA - Check）
@@ -137,7 +145,7 @@ async function generateAIStrategy(
   // プロンプトビルダーを使用してシステムプロンプトを構築
   let systemPrompt: string;
 
-  if (userProfile) {
+  if (userProfile && userProfile.businessInfo) {
     // ✅ プロンプトビルダーを使用（クライアントの詳細情報を含む）
     // selectedStrategiesとselectedCategoriesをformDataに含める
     const enhancedFormData = {
@@ -148,26 +156,31 @@ async function generateAIStrategy(
         selectedCategories.length > 0 ? selectedCategories : formData.postCategories || [],
     };
 
-    systemPrompt = buildPlanPrompt(
-      userProfile,
-      "instagram",
-      enhancedFormData as {
-        currentFollowers?: number | string;
-        targetFollowers?: number | string;
-        planPeriod?: string;
-        goalCategory?: string;
-        strategyValues?: string[];
-        postCategories?: string[];
-        brandConcept?: string;
-        colorVisual?: string;
-        tone?: string;
-      },
-      simulationResult as {
-        monthlyTarget?: number | string;
-        feasibilityLevel?: string;
-        postsPerWeek?: { feed?: number; reel?: number };
-      }
-    );
+    try {
+      systemPrompt = buildPlanPrompt(
+        userProfile,
+        "instagram",
+        enhancedFormData as {
+          currentFollowers?: number | string;
+          targetFollowers?: number | string;
+          planPeriod?: string;
+          goalCategory?: string;
+          strategyValues?: string[];
+          postCategories?: string[];
+          brandConcept?: string;
+          colorVisual?: string;
+          tone?: string;
+        },
+        simulationResult as {
+          monthlyTarget?: number | string;
+          feasibilityLevel?: string;
+          postsPerWeek?: { feed?: number; reel?: number };
+        }
+      );
+    } catch (promptError) {
+      console.error("プロンプト構築エラー:", promptError);
+      throw new Error(`プロンプトの構築に失敗しました: ${promptError instanceof Error ? promptError.message : "Unknown error"}`);
+    }
 
     // 分析データの参照（PDCA - Check）
     if (analyticsData.length > 0) {
@@ -210,19 +223,31 @@ async function generateAIStrategy(
 前月の振り返り結果を踏まえ、継続すべき点と改善すべき点を明確にして戦略を提案してください。`;
     }
   } else {
-    // フォールバック: ユーザープロファイルがない場合（旧ロジック）
-    systemPrompt = `あなたはInstagram運用の専門家です。ユーザーの計画データとシミュレーション結果を基に、具体的で実用的な投稿戦略アドバイスを生成してください。
+    // フォールバック: ユーザープロファイルがない場合（関係性設計型に更新）
+    systemPrompt = `あなたはInstagram運用の専門家です。2026年のInstagramアルゴリズム変更に対応し、**関係性設計型**の戦略を生成してください。
 
-以下の8つのセクションで回答してください：
+「拡散」よりも「安心感の積み上げ」、「投稿の点」よりも「投稿前後の流れ」を重視します。
+ストーリーズを主軸に、フィード/リールはその結果として伸びる構造を提案してください。
 
-① 全体の投稿戦略
-② 投稿構成の方向性
-③ カスタマージャーニー別の投稿役割
-④ 注意点・成功のコツ
-⑤ 世界観診断
-⑥ フィード投稿提案
-⑦ リール投稿提案
-⑧ ストーリー投稿提案
+以下の4つのセクションで回答してください：
+
+① 全体運用戦略（AI提案）
+- 「拡散」よりも「安心感の積み上げ」を重視
+- ストーリーズを主軸に、フォロワーとの日常的な接点を増やす
+- 投稿は単体で完結させず、投稿前後のストーリーズによる反応設計を含める
+
+② 投稿設計（AI設計）
+- メイン投稿（週1〜2回）: リールまたはカルーセルで、考え方・雰囲気・安心感を伝える
+- ストーリーズ（ほぼ毎日）: 投稿前後にアンケート・質問・補足を行い、反応を蓄積
+- ストーリーズの反応をもとに、次の投稿テーマを調整する改善サイクル
+
+③ 関係性ベースのカスタマージャーニー
+- ①日常接触（ストーリーズ） → ②反応（質問・投票） → ③理解（フィード/カルーセル） → ④信頼（日常投稿） → ⑤行動（問い合わせ）
+- 機能ベースではなく、関係性の深まりを表現
+
+④ 注視すべき指標（AI推奨）
+- ストーリーズ閲覧率、スタンプ反応率、投稿後24時間の初動反応、プロフィールアクセス数、DM・問い合わせ数
+- フォロワー数より関係性指標を重視
 
 各セクションは具体的で実行可能なアドバイスを含むようにしてください。
 
@@ -267,10 +292,30 @@ async function generateAIStrategy(
   }
 
   // RAG: 関連知識を検索（既存の学習機能を維持）
-  const relevantKnowledge = searchRelevantKnowledge(formData, simulationResult);
-  const learningInsights = getLearningInsights(userId);
-  const masterContext = await getMasterContext(userId);
-  const patternLearningContext = buildPostPatternPromptSection(masterContext?.postPatterns);
+  // エラーが発生しても戦略生成は続行する
+  let relevantKnowledge: Array<{ content: string }> = [];
+  let learningInsights: string | null = null;
+  let patternLearningContext: string | null = null;
+
+  try {
+    relevantKnowledge = searchRelevantKnowledge(formData, simulationResult);
+  } catch (error) {
+    console.warn("⚠️ 関連知識検索エラー（続行）:", error);
+  }
+
+  try {
+    learningInsights = getLearningInsights(userId);
+  } catch (error) {
+    console.warn("⚠️ 学習インサイト取得エラー（続行）:", error);
+  }
+
+  try {
+    const masterContext = await getMasterContext(userId);
+    patternLearningContext = buildPostPatternPromptSection(masterContext?.postPatterns) || null;
+  } catch (error) {
+    console.warn("⚠️ MasterContext取得エラー（続行）:", error);
+    // エラーが発生しても戦略生成は続行
+  }
 
   // RAG: 関連知識をプロンプトに追加
   const knowledgeContext =
@@ -289,17 +334,25 @@ async function generateAIStrategy(
   const userPrompt = `
 【重要】以下の点を必ず守って戦略を提案してください：
 
-1. **抽象的な表現は禁止** - "エンゲージメントを高める"ではなく、"質問スタンプで1投稿あたり50件のリプライを獲得する"のように具体的に
+1. **関係性設計型の思想を反映** - 「何を投稿するか」ではなく「どう関係性を積み上げるか」を設計するAIとして提案
 
-2. **実例を必ず含める** - 投稿タイトル、リールのフック、ストーリーの質問など、コピペで使える実例を提示
+2. **ストーリーズを主軸に** - ストーリーズを補足ではなく戦略の中心に置き、フィード/リールはその結果として伸びる構造を提案
 
-3. **数値目標を明記** - "週3回投稿"、"エンゲージメント率5%"、"保存率3%"など具体的な数値
+3. **投稿前後の流れを設計** - 投稿が「点」で終わらず、投稿前後のストーリーズによる反応設計を含める
 
-4. **業種の特性を活かす** - ${userProfile ? userProfile.businessInfo.industry : ""}業界ならではの強みや切り口を提示
+4. **抽象的な表現は禁止** - "エンゲージメントを高める"ではなく、"ストーリーズ閲覧率60%を目指す"のように具体的に
 
-5. **差別化ポイントを明確に** - 競合と何が違うのか、なぜフォローすべきかを明確に
+5. **実例を必ず含める** - 投稿タイトル、リールのフック、ストーリーの質問など、コピペで使える実例を提示
 
-上記を踏まえて、8つのセクションで**即実行可能で具体的な**戦略を提案してください。${knowledgeContext}${learningContext}${patternLearningContext}`;
+6. **関係性指標を重視** - フォロワー数より、ストーリーズ閲覧率、スタンプ反応率、初動反応など関係性指標を優先
+
+7. **業種の特性を活かす** - ${userProfile ? userProfile.businessInfo.industry : ""}業界ならではの強みや切り口を提示
+
+8. **差別化ポイントを明確に** - 競合と何が違うのか、なぜフォローすべきかを明確に
+
+上記を踏まえて、**必ず4つのセクションのみ**（①全体運用戦略、②投稿設計、③関係性ベースのカスタマージャーニー、④注視すべき指標）で**即実行可能で具体的な**戦略を提案してください。
+
+**重要**: ⑤具体的な投稿タイトル、⑥ハッシュタグ戦略、⑦エンゲージメント向上施策、⑧分析・改善プランなどの追加セクションは生成しないでください。4セクションのみです。${knowledgeContext}${learningContext}${patternLearningContext}`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -378,10 +431,10 @@ export async function POST(request: NextRequest) {
 
     // AI戦略生成
     const aiStrategy = await generateAIStrategy(
-      body.formData,
+      body.formData || {},
       body.selectedStrategies || [],
       body.selectedCategories || [],
-      body.simulationResult,
+      body.simulationResult || null,
       userId
     );
 
@@ -392,16 +445,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("AI Strategy API Error:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
 
     // エラーログを記録（本番環境では適切なログサービスを使用）
-    const { status, body } = buildErrorResponse(error);
+    const { status, body: errorBody } = buildErrorResponse(error);
 
     return NextResponse.json(
       {
-        ...body,
+        ...errorBody,
+        error: errorBody.error || (error instanceof Error ? error.message : "Unknown error"),
         details:
           process.env.NODE_ENV === "development"
-            ? body.details ?? (error instanceof Error ? error.message : "Unknown error")
+            ? errorBody.details ?? (error instanceof Error ? error.stack : "Unknown error")
             : undefined,
       },
       { status }

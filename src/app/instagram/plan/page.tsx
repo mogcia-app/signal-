@@ -335,22 +335,33 @@ export default function InstagramPlanPage() {
         )}
 
         {/* 運用計画実行中 */}
-        {(loadedPlanId ||
-          (formData.planPeriod && formData.currentFollowers && formData.followerGain)) && (
-          <div className="mb-8 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        {!isPlanExpired &&
+          (loadedPlanId ||
+            (formData.planPeriod && formData.currentFollowers && formData.followerGain)) && (
+          <div className="mb-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
-                <h3 className="text-xl font-light text-gray-900 tracking-tight mb-2">
-                  {loadedPlanId ? "運用計画実行中" : "Instagram運用計画"}
-                </h3>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-xl font-light text-gray-900 tracking-tight">
+                    {loadedPlanId ? "運用計画実行中" : "Instagram運用計画"}
+                  </h3>
+                  {loadedPlanId && (
+                    <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                      実行中
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                     {planStartDate && planEndDate
                       ? `${planStartDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })} 〜 ${planEndDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}`
                       : `期間: ${formData.planPeriod}`}
                   </span>
                   {planStartDate && planEndDate && (
-                    <span className="text-orange-600 font-medium">
+                    <span className="px-2.5 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-full">
                       残り {Math.ceil(
                         (planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                       )} 日
@@ -358,10 +369,10 @@ export default function InstagramPlanPage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={handleEditCurrentPlan}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   title="編集"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,7 +381,7 @@ export default function InstagramPlanPage() {
                 </button>
                 <button
                   onClick={handleDeleteCurrentPlan}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-colors"
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   title="削除"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -381,7 +392,7 @@ export default function InstagramPlanPage() {
                   <button
                     onClick={handleSavePlan}
                     disabled={isSaving}
-                    className="p-2 text-gray-400 hover:text-green-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+                    className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
                     title="保存"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -391,7 +402,7 @@ export default function InstagramPlanPage() {
                 )}
                 <button
                   onClick={resetPlan}
-                  className="p-2 text-gray-400 hover:text-orange-600 hover:bg-gray-50 rounded-md transition-colors"
+                  className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                   title="再設定"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,11 +415,17 @@ export default function InstagramPlanPage() {
             {/* 計画の詳細表示 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
               {/* 目標 */}
-              <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">目標</div>
-                <div className="text-base font-light text-gray-900">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">目標</div>
+                <div className="text-lg font-semibold text-gray-900">
                   {formData.currentFollowers && formData.followerGain
-                    ? `${parseInt(formData.currentFollowers).toLocaleString()}人 → ${(parseInt(formData.currentFollowers) + parseInt(formData.followerGain)).toLocaleString()}人`
+                    ? (
+                        <>
+                          <span className="text-gray-600">{parseInt(formData.currentFollowers).toLocaleString()}人</span>
+                          <span className="mx-2 text-gray-400">→</span>
+                          <span className="text-[#FF8A15]">{(parseInt(formData.currentFollowers) + parseInt(formData.followerGain)).toLocaleString()}人</span>
+                        </>
+                      )
                     : "未設定"}
                 </div>
               </div>
@@ -451,13 +468,13 @@ export default function InstagramPlanPage() {
 
               {/* 取り組みたいこと */}
               {selectedStrategies.length > 0 && (
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">取り組みたいこと</div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">取り組みたいこと</div>
                   <div className="flex flex-wrap gap-2">
                     {selectedStrategies.map((strategy, index) => (
                       <span
                         key={index}
-                        className="inline-block bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-md"
+                        className="inline-block bg-white border border-gray-200 text-gray-700 text-xs px-3 py-1.5 rounded-md font-medium"
                       >
                         {strategy}
                       </span>
@@ -468,13 +485,13 @@ export default function InstagramPlanPage() {
 
               {/* 投稿したい内容 */}
               {selectedCategories.length > 0 && (
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">投稿したい内容</div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">投稿したい内容</div>
                   <div className="flex flex-wrap gap-2">
                     {selectedCategories.map((category, index) => (
                       <span
                         key={index}
-                        className="inline-block bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-md"
+                        className="inline-block bg-white border border-gray-200 text-gray-700 text-xs px-3 py-1.5 rounded-md font-medium"
                       >
                         {category}
                       </span>

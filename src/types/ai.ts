@@ -37,10 +37,17 @@ export interface AIInsightBlock {
   referenceIds?: string[];
 }
 
+export interface HashtagExplanation {
+  hashtag: string;
+  category: "brand" | "trending" | "supporting";
+  reason: string;
+}
+
 export interface AIDraftBlock {
   title: string;
   body: string;
   hashtags: string[];
+  hashtagExplanations?: HashtagExplanation[];
   cta?: string;
 }
 
@@ -49,6 +56,7 @@ export interface AIGenerationMetadata {
   generatedAt: string;
   promptVersion?: string;
   temperature?: number;
+  fallbackUsed?: boolean;
 }
 
 export interface AIGenerationResponse {

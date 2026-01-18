@@ -33,7 +33,8 @@ interface PostData {
   scheduledTime: string;
   createdAt: string;
   updatedAt: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
+  imageData?: string | null;
   hashtags?: string[];
   analytics?: {
     likes?: number;
@@ -649,10 +650,10 @@ export default function PostDetailPage() {
         {/* 投稿カード */}
         <div className="bg-white shadow-sm border border-orange-200 overflow-hidden">
           {/* サムネ画像 */}
-          {post.imageUrl ? (
+          {post.imageData || post.imageUrl ? (
             <div className="aspect-video bg-gray-100 relative overflow-hidden">
               <Image
-                src={post.imageUrl}
+                src={post.imageData || post.imageUrl || ""}
                 alt={post.title}
                 fill
                 className="object-cover"

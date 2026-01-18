@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
           ? "20-50文字程度、1-2行の短い一言二言"
           : postType === "reel"
             ? "50-150文字程度、エンゲージメント重視"
-            : "200-400文字程度";
+            : "150文字以内";
 
       systemPrompt += `
 
@@ -254,10 +254,41 @@ ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文�
 - 投稿日時: ${scheduledDate ? `${scheduledDate} ${scheduledTime}` : "未設定"}
 - テーマ: ${prompt}
 
-以下の形式で返してください:
-- タイトル: 簡潔で魅力的なタイトル
-- 本文: 計画に沿った投稿文（${textLengthGuide}）
-- ハッシュタグ: 関連するハッシュタグの配列（5-10個）`;
+必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
+
+{
+  "title": "簡潔で魅力的なタイトル",
+  "body": "計画に沿った投稿文（${textLengthGuide}）",
+  "hashtags": [
+    {
+      "tag": "企業・ブランドハッシュタグ（${userProfile?.name || "企業名"}に関連する固有のハッシュタグ、#は不要）",
+      "category": "brand",
+      "reason": "選定理由（20文字以内）"
+    },
+    {
+      "tag": "トレンド・検索されやすいハッシュタグ（投稿内容のテーマに沿った、検索されやすい大きなハッシュタグ、#は不要）",
+      "category": "trending",
+      "reason": "選定理由（20文字以内）"
+    },
+    {
+      "tag": "補助的ハッシュタグ1（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+      "category": "supporting",
+      "reason": "選定理由（20文字以内）"
+    },
+    {
+      "tag": "補助的ハッシュタグ2（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+      "category": "supporting",
+      "reason": "選定理由（20文字以内）"
+    },
+    {
+      "tag": "補助的ハッシュタグ3（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+      "category": "supporting",
+      "reason": "選定理由（20文字以内）"
+    }
+  ]
+}
+
+重要: JSON以外のテキストは一切出力しないでください。`;
     } else {
       const resolvedPlanData = planContext as PostGenerationRequest["planData"] | null;
 
@@ -307,13 +338,44 @@ AIペルソナ:
 3. ${resolvedPlanData.targetAudience}との繋がりを深める内容
 4. 目標達成への意識を適度に含める
 5. エンゲージメントを促進する要素を含める
-6. 適切なハッシュタグ（5-10個）を含める
+6. 必ず5個のハッシュタグを含める（企業ハッシュタグ1個、トレンドハッシュタグ1個、補助的ハッシュタグ3個）
 ${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文字、1-2行）にする" : ""}
 
-投稿文は以下の形式で返してください:
-- タイトル: 簡潔で魅力的なタイトル
-- 本文: 計画に沿った投稿文${postType === "story" ? "（20-50文字程度、2行以内の短い一言二言）" : "（200-400文字程度）"}
-- ハッシュタグ: 関連するハッシュタグの配列`;
+必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
+
+{
+  "title": "簡潔で魅力的なタイトル",
+  "body": "計画に沿った投稿文${postType === "story" ? "（20-50文字程度、2行以内の短い一言二言）" : postType === "feed" ? "（150文字以内）" : "（100文字以内）"}",
+  "hashtags": [
+    {
+      "tag": "企業・ブランドハッシュタグ（${resolvedPlanData.title || "企業名"}に関連する固有のハッシュタグ、#は不要）",
+      "category": "brand",
+      "reason": "選定理由（20文字以内）"
+    },
+    {
+      "tag": "トレンド・検索されやすいハッシュタグ（投稿内容のテーマに沿った、検索されやすい大きなハッシュタグ、#は不要）",
+      "category": "trending",
+      "reason": "選定理由（20文字以内）"
+    },
+    {
+      "tag": "補助的ハッシュタグ1（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+      "category": "supporting",
+      "reason": "選定理由（20文字以内）"
+    },
+    {
+      "tag": "補助的ハッシュタグ2（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+      "category": "supporting",
+      "reason": "選定理由（20文字以内）"
+    },
+    {
+      "tag": "補助的ハッシュタグ3（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+      "category": "supporting",
+      "reason": "選定理由（20文字以内）"
+    }
+  ]
+}
+
+重要: JSON以外のテキストは一切出力しないでください。`;
     }
 
     if (snapshotReferences.length > 0) {
@@ -357,6 +419,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
         ],
         temperature: 0.7,
         max_tokens: 1000,
+        response_format: { type: "json_object" },
       });
     } catch (openaiError: unknown) {
       console.error("OpenAI API呼び出しエラー:", openaiError);
@@ -390,55 +453,146 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
       return NextResponse.json({ error: "AI投稿文の生成に失敗しました" }, { status: 500 });
     }
 
-    // AIレスポンスを解析してタイトル、本文、ハッシュタグを抽出
-    const lines = aiResponse.split("\n").filter((line) => line.trim());
+    // JSON形式でパース
+    let parsedData: {
+      title?: string;
+      body?: string;
+      hashtags?: Array<{
+        tag: string;
+        category: "brand" | "trending" | "supporting";
+        reason: string;
+      }>;
+    };
 
-    let title = "";
-    let content = "";
+    try {
+      // まず直接パースを試す（response_format: json_object が効いている場合）
+      parsedData = JSON.parse(aiResponse);
+    } catch (directParseError) {
+      // 直接パースに失敗した場合、JSONを抽出して試す
+      try {
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error("JSON形式が見つかりません");
+        }
+        parsedData = JSON.parse(jsonMatch[0]);
+      } catch (fallbackParseError) {
+        console.error("JSONパースエラー（直接パース失敗）:", directParseError);
+        console.error("JSONパースエラー（フォールバックも失敗）:", fallbackParseError);
+        console.error("AIレスポンス:", aiResponse);
+        return NextResponse.json(
+          { error: "AIの応答を解析できませんでした。再度お試しください。" },
+          { status: 500 }
+        );
+      }
+    }
+
+    let title = parsedData.title || "";
+    let content = parsedData.body || "";
     let hashtags: string[] = [];
+    let hashtagExplanations: Array<{ hashtag: string; category: "brand" | "trending" | "supporting"; reason: string }> = [];
 
-    let currentSection = "";
-    for (const line of lines) {
-      if (line.includes("タイトル:") || line.includes("タイトル：")) {
-        title = line.replace(/タイトル[:：]\s*/, "").trim();
-        currentSection = "title";
-      } else if (line.includes("本文:") || line.includes("本文：")) {
-        currentSection = "content";
-        content = line.replace(/本文[:：]\s*/, "").trim();
-      } else if (line.includes("ハッシュタグ:") || line.includes("ハッシュタグ：")) {
-        currentSection = "hashtags";
-        const hashtagText = line.replace(/ハッシュタグ[:：]\s*/, "").trim();
-        hashtags = hashtagText.split(/[,\s]+/).filter((tag) => tag.trim());
-      } else if (currentSection === "content" && line.trim()) {
-        content += "\n" + line.trim();
-      } else if (currentSection === "hashtags" && line.trim()) {
-        const additionalHashtags = line.split(/[,\s]+/).filter((tag) => tag.trim());
-        hashtags.push(...additionalHashtags);
+    // ハッシュタグを抽出
+    if (parsedData.hashtags && Array.isArray(parsedData.hashtags)) {
+      for (const item of parsedData.hashtags) {
+        if (item.tag) {
+          // #を除去して正規化
+          const cleanTag = item.tag.replace(/^#+/, "").trim();
+          if (cleanTag && cleanTag.length > 0) {
+            hashtags.push(cleanTag);
+            // 説明も追加
+            hashtagExplanations.push({
+              hashtag: cleanTag,
+              category: item.category || "supporting",
+              reason: (item.reason || "").replace(/\*\*/g, "").replace(/\*/g, "").replace(/_/g, "").trim(),
+            });
+          }
+        }
       }
     }
 
     // フォールバック: パースに失敗した場合の処理
+    let fallbackUsed = false;
     if (!title || !content) {
-      title = `${prompt}${userProfile ? ` - ${userProfile.name}` : ""}`;
-      content = aiResponse;
-      hashtags = [
-        postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "インスタグラム",
-        "成長",
-        prompt.replace(/\s+/g, ""),
-        "エンゲージメント",
-        "フォロワー",
-        "目標達成",
-      ];
+      fallbackUsed = true;
+      title = parsedData.title || `${prompt}${userProfile ? ` - ${userProfile.name}` : ""}`;
+      content = parsedData.body || "";
+      // フォールバック時はハッシュタグを生成しない（空配列）
+      if (hashtags.length === 0) {
+        hashtags = [];
+        hashtagExplanations = [];
+      }
     }
 
-    // ハッシュタグに#を追加（まだない場合）
-    hashtags = hashtags.map((tag) => (tag.startsWith("#") ? tag : `#${tag}`));
+    // フィードとリールの場合はハッシュタグを5個までに制限
+    if (postType === "feed" || postType === "reel") {
+      hashtags = hashtags.slice(0, 5);
+      hashtagExplanations = hashtagExplanations.slice(0, 5);
+    }
+
+    // 5個保証：ハッシュタグが5個未満の場合、補完ロジック
+    if ((postType === "feed" || postType === "reel") && hashtags.length < 5) {
+      const existingTags = new Set(hashtags);
+      
+      // 必要な数だけ補完
+      while (hashtags.length < 5) {
+        const index = hashtags.length;
+        let category: "brand" | "trending" | "supporting" = "supporting";
+        let tag = "";
+        let reason = "";
+        
+        if (index === 0) {
+          category = "brand";
+          let brandName = userProfile?.name || "企業";
+          if (!userProfile?.name && planContext && "title" in planContext) {
+            brandName = String(planContext.title);
+          }
+          // ブランド名を正規化（空白除去、既に「公式」が含まれている場合は追加しない）
+          const normalizedName = brandName.replace(/\s+/g, "").replace(/公式$/, "");
+          tag = normalizedName.endsWith("公式") ? normalizedName : `${normalizedName}公式`;
+          reason = "企業・ブランドを表すハッシュタグ";
+        } else if (index === 1) {
+          category = "trending";
+          tag = "インスタグラム";
+          reason = "検索されやすいトレンドハッシュタグ";
+        } else {
+          category = "supporting";
+          tag = `投稿${index - 1}`;
+          reason = "投稿内容を補完する補助的ハッシュタグ";
+        }
+        
+        // 重複チェック
+        if (!existingTags.has(tag)) {
+          hashtags.push(tag);
+          hashtagExplanations.push({
+            hashtag: tag,
+            category,
+            reason,
+          });
+          existingTags.add(tag);
+        } else {
+          // 重複している場合は番号を追加
+          let counter = 1;
+          while (existingTags.has(`${tag}${counter}`)) {
+            counter++;
+          }
+          const uniqueTag = `${tag}${counter}`;
+          hashtags.push(uniqueTag);
+          hashtagExplanations.push({
+            hashtag: uniqueTag,
+            category,
+            reason,
+          });
+          existingTags.add(uniqueTag);
+        }
+      }
+    }
 
     const generationPayload: AIGenerationResponse = {
       draft: {
         title,
         body: content,
         hashtags,
+        hashtagExplanations: hashtagExplanations.length > 0 ? hashtagExplanations : undefined,
       },
       insights: [],
       imageHints: [],
@@ -447,6 +601,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
         model: "gpt-4o-mini",
         generatedAt: new Date().toISOString(),
         promptVersion: "post-generation:v1",
+        fallbackUsed: fallbackUsed,
       },
       rawText: aiResponse,
     };
@@ -461,6 +616,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
           postType,
           generatedAt: generationPayload.metadata?.generatedAt,
           basedOnPlan: Boolean(latestPlan),
+          fallbackUsed: generationPayload.metadata?.fallbackUsed || false,
           ...(userProfile && { clientName: userProfile.name }),
           ...(latestPlan && { planType: latestPlan.planType as string }),
           snapshotReferences: snapshotReferences.map((snapshot) => ({
