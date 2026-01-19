@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { canAccessFeature } from "@/lib/plan-access";
 import * as admin from "firebase-admin";
 
 interface AnalyticsData {

@@ -8,6 +8,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { canAccessFeature } from "@/lib/plan-access";
 import SNSLayout from "../../../../components/sns-layout";
 import { authFetch } from "../../../../utils/authFetch";
+import { notify } from "../../../../lib/ui/notifications";
 import {
   Calendar,
   Clock,
