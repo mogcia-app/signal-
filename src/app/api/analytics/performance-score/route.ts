@@ -182,6 +182,15 @@ export async function GET(request: NextRequest) {
       auditEventName: "analytics_performance_score_access",
     });
 
+    // プラン階層別アクセス制御: 松プランのみアクセス可能
+    const userProfile = await getUserProfile(uid);
+    if (!canAccessFeature(userProfile, "canAccessAnalytics")) {
+      return NextResponse.json(
+        { error: "投稿分析機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date"); // YYYY-MM形式
 

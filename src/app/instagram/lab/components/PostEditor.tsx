@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles } from "lucide-react";
 import { postsApi } from "../../../../lib/api";
 import { useAuth } from "../../../../contexts/auth-context";
+import { notify } from "../../../../lib/ui/notifications";
 import Image from "next/image";
 import type { PlanData } from "../../plan/types/plan";
 import type {
@@ -346,15 +347,14 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       setShowSuccessMessage(true);
 
       // トースト通知を表示
-      setToastMessage({ 
-        message: editingPostId ? "投稿が更新されました！" : "投稿が保存されました！", 
-        type: "success" 
+      notify({ 
+        type: "success", 
+        message: editingPostId ? "投稿が更新されました" : "投稿が保存されました"
       });
 
       // 3秒後にメッセージを非表示
       setTimeout(() => {
         setShowSuccessMessage(false);
-        setToastMessage(null);
       }, 3000);
     } catch (error) {
       console.error("保存エラー:", error);
@@ -364,15 +364,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       let errorMsg = "";
       if (errorMessage.includes("Payload too large") || errorMessage.includes("size")) {
         errorMsg = "画像のサイズが大きすぎます。画像を圧縮するか、別の画像を選択してください。";
-        showToast(errorMsg);
       } else {
-        errorMsg = `保存に失敗しました: ${errorMessage}`;
-        showToast(`${errorMsg}\n\nもう一度お試しください。`);
+        errorMsg = "保存に失敗しました。もう一度お試しください。";
       }
 
       // エラートースト通知を表示
-      setToastMessage({ message: errorMsg, type: "error" });
-      setTimeout(() => setToastMessage(null), 5000);
+      notify({ type: "error", message: errorMsg });
     } finally {
       setIsSaving(false);
     }

@@ -4,6 +4,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "../../../../components/auth-guard";
 import { useAuth } from "../../../../contexts/auth-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { canAccessFeature } from "@/lib/plan-access";
+import { notify } from "../../../../lib/ui/notifications";
 import ReelAnalyticsForm from "../../components/ReelAnalyticsForm";
 import SNSLayout from "../../../../components/sns-layout";
 import { CheckCircle, RefreshCw, X } from "lucide-react";
@@ -175,6 +178,9 @@ const createDefaultReelInputData = () => ({
 function AnalyticsReelContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const { userProfile, loading: profileLoading } = useUserProfile();
+
+  // すべてのHooksを早期リターンの前に定義
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -189,6 +195,8 @@ function AnalyticsReelContent() {
   } | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [inputData, setInputData] = useState(createDefaultReelInputData());
+
   // 投稿データを取得する関数
   const fetchPostData = useCallback(
     async (id: string) => {
@@ -259,8 +267,6 @@ function AnalyticsReelContent() {
       }));
     }
   }, [postData]);
-
-  const [inputData, setInputData] = useState(createDefaultReelInputData());
 
   // 分析データを取得（simple API経由）
   const fetchAnalytics = useCallback(async () => {
@@ -412,14 +418,14 @@ function AnalyticsReelContent() {
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
+
   const handleResetAnalytics = useCallback(async () => {
     if (!user?.uid) {
       router.push("/login");
       return;
     }
     if (!postData?.id) {
-      setToastMessage({ message: "投稿が選択されていません。投稿一覧から分析ページを開いてください。", type: "error" });
-      setTimeout(() => setToastMessage(null), 4000);
+      notify({ type: "error", message: "投稿が選択されていません。投稿一覧から分析ページを開いてください。" });
       return;
     }
     if (!window.confirm("この投稿に紐付く分析データをすべて削除します。よろしいですか？")) {
@@ -458,19 +464,34 @@ function AnalyticsReelContent() {
 
       await fetchAnalytics();
 
-      setToastMessage({ message: "分析データをリセットしました。", type: "success" });
-      setTimeout(() => setToastMessage(null), 3000);
+      notify({ type: "success", message: "分析データをリセットしました" });
     } catch (error) {
       console.error("Reel analytics reset error:", error);
       const message =
         error instanceof Error ? error.message : "分析データのリセットに失敗しました。";
       setResetError(message);
-      setToastMessage({ message, type: "error" });
-      setTimeout(() => setToastMessage(null), 5000);
+      notify({ type: "error", message });
     } finally {
       setIsResetting(false);
     }
   }, [user?.uid, postData, router, fetchAnalytics]);
+
+  // コンポーネントマウント時にデータを取得
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
+
+  // プラン階層別アクセス制御: 松プランのみアクセス可能
+  useEffect(() => {
+    if (!profileLoading && !canAccessFeature(userProfile, "canAccessAnalytics")) {
+      router.push("/instagram/lab/feed");
+    }
+  }, [userProfile, profileLoading, router]);
+
+  // アクセス権限がない場合は何も表示しない（リダイレクトされる）
+  if (profileLoading || !canAccessFeature(userProfile, "canAccessAnalytics")) {
+    return null;
+  }
 
   // 投稿分析データを保存（simple API経由）
   const handleSaveAnalytics = async (sentimentData?: {
@@ -484,18 +505,15 @@ function AnalyticsReelContent() {
     }
 
     if (!inputData.likes) {
-      setToastMessage({ message: "いいね数を入力してください", type: 'error' });
-      setTimeout(() => setToastMessage(null), 3000);
+      notify({ type: "error", message: "いいね数を入力してください" });
       return;
     }
     if (!inputData.reach) {
-      setToastMessage({ message: "閲覧数を入力してください", type: 'error' });
-      setTimeout(() => setToastMessage(null), 3000);
+      notify({ type: "error", message: "閲覧数を入力してください" });
       return;
     }
     if (sentimentData?.sentiment && !sentimentData.memo.trim()) {
-      setToastMessage({ message: "満足度を選んだ場合、メモは必須です", type: "error" });
-      setTimeout(() => setToastMessage(null), 3000);
+      notify({ type: "error", message: "満足度を選んだ場合、メモは必須です" });
       return;
     }
 
@@ -637,14 +655,13 @@ function AnalyticsReelContent() {
       }
 
       if (feedbackErrorMessage) {
-        setToastMessage({
-          message: `分析データは保存しましたが、フィードバックの保存に失敗しました: ${feedbackErrorMessage}`,
+        notify({
           type: "error",
+          message: `分析データは保存しましたが、フィードバックの保存に失敗しました: ${feedbackErrorMessage}`,
         });
       } else {
-        setToastMessage({ message: "投稿分析データを保存しました！", type: "success" });
+        notify({ type: "success", message: "投稿分析データを保存しました" });
       }
-      setTimeout(() => setToastMessage(null), 3000);
 
       // データを再取得
       await fetchAnalytics();
@@ -735,8 +752,7 @@ function AnalyticsReelContent() {
     } catch (error) {
       console.error("保存エラー:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      setToastMessage({ message: `保存に失敗しました: ${errorMessage}`, type: 'error' });
-      setTimeout(() => setToastMessage(null), 5000);
+      notify({ type: "error", message: `保存に失敗しました: ${errorMessage}` });
     } finally {
       setIsLoading(false);
     }

@@ -55,6 +55,7 @@ export interface UserProfile {
   billingInfo?: BillingInfo; // 課金情報
   notes?: string; // 管理者メモ
   setupRequired?: boolean; // 初期設定が必要かどうか
+  planTier?: "ume" | "take" | "matsu"; // プラン階層（梅・竹・松）
   createdAt: string; // 作成日時
   updatedAt: string; // 更新日時
 }

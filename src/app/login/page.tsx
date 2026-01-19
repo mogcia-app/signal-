@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useAuth } from "../../contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { notify } from "../../lib/ui/notifications";
 
 const loginMaintenanceEnabled = process.env.NEXT_PUBLIC_LOGIN_MAINTENANCE === "true";
 const isProductionBuild = process.env.NODE_ENV === "production";
@@ -29,9 +30,10 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       setLoginSuccess(true);
-      // 2秒後にホームに遷移
+      // 2秒後に投稿ラボ（フィード）に遷移（全プラン共通）
+      // URLパラメータにログイン成功フラグを追加
       setTimeout(() => {
-        router.push("/home");
+        router.push("/instagram/lab/feed?login=success");
       }, 2000);
     } catch (error: unknown) {
       // 契約期間切れのエラーの場合
@@ -56,21 +58,78 @@ export default function LoginPage() {
   // ログイン成功画面
   if (loginSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-orange-100 to-orange-50">
-        <div className="max-w-md w-full space-y-8 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 relative overflow-hidden">
+        {/* 背景装飾 */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-orange-300/30 to-amber-300/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-amber-300/30 to-orange-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-orange-200/20 to-amber-200/20 rounded-full blur-3xl"></div>
+        </div>
+
+        {/* メインコンテンツ */}
+        <div className="relative z-10 max-w-md w-full px-6 space-y-8 text-center">
           <div className="animate-fade-in">
-            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mb-6 shadow-lg">
-              <CheckCircle className="w-10 h-10 text-white" />
+            {/* 成功アイコン */}
+            <div className="mx-auto w-24 h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-orange-300/50 relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 to-transparent"></div>
+              <CheckCircle className="w-12 h-12 text-white relative z-10 drop-shadow-lg" strokeWidth={3} />
+              {/* 成功アニメーションの波紋 */}
+              <div className="absolute inset-0 rounded-full border-4 border-orange-400/50 animate-ping"></div>
             </div>
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-3">
-              ログイン成功！
-            </h2>
-            <p className="text-black text-lg">Signal.へようこそ</p>
-            <div className="mt-8">
-              <div className="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-500 mx-auto"></div>
+
+            {/* タイトル */}
+            <div className="space-y-4 mb-8">
+              <h2 className="text-5xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent mb-2 tracking-tight">
+                ログイン成功！
+              </h2>
+              <div className="relative inline-block">
+                <p className="text-gray-800 text-xl relative z-10">
+                  <span className="font-bold">Signal</span>
+                  <span style={{ color: '#ff8a15' }}>.</span>
+                  へようこそ
+                </p>
+                <div className="absolute -bottom-1 left-0 right-0 h-2 bg-gradient-to-r from-orange-200/50 via-amber-200/50 to-orange-200/50 rounded-full -z-0"></div>
+              </div>
+            </div>
+
+            {/* ローディングインジケーター */}
+            <div className="mt-10 space-y-4">
+              <div className="flex items-center justify-center gap-2">
+                <div className="relative">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-500"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-amber-400 animate-spin" style={{ animationDuration: "1.5s", animationDirection: "reverse" }}></div>
+                </div>
+              </div>
+              <p className="text-gray-600 text-sm font-medium animate-pulse">ダッシュボードへ移動中...</p>
+            </div>
+
+            {/* 装飾的な要素 */}
+            <div className="mt-12 flex items-center justify-center gap-2">
+              <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: "0s" }}></div>
+              <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
             </div>
           </div>
         </div>
+
+        <style jsx>{`
+          @keyframes fade-in {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .animate-fade-in {
+            animation: fade-in 0.6s ease-out;
+          }
+          .delay-1000 {
+            animation-delay: 1s;
+          }
+        `}</style>
       </div>
     );
   }

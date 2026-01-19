@@ -68,7 +68,9 @@ const retryWithBackoff = async (
 
       // 403エラー（アカウント停止など）の場合、リトライしない
       if (response.status === 403) {
-        const errorData = await response.json().catch(() => ({}));
+        // bodyを読み込むためにcloneする（元のResponseはそのまま返すため）
+        const clonedResponse = response.clone();
+        const errorData = await clonedResponse.json().catch(() => ({}));
         if (errorData.error?.includes("契約") || errorData.error?.includes("停止")) {
           console.error("[authFetch] Account suspended or contract invalid. Stopping retries.");
           return response;

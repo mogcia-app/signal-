@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import SNSLayout from "../../../components/sns-layout";
 import { KPIHeader } from "./components/KPIHeader";
 import { KPIBreakdownComponent } from "./components/KPIBreakdown";
@@ -10,13 +11,17 @@ import { AudienceBreakdownComponent } from "./components/AudienceBreakdown";
 import { DailyKPITrend } from "./components/DailyKPITrend";
 import { GoalAchievementComponent } from "./components/GoalAchievement";
 import { useAuth } from "../../../contexts/auth-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { canAccessFeature } from "@/lib/plan-access";
 import { authFetch } from "../../../utils/authFetch";
 import type { KPIBreakdown, TimeSlotEntry, FeedStats, ReelStats, AudienceBreakdown, DailyKPI, GoalAchievement } from "@/app/api/analytics/kpi-breakdown/route";
 
 export default function InstagramKPIPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const { userProfile, loading: profileLoading } = useUserProfile();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
-  
+
   // 現在の月を取得する関数（ローカルタイムゾーンを使用）
   const getCurrentMonth = () => {
     const now = new Date();
@@ -25,6 +30,7 @@ export default function InstagramKPIPage() {
     return `${year}-${month}`; // YYYY-MM形式
   };
   
+  // すべてのHooksを早期リターンの前に定義
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
   const [breakdowns, setBreakdowns] = useState<KPIBreakdown[]>([]);
   const [timeSlotAnalysis, setTimeSlotAnalysis] = useState<TimeSlotEntry[]>([]);

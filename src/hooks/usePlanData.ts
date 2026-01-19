@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../contexts/auth-context";
 import { authFetch } from "../utils/authFetch";
+import { useUserProfile } from "./useUserProfile";
+import { canAccessFeature } from "../lib/plan-access";
 
 // 統一された計画データの型定義
 interface PlanData {
@@ -70,7 +72,13 @@ export const usePlanData = (
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { userProfile, loading: profileLoading } = useUserProfile();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
+  
+  // プラン階層別アクセス制御: 運用計画機能は松プランのみ
+  const canAccessPlan = useMemo(() => {
+    return canAccessFeature(userProfile, "canAccessPlan");
+  }, [userProfile]);
 
   const normalizedEffectiveMonth = useMemo(
     () => normalizeEffectiveMonth(options.effectiveMonth),
@@ -93,6 +101,20 @@ export const usePlanData = (
       return;
     }
 
+    // プロフィール読み込み中は待機
+    if (profileLoading) {
+      return;
+    }
+
+    // プラン階層別アクセス制御: 運用計画機能は松プランのみ
+    // アクセス権限がない場合は、APIを呼ばずに静かに処理（エラーログを出さない）
+    if (!canAccessPlan) {
+      setPlanData(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -108,9 +130,29 @@ export const usePlanData = (
       const response = await authFetch(`/api/plans?${params.toString()}`);
 
       if (!response.ok) {
-        const errorText = await response.text();
+        // 403エラーはプラン制限によるものなので、エラーログを出さずに静かに処理
+        if (response.status === 403) {
+          setPlanData(null);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+
+        // その他のエラーは従来通り処理
+        // bodyが既に読み込まれている可能性があるので、try-catchで処理
+        let errorText = `HTTP error! status: ${response.status}`;
+        try {
+          // bodyを読み込もうとする（既に読み込まれている場合は空文字列になる）
+          const text = await response.text();
+          if (text) {
+            errorText += ` - ${text}`;
+          }
+        } catch (err) {
+          // bodyが既に読み込まれている場合は、ステータステキストを使用
+          errorText += ` - ${response.statusText || "Unknown error"}`;
+        }
         console.error("API Error Response:", errorText);
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        throw new Error(errorText);
       }
 
       const result = await response.json();
@@ -131,6 +173,10 @@ export const usePlanData = (
         console.log("計画データが見つかりません。新規作成が必要です。");
         setPlanData(null);
         setError(null);
+      } else if (err instanceof Error && err.message.includes("403")) {
+        // 403エラーもプラン制限によるものなので、静かに処理
+        setPlanData(null);
+        setError(null);
       } else {
         console.error("計画データ取得エラー:", err);
         setError("計画データの取得に失敗しました");
@@ -139,7 +185,7 @@ export const usePlanData = (
     } finally {
       setLoading(false);
     }
-  }, [isAuthReady, snsType, statusQuery, normalizedEffectiveMonth]);
+  }, [isAuthReady, profileLoading, canAccessPlan, snsType, statusQuery, normalizedEffectiveMonth]);
 
   useEffect(() => {
     fetchPlanData();

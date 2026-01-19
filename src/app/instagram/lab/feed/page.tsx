@@ -9,6 +9,7 @@ import { usePlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
 import ABTestSidebarSection from "../components/ABTestSidebarSection";
+import { notify } from "../../../../lib/ui/notifications";
 
 export default function FeedLabPage() {
   const [postContent, setPostContent] = useState("");
@@ -138,6 +139,21 @@ export default function FeedLabPage() {
     },
     [isAuthReady]
   );
+
+  // ログイン後のトースト表示（初回マウント時のみ）
+  useEffect(() => {
+    if (isAuthReady && isMounted) {
+      // URLパラメータでログイン成功フラグをチェック
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("login") === "success") {
+        notify({ type: "success", message: "ログインしました" });
+        // URLパラメータを削除（ブラウザ履歴をクリーンに保つ）
+        urlParams.delete("login");
+        const newUrl = window.location.pathname + (urlParams.toString() ? `?${urlParams.toString()}` : "");
+        window.history.replaceState({}, "", newUrl);
+      }
+    }
+  }, [isAuthReady, isMounted]);
 
   // URLパラメータの変更を監視
   useEffect(() => {

@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { requireAuthContext } from "@/lib/server/auth-context";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { canAccessFeature } from "@/lib/plan-access";
 import type { WriteResult } from "firebase-admin/firestore";
 
 // 特定の投稿取得
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+    });
+
+    // プラン階層別アクセス制御: 梅プランでは投稿詳細取得にアクセスできない
+    const userProfile = await getUserProfile(uid);
+    if (!canAccessFeature(userProfile, "canAccessPosts")) {
+      return NextResponse.json(
+        { error: "投稿管理機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
+
     const resolvedParams = await params;
     const postId = resolvedParams.id;
 
@@ -37,6 +53,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 // 投稿更新
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+    });
+
+    // プラン階層別アクセス制御: 梅プランでは投稿更新にアクセスできない
+    const userProfile = await getUserProfile(uid);
+    if (!canAccessFeature(userProfile, "canAccessPosts")) {
+      return NextResponse.json(
+        { error: "投稿管理機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
+
     const resolvedParams = await params;
     const postId = resolvedParams.id;
     const body = await request.json();
@@ -94,6 +123,19 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+    });
+
+    // プラン階層別アクセス制御: 梅プランでは投稿削除にアクセスできない
+    const userProfile = await getUserProfile(uid);
+    if (!canAccessFeature(userProfile, "canAccessPosts")) {
+      return NextResponse.json(
+        { error: "投稿管理機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
+
     const resolvedParams = await params;
     const postId = resolvedParams.id;
 

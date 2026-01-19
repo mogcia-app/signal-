@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { requireAuthContext } from "@/lib/server/auth-context";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { canAccessFeature } from "@/lib/plan-access";
 import * as admin from "firebase-admin";
 
 interface KPIBreakdownSegment {
@@ -906,6 +908,15 @@ function calculateAudienceAnalysis(postsWithAnalytics: PostWithAnalytics[]): Aud
 export async function GET(request: NextRequest) {
   try {
     const { uid } = await requireAuthContext(request);
+
+    // プラン階層別アクセス制御: 松プランのみアクセス可能
+    const userProfile = await getUserProfile(uid);
+    if (!canAccessFeature(userProfile, "canAccessKPI")) {
+      return NextResponse.json(
+        { success: false, error: "KPIダッシュボード機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");

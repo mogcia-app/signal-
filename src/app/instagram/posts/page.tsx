@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import SNSLayout from "../../../components/sns-layout";
 import { postsApi } from "../../../lib/api";
 import { useAuth } from "../../../contexts/auth-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { canAccessFeature } from "@/lib/plan-access";
+import { notify } from "../../../lib/ui/notifications";
 import {
   Image as ImageIcon,
   Heart,
@@ -153,6 +157,10 @@ interface AnalyticsData {
 
 export default function InstagramPostsPage() {
   const { user } = useAuth();
+  const { userProfile, loading: profileLoading } = useUserProfile();
+  const router = useRouter();
+
+  // すべてのHooksを早期リターンの前に定義
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "analyzed" | "created">("all");
@@ -524,8 +532,7 @@ export default function InstagramPostsPage() {
         try {
           await postsApi.delete(postId);
           setPosts(posts.filter((post) => post.id !== postId));
-          setToastMessage({ message: "投稿を削除しました", type: 'success' });
-          setTimeout(() => setToastMessage(null), 3000);
+          notify({ type: "success", message: "投稿を削除しました" });
 
           // 次のアクションを即座に更新
           if (
@@ -537,8 +544,7 @@ export default function InstagramPostsPage() {
           }
         } catch (error) {
           console.error("削除エラー:", error);
-          setToastMessage({ message: "削除に失敗しました", type: 'error' });
-          setTimeout(() => setToastMessage(null), 5000);
+          notify({ type: "error", message: "削除に失敗しました" });
         } finally {
           setDeleteConfirm(null);
         }
@@ -566,8 +572,7 @@ export default function InstagramPostsPage() {
             const result = await response.json();
             console.log("Delete result:", result);
             setAnalyticsData(analyticsData.filter((a) => a.id !== analyticsId));
-            setToastMessage({ message: "分析データを削除しました", type: 'success' });
-            setTimeout(() => setToastMessage(null), 3000);
+            notify({ type: "success", message: "分析データを削除しました" });
 
             // 次のアクションを即座に更新
             if (

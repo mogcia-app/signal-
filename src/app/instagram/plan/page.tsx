@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../contexts/auth-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { canAccessFeature } from "@/lib/plan-access";
 import { authFetch } from "../../../utils/authFetch";
 import SNSLayout from "../../../components/sns-layout";
 import { usePlanForm } from "./hooks/usePlanForm";
@@ -18,6 +20,9 @@ import { CheckCircle, X } from "lucide-react";
 export default function InstagramPlanPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { userProfile, loading: profileLoading } = useUserProfile();
+
+  // すべてのHooksを早期リターンの前に定義
   const [activeTab, setActiveTab] = useState<"simulation" | "ai">("simulation");
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false);

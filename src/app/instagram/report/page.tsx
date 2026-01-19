@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import SNSLayout from "../../../components/sns-layout";
 import { ReportHeader } from "./components/ReportHeader";
 import { PerformanceScore } from "./components/PerformanceScore";
@@ -12,6 +13,8 @@ import { PostDeepDive } from "./components/PostDeepDive";
 import { AILearningReferences } from "./components/AILearningReferences";
 import { FeedbackSentiment } from "./components/FeedbackSentiment";
 import { useAuth } from "../../../contexts/auth-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { canAccessFeature } from "@/lib/plan-access";
 import { authFetch } from "../../../utils/authFetch";
 
 interface PerformanceScoreData {
@@ -41,8 +44,10 @@ interface PerformanceScoreData {
 
 export default function InstagramReportPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const { userProfile, loading: profileLoading } = useUserProfile();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
-  
+
   // 現在の月を取得する関数（ローカルタイムゾーンを使用）
   const getCurrentMonth = () => {
     const now = new Date();
@@ -51,6 +56,7 @@ export default function InstagramReportPage() {
     return `${year}-${month}`; // YYYY-MM形式
   };
   
+  // すべてのHooksを早期リターンの前に定義
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
   const [performanceScore, setPerformanceScore] = useState<PerformanceScoreData | null>(null);
   const [isLoading, setIsLoading] = useState(false);

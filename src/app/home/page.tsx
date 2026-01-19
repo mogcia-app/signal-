@@ -3,6 +3,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { canAccessFeature } from "@/lib/plan-access";
+import { useRouter } from "next/navigation";
 import { authFetch } from "../../utils/authFetch";
 import { Users, Loader2, Lightbulb, ArrowRight, Check } from "lucide-react";
 import { KPISummaryCard } from "./components/KPISummaryCard";
@@ -26,7 +29,11 @@ const removeMarkdown = (text: string): string => {
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { userProfile, loading: profileLoading } = useUserProfile();
+  const router = useRouter();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
+  
+  // すべてのHooksを早期リターンの前に定義
   const [currentFollowers, setCurrentFollowers] = useState<string>("");
   const [profileVisits, setProfileVisits] = useState<string>("");
   const [externalLinkTaps, setExternalLinkTaps] = useState<string>("");
@@ -345,22 +352,48 @@ export default function HomePage() {
     };
   }, [currentMonth]);
 
+  // アクセス権限がない場合は何も表示しない（リダイレクトされる）
+  if (profileLoading || !canAccessFeature(userProfile, "canAccessHome")) {
+    return null;
+  }
+
   return (
     <SNSLayout customTitle="ホーム" customDescription="アカウント指標とKPIサマリーを確認・管理">
-      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 bg-gray-50 min-h-screen">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50 min-h-screen">
+        
+        {/* ようこそセクション */}
+        <div className="mb-6 sm:mb-8">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-6 sm:p-8 shadow-lg shadow-orange-200/50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  {userProfile?.name ? `${userProfile.name}さん、ようこそ！` : "ようこそ！"}
+                </h1>
+                <p className="text-orange-50 text-sm sm:text-base">
+                  今日もSignal.で、あなたのInstagram運用をレベルアップさせましょう
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
+                  <Users className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* KPIサマリーカード */}
         <KPISummaryCard breakdowns={kpiBreakdowns} isLoading={isLoadingKPI} />
 
         {/* アカウント指標入力セクション */}
-        <div className="bg-white rounded-xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-50 rounded-lg flex items-center justify-center border border-orange-100 flex-shrink-0">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+        <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200">
+          <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl flex items-center justify-center border-2 border-orange-200 flex-shrink-0 shadow-sm">
+              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-orange-600" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm sm:text-base font-semibold text-gray-900">アカウント指標</h2>
-              <p className="text-xs text-gray-500 mt-0.5">フォロワー数やプロフィールアクセス数などを記録</p>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">アカウント指標</h2>
+              <p className="text-sm text-gray-600">フォロワー数やプロフィールアクセス数などを記録して、成長を可視化</p>
             </div>
           </div>
 
@@ -472,23 +505,23 @@ export default function HomePage() {
         </div>
 
         {/* 今月のアクションプラン（先月のレポートまとめから） */}
-        <div className="bg-white rounded-xl p-3 sm:p-4 md:p-6 border border-gray-100 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-50 rounded-lg flex items-center justify-center border border-orange-100 flex-shrink-0">
-                <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+        <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl flex items-center justify-center border-2 border-amber-200 flex-shrink-0 shadow-sm">
+                <Lightbulb className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-sm sm:text-base font-semibold text-gray-900">今月のアクションプラン</h2>
-                <p className="text-xs text-gray-500 mt-0.5">改善点の見える化：今月すべき具体的なアクション</p>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">今月のアクションプラン</h2>
+                <p className="text-sm text-gray-600">改善点の見える化：今月すべき具体的なアクション</p>
               </div>
             </div>
             <a
               href="/instagram/report"
-              className="text-xs text-gray-600 hover:text-orange-600 font-medium flex items-center gap-1 transition-colors self-start sm:self-auto"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-all duration-200 border border-gray-200 hover:border-orange-300 self-start sm:self-auto"
             >
               詳細を見る
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-4 h-4" />
             </a>
           </div>
 
@@ -546,31 +579,34 @@ export default function HomePage() {
                 return (
                   <div
                     key={index}
-                    className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-100"
+                    className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 sm:p-5 border border-gray-200 hover:border-orange-200 hover:shadow-md transition-all duration-200"
                   >
                     <div className="flex items-start gap-2 sm:gap-3">
                       <button
                         onClick={handleToggle}
                         disabled={isPending}
-                        className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                        className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shadow-sm ${
                           isChecked
-                            ? "bg-orange-600 border-orange-600"
-                            : "bg-white border-gray-300 hover:border-orange-400"
+                            ? "bg-gradient-to-br from-orange-500 to-amber-500 border-orange-600 shadow-orange-200"
+                            : "bg-white border-gray-300 hover:border-orange-400 hover:bg-orange-50"
                         } ${isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                       >
                         {isChecked && <Check className="w-3 h-3 text-white" />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1 sm:mb-1.5">
-                          {index + 1}. {removeMarkdown(plan.title)}
+                        <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2">
+                          <span className="inline-block w-6 h-6 bg-orange-100 text-orange-600 rounded-lg text-xs font-bold flex items-center justify-center mr-2 align-middle">
+                            {index + 1}
+                          </span>
+                          {removeMarkdown(plan.title)}
                         </h3>
                         {plan.description && (
-                          <p className="text-xs text-gray-600 mb-1.5 sm:mb-2 leading-relaxed">{removeMarkdown(plan.description)}</p>
+                          <p className="text-sm text-gray-600 mb-3 leading-relaxed pl-8">{removeMarkdown(plan.description)}</p>
                         )}
                         {plan.action && (
-                          <div className="flex items-start gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-gray-100">
-                            <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs text-gray-600 leading-relaxed">{removeMarkdown(plan.action)}</p>
+                          <div className="flex items-start gap-2 mt-3 pt-3 border-t border-gray-200 pl-8">
+                            <ArrowRight className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-gray-700 leading-relaxed font-medium">{removeMarkdown(plan.action)}</p>
                           </div>
                         )}
                       </div>
@@ -580,9 +616,12 @@ export default function HomePage() {
               })}
             </div>
           ) : (
-            <div className="text-center py-8 sm:py-12 text-gray-400">
-              <p className="text-sm">アクションプランがありません</p>
-              <p className="text-xs mt-1">月次レポートページで生成できます</p>
+            <div className="text-center py-12 sm:py-16">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lightbulb className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-base text-gray-500 font-medium mb-1">アクションプランがありません</p>
+              <p className="text-sm text-gray-400">月次レポートページで生成できます</p>
             </div>
           )}
         </div>

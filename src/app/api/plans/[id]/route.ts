@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { canAccessFeature } from "@/lib/plan-access";
 
 // 計画更新（ステータス変更など）
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +12,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       rateLimit: { key: "plan-update", limit: 30, windowSeconds: 60 },
       auditEventName: "plan_update",
     });
+
+    // プラン階層別アクセス制御: 松プランのみアクセス可能
+    const userProfile = await getUserProfile(userId);
+    if (!canAccessFeature(userProfile, "canAccessPlan")) {
+      return NextResponse.json(
+        { error: "運用計画機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
 
     const { id } = await params;
     const body = await request.json();
@@ -57,6 +68,15 @@ export async function DELETE(
       rateLimit: { key: "plan-delete", limit: 30, windowSeconds: 60 },
       auditEventName: "plan_delete",
     });
+
+    // プラン階層別アクセス制御: 松プランのみアクセス可能
+    const userProfile = await getUserProfile(userId);
+    if (!canAccessFeature(userProfile, "canAccessPlan")) {
+      return NextResponse.json(
+        { error: "運用計画機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
 
     const { id } = await params;
 

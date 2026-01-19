@@ -105,6 +105,7 @@ export const useUserProfile = () => {
               amount: 0,
             },
             notes: "新規ユーザー",
+            planTier: "ume", // デフォルトは梅プラン
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };

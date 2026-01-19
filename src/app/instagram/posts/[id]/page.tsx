@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../../../contexts/auth-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { canAccessFeature } from "@/lib/plan-access";
 import SNSLayout from "../../../../components/sns-layout";
 import { authFetch } from "../../../../utils/authFetch";
 import {
@@ -166,6 +168,9 @@ export default function PostDetailPage() {
     typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
   const router = useRouter();
   const { user } = useAuth();
+  const { userProfile, loading: profileLoading } = useUserProfile();
+
+  // すべてのHooksを早期リターンの前に定義
   const [post, setPost] = useState<PostData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,6 +189,13 @@ export default function PostDetailPage() {
   const [resettingAnalytics, setResettingAnalytics] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [autoGenerateScheduled, setAutoGenerateScheduled] = useState(false);
+
+  // プラン階層別アクセス制御: 梅プランでは投稿詳細にアクセスできない
+  useEffect(() => {
+    if (!profileLoading && !canAccessFeature(userProfile, "canAccessPosts")) {
+      router.push("/instagram/lab/feed");
+    }
+  }, [userProfile, profileLoading, router]);
 
   const handleGenerateInsight = useCallback(async () => {
     if (!user?.uid || !postId) {
@@ -496,6 +508,18 @@ export default function PostDetailPage() {
     fetchPostAnalytics();
   }, [user?.uid, postId]);
 
+  // プラン階層別アクセス制御: 梅プランでは投稿詳細にアクセスできない
+  useEffect(() => {
+    if (!profileLoading && !canAccessFeature(userProfile, "canAccessPosts")) {
+      router.push("/instagram/lab/feed");
+    }
+  }, [userProfile, profileLoading, router]);
+
+  // アクセス権限がない場合は何も表示しない（リダイレクトされる）
+  if (profileLoading || !canAccessFeature(userProfile, "canAccessPosts")) {
+    return null;
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("ja-JP", {
@@ -555,13 +579,14 @@ export default function PostDetailPage() {
       setPostInsight(null);
       setSavedSummary(null);
       setSummaryTab("saved");
+      notify({ type: "success", message: "分析データを削除しました" });
     } catch (error) {
       console.error("Analytics reset error:", error);
-      setResetError(
-        error instanceof Error
-          ? error.message
-          : "分析データのリセットに失敗しました。",
-      );
+      const errorMsg = error instanceof Error
+        ? error.message
+        : "分析データのリセットに失敗しました。";
+      setResetError(errorMsg);
+      notify({ type: "error", message: errorMsg });
     } finally {
       setResettingAnalytics(false);
     }

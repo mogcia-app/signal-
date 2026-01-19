@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import SNSLayout from "../../components/sns-layout";
 import { EmptyStateCard } from "../../components/ui/empty-state-card";
 import { useAuth } from "../../contexts/auth-context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { canAccessFeature } from "@/lib/plan-access";
 import { authFetch } from "../../utils/authFetch";
 import { actionLogsApi } from "@/lib/api";
 import { getLearningPhaseLabel } from "@/utils/learningPhase";
@@ -112,6 +115,10 @@ const tagMeta: Record<
 
 export default function LearningDashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const { userProfile, loading: profileLoading } = useUserProfile();
+
+  // すべてのHooksを早期リターンの前に定義
   const [refreshKey, setRefreshKey] = useState(0);
   const [isContextLoading, setIsContextLoading] = useState(false);
   const [contextError, setContextError] = useState<string | null>(null);

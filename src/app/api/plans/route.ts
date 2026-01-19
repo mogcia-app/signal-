@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { canAccessFeature } from "@/lib/plan-access";
 import { syncPlanFollowerProgress } from "../../../lib/plans/sync-follower-progress";
 
 // 計画データの型定義（統一版）
@@ -57,6 +59,15 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "plan-create", limit: 10, windowSeconds: 60 },
       auditEventName: "plan_create",
     });
+
+    // プラン階層別アクセス制御: 松プランのみアクセス可能
+    const userProfile = await getUserProfile(userId);
+    if (!canAccessFeature(userProfile, "canAccessPlan")) {
+      return NextResponse.json(
+        { error: "運用計画機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json();
 
@@ -168,6 +179,15 @@ export async function GET(request: NextRequest) {
       rateLimit: { key: "plan-list", limit: 30, windowSeconds: 60 },
       auditEventName: "plan_list",
     });
+
+    // プラン階層別アクセス制御: 松プランのみアクセス可能
+    const userProfile = await getUserProfile(uid);
+    if (!canAccessFeature(userProfile, "canAccessPlan")) {
+      return NextResponse.json(
+        { error: "運用計画機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
     await syncPlanFollowerProgress(uid);
     const { searchParams } = new URL(request.url);
     const snsType = searchParams.get("snsType"); // instagram, x, tiktok

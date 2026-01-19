@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { canAccessFeature } from "@/lib/plan-access";
 import type { AIReference } from "@/types/ai";
 
 // 投稿データの型定義
@@ -132,6 +134,15 @@ export async function GET(request: NextRequest) {
       rateLimit: { key: "posts-list", limit: 60, windowSeconds: 60 },
       auditEventName: "posts_list",
     });
+
+    // プラン階層別アクセス制御: 梅プランでは投稿一覧にアクセスできない
+    const userProfile = await getUserProfile(uid);
+    if (!canAccessFeature(userProfile, "canAccessPosts")) {
+      return NextResponse.json(
+        { error: "投稿一覧機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
     console.log("=== POSTS API GET REQUEST ===");
     console.log("Request URL:", request.url);
     console.log("Request method:", request.method);

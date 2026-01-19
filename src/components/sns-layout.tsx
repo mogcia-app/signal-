@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
+import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 
@@ -82,11 +83,19 @@ export default function SNSLayout({
       >
         {/* ロゴ・ブランディング */}
         <div className="px-4 sm:px-6 py-3 border-b border-gray-200 flex items-center justify-between">
-          <Link href="/home" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-            <div className="text-2xl font-bold text-black">
-              Signal<span style={{ color: "#FF8A15" }}>.</span>
-            </div>
-          </Link>
+          {canAccessFeature(userProfile, "canAccessHome") ? (
+            <Link href="/home" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+              <div className="text-2xl font-bold text-black">
+                Signal<span style={{ color: "#FF8A15" }}>.</span>
+              </div>
+            </Link>
+          ) : (
+            <Link href="/instagram/lab/feed" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+              <div className="text-2xl font-bold text-black">
+                Signal<span style={{ color: "#FF8A15" }}>.</span>
+              </div>
+            </Link>
+          )}
           {/* 閉じるボタン（スマホのみ表示） */}
           <button
             onClick={() => setIsSidebarOpen(false)}
@@ -133,17 +142,19 @@ export default function SNSLayout({
               <span>🏠</span>
               <span>ダッシュボード</span>
             </Link>*/}
-            <Link
-              href="/instagram/plan"
-              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                pathname === "/instagram/plan"
-                  ? "bg-orange-100 text-orange-800 font-medium"
-                  : "text-black hover:bg-gray-100"
-              }`}
-            >
-              <span>📋</span>
-              <span>運用計画</span>
-            </Link>
+            {canAccessFeature(userProfile, "canAccessPlan") && (
+              <Link
+                href="/instagram/plan"
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                  pathname === "/instagram/plan"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <span>📋</span>
+                <span>運用計画</span>
+              </Link>
+            )}
 
             {/* 投稿ラボ - 展開可能なサブメニュー */}
             <div>
@@ -205,50 +216,71 @@ export default function SNSLayout({
               )}
             </div>
 
-            <Link
-              href="/instagram/posts"
-              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                pathname === "/instagram/posts"
-                  ? "bg-orange-100 text-orange-800 font-medium"
-                  : "text-black hover:bg-gray-100"
-              }`}
-            >
-              <span>📚</span>
-              <span>投稿一覧</span>
-            </Link>
-            <Link
-              href="/instagram/report"
-              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                pathname === "/instagram/report"
-                  ? "bg-orange-100 text-orange-800 font-medium"
-                  : "text-black hover:bg-gray-100"
-              }`}
-            >
-              <span>📈</span>
-              <span>月次レポート</span>
-            </Link>
-            <Link
-              href="/instagram/kpi"
-              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                pathname === "/instagram/kpi"
-                  ? "bg-orange-100 text-orange-800 font-medium"
-                  : "text-black hover:bg-gray-100"
-              }`}
-            >
-              <span>🎯</span>
-              <span>KPIコンソール</span>
-            </Link>
-            <Link
-              href="/learning"
-              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                pathname.startsWith("/learning")
-                  ? "bg-orange-100 text-orange-800 font-medium"
-                  : "text-black hover:bg-gray-100"
-              }`}
-            >
-              <span>🗂️</span>
-              <span>学習ダッシュボード</span>
-            </Link>
+            {canAccessFeature(userProfile, "canAccessPosts") && (
+              <Link
+                href="/instagram/posts"
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                  pathname === "/instagram/posts"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <span>📚</span>
+                <span>投稿一覧</span>
+              </Link>
+            )}
+            {canAccessFeature(userProfile, "canAccessAnalytics") && (
+              <Link
+                href="/instagram/analytics/feed"
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                  pathname === "/instagram/analytics/feed"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <span>📊</span>
+                <span>投稿分析</span>
+              </Link>
+            )}
+            {canAccessFeature(userProfile, "canAccessReport") && (
+              <Link
+                href="/instagram/report"
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                  pathname === "/instagram/report"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <span>📈</span>
+                <span>月次レポート</span>
+              </Link>
+            )}
+            {canAccessFeature(userProfile, "canAccessKPI") && (
+              <Link
+                href="/instagram/kpi"
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                  pathname === "/instagram/kpi"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <span>🎯</span>
+                <span>KPIコンソール</span>
+              </Link>
+            )}
+            {canAccessFeature(userProfile, "canAccessLearning") && (
+              <Link
+                href="/learning"
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                  pathname.startsWith("/learning")
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <span>🗂️</span>
+                <span>学習ダッシュボード</span>
+              </Link>
+            )}
           </nav>
         </div>
 

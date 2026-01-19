@@ -4,6 +4,8 @@ import { buildPlanPrompt } from "../../../../utils/aiPromptBuilder";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { canAccessFeature } from "@/lib/plan-access";
 import {
   buildPostPatternPromptSection,
   getMasterContext,
@@ -424,6 +426,15 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "instagram-ai-strategy", limit: 15, windowSeconds: 60 },
       auditEventName: "instagram_ai_strategy",
     });
+
+    // プラン階層別アクセス制御: 松プランのみアクセス可能
+    const userProfile = await getUserProfile(userId);
+    if (!canAccessFeature(userProfile, "canAccessPlan")) {
+      return NextResponse.json(
+        { error: "運用計画機能は、現在のプランではご利用いただけません。" },
+        { status: 403 }
+      );
+    }
 
     // リクエストボディの取得
     const body = await request.json();

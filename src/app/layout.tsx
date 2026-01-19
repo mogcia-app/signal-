@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "../contexts/auth-context";
 import { ConditionalAuthGuard } from "../components/conditional-auth-guard";
 import { ToastProvider } from "../components/toast-provider";
+import { TopProgressBar } from "../components/top-progress-bar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <TopProgressBar />
         <AuthProvider>
           <ToastProvider />
           <ConditionalAuthGuard>{children}</ConditionalAuthGuard>
