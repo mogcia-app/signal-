@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/terms",
   "/test-sentry",
+  "/auth/callback", // 認証コールバックページ（自動ログイン処理中）
 ];
 
 export function ConditionalAuthGuard({ children }: { children: React.ReactNode }) {
