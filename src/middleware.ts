@@ -20,6 +20,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // 認証不要な公開APIエンドポイントのリスト
+  const publicApiPaths = [
+    "/api/auth/generate-custom-token", // 認証コールバック用（認証前にアクセスするため）
+  ];
+
+  // 公開APIパスの場合は認証チェックをスキップ
+  if (publicApiPaths.includes(req.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   const isEmulatorEnv =
     process.env.FIREBASE_AUTH_EMULATOR_HOST ||
     process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST;
