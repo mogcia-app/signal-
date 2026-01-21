@@ -1,0 +1,46 @@
+# CodeRabbit設定ファイル
+# CodeRabbitのレビュー動作をカスタマイズ
+
+language: japanese
+
+# レビューの範囲を設定
+reviews:
+  # プルリクエスト作成時にレビューを実行
+  do_review: true
+  # 変更がコミットされた際にレビューを実行
+  review_commits: true
+  # レビューの粒度（デフォルト: medium）
+  review_granularity: medium
+  # コミットステータスの表示
+  commit_status:
+    enabled: true
+
+# チャットボットの設定
+chat:
+  # PRコメントへの返信を有効化
+  enabled: true
+  # 日本語での応答
+  language: japanese
+
+# コードレビューの設定
+code_review:
+  # レビューを実行するファイルパターン
+  include_paths:
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.js"
+    - "**/*.jsx"
+  # レビューから除外するパス
+  exclude_paths:
+    - "**/node_modules/**"
+    - "**/.next/**"
+    - "**/dist/**"
+    - "**/build/**"
+
+# レビューのトーン設定
+review_tone:
+  # ポジティブで建設的なレビュー
+  style: polite
+  # 日本語でのレビュー
+  language: japanese
+
