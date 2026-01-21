@@ -184,7 +184,9 @@ export async function GET(request: NextRequest) {
       if (analyticsWithFollowers.length > 0) {
         // 最初の投稿時点のフォロワー数を推定
         const firstAnalytics = analyticsWithFollowers[analyticsWithFollowers.length - 1];
-        const initialFollowers = (firstAnalytics.initialFollowers || 0) - (typeof firstAnalytics.followerIncrease === 'number' ? firstAnalytics.followerIncrease : 0);
+        const initialFollowersValue = typeof firstAnalytics.initialFollowers === 'number' ? firstAnalytics.initialFollowers : 0;
+        const followerIncreaseValue = typeof firstAnalytics.followerIncrease === 'number' ? firstAnalytics.followerIncrease : 0;
+        const initialFollowers = initialFollowersValue - followerIncreaseValue;
         currentFollowers = initialFollowers + totalFollowerGrowth;
       }
     }
@@ -320,8 +322,11 @@ export async function GET(request: NextRequest) {
     weeklyAnalytics.forEach((analytics) => {
       weeklyFollowerGrowth += typeof analytics.followerIncrease === 'number' ? analytics.followerIncrease : 0;
       weeklyEngagement +=
-        (analytics.likes || 0) + (analytics.comments || 0) + (analytics.shares || 0) + (analytics.saves || 0);
-      weeklyReach += analytics.reach || 0;
+        (typeof analytics.likes === 'number' ? analytics.likes : 0) + 
+        (typeof analytics.comments === 'number' ? analytics.comments : 0) + 
+        (typeof analytics.shares === 'number' ? analytics.shares : 0) + 
+        (typeof analytics.saves === 'number' ? analytics.saves : 0);
+      weeklyReach += typeof analytics.reach === 'number' ? analytics.reach : 0;
     });
 
     const avgWeeklyEngagementRate = weeklyReach > 0 ? (weeklyEngagement / weeklyReach) * 100 : 0;
