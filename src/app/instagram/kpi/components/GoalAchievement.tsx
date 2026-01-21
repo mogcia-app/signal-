@@ -53,9 +53,9 @@ export const GoalAchievementComponent: React.FC<GoalAchievementProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+      <div className="bg-white border border-gray-200 p-4 mb-6">
         <div className="flex items-center justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600 mr-2" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
           <span className="text-sm text-gray-700">読み込み中...</span>
         </div>
       </div>
@@ -64,7 +64,7 @@ export const GoalAchievementComponent: React.FC<GoalAchievementProps> = ({
 
   if (!goalAchievements || goalAchievements.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+      <div className="bg-white border border-gray-200 p-4 mb-6">
         <div className="text-center py-8 text-gray-500">
           <p className="text-sm">目標が設定されていません</p>
           <p className="text-xs mt-1">運用計画で目標を設定すると、達成度が表示されます</p>
@@ -74,14 +74,14 @@ export const GoalAchievementComponent: React.FC<GoalAchievementProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-6 mb-6">
       <div className="flex items-center mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
-          <Target className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
+          <Target className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-gray-900">KPI目標達成度</h2>
-          <p className="text-xs text-gray-600 mt-0.5">
+          <h2 className="text-lg font-bold text-gray-900">KPI目標達成度</h2>
+          <p className="text-sm text-gray-700 mt-0.5">
             設定した目標に対する達成度を表示します
           </p>
         </div>
@@ -97,7 +97,7 @@ export const GoalAchievementComponent: React.FC<GoalAchievementProps> = ({
             return (
               <div
                 key={goal.key}
-                className={`${statusConfig.bgColor} ${statusConfig.borderColor} border rounded-lg p-3 sm:p-4`}
+                className={`${statusConfig.bgColor} ${statusConfig.borderColor} border p-4`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center">

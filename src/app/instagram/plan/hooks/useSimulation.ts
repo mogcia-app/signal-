@@ -34,6 +34,17 @@ export const useSimulation = () => {
     setSimulationError("");
     setDebugInfo(null);
 
+    // タイムアウト処理（60秒）
+    let timeoutId: NodeJS.Timeout | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        setIsSimulating(false);
+        setSimulationError("シミュレーション処理がタイムアウトしました。しばらく待ってから再度お試しください。");
+        console.error("シミュレーションタイムアウト");
+        reject(new Error("シミュレーション処理がタイムアウトしました"));
+      }, 60000);
+    });
+
     try {
       // デバッグ情報を画面に表示
       setDebugInfo({
@@ -42,11 +53,20 @@ export const useSimulation = () => {
         timestamp: new Date().toLocaleTimeString(),
       });
 
-      // BFF APIを呼び出し
-      const response = await authFetch("/api/instagram/simulation", {
-        method: "POST",
-        body: JSON.stringify(requestData),
-      });
+      // BFF APIを呼び出し（タイムアウト処理付き）
+      const response = await Promise.race([
+        authFetch("/api/instagram/simulation", {
+          method: "POST",
+          body: JSON.stringify(requestData),
+        }),
+        timeoutPromise,
+      ]) as Response;
+
+      if (timeoutId) {
+        if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -71,6 +91,9 @@ export const useSimulation = () => {
 
       setIsSimulating(false);
     } catch (error) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       console.error("シミュレーションエラー:", error);
       const errorMessage =
         error instanceof Error ? error.message : "シミュレーション処理中にエラーが発生しました";

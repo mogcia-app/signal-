@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
-import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles } from "lucide-react";
+import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles, AlertTriangle } from "lucide-react";
 import { postsApi } from "../../../../lib/api";
 import { useAuth } from "../../../../contexts/auth-context";
 import { notify } from "../../../../lib/ui/notifications";
@@ -210,6 +210,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [aiGenerateFeedback, setAiGenerateFeedback] = useState<string | null>(null);
+  const [showAiAdminWarning, setShowAiAdminWarning] = useState(false);
+  const aiFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
+  
+  const [autoGenerateFeedback, setAutoGenerateFeedback] = useState<string | null>(null);
+  const [showAutoAdminWarning, setShowAutoAdminWarning] = useState(false);
+  const autoFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
 
   const showToast = (message: string, type: "success" | "error" = "error") => {
     setToastMessage({ message, type });
@@ -327,8 +334,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       } else {
         // 新規作成モード
         result = await postsApi.create(postData);
-        console.log("投稿を保存しました:", result);
-        console.log("Post saved successfully with ID:", result.id);
+      console.log("投稿を保存しました:", result);
+      console.log("Post saved successfully with ID:", result.id);
       }
 
       // 次のアクションを即座に更新
@@ -504,13 +511,75 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       // フィードとリールの場合はハッシュタグを5個までに制限
       const maxHashtags = postType === "feed" || postType === "reel" ? 5 : Infinity;
       if (hashtags.length < maxHashtags) {
-        onHashtagsChange([...hashtags, hashtag]);
+      onHashtagsChange([...hashtags, hashtag]);
       }
     }
   };
 
+  // 運用計画データを分析してフィードバックを生成
+  const analyzePlanData = (plan: PlanData | null): { feedback: string | null; category: string } => {
+    if (!plan) {
+      return {
+        feedback: "運用計画が設定されていません。運用計画ページで計画を作成してください。計画がないと、AIが適切な投稿文を生成できません。",
+        category: "no_plan",
+      };
+    }
+
+    // 目標が不明確
+    if (!plan.targetAudience || plan.targetAudience.trim().length < 5) {
+      return {
+        feedback: `運用計画の「ターゲット層」が不明確です（現在: ${plan.targetAudience || "未設定"}）。具体的なターゲット層（例：「20代の女性、朝の時間にSNSをチェックする習慣がある」）を設定すると、より適切な投稿文が生成されます。運用計画ページでターゲット層を詳しく設定してください。`,
+        category: "unclear_target",
+      };
+    }
+
+    // 戦略が不足
+    if (!plan.strategies || plan.strategies.length === 0) {
+      return {
+        feedback: `運用計画の「取り組みたいこと」が設定されていません。具体的な戦略（例：「写真をたくさん投稿する」「動画（リール）を中心に投稿する」）を設定すると、より効果的な投稿文が生成されます。運用計画ページで戦略を設定してください。`,
+        category: "no_strategy",
+      };
+    }
+
+    // カテゴリが不足
+    if (!plan.category || plan.category.trim().length < 3) {
+      return {
+        feedback: `運用計画の「投稿したい内容」が設定されていません。具体的なカテゴリ（例：「興味を引く内容」「ブランドの世界観」）を設定すると、より魅力的な投稿文が生成されます。運用計画ページでカテゴリを設定してください。`,
+        category: "no_category",
+      };
+    }
+
+    // 問題なし
+    return { feedback: null, category: "" };
+  };
+
   // AI自動生成（テーマも自動選択）
   const handleAutoGenerate = async () => {
+    // 運用計画データを分析
+    const analysis = analyzePlanData(planData ?? null);
+    setAutoGenerateFeedback(analysis.feedback);
+
+    // 連続フィードバックの追跡
+    if (analysis.feedback) {
+      const now = Date.now();
+      autoFeedbackHistoryRef.current.push({ category: analysis.category, timestamp: now });
+      
+      // 3分以内の同じカテゴリのフィードバックをカウント
+      const recentSameCategory = autoFeedbackHistoryRef.current.filter(
+        (f) => f.category === analysis.category && (now - f.timestamp) < 180000
+      );
+
+      if (recentSameCategory.length >= 3) {
+        setShowAutoAdminWarning(true);
+      } else {
+        setShowAutoAdminWarning(false);
+      }
+    } else {
+      // フィードバックがない場合は履歴をリセット
+      autoFeedbackHistoryRef.current = [];
+      setShowAutoAdminWarning(false);
+    }
+
     if (!planData) {
       showToast("運用計画が設定されていません");
       return;
@@ -582,6 +651,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         ) {
           onImageVideoSuggestionsGenerate(generatedContent);
         }
+        
+        // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
+        if (!autoGenerateFeedback) {
+          autoFeedbackHistoryRef.current = [];
+          setShowAutoAdminWarning(false);
+        }
       } else {
         throw new Error("自動生成に失敗しました");
       }
@@ -614,11 +689,79 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     }
   };
 
+  // プロンプト内容を分析してフィードバックを生成
+  const analyzePrompt = (prompt: string): { feedback: string | null; category: string } => {
+    const trimmed = prompt.trim();
+    const length = trimmed.length;
+
+    if (length === 0) {
+      return { feedback: null, category: "" };
+    }
+
+    // 短すぎる場合
+    if (length < 10) {
+      return {
+        feedback: `プロンプトが短すぎるようです（${length}文字）。以下のような情報を含めると、より具体的で効果的な投稿文が生成されます：\n• 何について投稿したいか（商品、イベント、日常など）\n• 伝えたいメッセージや感情（「感動した」「おすすめしたい」など）\n• ターゲット層（「若い女性」「ビジネスパーソン」など）\n• 具体的な内容（「新商品のコーヒー豆、深煎りでコクがある」など）\n\n例：「新商品のコーヒー豆を紹介したい。深煎りでコクがあり、朝の時間にぴったり。30代の女性向けに、日常の小さな幸せを感じられる投稿にしてほしい」`,
+        category: "too_short",
+      };
+    }
+
+    // 曖昧な表現が多い
+    const vagueWords = /(いい|良い|すごい|すごく|なんか|なんとなく|ちょっと|まあ|適当|いい感じ)/g;
+    const vagueCount = (trimmed.match(vagueWords) || []).length;
+    
+    if (vagueCount >= 2 && length < 50) {
+      return {
+        feedback: `プロンプトに曖昧な表現が多いようです。「いい感じ」「すごい」などの抽象的な言葉ではなく、具体的な情報を含めると、より効果的な投稿文が生成されます：\n• 商品の場合：価格、特徴、使った感想、おすすめポイント\n• イベントの場合：日時、場所、参加方法、どんな内容か\n• 日常の場合：何が起きたか、なぜ印象的だったか、何を感じたか\n• ターゲット層：誰に伝えたいのか、どんな価値を提供したいのか`,
+        category: "vague",
+      };
+    }
+
+    // 具体的な情報が不足
+    const hasSpecificInfo = /\d+|(日時|場所|価格|特徴|感想|おすすめ)/g.test(trimmed);
+    if (!hasSpecificInfo && length < 40) {
+      return {
+        feedback: `プロンプトに具体的な情報が不足しているようです。以下のような詳細を追加すると、より魅力的な投稿文が生成されます：\n• 数字やデータ（「1000円」「3日間限定」「累計1万個販売」など）\n• 具体的な特徴や違い（「他にはない香り」「30分で完成」など）\n• 実体験や感想（「使ってみたら」「実際に感じたことは」など）\n• ターゲット層との接点（「忙しい朝に」「仕事帰りに」など）`,
+        category: "lack_details",
+      };
+    }
+
+    // 問題なし
+    return { feedback: null, category: "" };
+  };
+
   // AI投稿文生成（テーマ指定）
   const handleAIGenerate = async () => {
-    if (!aiPrompt.trim()) {
+    const trimmedPrompt = aiPrompt.trim();
+    
+    if (!trimmedPrompt) {
       showToast("投稿のテーマを入力してください");
       return;
+    }
+
+    // プロンプト内容を分析
+    const analysis = analyzePrompt(trimmedPrompt);
+    setAiGenerateFeedback(analysis.feedback);
+
+    // 連続フィードバックの追跡
+    if (analysis.feedback) {
+      const now = Date.now();
+      aiFeedbackHistoryRef.current.push({ category: analysis.category, timestamp: now });
+      
+      // 3分以内の同じカテゴリのフィードバックをカウント
+      const recentSameCategory = aiFeedbackHistoryRef.current.filter(
+        (f) => f.category === analysis.category && (now - f.timestamp) < 180000
+      );
+
+      if (recentSameCategory.length >= 3) {
+        setShowAiAdminWarning(true);
+      } else {
+        setShowAiAdminWarning(false);
+      }
+    } else {
+      // フィードバックがない場合は履歴をリセット（成功したということ）
+      aiFeedbackHistoryRef.current = [];
+      setShowAiAdminWarning(false);
     }
 
     setIsGenerating(true);
@@ -661,6 +804,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         });
         const generatedContent = applied.content;
         setAiPrompt(""); // テーマをクリア
+        
+        // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
+        if (!aiGenerateFeedback) {
+          aiFeedbackHistoryRef.current = [];
+          setShowAiAdminWarning(false);
+        }
 
         if (postType === "reel" && onVideoStructureGenerate) {
           onVideoStructureGenerate(aiPrompt);
@@ -692,7 +841,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 animate-fade-in">
           <div
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg min-w-[300px] max-w-md ${
+            className={`flex items-center space-x-3 px-4 py-3 min-w-[300px] max-w-md ${
               toastMessage.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
             }`}
           >
@@ -713,17 +862,17 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col min-h-full">
+      <div className="bg-white border border-gray-200 flex flex-col">
         {/* ヘッダー */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 flex items-center justify-center mr-3">
                 <span className="text-white font-bold text-sm">📝</span>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-black">投稿文エディター</h2>
-                <p className="text-sm text-black">投稿文を作成・編集しましょう</p>
+                <h2 className="text-lg font-bold text-gray-900">投稿文エディター</h2>
+                <p className="text-sm text-gray-700">投稿文を作成・編集しましょう</p>
               </div>
             </div>
           </div>
@@ -731,7 +880,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
         {/* 成功メッセージ */}
         {showSuccessMessage && (
-          <div className="mx-6 mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="mx-6 mb-4 p-4 bg-white border border-orange-200">
             <div className="flex items-center">
               <CheckCircle size={20} className="text-orange-600 mr-3" />
               <div className="flex-1">
@@ -751,10 +900,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           </div>
         )}
 
-        <div className="p-6 flex-1 flex flex-col min-h-0">
+        <div className="p-6 flex-1 flex flex-col min-h-0 overflow-auto">
           {snapshotReferences.length > 0 && (
-            <div className="mb-6 border border-slate-200 rounded-xl bg-slate-50/70 p-4">
-              <p className="text-xs font-semibold text-slate-800 mb-2 flex items-center gap-1">
+            <div className="mb-6 border border-slate-200 bg-slate-50/70 p-4">
+              <p className="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 AIが参照した投稿
               </p>
@@ -764,7 +913,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     key={reference.id}
                   type="button"
                   onClick={() => onSnapshotReferenceClick?.(reference.id)}
-                  className={`text-[11px] px-3 py-1 rounded-full border transition-colors ${
+                  className={`text-[11px] px-3 py-1 border transition-colors ${
                       reference.status === "gold"
                       ? "border-amber-300 bg-white text-amber-700 hover:bg-amber-50"
                         : reference.status === "negative"
@@ -784,13 +933,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
 
           {latestGeneration?.imageHints?.length ? (
-            <div className="mb-6 border border-slate-200 rounded-xl bg-white p-4">
-              <p className="text-xs font-semibold text-slate-700 mb-3">推奨ビジュアル</p>
+            <div className="mb-6 border border-slate-200 bg-white p-4">
+              <p className="text-xs font-bold text-slate-700 mb-3">推奨ビジュアル</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {latestGeneration.imageHints.map((hint, index) => (
                   <div
                     key={`image-hint-${index}`}
-                    className="border border-slate-100 rounded-lg bg-slate-50/70 p-3 text-xs text-slate-700"
+                    className="border border-slate-100 bg-slate-50/70 p-3 text-xs text-slate-700"
                   >
                     <p className="font-semibold text-slate-900">{hint.label}</p>
                     {hint.description ? (
@@ -812,7 +961,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   type="date"
                   value={scheduledDate}
                   onChange={(e) => handleScheduledDateChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 bg-white focus:outline-none focus:border-[#ff8a15] text-sm"
                 />
               </div>
               <div>
@@ -821,7 +970,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   type="time"
                   value={scheduledTime}
                   onChange={(e) => handleScheduledTimeChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 bg-white focus:outline-none focus:border-[#ff8a15] text-sm"
                 />
               </div>
             </div>
@@ -835,7 +984,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               value={title}
               onChange={(e) => onTitleChange?.(e.target.value)}
               placeholder={`${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}のタイトルを入力してください...`}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
+              className="w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
             />
           </div>
 
@@ -847,7 +996,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 value={content}
                 onChange={(e) => onContentChange(e.target.value)}
                 placeholder={`${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}の投稿文を入力してください...`}
-                className="w-full h-32 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                className="w-full h-32 p-4 border-2 border-gray-200 resize-none focus:outline-none focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm"
                 style={{ fontFamily: "inherit" }}
               />
             </div>
@@ -855,7 +1004,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
           {/* 動画構成セクション（リールのみ） */}
           {postType === "reel" && (
-            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200 p-4">
+            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <span className="text-2xl mr-3">🎬</span>
@@ -884,25 +1033,25 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <div className="mb-6">
                 <h4 className="text-md font-medium text-gray-700 mb-3">起承転結</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-orange-50 p-3 rounded-lg">
+                  <div className="bg-orange-50 p-3">
                     <div className="text-sm font-medium text-orange-800 mb-1">起（導入）</div>
                     <div className="text-sm text-orange-700">
                       {videoStructure?.introduction || "AI投稿文生成で自動生成されます"}
                     </div>
                   </div>
-                  <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="bg-blue-50 p-3">
                     <div className="text-sm font-medium text-blue-800 mb-1">承（展開）</div>
                     <div className="text-sm text-blue-700">
                       {videoStructure?.development || "AI投稿文生成で自動生成されます"}
                     </div>
                   </div>
-                  <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="bg-green-50 p-3">
                     <div className="text-sm font-medium text-green-800 mb-1">転（転換）</div>
                     <div className="text-sm text-green-700">
                       {videoStructure?.twist || "AI投稿文生成で自動生成されます"}
                     </div>
                   </div>
-                  <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="bg-purple-50 p-3">
                     <div className="text-sm font-medium text-purple-800 mb-1">結（結論）</div>
                     <div className="text-sm text-purple-700">
                       {videoStructure?.conclusion || "AI投稿文生成で自動生成されます"}
@@ -914,7 +1063,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               {/* 動画構成の流れ */}
               <div>
                 <h4 className="text-md font-medium text-gray-700 mb-3">動画構成の流れ</h4>
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-gray-50 p-4">
                   <div className="text-sm text-gray-700">
                     {videoFlow || "AI投稿文生成で自動生成されます"}
                   </div>
@@ -925,7 +1074,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
           {/* AIヒントセクション（ストーリー・フィード） */}
           {(postType === "story" || postType === "feed") && (
-            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200 p-4">
+            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4">
               <div className="flex items-center mb-4">
                 <span className="text-2xl mr-3">💡</span>
                 <div>
@@ -938,7 +1087,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </div>
               </div>
 
-              <div className="bg-white p-4 rounded-lg border border-orange-100">
+              <div className="bg-white p-4 border border-orange-100">
                 {isGeneratingSuggestions ? (
                   <div className="flex items-center justify-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mr-3"></div>
@@ -950,13 +1099,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                       {imageVideoSuggestions?.content || "AI投稿文生成で自動提案されます"}
                     </div>
                     {imageVideoSuggestions?.rationale && (
-                      <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-300 rounded text-sm text-orange-800 whitespace-pre-line">
+                      <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-300 text-sm text-orange-800 whitespace-pre-line">
                         <p className="font-medium text-orange-900 mb-1">今回の提案理由</p>
                         {imageVideoSuggestions.rationale}
                       </div>
                     )}
                     {latestGeneration?.draft?.hashtagExplanations && latestGeneration.draft.hashtagExplanations.length > 0 && (
-                      <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-300 rounded">
+                      <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-300">
                         <p className="font-medium text-blue-900 mb-2 text-sm">ハッシュタグ根拠</p>
                         <div className="space-y-2">
                           {latestGeneration.draft.hashtagExplanations.map((explanation, index) => {
@@ -990,13 +1139,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               {hashtags.map((hashtag, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 text-sm rounded-full border border-orange-200"
+                  className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 text-sm border border-orange-200"
                 >
                   <span className="text-orange-600 mr-1">#</span>
                   {hashtag.replace(/^#+/, "")}
                   <button
                     onClick={() => handleHashtagRemove(index)}
-                    className="ml-2 text-orange-600 hover:text-orange-800 hover:bg-orange-200 rounded-full w-4 h-4 flex items-center justify-center transition-colors"
+                    className="ml-2 text-orange-600 hover:text-orange-800 hover:bg-orange-200 w-4 h-4 flex items-center justify-center transition-colors"
                   >
                     ×
                   </button>
@@ -1005,21 +1154,21 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
             <div className="flex space-x-3">
               <div className="flex-1">
-                <input
-                  type="text"
+              <input
+                type="text"
                   placeholder={postType === "feed" || postType === "reel" ? "ハッシュタグを入力...（最大5個）" : "ハッシュタグを入力..."}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
+                  className="w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
                   disabled={postType === "feed" || postType === "reel" ? hashtags.length >= 5 : false}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      const hashtag = e.currentTarget.value.trim().replace("#", "");
-                      if (hashtag) {
-                        handleHashtagAdd(hashtag);
-                        e.currentTarget.value = "";
-                      }
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    const hashtag = e.currentTarget.value.trim().replace("#", "");
+                    if (hashtag) {
+                      handleHashtagAdd(hashtag);
+                      e.currentTarget.value = "";
                     }
-                  }}
-                />
+                  }
+                }}
+              />
                 {(postType === "feed" || postType === "reel") && hashtags.length >= 5 && (
                   <p className="text-xs text-gray-500 mt-1">ハッシュタグは最大5個までです</p>
                 )}
@@ -1093,6 +1242,26 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 )}
               </button>
 
+              {showAutoAdminWarning ? (
+                <div className="border border-orange-300 bg-orange-50 text-orange-800 text-xs px-3 py-2 mt-2">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-bold mb-1">同じような改善提案が3回続いています</p>
+                      <p>運用計画を改善しても、期待する投稿文が得られない場合は、AI設定（トーン、マナー・ルール、目標など）が適切でない可能性があります。マイアカウントページでAI設定を確認するか、管理者にお問い合わせください。</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {autoGenerateFeedback ? (
+                <div className="border border-blue-200 bg-blue-50 text-blue-800 text-xs px-3 py-2 mt-2">
+                  <p className="font-bold mb-1">💡 より良い投稿文を得るために</p>
+                  <p className="whitespace-pre-wrap">{autoGenerateFeedback}</p>
+                  <p className="mt-2 text-blue-700">このフィードバックを参考に、運用計画をより具体的にしてみてください。</p>
+                </div>
+              ) : null}
+
               {/* テーマ指定生成ボタン */}
               <button
                 onClick={handleAIGenerate}
@@ -1112,6 +1281,26 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   "テーマ指定生成"
                 )}
               </button>
+
+              {showAiAdminWarning ? (
+                <div className="border border-orange-300 bg-orange-50 text-orange-800 text-xs px-3 py-2 mt-2">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-bold mb-1">同じような改善提案が3回続いています</p>
+                      <p>プロンプトを改善しても、期待する投稿文が得られない場合は、AI設定（トーン、マナー・ルール、目標など）が適切でない可能性があります。マイアカウントページでAI設定を確認するか、管理者にお問い合わせください。</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {aiGenerateFeedback ? (
+                <div className="border border-blue-200 bg-blue-50 text-blue-800 text-xs px-3 py-2 mt-2">
+                  <p className="font-bold mb-1">💡 より良い投稿文を得るために</p>
+                  <p className="whitespace-pre-wrap">{aiGenerateFeedback}</p>
+                  <p className="mt-2 text-blue-700">このフィードバックを参考に、プロンプトをより具体的にしてみてください。</p>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -1129,11 +1318,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     alt="投稿画像プレビュー"
                     width={400}
                     height={192}
-                    className="w-full h-48 object-cover rounded-xl border-2 border-gray-200"
+                    className="w-full h-48 object-cover border-2 border-gray-200"
                   />
                   <button
                     onClick={handleImageRemove}
-                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
                   >
                     <X size={16} />
                   </button>
@@ -1148,7 +1337,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-gray-400 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 p-8 text-center hover:border-gray-400 transition-colors">
                 <input
                   id="image-upload"
                   type="file"
@@ -1188,7 +1377,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
               プレビュー
             </h3>
-            <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl border-2 border-gray-100 shadow-sm">
+            <div className="bg-gradient-to-br from-gray-50 to-white p-6 border-2 border-gray-100">
               {/* 投稿情報ヘッダー */}
               <div className="mb-4 pb-3 border-b border-gray-200">
                 <div className="flex items-center justify-between text-xs text-black">

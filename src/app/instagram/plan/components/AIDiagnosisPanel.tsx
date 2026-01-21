@@ -141,10 +141,10 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h3 className="text-xl font-light text-gray-900 tracking-tight mb-2">
-          フォロワーとの関係性を起点にした運用戦略（AI提案）
+        <h3 className="text-xl font-bold text-gray-900 tracking-tight mb-2">
+          AI運用戦略提案
         </h3>
-        <p className="text-sm text-gray-500">2026年のInstagramアルゴリズムに対応した、関係性設計型の戦略をAIが提案します。</p>
+        <p className="text-sm text-gray-900">運用計画をもとにInstagram戦略をAIが提案します</p>
       </div>
 
         {/* 診断ボタン（常に表示、生成済みの場合はテキスト変更） */}
@@ -179,17 +179,6 @@ export const AIDiagnosisPanel: React.FC<AIDiagnosisPanelProps> = ({
         {strategyState.error && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-md">
             <p className="text-sm text-red-700">{strategyState.error}</p>
-          </div>
-        )}
-
-        {/* ローディング表示 */}
-        {(isLoading || strategyState.isLoading) && (
-          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center shadow-sm">
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-900"></div>
-              <p className="text-sm font-medium text-gray-700">AI戦略を生成中</p>
-              <p className="text-xs text-gray-500">あなたのビジネスに最適な戦略を分析しています</p>
-            </div>
           </div>
         )}
 

@@ -25,27 +25,29 @@ export function SuccessImprovementGallery({
   error,
 }: SuccessImprovementGalleryProps) {
   return (
-    <section className="border border-gray-200 bg-white rounded-none p-6">
+    <section className="border border-gray-200 bg-white p-6 mb-6">
       <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
         <div>
           <div className="flex items-center gap-2">
-            <Crown className="h-4 w-4 text-amber-500" />
-            <h2 className="text-lg font-semibold text-black">成功 & 改善投稿ギャラリー</h2>
+            <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
+              <Crown className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">成功 & 改善投稿ギャラリー</h2>
             <InfoTooltip text="ゴールド投稿（成功パターン）とレッド投稿（改善余地があるパターン）を一覧で確認できます。" />
           </div>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-700">
             ゴールド（成功）とレッド（改善が必要）投稿をピックアップしました。AIが学習したポイントを振り返り、次の投稿に活かしましょう。
           </p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-8 text-slate-600">
-          <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
+        <div className="flex items-center justify-center py-8 text-gray-700">
+          <div className="w-5 h-5 border-2 border-[#ff8a15] border-t-transparent rounded-full animate-spin mr-2" />
           <span className="text-sm">投稿パターンを分析中です...</span>
         </div>
       ) : error ? (
-        <div className="border border-red-200 bg-red-50 rounded-none p-4 text-sm text-red-700">{error}</div>
+        <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : !patternInsights || patternInsights.signals.length === 0 ? (
         <EmptyStateCard
           icon={Sparkles}

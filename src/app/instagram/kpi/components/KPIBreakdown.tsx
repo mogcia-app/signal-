@@ -79,9 +79,9 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white border border-gray-200 p-6">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-3" />
+          <Loader2 className="w-6 h-6 animate-spin text-[#FF8A15] mr-3" />
           <span className="text-sm text-gray-700">KPIデータを読み込み中...</span>
         </div>
       </div>
@@ -90,8 +90,8 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 p-6">
+        <div className="bg-red-50 border border-red-200 p-4">
           <p className="text-sm text-red-800">{error}</p>
         </div>
       </div>
@@ -100,7 +100,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
 
   if (!breakdowns || breakdowns.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white border border-gray-200 p-6">
         <div className="text-center py-12 text-gray-500">
           <p className="text-sm">KPIデータがありません</p>
         </div>
@@ -109,13 +109,13 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-6 mb-6">
       <div className="mb-4 pb-3 border-b border-gray-200">
         <div className="flex items-center">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
-            <PieChart className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
+            <PieChart className="w-5 h-5 text-white" />
           </div>
-          <h2 className="text-base font-semibold text-gray-900">KPI 分解とドリルダウン</h2>
+          <h2 className="text-lg font-bold text-gray-900">KPI 分解とドリルダウン</h2>
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
@@ -130,7 +130,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
           return (
             <div 
               key={item.key} 
-              className={`border rounded-lg p-2.5 sm:p-3 md:p-4 space-y-2 sm:space-y-3 md:space-y-4 ${
+              className={`border p-4 space-y-4 ${
                 isLowestKPI 
                   ? "border-red-300 bg-red-50/40" 
                   : "border-gray-200"
@@ -173,7 +173,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
               </div>
 
               {item.insight && (
-                <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
+                <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 p-3">
                   {item.insight}
                 </div>
               )}
@@ -196,9 +196,9 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                               : `${segment.value.toLocaleString()}件`}
                           </span>
                         </div>
-                        <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-gray-100 overflow-hidden">
                           <div
-                            className="h-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-600"
+                            className="h-2 bg-[#ff8a15]"
                             style={{ width: `${share}%` }}
                           />
                         </div>
@@ -225,7 +225,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                       return (
                         <div
                           key={`${item.key}-${post.postId}`}
-                          className="border border-gray-200 rounded-lg p-2 sm:p-2.5 md:p-3 bg-gray-50"
+                          className="border border-gray-200 p-3 bg-gray-50"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
@@ -248,19 +248,19 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                             {labHref && (
                               <Link
                                 href={labHref}
-                                className="text-[10px] sm:text-[11px] font-semibold text-gray-700 border border-gray-300 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
+                                className="text-xs font-medium text-gray-700 border border-gray-300 bg-white px-2 py-1 hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
                               >
                                 Labで開く
-                                <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <ExternalLink className="w-3 h-3" />
                               </Link>
                             )}
                             {analyticsHref && (
                               <Link
                                 href={analyticsHref}
-                                className="text-[10px] sm:text-[11px] font-semibold text-gray-700 border border-gray-300 bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
+                                className="text-xs font-medium text-gray-700 border border-gray-300 bg-white px-2 py-1 hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
                               >
                                 分析
-                                <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <ExternalLink className="w-3 h-3" />
                               </Link>
                             )}
                           </div>

@@ -168,7 +168,7 @@ export default function InstagramKPIPage() {
 
   return (
     <SNSLayout customTitle="KPIコンソール" customDescription="主要KPIを要素ごとに分解し、何が伸びたか／落ちたかを素早く把握できます">
-      <div className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 bg-white min-h-screen max-w-7xl mx-auto">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
         {/* ヘッダー */}
         <KPIHeader
           selectedMonth={selectedMonth}
@@ -178,7 +178,7 @@ export default function InstagramKPIPage() {
 
         {/* エラー表示 */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="bg-red-50 border border-red-200 p-4 mb-6">
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}

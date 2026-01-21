@@ -17,30 +17,32 @@ interface HistorySectionProps {
 
 export function HistorySection({ feedbackHistory, actionHistory, isLoading, error }: HistorySectionProps) {
   return (
-    <section className="border border-gray-200 bg-white rounded-none p-6">
+    <section className="border border-gray-200 bg-white p-6 mb-6">
       <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
         <div>
           <div className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4 text-slate-600" />
-            <h2 className="text-lg font-semibold text-black">フィードバック & アクション履歴</h2>
+            <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
+              <MessageCircle className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">フィードバック & アクション履歴</h2>
           </div>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-700">
             最新のフィードバックと、実行されたAI提案の記録です。学習ループがどのように活用されているかを振り返りましょう。
           </p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-8 text-slate-600">
-          <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
+        <div className="flex items-center justify-center py-8 text-gray-700">
+          <div className="w-5 h-5 border-2 border-[#ff8a15] border-t-transparent rounded-full animate-spin mr-2" />
           <span className="text-sm">履歴を取得しています...</span>
         </div>
       ) : error ? (
-        <div className="border border-red-200 bg-red-50 rounded-none p-4 text-sm text-red-700">{error}</div>
+        <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">最近のフィードバック</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-3">最近のフィードバック</h3>
             {feedbackHistory.length === 0 ? (
               <EmptyStateCard
                 icon={MessageCircle}
@@ -52,7 +54,7 @@ export function HistorySection({ feedbackHistory, actionHistory, isLoading, erro
             ) : (
               <ul className="space-y-3">
                 {feedbackHistory.map((entry) => (
-                  <li key={`feedback-${entry.id}`} className="border border-gray-200 bg-gray-50 rounded-none p-3 text-xs text-gray-700">
+                  <li key={`feedback-${entry.id}`} className="border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
                     <div className="flex items-center justify-between mb-2">
                       <span
                         className={`font-semibold ${
@@ -77,7 +79,7 @@ export function HistorySection({ feedbackHistory, actionHistory, isLoading, erro
 
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-gray-800">アクション実行ログ</h3>
+              <h3 className="text-sm font-bold text-gray-900">アクション実行ログ</h3>
               <InfoTooltip text="月次レポートの「次月のアクションプラン」や投稿ディープダイブの「次のアクション」でチェックを入れたAI提案がここに記録されます。「フォーカス」は提案の出所を示します（例: next-month-2025-11 = 2025年11月の月次レポート）。" />
             </div>
             {actionHistory.length === 0 ? (

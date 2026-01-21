@@ -105,15 +105,15 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#ff8a15] flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
             <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">次のアクションプラン</h2>
+            <h2 className="text-base font-bold text-gray-900">次のアクションプラン</h2>
             <p className="text-xs text-gray-600 mt-0.5">
               AIが生成した来月に向けた具体的なアクションプラン
             </p>
@@ -123,7 +123,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
         {actionPlans.length > 0 && (
           <button
             onClick={handleToggle}
-            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all border border-gray-300"
           >
             {isExpanded ? (
               <span className="hidden sm:inline text-xs">閉じる</span>
@@ -143,7 +143,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
               <span className="text-sm text-gray-700">AI分析を実行中...</span>
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+            <div className="bg-white border border-red-200 p-3 sm:p-4">
               <div className="flex items-start">
                 <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
                 <div className="flex-1">
@@ -162,7 +162,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
               {actionPlans.map((plan, index) => (
                   <div
                     key={index}
-                    className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-3 sm:p-4 border border-orange-200 shadow-sm"
+                    className="bg-white p-3 sm:p-4 border border-gray-200"
                   >
                     <h3 className="text-sm font-semibold text-gray-900 mb-1.5">
                       {index + 1}. {removeMarkdown(plan.title)}
@@ -191,7 +191,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
               <button
                 onClick={handleRegenerate}
                 disabled={isLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300"
               >
                 <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
                 <span>再提案する</span>
@@ -207,7 +207,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
           <button
             onClick={() => fetchActionPlans(false)}
             disabled={isLoading}
-            className="w-full flex items-center justify-center space-x-1.5 px-3 py-2 text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full flex items-center justify-center space-x-1.5 px-3 py-2 text-sm bg-[#ff8a15] text-white hover:bg-[#e6760f] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {isLoading ? (
               <>

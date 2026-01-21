@@ -37,9 +37,9 @@ export function PostDeepDiveSection({
 }: PostDeepDiveSectionProps) {
   if (isLoading) {
     return (
-      <section className="border border-gray-200 bg-white rounded-none p-6">
-        <div className="flex items-center justify-center py-8 text-slate-600">
-          <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
+      <section className="border border-gray-200 bg-white p-6 mb-6">
+        <div className="flex items-center justify-center py-8 text-gray-700">
+          <div className="w-5 h-5 border-2 border-[#ff8a15] border-t-transparent rounded-full animate-spin mr-2" />
           <span className="text-sm">投稿ディープダイブを読み込んでいます...</span>
         </div>
       </section>
@@ -48,15 +48,15 @@ export function PostDeepDiveSection({
 
   if (error) {
     return (
-      <section className="border border-gray-200 bg-white rounded-none p-6">
-        <div className="border border-red-200 bg-red-50 rounded-none p-4 text-sm text-red-700">{error}</div>
+      <section className="border border-gray-200 bg-white p-6 mb-6">
+        <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       </section>
     );
   }
 
   if (!signals.length) {
     return (
-      <section className="border border-gray-200 bg-white rounded-none p-6">
+      <section className="border border-gray-200 bg-white p-6 mb-6">
         <EmptyStateCard
           icon={History}
           tone="info"
@@ -69,17 +69,19 @@ export function PostDeepDiveSection({
   }
 
   return (
-    <section className="border border-gray-200 bg-white rounded-none p-6">
+    <section className="border border-gray-200 bg-white p-6 mb-6">
       <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
         <div>
           <div className="flex items-center gap-2">
-            <History className="h-4 w-4 text-slate-600" />
-            <h2 className="text-lg font-semibold text-black">投稿ディープダイブ</h2>
+            <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
+              <History className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">投稿ディープダイブ</h2>
           </div>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-700">
             投稿ごとの指標やクラスタ比較を深掘りし、AIが導き出した強み・改善点・次の一手を確認できます。
           </p>
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-none text-xs text-blue-800">
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 text-xs text-blue-800">
             <p className="font-semibold mb-1">📊 このセクションの見方</p>
             <ul className="space-y-1 list-disc list-inside ml-2">
               <li><strong>指標の強み</strong>: この投稿が平均と比べてどの指標が優れているかを表示</li>

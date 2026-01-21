@@ -716,15 +716,18 @@ export default function InstagramPostsPage() {
         customTitle="投稿一覧"
         customDescription="作成した投稿の詳細表示・管理・削除・分析を行えます"
       >
-        <div className="w-full p-4 sm:p-6">
+        <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
           {/* 統計表示 */}
           <PostStats scheduledPosts={scheduledPosts} unanalyzedPosts={unanalyzedPosts} />
 
           {/* 投稿一覧 */}
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin  h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-black mt-2">読み込み中...</p>
+              <div className="relative w-12 h-12 mx-auto mb-4">
+                <div className="absolute inset-0 border-2 border-gray-200 rounded-full"></div>
+                <div className="absolute inset-0 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <p className="text-sm font-medium text-gray-700">読み込み中...</p>
             </div>
           ) : posts.length === 0 && manualAnalyticsData.length === 0 ? (
             <div className="text-center py-12">
@@ -829,7 +832,7 @@ export default function InstagramPostsPage() {
                                 手動入力
                               </span>
                               <span className="px-2 py-1 text-xs  bg-green-100 text-green-800 font-medium">
-                                📊 分析済み
+                                分析済み
                               </span>
                               {analytics.sentiment && (
                                 <span

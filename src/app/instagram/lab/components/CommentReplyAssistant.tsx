@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Loader2, MessageCircleReply, Sparkle, Copy, Check } from "lucide-react";
+import React, { useMemo, useState, useRef } from "react";
+import { Loader2, MessageCircleReply, Sparkle, Copy, Check, AlertTriangle } from "lucide-react";
 
 import { authFetch } from "../../../../utils/authFetch";
 
@@ -45,6 +45,11 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [guidance, setGuidance] = useState<string | undefined>(undefined);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [showAdminWarning, setShowAdminWarning] = useState(false);
+
+  // 連続フィードバックの追跡
+  const feedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
 
   const placeholder = useMemo(
     () =>
@@ -52,10 +57,77 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
     [],
   );
 
+  // コメント内容を分析してフィードバックを生成
+  const analyzeComment = (comment: string): { feedback: string | null; category: string } => {
+    const trimmed = comment.trim();
+    const length = trimmed.length;
+
+    if (length === 0) {
+      return { feedback: null, category: "" };
+    }
+
+    // 短すぎる場合
+    if (length < 10) {
+      return {
+        feedback: `コメントが短すぎるようです（${length}文字）。具体的な内容や感情（嬉しい、ありがとう、質問など）を含めると、より適切な返信案が生成されます。例えば「いつも楽しみにしています」ではなく「いつも投稿楽しみにしています！今回のレシピも真似してみました！」のように書くと良いでしょう。`,
+        category: "too_short",
+      };
+    }
+
+    // 長すぎる場合
+    if (length > 500) {
+      return {
+        feedback: `コメントが長すぎるようです（${length}文字）。重要なポイントを100-200文字程度にまとめると、より焦点の絞られた返信案が生成されます。特に伝えたい内容や質問を明確にすることで、AIが適切な返信を提案しやすくなります。`,
+        category: "too_long",
+      };
+    }
+
+    // 感情や意図が不明確
+    const hasEmotion = /[！？。！?]/g.test(trimmed) || 
+      /ありがとう|嬉しい|感謝|質問|教えて|知りたい|気になる|興味/g.test(trimmed);
+    
+    if (!hasEmotion && length < 30) {
+      return {
+        feedback: `コメントに感情や意図が不明確なようです。以下のような情報を含めると、より適切な返信案が生成されます：\n• どの投稿についてのコメントか（「この投稿」「先日の投稿」など）\n• 具体的な感情や感想（「嬉しい」「参考になった」など）\n• 質問や要望がある場合は、その内容\n• 相手との関係性（「初めての方」「常連のお客様」など）`,
+        category: "unclear_intent",
+      };
+    }
+
+    // 問題なし
+    return { feedback: null, category: "" };
+  };
+
   const handleGenerate = async () => {
-    if (!commentText.trim()) {
+    const trimmedComment = commentText.trim();
+    
+    if (!trimmedComment) {
       setError("コメント内容を入力してください。");
       return;
+    }
+
+    // コメント内容を分析
+    const analysis = analyzeComment(trimmedComment);
+    setFeedback(analysis.feedback);
+
+    // 連続フィードバックの追跡
+    if (analysis.feedback) {
+      const now = Date.now();
+      feedbackHistoryRef.current.push({ category: analysis.category, timestamp: now });
+      
+      // 3分以内の同じカテゴリのフィードバックをカウント
+      const recentSameCategory = feedbackHistoryRef.current.filter(
+        (f) => f.category === analysis.category && (now - f.timestamp) < 180000
+      );
+
+      if (recentSameCategory.length >= 3) {
+        setShowAdminWarning(true);
+      } else {
+        setShowAdminWarning(false);
+      }
+    } else {
+      // フィードバックがない場合は履歴をリセット（成功したということ）
+      feedbackHistoryRef.current = [];
+      setShowAdminWarning(false);
     }
 
     setIsGenerating(true);
@@ -91,6 +163,12 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
 
       setSuggestions(data.suggestions ?? []);
       setGuidance(data.guidance);
+      
+      // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
+      if (!feedback) {
+        feedbackHistoryRef.current = [];
+        setShowAdminWarning(false);
+      }
     } catch (err) {
       console.error("Comment reply assistant error:", err);
       setError(err instanceof Error ? err.message : "AI返信の生成に失敗しました。");
@@ -111,45 +189,45 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm h-full flex flex-col">
-      <div className="border-b border-slate-100 px-4 py-3 rounded-t-xl">
-        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-          <MessageCircleReply className="w-4 h-4 text-orange-500" />
+    <div className="bg-white border border-slate-200 flex flex-col h-full">
+      <div className="border-b border-slate-100 px-6 py-4">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <MessageCircleReply className="w-5 h-5 text-[#ff8a15]" />
           コメント返信アシスト
         </h3>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-sm text-gray-700 mt-1">
           コメントやDMに対する返信をAIが即座に提案します。文章はそのままコピペしてもOKです。
         </p>
       </div>
 
       <div className="p-4 space-y-4 flex-1 flex flex-col">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">受け取ったコメント</label>
+          <label className="block text-xs font-bold text-gray-900 mb-2">受け取ったコメント</label>
           <textarea
             value={commentText}
             onChange={(event) => setCommentText(event.target.value)}
             rows={5}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[#ff8a15] focus:outline-none"
             placeholder={placeholder}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">返信トーンの希望</label>
+          <label className="block text-xs font-bold text-gray-900 mb-2">返信トーンの希望</label>
           <div className="grid grid-cols-2 gap-2">
             {toneOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => setTone(option.value)}
-                className={`border px-3 py-2 text-xs text-left rounded transition-colors ${
+                className={`border px-3 py-2 text-xs text-left transition-colors ${
                   tone === option.value
-                    ? "border-orange-500 bg-orange-50 text-orange-700"
-                    : "border-gray-300 hover:border-orange-300 text-gray-700"
+                    ? "border-[#ff8a15] bg-orange-50 text-orange-700"
+                    : "border-gray-300 hover:border-[#ff8a15] text-gray-700 bg-white"
                 }`}
               >
-                <p className="font-semibold">{option.label}</p>
-                <p className="text-[11px] text-gray-500 mt-1">{option.description}</p>
+                <p className="font-bold">{option.label}</p>
+                <p className="text-[11px] text-gray-600 mt-1">{option.description}</p>
               </button>
             ))}
           </div>
@@ -159,18 +237,38 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
           type="button"
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="inline-flex items-center justify-center gap-2 w-full rounded bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center gap-2 w-full bg-[#ff8a15] px-4 py-2 text-sm font-medium text-white hover:bg-[#e67a0f] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkle className="w-4 h-4" />}
           {isGenerating ? "AI返信を生成中..." : "AIに返信案をつくってもらう"}
         </button>
 
         {error ? (
-          <div className="border border-red-200 bg-red-50 text-red-700 text-xs px-3 py-2 rounded">{error}</div>
+          <div className="border border-red-200 bg-white text-red-700 text-xs px-3 py-2">{error}</div>
+        ) : null}
+
+        {showAdminWarning ? (
+          <div className="border border-orange-300 bg-orange-50 text-orange-800 text-xs px-3 py-2">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-bold mb-1">同じような改善提案が3回続いています</p>
+                <p>コメント内容を改善しても、期待する返信案が得られない場合は、AI設定（トーン、マナー・ルールなど）が適切でない可能性があります。マイアカウントページでAI設定を確認するか、管理者にお問い合わせください。</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {feedback ? (
+          <div className="border border-blue-200 bg-blue-50 text-blue-800 text-xs px-3 py-2">
+            <p className="font-bold mb-1">💡 より良い返信案を得るために</p>
+            <p className="whitespace-pre-wrap">{feedback}</p>
+            <p className="mt-2 text-blue-700">このフィードバックを参考に、コメント内容をより具体的にしてみてください。</p>
+          </div>
         ) : null}
 
         {guidance ? (
-          <div className="border border-dashed border-gray-300 bg-gray-50 text-xs text-gray-600 px-3 py-2 rounded">
+          <div className="border border-dashed border-gray-300 bg-white text-xs text-gray-700 px-3 py-2">
             {guidance}
           </div>
         ) : null}
@@ -178,7 +276,7 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
         {suggestions.length > 0 ? (
           <div className="space-y-3 flex-1 overflow-y-auto">
             {suggestions.map((suggestion, index) => (
-              <div key={`suggestion-${index}`} className="border border-gray-200 rounded p-3">
+              <div key={`suggestion-${index}`} className="border border-gray-200 p-3 bg-white">
                 <div className="flex items-center justify-between gap-3 mb-2">
                   <p className="text-xs font-semibold text-gray-700">返信案 {index + 1}</p>
                   <button

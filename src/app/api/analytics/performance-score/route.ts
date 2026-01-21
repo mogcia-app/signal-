@@ -76,7 +76,7 @@ function calculatePerformanceScore(params: {
       metrics: {
         postCount: 0,
         analyzedCount: 0,
-        hasPlan: false,
+        hasPlan: params.hasPlan, // 計画の有無を正しく反映
       },
     };
   }
@@ -226,15 +226,25 @@ export async function GET(request: NextRequest) {
         .where("publishedAt", "<=", endTimestamp)
         .get(),
 
-      // 計画の有無
+      // 計画の有無（statusでフィルタリング）
       adminDb
         .collection("plans")
         .where("userId", "==", uid)
         .where("snsType", "==", "instagram")
         .where("status", "==", "active")
-        .limit(1)
         .get(),
     ]);
+
+    // 計画の有無を確認（シンプルにアクティブな計画が存在するかチェック）
+    const hasValidPlan = !plansSnapshot.empty;
+    console.log(`[PerformanceScore] 計画検索結果: userId=${uid}, date=${date}, plansSnapshot.size=${plansSnapshot.size}, hasValidPlan=${hasValidPlan}`);
+    
+    if (hasValidPlan) {
+      plansSnapshot.docs.forEach((planDoc) => {
+        const planData = planDoc.data();
+        console.log(`[PerformanceScore] 計画詳細: planId=${planDoc.id}, status=${planData.status}, createdAt=${planData.createdAt}, planPeriod=${planData.planPeriod || planData.formData?.planPeriod || "1ヶ月"}`);
+      });
+    }
 
     // 期間内の投稿IDを取得
     const postIdsInPeriod = new Set(
@@ -353,7 +363,7 @@ export async function GET(request: NextRequest) {
     const result = calculatePerformanceScore({
       postCount,
       analyzedCount,
-      hasPlan: !plansSnapshot.empty,
+      hasPlan: hasValidPlan,
       totalLikes,
       totalReach,
       totalSaves,

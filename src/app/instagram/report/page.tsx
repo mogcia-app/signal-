@@ -124,18 +124,30 @@ export default function InstagramReportPage() {
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
+            console.log("[ReportPage] パフォーマンス評価データ取得:", {
+              score: result.data.score,
+              rating: result.data.rating,
+              hasPlan: result.data.metrics?.hasPlan,
+              postCount: result.data.metrics?.postCount,
+              analyzedCount: result.data.metrics?.analyzedCount,
+            });
             setPerformanceScore(result.data);
           } else {
+            console.error("[ReportPage] パフォーマンス評価データが不正:", result);
             setError("データの取得に失敗しました");
             setPerformanceScore(null);
           }
         } else {
           const errorData = await response.json().catch(() => ({}));
+          console.error("[ReportPage] パフォーマンス評価API エラー:", {
+            status: response.status,
+            error: errorData,
+          });
           setError(errorData.error || "データの取得に失敗しました");
           setPerformanceScore(null);
         }
       } catch (err) {
-        console.error("パフォーマンス評価スコア取得エラー:", err);
+        console.error("[ReportPage] パフォーマンス評価スコア取得エラー:", err);
         setError("データの取得中にエラーが発生しました");
         setPerformanceScore(null);
       } finally {
@@ -154,7 +166,7 @@ export default function InstagramReportPage() {
 
   return (
     <SNSLayout customTitle="月次レポート" customDescription="月次のパフォーマンス分析とレポート">
-      <div className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 bg-white min-h-screen max-w-7xl mx-auto">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
         {/* ヘッダー */}
         <ReportHeader
           selectedMonth={selectedMonth}
@@ -164,7 +176,7 @@ export default function InstagramReportPage() {
 
         {/* エラー表示 */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="bg-white border border-red-200 p-4 mb-6">
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}

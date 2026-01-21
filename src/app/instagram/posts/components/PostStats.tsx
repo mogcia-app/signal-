@@ -33,7 +33,6 @@ const PostStats: React.FC<PostStatsProps> = ({ scheduledPosts, unanalyzedPosts }
       <div className="bg-white shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-            <span className="text-2xl mr-2">📅</span>
             今週の投稿予定
           </h2>
         </div>
@@ -90,11 +89,10 @@ const PostStats: React.FC<PostStatsProps> = ({ scheduledPosts, unanalyzedPosts }
       <div className="bg-white shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-            <span className="text-2xl mr-2">📊</span>
             分析待ちの投稿
           </h2>
         </div>
-        <div className="p-6 space-y-3">
+        <div className="p-6 space-y-3 max-h-96 overflow-y-auto">
           {unanalyzedPosts.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-black text-4xl mb-2">✅</div>

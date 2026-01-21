@@ -217,7 +217,14 @@ export const usePlanForm = () => {
 
       // 保存された計画IDを設定
       if (responseData.planId || responseData.id) {
-        setLoadedPlanId(responseData.planId || responseData.id);
+        const savedPlanId = responseData.planId || responseData.id;
+        setLoadedPlanId(savedPlanId);
+        console.log("[PlanForm] 計画が保存されました:", {
+          planId: savedPlanId,
+          status: "active",
+          planPeriod: formData.planPeriod,
+          targetFollowers: parseInt(formData.currentFollowers, 10) + parseInt(formData.followerGain, 10),
+        });
 
         // 計画の開始日と終了日を設定
         const startDate = new Date();
@@ -232,6 +239,7 @@ export const usePlanForm = () => {
       }
 
       setSaveSuccess(true);
+      console.log("[PlanForm] 計画保存成功:", { success: true });
       return true;
     } catch (error) {
       console.error("計画保存エラー:", error);
@@ -375,6 +383,7 @@ export const usePlanForm = () => {
     // フォームをリセット
     resetForm();
     setSimulationResult(null);
+    setGeneratedStrategy("");
     setLoadedPlanId(null);
     setPlanStartDate(null);
     setPlanEndDate(null);

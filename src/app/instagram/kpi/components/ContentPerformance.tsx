@@ -43,11 +43,11 @@ const formatSeconds = (seconds: number) => {
 const StatGrid: React.FC<{
   items: Array<{ label: string; value: string; icon: React.ReactNode }>;
 }> = ({ items }) => (
-  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2 sm:gap-2 md:gap-3">
+  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
     {items.map((item) => (
       <div
         key={item.label}
-        className="bg-white border border-gray-200 rounded-lg p-2 sm:p-2.5 md:p-3 flex items-center justify-between"
+        className="bg-white border border-gray-200 p-3 flex items-center justify-between"
       >
         <div className="flex-1 min-w-0">
           <p className="text-[10px] sm:text-xs text-gray-500 truncate">{item.label}</p>
@@ -66,9 +66,9 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+      <div className="bg-white border border-gray-200 p-4">
         <div className="flex items-center justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600 mr-2" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
           <span className="text-sm text-gray-700">読み込み中...</span>
         </div>
       </div>
@@ -77,7 +77,7 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
 
   if (!feedStats && !reelStats) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+      <div className="bg-white border border-gray-200 p-4 mb-6">
         <div className="text-center py-8 text-gray-500">
           <p className="text-sm">フィードまたはリールの分析データがありません</p>
         </div>
@@ -86,17 +86,17 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
       {/* フィード統計サマリー */}
       {feedStats ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="bg-white border border-gray-200 p-6">
           <div className="flex items-center mb-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
-              <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
+              <Eye className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">フィード統計サマリー</h2>
-              <p className="text-xs text-gray-600 mt-0.5">フィード投稿の総合統計</p>
+              <h2 className="text-lg font-bold text-gray-900">フィード統計サマリー</h2>
+              <p className="text-sm text-gray-700 mt-0.5">フィード投稿の総合統計</p>
             </div>
           </div>
 
@@ -136,31 +136,31 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               ]}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">総インタラクション数</p>
-                <p className="text-lg sm:text-xl font-semibold text-gray-900 break-all">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-gray-50 border border-gray-200 p-3">
+                <p className="text-xs text-gray-500 mb-1">総インタラクション数</p>
+                <p className="text-xl font-semibold text-gray-900 break-all">
                   {formatNumber(feedStats.totalInteractionCount)}
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">平均閲覧フォロワー%</p>
-                <p className="text-sm sm:text-base font-semibold text-gray-900">
+                <p className="text-xs text-gray-500 mt-3">平均閲覧フォロワー%</p>
+                <p className="text-base font-semibold text-gray-900">
                   {formatPercent(feedStats.avgReachFollowerPercent)}
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">平均インタラクションフォロワー%</p>
-                <p className="text-lg sm:text-xl font-semibold text-gray-900">
+              <div className="bg-gray-50 border border-gray-200 p-3">
+                <p className="text-xs text-gray-500 mb-1">平均インタラクションフォロワー%</p>
+                <p className="text-xl font-semibold text-gray-900">
                   {formatPercent(feedStats.avgInteractionFollowerPercent)}
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">プロフィールアクセス</p>
-                <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
+                <p className="text-xs text-gray-500 mt-3">プロフィールアクセス</p>
+                <p className="text-base font-semibold text-gray-900 break-all">
                   {formatNumber(feedStats.totalProfileVisits)}
                 </p>
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-gray-700 mb-2">閲覧ソース内訳</p>
+              <p className="text-sm font-bold text-gray-900 mb-2">閲覧ソース内訳</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   { label: "プロフィール", value: feedStats.reachSources.profile },
@@ -169,9 +169,9 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
                   { label: "検索", value: feedStats.reachSources.search },
                   { label: "その他", value: feedStats.reachSources.other },
                 ].map((source) => (
-                  <div key={source.label} className="bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2">
-                    <p className="text-[10px] sm:text-xs text-gray-500">{source.label}</p>
-                    <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
+                  <div key={source.label} className="bg-white border border-gray-200 p-2">
+                    <p className="text-xs text-gray-500">{source.label}</p>
+                    <p className="text-base font-semibold text-gray-900 break-all">
                       {formatNumber(source.value)}
                     </p>
                   </div>
@@ -179,7 +179,7 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               </div>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+            <div className="bg-gray-50 border border-gray-200 p-3 flex items-center justify-between">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] sm:text-xs text-gray-500">リーチしたアカウント</p>
                 <p className="text-lg sm:text-xl font-semibold text-gray-900 break-all">
@@ -194,14 +194,14 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
 
       {/* リール統計サマリー */}
       {reelStats ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="bg-white border border-gray-200 p-6">
           <div className="flex items-center mb-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
-              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
+              <Clock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-gray-900">リール統計サマリー</h2>
-              <p className="text-xs text-gray-600 mt-0.5">リール投稿の総合統計</p>
+              <h2 className="text-lg font-bold text-gray-900">リール統計サマリー</h2>
+              <p className="text-sm text-gray-700 mt-0.5">リール投稿の総合統計</p>
             </div>
           </div>
 
@@ -241,50 +241,50 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               ]}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">総インタラクション数</p>
-                <p className="text-lg sm:text-xl font-semibold text-gray-900 break-all">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-gray-50 border border-gray-200 p-3">
+                <p className="text-xs text-gray-500 mb-1">総インタラクション数</p>
+                <p className="text-xl font-semibold text-gray-900 break-all">
                   {formatNumber(reelStats.totalInteractionCount)}
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">平均閲覧フォロワー%</p>
-                <p className="text-sm sm:text-base font-semibold text-gray-900">
+                <p className="text-xs text-gray-500 mt-3">平均閲覧フォロワー%</p>
+                <p className="text-base font-semibold text-gray-900">
                   {formatPercent(reelStats.avgReachFollowerPercent)}
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">平均インタラクションフォロワー%</p>
-                <p className="text-lg sm:text-xl font-semibold text-gray-900">
+              <div className="bg-gray-50 border border-gray-200 p-3">
+                <p className="text-xs text-gray-500 mb-1">平均インタラクションフォロワー%</p>
+                <p className="text-xl font-semibold text-gray-900">
                   {formatPercent(reelStats.avgInteractionFollowerPercent)}
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3">平均再生時間</p>
-                <p className="text-sm sm:text-base font-semibold text-gray-900">
+                <p className="text-xs text-gray-500 mt-3">平均再生時間</p>
+                <p className="text-base font-semibold text-gray-900">
                   {formatSeconds(reelStats.avgPlayTimeSeconds)}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-gray-500">合計再生時間</p>
-                <p className="text-lg sm:text-xl font-semibold text-gray-900">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-white border border-gray-200 p-3">
+                <p className="text-xs text-gray-500">合計再生時間</p>
+                <p className="text-xl font-semibold text-gray-900">
                   {formatSeconds(reelStats.totalPlayTimeSeconds)}
                 </p>
               </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-gray-500">平均スキップ率</p>
-                <p className="text-lg sm:text-xl font-semibold text-gray-900">
+              <div className="bg-white border border-gray-200 p-3">
+                <p className="text-xs text-gray-500">平均スキップ率</p>
+                <p className="text-xl font-semibold text-gray-900">
                   {formatPercent(reelStats.avgSkipRate)}
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-2">ノーマルスキップ率</p>
-                <p className="text-sm sm:text-base font-semibold text-gray-900">
+                <p className="text-xs text-gray-500 mt-2">ノーマルスキップ率</p>
+                <p className="text-base font-semibold text-gray-900">
                   {formatPercent(reelStats.avgNormalSkipRate)}
                 </p>
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-gray-700 mb-2">閲覧ソース内訳</p>
+              <p className="text-sm font-bold text-gray-900 mb-2">閲覧ソース内訳</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   { label: "プロフィール", value: reelStats?.reachSources?.profile ?? 0 },
@@ -293,9 +293,9 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
                   { label: "検索", value: reelStats?.reachSources?.search ?? 0 },
                   { label: "その他", value: reelStats?.reachSources?.other ?? 0 },
                 ].map((source) => (
-                  <div key={source.label} className="bg-white border border-gray-200 rounded-lg p-1.5 sm:p-2">
-                    <p className="text-[10px] sm:text-xs text-gray-500">{source.label}</p>
-                    <p className="text-sm sm:text-base font-semibold text-gray-900 break-all">
+                  <div key={source.label} className="bg-white border border-gray-200 p-2">
+                    <p className="text-xs text-gray-500">{source.label}</p>
+                    <p className="text-base font-semibold text-gray-900 break-all">
                       {formatNumber(source.value)}
                     </p>
                   </div>
@@ -303,7 +303,7 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               </div>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+            <div className="bg-gray-50 border border-gray-200 p-3 flex items-center justify-between">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] sm:text-xs text-gray-500">リーチしたアカウント</p>
                 <p className="text-lg sm:text-xl font-semibold text-gray-900 break-all">

@@ -33,14 +33,14 @@ const AudienceCard: React.FC<{
 }> = ({ title, breakdown }) => {
   if (!breakdown || (!breakdown.gender && !breakdown.age)) {
     return (
-      <div className="border border-dashed border-gray-300 rounded-lg p-4 text-xs sm:text-sm text-gray-500 bg-white">
+      <div className="border border-dashed border-gray-300 p-4 text-sm text-gray-500 bg-white">
         データが不足しています。投稿分析を追加すると表示されます。
       </div>
     );
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white space-y-3 sm:space-y-4 shadow-sm">
+    <div className="border border-gray-200 p-4 bg-white space-y-4">
       <div className="flex items-center gap-2">
         <Users className="w-4 h-4 text-gray-500 flex-shrink-0" />
         <div>
@@ -116,9 +116,9 @@ export const AudienceBreakdownComponent: React.FC<AudienceBreakdownProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+      <div className="bg-white border border-gray-200 p-4 mb-6">
         <div className="flex items-center justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600 mr-2" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
           <span className="text-sm text-gray-700">読み込み中...</span>
         </div>
       </div>
@@ -130,14 +130,14 @@ export const AudienceBreakdownComponent: React.FC<AudienceBreakdownProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-6 mb-6">
       <div className="flex items-center mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
-          <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
+          <Users className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-gray-900">オーディエンス構成サマリー</h2>
-          <p className="text-xs text-gray-600 mt-0.5">
+          <h2 className="text-lg font-bold text-gray-900">オーディエンス構成サマリー</h2>
+          <p className="text-sm text-gray-700 mt-0.5">
             今月のフィード／リールで反応が高かった性別・年齢を比較します
           </p>
         </div>

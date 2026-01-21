@@ -254,8 +254,8 @@ function AnalyticsFeedContent() {
         title: postData.title,
         content: postData.content,
         hashtags: Array.isArray(postData.hashtags)
-          ? postData.hashtags.join(" ")
-          : postData.hashtags || "",
+          ? postData.hashtags.map((tag: string) => tag.replace(/^#+/, "").trim()).join(" ")
+          : "",
         category:
           postData.postType === "feed" ? "feed" : postData.postType === "reel" ? "reel" : "story",
         publishedAt:
@@ -540,8 +540,8 @@ function AnalyticsFeedContent() {
           title: inputData.title,
           content: inputData.content,
           hashtags: inputData.hashtags
-            .split(",")
-            .map((tag) => tag.trim())
+            .split(/[,\s]+/)
+            .map((tag) => tag.replace(/^#+/, "").trim())
             .filter((tag) => tag),
           thumbnail: inputData.thumbnail,
           category: inputData.category,
@@ -704,7 +704,7 @@ function AnalyticsFeedContent() {
         customTitle="フィード分析"
         customDescription="Instagram投稿の分析データを入力・管理します"
       >
-        <div className="p-6 space-y-6">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen space-y-6">
           <div className="bg-white border border-orange-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-gray-800">投稿分析データ</p>

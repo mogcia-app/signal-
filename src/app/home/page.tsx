@@ -359,25 +359,18 @@ export default function HomePage() {
 
   return (
     <SNSLayout customTitle="ホーム" customDescription="アカウント指標とKPIサマリーを確認・管理">
-      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50 min-h-screen">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
         
         {/* ようこそセクション */}
-        <div className="mb-6 sm:mb-8">
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-6 sm:p-8 shadow-lg shadow-orange-200/50">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                  {userProfile?.name ? `${userProfile.name}さん、ようこそ！` : "ようこそ！"}
-                </h1>
-                <p className="text-orange-50 text-sm sm:text-base">
-                  今日もSignal.で、あなたのInstagram運用をレベルアップさせましょう
-                </p>
-              </div>
-              <div className="flex-shrink-0">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
-                  <Users className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                </div>
-              </div>
+        <div className="mt-2 mb-4">
+          <div className="bg-white border border-gray-200 p-3 sm:p-4 transition-all duration-300 group">
+            <div className="animate-fade-in">
+              <h1 className="text-lg sm:text-xl font-semibold mb-1 bg-gradient-to-r from-gray-900 via-[#FF8A15] to-gray-900 bg-clip-text text-transparent bg-[length:200%_100%] animate-gradient-x">
+                {userProfile?.name ? `${userProfile.name}さん、ようこそ！` : "ようこそ！"}
+              </h1>
+              <p className="text-gray-600 text-xs sm:text-sm group-hover:text-gray-700 transition-colors duration-300">
+                今日も<span className="font-bold text-black group-hover:text-gray-900 transition-colors duration-300">Signal</span><span className="text-[#FF8A15] animate-pulse">.</span>で、あなたのInstagram運用をレベルアップさせましょう
+              </p>
             </div>
           </div>
         </div>
@@ -386,13 +379,13 @@ export default function HomePage() {
         <KPISummaryCard breakdowns={kpiBreakdowns} isLoading={isLoadingKPI} />
 
         {/* アカウント指標入力セクション */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200">
+        <div className="bg-white p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 border border-gray-200">
           <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl flex items-center justify-center border-2 border-orange-200 flex-shrink-0 shadow-sm">
-              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-orange-600" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white border-2 border-gray-200 flex items-center justify-center flex-shrink-0">
+              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-[#FF8A15]" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">アカウント指標</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">アカウント指標</h2>
               <p className="text-sm text-gray-600">フォロワー数やプロフィールアクセス数などを記録して、成長を可視化</p>
             </div>
           </div>
@@ -414,13 +407,13 @@ export default function HomePage() {
                   onChange={(e) => setCurrentFollowers(e.target.value)}
                   placeholder="フォロワー数を入力"
                   min="0"
-                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all"
                   disabled={isSaving}
                 />
                 <button
                   onClick={saveFollowerCount}
                   disabled={isSaving || !currentFollowers}
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-[#FF8A15] text-white hover:bg-[#E67A0A] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                 >
                   {isSaving ? (
                     <>
@@ -505,20 +498,20 @@ export default function HomePage() {
         </div>
 
         {/* 今月のアクションプラン（先月のレポートまとめから） */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200">
+        <div className="bg-white p-4 sm:p-6 md:p-8 border border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl flex items-center justify-center border-2 border-amber-200 flex-shrink-0 shadow-sm">
-                <Lightbulb className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white border-2 border-gray-200 flex items-center justify-center flex-shrink-0">
+                <Lightbulb className="w-6 h-6 sm:w-7 sm:h-7 text-[#FF8A15]" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">今月のアクションプラン</h2>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">今月のアクションプラン</h2>
                 <p className="text-sm text-gray-600">改善点の見える化：今月すべき具体的なアクション</p>
               </div>
             </div>
             <a
               href="/instagram/report"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-all duration-200 border border-gray-200 hover:border-orange-300 self-start sm:self-auto"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 hover:text-[#FF8A15] transition-all duration-200 border border-gray-200 hover:border-[#FF8A15] self-start sm:self-auto"
             >
               詳細を見る
               <ArrowRight className="w-4 h-4" />
@@ -579,23 +572,23 @@ export default function HomePage() {
                 return (
                   <div
                     key={index}
-                    className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 sm:p-5 border border-gray-200 hover:border-orange-200 hover:shadow-md transition-all duration-200"
+                    className="bg-white p-4 sm:p-5 border border-gray-200 hover:border-[#FF8A15] transition-all duration-200"
                   >
                     <div className="flex items-start gap-2 sm:gap-3">
                       <button
                         onClick={handleToggle}
                         disabled={isPending}
-                        className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shadow-sm ${
+                        className={`mt-0.5 flex-shrink-0 w-6 h-6 border-2 flex items-center justify-center transition-all ${
                           isChecked
-                            ? "bg-gradient-to-br from-orange-500 to-amber-500 border-orange-600 shadow-orange-200"
-                            : "bg-white border-gray-300 hover:border-orange-400 hover:bg-orange-50"
+                            ? "bg-[#FF8A15] border-[#FF8A15]"
+                            : "bg-white border-gray-300 hover:border-[#FF8A15]"
                         } ${isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                       >
                         {isChecked && <Check className="w-3 h-3 text-white" />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2">
-                          <span className="inline-block w-6 h-6 bg-orange-100 text-orange-600 rounded-lg text-xs font-bold flex items-center justify-center mr-2 align-middle">
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
+                          <span className="inline-block w-6 h-6 bg-gray-100 text-gray-700 text-xs font-medium flex items-center justify-center mr-2 align-middle">
                             {index + 1}
                           </span>
                           {removeMarkdown(plan.title)}
@@ -605,7 +598,7 @@ export default function HomePage() {
                         )}
                         {plan.action && (
                           <div className="flex items-start gap-2 mt-3 pt-3 border-t border-gray-200 pl-8">
-                            <ArrowRight className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                            <ArrowRight className="w-4 h-4 text-[#FF8A15] mt-0.5 flex-shrink-0" />
                             <p className="text-sm text-gray-700 leading-relaxed font-medium">{removeMarkdown(plan.action)}</p>
                           </div>
                         )}
@@ -617,11 +610,11 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="text-center py-12 sm:py-16">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-50 border border-gray-200 flex items-center justify-center mx-auto mb-4">
                 <Lightbulb className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="text-base text-gray-500 font-medium mb-1">アクションプランがありません</p>
-              <p className="text-sm text-gray-400">月次レポートページで生成できます</p>
+              <p className="text-base text-gray-700 font-medium mb-1">アクションプランがありません</p>
+              <p className="text-sm text-gray-500">月次レポートページで生成できます</p>
             </div>
           )}
         </div>

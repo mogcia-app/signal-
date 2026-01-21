@@ -112,14 +112,14 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
   const nonSnapshotReferences = references.filter((ref) => ref.sourceType !== "snapshot");
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       {/* ヘッダー */}
       <div className="flex items-center mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#ff8a15] flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
           <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-gray-900">AI学習リファレンス</h2>
+          <h2 className="text-base font-bold text-gray-900">AI学習リファレンス</h2>
           <p className="text-xs text-gray-600 mt-0.5">
             今月のAIがどのデータを参照して提案を出したかを可視化します
           </p>
@@ -134,7 +134,7 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
             <span className="text-sm text-gray-700">データを読み込み中...</span>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+          <div className="bg-white border border-red-200 p-3 sm:p-4">
             <div className="flex items-start">
               <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
               <div className="flex-1">
@@ -162,7 +162,7 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* マスターコンテキスト */}
             {masterContext ? (
-              <div className="border border-gray-200 rounded-lg p-2.5 sm:p-3 space-y-2">
+              <div className="border border-gray-200 p-2.5 sm:p-3 space-y-2">
                 <p className="text-xs font-semibold text-gray-700 flex items-center gap-2">
                   <Brain className="w-4 h-4 text-gray-500" />
                   マスターコンテキスト
@@ -215,13 +215,13 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
                 )}
               </div>
             ) : (
-              <div className="border border-dashed border-gray-200 rounded-lg p-4 text-xs text-gray-500">
+              <div className="border border-dashed border-gray-200 p-4 text-xs text-gray-500">
                 マスターコンテキストがまだ構築されていません。マイアカウント設定とフィードバックを入力するとAIが学習を開始します。
               </div>
             )}
 
             {/* 参照データログ */}
-            <div className="border border-gray-200 rounded-lg p-2.5 sm:p-3 md:p-4 space-y-2 sm:space-y-3">
+            <div className="border border-gray-200 p-2.5 sm:p-3 md:p-4 space-y-2 sm:space-y-3">
               <p className="text-xs font-semibold text-gray-700 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-gray-500" />
                 参照データログ
@@ -256,7 +256,7 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
 
         {/* 引用された投稿スナップショット */}
         {!isLoading && !error && snapshotRefs.length > 0 && (
-          <div className="mt-3 sm:mt-4 border border-gray-200 rounded-lg p-2.5 sm:p-3 md:p-4">
+          <div className="mt-3 sm:mt-4 border border-gray-200 p-2.5 sm:p-3 md:p-4">
             <p className="text-xs font-semibold text-gray-700 flex items-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               引用された投稿スナップショット

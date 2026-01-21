@@ -107,9 +107,12 @@ export default function SNSLayout({
         </div>
 
         {/* ユーザー情報 */}
-        <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
+        <Link
+          href="/onboarding"
+          className="block px-4 sm:px-6 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer no-underline"
+        >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white flex-shrink-0">
               <span className="text-lg font-medium">
                 {userProfile?.name?.charAt(0).toUpperCase() ||
                   user?.email?.charAt(0).toUpperCase() ||
@@ -125,7 +128,7 @@ export default function SNSLayout({
               />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* ナビゲーションメニュー */}
         <div className="p-4 border-b border-gray-200">
@@ -229,11 +232,11 @@ export default function SNSLayout({
                 <span>投稿一覧</span>
               </Link>
             )}
-            {canAccessFeature(userProfile, "canAccessAnalytics") && (
+            {/* {canAccessFeature(userProfile, "canAccessAnalytics") && (
               <Link
-                href="/instagram/analytics/feed"
+                href="/analytics/feed"
                 className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                  pathname === "/instagram/analytics/feed"
+                  pathname === "/analytics/feed"
                     ? "bg-orange-100 text-orange-800 font-medium"
                     : "text-black hover:bg-gray-100"
                 }`}
@@ -241,7 +244,7 @@ export default function SNSLayout({
                 <span>📊</span>
                 <span>投稿分析</span>
               </Link>
-            )}
+            )} */}
             {canAccessFeature(userProfile, "canAccessReport") && (
               <Link
                 href="/instagram/report"
@@ -298,45 +301,7 @@ export default function SNSLayout({
           </div>
         </div>
 
-        {/* 共通メニュー */}
-        <div className="p-3 sm:p-4 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">共通メニュー</h3>
-          <nav className="space-y-1">
-            {/*<Link
-              href="/notifications"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
-            >
-              <span>🔔</span>
-              <span>お知らせ</span>
-              {unreadCount > 0 && (
-                <div className="ml-auto w-3 h-3 bg-[#FF8A15] rounded-full"></div>
-              )}
-            </Link>
-            {/*< Link 
-              href="/guide"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
-            >
-              <span>📖</span>
-              <span>使い方ガイド</span>
-            </Link>*/}
-
-            <Link
-              href="/onboarding"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
-            >
-              <span>👤</span>
-              <span>マイアカウント</span>
-            </Link>
-
-            <Link
-              href="/terms"
-              className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg"
-            >
-              <span>📄</span>
-              <span>利用規約</span>
-            </Link>
-          </nav>
-        </div>
+        
 
         {/* ユーザー情報 */}
         {/* <div className="p-4 mt-auto">
@@ -357,13 +322,30 @@ export default function SNSLayout({
           </div>
         </div> */}
 
+        {/* 会員サイトボタン */}
+        <div className="px-4 pb-2 mt-4">
+          <Link
+            href="https://signal-portal.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
+          >
+            <span>会員サイト</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </Link>
+        </div>
+
         {/* ログアウトボタン */}
-        <div className="p-4 mt-auto">
+        <div className="px-4 pb-4">
           <button
             onClick={handleSignOut}
-            className="w-full px-3 py-2 text-sm text-black hover:bg-gray-100 rounded-lg flex items-center space-x-2"
+            className="w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 flex items-center justify-center space-x-2 border-2 border-gray-300 hover:border-gray-400 transition-all duration-200"
           >
-            <span>🚪</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
             <span>ログアウト</span>
           </button>
         </div>

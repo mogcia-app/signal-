@@ -1574,6 +1574,14 @@ export async function getMasterContext(
       }
     });
 
+    // 現在の月/週を確実に含める
+    const currentDate = new Date();
+    const currentMonthKey = monthKeyFromDate(currentDate);
+    const currentWeekKey = weekKeyFromDate(currentDate);
+    
+    ensureSlot(monthlyAccumulator, currentMonthKey);
+    ensureSlot(weeklyAccumulator, currentWeekKey);
+
     const buildTimeline = (
       map: Map<string, TimelineAccumulator>,
       labelFormatter: (key: string) => string,

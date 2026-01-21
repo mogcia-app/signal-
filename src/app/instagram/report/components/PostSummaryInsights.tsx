@@ -221,7 +221,7 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
+      <div className="bg-white border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-gray-400 mr-2" />
           <span className="text-sm text-gray-500">投稿分析結果を読み込み中...</span>
@@ -232,7 +232,7 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
 
   if (error) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
+      <div className="bg-white border border-gray-200 p-6 mb-6">
         <div className="flex items-center text-red-600">
           <AlertCircle className="w-5 h-5 mr-2" />
           <span className="text-sm">{error}</span>
@@ -243,14 +243,14 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
 
   if (!insights || insights.postCount === 0) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm mb-4">
+    <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       <div className="flex items-center mb-4">
         <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-[#FF8A15] mr-2 sm:mr-3" />
         <h2 className="text-base font-semibold text-gray-900">
           今月の投稿別強み・改善・施策まとめ
         </h2>
       </div>
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 text-center">
+      <div className="bg-white border border-gray-200 p-3 sm:p-4 text-center">
         <p className="text-sm text-gray-600">
           投稿ごとのAI分析結果が生成されると、ここに表示されます。
         </p>
@@ -263,7 +263,7 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm mb-4">
+    <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       <div className="flex items-center mb-4">
         <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-[#FF8A15] mr-2 sm:mr-3" />
         <h2 className="text-base font-semibold text-gray-900">

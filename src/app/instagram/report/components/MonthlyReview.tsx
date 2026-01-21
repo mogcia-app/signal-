@@ -93,15 +93,15 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#ff8a15] flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
             <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">今月の振り返り</h2>
+            <h2 className="text-base font-bold text-gray-900">今月の振り返り</h2>
             <p className="text-xs text-gray-600 mt-0.5">
               AIが生成した月次の総合的な振り返り
             </p>
@@ -111,7 +111,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
         {reviewData && (
         <button
           onClick={handleToggle}
-            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all border border-gray-300"
         >
             {isExpanded ? (
             <>
@@ -137,7 +137,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
               <span className="text-sm text-gray-700">AI分析を実行中...</span>
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+            <div className="bg-white border border-red-200 p-3 sm:p-4">
               <div className="flex items-start">
                 <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
                 <div className="flex-1">

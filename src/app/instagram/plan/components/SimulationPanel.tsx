@@ -15,17 +15,29 @@ interface SimulationPanelProps {
   hasActivePlan?: boolean;
   onSave?: () => void;
   isSaving?: boolean;
+  planEndDate?: Date | null;
 }
 
-interface PreviousMonthData {
-  followerIncrease: number;
-  totalPosts: number;
-  lowKPIs: Array<{
-    key: string;
-    label: string;
-    value: number;
-    changePct?: number;
-  }>;
+interface SimulationCalculationData {
+  weeksRemaining: number;
+  daysRemaining: number;
+  postBreakdown: {
+    reel: { frequency: string; countTotal: number; expected: { min: number; max: number } };
+    feed: { frequency: string; countTotal: number; expected: { min: number; max: number } };
+    story: { frequency: string; countTotal: number; expected: { min: number; max: number } };
+  };
+  totalExpected: { min: number; max: number };
+  goalAchievementRate: { label: string; showAdSuggestion: boolean };
+  dailyPace: number;
+  workload: {
+    weeklyHours: number;
+    monthlyHours: number;
+    breakdown: {
+      reel: { hours: number; perPost: number };
+      feed: { hours: number; perPost: number };
+      story: { hours: number; perPost: number };
+    };
+  };
 }
 
 export const SimulationPanel: React.FC<SimulationPanelProps> = ({
@@ -37,39 +49,66 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   hasActivePlan = false,
   onSave,
   isSaving = false,
+  planEndDate,
 }) => {
   const { user } = useAuth();
-  const [previousMonthData, setPreviousMonthData] = useState<PreviousMonthData | null>(null);
-  const [isLoadingPreviousMonth, setIsLoadingPreviousMonth] = useState(false);
+  const [calculationData, setCalculationData] = useState<SimulationCalculationData | null>(null);
+  const [isLoadingCalculation, setIsLoadingCalculation] = useState(false);
 
-  // 期間に基づく固定日数を取得
-  const getPeriodDays = (planPeriod: string): number => {
-    switch (planPeriod) {
-      case "1ヶ月":
-        return 31;
-      case "3ヶ月":
-        return 90;
-      case "6ヶ月":
-        return 180;
-      case "1年":
-        return 365;
-      default:
-        return 31;
-    }
-  };
+  // 期待値のラベルフォーマット
+  const formatExpectedLabel = (e: { min: number; max: number }) => `${e.min}〜${e.max}人`;
 
-  // 期間と残り日数を計算（固定値を使用）
+  // BFF APIからシミュレーション計算データを取得
+  useEffect(() => {
+    const fetchCalculationData = async () => {
+      if (!result || !formData.followerGain || !formData.currentFollowers || !formData.planPeriod) {
+        setCalculationData(null);
+        return;
+      }
+
+      setIsLoadingCalculation(true);
+      try {
+        const requestBody = {
+          followerGain: Number(formData.followerGain),
+          currentFollowers: Number(formData.currentFollowers),
+          planPeriod: formData.planPeriod,
+          postsPerWeek: result.postsPerWeek || { reel: 0, feed: 0, story: 0 },
+          planEndDate: planEndDate ? planEndDate.toISOString() : undefined,
+        };
+
+        const response = await authFetch("/api/plan/simulation", {
+          method: "POST",
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error("シミュレーション計算に失敗しました");
+        }
+
+        const data: SimulationCalculationData = await response.json();
+        setCalculationData(data);
+      } catch (error) {
+        console.error("シミュレーション計算エラー:", error);
+        setCalculationData(null);
+      } finally {
+        setIsLoadingCalculation(false);
+      }
+    };
+
+    fetchCalculationData();
+  }, [result, formData.followerGain, formData.currentFollowers, formData.planPeriod, planEndDate]);
+
+  // 期間と残り日数を計算（実際の日付を使用）
   const periodInfo = useMemo(() => {
     if (!result) return null;
 
     const periodMultiplier = getPeriodMultiplier(formData.planPeriod);
-    const daysRemaining = getPeriodDays(formData.planPeriod);
     
-    // 表示用の日付（現在の日付を使用、ただし計算には使わない）
+    // 実際の現在日時から計算
     const now = new Date();
     const startDate = new Date(now);
-    startDate.setDate(1);
     
+    // 計画終了日を計算
     const targetDate = new Date(now);
     switch (formData.planPeriod) {
       case "1ヶ月":
@@ -87,248 +126,29 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
       default:
         targetDate.setMonth(targetDate.getMonth() + 1);
     }
-    targetDate.setDate(1);
+
+    // 実際の残り日数を計算（ミリ秒から日数に変換、切り上げ）
+    const timeDiff = targetDate.getTime() - now.getTime();
+    const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
 
     return {
       startDate,
       targetDate,
-      daysRemaining,
+      daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
       periodMultiplier,
     };
-  }, [result, formData.planPeriod]);
+  }, [result, formData.planPeriod, planEndDate]);
 
-  // 1日あたりの必要ペースを計算
-  const dailyPace = useMemo(() => {
-    if (!result || !periodInfo) return 0;
-    const followerGain = parseInt(formData.followerGain, 10);
-    return periodInfo.daysRemaining > 0 ? Math.ceil(followerGain / periodInfo.daysRemaining) : followerGain;
-  }, [result, periodInfo, formData.followerGain]);
+  // APIから取得した計算データを使用（フォールバックは計算値を保持）
+  const weeksRemaining = calculationData?.weeksRemaining ?? (periodInfo ? Math.max(1, Math.ceil(periodInfo.daysRemaining / 7)) : 0);
+  const dailyPace = calculationData?.dailyPace ?? 0;
+  const postBreakdown = calculationData?.postBreakdown ?? null;
+  const totalExpected = calculationData?.totalExpected ?? { min: 0, max: 0 };
+  const goalAchievementRate = calculationData?.goalAchievementRate ?? { label: "不明", showAdSuggestion: false };
 
-  // 投稿頻度を分かりやすい形式に変換
-  const formatPostFrequency = (postsPerWeek: number) => {
-    if (postsPerWeek === 0) return "投稿なし";
-    if (postsPerWeek === 1) return "週1回";
-    if (postsPerWeek === 2) return "週2回";
-    if (postsPerWeek === 3) return "週3回";
-    if (postsPerWeek === 4) return "週4回";
-    if (postsPerWeek === 5) return "週5回";
-    if (postsPerWeek === 6) return "週6回";
-    if (postsPerWeek >= 7) return "毎日";
-    // 小数点がある場合（例：0.5回/週）
-    return `週${postsPerWeek}回`;
-  };
-
-  // 期間に基づく週数を取得
-  const getWeeksForPeriod = (planPeriod: string): number => {
-    switch (planPeriod) {
-      case "1ヶ月":
-        return 4;
-      case "3ヶ月":
-        return 12;
-      case "6ヶ月":
-        return 24;
-      case "1年":
-        return 52;
-      default:
-        return 4;
-    }
-  };
-
-  // デフォルトの投稿頻度（すべての箇所で統一）
-  const DEFAULT_POSTS_PER_WEEK = {
-    reel: 0,
-    feed: 0,
-    story: 0,
-  };
-
-  // 投稿内訳を残り日数で計算
-  const postBreakdown = useMemo(() => {
-    if (!result || !periodInfo) return null;
-
-    try {
-      const daysRemaining = periodInfo.daysRemaining;
-      const weeksRemaining = getWeeksForPeriod(formData.planPeriod);
-      
-      // postsPerWeekのデフォルト値を設定（各プロパティが存在しない場合も安全に処理）
-      // オプショナルチェーンとnull合体演算子を使用して安全にアクセス
-      const rawPostsPerWeek = result?.postsPerWeek;
-      
-      // 有効なオブジェクトかどうかを確認し、各プロパティが存在するかチェック
-      const postsPerWeek = (
-        rawPostsPerWeek &&
-        typeof rawPostsPerWeek === 'object' &&
-        !Array.isArray(rawPostsPerWeek) &&
-        'reel' in rawPostsPerWeek &&
-        'feed' in rawPostsPerWeek &&
-        'story' in rawPostsPerWeek
-      ) ? rawPostsPerWeek : DEFAULT_POSTS_PER_WEEK;
-      
-      // 安全にプロパティにアクセス（型チェック + デフォルト値）
-      const reelCount = typeof postsPerWeek.reel === 'number' && !isNaN(postsPerWeek.reel) 
-        ? postsPerWeek.reel 
-        : DEFAULT_POSTS_PER_WEEK.reel;
-      const feedCount = typeof postsPerWeek.feed === 'number' && !isNaN(postsPerWeek.feed)
-        ? postsPerWeek.feed
-        : DEFAULT_POSTS_PER_WEEK.feed;
-      const storyCount = typeof postsPerWeek.story === 'number' && !isNaN(postsPerWeek.story)
-        ? postsPerWeek.story
-        : DEFAULT_POSTS_PER_WEEK.story;
-    
-    // 期間全体の投稿数
-    const reelTotal = Math.round(reelCount * weeksRemaining);
-    const feedTotal = Math.round(feedCount * weeksRemaining);
-    const storyTotal = daysRemaining;
-    
-    // 1週間分の予測増加数
-    const reelWeeklyExpected = `${reelCount * 4}〜${reelCount * 7}人`;
-    const feedWeeklyExpected = `${feedCount * 1}〜${feedCount * 3}人`;
-    const storyWeeklyExpected = `2〜8人`; // 毎日1回 × 7日 = 0.3×7〜1.2×7 ≈ 2〜8人
-    
-      return {
-        reel: {
-          frequency: formatPostFrequency(reelCount),
-          countTotal: reelTotal,
-          effect: "4〜7人",
-          expected: reelWeeklyExpected,
-        },
-        feed: {
-          frequency: formatPostFrequency(feedCount),
-          countTotal: feedTotal,
-          effect: "1〜3人",
-          expected: feedWeeklyExpected,
-        },
-        story: {
-          frequency: "毎日",
-          countTotal: storyTotal,
-          effect: "0.3〜1.2人",
-          expected: storyWeeklyExpected,
-        },
-      };
-    } catch (error) {
-      // 安全にエラーログを出力
-      try {
-        if (typeof console !== 'undefined' && console.error) {
-          console.error('Error calculating postBreakdown:', error);
-        }
-      } catch (logError) {
-        // コンソールログ自体が失敗した場合は無視
-      }
-      return null;
-    }
-  }, [result, periodInfo, formData.planPeriod]);
-
-  // 合計期待値を計算
-  const totalExpected = useMemo(() => {
-    // オプショナルチェーンで安全にアクセス
-    if (!postBreakdown?.reel?.expected || !postBreakdown?.feed?.expected || !postBreakdown?.story?.expected) {
-      return { min: 0, max: 0 };
-    }
-    
-    const reelMin = parseInt(postBreakdown.reel.expected.split("〜")[0]) || 0;
-    const reelMax = parseInt(postBreakdown.reel.expected.split("〜")[1]?.replace("人", "") || "0") || 0;
-    const feedMin = parseInt(postBreakdown.feed.expected.split("〜")[0]) || 0;
-    const feedMax = parseInt(postBreakdown.feed.expected.split("〜")[1]?.replace("人", "") || "0") || 0;
-    const storyMin = parseInt(postBreakdown.story.expected.split("〜")[0]) || 0;
-    const storyMax = parseInt(postBreakdown.story.expected.split("〜")[1]?.replace("人", "") || "0") || 0;
-
-    return {
-      min: reelMin + feedMin + storyMin,
-      max: reelMax + feedMax + storyMax,
-    };
-  }, [postBreakdown]);
-
-  // 目標到達率を判定（5段階）
-  const goalAchievementRate = useMemo(() => {
-    if (!totalExpected) return { label: "不明", showAdSuggestion: false };
-    const target = parseInt(formData.followerGain, 10);
-    
-    // 達成率を計算（最小値と最大値の平均で判定）
-    const avgExpected = (totalExpected.min + totalExpected.max) / 2;
-    const achievementRate = (avgExpected / target) * 100;
-    
-    if (totalExpected.min >= target) {
-      // 最小値でも目標を超える → 達成可能
-      return { label: "達成可能", showAdSuggestion: false };
-    } else if (totalExpected.max >= target && achievementRate >= 80) {
-      // 最大値で目標を超え、達成率80%以上 → 頑張れば達成可能
-      return { label: "頑張れば達成可能", showAdSuggestion: true };
-    } else if (achievementRate >= 60) {
-      // 達成率60%以上 → やや困難
-      return { label: "やや困難", showAdSuggestion: true };
-    } else if (achievementRate >= 30) {
-      // 達成率30%以上 → 困難
-      return { label: "困難", showAdSuggestion: true };
-    } else {
-      // 達成率30%未満 → 非常に困難
-      return { label: "非常に困難", showAdSuggestion: true };
-    }
-  }, [totalExpected, formData.followerGain]);
-
-  // 先月のデータを取得
-  useEffect(() => {
-    const fetchPreviousMonthData = async () => {
-      if (!user) return;
-
-      setIsLoadingPreviousMonth(true);
-      try {
-        const now = new Date();
-        const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const previousMonthStr = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, "0")}`;
-
-        const kpiResponse = await authFetch(
-          `/api/analytics/kpi-breakdown?date=${encodeURIComponent(previousMonthStr)}`
-        );
-        const kpiResult = await kpiResponse.json();
-
-        if (kpiResult.success && kpiResult.data) {
-          const breakdowns = Array.isArray(kpiResult.data.breakdowns) ? kpiResult.data.breakdowns : [];
-          
-          const followerBreakdown = breakdowns.find((b: any) => b.key === "current_followers");
-          const followerIncrease = followerBreakdown?.value || 0;
-
-          const lowKPIs = breakdowns
-            .filter((b: any) => {
-              if (b.key === "current_followers") return false;
-              if (b.changePct === undefined || isNaN(b.changePct)) return false;
-              return b.changePct < 0 || (b.changePct < 10 && b.value > 0);
-            })
-            .sort((a: any, b: any) => {
-              const aChange = a.changePct || 0;
-              const bChange = b.changePct || 0;
-              return aChange - bChange;
-            })
-            .slice(0, 2);
-
-          const analyticsResponse = await authFetch(`/api/analytics`);
-          const analyticsResult = await analyticsResponse.json();
-          const analytics = analyticsResult.analytics || analyticsResult.data || [];
-          
-          const previousMonthStart = new Date(previousMonth.getFullYear(), previousMonth.getMonth(), 1);
-          const previousMonthEnd = new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0, 23, 59, 59);
-          
-          const totalPosts = analytics.filter((item: any) => {
-            if (!item.publishedAt) return false;
-            const publishedAt = item.publishedAt instanceof Date 
-              ? item.publishedAt 
-              : new Date(item.publishedAt);
-            return publishedAt >= previousMonthStart && publishedAt <= previousMonthEnd;
-          }).length;
-
-          setPreviousMonthData({
-            followerIncrease,
-            totalPosts,
-            lowKPIs,
-          });
-        }
-      } catch (error) {
-        console.error("先月のデータ取得エラー:", error);
-      } finally {
-        setIsLoadingPreviousMonth(false);
-      }
-    };
-
-    fetchPreviousMonthData();
-  }, [user]);
+  // 代替プラン提示ロジック（ステップ2でBFFに移行予定）
+  // TODO: 代替プラン生成をBFF APIに移行
+  const alternativePlans = null;
 
   // 期間乗数を取得
   function getPeriodMultiplier(planPeriod: string): number {
@@ -369,7 +189,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
     return (
       <section className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <span className="mr-2">📊</span>目標達成シミュレーション
+          <span className="mr-2 font-bold">目標達成シミュレーション</span>
         </h3>
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
           <p className="text-sm text-black mb-4">
@@ -379,15 +199,20 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
             <button
               onClick={onRunSimulation}
               disabled={isSimulating}
-              className="w-full bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-orange-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSimulating ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  シミュレーション実行中...
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                    <span>シミュレーション実行中...</span>
+                  </div>
+                  <p className="text-xs text-orange-100">
+                    AIが戦略を生成しています。しばらくお待ちください...
+                  </p>
                 </div>
               ) : (
-                "🎯 シミュレーション実行"
+                "シミュレーション実行"
               )}
             </button>
           )}
@@ -402,10 +227,10 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
   }
 
   return (
-    <section className="p-8 bg-gray-50 min-h-screen">
+    <section className="p-8 bg-white min-h-screen">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <h3 className="text-2xl font-light text-gray-900 tracking-tight">
+          <h3 className="text-2xl font-bold text-gray-900 tracking-tight">
             目標達成シミュレーション
           </h3>
           {onRunSimulation && (
@@ -452,7 +277,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
         <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <div className="text-center">
             <div className="text-2xl font-light text-gray-900 mb-1">
-              {parseInt(formData.currentFollowers).toLocaleString()}人
+              {formData.currentFollowers ? parseInt(formData.currentFollowers).toLocaleString() : "0"}人
             </div>
             <div className="text-sm text-gray-500 mb-4">現在のフォロワー数</div>
             <div className="flex items-center justify-center space-x-2 text-gray-400 mb-4">
@@ -461,10 +286,12 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
               <div className="h-px bg-gray-300 flex-1"></div>
             </div>
             <div className="text-2xl font-light text-orange-600 mb-1">
-              {parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人
+              {formData.currentFollowers && formData.followerGain 
+                ? (parseInt(formData.currentFollowers) + parseInt(formData.followerGain)).toLocaleString() 
+                : "0"}人
             </div>
             <div className="text-sm text-orange-600 font-medium">
-              +{parseInt(formData.followerGain)}人必要
+              {formData.followerGain ? `+${parseInt(formData.followerGain)}人必要` : "0人必要"}
             </div>
           </div>
         </div>
@@ -482,10 +309,10 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
             {periodInfo && (
               <div className="space-y-2">
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  残り <span className="font-medium text-orange-600">{periodInfo.daysRemaining}日</span> で <span className="font-medium text-orange-600">+{parseInt(formData.followerGain)}人</span> の増加が必要です。
+                  残り <span className="font-medium text-orange-600">{periodInfo.daysRemaining}日</span> で <span className="font-medium text-orange-600">{formData.followerGain ? `+${parseInt(formData.followerGain)}人` : "目標未設定"}</span> の増加が必要です。
                 </p>
                 <p className="text-sm text-gray-500">
-                  1日あたり <span className="font-medium text-orange-600">+{dailyPace}人</span> のペースで成長を維持する必要があります。
+                  1日あたり <span className="font-medium text-orange-600">+{typeof dailyPace === 'number' ? dailyPace.toFixed(1) : dailyPace}人</span> のペースで成長を維持する必要があります。
                 </p>
               </div>
             )}
@@ -522,8 +349,8 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">投稿タイプ</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">投稿数</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">予測増加数</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">週あたりの投稿頻度</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">週あたりの予測増加数</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -532,21 +359,27 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                     <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
                       {postBreakdown.reel?.frequency || "投稿なし"}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.reel?.expected || "0人"}</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">
+                      +{postBreakdown.reel?.expected ? formatExpectedLabel(postBreakdown.reel.expected) : "0人"}
+                    </td>
                   </tr>
                   <tr>
                     <td className="px-4 py-4 text-sm text-gray-900">フィード投稿</td>
                     <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
                       {postBreakdown.feed?.frequency || "投稿なし"}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.feed?.expected || "0人"}</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">
+                      +{postBreakdown.feed?.expected ? formatExpectedLabel(postBreakdown.feed.expected) : "0人"}
+                    </td>
                   </tr>
                   <tr>
                     <td className="px-4 py-4 text-sm text-gray-900">ストーリー</td>
                     <td className="px-4 py-4 text-center text-sm font-medium text-gray-900">
                       {postBreakdown.story?.frequency || "投稿なし"}
                     </td>
-                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">+{postBreakdown.story?.expected || "0人"}</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium text-orange-600">
+                      +{postBreakdown.story?.expected ? formatExpectedLabel(postBreakdown.story.expected) : "0人"}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -554,60 +387,144 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
             <div className="mt-6 pt-6 border-t border-gray-100">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">
-                  {periodInfo && periodInfo.daysRemaining >= 28 
-                    ? "今月の目標投稿数" 
-                    : `残り期間の目標投稿数（残り${periodInfo?.daysRemaining || 0}日間）`}
+                  期間全体の目標投稿数（4週間）
                 </span>
                 <span className="text-xl font-light text-orange-600">
                   {(postBreakdown.reel?.countTotal || 0) + (postBreakdown.feed?.countTotal || 0) + (postBreakdown.story?.countTotal || 0)}投稿
                 </span>
               </div>
-              <div className="text-xs text-gray-400 mt-1">
-                リール {postBreakdown.reel?.countTotal || 0}投稿 + フィード {postBreakdown.feed?.countTotal || 0}投稿 + ストーリー {postBreakdown.story?.countTotal || 0}回
+              <div className="text-xs text-gray-500 mt-2 space-y-1">
+                <div className="flex justify-between">
+                  <span>リール: {postBreakdown.reel?.countTotal || 0}投稿</span>
+                  <span className="text-gray-400">
+                    （{postBreakdown.reel?.frequency || "0"} × 4週）
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>フィード: {postBreakdown.feed?.countTotal || 0}投稿</span>
+                  <span className="text-gray-400">
+                    （{postBreakdown.feed?.frequency || "0"} × 4週）
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ストーリー: {postBreakdown.story?.countTotal || 0}回</span>
+                  <span className="text-gray-400">
+                    （{postBreakdown.story?.frequency || "0"} × 4週）
+                  </span>
+                </div>
               </div>
             </div>
-            {goalAchievementRate.showAdSuggestion && (
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <h5 className="text-sm font-medium text-gray-700 mb-3">広告予算の投入</h5>
-                <p className="text-sm text-gray-600 leading-relaxed mb-2">
-                  Instagram広告を活用して、オーガニックな成長を補完します。月1-2万円程度の予算で成長ペースを加速できます。
-                </p>
-                <p className="text-sm font-medium text-orange-600">
-                  月間+10-20%の成長促進
-                </p>
-              </div>
-            )}
           </div>
         )}
 
-        {/* 先月の課題 */}
-        {previousMonthData && previousMonthData.lowKPIs.length > 0 && (
+        {/* 代替プラン提示（目標未達時） */}
+        {/* TODO: ステップ2でBFF APIから取得して実装 */}
+        {/* {alternativePlans && Array.isArray(alternativePlans) && alternativePlans.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
-              先月の課題
-            </h4>
-            <div className="space-y-3">
-              {previousMonthData.lowKPIs.map((kpi) => (
-                <div key={kpi.key} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                  <span className="text-sm text-gray-700">{kpi.label}</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {kpi.changePct !== undefined && kpi.changePct < 0
-                      ? `${kpi.changePct.toFixed(1)}%`
-                      : kpi.value.toLocaleString()}
-                  </span>
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
+                目標達成のための代替プラン
+              </h4>
+              <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                この条件では <span className="font-medium text-orange-600">+{Math.round(totalExpected.max)}人前後</span> が現実的です。
+                <br />
+                目標の <span className="font-medium text-orange-600">+{Number(formData.followerGain)}人</span> に近づけるには、以下のいずれかが必要です：
+              </p>
+            </div>
+            <div className="space-y-4">
+              {alternativePlans.map((plan, index) => (
+                <div
+                  key={index}
+                  className="border border-gray-200 p-4 hover:border-[#FF8A15] transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h5 className="text-sm font-medium text-gray-900">{plan.title}</h5>
+                    {plan.type === "ad" && (
+                      <span className="px-2 py-1 text-xs font-medium bg-[#FF8A15] text-white">
+                        推奨
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">{plan.description}</p>
+                  <p className="text-sm font-medium text-orange-600">{plan.expectedGain}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        )} */}
+
+        {/* 実行負荷（工数）シミュレーション */}
+        {calculationData?.workload && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+              実行負荷
+            </h4>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">週あたり制作時間</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {calculationData.workload.weeklyHours.toFixed(1)}
+                    <span className="text-base font-medium text-gray-600 ml-1">時間</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">期間全体の合計時間</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {calculationData.workload.monthlyHours.toFixed(1)}
+                    <span className="text-base font-medium text-gray-600 ml-1">時間</span>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-gray-100">
+                <div className="text-xs text-gray-500 mb-2">内訳（週あたり）</div>
+                <div className="space-y-2">
+                  {calculationData.workload.breakdown.reel.hours > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700">リール</span>
+                      <span className="text-gray-900 font-medium">
+                        {calculationData.workload.breakdown.reel.hours.toFixed(1)}時間
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({calculationData.workload.breakdown.reel.perPost.toFixed(1)}時間/本)
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {calculationData.workload.breakdown.feed.hours > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700">フィード</span>
+                      <span className="text-gray-900 font-medium">
+                        {calculationData.workload.breakdown.feed.hours.toFixed(1)}時間
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({calculationData.workload.breakdown.feed.perPost.toFixed(2)}時間/本)
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {calculationData.workload.breakdown.story.hours > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700">ストーリー</span>
+                      <span className="text-gray-900 font-medium">
+                        {calculationData.workload.breakdown.story.hours.toFixed(1)}時間
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({calculationData.workload.breakdown.story.perPost.toFixed(1)}時間/本)
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* 保存ボタン */}
-        {onSave && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        {onSave && result && (
+          <div className="mt-6">
             <button
               onClick={onSave}
               disabled={isSaving}
-              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-md font-medium transition-all duration-200 flex items-center justify-center shadow-sm"
+              className="w-full bg-[#FF8A15] hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 font-medium transition-all duration-200 flex items-center justify-center border border-[#FF8A15]"
             >
               {isSaving ? (
                 <>
@@ -615,11 +532,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
                   保存中...
                 </>
               ) : (
-                <>
-                  {hasActivePlan
-                    ? "シミュレーションを更新"
-                    : "シミュレーションを保存"}
-                </>
+                "この計画を保存する"
               )}
             </button>
           </div>

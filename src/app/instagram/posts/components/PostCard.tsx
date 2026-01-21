@@ -258,7 +258,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
         </span>
         {hasAnalytics && post.postType !== "story" && (
           <span className="px-2 py-1 text-xs bg-green-100 text-green-800 font-medium shadow-sm">
-            📊 分析済み
+            分析済み
           </span>
         )}
         {hasAnalytics &&

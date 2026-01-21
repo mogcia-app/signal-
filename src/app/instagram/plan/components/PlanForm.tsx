@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { PlanFormData } from "../types/plan";
 import { InfoTooltip } from "./InfoTooltip";
 
@@ -21,19 +21,17 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   onStrategyToggle,
   onCategoryToggle,
 }) => {
+
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <div className="bg-white border border-gray-200 p-6">
       <div className="mb-6">
-        <h3 className="text-xl font-semibold mb-2">📋 計画を立てる</h3>
-        <p className="text-sm text-black">
-          具体的に記入するほど、精度の高いアドバイスが得られます。
-        </p>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">計画を立てる</h3>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* 期間 */}
         <div>
-          <label htmlFor="planPeriod" className="block text-sm font-medium mb-1">
+          <label htmlFor="planPeriod" className="block text-sm font-bold text-gray-900 mb-2">
             期間
             <InfoTooltip content="計画を実行する期間を選択してください。1ヶ月から始めることをおすすめします。期間が長いほど、より多くのフォロワーを獲得できますが、継続が重要です。" />
           </label>
@@ -42,65 +40,72 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             name="planPeriod"
             value={formData.planPeriod}
             onChange={onInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 bg-white"
           >
             <option value="1ヶ月">1ヶ月（おすすめ）</option>
             <option value="3ヶ月">3ヶ月</option>
             <option value="6ヶ月">6ヶ月</option>
             <option value="1年">1年</option>
           </select>
-          <p className="text-sm text-black mt-1">
-            この計画は <span className="font-medium">{formData.planPeriod}</span> 単位で運用されます
-          </p>
         </div>
 
-        {/* フォロワー数 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="currentFollowers" className="block text-sm font-medium mb-1">
-              現在のフォロワー数
-              <InfoTooltip content="現在のInstagramアカウントのフォロワー数を入力してください。正確な数値でなくても大丈夫です。例：100人、500人、1000人など" />
-            </label>
-            <input
-              type="number"
-              id="currentFollowers"
-              name="currentFollowers"
-              value={formData.currentFollowers}
-              onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="followerGain" className="block text-sm font-medium mb-1">
-              目標増加数
-              <InfoTooltip content="期間内に何人のフォロワーを増やしたいかを入力してください。現実的な目標を設定することが大切です。例：50人、100人、200人など" />
-            </label>
-            <input
-              type="number"
-              id="followerGain"
-              name="followerGain"
-              value={formData.followerGain}
-              onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-          </div>
-        </div>
-
-        {/* KPIカテゴリ */}
+        {/* 目標 */}
         <div>
-          <label htmlFor="goalCategorySelect" className="block text-sm font-medium mb-1">
-            KPIカテゴリ
-            <InfoTooltip content="最も重視したい指標を選択してください。フォロワー獲得、エンゲージ促進、いいねを増やすなど、あなたの目標に最も近いものを選んでください。" />
+          <label className="block text-sm font-bold text-gray-900 mb-2">
+            目標
+            <InfoTooltip content="現在のフォロワー数と目標増加数を入力してください。" />
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="currentFollowers" className="block text-xs text-gray-600 mb-1">
+                現在のフォロワー数
+              </label>
+              <input
+                type="number"
+                id="currentFollowers"
+                name="currentFollowers"
+                value={formData.currentFollowers}
+                onChange={onInputChange}
+                placeholder="例: 100"
+                className="w-full px-4 py-3 border border-gray-300 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+            <div>
+              <label htmlFor="followerGain" className="block text-xs text-gray-600 mb-1">
+                目標増加数
+              </label>
+              <input
+                type="number"
+                id="followerGain"
+                name="followerGain"
+                value={formData.followerGain}
+                onChange={onInputChange}
+                placeholder="例: 30"
+                className="w-full px-4 py-3 border border-gray-300 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              {formData.currentFollowers && formData.followerGain && (
+                <p className="text-xs text-gray-500 mt-1">
+                  目標: {parseInt(formData.currentFollowers).toLocaleString()}人 → {(parseInt(formData.currentFollowers) + parseInt(formData.followerGain)).toLocaleString()}人
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* KPI */}
+        <div>
+          <label htmlFor="goalCategorySelect" className="block text-sm font-bold text-gray-900 mb-2">
+            KPI
+            <InfoTooltip content="最も重視したい指標を選択してください。" />
           </label>
           <select
             id="goalCategorySelect"
             name="goalCategory"
             value={formData.goalCategory}
             onChange={onInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 bg-white"
           >
-            <option value="">-- 選択してください --</option>
+            <option value="">選択してください</option>
             <option value="follower">フォロワー獲得</option>
             <option value="engagement">エンゲージ促進</option>
             <option value="like">いいねを増やす</option>
@@ -119,18 +124,18 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               placeholder="その他の目標カテゴリ"
               value={formData.otherGoal}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent mt-2"
+              className="w-full px-4 py-3 border border-gray-300 bg-white mt-2"
             />
           )}
         </div>
 
-        {/* 施策選択 */}
+        {/* 取り組みたいこと */}
         <div>
-          <label className="block text-sm font-medium mb-2">
-            取り組みたいこと（複数選択可）
-            <InfoTooltip content="Instagramで取り組みたいことを複数選択してください。写真投稿、動画投稿、ストーリー活用など、あなたが実践したいものを選んでください。複数選択可能です。" />
+          <label className="block text-sm font-bold text-gray-900 mb-3">
+            取り組みたいこと
+            <InfoTooltip content="Instagramで取り組みたいことを複数選択してください。複数選択可能です。" />
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
               "写真をたくさん投稿する",
               "動画（リール）を中心に投稿する",
@@ -143,24 +148,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               "ハッシュタグを工夫する",
               "その他",
             ].map((strategy) => (
-              <span
+              <button
                 key={strategy}
-                className={`px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                  selectedStrategies.includes(strategy)
-                    ? "bg-orange-500 text-white"
-                    : "bg-gray-200 text-black hover:bg-gray-300"
-                }`}
+                type="button"
                 onClick={() => onStrategyToggle(strategy)}
+                className={`px-4 py-3 text-sm text-left border transition-colors ${
+                  selectedStrategies.includes(strategy)
+                    ? "bg-[#FF8A15] text-white border-[#FF8A15]"
+                    : "bg-white text-gray-900 border-gray-300 hover:border-[#FF8A15]"
+                }`}
               >
                 {strategy}
-              </span>
+              </button>
             ))}
           </div>
           {selectedStrategies.includes("その他") && (
             <input
               type="text"
               placeholder="その他の取り組みたいことを入力してください"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent mt-2"
+              className="w-full px-4 py-3 border border-gray-300 bg-white mt-2"
               onChange={(e) => {
                 if (e.target.value.trim()) {
                   const customStrategy = e.target.value.trim();
@@ -173,13 +179,13 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           )}
         </div>
 
-        {/* 投稿カテゴリ */}
+        {/* 投稿したい内容 */}
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-bold text-gray-900 mb-3">
             投稿したい内容
-            <InfoTooltip content="投稿したい内容の種類を複数選択してください。役立つ情報、実績紹介、ブランドの世界観など、あなたが投稿したい内容を選んでください。複数選択可能です。" />
+            <InfoTooltip content="投稿したい内容の種類を複数選択してください。複数選択可能です。" />
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
               "役立つ情報やコツ",
               "実績や成果の紹介",
@@ -194,24 +200,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               "話題のトレンド",
               "その他",
             ].map((category) => (
-              <span
+              <button
                 key={category}
-                className={`px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                  selectedCategories.includes(category)
-                    ? "bg-orange-500 text-white"
-                    : "bg-gray-200 text-black hover:bg-gray-300"
-                }`}
+                type="button"
                 onClick={() => onCategoryToggle(category)}
+                className={`px-4 py-3 text-sm text-left border transition-colors ${
+                  selectedCategories.includes(category)
+                    ? "bg-[#FF8A15] text-white border-[#FF8A15]"
+                    : "bg-white text-gray-900 border-gray-300 hover:border-[#FF8A15]"
+                }`}
               >
                 {category}
-              </span>
+              </button>
             ))}
           </div>
           {selectedCategories.includes("その他") && (
             <input
               type="text"
               placeholder="その他の投稿したい内容を入力してください"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent mt-2"
+              className="w-full px-4 py-3 border border-gray-300 bg-white mt-2"
               onChange={(e) => {
                 if (e.target.value.trim()) {
                   const customCategory = e.target.value.trim();
@@ -226,7 +233,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
 
         {/* ターゲット層 */}
         <div>
-          <label htmlFor="targetAudienceInput" className="block text-sm font-medium mb-1">
+          <label htmlFor="targetAudienceInput" className="block text-sm font-bold text-gray-900 mb-2">
             ターゲット層
             <InfoTooltip content="あなたの投稿を見てほしい人、フォローしてほしい人を具体的に書いてください。年齢、性別、興味、職業など、できるだけ具体的に書くほど効果的です。" />
           </label>
@@ -235,9 +242,9 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             name="targetAudience"
             value={formData.targetAudience}
             onChange={onInputChange}
-            placeholder="例：SNS初心者の20〜30代女性、美容に興味がある、子育て中のママ など"
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent resize-none"
+            placeholder="例：ブランドの認知拡大"
+            rows={4}
+            className="w-full px-4 py-3 border border-gray-300 bg-white resize-none"
           />
         </div>
 
@@ -409,3 +416,4 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     </div>
   );
 };
+

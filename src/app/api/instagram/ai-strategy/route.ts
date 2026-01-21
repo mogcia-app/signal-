@@ -159,26 +159,26 @@ async function generateAIStrategy(
     };
 
     try {
-      systemPrompt = buildPlanPrompt(
-        userProfile,
-        "instagram",
-        enhancedFormData as {
-          currentFollowers?: number | string;
-          targetFollowers?: number | string;
-          planPeriod?: string;
-          goalCategory?: string;
-          strategyValues?: string[];
-          postCategories?: string[];
-          brandConcept?: string;
-          colorVisual?: string;
-          tone?: string;
-        },
-        simulationResult as {
-          monthlyTarget?: number | string;
-          feasibilityLevel?: string;
-          postsPerWeek?: { feed?: number; reel?: number };
-        }
-      );
+    systemPrompt = buildPlanPrompt(
+      userProfile,
+      "instagram",
+      enhancedFormData as {
+        currentFollowers?: number | string;
+        targetFollowers?: number | string;
+        planPeriod?: string;
+        goalCategory?: string;
+        strategyValues?: string[];
+        postCategories?: string[];
+        brandConcept?: string;
+        colorVisual?: string;
+        tone?: string;
+      },
+      simulationResult as {
+        monthlyTarget?: number | string;
+        feasibilityLevel?: string;
+        postsPerWeek?: { feed?: number; reel?: number };
+      }
+    );
     } catch (promptError) {
       console.error("プロンプト構築エラー:", promptError);
       throw new Error(`プロンプトの構築に失敗しました: ${promptError instanceof Error ? promptError.message : "Unknown error"}`);
@@ -312,7 +312,7 @@ async function generateAIStrategy(
   }
 
   try {
-    const masterContext = await getMasterContext(userId);
+  const masterContext = await getMasterContext(userId);
     patternLearningContext = buildPostPatternPromptSection(masterContext?.postPatterns) || null;
   } catch (error) {
     console.warn("⚠️ MasterContext取得エラー（続行）:", error);

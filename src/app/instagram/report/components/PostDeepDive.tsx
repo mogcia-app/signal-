@@ -131,14 +131,14 @@ export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth }) => 
   }, [user, selectedMonth, fetchPostDeepDive]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       {/* ヘッダー */}
       <div className="flex items-center mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#ff8a15] flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
           <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-gray-900">投稿ディープダイブ</h2>
+          <h2 className="text-base font-bold text-gray-900">投稿ディープダイブ</h2>
           <p className="text-xs text-gray-600 mt-0.5">
             投稿実績・AI参照元・主要KPIをワンビューで確認できます
           </p>
@@ -150,11 +150,11 @@ export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth }) => 
         <div className="mt-4 pt-4 border-t border-gray-200 animate-in fade-in duration-300">
           {isLoading ? (
             <div className="flex items-center justify-center py-6">
-              <Loader2 className="w-5 h-5 animate-spin text-orange-600 mr-2" />
+              <Loader2 className="w-5 h-5 animate-spin text-[#ff8a15] mr-2" />
               <span className="text-sm text-gray-700">データを読み込み中...</span>
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+            <div className="bg-white border border-red-200 p-3 sm:p-4">
               <div className="flex items-start">
                 <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
                 <div className="flex-1">
@@ -174,7 +174,7 @@ export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth }) => 
                 const analytics = post.analyticsSummary;
                 const snapshotRefs = post.snapshotReferences || [];
                 return (
-                  <div key={post.id} className="border border-gray-200 rounded-lg p-2.5 sm:p-3 space-y-2">
+                  <div key={post.id} className="border border-gray-200 p-2.5 sm:p-3 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1">
                         <p className="text-xs text-gray-500">

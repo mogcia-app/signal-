@@ -521,20 +521,11 @@ function buildKpiBreakdowns(params: {
         : 0
       : ((totals.totalFollowerIncrease - previousTotals.totalFollowerIncrease) / Math.abs(previousTotals.totalFollowerIncrease)) * 100;
 
-  // フォロワー数の内訳を表示
-  // 初月の場合：ツール利用開始時 + リールから + フィードから + その他から
-  // 翌月以降：リールから + フィードから + その他から
+  // フォロワー数の内訳を表示（月ごとにリセット、その月の増加数のみを表示）
+  // すべての月で、その月のリールから + フィードから + その他からの増加数のみを表示
   const currentFollowersSegments: KPIBreakdownSegment[] = [];
   
-  // 初月の場合、ツール利用開始時のフォロワー数をセグメントに追加
-  if (params.isFirstMonth && params.initialFollowers && params.initialFollowers > 0) {
-    currentFollowersSegments.push({
-      label: "ツール利用開始時",
-      value: params.initialFollowers,
-    });
-  }
-  
-  // リール、フィード、その他からの増加数を追加
+  // リール、フィード、その他からの増加数を追加（初月でもinitialFollowersは含めない）
   if (params.followerIncreaseFromReel && params.followerIncreaseFromReel > 0) {
     currentFollowersSegments.push({
       label: "リールから",
@@ -1272,22 +1263,15 @@ export async function GET(request: NextRequest) {
     // /homeで入力された値（currentFollowers）は「その他からの増加数」を表す
     const followerIncreaseFromOther = currentFollowers || 0;
     
-    // 合計増加数の計算
-    // 初月の場合：ツール利用開始時のフォロワー数 + 投稿からの増加数 + その他からの増加数
-    // 翌月以降：投稿からの増加数 + その他からの増加数
-    let totalFollowerIncrease: number;
-    if (isFirstMonth && initialFollowers > 0) {
-      // 初月：ツール利用開始時のフォロワー数を含めた絶対値
-      totalFollowerIncrease = initialFollowers + followerIncreaseFromPosts + followerIncreaseFromOther;
-    } else {
-      // 翌月以降：増加数のみ
-      totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
-    }
+    // 合計増加数の計算（月ごとにリセット、その月の増加数のみを表示）
+    // すべての月で、その月の投稿からの増加数 + その他からの増加数のみを計算
+    // 初月でもinitialFollowersは含めない（月ごとにリセットするため）
+    const totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
     
     // totalsのtotalFollowerIncreaseを更新
     totals.totalFollowerIncrease = totalFollowerIncrease;
     
-    // デバッグログ
+      // デバッグログ
     if (process.env.NODE_ENV === "development") {
       console.log("[フォロワー数内訳計算]", {
         isFirstMonth,
@@ -1300,9 +1284,7 @@ export async function GET(request: NextRequest) {
         totalFollowerIncrease,
         totalsTotalFollowerIncrease: totals.totalFollowerIncrease,
         previousTotalsTotalFollowerIncrease: previousTotals.totalFollowerIncrease,
-        note: isFirstMonth 
-          ? "初月：ツール利用開始時のフォロワー数 + 投稿からの増加 + その他からの増加"
-          : "翌月以降：投稿からの増加 + その他からの増加",
+        note: "すべての月で、その月の投稿からの増加 + その他からの増加のみを表示（月ごとにリセット）",
       });
     }
 

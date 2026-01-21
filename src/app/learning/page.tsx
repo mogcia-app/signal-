@@ -555,17 +555,18 @@ const goldSampleSignals = useMemo(() => {
 
   return (
     <SNSLayout customTitle="学習ダッシュボード" customDescription="AIと一緒に成長するための学習ログと振り返り">
-      <div className="space-y-6">
-        <section className="border border-gray-200 bg-white rounded-none p-6">
-          <h2 className="text-lg font-semibold text-black mb-3">AIとの学習状況</h2>
-          <p className="text-sm text-gray-600 leading-relaxed">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
+        <div className="space-y-6">
+        <section className="border border-gray-200 bg-white p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-3">AIとの学習状況</h2>
+          <p className="text-sm text-gray-700 leading-relaxed">
             AIが生成したサマリーや提案、あなたのフィードバックがどのように蓄積されているかを確認できます。
             今後、投稿への主観的評価や提案実行率などもここで追跡できる予定です。
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-4">
             <button
               onClick={() => setRefreshKey((prev) => prev + 1)}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-none transition-colors"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#ff8a15] hover:bg-[#e6760f] transition-colors border border-[#ff8a15]"
             >
               最新の履歴を再取得
             </button>
@@ -585,22 +586,24 @@ const goldSampleSignals = useMemo(() => {
 
         {/* LearningReferenceCard コンポーネントは削除されました */}
 
-        <section className="border border-gray-200 bg-white rounded-none p-6">
+        <section className="border border-gray-200 bg-white p-6 mb-6">
           <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
             <div>
               <div className="flex items-center gap-2">
-                <Award className="h-4 w-4 text-amber-500" />
-                <h2 className="text-lg font-semibold text-black">学習バッジ</h2>
+                <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
+                  <Award className="h-5 w-5 text-white" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-900">学習バッジ</h2>
                 <InfoTooltip text="ゴールド投稿数やフィードバック件数など、AIとの学習進捗に応じてアンロックされるバッジです。" />
               </div>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-gray-700">
                 AIとの学習度合いや活用状況に応じてバッジがアンロックされます。進捗を確認し、次のマイルストーンを目指しましょう。
               </p>
             </div>
           </div>
           {isContextLoading && achievements.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-slate-600">
-              <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
+            <div className="flex items-center justify-center py-8 text-gray-700">
+              <div className="w-5 h-5 border-2 border-[#ff8a15] border-t-transparent rounded-full animate-spin mr-2" />
               <span className="text-sm">バッジ情報を取得しています...</span>
             </div>
           ) : (
@@ -614,7 +617,7 @@ const goldSampleSignals = useMemo(() => {
                 return (
                   <div
                     key={badge.id}
-                    className={`border rounded-none p-4 ${
+                    className={`border p-4 ${
                       badge.status === "earned" ? "border-emerald-200 bg-emerald-50" : "border-gray-200 bg-gray-50"
                     }`}
                   >
@@ -633,7 +636,7 @@ const goldSampleSignals = useMemo(() => {
                         </div>
                         <p className="text-xs text-gray-600 mt-1">{badge.description}</p>
                         {badge.id === "feedback-balance" && (
-                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-none">
+                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200">
                             <p className="text-[10px] text-blue-800 font-semibold mb-1">💡 計算方法</p>
                             <p className="text-[10px] text-blue-700">
                               ポジティブとネガティブのフィードバック重みの「最小値」がポイントになります。
@@ -685,15 +688,17 @@ const goldSampleSignals = useMemo(() => {
           )}
         </section>
 
-        <section className="border border-gray-200 bg-white rounded-none p-6">
+        <section className="border border-gray-200 bg-white p-6 mb-6">
           <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
             <div>
               <div className="flex items-center gap-2">
-                <History className="h-4 w-4 text-slate-600" />
-                <h2 className="text-lg font-semibold text-black">学習進捗タイムライン</h2>
+                <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
+                  <History className="h-5 w-5 text-white" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-900">学習進捗タイムライン</h2>
                 <InfoTooltip text="月次・週次のフィードバック量やAI提案の採用率を追跡し、学習の定着度を確認できます。" />
               </div>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-gray-700">
                 月次・週次のフィードバック量とAI提案の採用率を可視化しています。AIとの学習曲線を一緒に追いかけましょう。
               </p>
             </div>
@@ -702,8 +707,8 @@ const goldSampleSignals = useMemo(() => {
                 onClick={() => setTimelineMode("monthly")}
                 className={`px-3 py-1 text-xs font-medium border transition-colors ${
                   resolvedTimelineMode === "monthly"
-                    ? "bg-slate-800 text-white border-slate-800"
-                    : "bg-white text-slate-600 border-gray-200 hover:bg-gray-50"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                 }`}
               >
                 月次
@@ -713,8 +718,8 @@ const goldSampleSignals = useMemo(() => {
                 disabled={!hasWeeklyTimeline}
                 className={`px-3 py-1 text-xs font-medium border transition-colors ${
                   resolvedTimelineMode === "weekly"
-                    ? "bg-slate-800 text-white border-slate-800"
-                    : "bg-white text-slate-600 border-gray-200 hover:bg-gray-50"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                 } ${!hasWeeklyTimeline ? "opacity-50 cursor-not-allowed" : ""}`}
                 title={
                   hasWeeklyTimeline
@@ -728,12 +733,12 @@ const goldSampleSignals = useMemo(() => {
           </div>
 
           {isContextLoading ? (
-            <div className="flex items-center justify-center py-10 text-slate-600">
-              <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
+            <div className="flex items-center justify-center py-10 text-gray-700">
+              <div className="w-5 h-5 border-2 border-[#ff8a15] border-t-transparent rounded-full animate-spin mr-2" />
               <span className="text-sm">タイムラインを読み込んでいます...</span>
             </div>
           ) : contextError ? (
-            <div className="border border-red-200 bg-red-50 rounded-none p-4 text-sm text-red-700">
+            <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               {contextError}
             </div>
           ) : displayedTimeline.length === 0 ? (
@@ -784,36 +789,36 @@ const goldSampleSignals = useMemo(() => {
 
               {latestTimelinePoint ? (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="border border-gray-200 bg-gray-50 rounded-none p-4">
-                    <p className="text-xs text-gray-500 mb-1">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs text-gray-700 mb-1">
                       最新{resolvedTimelineMode === "weekly" ? "週" : "月"}のフィードバック
                     </p>
-                    <p className="text-2xl font-semibold text-gray-800">
+                    <p className="text-2xl font-bold text-gray-900">
                       {latestTimelinePoint.feedbackCount}
-                      <span className="text-sm font-normal text-gray-500 ml-1">件</span>
+                      <span className="text-sm font-normal text-gray-700 ml-1">件</span>
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-gray-700 mt-2">
                       コメント付き {latestTimelinePoint.feedbackWithCommentCount}件 / ポジティブ率{" "}
                       {latestTimelinePoint.positiveRatePercent.toFixed(1)}%
                     </p>
                   </div>
-                  <div className="border border-gray-200 bg-gray-50 rounded-none p-4">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="text-xs text-gray-500">AI提案の採用状況</p>
+                      <p className="text-xs text-gray-700">AI提案の採用状況</p>
                       <InfoTooltip text="月次レポートや投稿ディープダイブセクションで「実行した」にチェックを入れると、ここに採用として記録されます。詳細は「フィードバック & アクション履歴」セクションで確認できます。" />
                     </div>
-                    <p className="text-2xl font-semibold text-gray-800">
+                    <p className="text-2xl font-bold text-gray-900">
                       {latestTimelinePoint.appliedCount}
-                      <span className="text-sm font-normal text-gray-500 ml-1">件採用</span>
+                      <span className="text-sm font-normal text-gray-700 ml-1">件採用</span>
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-gray-700 mt-2">
                       採用率 {latestTimelinePoint.adoptionRatePercent.toFixed(1)}% 
                       {latestTimelinePoint.actionCount > 0 && (
                         <span className="ml-1">({latestTimelinePoint.actionCount}件中)</span>
                       )}
                     </p>
                     {latestTimelinePoint.appliedCount === 0 && latestTimelinePoint.actionCount === 0 && (
-                      <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-none">
+                      <div className="mt-3 p-2 bg-blue-50 border border-blue-200">
                         <p className="text-[10px] text-blue-800 mb-1">
                           💡 採用を記録するには
                         </p>
@@ -838,10 +843,10 @@ const goldSampleSignals = useMemo(() => {
                       </Link>
                     )}
                   </div>
-                  <div className="border border-gray-200 bg-gray-50 rounded-none p-4">
-                    <p className="text-xs text-gray-500 mb-1">対象期間</p>
-                    <p className="text-2xl font-semibold text-gray-800">{latestTimelinePoint.label}</p>
-                    <p className="text-xs text-gray-500 mt-2">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs text-gray-700 mb-1">対象期間</p>
+                    <p className="text-2xl font-bold text-gray-900">{latestTimelinePoint.label}</p>
+                    <p className="text-xs text-gray-700 mt-2">
                       フィードバックとアクションを重ねるほど、AI提案があなたに最適化されます。
                     </p>
                   </div>
@@ -890,7 +895,7 @@ const goldSampleSignals = useMemo(() => {
             error={historyError}
           />
         </div>
-
+        </div>
       </div>
     </SNSLayout>
   );

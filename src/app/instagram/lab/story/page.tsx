@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import SNSLayout from "../../../../components/sns-layout";
 import PostEditor, { AIHintSuggestion } from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
@@ -9,6 +9,8 @@ import ABTestSidebarSection from "../components/ABTestSidebarSection";
 import { usePlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
+import { notify } from "../../../../lib/ui/notifications";
+import { AlertTriangle } from "lucide-react";
 
 export default function StoryLabPage() {
   const [postContent, setPostContent] = useState("");
@@ -44,6 +46,14 @@ export default function StoryLabPage() {
   // AIヒント関連の状態
   const [imageVideoSuggestions, setImageVideoSuggestions] = useState<AIHintSuggestion | null>(null);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+
+  // フィードバック関連の状態
+  const [scheduleFeedback, setScheduleFeedback] = useState<string | null>(null);
+  const [showScheduleAdminWarning, setShowScheduleAdminWarning] = useState(false);
+  const scheduleFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
+  const [suggestionsFeedback, setSuggestionsFeedback] = useState<string | null>(null);
+  const [showSuggestionsAdminWarning, setShowSuggestionsAdminWarning] = useState(false);
+  const suggestionsFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
 
   // 計画データを取得
   const { planData } = usePlanData("instagram");
@@ -158,9 +168,47 @@ export default function StoryLabPage() {
   }, [isAuthReady, fetchPostData]);
 
   // 分析データを取得
+  // スケジュール設定を分析してフィードバックを生成
+  const analyzeScheduleSettings = (): { feedback: string | null; category: string } => {
+    if (monthlyPosts < 4) {
+      return {
+        feedback: `投稿頻度が低すぎるようです（月${monthlyPosts}回）。週1回（月4回）以上に設定すると、より効果的なスケジュールが生成されます。継続的な投稿がフォロワー獲得には重要です。`,
+        category: "low_frequency",
+      };
+    }
+    if (dailyPosts > 3) {
+      return {
+        feedback: `1日の投稿回数が多すぎるようです（${dailyPosts}回）。1日1-2回程度が推奨です。投稿の質を保つためにも、無理のない頻度に設定してください。`,
+        category: "too_many_daily",
+      };
+    }
+    return { feedback: null, category: "" };
+  };
+
   // スケジュール生成関数
   const generateSchedule = useCallback(async () => {
     if (!isAuthReady) {return;}
+
+    // スケジュール設定を分析
+    const analysis = analyzeScheduleSettings();
+    setScheduleFeedback(analysis.feedback);
+
+    // 連続フィードバックの追跡
+    if (analysis.feedback) {
+      const now = Date.now();
+      scheduleFeedbackHistoryRef.current.push({ category: analysis.category, timestamp: now });
+      const recentSameCategory = scheduleFeedbackHistoryRef.current.filter(
+        (f) => f.category === analysis.category && (now - f.timestamp) < 180000
+      );
+      if (recentSameCategory.length >= 3) {
+        setShowScheduleAdminWarning(true);
+      } else {
+        setShowScheduleAdminWarning(false);
+      }
+    } else {
+      scheduleFeedbackHistoryRef.current = [];
+      setShowScheduleAdminWarning(false);
+    }
 
     setIsGeneratingSchedule(true);
     setScheduleError("");
@@ -191,6 +239,12 @@ export default function StoryLabPage() {
 
       const scheduleData = await scheduleResponse.json();
       setGeneratedSchedule(scheduleData.schedule || []);
+      
+      // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
+      if (!scheduleFeedback) {
+        scheduleFeedbackHistoryRef.current = [];
+        setShowScheduleAdminWarning(false);
+      }
     } catch (error) {
       console.error("スケジュール生成エラー:", error);
       setScheduleError(error instanceof Error ? error.message : "スケジュール生成に失敗しました");
@@ -258,7 +312,7 @@ export default function StoryLabPage() {
           setGeneratedSchedule(result.schedule.schedule || []);
           setMonthlyPosts(result.schedule.monthlyPosts || 8);
           setDailyPosts(result.schedule.dailyPosts || 1);
-          setSaveMessage("✅ 保存されたスケジュールを読み込みました");
+          notify({ type: "success", message: "保存されたスケジュールを読み込みました" });
         }
       }
     } catch (error) {
@@ -266,10 +320,53 @@ export default function StoryLabPage() {
     }
   }, [isAuthReady]);
 
+  // コンテンツを分析してフィードバックを生成（feedページと同じ）
+  const analyzeContent = (content: string): { feedback: string | null; category: string } => {
+    const trimmed = content.trim();
+    const length = trimmed.length;
+
+    if (length === 0) {
+      return {
+        feedback: "投稿文が入力されていません。AIヒントを生成するには、まず投稿文を作成してください。",
+        category: "no_content",
+      };
+    }
+
+    if (length < 20) {
+      return {
+        feedback: `投稿文が短すぎるようです（${length}文字）。もう少し詳しい内容（商品の特徴、イベントの詳細、伝えたいメッセージなど）を含めると、より具体的で効果的な画像・動画の提案が生成されます。`,
+        category: "too_short",
+      };
+    }
+
+    return { feedback: null, category: "" };
+  };
+
   // AIヒント生成関数
   const generateImageVideoSuggestions = useCallback(
     async (content: string) => {
       if (!isAuthReady) {return;}
+
+      // コンテンツを分析
+      const analysis = analyzeContent(content);
+      setSuggestionsFeedback(analysis.feedback);
+
+      // 連続フィードバックの追跡
+      if (analysis.feedback) {
+        const now = Date.now();
+        suggestionsFeedbackHistoryRef.current.push({ category: analysis.category, timestamp: now });
+        const recentSameCategory = suggestionsFeedbackHistoryRef.current.filter(
+          (f) => f.category === analysis.category && (now - f.timestamp) < 180000
+        );
+        if (recentSameCategory.length >= 3) {
+          setShowSuggestionsAdminWarning(true);
+        } else {
+          setShowSuggestionsAdminWarning(false);
+        }
+      } else {
+        suggestionsFeedbackHistoryRef.current = [];
+        setShowSuggestionsAdminWarning(false);
+      }
 
       setIsGeneratingSuggestions(true);
       try {
@@ -303,6 +400,12 @@ export default function StoryLabPage() {
               ? suggestionsData.rationale
               : undefined,
         });
+        
+        // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
+        if (!suggestionsFeedback) {
+          suggestionsFeedbackHistoryRef.current = [];
+          setShowSuggestionsAdminWarning(false);
+        }
       } catch (error) {
         console.error("AIヒント生成エラー:", error);
       } finally {
@@ -332,48 +435,44 @@ export default function StoryLabPage() {
       customDescription="Instagramストーリーの作成・編集"
       contentClassName="py-0 sm:py-0"
     >
-      <div className="pt-4 pb-0 space-y-4">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen pt-4 pb-0">
         {/* ストーリー投稿計画提案 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-6">
-            <span className="text-2xl mr-3">📅</span>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">ストーリー投稿計画</h2>
-              <p className="text-sm text-gray-600">1ヶ月のストーリー投稿スケジュールを提案します</p>
-            </div>
+        <div className="bg-white border border-gray-200 p-6 mb-4">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">ストーリー投稿計画</h2>
+            <p className="text-sm text-gray-700 mt-1">1ヶ月のストーリー投稿スケジュールを提案します</p>
           </div>
 
           {/* 投稿頻度設定 */}
           <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">投稿頻度設定</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">投稿頻度設定</h3>
 
             {/* 投稿頻度の概要表示 */}
-            <div className="mb-6 p-4 bg-orange-50 border border-orange-200">
-              <div className="flex items-center mb-2">
-                <span className="text-lg mr-2">📊</span>
-                <span className="font-medium text-orange-800">投稿スケジュール概要</span>
+            <div className="mb-6 p-4 bg-white border border-gray-200">
+              <div className="mb-2">
+                <span className="text-sm font-bold text-gray-900">投稿スケジュール概要</span>
               </div>
-              <div className="text-sm text-orange-700">
+              <div className="text-sm text-gray-700">
                 <p>
-                  • 週の投稿回数:{" "}
-                  <span className="font-semibold">{Math.round(monthlyPosts / 4)}回</span>（月
+                  週の投稿回数:{" "}
+                  <span className="font-bold">{Math.round(monthlyPosts / 4)}回</span>（月
                   {monthlyPosts}回）
                 </p>
                 <p>
-                  • 1日の投稿回数: <span className="font-semibold">{dailyPosts}回</span>
+                  1日の投稿回数: <span className="font-bold">{dailyPosts}回</span>
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="bg-white border border-gray-200 p-4">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
                   1ヶ月の投稿回数
                 </label>
                 <select
                   value={monthlyPosts}
                   onChange={(e) => setMonthlyPosts(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-300 bg-white focus:outline-none focus:border-[#ff8a15]"
                 >
                   <option value="4">4回（週1回）</option>
                   <option value="8">8回（週2回）</option>
@@ -384,14 +483,14 @@ export default function StoryLabPage() {
                   <option value="28">28回（毎日）</option>
                 </select>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="bg-white border border-gray-200 p-4">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
                   1日の投稿回数
                 </label>
                 <select
                   value={dailyPosts}
                   onChange={(e) => setDailyPosts(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-300 bg-white focus:outline-none focus:border-[#ff8a15]"
                 >
                   <option value="1">1回</option>
                   <option value="2">2回</option>
@@ -404,7 +503,7 @@ export default function StoryLabPage() {
 
           {/* 曜日別投稿提案カード */}
           <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">週間投稿スケジュール</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">週間投稿スケジュール</h3>
             {generatedSchedule.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {generatedSchedule
@@ -412,13 +511,13 @@ export default function StoryLabPage() {
                   .map((daySchedule) => (
                     <div
                       key={daySchedule.day}
-                      className="border-2 p-4 bg-orange-50 border-orange-300"
+                      className="border border-gray-200 p-4 bg-white"
                     >
                       <div className="space-y-2">
                         {daySchedule.posts.map((post, postIndex: number) => (
                           <div
                             key={postIndex}
-                            className="bg-white bg-opacity-80 p-2 text-sm text-gray-800"
+                            className="bg-white border border-gray-100 p-2 text-sm text-gray-900"
                           >
                             {post.emoji} {post.title}
                             <div className="text-xs text-gray-600 mt-1">{post.description}</div>
@@ -429,11 +528,11 @@ export default function StoryLabPage() {
                   ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-700">
                 <button
                   onClick={generateSchedule}
                   disabled={isGeneratingSchedule}
-                  className="px-6 py-3 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4 flex items-center justify-center gap-2 mx-auto"
+                  className="px-6 py-3 bg-[#ff8a15] text-white hover:bg-[#e67a0f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4 flex items-center justify-center gap-2 mx-auto font-medium"
                 >
                   {isGeneratingSchedule && (
                     <svg
@@ -459,9 +558,30 @@ export default function StoryLabPage() {
                   )}
                   <span>{isGeneratingSchedule ? "生成中..." : "AIでスケジュールを生成"}</span>
                 </button>
-                <p>あなたに最適な投稿スケジュールを作成しましょう</p>
+                <p className="text-sm">あなたに最適な投稿スケジュールを作成しましょう</p>
+                
+                {showScheduleAdminWarning ? (
+                  <div className="mt-4 p-3 border border-orange-300 bg-orange-50 text-orange-800 text-xs">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-bold mb-1">同じような改善提案が3回続いています</p>
+                        <p>投稿頻度設定を改善しても、期待するスケジュールが得られない場合は、ビジネス情報やAI設定が適切でない可能性があります。マイアカウントページで設定を確認するか、管理者にお問い合わせください。</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {scheduleFeedback ? (
+                  <div className="mt-4 p-3 border border-blue-200 bg-blue-50 text-blue-800 text-xs">
+                    <p className="font-bold mb-1">💡 より良いスケジュールを得るために</p>
+                    <p className="whitespace-pre-wrap">{scheduleFeedback}</p>
+                    <p className="mt-2 text-blue-700">このフィードバックを参考に、投稿頻度設定を調整してみてください。</p>
+                  </div>
+                ) : null}
+
                 {scheduleError && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                  <div className="mt-4 p-3 bg-white border border-red-200 text-red-700 text-sm">
                     {scheduleError}
                   </div>
                 )}
@@ -474,7 +594,7 @@ export default function StoryLabPage() {
             <button
               onClick={saveSchedule}
               disabled={isSavingSchedule || generatedSchedule.length === 0}
-              className="px-4 py-2 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="px-4 py-2 bg-[#ff8a15] text-white hover:bg-[#e67a0f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium"
             >
               {isSavingSchedule && (
                 <svg
@@ -498,12 +618,12 @@ export default function StoryLabPage() {
                   ></path>
                 </svg>
               )}
-              <span>{isSavingSchedule ? "保存中..." : "📅 スケジュールを保存"}</span>
+              <span>{isSavingSchedule ? "保存中..." : "スケジュールを保存"}</span>
             </button>
             <button
               onClick={generateSchedule}
               disabled={isGeneratingSchedule}
-              className="px-4 py-2 text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
               {isGeneratingSchedule && (
                 <svg
@@ -527,23 +647,23 @@ export default function StoryLabPage() {
                   ></path>
                 </svg>
               )}
-              <span>{isGeneratingSchedule ? "生成中..." : "🔄 再生成"}</span>
+              <span>{isGeneratingSchedule ? "生成中..." : "再生成"}</span>
             </button>
             <button
               onClick={loadSavedSchedule}
-              className="px-4 py-2 text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors font-medium"
             >
-              📂 保存済みを読み込み
+              保存済みを読み込み
             </button>
           </div>
 
           {/* 保存メッセージ */}
-          {saveMessage && (
+          {saveMessage && !saveMessage.includes("保存されたスケジュールを読み込みました") && (
             <div
-              className={`mt-3 p-3 rounded-md text-sm ${
+              className={`mt-3 p-3 border text-sm ${
                 saveMessage.includes("✅")
-                  ? "bg-green-50 border border-green-200 text-green-700"
-                  : "bg-red-50 border border-red-200 text-red-700"
+                  ? "bg-white border-green-200 text-green-700"
+                  : "bg-white border-red-200 text-red-700"
               }`}
             >
               {saveMessage}
@@ -552,7 +672,7 @@ export default function StoryLabPage() {
         </div>
 
         {/* ストーリー投稿エディター */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch [&>*:last-child]:mb-0" style={{ gridAutoRows: '1fr' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*:last-child]:mb-0" style={{ alignItems: 'stretch' }}>
           {/* 左カラム: ストーリー投稿エディター */}
           <div className="flex flex-col">
             <PostEditor
@@ -581,7 +701,7 @@ export default function StoryLabPage() {
 
           {/* 右カラム: ツールパネル */}
           <div className="flex flex-col h-full">
-            <div className="mb-6 flex-shrink-0">
+            <div className="flex-shrink-0">
               <ABTestSidebarSection currentPostTitle={postTitle} />
             </div>
             <div className="flex-1 flex flex-col min-h-0">

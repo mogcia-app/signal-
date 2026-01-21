@@ -611,10 +611,13 @@ export default function PostDetailPage() {
   if (loading) {
     return (
       <SNSLayout customTitle="投稿詳細" customDescription="投稿の詳細情報を表示">
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-white flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">読み込み中...</p>
+            <div className="relative w-16 h-16 mx-auto mb-4">
+              <div className="absolute inset-0 border-2 border-gray-200 rounded-full"></div>
+              <div className="absolute inset-0 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-sm font-medium text-gray-700">読み込み中...</p>
           </div>
         </div>
       </SNSLayout>
@@ -642,7 +645,7 @@ export default function PostDetailPage() {
 
   return (
     <SNSLayout customTitle="投稿詳細" customDescription="投稿の詳細情報を表示">
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
         {/* ヘッダー */}
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

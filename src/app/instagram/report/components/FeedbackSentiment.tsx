@@ -248,14 +248,14 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
   const commentCoverage = summary.total > 0 ? summary.withCommentCount / summary.total : 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       {/* ヘッダー */}
       <div className="flex items-center mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#ff8a15] flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
           <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
         </div>
         <div className="flex-1">
-          <h2 className="text-base font-semibold text-gray-900">フィードバック感情トラッキング</h2>
+          <h2 className="text-base font-bold text-gray-900">フィードバック感情トラッキング</h2>
           <p className="text-xs text-gray-600 mt-0.5">
             ユーザーの声から好評・不満の傾向を把握し、次の改善テーマにつなげます
           </p>
@@ -270,7 +270,7 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
             <span className="text-sm text-gray-700">データを読み込み中...</span>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+          <div className="bg-white border border-red-200 p-3 sm:p-4">
             <div className="flex items-start">
               <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
               <div className="flex-1">

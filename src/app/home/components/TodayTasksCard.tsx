@@ -28,7 +28,7 @@ export const TodayTasksCard: React.FC<TodayTasksCardProps> = ({
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600 mr-2" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
           <span className="text-sm text-gray-700">読み込み中...</span>
         </div>
       </div>

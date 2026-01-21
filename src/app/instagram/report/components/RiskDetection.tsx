@@ -101,14 +101,14 @@ export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpi
   }, [user, selectedMonth, kpis, fetchRiskDetection]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4">
+    <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       {/* ヘッダー */}
       <div className="flex items-center mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0 shadow-sm">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#ff8a15] flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
           <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-gray-900">リスク・異常検知</h2>
+          <h2 className="text-base font-bold text-gray-900">リスク・異常検知</h2>
           <p className="text-xs text-gray-600 mt-0.5">
             数値の急変やリスクを検知した場合に表示します
           </p>
@@ -123,7 +123,7 @@ export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpi
               <span className="text-sm text-gray-700">リスク分析を実行中...</span>
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+            <div className="bg-white border border-red-200 p-3 sm:p-4">
               <div className="flex items-start">
                 <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
                 <div className="flex-1">
@@ -144,11 +144,11 @@ export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpi
                 return (
                   <div
                     key={alert.id}
-                    className={`rounded-lg border-2 ${config.border} ${config.bg} p-3 sm:p-4 shadow-sm`}
+                    className={`border-2 ${config.border} ${config.bg} p-3 sm:p-4`}
                   >
                     <div className="flex items-start justify-between mb-1.5">
                       <div className="flex items-center space-x-2 flex-1">
-                        <span className="inline-flex items-center space-x-1.5 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 shadow-sm">
+                        <span className="inline-flex items-center space-x-1.5 px-2 py-1 bg-white border border-gray-200 text-xs font-semibold text-gray-700">
                           {config.icon}
                           <span>{config.label}</span>
                         </span>

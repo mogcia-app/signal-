@@ -83,17 +83,10 @@ async function runSimulation(
     postsPerWeek: postsPerWeek,
   };
 
-  // AIアドバイス生成（ユーザープロファイルを使用）
-  const { mainAdvice, improvementTips } = await generateAISimulationAdvice(
-    userId,
-    currentFollowers,
-    followerGain,
-    goalCategory,
-    strategyValues,
-    postCategories,
-    hashtagStrategy,
-    simulationResultData
-  );
+  // アドバイス生成（テンプレートベース - AIは使用しない）
+  // パフォーマンス向上のため、AI呼び出しを削除しテンプレートアドバイスを使用
+  const mainAdvice = generateMainAdvice(strategyValues, goalCategory, followerGain);
+  const improvementTips = generateImprovementTips(strategyValues, hashtagStrategy, postCategories);
 
   // 目標達成日を計算
   const targetDate = calculateTargetDate(planPeriod);

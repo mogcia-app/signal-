@@ -50,10 +50,10 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+      <div className="bg-white border border-gray-200 p-4 mb-4">
         <div className="animate-pulse">
-          <div className="h-5 bg-gray-200 rounded w-1/3 mb-3"></div>
-          <div className="h-24 bg-gray-200 rounded"></div>
+          <div className="h-5 bg-gray-200 w-1/3 mb-3"></div>
+          <div className="h-24 bg-gray-200"></div>
         </div>
       </div>
     );
@@ -62,8 +62,8 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
   const ratingStyle = ratingColors[rating] || ratingColors.C;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-      <h2 className="text-base font-semibold text-gray-900 mb-4">
+    <div className="bg-white border border-gray-200 p-4 mb-4">
+      <h2 className="text-base font-bold text-gray-900 mb-4">
         パフォーマンス評価
       </h2>
 
@@ -73,7 +73,7 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
           {/* 評価バッジ */}
           <div className="flex-shrink-0">
             <div
-              className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full ${ratingStyle.bg} ${ratingStyle.border} border-2 flex items-center justify-center mx-auto shadow-sm`}
+              className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full ${ratingStyle.bg} ${ratingStyle.border} border-2 flex items-center justify-center mx-auto`}
             >
               <span className={`text-2xl sm:text-3xl font-bold ${ratingStyle.text}`}>{rating}</span>
             </div>
@@ -86,7 +86,7 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
             <h3 className="text-xs font-semibold text-gray-700 mb-2">スコア内訳</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {/* エンゲージメント */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 shadow-sm relative">
+              <div className="bg-white p-3 border border-gray-200 relative">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-medium text-gray-700">エンゲージメント</p>
                   <div className="relative group">
@@ -105,7 +105,7 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
               </div>
 
               {/* 成長 */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 shadow-sm relative">
+              <div className="bg-white p-3 border border-gray-200 relative">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-medium text-gray-700">成長</p>
                 <div className="relative group">
@@ -124,7 +124,7 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
               </div>
 
               {/* 品質 */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 shadow-sm relative">
+              <div className="bg-white p-3 border border-gray-200 relative">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-medium text-gray-700">品質</p>
                 <div className="relative group">
@@ -143,7 +143,7 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
               </div>
 
               {/* 一貫性 */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 shadow-sm relative">
+              <div className="bg-white p-3 border border-gray-200 relative">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-medium text-gray-700">一貫性</p>
                 <div className="relative group">
@@ -169,31 +169,31 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
       <div className="mb-4">
         <h3 className="text-xs font-semibold text-gray-700 mb-2">主要KPI</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2 md:gap-3">
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-2 sm:p-3 border border-orange-200 shadow-sm">
-            <p className="text-xs font-medium text-orange-700 mb-0.5 sm:mb-1">いいね数</p>
-            <p className="text-sm sm:text-base md:text-lg font-bold text-orange-900 break-all">
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
+            <p className="text-xs font-medium text-gray-700 mb-0.5 sm:mb-1">いいね数</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-[#ff8a15] break-all">
               {kpis.totalLikes.toLocaleString()}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2 sm:p-3 border border-blue-200 shadow-sm">
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-blue-700 mb-0.5 sm:mb-1">リーチ数</p>
             <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 break-all">
               {kpis.totalReach.toLocaleString()}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-2 sm:p-3 border border-green-200 shadow-sm">
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-green-700 mb-0.5 sm:mb-1">保存数</p>
             <p className="text-sm sm:text-base md:text-lg font-bold text-green-900 break-all">
               {kpis.totalSaves.toLocaleString()}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2 sm:p-3 border border-purple-200 shadow-sm">
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-purple-700 mb-0.5 sm:mb-1">コメント数</p>
             <p className="text-sm sm:text-base md:text-lg font-bold text-purple-900 break-all">
               {kpis.totalComments.toLocaleString()}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-2 sm:p-3 border border-pink-200 shadow-sm">
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-pink-700 mb-0.5 sm:mb-1">フォロワー増減</p>
             <p className={`text-sm sm:text-base md:text-lg font-bold break-all ${
               kpis.totalFollowerIncrease >= 0 ? "text-pink-900" : "text-red-600"
@@ -209,15 +209,15 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
       <div className="pt-3 sm:pt-4 border-t border-gray-200">
         <h3 className="text-xs font-semibold text-gray-700 mb-2">基本情報</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2 md:gap-3">
-          <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-gray-600 mb-0.5 sm:mb-1">投稿数</p>
             <p className="text-sm sm:text-base font-bold text-gray-900">{metrics.postCount}件</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-gray-600 mb-0.5 sm:mb-1">分析済み数</p>
             <p className="text-sm sm:text-base font-bold text-gray-900">{metrics.analyzedCount}件</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-gray-600 mb-0.5 sm:mb-1">運用計画</p>
             <p className="text-sm sm:text-base font-bold">
               {metrics.hasPlan ? (

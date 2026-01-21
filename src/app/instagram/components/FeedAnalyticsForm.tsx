@@ -9,7 +9,6 @@ import {
   Save,
   ThumbsUp,
   ThumbsDown,
-  Edit3,
   CheckCircle,
   X,
   Plus,
@@ -46,7 +45,6 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [sentiment, setSentiment] = useState<"satisfied" | "dissatisfied" | null>(null);
   const [memo, setMemo] = useState("");
-  const [isEditingMemo, setIsEditingMemo] = useState(false);
 
   const handleInputChange = (field: keyof InputData, value: string) => {
     onChange({
@@ -685,18 +683,18 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
           </div>
         </div>
 
-        {/* 満足度フィードバック */}
+        {/* この投稿についてのフィードバックを書きましょう */}
         <div className="p-4 border-t border-gray-200">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
             <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
-            満足度フィードバック
+            この投稿についてのフィードバックを書きましょう
           </h3>
           <div className="space-y-4">
             <div className="flex space-x-4">
               <button
                 type="button"
                 onClick={() => setSentiment("satisfied")}
-                className={`flex items-center px-4 py-2 rounded-md border ${
+                className={`flex items-center px-4 py-2 border ${
                   sentiment === "satisfied"
                     ? "bg-green-100 border-green-500 text-green-700"
                     : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -708,7 +706,7 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
               <button
                 type="button"
                 onClick={() => setSentiment("dissatisfied")}
-                className={`flex items-center px-4 py-2 rounded-md border ${
+                className={`flex items-center px-4 py-2 border ${
                   sentiment === "dissatisfied"
                     ? "bg-red-100 border-red-500 text-red-700"
                     : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -720,30 +718,14 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">メモ</label>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingMemo(!isEditingMemo)}
-                  className="text-sm text-[#ff8a15] hover:text-[#e6760f] flex items-center"
-                >
-                  <Edit3 className="w-3 h-3 mr-1" />
-                  {isEditingMemo ? "完了" : "編集"}
-                </button>
-              </div>
-              {isEditingMemo ? (
-                <textarea
-                  value={memo}
-                  onChange={(e) => setMemo(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  rows={3}
-                  placeholder="フィード投稿についてのメモを入力..."
-                />
-              ) : (
-                <div className="w-full px-3 py-2 border border-gray-200 bg-gray-50 text-gray-600 min-h-[80px]">
-                  {memo || "メモがありません"}
-                </div>
-              )}
+              <label className="block text-sm font-medium text-gray-700 mb-2">メモ</label>
+              <textarea
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                rows={3}
+                placeholder="投稿についてのフィードバックを入力..."
+              />
             </div>
           </div>
         </div>

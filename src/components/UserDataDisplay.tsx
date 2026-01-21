@@ -23,7 +23,10 @@ export function UserDataDisplay({ showAll = false }: UserDataDisplayProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="relative w-8 h-8">
+          <div className="absolute inset-0 border-2 border-gray-200 rounded-full"></div>
+          <div className="absolute inset-0 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin"></div>
+        </div>
         <span className="ml-2">データを読み込み中...</span>
       </div>
     );

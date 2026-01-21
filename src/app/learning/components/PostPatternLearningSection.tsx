@@ -35,9 +35,9 @@ export function PostPatternLearningSection({
 }: PostPatternLearningSectionProps) {
   if (isLoading) {
     return (
-      <section className="border border-gray-200 bg-white rounded-none p-6">
-        <div className="flex items-center justify-center py-10 text-slate-600">
-          <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
+      <section className="border border-gray-200 bg-white p-6 mb-6">
+        <div className="flex items-center justify-center py-10 text-gray-700">
+          <div className="w-5 h-5 border-2 border-[#ff8a15] border-t-transparent rounded-full animate-spin mr-2" />
           <span className="text-sm">投稿パターンを学習中です...</span>
         </div>
       </section>
@@ -46,15 +46,15 @@ export function PostPatternLearningSection({
 
   if (error) {
     return (
-      <section className="border border-gray-200 bg-white rounded-none p-6">
-        <div className="border border-red-200 bg-red-50 rounded-none p-4 text-sm text-red-700">{error}</div>
+      <section className="border border-gray-200 bg-white p-6 mb-6">
+        <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       </section>
     );
   }
 
   if (!patternInsights || Object.keys(patternInsights.summaries || {}).length === 0) {
     return (
-      <section className="border border-gray-200 bg-white rounded-none p-6">
+      <section className="border border-gray-200 bg-white p-6 mb-6">
         <EmptyStateCard
           icon={Target}
           tone="info"
@@ -67,11 +67,11 @@ export function PostPatternLearningSection({
   }
 
   return (
-    <section className="border border-gray-200 bg-white rounded-none p-6">
+    <section className="border border-gray-200 bg-white p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-black">投稿パターン学習</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-lg font-bold text-gray-900">投稿パターン学習</h2>
+          <p className="text-sm text-gray-700">
             KPIと満足度の両面から自動抽出した投稿パターンです。成功パターンを再現しつつ、惜しい投稿の改善点を確認できます。
           </p>
         </div>
