@@ -37,7 +37,6 @@ interface AnalyticsData {
   createdAt?: Date | string | admin.firestore.Timestamp;
   [key: string]: unknown;
 }
-import * as admin from "firebase-admin";
 
 export async function GET(request: NextRequest) {
   try {
@@ -120,22 +119,38 @@ export async function GET(request: NextRequest) {
     // ===== 1. ダッシュボード統計 =====
     const publishedPosts = posts.filter((p) => p.status === "published");
     const postsThisWeek = publishedPosts.filter((p) => {
-      const createdAt = p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt);
+      const createdAt = p.createdAt instanceof Date 
+        ? p.createdAt 
+        : (p.createdAt as admin.firestore.Timestamp)?.toDate 
+          ? (p.createdAt as admin.firestore.Timestamp).toDate() 
+          : new Date(p.createdAt as string);
       return createdAt >= startOfWeek;
     }).length;
 
     const monthlyFeedPosts = publishedPosts.filter((p) => {
-      const createdAt = p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt);
+      const createdAt = p.createdAt instanceof Date 
+        ? p.createdAt 
+        : (p.createdAt as admin.firestore.Timestamp)?.toDate 
+          ? (p.createdAt as admin.firestore.Timestamp).toDate() 
+          : new Date(p.createdAt as string);
       return createdAt >= startOfMonth && p.postType === "feed";
     }).length;
 
     const monthlyReelPosts = publishedPosts.filter((p) => {
-      const createdAt = p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt);
+      const createdAt = p.createdAt instanceof Date 
+        ? p.createdAt 
+        : (p.createdAt as admin.firestore.Timestamp)?.toDate 
+          ? (p.createdAt as admin.firestore.Timestamp).toDate() 
+          : new Date(p.createdAt as string);
       return createdAt >= startOfMonth && p.postType === "reel";
     }).length;
 
     const monthlyStoryPosts = publishedPosts.filter((p) => {
-      const createdAt = p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt);
+      const createdAt = p.createdAt instanceof Date 
+        ? p.createdAt 
+        : (p.createdAt as admin.firestore.Timestamp)?.toDate 
+          ? (p.createdAt as admin.firestore.Timestamp).toDate() 
+          : new Date(p.createdAt as string);
       return createdAt >= startOfMonth && p.postType === "story";
     }).length;
 
@@ -153,7 +168,7 @@ export async function GET(request: NextRequest) {
       totalComments += analytics.comments || 0;
       totalSaves += analytics.saves || 0;
       totalReach += analytics.reach || 0;
-      totalFollowerGrowth += parseInt(analytics.followerIncrease) || 0;
+      totalFollowerGrowth += typeof analytics.followerIncrease === 'number' ? analytics.followerIncrease : 0;
       totalEngagement +=
         (analytics.likes || 0) + (analytics.comments || 0) + (analytics.shares || 0) + (analytics.saves || 0);
       analyticsCount++;
@@ -169,7 +184,7 @@ export async function GET(request: NextRequest) {
       if (analyticsWithFollowers.length > 0) {
         // 最初の投稿時点のフォロワー数を推定
         const firstAnalytics = analyticsWithFollowers[analyticsWithFollowers.length - 1];
-        const initialFollowers = (firstAnalytics.initialFollowers || 0) - (parseInt(firstAnalytics.followerIncrease) || 0);
+        const initialFollowers = (firstAnalytics.initialFollowers || 0) - (typeof firstAnalytics.followerIncrease === 'number' ? firstAnalytics.followerIncrease : 0);
         currentFollowers = initialFollowers + totalFollowerGrowth;
       }
     }
@@ -233,12 +248,24 @@ export async function GET(request: NextRequest) {
     // ===== 2. 最近の投稿 =====
     const recentPostsData = publishedPosts
       .filter((post) => {
-        const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt);
+        const createdAt = post.createdAt instanceof Date 
+          ? post.createdAt 
+          : (post.createdAt as admin.firestore.Timestamp)?.toDate 
+            ? (post.createdAt as admin.firestore.Timestamp).toDate() 
+            : new Date(post.createdAt as string);
         return createdAt >= thirtyDaysAgo;
       })
       .sort((a, b) => {
-        const aCreatedAt = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-        const bCreatedAt = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        const aCreatedAt = a.createdAt instanceof Date 
+          ? a.createdAt 
+          : (a.createdAt as admin.firestore.Timestamp)?.toDate 
+            ? (a.createdAt as admin.firestore.Timestamp).toDate() 
+            : new Date(a.createdAt as string);
+        const bCreatedAt = b.createdAt instanceof Date 
+          ? b.createdAt 
+          : (b.createdAt as admin.firestore.Timestamp)?.toDate 
+            ? (b.createdAt as admin.firestore.Timestamp).toDate() 
+            : new Date(b.createdAt as string);
         return bCreatedAt.getTime() - aCreatedAt.getTime();
       })
       .slice(0, 10)
@@ -277,7 +304,12 @@ export async function GET(request: NextRequest) {
 
     // ===== 3. パフォーマンスサマリー =====
     const weeklyAnalytics = analytics.filter((analytics) => {
-      const publishedAt = analytics.publishedAt instanceof Date ? analytics.publishedAt : new Date(analytics.publishedAt);
+      if (!analytics.publishedAt) return false;
+      const publishedAt = analytics.publishedAt instanceof Date 
+        ? analytics.publishedAt 
+        : (analytics.publishedAt as admin.firestore.Timestamp)?.toDate 
+          ? (analytics.publishedAt as admin.firestore.Timestamp).toDate() 
+          : new Date(analytics.publishedAt as string);
       return publishedAt >= oneWeekAgo;
     });
 
@@ -286,7 +318,7 @@ export async function GET(request: NextRequest) {
     let weeklyReach = 0;
 
     weeklyAnalytics.forEach((analytics) => {
-      weeklyFollowerGrowth += parseInt(analytics.followerIncrease) || 0;
+      weeklyFollowerGrowth += typeof analytics.followerIncrease === 'number' ? analytics.followerIncrease : 0;
       weeklyEngagement +=
         (analytics.likes || 0) + (analytics.comments || 0) + (analytics.shares || 0) + (analytics.saves || 0);
       weeklyReach += analytics.reach || 0;
@@ -294,7 +326,11 @@ export async function GET(request: NextRequest) {
 
     const avgWeeklyEngagementRate = weeklyReach > 0 ? (weeklyEngagement / weeklyReach) * 100 : 0;
     const postsThisMonth = publishedPosts.filter((p) => {
-      const createdAt = p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt);
+      const createdAt = p.createdAt instanceof Date 
+        ? p.createdAt 
+        : (p.createdAt as admin.firestore.Timestamp)?.toDate 
+          ? (p.createdAt as admin.firestore.Timestamp).toDate() 
+          : new Date(p.createdAt as string);
       return createdAt >= oneMonthAgo;
     }).length;
 
@@ -369,8 +405,17 @@ export async function GET(request: NextRequest) {
     const recentAnalytics = analytics
       .filter((a) => a.publishedAt)
       .sort((a, b) => {
-        const aPublishedAt = a.publishedAt instanceof Date ? a.publishedAt : new Date(a.publishedAt);
-        const bPublishedAt = b.publishedAt instanceof Date ? b.publishedAt : new Date(b.publishedAt);
+        if (!a.publishedAt || !b.publishedAt) return 0;
+        const aPublishedAt = a.publishedAt instanceof Date 
+          ? a.publishedAt 
+          : (a.publishedAt as admin.firestore.Timestamp)?.toDate 
+            ? (a.publishedAt as admin.firestore.Timestamp).toDate() 
+            : new Date(a.publishedAt as string);
+        const bPublishedAt = b.publishedAt instanceof Date 
+          ? b.publishedAt 
+          : (b.publishedAt as admin.firestore.Timestamp)?.toDate 
+            ? (b.publishedAt as admin.firestore.Timestamp).toDate() 
+            : new Date(b.publishedAt as string);
         return bPublishedAt.getTime() - aPublishedAt.getTime();
       })
       .slice(0, 7);
@@ -380,7 +425,7 @@ export async function GET(request: NextRequest) {
 
     recentAnalytics.forEach((analytics) => {
       if (analytics.followerIncrease) {
-        recentTotalFollowerGrowth += parseInt(analytics.followerIncrease) || 0;
+        recentTotalFollowerGrowth += typeof analytics.followerIncrease === 'number' ? analytics.followerIncrease : 0;
         postsWithGrowth++;
       }
     });
@@ -464,13 +509,18 @@ export async function GET(request: NextRequest) {
 
       // フォロワー増加目標
       const monthlyAnalytics = analytics.filter((a) => {
-        const publishedAt = a.publishedAt instanceof Date ? a.publishedAt : new Date(a.publishedAt);
+        if (!a.publishedAt) return false;
+        const publishedAt = a.publishedAt instanceof Date 
+          ? a.publishedAt 
+          : (a.publishedAt as admin.firestore.Timestamp)?.toDate 
+            ? (a.publishedAt as admin.firestore.Timestamp).toDate() 
+            : new Date(a.publishedAt as string);
         return publishedAt >= startOfMonth;
       });
 
       let totalFollowerIncrease = 0;
       monthlyAnalytics.forEach((a) => {
-        totalFollowerIncrease += parseInt(a.followerIncrease) || 0;
+        totalFollowerIncrease += typeof a.followerIncrease === 'number' ? a.followerIncrease : 0;
       });
 
       const followerRemaining = followerGoal - totalFollowerIncrease;
@@ -491,7 +541,11 @@ export async function GET(request: NextRequest) {
 
     // 3. 投稿頻度チェック
     const recentPostCount = publishedPosts.filter((p) => {
-      const createdAt = p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt);
+      const createdAt = p.createdAt instanceof Date 
+        ? p.createdAt 
+        : (p.createdAt as admin.firestore.Timestamp)?.toDate 
+          ? (p.createdAt as admin.firestore.Timestamp).toDate() 
+          : new Date(p.createdAt as string);
       return createdAt >= oneWeekAgo;
     }).length;
 
