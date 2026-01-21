@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     const hasPlan = !plansSnapshot.empty;
 
     // 投稿と分析データをpostIdで紐付け（重複除去: 同じpostIdの最新レコードのみ保持）
-    const analyticsByPostId = new Map<string, any>();
+    const analyticsByPostId = new Map<string, admin.firestore.DocumentData>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;

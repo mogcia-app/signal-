@@ -137,7 +137,7 @@ export const SimulationPanel: React.FC<SimulationPanelProps> = ({
       daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
       periodMultiplier,
     };
-  }, [result, formData.planPeriod, planEndDate]);
+  }, [result, formData.planPeriod]);
 
   // APIから取得した計算データを使用（フォールバックは計算値を保持）
   const weeksRemaining = calculationData?.weeksRemaining ?? (periodInfo ? Math.max(1, Math.ceil(periodInfo.daysRemaining / 7)) : 0);

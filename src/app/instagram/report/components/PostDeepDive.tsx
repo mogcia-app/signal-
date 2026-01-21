@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React from "react";
 import Link from "next/link";
-import { BarChart3, Loader2, Sparkles, TrendingDown } from "lucide-react";
-import { useAuth } from "../../../../contexts/auth-context";
-import { authFetch } from "../../../../utils/authFetch";
+import { BarChart3, Sparkles, TrendingDown, Loader2 } from "lucide-react";
 
 interface PostDeepDiveProps {
   selectedMonth: string;
+  reportData?: any;
 }
 
 interface PostDeepDiveData {
@@ -89,46 +88,9 @@ function MetricCell({ label, value }: { label: string; value?: number }) {
   );
 }
 
-export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth }) => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [posts, setPosts] = useState<PostDeepDiveData[]>([]);
-
-  const fetchPostDeepDive = useCallback(async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await authFetch(`/api/analytics/post-deep-dive?date=${selectedMonth}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          setPosts(result.data.posts || []);
-        } else {
-          setError("データの取得に失敗しました");
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        setError(errorData.error || "データの取得に失敗しました");
-      }
-    } catch (err) {
-      console.error("投稿ディープダイブ取得エラー:", err);
-      setError("データの取得中にエラーが発生しました");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, selectedMonth]);
-
-  // ページ読み込み時に自動的にデータを取得
-  React.useEffect(() => {
-    if (user && selectedMonth) {
-      fetchPostDeepDive();
-    }
-  }, [user, selectedMonth, fetchPostDeepDive]);
+export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth, reportData }) => {
+  // reportDataから投稿ディープダイブデータを取得
+  const posts: PostDeepDiveData[] = reportData?.postDeepDive?.posts || [];
 
   return (
     <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
@@ -148,23 +110,12 @@ export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth }) => 
       {/* コンテンツ */}
       <div>
         <div className="mt-4 pt-4 border-t border-gray-200 animate-in fade-in duration-300">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="w-5 h-5 animate-spin text-[#ff8a15] mr-2" />
-              <span className="text-sm text-gray-700">データを読み込み中...</span>
-            </div>
-          ) : error ? (
-            <div className="bg-white border border-red-200 p-3 sm:p-4">
+          {!reportData?.postDeepDive?.posts || reportData.postDeepDive.posts.length === 0 ? (
+            <div className="bg-white border border-gray-200 p-3 sm:p-4">
               <div className="flex items-start">
-                <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
+                <div className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0">ℹ️</div>
                 <div className="flex-1">
-                  <p className="text-xs font-medium text-red-800 mb-1.5">{error}</p>
-                  <button
-                    onClick={fetchPostDeepDive}
-                    className="text-xs text-red-600 hover:text-red-800 underline font-medium"
-                  >
-                    再試行
-                  </button>
+                  <p className="text-xs font-medium text-gray-800 mb-1.5">データがありません</p>
                 </div>
               </div>
             </div>

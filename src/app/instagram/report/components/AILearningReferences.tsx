@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React from "react";
 import { Brain, Layers, ListChecks, Target, Award, Sparkles, Loader2 } from "lucide-react";
-import { useAuth } from "../../../../contexts/auth-context";
-import { authFetch } from "../../../../utils/authFetch";
 import { getLearningPhaseLabel } from "../../../../utils/learningPhase";
 
 interface AILearningReferencesProps {
   selectedMonth: string;
+  reportData?: any;
 }
 
 interface AIReference {
@@ -64,50 +63,11 @@ const sourceIconMap: Record<AIReference["sourceType"], React.ReactNode> = {
   manual: <Layers className="w-3.5 h-3.5 text-slate-500" />,
 };
 
-export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ selectedMonth }) => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [masterContext, setMasterContext] = useState<MasterContextSummary | null>(null);
-  const [references, setReferences] = useState<AIReference[]>([]);
-  const [snapshotRefs, setSnapshotRefs] = useState<SnapshotReference[]>([]);
-
-  const fetchAILearningReferences = useCallback(async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await authFetch(`/api/analytics/ai-learning-references?date=${selectedMonth}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          setMasterContext(result.data.masterContext || null);
-          setReferences(result.data.references || []);
-          setSnapshotRefs(result.data.snapshotReferences || []);
-        } else {
-          setError("データの取得に失敗しました");
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        setError(errorData.error || "データの取得に失敗しました");
-      }
-    } catch (err) {
-      console.error("AI学習リファレンス取得エラー:", err);
-      setError("データの取得中にエラーが発生しました");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, selectedMonth]);
-
-  // ページ読み込み時に自動的にデータを取得
-  useEffect(() => {
-    if (user && selectedMonth) {
-      fetchAILearningReferences();
-    }
-  }, [user, selectedMonth, fetchAILearningReferences]);
+export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ selectedMonth, reportData }) => {
+  // reportDataからAI学習リファレンスデータを取得
+  const masterContext: MasterContextSummary | null = reportData?.aiLearningReferences?.masterContext || null;
+  const references: AIReference[] = reportData?.aiLearningReferences?.references || [];
+  const snapshotRefs: SnapshotReference[] = reportData?.aiLearningReferences?.snapshotReferences || [];
 
   const nonSnapshotReferences = references.filter((ref) => ref.sourceType !== "snapshot");
 
@@ -128,23 +88,12 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
 
       {/* コンテンツ */}
       <div>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-5 h-5 animate-spin text-purple-600 mr-2" />
-            <span className="text-sm text-gray-700">データを読み込み中...</span>
-          </div>
-        ) : error ? (
-          <div className="bg-white border border-red-200 p-3 sm:p-4">
+        {!masterContext && references.length === 0 && snapshotRefs.length === 0 ? (
+          <div className="bg-white border border-gray-200 p-3 sm:p-4">
             <div className="flex items-start">
-              <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
+              <div className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0">ℹ️</div>
               <div className="flex-1">
-                <p className="text-xs font-medium text-red-800 mb-1.5">{error}</p>
-                <button
-                  onClick={fetchAILearningReferences}
-                  className="text-xs text-red-600 hover:text-red-800 underline font-medium"
-                >
-                  再試行
-                </button>
+                <p className="text-xs font-medium text-gray-800 mb-1.5">データがありません</p>
               </div>
             </div>
           </div>
@@ -255,7 +204,7 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
         )}
 
         {/* 引用された投稿スナップショット */}
-        {!isLoading && !error && snapshotRefs.length > 0 && (
+        {snapshotRefs.length > 0 && (
           <div className="mt-3 sm:mt-4 border border-gray-200 p-2.5 sm:p-3 md:p-4">
             <p className="text-xs font-semibold text-gray-700 flex items-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-amber-500" />

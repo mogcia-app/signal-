@@ -54,7 +54,13 @@ export default function HomePage() {
   const [actionLogPendingIds, setActionLogPendingIds] = useState<Set<string>>(new Set());
 
   // KPIサマリー
-  const [kpiBreakdowns, setKpiBreakdowns] = useState<any[]>([]);
+  interface KPIBreakdown {
+    key: string;
+    label: string;
+    value: number;
+    unit?: "count" | "percent";
+  }
+  const [kpiBreakdowns, setKpiBreakdowns] = useState<KPIBreakdown[]>([]);
   const [isLoadingKPI, setIsLoadingKPI] = useState(false);
 
 
@@ -69,25 +75,47 @@ export default function HomePage() {
   // 現在の月をstateで管理（自動更新のため）
   const [currentMonth, setCurrentMonth] = useState<string>(getCurrentMonth());
 
-  // フォロワー数を取得
-  const fetchFollowerCount = useCallback(async () => {
+  // BFF APIから全データを取得
+  const fetchDashboardData = useCallback(async () => {
     if (!isAuthReady) return;
 
     setIsLoading(true);
+    setIsLoadingActionPlans(true);
+    setIsLoadingKPI(true);
+    
     try {
-      const response = await authFetch(`/api/follower-counts?month=${currentMonth}&snsType=instagram`);
+      const response = await authFetch(`/api/home/dashboard?month=${currentMonth}`);
 
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
-          // 入力欄は常に空にするため、値を設定しない
-          setLastUpdated(result.data.updatedAt);
+          // フォロワー数データ
+          if (result.data.followerCount) {
+            setLastUpdated(result.data.followerCount.updatedAt);
+          }
+
+          // アクションプラン
+          setActionPlans(result.data.actionPlans || []);
+
+          // アクションログマップ
+          if (result.data.actionLogMap) {
+            const logMap = new Map<string, { applied: boolean }>();
+            Object.entries(result.data.actionLogMap).forEach(([key, value]: [string, { applied: boolean }]) => {
+              logMap.set(key, value);
+            });
+            setActionLogMap(logMap);
+          }
+
+          // KPIサマリー
+          setKpiBreakdowns(result.data.kpiBreakdowns || []);
         }
       }
     } catch (err) {
-      console.error("フォロワー数取得エラー:", err);
+      console.error("ダッシュボードデータ取得エラー:", err);
     } finally {
       setIsLoading(false);
+      setIsLoadingActionPlans(false);
+      setIsLoadingKPI(false);
     }
   }, [isAuthReady, currentMonth]);
 
@@ -118,8 +146,9 @@ export default function HomePage() {
         if (result.success) {
           setLastUpdated(result.data.updatedAt);
           notify({ type: "success", message: "フォロワー数を保存しました" });
-          // 入力欄をクリア
           setCurrentFollowers("");
+          // データを再取得
+          fetchDashboardData();
         }
       } else {
         throw new Error("保存に失敗しました");
@@ -159,12 +188,12 @@ export default function HomePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          followers: followers, // 既存のフォロワー数を維持
+          followers: followers,
           month: currentMonth,
           snsType: "instagram",
           source: "manual",
           profileVisits: parseInt(profileVisits, 10),
-          externalLinkTaps: existingExternalLinkTaps, // 既存の外部リンクタップ数を維持
+          externalLinkTaps: existingExternalLinkTaps,
         }),
       });
 
@@ -173,8 +202,9 @@ export default function HomePage() {
         if (result.success) {
           setLastUpdated(result.data.updatedAt);
           notify({ type: "success", message: "プロフィールアクセス数を保存しました" });
-          // 入力欄をクリア
           setProfileVisits("");
+          // データを再取得
+          fetchDashboardData();
         }
       } else {
         throw new Error("保存に失敗しました");
@@ -213,11 +243,11 @@ export default function HomePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          followers: followers, // 既存のフォロワー数を維持
+          followers: followers,
           month: currentMonth,
           snsType: "instagram",
           source: "manual",
-          profileVisits: existingProfileVisits, // 既存のプロフィールアクセス数を維持
+          profileVisits: existingProfileVisits,
           externalLinkTaps: parseInt(externalLinkTaps, 10),
         }),
       });
@@ -227,8 +257,9 @@ export default function HomePage() {
         if (result.success) {
           setLastUpdated(result.data.updatedAt);
           notify({ type: "success", message: "外部リンクタップ数を保存しました" });
-          // 入力欄をクリア
           setExternalLinkTaps("");
+          // データを再取得
+          fetchDashboardData();
         }
       } else {
         throw new Error("保存に失敗しました");
@@ -248,73 +279,11 @@ export default function HomePage() {
     return `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, "0")}`;
   }, []);
 
-  // アクションプランを取得（先月のレポートまとめから）
-  const fetchActionPlans = useCallback(async () => {
-    if (!isAuthReady || !user?.uid) return;
-
-    setIsLoadingActionPlans(true);
-    try {
-      const lastMonth = getLastMonth();
-      const [response, actionLogsResponse] = await Promise.all([
-        authFetch(`/api/analytics/monthly-proposals?date=${lastMonth}`),
-        actionLogsApi.list(user.uid, { limit: 100 }),
-      ]);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data?.actionPlans) {
-          setActionPlans(result.data.actionPlans);
-        }
-      }
-
-      // アクションログを取得してマップに保存
-      if (actionLogsResponse.success && Array.isArray(actionLogsResponse.data)) {
-        const logMap = new Map<string, { applied: boolean }>();
-        actionLogsResponse.data.forEach((log: any) => {
-          if (log.actionId && typeof log.applied === "boolean") {
-            logMap.set(log.actionId, { applied: log.applied });
-          }
-        });
-        setActionLogMap(logMap);
-      }
-    } catch (err) {
-      console.error("アクションプラン取得エラー:", err);
-    } finally {
-      setIsLoadingActionPlans(false);
-    }
-  }, [isAuthReady, user?.uid, getLastMonth]);
-
-  // KPIサマリーを取得
-  const fetchKPISummary = useCallback(async () => {
-    if (!isAuthReady) return;
-
-    setIsLoadingKPI(true);
-    try {
-      const response = await authFetch(`/api/analytics/kpi-breakdown?date=${encodeURIComponent(currentMonth)}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data?.breakdowns) {
-          setKpiBreakdowns(result.data.breakdowns);
-        }
-      } else {
-        console.error("KPIサマリー取得エラー:", response.status, await response.text());
-      }
-    } catch (err) {
-      console.error("KPIサマリー取得例外:", err);
-    } finally {
-      setIsLoadingKPI(false);
-    }
-  }, [isAuthReady, currentMonth]);
-
-
   useEffect(() => {
     if (isAuthReady) {
-      fetchFollowerCount();
-      fetchActionPlans();
-      fetchKPISummary();
+      fetchDashboardData();
     }
-  }, [isAuthReady, fetchFollowerCount, fetchActionPlans, fetchKPISummary]);
+  }, [isAuthReady, currentMonth, fetchDashboardData]);
 
   // 月が変わったら自動的に現在の月に更新
   useEffect(() => {

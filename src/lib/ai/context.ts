@@ -311,13 +311,14 @@ async function fetchRecentAbTests(
 
     const tests = snapshot.docs.map((doc) => {
       const data = doc.data() || {};
-      const variants = Array.isArray(data.variants) ? data.variants : [];
+      const variants = Array.isArray(data.variants) ? (data.variants as unknown[]) : [];
       const winnerVariant =
-        variants.find((variant: any) => {
+        variants.find((variant: unknown) => {
+          const v = variant as Record<string, unknown> & { id?: string; key?: string; result?: string };
           if (data.winnerVariantId) {
-            return variant.id === data.winnerVariantId || variant.key === data.winnerVariantId;
+            return v.id === data.winnerVariantId || v.key === data.winnerVariantId;
           }
-          return variant.result === "win";
+          return v.result === "win";
         }) || null;
       const summaryParts: string[] = [];
 

@@ -253,7 +253,7 @@ export default function ReelLabPage() {
     } finally {
       setIsGeneratingSchedule(false);
     }
-  }, [isAuthReady, monthlyPosts, dailyPosts]);
+  }, [isAuthReady, monthlyPosts, dailyPosts, analyzeScheduleSettings, scheduleFeedback]);
 
   // スケジュール保存関数
   const saveSchedule = useCallback(async () => {

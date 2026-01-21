@@ -333,7 +333,7 @@ export default function FeedLabPage() {
       setIsGeneratingSchedule(false);
       console.log("🏁 Schedule generation completed");
     }
-  }, [isAuthReady, monthlyPosts, dailyPosts]);
+  }, [isAuthReady, monthlyPosts, dailyPosts, analyzeScheduleSettings, scheduleFeedback]);
 
   // スケジュール保存関数
   const saveSchedule = useCallback(async () => {
@@ -500,7 +500,7 @@ export default function FeedLabPage() {
         setIsGeneratingSuggestions(false);
       }
     },
-    [isAuthReady]
+    [isAuthReady, suggestionsFeedback]
   );
 
   useEffect(() => {

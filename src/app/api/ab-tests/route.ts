@@ -178,12 +178,12 @@ export async function POST(request: NextRequest) {
     }
 
     // undefinedをnullに変換するヘルパー関数
-    const cleanValue = (value: any): any => {
+    const cleanValue = (value: unknown): unknown => {
       if (value === undefined) return null;
       if (Array.isArray(value)) {
         return value.map((item) => {
           if (typeof item === "object" && item !== null) {
-            const cleaned: any = {};
+            const cleaned: Record<string, unknown> = {};
             for (const [k, v] of Object.entries(item)) {
               if (v !== undefined) {
                 cleaned[k] = cleanValue(v);
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
         });
       }
       if (typeof value === "object" && value !== null) {
-        const cleaned: any = {};
+        const cleaned: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(value)) {
           if (v !== undefined) {
             cleaned[k] = cleanValue(v);

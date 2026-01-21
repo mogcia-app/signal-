@@ -120,112 +120,22 @@ function InstagramDashboardContent() {
   const [performanceSummary, setPerformanceSummary] = useState<PerformanceSummary | null>(null);
   const [goalProgress, setGoalProgress] = useState<GoalProgress | null>(null);
 
-  // 次のアクションを取得
-  const fetchNextActions = useCallback(async () => {
-    if (!isAuthReady) {return;}
-
-    try {
-      const response = await authFetch("/api/instagram/next-actions");
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setNextActions(result.data.actions || []);
-        }
-      }
-    } catch (error) {
-      console.error("Next actions fetch error:", error);
+  // BFF APIから全データを取得
+  const fetchDashboardData = useCallback(async () => {
+    if (!isAuthReady) {
+      return;
     }
-  }, [isAuthReady]);
-
-  // 次のアクションを即座に更新する関数（外部から呼び出し可能）
-  const refreshNextActions = useCallback(() => {
-    console.log("🔄 Refreshing next actions...");
-    fetchNextActions();
-  }, [fetchNextActions]);
-
-  // 最近の投稿を取得
-  const fetchRecentPosts = useCallback(async () => {
-    if (!isAuthReady) {return;}
 
     try {
-      const response = await authFetch("/api/instagram/recent-posts");
+      setLoading(true);
+
+      const response = await authFetch("/api/instagram/dashboard-complete");
 
       if (response.ok) {
         const result = await response.json();
-        if (result.success) {
-          setRecentPosts(result.data.posts || []);
-        }
-      }
-    } catch (error) {
-      console.error("Recent posts fetch error:", error);
-    }
-  }, [isAuthReady]);
-
-  // パフォーマンスサマリーを取得
-  const fetchPerformanceSummary = useCallback(async () => {
-    if (!isAuthReady) {return;}
-
-    try {
-      const response = await authFetch("/api/instagram/performance-summary");
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setPerformanceSummary(result.data);
-        }
-      }
-    } catch (error) {
-      console.error("Performance summary fetch error:", error);
-    }
-  }, [isAuthReady]);
-
-  // 目標進捗を取得
-  const fetchGoalProgress = useCallback(async () => {
-    if (!isAuthReady) {return;}
-
-    try {
-      const response = await authFetch("/api/instagram/goal-progress");
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setGoalProgress(result.data);
-        }
-      }
-    } catch (error) {
-      console.error("Goal progress fetch error:", error);
-    }
-  }, [isAuthReady]);
-
-  // アナリティクスデータを取得
-  const fetchAnalyticsData = useCallback(async () => {
-    if (!isAuthReady) {return [];}
-
-    try {
-      const response = await authFetch("/api/analytics");
-
-      if (response.ok) {
-        const result = await response.json();
-        return result.data || [];
-      }
-    } catch (error) {
-      console.error("アナリティクスデータ取得エラー:", error);
-    }
-    return [];
-  }, [isAuthReady]);
-
-  // ダッシュボード統計を取得
-  const fetchDashboardStats = useCallback(async () => {
-    if (!isAuthReady) {return;}
-
-    try {
-      const response = await authFetch("/api/instagram/dashboard-stats");
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          const statsData = result.data;
+        if (result.success && result.data) {
+          // ダッシュボード統計
+          const statsData = result.data.dashboardStats;
           setStats({
             followers: statsData.followers,
             engagement: statsData.engagement,
@@ -236,63 +146,37 @@ function InstagramDashboardContent() {
             postsThisWeek: statsData.postsThisWeek,
             weeklyGoal: statsData.weeklyGoal,
             followerGrowth: statsData.followerGrowth,
-            topPostType:
-              statsData.topPostType === "feed"
-                ? "フィード"
-                : statsData.topPostType === "reel"
-                  ? "リール"
-                  : "ストーリー",
+            topPostType: statsData.topPostType,
             monthlyFeedPosts: statsData.monthlyFeedPosts,
             monthlyReelPosts: statsData.monthlyReelPosts,
             monthlyStoryPosts: statsData.monthlyStoryPosts,
           });
-          console.log("✅ ダッシュボード統計を取得しました:", statsData);
+
+          // 最近の投稿
+          setRecentPosts(result.data.recentPosts || []);
+
+          // パフォーマンスサマリー
+          setPerformanceSummary(result.data.performanceSummary || null);
+
+          // 目標進捗
+          setGoalProgress(result.data.goalProgress || null);
+
+          // 次のアクション
+          setNextActions(result.data.nextActions || []);
         }
       }
     } catch (error) {
-      console.error("ダッシュボード統計取得エラー:", error);
-    }
-  }, [isAuthReady]);
-
-  // 投稿データを取得して統計を計算
-  const fetchPostsAndCalculateStats = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      if (!isAuthReady) {
-        console.error("User not authenticated");
-        return;
-      }
-
-      console.log("Fetching data for authenticated user");
-
-      // アナリティクスデータを取得
-      await fetchAnalyticsData();
-
-      // ダッシュボード統計をAPIから取得
-      await fetchDashboardStats();
-
-      // 新しいデータを取得
-      await Promise.all([
-        fetchRecentPosts(),
-        fetchPerformanceSummary(),
-        fetchGoalProgress(),
-        fetchNextActions(),
-      ]);
-    } catch (error) {
-      console.error("データ取得エラー:", error);
+      console.error("ダッシュボードデータ取得エラー:", error);
     } finally {
       setLoading(false);
     }
-  }, [
-    isAuthReady,
-    fetchAnalyticsData,
-    fetchDashboardStats,
-    fetchRecentPosts,
-    fetchPerformanceSummary,
-    fetchGoalProgress,
-    fetchNextActions,
-  ]);
+  }, [isAuthReady]);
+
+  // 次のアクションを即座に更新する関数（外部から呼び出し可能）
+  const refreshNextActions = useCallback(() => {
+    console.log("🔄 Refreshing next actions...");
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   // グローバルにアクセス可能な更新関数を設定
   useEffect(() => {
@@ -306,18 +190,18 @@ function InstagramDashboardContent() {
     // 認証状態が確定してからデータを取得
     if (isAuthReady) {
       console.log("User authenticated, fetching data");
-      fetchPostsAndCalculateStats();
+      fetchDashboardData();
 
       // 4日ごとに自動更新（4日 = 4 * 24 * 60 * 60 * 1000 = 345,600,000ms）
       const interval = setInterval(() => {
-        fetchPostsAndCalculateStats();
+        fetchDashboardData();
       }, 345600000);
 
       return () => clearInterval(interval);
     } else {
       console.log("User not authenticated, skipping data fetch");
     }
-  }, [isAuthReady, fetchPostsAndCalculateStats]);
+  }, [isAuthReady, fetchDashboardData]);
 
   // ローディング状態
   if (profileLoading) {

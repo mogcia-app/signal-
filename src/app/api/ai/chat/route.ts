@@ -22,16 +22,11 @@ interface ChatRequest {
 }
 
 interface InstagramData {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  planData?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  analyticsData?: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  postsData?: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  goalSettings?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  businessInfo?: any;
+  planData?: Record<string, unknown> | null;
+  analyticsData?: Record<string, unknown>[];
+  postsData?: Record<string, unknown>[];
+  goalSettings?: Record<string, unknown> | null;
+  businessInfo?: Record<string, unknown> | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -231,17 +226,20 @@ ${
 - 計画期間: ${planData.planPeriod || "未設定"}
 - ターゲットオーディエンス: ${planData.targetAudience || "未設定"}
 - カテゴリ: ${planData.category || "未設定"}
-- 戦略: ${planData.strategies?.join(", ") || "未設定"}`;
+- 戦略: ${Array.isArray(planData.strategies) ? planData.strategies.join(", ") : planData.strategies || "未設定"}`;
 
     if (planData.aiPersona) {
+      const aiPersona = planData.aiPersona as Record<string, unknown>;
       systemPrompt += `
-- AIペルソナ: ${planData.aiPersona.tone || "未設定"}、${planData.aiPersona.style || "未設定"}
-- 興味分野: ${planData.aiPersona.interests?.join(", ") || "未設定"}`;
+- AIペルソナ: ${aiPersona.tone || "未設定"}、${aiPersona.style || "未設定"}
+- 興味分野: ${Array.isArray(aiPersona.interests) ? aiPersona.interests.join(", ") : aiPersona.interests || "未設定"}`;
     }
 
     if (planData.simulation) {
+      const simulation = planData.simulation as Record<string, unknown>;
+      const postTypes = simulation.postTypes as Record<string, Record<string, unknown>> | undefined;
       systemPrompt += `
-- 投稿戦略: リール${planData.simulation.postTypes?.reel?.weeklyCount || 0}回/週、フィード${planData.simulation.postTypes?.feed?.weeklyCount || 0}回/週、ストーリー${planData.simulation.postTypes?.story?.weeklyCount || 0}回/週`;
+- 投稿戦略: リール${(postTypes?.reel?.weeklyCount as number) || 0}回/週、フィード${(postTypes?.feed?.weeklyCount as number) || 0}回/週、ストーリー${(postTypes?.story?.weeklyCount as number) || 0}回/週`;
     }
   }
 
@@ -263,9 +261,13 @@ ${
 📊 【最近の分析データ】
 ${recentAnalytics
   .map(
-    (analytics, index) => `
-${index + 1}. リーチ: ${analytics.reach || 0}、いいね: ${analytics.likes || 0}、コメント: ${analytics.comments || 0}
-   エンゲージメント率: ${analytics.engagementRate ? analytics.engagementRate.toFixed(2) + "%" : "未計算"}`
+    (analytics, index) => {
+      const analyticsRecord = analytics as Record<string, unknown>;
+      const engagementRate = typeof analyticsRecord.engagementRate === 'number' ? analyticsRecord.engagementRate : null;
+      return `
+${index + 1}. リーチ: ${analyticsRecord.reach || 0}、いいね: ${analyticsRecord.likes || 0}、コメント: ${analyticsRecord.comments || 0}
+   エンゲージメント率: ${engagementRate ? engagementRate.toFixed(2) + "%" : "未計算"}`;
+    }
   )
   .join("")}`;
   }
@@ -278,8 +280,14 @@ ${index + 1}. リーチ: ${analytics.reach || 0}、いいね: ${analytics.likes 
 📝 【最近の投稿】
 ${recentPosts
   .map(
-    (post, index) => `
-${index + 1}. ${post.type || "フィード"}: ${post.title || post.content?.substring(0, 50) || "タイトルなし"}...`
+    (post, index) => {
+      const postRecord = post as Record<string, unknown>;
+      const content = typeof postRecord.content === 'string' ? postRecord.content : '';
+      const title = typeof postRecord.title === 'string' ? postRecord.title : '';
+      const type = typeof postRecord.type === 'string' ? postRecord.type : "フィード";
+      return `
+${index + 1}. ${type}: ${title || (content ? content.substring(0, 50) : '') || "タイトルなし"}...`;
+    }
   )
   .join("")}`;
   }

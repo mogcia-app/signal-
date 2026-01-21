@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 投稿と分析データをpostIdで紐付け
-    const analyticsByPostId = new Map<string, any>();
+    const analyticsByPostId = new Map<string, admin.firestore.DocumentData>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;

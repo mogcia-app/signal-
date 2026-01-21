@@ -58,113 +58,86 @@ export default function LoginPage() {
   // ログイン成功画面
   if (loginSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 relative overflow-hidden">
-        {/* 背景装飾 */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-orange-300/30 to-amber-300/30 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-amber-300/30 to-orange-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-orange-200/20 to-amber-200/20 rounded-full blur-3xl"></div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#ff8a15]/10 p-4 relative overflow-hidden">
+        {/* グリッドパターン */}
+        <div 
+          className="absolute inset-0 opacity-[0.08]" 
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #000 1px, transparent 1px),
+              linear-gradient(to bottom, #000 1px, transparent 1px)
+            `,
+            backgroundSize: '48px 48px'
+          }}
+        ></div>
 
-        {/* メインコンテンツ */}
-        <div className="relative z-10 max-w-md w-full px-6 space-y-8 text-center">
-          <div className="animate-fade-in">
-            {/* 成功アイコン */}
-            <div className="mx-auto w-24 h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-orange-300/50 relative">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 to-transparent"></div>
-              <CheckCircle className="w-12 h-12 text-white relative z-10 drop-shadow-lg" strokeWidth={3} />
-              {/* 成功アニメーションの波紋 */}
-              <div className="absolute inset-0 rounded-full border-4 border-orange-400/50 animate-ping"></div>
-            </div>
+        <div className="relative max-w-md w-full space-y-4 text-center animate-fade-in">
+          {/* 成功アイコン */}
+          <div className="mx-auto w-16 h-16 bg-[#ff8a15] border-2 border-gray-900 flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-white" strokeWidth={2.5} />
+          </div>
 
-            {/* タイトル */}
-            <div className="space-y-4 mb-8">
-              <h2 className="text-5xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent mb-2 tracking-tight">
-                ログイン成功！
+          {/* タイトルとローディング */}
+          <div className="bg-white border-2 border-gray-900 p-8 shadow-[8px_8px_0_0_#000] space-y-6">
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold text-black">
+                ログイン成功
               </h2>
-              <div className="relative inline-block">
-                <p className="text-gray-800 text-xl relative z-10">
-                  <span className="font-bold">Signal</span>
-                  <span style={{ color: '#ff8a15' }}>.</span>
-                  へようこそ
-                </p>
-                <div className="absolute -bottom-1 left-0 right-0 h-2 bg-gradient-to-r from-orange-200/50 via-amber-200/50 to-orange-200/50 rounded-full -z-0"></div>
-              </div>
+              <p className="text-base text-gray-700">
+                <span className="font-bold">Signal</span>
+                <span className="text-[#ff8a15]">.</span>
+                へようこそ
+              </p>
             </div>
 
             {/* ローディングインジケーター */}
-            <div className="mt-10 space-y-4">
-              <div className="flex items-center justify-center gap-2">
-                <div className="relative">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-500"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-amber-400 animate-spin" style={{ animationDuration: "1.5s", animationDirection: "reverse" }}></div>
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-gray-900 border-t-[#ff8a15] animate-spin"></div>
               </div>
-              <p className="text-gray-600 text-sm font-medium animate-pulse">ダッシュボードへ移動中...</p>
-            </div>
-
-            {/* 装飾的な要素 */}
-            <div className="mt-12 flex items-center justify-center gap-2">
-              <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: "0s" }}></div>
-              <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+              <p className="text-sm text-black font-medium">ダッシュボードへ移動中...</p>
             </div>
           </div>
         </div>
-
-        <style jsx>{`
-          @keyframes fade-in {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          .animate-fade-in {
-            animation: fade-in 0.6s ease-out;
-          }
-          .delay-1000 {
-            animation-delay: 1s;
-          }
-        `}</style>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-orange-100 to-orange-50 p-4">
-      {/* 背景装飾 */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-orange-200 to-orange-300 rounded-full opacity-15 blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-orange-200 to-orange-300 rounded-full opacity-15 blur-3xl"></div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#ff8a15]/10 p-4 relative overflow-hidden">
+      {/* グリッドパターン */}
+      <div 
+        className="absolute inset-0 opacity-[0.08]" 
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, #000 1px, transparent 1px),
+            linear-gradient(to bottom, #000 1px, transparent 1px)
+          `,
+          backgroundSize: '48px 48px'
+        }}
+      ></div>
 
-      <div className="relative max-w-md w-full space-y-8">
+      <div className="relative max-w-md w-full space-y-2 animate-fade-in">
         {/* ロゴ・タイトルセクション */}
-        <div className="text-center">
-          <div className="mx-auto w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-xl">
-            <Image src="/favicon.png" alt="Signal Logo" width={56} height={56} className="w-14 h-14" priority />
+        <div className="text-center mb-4">
+          <div className="inline-block border-2 border-gray-900 bg-white px-8 py-3">
+            <h1 className="text-4xl font-bold text-black tracking-tight">
+              Signal<span className="text-[#ff8a15]">.</span>
+            </h1>
           </div>
-          <h1 className="text-4xl font-bold text-black mb-2">
-            Signal<span className="text-[#ff8a15]">.</span>
-          </h1>
-          <p className="text-black text-lg">アカウントにログイン</p>
         </div>
 
         {/* ログインフォーム */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">
+        <div className="bg-white border-2 border-gray-900 p-8 shadow-[8px_8px_0_0_#000] hover:shadow-[12px_12px_0_0_#ff8a15] transition-all duration-300">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* メールアドレス入力 */}
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="email" className="block text-sm font-bold text-black">
                 メールアドレス
               </label>
-              <div className="relative">
+              <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-orange-400" />
+                  <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-[#ff8a15] transition-colors" />
                 </div>
                 <input
                   id="email"
@@ -174,20 +147,24 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-white/50"
+                  className="block w-full pl-12 pr-4 py-4 border-2 border-gray-900 bg-white text-black placeholder-gray-400 focus:outline-none focus:border-[#ff8a15] focus:bg-[#ff8a15]/5 transition-all duration-200 font-medium autofill:bg-[#ff8a15]/5 autofill:text-black"
                   placeholder="your@email.com"
+                  style={{
+                    WebkitBoxShadow: email ? '0 0 0 1000px rgb(255 138 21 / 0.05) inset' : undefined,
+                    boxShadow: email ? '0 0 0 1000px rgb(255 138 21 / 0.05) inset' : undefined,
+                  }}
                 />
               </div>
             </div>
 
             {/* パスワード入力 */}
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="password" className="block text-sm font-bold text-black">
                 パスワード
               </label>
-              <div className="relative">
+              <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-orange-400" />
+                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-[#ff8a15] transition-colors" />
                 </div>
                 <input
                   id="password"
@@ -197,13 +174,17 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-white/50"
+                  className="block w-full pl-12 pr-12 py-4 border-2 border-gray-900 bg-white text-black placeholder-gray-400 focus:outline-none focus:border-[#ff8a15] focus:bg-[#ff8a15]/5 transition-all duration-200 font-medium autofill:bg-[#ff8a15]/5 autofill:text-black"
                   placeholder="パスワードを入力"
+                  style={{
+                    WebkitBoxShadow: password ? '0 0 0 1000px rgb(255 138 21 / 0.05) inset' : undefined,
+                    boxShadow: password ? '0 0 0 1000px rgb(255 138 21 / 0.05) inset' : undefined,
+                  }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-black hover:text-orange-500 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[#ff8a15] transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -212,9 +193,9 @@ export default function LoginPage() {
 
             {/* エラーメッセージ */}
             {(isMaintenanceMode || error) && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
+              <div className="bg-red-50 border-2 border-red-500 p-4 flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-red-700">
+                <div className="text-sm text-red-700 font-medium">
                   {isMaintenanceMode
                     ? "現在メンテナンス中のためログインできません。時間をおいて再度お試しください。"
                     : error}
@@ -227,40 +208,31 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading || isMaintenanceMode}
-                className="group relative w-full flex justify-center items-center py-4 px-6 border border-transparent text-lg font-semibold rounded-xl text-white bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                className="group relative w-full flex justify-center items-center py-4 px-6 border-2 border-gray-900 text-lg font-bold text-white bg-[#ff8a15] hover:bg-black hover:border-[#ff8a15] focus:outline-none focus:ring-4 focus:ring-[#ff8a15]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-[4px_4px_0_0_#000] hover:shadow-[6px_6px_0_0_#ff8a15] active:shadow-[2px_2px_0_0_#ff8a15] active:translate-x-[2px] active:translate-y-[2px] transform"
               >
                 {isMaintenanceMode ? (
                   "メンテナンス中です"
                 ) : loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3"></div>
+                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent mr-3"></div>
                     ログイン中...
                   </>
                 ) : (
-                  "ログイン"
+                  <>
+                    ログイン
+                    <span className="ml-2 group-hover:translate-x-1 transition-transform inline-block">→</span>
+                  </>
                 )}
               </button>
             </div>
 
-            {/* パスワードを忘れた場合 */}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  // パスワードリセットページに遷移（実装が必要な場合は追加）
-                  alert("パスワードリセット機能は管理者にお問い合わせください。");
-                }}
-                className="text-sm text-orange-600 hover:text-orange-700 underline transition-colors"
-              >
-                パスワードを忘れた場合
-              </button>
-            </div>
+            
 
             {/* 注意事項 */}
             <div className="text-center">
-              <p className="text-sm text-black bg-orange-50 rounded-lg p-3 border border-orange-100">
-                <span className="font-medium text-orange-700">※</span>{" "}
-                管理者によって登録されたメールアドレスでのみログイン可能です
+              <p className="text-xs text-gray-600 bg-gray-50 border border-gray-200 p-3 font-medium">
+                <span className="text-[#ff8a15] font-bold">※</span>{" "}
+              パスワードを忘れた方は管理者に連絡してください
               </p>
             </div>
           </form>
@@ -280,6 +252,15 @@ export default function LoginPage() {
         }
         .animate-fade-in {
           animation: fade-in 0.6s ease-out;
+        }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 1000px rgb(255 138 21 / 0.05) inset !important;
+          box-shadow: 0 0 0 1000px rgb(255 138 21 / 0.05) inset !important;
+          -webkit-text-fill-color: #000 !important;
+          background-color: transparent !important;
         }
       `}</style>
     </div>

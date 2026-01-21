@@ -3,7 +3,7 @@ import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/a
 import {
   buildPostPatternPromptSection,
   getMasterContext,
-} from "../../ai/monthly-analysis/route";
+} from "../../ai/monthly-analysis/infra/firestore/master-context";
 
 export async function POST(request: NextRequest) {
   try {

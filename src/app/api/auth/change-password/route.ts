@@ -44,10 +44,16 @@ export async function POST(request: NextRequest) {
         success: true,
         message: "パスワードが正常に変更されました",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("パスワード変更エラー:", error);
+      const errorMessage = error instanceof Error ? error.message : "パスワードの変更に失敗しました";
       
-      if (error.code === "auth/weak-password") {
+      interface FirebaseError extends Error {
+        code?: string;
+      }
+
+      const firebaseError = error as FirebaseError;
+      if (firebaseError.code === "auth/weak-password") {
         return NextResponse.json(
           {
             success: false,
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: "パスワードの変更に失敗しました",
-          details: error.message || "Unknown error",
+          details: errorMessage,
         },
         { status: 500 }
       );

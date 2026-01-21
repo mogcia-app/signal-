@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
-import { getMasterContext } from "../../ai/monthly-analysis/route";
-import type { PostLearningSignal, PatternSummary } from "../../ai/monthly-analysis/route";
+import { getMasterContext } from "../../ai/monthly-analysis/infra/firestore/master-context";
+import type { PostLearningSignal, PatternSummary } from "../../ai/monthly-analysis/types";
 
 // 先月の日付を取得（YYYY-MM形式）
 function getLastMonth(): string {

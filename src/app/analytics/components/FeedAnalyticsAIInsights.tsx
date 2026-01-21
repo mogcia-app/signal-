@@ -356,7 +356,7 @@ const FeedAnalyticsAIInsights: React.FC<FeedAnalyticsAIInsightsProps> = ({
       masterContext,
       targetCategory,
     };
-  }, [filteredData, masterContext]);
+  }, [filteredData, masterContext, targetCategory]);
 
   const handleRunAnalysis = async () => {
     if (!user?.uid || !aggregatedMetrics) {

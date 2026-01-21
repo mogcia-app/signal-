@@ -4,6 +4,7 @@ import type {
   ABTestVariantMetrics,
   ABTestResultTag,
   ABTestVariantResult,
+  ABTestVariant,
 } from "@/types/ab-test";
 
 function formatMetricSummary(metrics?: ABTestVariantMetrics | null) {
@@ -43,24 +44,28 @@ export async function fetchAbTestSummaries(
 
   const summaries: ABTestSummary[] = snapshot.docs.map((doc) => {
     const data = doc.data() || {};
-    const variantsRaw = Array.isArray(data.variants) ? data.variants : [];
+    const variantsRaw = Array.isArray(data.variants) ? (data.variants as unknown[]) : [];
 
-    const variants = variantsRaw.map((variant: any) => ({
-      label: variant.label || "バリエーション",
-      metrics: variant.metrics || undefined,
-      result: variant.result || "pending",
-      linkedPostId: variant.linkedPostId || null,
-    }));
+    const variants = variantsRaw.map((variant: unknown) => {
+      const v = variant as Record<string, unknown>;
+      return {
+        label: (typeof v.label === "string" ? v.label : "バリエーション") as string,
+        metrics: (v.metrics as ABTestVariantMetrics | undefined) || undefined,
+        result: (v.result as ABTestVariantResult | undefined) || "pending",
+        linkedPostId: (typeof v.linkedPostId === "string" ? v.linkedPostId : null) as string | null,
+      };
+    });
 
     const winnerVariant =
-      variantsRaw.find((variant: any) => {
+      variantsRaw.find((variant: unknown) => {
+        const v = variant as Record<string, unknown> & { id?: string; key?: string; result?: string };
         if (data.winnerVariantId) {
-          return variant.id === data.winnerVariantId || variant.key === data.winnerVariantId;
+          return v.id === data.winnerVariantId || v.key === data.winnerVariantId;
         }
         if (data.winnerVariantKey) {
-          return variant.id === data.winnerVariantKey || variant.key === data.winnerVariantKey;
+          return v.id === data.winnerVariantKey || v.key === data.winnerVariantKey;
         }
-        return variant.result === "win";
+        return v.result === "win";
       }) || null;
 
     const summaryParts: string[] = [];

@@ -3,6 +3,7 @@ import { adminDb } from "../../../../lib/firebase-admin";
 import { requireAuthContext } from "../../../../lib/server/auth-context";
 import OpenAI from "openai";
 import * as admin from "firebase-admin";
+import type { KPIBreakdown } from "../../analytics/kpi-breakdown/route";
 
 // OpenAI APIキーのチェック
 const getOpenAIClient = () => {
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
     let followerIncrease = currentFollowers - startFollowers;
     
     // KPI分解データにfollowersがある場合はそれを使用
-    const followersKPI = kpiBreakdowns.find((kpi: any) => kpi.key === "followers");
+    const followersKPI = kpiBreakdowns.find((kpi: KPIBreakdown) => kpi.key === "followers");
     if (followersKPI && followersKPI.value) {
       followerIncrease = followersKPI.value;
       console.log("Using followers KPI value:", followerIncrease);
@@ -208,12 +209,12 @@ export async function POST(request: NextRequest) {
 
     // KPI分解データから伸びていない部分を分析
     const weakKPIs = kpiBreakdowns
-      .filter((kpi: any) => {
+      .filter((kpi: KPIBreakdown) => {
         // 前月比がマイナス、または変化率が低いKPIを特定
         const changePct = kpi.changePct || 0;
         return changePct < 0 || (changePct < 5 && kpi.value > 0);
       })
-      .map((kpi: any) => ({
+      .map((kpi: KPIBreakdown) => ({
         key: kpi.key,
         label: kpi.label,
         currentValue: kpi.value || 0,
@@ -241,7 +242,7 @@ export async function POST(request: NextRequest) {
     let proposal: NextMonthGoalProposal;
 
     // KPI分解データのサマリーを作成
-    const kpiSummary = kpiBreakdowns.map((kpi: any) => ({
+    const kpiSummary = kpiBreakdowns.map((kpi: KPIBreakdown) => ({
       key: kpi.key,
       label: kpi.label,
       value: kpi.value || 0,

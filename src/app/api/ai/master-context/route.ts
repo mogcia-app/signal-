@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getMasterContext,
+import { getMasterContext } from "../monthly-analysis/infra/firestore/master-context";
+import type {
   MasterContext,
   PatternSummary,
   PostLearningSignal,
   PostPerformanceTag,
-} from "../monthly-analysis/route";
+} from "../monthly-analysis/types";
 import { buildAIContext } from "@/lib/ai/context";
 import type { AIReference, SnapshotReference } from "@/types/ai";
 

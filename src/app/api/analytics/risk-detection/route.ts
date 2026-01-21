@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     const analyzedCount = analyticsSnapshot.docs.length;
 
     // 投稿と分析データをpostIdで紐付け
-    const analyticsByPostId = new Map<string, any>();
+    const analyticsByPostId = new Map<string, admin.firestore.DocumentData>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       .where("publishedAt", "<=", prevEndTimestamp)
       .get();
 
-    const prevAnalyticsByPostId = new Map<string, any>();
+    const prevAnalyticsByPostId = new Map<string, admin.firestore.DocumentData>();
     prevAnalyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;

@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { MessageCircle, Smile, Frown, Meh, ExternalLink, AlertTriangle, Loader2 } from "lucide-react";
-import { useAuth } from "../../../../contexts/auth-context";
-import { authFetch } from "../../../../utils/authFetch";
 import { getLabEditorHref, getAnalyticsHref } from "../../../../utils/links";
 
 interface FeedbackSentimentProps {
   selectedMonth: string;
+  reportData?: any;
 }
 
 type SentimentType = "positive" | "negative" | "neutral";
@@ -130,53 +129,12 @@ function CommentList({
   );
 }
 
-export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMonth }) => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [summary, setSummary] = useState<FeedbackSentimentSummary | null>(null);
-
-  const fetchFeedbackSentiment = useCallback(async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await authFetch(`/api/analytics/feedback-sentiment?date=${selectedMonth}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setSummary(result.data);
-        } else {
-          setError("データの取得に失敗しました");
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        setError(errorData.error || "データの取得に失敗しました");
-      }
-    } catch (err) {
-      console.error("フィードバック感情トラッキング取得エラー:", err);
-      setError("データの取得中にエラーが発生しました");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, selectedMonth]);
-
-  // ページ読み込み時に自動的にデータを取得
-  useEffect(() => {
-    if (user && selectedMonth) {
-      fetchFeedbackSentiment();
-    }
-  }, [user, selectedMonth, fetchFeedbackSentiment]);
+export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMonth, reportData }) => {
+  // reportDataからフィードバック感情分析データを取得
+  const summary: FeedbackSentimentSummary | null = reportData?.feedbackSentiment || null;
 
   // データがない場合は非表示
-  if (!isLoading && !error && (!summary || summary.total === 0)) {
-    return null;
-  }
-
-  if (!summary) {
+  if (!summary || summary.total === 0) {
     return null;
   }
 
@@ -264,23 +222,12 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
 
       {/* コンテンツ */}
       <div>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-5 h-5 animate-spin text-emerald-600 mr-2" />
-            <span className="text-sm text-gray-700">データを読み込み中...</span>
-          </div>
-        ) : error ? (
-          <div className="bg-white border border-red-200 p-3 sm:p-4">
+        {!reportData?.feedbackSentiment ? (
+          <div className="bg-white border border-gray-200 p-3 sm:p-4">
             <div className="flex items-start">
-              <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
+              <div className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0">ℹ️</div>
               <div className="flex-1">
-                <p className="text-xs font-medium text-red-800 mb-1.5">{error}</p>
-                <button
-                  onClick={fetchFeedbackSentiment}
-                  className="text-xs text-red-600 hover:text-red-800 underline font-medium"
-                >
-                  再試行
-                </button>
+                <p className="text-xs font-medium text-gray-800 mb-1.5">データがありません</p>
               </div>
             </div>
           </div>

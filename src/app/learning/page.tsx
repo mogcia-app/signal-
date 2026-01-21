@@ -268,98 +268,41 @@ export default function LearningDashboardPage() {
     }
 
     let isCancelled = false;
-    const fetchMasterContext = async () => {
+    const fetchDashboardData = async () => {
       setIsContextLoading(true);
+      setIsHistoryLoading(true);
       setContextError(null);
+      setHistoryError(null);
 
       try {
         const params = new URLSearchParams({
-          userId: user.uid,
           forceRefresh: "1", // 常に最新データを取得
+          limit: "10",
         });
 
-        const response = await authFetch(`/api/ai/master-context?${params.toString()}`);
+        const response = await authFetch(`/api/learning/dashboard?${params.toString()}`);
 
         if (!response.ok) {
-          throw new Error(`Master context API error: ${response.status}`);
+          throw new Error(`Learning dashboard API error: ${response.status}`);
         }
 
         const result = await response.json();
 
         if (!result.success) {
-          throw new Error(result.error || "マスターコンテキストの取得に失敗しました");
+          throw new Error(result.error || "学習ダッシュボードデータの取得に失敗しました");
         }
 
         if (!isCancelled) {
-          setContextData(result.data);
-          setPostInsights(result.data?.postInsights ?? {});
-          setSharedLearningContext(result.data?.learningContext ?? null);
-        }
-      } catch (error) {
-        console.error("マスターコンテキスト取得エラー:", error);
-        if (!isCancelled) {
-          setContextError(
-            error instanceof Error ? error.message : "マスターコンテキストの取得に失敗しました"
-          );
-          setContextData(null);
-          setSharedLearningContext(null);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsContextLoading(false);
-        }
-      }
-    };
+          const data = result.data;
+          
+          // マスターコンテキストデータを設定
+          setContextData(data);
+          setPostInsights(data?.postInsights ?? {});
+          setSharedLearningContext(data?.learningContext ?? null);
 
-    fetchMasterContext();
-    return () => {
-      isCancelled = true;
-    };
-  }, [isAuthReady, user?.uid, refreshKey]);
-
-  useEffect(() => {
-    if (!isAuthReady || !user?.uid) {
-      return;
-    }
-
-    let isCancelled = false;
-    const fetchHistories = async () => {
-      setIsHistoryLoading(true);
-      setHistoryError(null);
-      try {
-        const params = new URLSearchParams({
-          userId: user.uid,
-          limit: "10",
-        });
-        if (refreshKey > 0) {
-          params.set("forceRefresh", "1");
-        }
-
-        const [feedbackRes, actionRes] = await Promise.all([
-          authFetch(`/api/ai/feedback?${params.toString()}`),
-          authFetch(`/api/ai/action-logs?${params.toString()}`),
-        ]);
-
-        if (!feedbackRes.ok) {
-          throw new Error(`Feedback history error: ${feedbackRes.status}`);
-        }
-        if (!actionRes.ok) {
-          throw new Error(`Action history error: ${actionRes.status}`);
-        }
-
-        const feedbackJson = await feedbackRes.json();
-        const actionJson = await actionRes.json();
-
-        if (!feedbackJson.success) {
-          throw new Error(feedbackJson.error || "フィードバック履歴の取得に失敗しました");
-        }
-        if (!actionJson.success) {
-          throw new Error(actionJson.error || "アクション履歴の取得に失敗しました");
-        }
-
-        if (!isCancelled) {
-          const mappedFeedback: FeedbackEntry[] = Array.isArray(feedbackJson.data)
-            ? feedbackJson.data.map((entry: any) => ({
+          // フィードバック履歴とアクション履歴を設定
+          const mappedFeedback: FeedbackEntry[] = Array.isArray(data.feedbackHistory)
+            ? data.feedbackHistory.map((entry: any) => ({
                 id: String(entry.id ?? ""),
                 postId: entry.postId ?? null,
                 sentiment:
@@ -371,8 +314,8 @@ export default function LearningDashboardPage() {
                 createdAt: typeof entry.createdAt === "string" ? entry.createdAt : null,
               }))
             : [];
-          const mappedActions: ActionLogEntry[] = Array.isArray(actionJson.data)
-            ? actionJson.data.map((entry: any) => ({
+          const mappedActions: ActionLogEntry[] = Array.isArray(data.actionHistory)
+            ? data.actionHistory.map((entry: any) => ({
                 id: String(entry.id ?? ""),
                 actionId: String(entry.actionId ?? ""),
                 title: entry.title ?? "未設定",
@@ -393,18 +336,26 @@ export default function LearningDashboardPage() {
           setActionHistory(mappedActions);
         }
       } catch (error) {
-        console.error("学習履歴取得エラー:", error);
+        console.error("学習ダッシュボードデータ取得エラー:", error);
         if (!isCancelled) {
-          setHistoryError(error instanceof Error ? error.message : "履歴の取得に失敗しました");
+          const errorMessage =
+            error instanceof Error ? error.message : "学習ダッシュボードデータの取得に失敗しました";
+          setContextError(errorMessage);
+          setHistoryError(errorMessage);
+          setContextData(null);
+          setSharedLearningContext(null);
+          setFeedbackHistory([]);
+          setActionHistory([]);
         }
       } finally {
         if (!isCancelled) {
+          setIsContextLoading(false);
           setIsHistoryLoading(false);
         }
       }
     };
 
-    fetchHistories();
+    fetchDashboardData();
     return () => {
       isCancelled = true;
     };

@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
 
     // 投稿マップを作成（analyticsコレクションから）
     const postsMap = new Map<string, { id: string; title: string; postType: "feed" | "reel" | "story" }>();
-    const analyticsByPostId = new Map<string, any>();
+    const analyticsByPostId = new Map<string, admin.firestore.DocumentData>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;

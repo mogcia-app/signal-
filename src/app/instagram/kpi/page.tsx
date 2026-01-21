@@ -32,15 +32,17 @@ export default function InstagramKPIPage() {
   
   // すべてのHooksを早期リターンの前に定義
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
-  const [breakdowns, setBreakdowns] = useState<KPIBreakdown[]>([]);
-  const [timeSlotAnalysis, setTimeSlotAnalysis] = useState<TimeSlotEntry[]>([]);
-  const [hashtagStats, setHashtagStats] = useState<Array<{ hashtag: string; count: number }>>([]);
-  const [feedStats, setFeedStats] = useState<FeedStats | null>(null);
-  const [reelStats, setReelStats] = useState<ReelStats | null>(null);
-  const [feedAudience, setFeedAudience] = useState<AudienceBreakdown | null>(null);
-  const [reelAudience, setReelAudience] = useState<AudienceBreakdown | null>(null);
-  const [dailyKPIs, setDailyKPIs] = useState<DailyKPI[]>([]);
-  const [goalAchievements, setGoalAchievements] = useState<GoalAchievement[]>([]);
+  const [kpiData, setKpiData] = useState<{
+    breakdowns: KPIBreakdown[];
+    timeSlotAnalysis: TimeSlotEntry[];
+    hashtagStats: Array<{ hashtag: string; count: number }>;
+    feedStats: FeedStats | null;
+    reelStats: ReelStats | null;
+    feedAudience: AudienceBreakdown | null;
+    reelAudience: AudienceBreakdown | null;
+    dailyKPIs: DailyKPI[];
+    goalAchievements: GoalAchievement[];
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,52 +66,30 @@ export default function InstagramKPIPage() {
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
-            setBreakdowns(result.data.breakdowns || []);
-            setTimeSlotAnalysis(result.data.timeSlotAnalysis || []);
-            setHashtagStats(result.data.hashtagStats || []);
-            setFeedStats(result.data.feedStats || null);
-            setReelStats(result.data.reelStats || null);
-            setFeedAudience(result.data.feedAudience || null);
-            setReelAudience(result.data.reelAudience || null);
-            setDailyKPIs(result.data.dailyKPIs || []);
-            setGoalAchievements(result.data.goalAchievements || []);
+            setKpiData({
+              breakdowns: result.data.breakdowns || [],
+              timeSlotAnalysis: result.data.timeSlotAnalysis || [],
+              hashtagStats: result.data.hashtagStats || [],
+              feedStats: result.data.feedStats || null,
+              reelStats: result.data.reelStats || null,
+              feedAudience: result.data.feedAudience || null,
+              reelAudience: result.data.reelAudience || null,
+              dailyKPIs: result.data.dailyKPIs || [],
+              goalAchievements: result.data.goalAchievements || [],
+            });
           } else {
             setError("データの取得に失敗しました");
-            setBreakdowns([]);
-            setTimeSlotAnalysis([]);
-            setHashtagStats([]);
-            setFeedStats(null);
-            setReelStats(null);
-            setFeedAudience(null);
-            setReelAudience(null);
-            setDailyKPIs([]);
-            setGoalAchievements([]);
+            setKpiData(null);
           }
         } else {
           const errorData = await response.json().catch(() => ({}));
           setError(errorData.error || "データの取得に失敗しました");
-          setBreakdowns([]);
-          setTimeSlotAnalysis([]);
-          setHashtagStats([]);
-          setFeedStats(null);
-          setReelStats(null);
-          setFeedAudience(null);
-          setReelAudience(null);
-          setDailyKPIs([]);
-          setGoalAchievements([]);
+          setKpiData(null);
         }
       } catch (err) {
         console.error("KPI分解データ取得エラー:", err);
         setError("データの取得中にエラーが発生しました");
-        setBreakdowns([]);
-        setTimeSlotAnalysis([]);
-        setHashtagStats([]);
-        setFeedStats(null);
-        setReelStats(null);
-        setFeedAudience(null);
-        setReelAudience(null);
-        setDailyKPIs([]);
-        setGoalAchievements([]);
+        setKpiData(null);
       } finally {
         setIsLoading(false);
       }
@@ -185,39 +165,39 @@ export default function InstagramKPIPage() {
 
         {/* KPI分解 */}
         <KPIBreakdownComponent
-          breakdowns={breakdowns}
+          breakdowns={kpiData?.breakdowns || []}
           isLoading={isLoading}
           error={error}
         />
 
         {/* KPI目標達成度 */}
         <GoalAchievementComponent
-          goalAchievements={goalAchievements}
+          goalAchievements={kpiData?.goalAchievements || []}
           isLoading={isLoading}
         />
 
         {/* フィード/リール統計サマリー */}
         <ContentPerformance
-          feedStats={feedStats}
-          reelStats={reelStats}
+          feedStats={kpiData?.feedStats || null}
+          reelStats={kpiData?.reelStats || null}
           isLoading={isLoading}
         />
 
         {/* 日別KPI推移 */}
-        <DailyKPITrend dailyKPIs={dailyKPIs} isLoading={isLoading} />
+        <DailyKPITrend dailyKPIs={kpiData?.dailyKPIs || []} isLoading={isLoading} />
 
         {/* 時間帯 × コンテンツタイプ */}
         {/* TimeSlotHeatmap コンポーネントは削除されました */}
 
         {/* ハッシュタグ分析 */}
         <div className="mt-4">
-          <HashtagAnalysis hashtagStats={hashtagStats} isLoading={isLoading} />
+          <HashtagAnalysis hashtagStats={kpiData?.hashtagStats || []} isLoading={isLoading} />
         </div>
 
         {/* オーディエンス構成サマリー */}
         <AudienceBreakdownComponent
-          feed={feedAudience}
-          reel={reelAudience}
+          feed={kpiData?.feedAudience || null}
+          reel={kpiData?.reelAudience || null}
           isLoading={isLoading}
         />
       </div>

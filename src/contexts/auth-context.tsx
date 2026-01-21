@@ -46,10 +46,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // ユーザードキュメントが存在しない場合、デフォルト値で作成
         await createUserDocument(userDocRef, user);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 権限エラーが発生した場合（新規ユーザーでドキュメントが存在しない場合など）
       // 直接作成を試みる（create権限はルールで許可されている）
-      if (error.code === 'permission-denied') {
+      interface FirebaseError extends Error {
+        code?: string;
+      }
+      const firebaseError = error as FirebaseError;
+      if (firebaseError.code === 'permission-denied') {
         try {
           await createUserDocument(userDocRef, user);
         } catch (createError) {

@@ -9,7 +9,7 @@ import { canAccessFeature } from "@/lib/plan-access";
 import {
   buildPostPatternPromptSection,
   getMasterContext,
-} from "../../ai/monthly-analysis/route";
+} from "../../ai/monthly-analysis/infra/firestore/master-context";
 
 // セキュリティ: APIキーの検証
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

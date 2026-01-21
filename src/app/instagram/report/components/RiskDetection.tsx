@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { ShieldAlert, AlertTriangle, Info, Loader2 } from "lucide-react";
-import { useAuth } from "../../../../contexts/auth-context";
-import { authFetch } from "../../../../utils/authFetch";
+import React from "react";
+import { ShieldAlert, AlertTriangle, Info } from "lucide-react";
 
 interface RiskDetectionProps {
   selectedMonth: string;
@@ -14,6 +12,7 @@ interface RiskDetectionProps {
     totalComments: number;
     totalFollowerIncrease: number;
   } | null;
+  reportData?: Record<string, unknown> | null;
 }
 
 interface RiskAlert {
@@ -49,56 +48,9 @@ const severityConfig = {
   },
 } as const;
 
-export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpis }) => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [alerts, setAlerts] = useState<RiskAlert[]>([]);
-
-  const fetchRiskDetection = useCallback(async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // KPIデータをクエリパラメータとして渡す
-      const params = new URLSearchParams({ date: selectedMonth });
-      if (kpis) {
-        params.append("totalLikes", kpis.totalLikes.toString());
-        params.append("totalReach", kpis.totalReach.toString());
-        params.append("totalSaves", kpis.totalSaves.toString());
-        params.append("totalComments", kpis.totalComments.toString());
-        params.append("totalFollowerIncrease", kpis.totalFollowerIncrease.toString());
-      }
-
-      const response = await authFetch(`/api/analytics/risk-detection?${params.toString()}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data?.alerts) {
-          setAlerts(result.data.alerts);
-        } else {
-          setError("データの取得に失敗しました");
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        setError(errorData.error || "データの取得に失敗しました");
-      }
-    } catch (err) {
-      console.error("リスク検知取得エラー:", err);
-      setError("データの取得中にエラーが発生しました");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, selectedMonth, kpis]);
-
-  // ページ読み込み時に自動的にデータを取得
-  React.useEffect(() => {
-    if (user && selectedMonth && kpis) {
-      fetchRiskDetection();
-    }
-  }, [user, selectedMonth, kpis, fetchRiskDetection]);
+export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpis, reportData }) => {
+  // reportDataからリスクアラートを取得
+  const alerts: RiskAlert[] = reportData?.riskAlerts || [];
 
   return (
     <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
@@ -117,27 +69,7 @@ export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpi
 
       {/* コンテンツ */}
       <div className="mt-4 pt-4 border-t border-gray-200">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="w-5 h-5 animate-spin text-red-600 mr-2" />
-              <span className="text-sm text-gray-700">リスク分析を実行中...</span>
-            </div>
-          ) : error ? (
-            <div className="bg-white border border-red-200 p-3 sm:p-4">
-              <div className="flex items-start">
-                <div className="w-4 h-4 text-red-600 mr-2 mt-0.5 flex-shrink-0">⚠️</div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-red-800 mb-1.5">{error}</p>
-                  <button
-                    onClick={fetchRiskDetection}
-                    className="text-xs text-red-600 hover:text-red-800 underline font-medium"
-                  >
-                    再試行
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : alerts.length > 0 ? (
+          {alerts.length > 0 ? (
             <div className="space-y-2">
               {alerts.map((alert) => {
                 const config = severityConfig[alert.severity];

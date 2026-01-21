@@ -59,6 +59,7 @@ export default function InstagramReportPage() {
   // すべてのHooksを早期リターンの前に定義
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
   const [performanceScore, setPerformanceScore] = useState<PerformanceScoreData | null>(null);
+  const [reportData, setReportData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,46 +111,59 @@ export default function InstagramReportPage() {
     return date.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
   };
 
-  // パフォーマンス評価スコアを取得
-  const fetchPerformanceScore = useCallback(
-    async (date: string) => {
+  // BFF APIから全データを取得
+  const fetchReportData = useCallback(
+    async (date: string, regenerate = false) => {
       if (!isAuthReady) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
-        const response = await authFetch(`/api/analytics/performance-score?date=${date}`);
+        const params = new URLSearchParams({ date });
+        if (regenerate) {
+          params.append("regenerate", "true");
+        }
+
+        const response = await authFetch(`/api/analytics/report-complete?${params.toString()}`);
 
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
-            console.log("[ReportPage] パフォーマンス評価データ取得:", {
-              score: result.data.score,
-              rating: result.data.rating,
-              hasPlan: result.data.metrics?.hasPlan,
-              postCount: result.data.metrics?.postCount,
-              analyzedCount: result.data.metrics?.analyzedCount,
+            console.log("[ReportPage] BFF APIデータ取得完了:", {
+              hasPerformanceScore: !!result.data.performanceScore,
+              hasRiskAlerts: !!result.data.riskAlerts,
+              hasFeedbackSentiment: !!result.data.feedbackSentiment,
+              hasPostDeepDive: !!result.data.postDeepDive,
+              hasAILearningReferences: !!result.data.aiLearningReferences,
+              hasPostSummaries: !!result.data.postSummaries,
+              hasMonthlyReview: !!result.data.monthlyReview,
             });
-            setPerformanceScore(result.data);
+            setReportData(result.data);
+            if (result.data.performanceScore) {
+              setPerformanceScore(result.data.performanceScore);
+            }
           } else {
-            console.error("[ReportPage] パフォーマンス評価データが不正:", result);
+            console.error("[ReportPage] BFF APIデータが不正:", result);
             setError("データの取得に失敗しました");
             setPerformanceScore(null);
+            setReportData(null);
           }
         } else {
           const errorData = await response.json().catch(() => ({}));
-          console.error("[ReportPage] パフォーマンス評価API エラー:", {
+          console.error("[ReportPage] BFF API エラー:", {
             status: response.status,
             error: errorData,
           });
           setError(errorData.error || "データの取得に失敗しました");
           setPerformanceScore(null);
+          setReportData(null);
         }
       } catch (err) {
-        console.error("[ReportPage] パフォーマンス評価スコア取得エラー:", err);
+        console.error("[ReportPage] レポートデータ取得エラー:", err);
         setError("データの取得中にエラーが発生しました");
         setPerformanceScore(null);
+        setReportData(null);
       } finally {
         setIsLoading(false);
       }
@@ -160,9 +174,9 @@ export default function InstagramReportPage() {
   // 月が変更された時、または認証が準備できた時にデータを取得
   useEffect(() => {
     if (isAuthReady && selectedMonth) {
-      fetchPerformanceScore(selectedMonth);
+      fetchReportData(selectedMonth);
     }
-  }, [isAuthReady, selectedMonth, fetchPerformanceScore]);
+  }, [isAuthReady, selectedMonth, fetchReportData]);
 
   return (
     <SNSLayout customTitle="月次レポート" customDescription="月次のパフォーマンス分析とレポート">
@@ -213,31 +227,48 @@ export default function InstagramReportPage() {
         <MonthlyReview 
           selectedMonth={selectedMonth} 
           kpis={performanceScore?.kpis || null}
+          reportData={reportData}
+          onRegenerate={() => fetchReportData(selectedMonth, true)}
         />
 
         {/* 次のアクションプラン */}
         <MonthlyActionPlans 
           selectedMonth={selectedMonth} 
           kpis={performanceScore?.kpis || null}
+          reportData={reportData}
+          onRegenerate={() => fetchReportData(selectedMonth, true)}
         />
 
         {/* リスク・異常検知 */}
         <RiskDetection 
           selectedMonth={selectedMonth} 
           kpis={performanceScore?.kpis || null}
+          reportData={reportData}
         />
 
         {/* 今月の投稿別強み・改善・施策まとめ */}
-        <PostSummaryInsights selectedMonth={selectedMonth} />
+        <PostSummaryInsights 
+          selectedMonth={selectedMonth} 
+          reportData={reportData}
+        />
 
         {/* フィードバック感情トラッキング */}
-        <FeedbackSentiment selectedMonth={selectedMonth} />
+        <FeedbackSentiment 
+          selectedMonth={selectedMonth} 
+          reportData={reportData}
+        />
 
         {/* 投稿ディープダイブ */}
-        <PostDeepDive selectedMonth={selectedMonth} />
+        <PostDeepDive 
+          selectedMonth={selectedMonth} 
+          reportData={reportData}
+        />
 
         {/* AI学習リファレンス */}
-        <AILearningReferences selectedMonth={selectedMonth} />
+        <AILearningReferences 
+          selectedMonth={selectedMonth} 
+          reportData={reportData}
+        />
       </div>
     </SNSLayout>
   );

@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       reachSource: reachSource || null,
       commentThreads: Array.isArray(commentThreads)
         ? commentThreads
-            .map((thread: any) => ({
+            .map((thread: { comment?: string; reply?: string }) => ({
               comment: typeof thread?.comment === "string" ? thread.comment.trim() : "",
               reply: typeof thread?.reply === "string" ? thread.reply.trim() : "",
             }))

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMasterContext } from "../monthly-analysis/route";
-import type { PostLearningSignal } from "../monthly-analysis/route";
+import { getMasterContext } from "../monthly-analysis/infra/firestore/master-context";
+import type { PostLearningSignal } from "../monthly-analysis/types";
 
 interface PostInsightRequest {
   userId?: string;

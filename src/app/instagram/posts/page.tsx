@@ -190,7 +190,7 @@ export default function InstagramPostsPage() {
     }>
   >([]);
 
-  // 投稿一覧を取得
+  // BFF APIから投稿一覧と分析データを取得
   const fetchPosts = useCallback(async () => {
     if (!user?.uid) {
       setLoading(false);
@@ -200,20 +200,11 @@ export default function InstagramPostsPage() {
     try {
       setLoading(true);
 
-      const params: Record<string, string> = {
-        userId: user.uid,
-      };
-
-      const searchParams = new URLSearchParams(params);
-      console.log("Fetching posts from:", `/api/posts?${searchParams.toString()}`);
-      const response = await fetch(`/api/posts?${searchParams.toString()}`, {
+      const response = await fetch(`/api/posts/with-analytics`, {
         headers: {
           "Content-Type": "application/json",
         },
       });
-
-      console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -222,35 +213,16 @@ export default function InstagramPostsPage() {
       }
 
       const result = await response.json();
-      const postsData = result.posts || [];
-
-      const sortedPosts = postsData.sort((a: PostData, b: PostData) => {
-        // 作成済み（created）を最優先
-        if (a.status === "created" && b.status !== "created") {return -1;}
-        if (b.status === "created" && a.status !== "created") {return 1;}
-
-        // 同じステータスの場合は、作成日時で降順（新しい順）
-        const aCreatedAt =
-          a.createdAt instanceof Date
-            ? a.createdAt
-            : typeof a.createdAt === "string"
-              ? new Date(a.createdAt)
-              : a.createdAt?.toDate
-                ? a.createdAt.toDate()
-                : new Date(0);
-        const bCreatedAt =
-          b.createdAt instanceof Date
-            ? b.createdAt
-            : typeof b.createdAt === "string"
-              ? new Date(b.createdAt)
-              : b.createdAt?.toDate
-                ? b.createdAt.toDate()
-                : new Date(0);
-
-        return bCreatedAt.getTime() - aCreatedAt.getTime();
-      });
-
-      setPosts(sortedPosts);
+      if (result.success && result.data) {
+        // BFF APIから取得したデータを設定
+        setPosts(result.data.posts || []);
+        setAnalyticsData(result.data.analytics || []);
+        setScheduledPosts(result.data.scheduledPosts || []);
+        setUnanalyzedPosts(result.data.unanalyzedPosts || []);
+        
+        // 手動入力の分析データも設定（BFF APIから取得済み）
+        // manualAnalyticsDataはanalyticsDataからフィルタリングして取得
+      }
     } catch (error) {
       console.error("投稿取得エラー:", error);
     } finally {
@@ -258,224 +230,13 @@ export default function InstagramPostsPage() {
     }
   }, [user?.uid]);
 
-  // 分析データを取得
-  const fetchAnalytics = useCallback(async () => {
-    if (!user?.uid) {return;}
-
-    try {
-      const response = await fetch(`/api/analytics?userId=${user.uid}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        setAnalyticsData(result.analytics || []);
-      }
-    } catch (error) {
-      console.error("Analytics fetch error:", error);
-    }
-  }, [user]);
-
-  // 投稿データを処理してセクション別に分類
-  const processPostsData = useCallback(() => {
-    if (!posts.length) {return;}
-
-    const analyzedPostIds = new Set(
-      analyticsData
-        .map((analytics) => analytics.postId)
-        .filter((postId): postId is string => Boolean(postId))
-    );
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    // 今週の投稿予定
-    const scheduledPostsData = posts
-      .filter((post: PostData) => {
-        if (post.status !== "created") {return false;}
-        if (!post.scheduledDate) {return false;}
-
-        try {
-          let scheduledDate: Date;
-
-          if (
-            post.scheduledDate &&
-            typeof post.scheduledDate === "object" &&
-            "toDate" in post.scheduledDate
-          ) {
-            scheduledDate = (post.scheduledDate as { toDate(): Date }).toDate();
-          } else if (
-            post.scheduledDate &&
-            typeof post.scheduledDate === "object" &&
-            "type" in post.scheduledDate &&
-            (post.scheduledDate as { type: string }).type === "firestore/timestamp/1.0"
-          ) {
-            const timestamp = post.scheduledDate as unknown as {
-              seconds: number;
-              nanoseconds: number;
-            };
-            scheduledDate = new Date(
-              timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000)
-            );
-          } else {
-            scheduledDate =
-              post.scheduledDate instanceof Date
-                ? post.scheduledDate
-                : new Date(post.scheduledDate as string);
-          }
-
-          return scheduledDate >= today;
-        } catch (error) {
-          console.error("投稿予定の日付変換エラー:", error, post);
-          return false;
-        }
-      })
-      .slice(0, 5)
-      .map((post: PostData) => {
-        try {
-          let scheduledDate: Date;
-
-          if (
-            post.scheduledDate &&
-            typeof post.scheduledDate === "object" &&
-            "toDate" in post.scheduledDate
-          ) {
-            scheduledDate = (post.scheduledDate as { toDate(): Date }).toDate();
-          } else if (
-            post.scheduledDate &&
-            typeof post.scheduledDate === "object" &&
-            "type" in post.scheduledDate &&
-            (post.scheduledDate as { type: string }).type === "firestore/timestamp/1.0"
-          ) {
-            const timestamp = post.scheduledDate as unknown as {
-              seconds: number;
-              nanoseconds: number;
-            };
-            scheduledDate = new Date(
-              timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000)
-            );
-          } else {
-            scheduledDate =
-              post.scheduledDate instanceof Date
-                ? post.scheduledDate
-                : new Date(post.scheduledDate as string);
-          }
-
-          const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
-
-          return {
-            day: dayNames[scheduledDate.getDay()],
-            date: `${scheduledDate.getMonth() + 1}/${scheduledDate.getDate()}`,
-            type:
-              post.postType === "reel"
-                ? "リール"
-                : post.postType === "feed"
-                  ? "フィード"
-                  : "ストーリー",
-            title: post.title,
-            time: post.scheduledTime || "未設定",
-            status: "分析未設定",
-          };
-        } catch (error) {
-          console.error("投稿予定の日付変換エラー:", error, post);
-          return null;
-        }
-      })
-      .filter((post): post is NonNullable<typeof post> => post !== null);
-    setScheduledPosts(scheduledPostsData);
-
-    // 未分析投稿
-    const unanalyzedPostsData = posts
-      .filter((post: PostData) => {
-        if (post.status !== "created") {return false;}
-        if (!post.scheduledDate) {return false;}
-        if (post.id && analyzedPostIds.has(post.id)) {return false;}
-
-        try {
-          let scheduledDate: Date;
-
-          if (
-            post.scheduledDate &&
-            typeof post.scheduledDate === "object" &&
-            "toDate" in post.scheduledDate
-          ) {
-            scheduledDate = (post.scheduledDate as { toDate(): Date }).toDate();
-          } else if (
-            post.scheduledDate &&
-            typeof post.scheduledDate === "object" &&
-            "type" in post.scheduledDate &&
-            (post.scheduledDate as { type: string }).type === "firestore/timestamp/1.0"
-          ) {
-            const timestamp = post.scheduledDate as unknown as {
-              seconds: number;
-              nanoseconds: number;
-            };
-            scheduledDate = new Date(
-              timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000)
-            );
-          } else {
-            scheduledDate =
-              post.scheduledDate instanceof Date
-                ? post.scheduledDate
-                : new Date(post.scheduledDate as string);
-          }
-
-          return scheduledDate < today;
-        } catch (error) {
-          console.error("未分析投稿の日付変換エラー:", error, post);
-          return false;
-        }
-      })
-      .slice(0, 5)
-      .map((post: PostData) => {
-        try {
-          let createdAt: Date;
-
-          if (post.createdAt && typeof post.createdAt === "object" && "toDate" in post.createdAt) {
-            createdAt = (post.createdAt as { toDate(): Date }).toDate();
-          } else if (
-            post.createdAt &&
-            typeof post.createdAt === "object" &&
-            "type" in post.createdAt &&
-            (post.createdAt as { type: string }).type === "firestore/timestamp/1.0"
-          ) {
-            const timestamp = post.createdAt as unknown as { seconds: number; nanoseconds: number };
-            createdAt = new Date(
-              timestamp.seconds * 1000 + Math.floor(timestamp.nanoseconds / 1000000)
-            );
-          } else {
-            createdAt =
-              post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt as string);
-          }
-
-          // デバッグログを追加
-          console.log("未分析投稿タイプデバッグ:", {
-            postId: post.id,
-            postType: post.postType,
-            title: post.title,
-          });
-
-          return {
-            id: post.id,
-            title: post.title,
-            type: post.postType, // 英語のまま保持
-            imageUrl: post.imageUrl || null,
-            createdAt: createdAt.toLocaleDateString("ja-JP"),
-            status: "分析未設定",
-          };
-        } catch (error) {
-          console.error("未分析投稿の日付変換エラー:", error, post);
-          return null;
-        }
-      })
-      .filter((post): post is NonNullable<typeof post> => post !== null);
-    setUnanalyzedPosts(unanalyzedPostsData);
-  }, [posts, analyticsData]);
+  // BFF APIから既に計算済みのデータを使用するため、processPostsDataは削除済み
 
   useEffect(() => {
     if (user?.uid) {
       fetchPosts();
-      fetchAnalytics();
     }
-  }, [user?.uid, fetchPosts, fetchAnalytics]);
+  }, [user?.uid, fetchPosts]);
 
   // リアルタイムソート更新（30秒ごと）
   useEffect(() => {
@@ -517,11 +278,6 @@ export default function InstagramPostsPage() {
     };
   }, []); // 依存配列を空にして、マウント時のみ実行
 
-  useEffect(() => {
-    if (posts.length > 0) {
-      processPostsData();
-    }
-  }, [posts, processPostsData]);
 
   // 投稿削除
   const handleDeletePost = async (postId: string) => {
@@ -604,15 +360,21 @@ export default function InstagramPostsPage() {
     (a) => a.postId === null || a.postId === "" || a.postId === undefined
   );
 
-  // タブの投稿数を効率的に計算
+  // タブの投稿数を計算（BFF APIから取得したデータを使用）
   const tabCounts = React.useMemo(() => {
+    // BFF APIから既に計算済みのデータを使用するため、ここでは簡易的に計算
+    // 実際の値はBFF APIから取得するが、フロントエンドでも再計算する
+    const manualAnalyticsData = analyticsData.filter(
+      (a) => a.postId === null || a.postId === "" || a.postId === undefined
+    );
+
     const allPostsCount = posts.length + manualAnalyticsData.length;
 
     const analyzedPostsCount =
       posts.filter((post) => {
         const hasAnalytics = analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
         return hasAnalytics;
-      }).length + manualAnalyticsData.length; // 手動入力データは全て分析済み
+      }).length + manualAnalyticsData.length;
 
     const createdOnlyCount = posts.filter((post) => {
       const hasAnalytics = analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
@@ -624,7 +386,7 @@ export default function InstagramPostsPage() {
       analyzed: analyzedPostsCount,
       created: createdOnlyCount,
     };
-  }, [posts, analyticsData, manualAnalyticsData]);
+  }, [posts, analyticsData]);
 
   // フィルタリングされた投稿を効率的に計算
   const filteredPosts = React.useMemo(() => {
@@ -984,10 +746,11 @@ export default function InstagramPostsPage() {
 
               {/* 投稿一覧 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {filteredPosts.map((post) => {
-                  const hasAnalytics =
-                    analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
-                  const analyticsFromData = analyticsData.find((a) => a.postId === post.id);
+                {filteredPosts.map((post: PostData & { hasAnalytics?: boolean; analyticsFromData?: PostData["analytics"] }) => {
+                  const hasAnalytics = post.hasAnalytics !== undefined
+                    ? post.hasAnalytics
+                    : analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
+                  const analyticsFromData = post.analyticsFromData || analyticsData.find((a) => a.postId === post.id);
                   const postAnalytics = analyticsFromData
                     ? {
                         id: analyticsFromData.id,

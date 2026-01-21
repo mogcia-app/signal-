@@ -197,227 +197,182 @@ function AnalyticsReelContent() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [inputData, setInputData] = useState(createDefaultReelInputData());
 
-  // 投稿データを取得する関数
-  const fetchPostData = useCallback(
-    async (id: string) => {
-      if (!user?.uid) {return;}
-
-      try {
-        const response = await fetch(`/api/posts`);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log("Reel Analytics API Response:", result);
-
-        if (result.posts && Array.isArray(result.posts)) {
-          const post = result.posts.find((p: { id: string }) => p.id === id);
-          console.log("Found post for reel analytics:", post);
-
-          if (post) {
-            const postData = {
-              id: post.id,
-              title: post.title || "",
-              content: post.content || "",
-              hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
-              postType: post.postType || "reel",
-            };
-
-            console.log("Setting post data for reel analytics:", postData);
-            setPostData(postData);
-          } else {
-            console.error("Post not found for reel analytics with ID:", id);
-          }
-        } else {
-          console.error("Invalid API response structure for reel analytics:", result);
-        }
-      } catch (error) {
-        console.error("投稿データ取得エラー:", error);
-      }
-    },
-    [user?.uid]
-  );
-
-  // URLパラメータを監視
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const id = urlParams.get("postId");
-      console.log("URL params postId:", id);
-      if (id) {fetchPostData(id);}
-    }
-  }, [fetchPostData]);
-
-  // postDataが取得された時にinputDataを更新
-  useEffect(() => {
-    if (postData) {
-      setInputData((prev) => ({
-        ...prev,
-        title: postData.title,
-        content: postData.content,
-        hashtags: Array.isArray(postData.hashtags)
-          ? postData.hashtags.map((tag: string) => tag.replace(/^#+/, "").trim()).join(" ")
-          : "",
-        category:
-          postData.postType === "feed" ? "feed" : postData.postType === "reel" ? "reel" : "story",
-        publishedAt: postData.publishedAt ?? prev.publishedAt ?? new Date().toISOString().split("T")[0],
-        publishedTime: postData.publishedTime ?? prev.publishedTime ?? new Date().toTimeString().slice(0, 5),
-      }));
-    }
-  }, [postData]);
-
-  // 分析データを取得（simple API経由）
-  const fetchAnalytics = useCallback(async () => {
-    console.log("Fetch analytics called, user:", user);
-    console.log("User UID:", user?.uid);
+  // BFF APIから投稿データと分析データを取得
+  const fetchAnalyticsData = useCallback(async () => {
     if (!user?.uid) {
-      console.log("User not authenticated, skipping analytics fetch");
       return;
     }
 
     setIsLoading(true);
     try {
-      console.log("Fetching analytics via simple API for user:", user.uid);
+      // URLパラメータからpostIdを取得
+      const urlParams = new URLSearchParams(window.location.search);
+      const postId = urlParams.get("postId");
 
-      // Firebase認証トークンを取得
-      const response = await fetch(`/api/analytics/simple?userId=${user.uid}`);
+      const url = postId ? `/api/analytics/feed?postId=${postId}` : `/api/analytics/feed`;
+      const response = await authFetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log("Simple API fetch result:", result);
 
-      // simple APIの結果をAnalyticsData形式に変換
-      if (result.success && result.data && Array.isArray(result.data)) {
-        const convertedData: AnalyticsData[] = result.data.map(
-          (item: {
-            id: string;
-            postId?: string;
-            title: string;
-            content: string;
-            hashtags: string[];
-            category: string;
-            thumbnail: string;
-            publishedAt: string;
-            publishedTime: string;
-            likes: number;
-            comments: number;
-            shares: number;
-            reposts: number;
-            reach: number;
-            saves: number;
-            followerIncrease: number;
-            engagementRate: number;
-            reachFollowerPercent: number;
-            interactionCount: number;
-            interactionFollowerPercent: number;
-            reachSourceProfile: number;
-            reachSourceFeed: number;
-            reachSourceExplore: number;
-            reachSourceSearch: number;
-            reachSourceOther: number;
-            reachedAccounts: number;
-            profileVisits: number;
-            profileFollows: number;
-            reelReachFollowerPercent: number;
-            reelInteractionCount: number;
-            reelInteractionFollowerPercent: number;
-            reelReachSourceProfile: number;
-            reelReachSourceReel: number;
-            reelReachSourceExplore: number;
-            reelReachSourceSearch: number;
-            reelReachSourceOther: number;
-            reelReachedAccounts: number;
-            reelSkipRate: number;
-            reelNormalSkipRate: number;
-            reelPlayTime: number;
-            reelAvgPlayTime: number;
-            audience: AudienceData;
-            reachSource: ReachSourceData;
-            sentiment: "satisfied" | "dissatisfied" | null;
-            sentimentMemo: string;
-            createdAt: string;
-            updatedAt: string;
-            commentThreads?: CommentThread[];
-          }) => ({
-            id: item.id || "",
-            userId: user.uid,
-            postId: item.postId || "",
-            likes: item.likes || 0,
-            comments: item.comments || 0,
-            shares: item.shares || 0,
-            reposts: item.reposts || 0,
-            reach: item.reach || 0,
-            saves: item.saves || 0,
-            followerIncrease: item.followerIncrease || 0,
-            engagementRate: item.engagementRate || 0,
-            publishedAt: item.publishedAt ? new Date(item.publishedAt) : new Date(),
-            publishedTime: item.publishedTime || "",
-            createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
-            title: item.title || "",
-            content: item.content || "",
-            hashtags: item.hashtags || [],
-            thumbnail: item.thumbnail || "",
-            category: item.category || "reel",
-            // フィード専用フィールド
-            reachFollowerPercent: item.reachFollowerPercent || 0,
-            interactionCount: item.interactionCount || 0,
-            interactionFollowerPercent: item.interactionFollowerPercent || 0,
-            reachSourceProfile: item.reachSourceProfile || 0,
-            reachSourceFeed: item.reachSourceFeed || 0,
-            reachSourceExplore: item.reachSourceExplore || 0,
-            reachSourceSearch: item.reachSourceSearch || 0,
-            reachSourceOther: item.reachSourceOther || 0,
-            reachedAccounts: item.reachedAccounts || 0,
-            profileVisits: item.profileVisits || 0,
-            profileFollows: item.profileFollows || 0,
-            // リール専用フィールド
-            reelReachFollowerPercent: item.reelReachFollowerPercent || 0,
-            reelInteractionCount: item.reelInteractionCount || 0,
-            reelInteractionFollowerPercent: item.reelInteractionFollowerPercent || 0,
-            reelReachSourceProfile: item.reelReachSourceProfile || 0,
-            reelReachSourceReel: item.reelReachSourceReel || 0,
-            reelReachSourceExplore: item.reelReachSourceExplore || 0,
-            reelReachSourceSearch: item.reelReachSourceSearch || 0,
-            reelReachSourceOther: item.reelReachSourceOther || 0,
-            reelReachedAccounts: item.reelReachedAccounts || 0,
-            reelSkipRate: item.reelSkipRate || 0,
-            reelNormalSkipRate: item.reelNormalSkipRate || 0,
-            reelPlayTime: item.reelPlayTime || 0,
-            reelAvgPlayTime: item.reelAvgPlayTime || 0,
-            audience: item.audience || {},
-            reachSource: item.reachSource || {},
-            commentThreads: Array.isArray(item.commentThreads) ? item.commentThreads : [],
-            sentiment: item.sentiment || null,
-            sentimentMemo: item.sentimentMemo || "",
-          })
-        );
+      if (result.success && result.data) {
+        // 投稿データを設定
+        if (result.data.post) {
+          const post = result.data.post;
+          const postData = {
+            id: post.id,
+            title: post.title || "",
+            content: post.content || "",
+            hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
+            postType: post.postType || "reel",
+            publishedAt: post.publishedAt || null,
+            publishedTime: post.publishedTime || null,
+          };
+          setPostData(postData);
 
-        console.log("Converted analytics data:", convertedData);
+          // inputDataを更新
+          setInputData((prev) => ({
+            ...prev,
+            title: postData.title,
+            content: postData.content,
+            hashtags: Array.isArray(postData.hashtags)
+              ? postData.hashtags.map((tag: string) => tag.replace(/^#+/, "").trim()).join(" ")
+              : "",
+            category:
+              postData.postType === "feed" ? "feed" : postData.postType === "reel" ? "reel" : "story",
+            publishedAt:
+              postData.publishedAt ??
+              prev.publishedAt ??
+              new Date().toISOString().split("T")[0],
+            publishedTime:
+              postData.publishedTime ??
+              prev.publishedTime ??
+              new Date().toTimeString().slice(0, 5),
+          }));
+        }
+
+        // 分析データを設定
+        const analytics = result.data.analytics || [];
+        const convertedData: AnalyticsData[] = analytics.map((item: {
+          id?: string;
+          postId?: string | null;
+          likes?: number;
+          comments?: number;
+          shares?: number;
+          reposts?: number;
+          reach?: number;
+          saves?: number;
+          followerIncrease?: number;
+          engagementRate?: number;
+          publishedAt?: string | Date;
+          publishedTime?: string;
+          createdAt?: string | Date;
+          title?: string;
+          content?: string;
+          hashtags?: string[] | string;
+          thumbnail?: string;
+          category?: "feed" | "reel" | "story";
+          reachFollowerPercent?: number;
+          interactionCount?: number;
+          interactionFollowerPercent?: number;
+          reachSourceProfile?: number;
+          reachSourceFeed?: number;
+          reachSourceExplore?: number;
+          reachSourceSearch?: number;
+          reachSourceOther?: number;
+          reachedAccounts?: number;
+          profileVisits?: number;
+          profileFollows?: number;
+          reelReachFollowerPercent?: number;
+          reelInteractionCount?: number;
+          reelInteractionFollowerPercent?: number;
+          reelReachSourceProfile?: number;
+          reelReachSourceReel?: number;
+          reelReachSourceExplore?: number;
+          reelReachSourceSearch?: number;
+          reelReachSourceOther?: number;
+          reelReachedAccounts?: number;
+          reelSkipRate?: number;
+          reelNormalSkipRate?: number;
+          reelPlayTime?: number;
+          reelAvgPlayTime?: number;
+          audience?: AudienceData;
+          reachSource?: ReachSourceData;
+          commentThreads?: CommentThread[];
+          sentiment?: "satisfied" | "dissatisfied" | null;
+          sentimentMemo?: string;
+        }) => ({
+          id: item.id || "",
+          userId: user.uid,
+          postId: item.postId || "",
+          likes: item.likes || 0,
+          comments: item.comments || 0,
+          shares: item.shares || 0,
+          reposts: item.reposts || 0,
+          reach: item.reach || 0,
+          saves: item.saves || 0,
+          followerIncrease: item.followerIncrease || 0,
+          engagementRate: item.engagementRate || 0,
+          publishedAt: item.publishedAt ? new Date(item.publishedAt) : new Date(),
+          publishedTime: item.publishedTime || "",
+          createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+          title: item.title || "",
+          content: item.content || "",
+          hashtags: item.hashtags || [],
+          thumbnail: item.thumbnail || "",
+          category: item.category || "reel",
+          // フィード専用フィールド
+          reachFollowerPercent: item.reachFollowerPercent || 0,
+          interactionCount: item.interactionCount || 0,
+          interactionFollowerPercent: item.interactionFollowerPercent || 0,
+          reachSourceProfile: item.reachSourceProfile || 0,
+          reachSourceFeed: item.reachSourceFeed || 0,
+          reachSourceExplore: item.reachSourceExplore || 0,
+          reachSourceSearch: item.reachSourceSearch || 0,
+          reachSourceOther: item.reachSourceOther || 0,
+          reachedAccounts: item.reachedAccounts || 0,
+          profileVisits: item.profileVisits || 0,
+          profileFollows: item.profileFollows || 0,
+          // リール専用フィールド
+          reelReachFollowerPercent: item.reelReachFollowerPercent || 0,
+          reelInteractionCount: item.reelInteractionCount || 0,
+          reelInteractionFollowerPercent: item.reelInteractionFollowerPercent || 0,
+          reelReachSourceProfile: item.reelReachSourceProfile || 0,
+          reelReachSourceReel: item.reelReachSourceReel || 0,
+          reelReachSourceExplore: item.reelReachSourceExplore || 0,
+          reelReachSourceSearch: item.reelReachSourceSearch || 0,
+          reelReachSourceOther: item.reelReachSourceOther || 0,
+          reelReachedAccounts: item.reelReachedAccounts || 0,
+          reelSkipRate: item.reelSkipRate || 0,
+          reelNormalSkipRate: item.reelNormalSkipRate || 0,
+          reelPlayTime: item.reelPlayTime || 0,
+          reelAvgPlayTime: item.reelAvgPlayTime || 0,
+          audience: item.audience || {},
+          reachSource: item.reachSource || {},
+          commentThreads: Array.isArray(item.commentThreads) ? item.commentThreads : [],
+          sentiment: item.sentiment || null,
+          sentimentMemo: item.sentimentMemo || "",
+        }));
+
         setAnalyticsData(convertedData);
-      } else {
-        console.log("No analytics data found");
-        setAnalyticsData([]);
       }
     } catch (error) {
       console.error("Analytics fetch error:", error);
-      if (error instanceof Error) {
-        console.error("Error details:", error.message);
-      }
       setAnalyticsData([]);
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user?.uid]);
 
-  // コンポーネントマウント時にデータを取得
+  // URLパラメータを監視してデータを取得
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    if (typeof window !== "undefined" && user?.uid) {
+      fetchAnalyticsData();
+    }
+  }, [fetchAnalyticsData, user?.uid]);
 
   const handleResetAnalytics = useCallback(async () => {
     if (!user?.uid) {
@@ -462,7 +417,7 @@ function AnalyticsReelContent() {
       setInputData(defaultInput);
       setAnalyticsData((prev) => prev.filter((item) => item.postId !== postData.id));
 
-      await fetchAnalytics();
+      await fetchAnalyticsData();
 
       notify({ type: "success", message: "分析データをリセットしました" });
     } catch (error) {
@@ -474,12 +429,8 @@ function AnalyticsReelContent() {
     } finally {
       setIsResetting(false);
     }
-  }, [user?.uid, postData, router, fetchAnalytics]);
+  }, [user?.uid, postData, router, fetchAnalyticsData]);
 
-  // コンポーネントマウント時にデータを取得
-  useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
 
   // プラン階層別アクセス制御: 松プランのみアクセス可能
   useEffect(() => {
@@ -664,7 +615,7 @@ function AnalyticsReelContent() {
       }
 
       // データを再取得
-      await fetchAnalytics();
+      await fetchAnalyticsData();
 
       // 次のアクションを即座に更新
       if (

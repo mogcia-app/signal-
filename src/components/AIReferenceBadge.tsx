@@ -48,7 +48,11 @@ export function AIReferenceBadge({ reference, className }: AIReferenceBadgeProps
 
   const metadata = (reference.metadata ?? {}) as ReferenceMetadata;
   const appliedStatus =
-    typeof metadata.applied === "boolean" ? metadata.applied : (reference.metadata as any)?.applied;
+    typeof metadata.applied === "boolean"
+      ? metadata.applied
+      : typeof reference.metadata?.applied === "boolean"
+        ? reference.metadata.applied
+        : false;
   const focusArea =
     typeof metadata.focusArea === "string" && metadata.focusArea.trim().length > 0
       ? metadata.focusArea

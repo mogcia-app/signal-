@@ -251,7 +251,7 @@ export default function StoryLabPage() {
     } finally {
       setIsGeneratingSchedule(false);
     }
-  }, [isAuthReady, monthlyPosts, dailyPosts]);
+  }, [isAuthReady, monthlyPosts, dailyPosts, analyzeScheduleSettings, scheduleFeedback]);
 
   // スケジュール保存関数
   const saveSchedule = useCallback(async () => {
@@ -412,7 +412,7 @@ export default function StoryLabPage() {
         setIsGeneratingSuggestions(false);
       }
     },
-    [isAuthReady]
+    [isAuthReady, suggestionsFeedback]
   );
 
   useEffect(() => {

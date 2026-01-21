@@ -860,8 +860,15 @@ function calculateReelStats(postsWithAnalytics: PostWithAnalytics[]): ReelStats 
 
 // オーディエンス分析を計算
 function calculateAudienceAnalysis(postsWithAnalytics: PostWithAnalytics[]): AudienceBreakdown {
+  interface AnalyticsSummaryWithAudience {
+    audience?: {
+      gender?: { male: number; female: number; other: number };
+      age?: { "18-24": number; "25-34": number; "35-44": number; "45-54": number };
+    } | null;
+  }
+
   const postsWithAudience = postsWithAnalytics.filter(
-    (post) => post.analyticsSummary && (post.analyticsSummary as any).audience
+    (post) => post.analyticsSummary && (post.analyticsSummary as AnalyticsSummaryWithAudience).audience
   );
   
   if (postsWithAudience.length === 0) {
@@ -871,7 +878,7 @@ function calculateAudienceAnalysis(postsWithAnalytics: PostWithAnalytics[]): Aud
     };
   }
 
-  const audienceData = postsWithAudience.map((post) => (post.analyticsSummary as any).audience);
+  const audienceData = postsWithAudience.map((post) => (post.analyticsSummary as AnalyticsSummaryWithAudience).audience);
 
   const avgGender = {
     male:
@@ -940,7 +947,7 @@ export async function GET(request: NextRequest) {
       .get();
 
     // 投稿IDごとに最新の分析データを保持（重複除去）
-    const analyticsByPostId = new Map<string, any>();
+    const analyticsByPostId = new Map<string, admin.firestore.DocumentData>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;
@@ -1335,7 +1342,7 @@ export async function GET(request: NextRequest) {
     const daysInMonth = endDate.getDate();
     
     // analyticsデータを日別にグループ化
-    const analyticsByDay = new Map<string, any[]>();
+    const analyticsByDay = new Map<string, admin.firestore.DocumentData[]>();
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const publishedAt = data.publishedAt
