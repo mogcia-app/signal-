@@ -751,23 +751,42 @@ export default function InstagramPostsPage() {
                     ? post.hasAnalytics
                     : analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
                   const analyticsFromData = post.analyticsFromData || analyticsData.find((a) => a.postId === post.id);
-                  const postAnalytics = analyticsFromData
+                  const postAnalytics: AnalyticsData | null = analyticsFromData
                     ? {
-                        id: analyticsFromData.id,
-                        postId: analyticsFromData.postId,
-                        likes: analyticsFromData.likes,
-                        comments: analyticsFromData.comments,
-                        shares: analyticsFromData.shares,
-                        reach: analyticsFromData.reach,
-                        engagementRate: analyticsFromData.engagementRate,
-                        publishedAt: analyticsFromData.publishedAt,
-                        title: analyticsFromData.title,
-                        content: analyticsFromData.content,
-                        hashtags: analyticsFromData.hashtags,
-                        category: analyticsFromData.category,
-                        thumbnail: analyticsFromData.thumbnail,
-                        audience: analyticsFromData.audience,
-                        reachSource: analyticsFromData.reachSource,
+                        id: (analyticsFromData as { id?: string })?.id || post.id,
+                        postId: (analyticsFromData as { postId?: string })?.postId || post.id,
+                        likes: (analyticsFromData as { likes?: number })?.likes || 0,
+                        comments: (analyticsFromData as { comments?: number })?.comments || 0,
+                        shares: (analyticsFromData as { shares?: number })?.shares || 0,
+                        reach: (analyticsFromData as { reach?: number })?.reach || 0,
+                        engagementRate: (analyticsFromData as { engagementRate?: number })?.engagementRate || 0,
+                        publishedAt: (() => {
+                          const publishedAt = (analyticsFromData as { publishedAt?: Date | string })?.publishedAt;
+                          if (publishedAt) {
+                            return publishedAt instanceof Date ? publishedAt : new Date(publishedAt);
+                          }
+                          if (post.scheduledDate instanceof Date) {
+                            return post.scheduledDate;
+                          }
+                          if (typeof post.scheduledDate === 'string') {
+                            return new Date(post.scheduledDate);
+                          }
+                          if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'toDate' in post.scheduledDate) {
+                            return post.scheduledDate.toDate();
+                          }
+                          return new Date();
+                        })(),
+                        title: (analyticsFromData as { title?: string })?.title,
+                        content: (analyticsFromData as { content?: string })?.content,
+                        hashtags: (() => {
+                          const hashtags = (analyticsFromData as { hashtags?: string[] | string })?.hashtags;
+                          if (!hashtags) return undefined;
+                          return Array.isArray(hashtags) ? hashtags : typeof hashtags === 'string' ? normalizeHashtags(hashtags) : undefined;
+                        })(),
+                        category: (analyticsFromData as { category?: string })?.category,
+                        thumbnail: (analyticsFromData as { thumbnail?: string })?.thumbnail,
+                        audience: (analyticsFromData as { audience?: unknown })?.audience as AnalyticsData['audience'],
+                        reachSource: (analyticsFromData as { reachSource?: unknown })?.reachSource as AnalyticsData['reachSource'],
                       }
                     : post.analytics
                       ? {

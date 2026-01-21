@@ -57,7 +57,7 @@ export async function fetchAbTestSummaries(
     });
 
     const winnerVariant =
-      variantsRaw.find((variant: unknown) => {
+      (variantsRaw.find((variant: unknown) => {
         const v = variant as Record<string, unknown> & { id?: string; key?: string; result?: string };
         if (data.winnerVariantId) {
           return v.id === data.winnerVariantId || v.key === data.winnerVariantId;
@@ -66,7 +66,7 @@ export async function fetchAbTestSummaries(
           return v.id === data.winnerVariantKey || v.key === data.winnerVariantKey;
         }
         return v.result === "win";
-      }) || null;
+      }) as Record<string, unknown> & { label?: string; metrics?: { engagementRate?: number; saveRate?: number } } | null) || null;
 
     const summaryParts: string[] = [];
     if (data.primaryMetric) {

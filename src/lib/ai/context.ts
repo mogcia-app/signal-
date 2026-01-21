@@ -319,7 +319,7 @@ async function fetchRecentAbTests(
             return v.id === data.winnerVariantId || v.key === data.winnerVariantId;
           }
           return v.result === "win";
-        }) || null;
+        }) as Record<string, unknown> & { label?: string; metrics?: { engagementRate?: number; saveRate?: number } } | null;
       const summaryParts: string[] = [];
 
       if (data.primaryMetric) {

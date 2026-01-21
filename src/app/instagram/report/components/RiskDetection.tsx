@@ -50,7 +50,7 @@ const severityConfig = {
 
 export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpis, reportData }) => {
   // reportDataからリスクアラートを取得
-  const alerts: RiskAlert[] = reportData?.riskAlerts || [];
+  const alerts: RiskAlert[] = (Array.isArray(reportData?.riskAlerts) ? reportData.riskAlerts : []) as RiskAlert[];
 
   return (
     <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">

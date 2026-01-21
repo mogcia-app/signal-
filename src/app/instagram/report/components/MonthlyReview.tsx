@@ -28,12 +28,13 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
 
   // reportDataから月次レビューデータを取得（useMemoでメモ化）
   const reviewData: MonthlyReviewData | null = React.useMemo(() => {
-    return reportData?.monthlyReview
+    const monthlyReview = reportData?.monthlyReview as { review?: string; hasPlan?: boolean; analyzedCount?: number } | undefined;
+    return monthlyReview
       ? {
-          review: reportData.monthlyReview.review || "",
-          hasPlan: reportData.monthlyReview.hasPlan || false,
+          review: monthlyReview.review || "",
+          hasPlan: monthlyReview.hasPlan || false,
           postCount: 0,
-          analyzedCount: reportData.monthlyReview.analyzedCount || 0,
+          analyzedCount: monthlyReview.analyzedCount || 0,
         }
       : null;
   }, [reportData?.monthlyReview]);
