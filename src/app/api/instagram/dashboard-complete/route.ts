@@ -287,7 +287,11 @@ export async function GET(request: NextRequest) {
         };
 
         const typeInfo = getPostTypeInfo(post.postType || "feed");
-        const createdAt = post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt);
+        const createdAt = post.createdAt instanceof Date 
+          ? post.createdAt 
+          : (post.createdAt as admin.firestore.Timestamp)?.toDate 
+            ? (post.createdAt as admin.firestore.Timestamp).toDate() 
+            : new Date(post.createdAt as string);
         const timeAgo = getTimeAgo(createdAt);
 
         return {

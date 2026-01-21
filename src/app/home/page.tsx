@@ -100,8 +100,8 @@ export default function HomePage() {
           // アクションログマップ
           if (result.data.actionLogMap) {
             const logMap = new Map<string, { applied: boolean }>();
-            Object.entries(result.data.actionLogMap).forEach(([key, value]: [string, { applied: boolean }]) => {
-              logMap.set(key, value);
+            Object.entries(result.data.actionLogMap).forEach(([key, value]) => {
+              logMap.set(key, value as { applied: boolean });
             });
             setActionLogMap(logMap);
           }
