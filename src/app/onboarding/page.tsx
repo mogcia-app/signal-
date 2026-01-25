@@ -822,8 +822,10 @@ export default function OnboardingPage() {
                                 type="text"
                                 value={productPrice}
                                 onChange={(e) => {
-                                  // 数字とカンマのみ許可
-                                  const value = e.target.value.replace(/[^\d,]/g, "");
+                                  // 全角数字を半角数字に変換
+                                  let value = e.target.value
+                                    .replace(/[０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xFEE0))
+                                    .replace(/[^\d,]/g, ""); // 数字とカンマ以外を削除
                                   setProductPrice(value);
                                 }}
                                 placeholder="例: 4,000"
@@ -878,16 +880,14 @@ export default function OnboardingPage() {
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="text-lg flex-shrink-0">🏷️</span>
                                   <h4 className="font-semibold text-black text-base">{item.name}</h4>
+                                  {item.price && (
+                                    <span className="text-black font-semibold text-sm ml-2">
+                                      {item.price}円（税込）
+                                    </span>
+                                  )}
                                 </div>
                                 {item.details && (
                                   <p className="text-sm text-gray-700 mt-1 ml-7 mb-2">{item.details}</p>
-                                )}
-                                {item.price && (
-                                  <div className="ml-7 mt-2">
-                                    <span className="inline-flex items-center px-3 py-1 bg-[#FF8A15] bg-opacity-10 text-[#FF8A15] font-semibold text-sm">
-                                      💰 {item.price}円（税込）
-                                    </span>
-                                  </div>
                                 )}
                               </div>
                               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4 flex-shrink-0">
@@ -1400,16 +1400,14 @@ export default function OnboardingPage() {
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-lg">🏷️</span>
                             <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
+                            {item.price && (
+                              <span className="text-black font-semibold text-sm ml-2">
+                                {item.price}円（税込）
+                              </span>
+                            )}
                           </div>
                           {item.details && (
                             <p className="text-sm text-gray-700 mt-1 ml-7 mb-2">{item.details}</p>
-                          )}
-                          {item.price && (
-                            <div className="ml-7 mt-2">
-                              <span className="inline-flex items-center px-3 py-1 bg-[#FF8A15] bg-opacity-10 text-[#FF8A15] font-semibold text-sm">
-                                💰 {item.price}円（税込）
-                              </span>
-                            </div>
                           )}
                         </div>
                       ))}
