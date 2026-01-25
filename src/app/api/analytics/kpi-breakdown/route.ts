@@ -215,12 +215,12 @@ function buildKpiBreakdowns(params: {
     totalProfileVisits: number;
   };
   changes: {
-    reachChange: number;
-    savesChange: number;
-    followerChange: number;
-    totalInteractionChange: number;
-    externalLinkTapsChange: number;
-    profileVisitsChange: number;
+    reachChange: number | undefined;
+    savesChange: number | undefined;
+    followerChange: number | undefined;
+    totalInteractionChange: number | undefined;
+    externalLinkTapsChange: number | undefined;
+    profileVisitsChange: number | undefined;
   };
   profileVisitsFromPosts: number; // 投稿からのプロフィール閲覧数
   profileVisitsFromOther: number; // その他からのプロフィール閲覧数
@@ -331,11 +331,10 @@ function buildKpiBreakdowns(params: {
   // リールとフィードのいいね数の合計
   const likesValue = (totals.totalLikes || 0);
   const previousLikesValue = (previousTotals.totalLikes || 0);
+  // 前月が0の場合は前月比を計算しない（undefinedを返す）
   const likesChange =
     previousLikesValue === 0
-      ? likesValue > 0
-        ? 100
-        : 0
+      ? undefined
       : ((likesValue - previousLikesValue) / previousLikesValue) * 100;
 
   const followerBreakdown: KPIBreakdown = {
@@ -364,11 +363,10 @@ function buildKpiBreakdowns(params: {
     (previousTotals.totalComments || 0) +
     (previousTotals.totalShares || 0) +
     (previousTotals.totalSaves || 0);
+  // 前月が0の場合は前月比を計算しない（nullを返す）
   const engagementChange =
     previousEngagementValue === 0
-      ? engagementValue > 0
-        ? 100
-        : 0
+      ? undefined
       : ((engagementValue - previousEngagementValue) / previousEngagementValue) * 100;
 
   const engagementSegments: KPIBreakdownSegment[] = [
@@ -397,11 +395,10 @@ function buildKpiBreakdowns(params: {
   // 総合インタラクション数（フィード+リール合わせた、いいね+保存+コメント+シェアのトータル）
   const totalInteractionValue = params.totals.totalInteraction || 0;
   const previousTotalInteractionValue = params.previousTotals.totalInteraction || 0;
+  // 前月が0の場合は前月比を計算しない（undefinedを返す）
   const totalInteractionChange =
     previousTotalInteractionValue === 0
-      ? totalInteractionValue > 0
-        ? 100
-        : 0
+      ? undefined
       : ((totalInteractionValue - previousTotalInteractionValue) / previousTotalInteractionValue) * 100;
 
   const totalInteractionByType = posts.reduce<Record<string, number>>((acc, post) => {
@@ -440,11 +437,10 @@ function buildKpiBreakdowns(params: {
   // 外部リンク数（投稿からの外部リンク数 + その他からの外部リンク数）
   const externalLinkTapsValue = params.totals.totalExternalLinkTaps || 0;
   const previousExternalLinkTapsValue = params.previousTotals.totalExternalLinkTaps || 0;
+  // 前月が0の場合は前月比を計算しない（undefinedを返す）
   const externalLinkTapsChange =
     previousExternalLinkTapsValue === 0
-      ? externalLinkTapsValue > 0
-        ? 100
-        : 0
+      ? undefined
       : ((externalLinkTapsValue - previousExternalLinkTapsValue) / previousExternalLinkTapsValue) * 100;
 
   // 外部リンク数の内訳を表示
@@ -484,11 +480,10 @@ function buildKpiBreakdowns(params: {
   // プロフィール閲覧数（投稿からの閲覧数 + その他からの取得）
   const profileVisitsValue = params.totals.totalProfileVisits || 0;
   const previousProfileVisitsValue = params.previousTotals.totalProfileVisits || 0;
+  // 前月が0の場合は前月比を計算しない（undefinedを返す）
   const profileVisitsChange =
     previousProfileVisitsValue === 0
-      ? profileVisitsValue > 0
-        ? 100
-        : 0
+      ? undefined
       : ((profileVisitsValue - previousProfileVisitsValue) / previousProfileVisitsValue) * 100;
 
   const profileVisitsSegments: KPIBreakdownSegment[] = [
@@ -515,10 +510,9 @@ function buildKpiBreakdowns(params: {
   // totals.totalFollowerIncrease = 今月の合計増加数（投稿からの増加 + その他からの増加）
   // previousTotals.totalFollowerIncrease = 前期間の合計増加数
   const currentFollowersChange =
+    // 前月が0の場合は前月比を計算しない（undefinedを返す）
     previousTotals.totalFollowerIncrease === 0
-      ? totals.totalFollowerIncrease > 0
-        ? 100
-        : 0
+      ? undefined
       : ((totals.totalFollowerIncrease - previousTotals.totalFollowerIncrease) / Math.abs(previousTotals.totalFollowerIncrease)) * 100;
 
   // フォロワー数の内訳を表示（月ごとにリセット、その月の増加数のみを表示）
@@ -1106,42 +1100,31 @@ export async function GET(request: NextRequest) {
     };
 
     // 変化率を計算
+    // 前月が0の場合は前月比を計算しない（undefinedを返す）
     const changes = {
       reachChange:
         previousTotals.totalReach === 0
-          ? totals.totalReach > 0
-            ? 100
-            : 0
+          ? undefined
           : ((totals.totalReach - previousTotals.totalReach) / previousTotals.totalReach) * 100,
       savesChange:
         previousTotals.totalSaves === 0
-          ? totals.totalSaves > 0
-            ? 100
-            : 0
+          ? undefined
           : ((totals.totalSaves - previousTotals.totalSaves) / previousTotals.totalSaves) * 100,
       followerChange:
         previousTotals.totalFollowerIncrease === 0
-          ? totals.totalFollowerIncrease !== 0
-            ? (totals.totalFollowerIncrease > 0 ? 100 : -100)
-            : 0
+          ? undefined
           : ((totals.totalFollowerIncrease - previousTotals.totalFollowerIncrease) / Math.abs(previousTotals.totalFollowerIncrease)) * 100,
       totalInteractionChange:
         previousTotals.totalInteraction === 0
-          ? totals.totalInteraction > 0
-            ? 100
-            : 0
+          ? undefined
           : ((totals.totalInteraction - previousTotals.totalInteraction) / previousTotals.totalInteraction) * 100,
       externalLinkTapsChange:
         previousTotals.totalExternalLinkTaps === 0
-          ? totals.totalExternalLinkTaps > 0
-            ? 100
-            : 0
+          ? undefined
           : ((totals.totalExternalLinkTaps - previousTotals.totalExternalLinkTaps) / previousTotals.totalExternalLinkTaps) * 100,
       profileVisitsChange:
         previousTotals.totalProfileVisits === 0
-          ? totals.totalProfileVisits > 0
-            ? 100
-            : 0
+          ? undefined
           : ((totals.totalProfileVisits - previousTotals.totalProfileVisits) / previousTotals.totalProfileVisits) * 100,
     };
 

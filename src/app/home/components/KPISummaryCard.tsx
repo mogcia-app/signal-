@@ -31,27 +31,6 @@ export const KPISummaryCard: React.FC<KPISummaryCardProps> = ({
   breakdowns,
   isLoading,
 }) => {
-  if (isLoading) {
-    return (
-      <div className="bg-white border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
-          <span className="text-sm text-gray-700">読み込み中...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!breakdowns || breakdowns.length === 0) {
-    return (
-      <div className="bg-white border border-gray-200 p-6 mb-6">
-        <div className="text-center py-12 text-gray-700">
-          <p className="text-sm">KPIデータがありません</p>
-        </div>
-      </div>
-    );
-  }
-
   // カードの背景色をKPIごとに設定（すべて白背景に統一）
   const getCardColor = (key: string) => {
     return { bg: "bg-white", border: "border-gray-200" };
@@ -78,41 +57,77 @@ export const KPISummaryCard: React.FC<KPISummaryCardProps> = ({
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-        {breakdowns.map((kpi) => {
-          const colors = getCardColor(kpi.key);
-          return (
-            <div
-              key={kpi.key}
-              className={`${colors.bg} ${colors.border} border p-2.5 sm:p-3 md:p-4`}
-            >
-              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                <span className="text-[10px] sm:text-xs font-medium text-gray-500 truncate">{kpi.label}</span>
-                {kpi.changePct !== undefined && !Number.isNaN(kpi.changePct) && (
-                  <div
-                    className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-semibold flex-shrink-0 ml-1 ${
-                      kpi.changePct >= 0 ? "text-[#FF8A15]" : "text-red-500"
-                    }`}
-                  >
-                    {kpi.changePct >= 0 ? (
-                      <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    ) : (
-                      <TrendingDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    )}
-                    <span className="whitespace-nowrap">
-                      {kpi.changePct > 0 ? "+" : ""}
-                      {kpi.changePct.toFixed(1)}%
-                    </span>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
+          <span className="text-sm text-gray-700">読み込み中...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+          {(!breakdowns || breakdowns.length === 0) ? (
+            // デフォルトのKPI項目を表示（データがない場合）
+            [
+              { key: "reach", label: "リーチ", value: 0, unit: "count" as const },
+              { key: "likes", label: "いいね", value: 0, unit: "count" as const },
+              { key: "comments", label: "コメント", value: 0, unit: "count" as const },
+              { key: "saves", label: "保存", value: 0, unit: "count" as const },
+              { key: "followers", label: "フォロワー増加", value: 0, unit: "count" as const },
+              { key: "engagement", label: "エンゲージメント率", value: 0, unit: "percent" as const },
+              { key: "profileVisits", label: "プロフィールアクセス", value: 0, unit: "count" as const },
+              { key: "externalLinkTaps", label: "外部リンクタップ", value: 0, unit: "count" as const },
+            ].map((kpi) => {
+              const colors = getCardColor(kpi.key);
+              return (
+                <div
+                  key={kpi.key}
+                  className={`${colors.bg} ${colors.border} border p-2.5 sm:p-3 md:p-4`}
+                >
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className="text-[10px] sm:text-xs font-medium text-gray-500 truncate">{kpi.label}</span>
                   </div>
-                )}
-              </div>
-              <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-all">
-                {formatValue(kpi.value, kpi.unit)}
-              </p>
-            </div>
-          );
-        })}
-      </div>
+                  <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-all">
+                    {formatValue(kpi.value, kpi.unit)}
+                  </p>
+                </div>
+              );
+            })
+          ) : (
+            breakdowns.map((kpi) => {
+              const colors = getCardColor(kpi.key);
+              return (
+                <div
+                  key={kpi.key}
+                  className={`${colors.bg} ${colors.border} border p-2.5 sm:p-3 md:p-4`}
+                >
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                    <span className="text-[10px] sm:text-xs font-medium text-gray-500 truncate">{kpi.label}</span>
+                    {kpi.changePct !== undefined && !Number.isNaN(kpi.changePct) && (
+                      <div
+                        className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-semibold flex-shrink-0 ml-1 ${
+                          kpi.changePct >= 0 ? "text-[#FF8A15]" : "text-red-500"
+                        }`}
+                      >
+                        {kpi.changePct >= 0 ? (
+                          <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        ) : (
+                          <TrendingDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        )}
+                        <span className="whitespace-nowrap">
+                          {kpi.changePct > 0 ? "+" : ""}
+                          {kpi.changePct.toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-all">
+                    {formatValue(kpi.value, kpi.unit)}
+                  </p>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 };

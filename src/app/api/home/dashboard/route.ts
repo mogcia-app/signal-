@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
         };
       });
 
-    // KPI分解データを計算（簡易版）
+    // KPI分解データを計算（常に全てのKPI項目を返す）
     const kpiBreakdowns: Array<{
       key: string;
       label: string;
@@ -148,47 +148,48 @@ export async function GET(request: NextRequest) {
 
     // リーチ
     const totalReach = analyticsInMonth.reduce((sum, a) => sum + a.reach, 0);
-    if (totalReach > 0) {
-      kpiBreakdowns.push({
-        key: "reach",
-        label: "リーチ",
-        value: totalReach,
-        unit: "count",
-      });
-    }
+    kpiBreakdowns.push({
+      key: "reach",
+      label: "リーチ",
+      value: totalReach,
+      unit: "count",
+    });
 
     // いいね
     const totalLikes = analyticsInMonth.reduce((sum, a) => sum + a.likes, 0);
-    if (totalLikes > 0) {
-      kpiBreakdowns.push({
-        key: "saves",
-        label: "いいね",
-        value: totalLikes,
-        unit: "count",
-      });
-    }
+    kpiBreakdowns.push({
+      key: "likes",
+      label: "いいね",
+      value: totalLikes,
+      unit: "count",
+    });
+
+    // コメント
+    const totalComments = analyticsInMonth.reduce((sum, a) => sum + (a.comments || 0), 0);
+    kpiBreakdowns.push({
+      key: "comments",
+      label: "コメント",
+      value: totalComments,
+      unit: "count",
+    });
 
     // 保存
     const totalSaves = analyticsInMonth.reduce((sum, a) => sum + a.saves, 0);
-    if (totalSaves > 0) {
-      kpiBreakdowns.push({
-        key: "saves",
-        label: "保存",
-        value: totalSaves,
-        unit: "count",
-      });
-    }
+    kpiBreakdowns.push({
+      key: "saves",
+      label: "保存",
+      value: totalSaves,
+      unit: "count",
+    });
 
     // フォロワー増加
     const totalFollowerIncrease = analyticsInMonth.reduce((sum, a) => sum + a.followerIncrease, 0);
-    if (totalFollowerIncrease > 0) {
-      kpiBreakdowns.push({
-        key: "followers",
-        label: "フォロワー増加",
-        value: totalFollowerIncrease,
-        unit: "count",
-      });
-    }
+    kpiBreakdowns.push({
+      key: "followers",
+      label: "フォロワー増加",
+      value: totalFollowerIncrease,
+      unit: "count",
+    });
 
     // エンゲージメント
     const totalEngagement = analyticsInMonth.reduce(
@@ -196,14 +197,30 @@ export async function GET(request: NextRequest) {
       0
     );
     const avgEngagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0;
-    if (avgEngagementRate > 0) {
-      kpiBreakdowns.push({
-        key: "engagement",
-        label: "エンゲージメント率",
-        value: avgEngagementRate,
-        unit: "percent",
-      });
-    }
+    kpiBreakdowns.push({
+      key: "engagement",
+      label: "エンゲージメント率",
+      value: avgEngagementRate,
+      unit: "percent",
+    });
+
+    // プロフィールアクセス数
+    const profileVisits = followerCountData?.profileVisits || 0;
+    kpiBreakdowns.push({
+      key: "profileVisits",
+      label: "プロフィールアクセス",
+      value: profileVisits,
+      unit: "count",
+    });
+
+    // 外部リンクタップ数
+    const externalLinkTaps = followerCountData?.externalLinkTaps || 0;
+    kpiBreakdowns.push({
+      key: "externalLinkTaps",
+      label: "外部リンクタップ",
+      value: externalLinkTaps,
+      unit: "count",
+    });
 
     return NextResponse.json({
       success: true,

@@ -163,13 +163,17 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                     </p>
                   )}
                 </div>
-                {changeMeta && (
+                {changeMeta ? (
                   <span
                     className={`text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border flex-shrink-0 ${changeMeta.className}`}
                   >
                     {changeMeta.formatted}
                   </span>
-                )}
+                ) : item.changePct === undefined && item.value > 0 ? (
+                  <span className="text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border flex-shrink-0 text-[#ff8a15] bg-[#ff8a15]/10 border-[#ff8a15]">
+                    新規
+                  </span>
+                ) : null}
               </div>
 
               {item.insight && (
