@@ -5,6 +5,7 @@ import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { buildAIContext } from "@/lib/ai/context";
 import { AIGenerationResponse, SnapshotReference, AIReference } from "@/types/ai";
+import { UserProfile } from "@/types/user";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -308,7 +309,13 @@ ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文�
       const weeklyTarget = resolvedPlanData.simulation.postTypes[postType].weeklyCount;
       const followerEffect = resolvedPlanData.simulation.postTypes[postType].followerEffect;
 
-      systemPrompt = `あなたはInstagramの運用をサポートするAIアシスタントです。ユーザーの運用計画に基づいて、効果的な投稿文を生成してください。
+      // ユーザープロファイルの商品・サービス情報を含むベースプロンプトを構築
+      let basePrompt = "";
+      if (userProfile) {
+        basePrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
+      }
+
+      systemPrompt = `${basePrompt ? `${basePrompt}\n\n` : ""}あなたはInstagramの運用をサポートするAIアシスタントです。ユーザーの運用計画に基づいて、効果的な投稿文を生成してください。
 
 運用計画の詳細:
 - 計画名: ${resolvedPlanData.title}
@@ -340,6 +347,15 @@ AIペルソナ:
 5. エンゲージメントを促進する要素を含める
 6. 必ず5個のハッシュタグを含める（企業ハッシュタグ1個、トレンドハッシュタグ1個、補助的ハッシュタグ3個）
 ${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文字、1-2行）にする" : ""}
+${(() => {
+  const profile = userProfile as UserProfile | null;
+  return profile?.businessInfo?.productsOrServices && Array.isArray(profile.businessInfo.productsOrServices) && profile.businessInfo.productsOrServices.length > 0;
+})() ? `
+【商品・サービス情報の参照について】
+ユーザーが商品・サービス名を指定した場合（例：「ランチセットの投稿文を作って」）、上記の「商品・サービス情報」セクションから該当する商品・サービスの詳細と価格情報を必ず参照してください。
+- 商品・サービス名が一致する場合は、その詳細（説明文）と価格（税込）を投稿文に自然に含めてください。
+- 価格がある場合は、価格情報も投稿文に含めることを推奨します。
+- 詳細情報を活用して、具体的で魅力的な投稿文を作成してください。` : ""}
 
 必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
 

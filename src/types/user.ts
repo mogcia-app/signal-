@@ -7,6 +7,7 @@ export interface ProductOrService {
   id: string; // 一意のID
   name: string; // 商品名/サービス名/政策名
   details: string; // 詳細（価格、内容など）
+  price?: string; // 価格（税込）
 }
 
 export interface BusinessInfo {

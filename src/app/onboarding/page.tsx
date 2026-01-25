@@ -55,10 +55,11 @@ export default function OnboardingPage() {
 
   // 商品・サービス情報
   const [productsOrServices, setProductsOrServices] = useState<
-    Array<{ id: string; name: string; details: string }>
+    Array<{ id: string; name: string; details: string; price?: string }>
   >([]);
   const [productName, setProductName] = useState("");
   const [productDetails, setProductDetails] = useState("");
+  const [productPrice, setProductPrice] = useState("");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
   // ステップ3: SNS AI設定
@@ -143,6 +144,8 @@ export default function OnboardingPage() {
       beauty: "美容・健康",
       education: "教育",
       realestate: "不動産",
+      care: "介護・福祉",
+      politics: "政治",
       other: "その他",
     };
     // 既に日本語の場合はそのまま返す
@@ -209,6 +212,8 @@ export default function OnboardingPage() {
     "美容・健康",
     "教育",
     "不動産",
+    "介護・福祉",
+    "政治",
     "その他",
   ];
   const companySizeOptions = ["個人", "2-10名", "11-50名", "51-200名", "201名以上"];
@@ -266,7 +271,7 @@ export default function OnboardingPage() {
   // 商品・サービスの追加
   const addProduct = () => {
     if (!productName.trim()) {
-      notify({ type: "error", message: "項目名を入力してください" });
+      notify({ type: "error", message: "商品・サービス名を入力してください" });
       return;
     }
 
@@ -274,18 +279,21 @@ export default function OnboardingPage() {
       id: Date.now().toString(),
       name: productName.trim(),
       details: productDetails.trim(),
+      price: productPrice.trim() || undefined,
     };
 
     setProductsOrServices([...productsOrServices, newProduct]);
     setProductName("");
     setProductDetails("");
+    setProductPrice("");
   };
 
   // 商品・サービスの編集
-  const startEditProduct = (product: { id: string; name: string; details: string }) => {
+  const startEditProduct = (product: { id: string; name: string; details: string; price?: string }) => {
     setEditingProductId(product.id);
     setProductName(product.name);
     setProductDetails(product.details);
+    setProductPrice(product.price || "");
   };
 
   const saveEditProduct = () => {
@@ -294,19 +302,21 @@ export default function OnboardingPage() {
     setProductsOrServices(
       productsOrServices.map((p) =>
         p.id === editingProductId
-          ? { ...p, name: productName.trim(), details: productDetails.trim() }
+          ? { ...p, name: productName.trim(), details: productDetails.trim(), price: productPrice.trim() || undefined }
           : p
       )
     );
     setEditingProductId(null);
     setProductName("");
     setProductDetails("");
+    setProductPrice("");
   };
 
   const cancelEditProduct = () => {
     setEditingProductId(null);
     setProductName("");
     setProductDetails("");
+    setProductPrice("");
   };
 
   // 商品・サービスの削除
@@ -756,102 +766,140 @@ export default function OnboardingPage() {
                       </p>
                     </div>
 
-                    {/* 商品・サービス・政策情報 */}
+                    {/* 商品・サービス情報 */}
                     <div className="border-t-2 border-gray-200 pt-6">
                       <label className="block text-sm font-medium text-gray-700 mb-3">
-                        📦 商品・サービス・政策情報
+                        📦 商品・サービス情報
                         <span className="ml-2 text-xs text-black">（AIが参照します）</span>
                       </label>
 
                       {/* 入力フォーム */}
-                      <div className="space-y-3 mb-4">
-                        <div>
-                          <input
-                            type="text"
-                            value={productName}
-                            onChange={(e) => setProductName(e.target.value)}
-                            placeholder={
-                              businessInfo.industry === "美容・健康"
-                                ? "例: カット"
-                                : businessInfo.industry === "飲食"
-                                  ? "例: ランチセット"
-                                  : businessInfo.industry === "教育"
-                                    ? "例: 英会話コース"
-                                    : "例: 商品名、サービス名、政策名"
-                            }
-                            className="w-full px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={productDetails}
-                            onChange={(e) => setProductDetails(e.target.value)}
-                            placeholder={
-                              businessInfo.industry === "美容・健康"
-                                ? "例: ¥4,000 - 丁寧なカット施術"
-                                : businessInfo.industry === "飲食"
-                                  ? "例: ¥980 - 日替わりメイン+サラダ+ドリンク"
-                                  : businessInfo.industry === "教育"
-                                    ? "例: 月額¥15,000 - マンツーマンレッスン"
-                                    : "例: 価格や詳細を入力"
-                            }
-                            className="flex-1 px-4 py-2 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
-                          />
-                          {editingProductId ? (
-                            <>
+                      <div className="bg-gray-50 border border-gray-200 p-4 mb-4">
+                        <div className="space-y-4">
+                          {/* 商品・サービス名 */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              商品・サービス名 <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={productName}
+                              onChange={(e) => setProductName(e.target.value)}
+                              placeholder={
+                                businessInfo.industry === "美容・健康"
+                                  ? "例: カット"
+                                  : businessInfo.industry === "飲食"
+                                    ? "例: ランチセット"
+                                    : businessInfo.industry === "教育"
+                                      ? "例: 英会話コース"
+                                      : "例: 商品名、サービス名"
+                              }
+                              className="w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                            />
+                          </div>
+
+                          {/* 詳細 */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              詳細（任意）
+                            </label>
+                            <textarea
+                              value={productDetails}
+                              onChange={(e) => setProductDetails(e.target.value)}
+                              placeholder="例: 丁寧なカット施術"
+                              rows={3}
+                              className="w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] resize-none"
+                            />
+                          </div>
+
+                          {/* 価格（税込） */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              価格（税込）（任意）
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={productPrice}
+                                onChange={(e) => {
+                                  // 数字とカンマのみ許可
+                                  const value = e.target.value.replace(/[^\d,]/g, "");
+                                  setProductPrice(value);
+                                }}
+                                placeholder="例: 4,000"
+                                className="flex-1 px-4 py-3 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                              />
+                              <span className="text-gray-600 font-medium">円</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              価格を入力すると、AIが価格情報も参照します
+                            </p>
+                          </div>
+
+                          {/* ボタン */}
+                          <div className="flex gap-2 pt-2">
+                            {editingProductId ? (
+                              <>
+                                <button
+                                  onClick={saveEditProduct}
+                                  className="flex-1 bg-[#FF8A15] hover:bg-[#E67A0A] text-white px-4 py-3 transition-colors flex items-center justify-center gap-2 font-medium"
+                                >
+                                  <Save className="w-4 h-4" />
+                                  保存
+                                </button>
+                                <button
+                                  onClick={cancelEditProduct}
+                                  className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-3 transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </>
+                            ) : (
                               <button
-                                onClick={saveEditProduct}
-                                className="bg-[#FF8A15] hover:bg-[#E67A0A] text-white px-4 py-2 transition-colors flex items-center gap-1"
+                                onClick={addProduct}
+                                className="flex-1 bg-[#FF8A15] hover:bg-orange-600 text-white px-6 py-3 transition-colors font-medium"
                               >
-                                <Save className="w-4 h-4" />
-                                保存
+                                追加
                               </button>
-                              <button
-                                onClick={cancelEditProduct}
-                                className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 transition-colors"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={addProduct}
-                              className="bg-[#FF8A15] hover:bg-orange-600 text-white px-6 py-2 transition-colors font-medium"
-                            >
-                              追加
-                            </button>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* 追加された商品・サービス一覧 */}
                       {productsOrServices.length > 0 && (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {productsOrServices.map((item) => (
                             <div
                               key={item.id}
-                              className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-3 flex items-start justify-between group hover:shadow-sm transition-shadow"
+                              className="bg-white border border-gray-200 border-l-4 border-l-[#FF8A15] p-4 flex items-start justify-between group hover:shadow-md transition-all"
                             >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg">🏷️</span>
-                                  <h4 className="font-semibold text-black">{item.name}</h4>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-lg flex-shrink-0">🏷️</span>
+                                  <h4 className="font-semibold text-black text-base">{item.name}</h4>
                                 </div>
                                 {item.details && (
-                                  <p className="text-sm text-black mt-1 ml-7">{item.details}</p>
+                                  <p className="text-sm text-gray-700 mt-1 ml-7 mb-2">{item.details}</p>
+                                )}
+                                {item.price && (
+                                  <div className="ml-7 mt-2">
+                                    <span className="inline-flex items-center px-3 py-1 bg-[#FF8A15] bg-opacity-10 text-[#FF8A15] font-semibold text-sm">
+                                      💰 {item.price}円（税込）
+                                    </span>
+                                  </div>
                                 )}
                               </div>
-                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4 flex-shrink-0">
                                 <button
                                   onClick={() => startEditProduct(item)}
-                                  className="text-blue-600 hover:text-blue-700 text-sm px-2 py-1"
+                                  className="text-blue-600 hover:text-blue-700 text-sm px-3 py-2 hover:bg-blue-50 transition-colors"
                                 >
                                   編集
                                 </button>
                                 <button
                                   onClick={() => removeProduct(item.id)}
-                                  className="text-red-600 hover:text-red-700 text-sm px-2 py-1"
+                                  className="text-red-600 hover:text-red-700 text-sm px-3 py-2 hover:bg-red-50 transition-colors"
                                 >
                                   削除
                                 </button>
@@ -862,8 +910,12 @@ export default function OnboardingPage() {
                       )}
 
                       {productsOrServices.length === 0 && (
-                        <p className="text-sm text-black text-center py-4 bg-gray-50 rounded-lg">
-                          商品、サービス、または政策を追加してください
+                        <p className="text-sm text-gray-600 text-center py-8 bg-gray-50 border-2 border-dashed border-gray-300">
+                          商品・サービス情報を追加してください
+                          <br />
+                          <span className="text-xs text-gray-500 mt-1 block">
+                            複数の商品・サービスを追加できます
+                          </span>
                         </p>
                       )}
                     </div>
@@ -1333,24 +1385,31 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* 商品・サービス・政策情報 */}
+                {/* 商品・サービス情報 */}
                 {productsOrServices.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <label className="block text-xs font-medium text-gray-500 mb-3">
-                      📦 商品・サービス・政策情報
+                      📦 商品・サービス情報
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {productsOrServices.map((item) => (
                         <div
                           key={item.id}
-                          className="bg-gray-50 border border-gray-200 p-3"
+                          className="bg-gray-50 border border-gray-200 p-4"
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 mb-2">
                             <span className="text-lg">🏷️</span>
-                            <h4 className="font-medium text-gray-900">{item.name}</h4>
+                            <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
                           </div>
                           {item.details && (
-                            <p className="text-sm text-gray-700 mt-1 ml-7">{item.details}</p>
+                            <p className="text-sm text-gray-700 mt-1 ml-7 mb-2">{item.details}</p>
+                          )}
+                          {item.price && (
+                            <div className="ml-7 mt-2">
+                              <span className="inline-flex items-center px-3 py-1 bg-[#FF8A15] bg-opacity-10 text-[#FF8A15] font-semibold text-sm">
+                                💰 {item.price}円（税込）
+                              </span>
+                            </div>
                           )}
                         </div>
                       ))}

@@ -19,11 +19,20 @@ export const buildSystemPrompt = (userProfile: UserProfile, snsType?: string): s
 ${businessInfo.catchphrase ? `- キャッチコピー: 「${businessInfo.catchphrase}」` : ""}
 - 事業内容: ${businessInfo.description || "未設定"}
 
-【商品・サービス・政策】
+【商品・サービス情報】
 ${
   businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0
     ? businessInfo.productsOrServices
-        .map((p) => `- ${p.name}${p.details ? `: ${p.details}` : ""}`)
+        .map((p) => {
+          let productInfo = `- ${p.name}`;
+          if (p.details) {
+            productInfo += `: ${p.details}`;
+          }
+          if (p.price) {
+            productInfo += ` [価格: ${p.price}円（税込）]`;
+          }
+          return productInfo;
+        })
         .join("\n")
     : "- 未設定"
 }
@@ -248,7 +257,16 @@ export const buildPlanPrompt = (
 - ビジネス目標: ${Array.isArray(userProfile.businessInfo.goals) ? userProfile.businessInfo.goals.join(", ") : (userProfile.businessInfo.goals || "未設定")}
 - 課題: ${Array.isArray(userProfile.businessInfo.challenges) ? userProfile.businessInfo.challenges.join(", ") : (userProfile.businessInfo.challenges || "未設定")}
 ${userProfile.businessInfo.catchphrase ? `- キャッチコピー: ${userProfile.businessInfo.catchphrase}` : ""}
-${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.productsOrServices.length > 0 ? `- 商品・サービス: ${userProfile.businessInfo.productsOrServices.map((p) => `${p.name}${p.details ? `（${p.details}）` : ""}`).join("、")}` : ""}
+${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.productsOrServices.length > 0 ? `- 商品・サービス: ${userProfile.businessInfo.productsOrServices.map((p) => {
+  let productInfo = p.name;
+  if (p.details) {
+    productInfo += `（${p.details}）`;
+  }
+  if (p.price) {
+    productInfo += ` [価格: ${p.price}円（税込）]`;
+  }
+  return productInfo;
+}).join("、")}` : ""}
 
 ## ⚠️ AI設定の制約条件（絶対遵守）
 ${
