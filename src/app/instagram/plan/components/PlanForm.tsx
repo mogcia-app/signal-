@@ -242,6 +242,15 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             name="targetAudience"
             value={formData.targetAudience}
             onChange={onInputChange}
+            onFocus={(e) => {
+              // フォーカス時の自動スクロールを防ぐ
+              // 現在のスクロール位置を保存
+              const scrollY = window.scrollY;
+              // 次のフレームでスクロール位置を元に戻す
+              requestAnimationFrame(() => {
+                window.scrollTo({ top: scrollY, behavior: 'instant' });
+              });
+            }}
             placeholder="例：ブランドの認知拡大"
             rows={4}
             className="w-full px-4 py-3 border border-gray-300 bg-white resize-none"
