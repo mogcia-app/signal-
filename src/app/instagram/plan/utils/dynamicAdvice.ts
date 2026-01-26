@@ -17,9 +17,13 @@ export function generateDynamicAdvice(
 
   if (!formData) {return advice;}
 
-  const currentFollowers = parseInt(formData.currentFollowers) || 0;
-  const followerGain = parseInt(formData.followerGain) || 0;
-  const targetFollowers = currentFollowers + followerGain;
+  const currentFollowers = parseInt(formData.currentFollowers || "0", 10) || 0;
+  const targetFollowers = formData.targetFollowers 
+    ? parseInt(formData.targetFollowers, 10)
+    : formData.followerGain
+    ? currentFollowers + parseInt(formData.followerGain, 10)
+    : currentFollowers;
+  const followerGain = targetFollowers - currentFollowers;
   const planPeriod = formData.planPeriod;
   const monthlyGrowth =
     followerGain / (planPeriod === "1ヶ月" ? 1 : planPeriod === "3ヶ月" ? 3 : 6);

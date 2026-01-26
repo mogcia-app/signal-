@@ -4,6 +4,14 @@ import { buildPlanPrompt } from "../../../../utils/aiPromptBuilder";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import {
+  calculateFeasibilityScore,
+  suggestRealisticTarget,
+  getGrowthRateForAccountSize,
+  getPostTypePerformance,
+  calculateRequiredMonthlyGrowthRate,
+  RECOMMENDED_POST_FREQUENCY,
+} from "../../../../lib/instagram-benchmarks";
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,18 +59,43 @@ async function runSimulation(
   const monthlyTarget = Math.ceil(followerGain / periodMultiplier);
   const weeklyTarget = Math.ceil(followerGain / (periodMultiplier * 4));
 
-  // 実現可能性の判定
-  const feasibility = calculateFeasibility(followerGain, currentFollowers, planPeriod);
+  // 必要成長率を計算（代替案生成で使用）
+  const requiredGrowthRate = calculateRequiredMonthlyGrowthRate(
+    currentFollowers,
+    currentFollowers + followerGain,
+    periodMultiplier
+  );
 
-  // 「非常に困難」の場合の代替案を生成
-  const alternativeOptions =
-    feasibility.level === "very_challenging"
-      ? generateAlternativeOptions(followerGain, currentFollowers, planPeriod)
-      : null;
-
-  // 投稿頻度の計算
+  // 投稿頻度の計算（先に計算してfeasibility計算に使用）
   const postsPerWeek = calculatePostFrequency(strategyValues, postCategories, followerGain);
-  const monthlyPostCount = (postsPerWeek.reel + postsPerWeek.feed + postsPerWeek.story) * 4;
+  const totalPostingFrequency = postsPerWeek.reel + postsPerWeek.feed + postsPerWeek.story;
+
+  // 実現可能性の判定（新しいベンチマークデータに基づく、目標タイプと投稿頻度を考慮）
+  const feasibility = calculateFeasibility(
+    followerGain, 
+    currentFollowers, 
+    planPeriod,
+    goalCategory,
+    totalPostingFrequency
+  );
+
+  // 代替案の表示判定：達成難易度スコアが110以上（挑戦的 or 非現実的）の場合のみ表示
+  const feasibilityScore = feasibility.feasibilityScore?.difficultyRatio || 0;
+  const shouldShowAlternatives = feasibilityScore >= 110;
+  
+  const alternativeOptions = shouldShowAlternatives
+    ? generateAlternativeOptionsWithBenchmarks(
+        followerGain, 
+        currentFollowers, 
+        planPeriod,
+        goalCategory,
+        feasibilityScore,
+        requiredGrowthRate
+      )
+    : null;
+
+  // 投稿頻度は既に計算済み（feasibility計算で使用）
+  const monthlyPostCount = totalPostingFrequency * 4;
 
   // ワークロード判定
   const workloadMessage = calculateWorkload(monthlyPostCount);
@@ -125,24 +158,50 @@ function getPeriodMultiplier(planPeriod: string): number {
 }
 
 // 実現可能性を計算（保守的な基準）
-function calculateFeasibility(followerGain: number, currentFollowers: number, planPeriod: string) {
+// 実現可能性を計算（2026年ベンチマークデータに基づく）
+function calculateFeasibility(
+  followerGain: number, 
+  currentFollowers: number, 
+  planPeriod: string,
+  goalType?: string,
+  postingFrequency?: number
+) {
   const periodMultiplier = getPeriodMultiplier(planPeriod);
-  const monthlyGain = followerGain / periodMultiplier;
-  const growthRate = monthlyGain / Math.max(currentFollowers, 1);
+  const targetFollowers = currentFollowers + followerGain;
+  
+  // 新しいベンチマークデータに基づく達成難易度計算（目標タイプと投稿頻度を考慮）
+  const feasibilityScore = calculateFeasibilityScore(
+    currentFollowers,
+    targetFollowers,
+    periodMultiplier,
+    goalType,
+    postingFrequency
+  );
 
-  // より保守的な基準に変更
-  // 実際のInstagram運用では月3%以下が現実的、月5%以下が良い成長率
-  if (growthRate <= 0.02) {
-    return { level: "very_realistic", badge: "非常に現実的" };
-  } else if (growthRate <= 0.05) {
-    return { level: "realistic", badge: "現実的" };
-  } else if (growthRate <= 0.1) {
-    return { level: "moderate", badge: "挑戦的" };
-  } else if (growthRate <= 0.2) {
-    return { level: "challenging", badge: "困難" };
-  } else {
-    return { level: "very_challenging", badge: "非常に困難" };
-  }
+  // レベルをマッピング
+  const levelMap: Record<string, string> = {
+    very_easy: "very_realistic",
+    easy: "realistic",
+    realistic: "moderate",
+    challenging: "challenging",
+    very_challenging: "very_challenging",
+    unrealistic: "very_challenging",
+  };
+
+  const badgeMap: Record<string, string> = {
+    very_easy: "非常に現実的",
+    easy: "現実的",
+    realistic: "挑戦的",
+    challenging: "困難",
+    very_challenging: "非常に困難",
+    unrealistic: "非現実的",
+  };
+
+  return {
+    level: levelMap[feasibilityScore.level] || "moderate",
+    badge: badgeMap[feasibilityScore.level] || "挑戦的",
+    feasibilityScore, // 詳細情報も含める
+  };
 }
 
 // 投稿頻度を計算
@@ -466,46 +525,120 @@ function calculateTargetDate(planPeriod: string): string {
 }
 
 // 代替案を生成（非常に困難な場合）
-function generateAlternativeOptions(
+// 週あたり時間を計算（Signal.でできること：投稿文生成のみを考慮）
+function calculateWeeklyTime(
+  feedPosts: number,
+  reelPosts: number,
+  storiesPosts: number,
+  engagementLevel: "low" | "medium" | "high"
+): { weeklyMinutes: number; dailyMinutes: number } {
+  // Signal.でできること：投稿文生成時間のみ
+  const TIME_PER_POST = {
+    feed: 1,       // フィード1投稿: Signal.での投稿文生成約1分
+    reel: 1,       // リール1投稿: Signal.での投稿文生成約1分
+    stories: 0.5   // ストーリーズ1投稿: Signal.での投稿文生成約30秒
+  };
+  
+  // エンゲージメント対応時間（Signal.でのコメント返信文生成）
+  const ENGAGEMENT_TIME = {
+    low: 5,        // コメント返信文生成: 週5分
+    medium: 10,   // コメント返信文生成: 週10分
+    high: 15       // コメント返信文生成: 週15分
+  };
+  
+  const feedTime = feedPosts * TIME_PER_POST.feed;
+  const reelTime = reelPosts * TIME_PER_POST.reel;
+  const storiesTime = storiesPosts * TIME_PER_POST.stories;
+  const engagementTime = ENGAGEMENT_TIME[engagementLevel];
+  
+  const weeklyMinutes = Math.round(feedTime + reelTime + storiesTime + engagementTime);
+  const dailyMinutes = Math.round(weeklyMinutes / 7);
+  
+  return { weeklyMinutes, dailyMinutes };
+}
+
+// 代替案を生成（2026年ベンチマークデータに基づく、改善版）
+function generateAlternativeOptionsWithBenchmarks(
   followerGain: number,
   currentFollowers: number,
-  planPeriod: string
+  planPeriod: string,
+  goalType?: string,
+  feasibilityScore: number = 0,
+  requiredGrowthRate: number = 0
 ) {
   const periodMultiplier = getPeriodMultiplier(planPeriod);
-  const monthlyGain = followerGain / periodMultiplier;
-  const growthRate = monthlyGain / Math.max(currentFollowers, 1);
+  const targetFollowers = currentFollowers + followerGain;
+  
+  // 期間を日数に変換（1ヶ月=30日基準）
+  const periodDays = periodMultiplier * 30;
+  const periodMultiplierForCalculation = periodDays / 30; // 期間補正係数
 
-  // 現実的な目標（月間成長率5%以下）
-  const realisticMonthlyGrowthRate = 0.05;
-  const realisticMonthlyGain = currentFollowers * realisticMonthlyGrowthRate;
-  const realisticTotalGain = realisticMonthlyGain * periodMultiplier;
-  const realisticTargetFollowers = currentFollowers + realisticTotalGain;
+  const growthBenchmark = getGrowthRateForAccountSize(currentFollowers);
+  const adjustedAverage = growthBenchmark.monthly.realistic;
 
-  // 中等度の目標（月間成長率10%以下）
-  const moderateMonthlyGrowthRate = 0.1;
-  const moderateMonthlyGain = currentFollowers * moderateMonthlyGrowthRate;
-  const moderateTotalGain = moderateMonthlyGain * periodMultiplier;
-  const moderateTargetFollowers = currentFollowers + moderateTotalGain;
+  // 代替案表示の理由を生成
+  let whyDifficult: string;
+  let recommendedAction: string;
+  
+  if (feasibilityScore >= 150) {
+    whyDifficult = `現在の目標は月間${requiredGrowthRate.toFixed(1)}%の成長率が必要です。業界平均（${adjustedAverage.toFixed(1)}%）を${(feasibilityScore / 100).toFixed(1)}倍上回るため、達成は非常に困難です。`;
+    recommendedAction = "より現実的な目標に調整することを強くおすすめします。";
+  } else if (feasibilityScore >= 110) {
+    whyDifficult = `現在の目標は月間${requiredGrowthRate.toFixed(1)}%の成長率が必要です。業界平均（${adjustedAverage.toFixed(1)}%）を上回る挑戦的な目標です。`;
+    recommendedAction = "高頻度投稿と積極的なエンゲージメントが必要です。または、より達成しやすい目標も検討できます。";
+  } else {
+    whyDifficult = `現在の目標は月間${requiredGrowthRate.toFixed(1)}%の成長率が必要です。`;
+    recommendedAction = "";
+  }
 
-  // 段階的アプローチ（半分ずつ達成）
-  const phasedFirstTarget = currentFollowers + Math.ceil(followerGain / 2);
-  const phasedSecondTarget = currentFollowers + followerGain;
+  // 保守的プラン（達成確率80%）
+  const conservativeGrowthRate = growthBenchmark.monthly.conservative;
+  const conservativeIncrease = Math.round(
+    currentFollowers * (conservativeGrowthRate / 100) * periodMultiplierForCalculation
+  );
+  const conservativeTargetFollowers = currentFollowers + conservativeIncrease;
+  const conservativeTime = calculateWeeklyTime(3, 1, 4, "low");
+
+  // 現実的プラン（達成確率50%）
+  const realisticGrowthRate = growthBenchmark.monthly.realistic;
+  const realisticIncrease = Math.round(
+    currentFollowers * (realisticGrowthRate / 100) * periodMultiplierForCalculation
+  );
+  const realisticTargetFollowers = currentFollowers + realisticIncrease;
+  const realisticTime = calculateWeeklyTime(5, 2, 7, "medium");
+
+  // 挑戦的プラン（達成確率20%）
+  const aggressiveGrowthRate = growthBenchmark.monthly.aggressive;
+  const aggressiveIncrease = Math.round(
+    currentFollowers * (aggressiveGrowthRate / 100) * periodMultiplierForCalculation
+  );
+  const aggressiveTargetFollowers = currentFollowers + aggressiveIncrease;
+  const aggressiveTime = calculateWeeklyTime(6, 3, 14, "high");
+
+  // 段階的アプローチ
+  const phasedFirstTarget = currentFollowers + Math.ceil(conservativeIncrease);
+  const phasedSecondTarget = aggressiveTargetFollowers;
 
   // 期間延長案
   const extendedPeriodMultiplier = periodMultiplier * 1.5;
   const extendedPeriod = getExtendedPeriod(planPeriod);
 
   return {
-    whyDifficult: `現在の目標は月間${(growthRate * 100).toFixed(1)}%の成長率が必要です。一般的な成長率（月間3-5%）を大幅に上回るため、達成は非常に困難です。`,
+    whyDifficult,
+    recommendedAction,
 
     realistic: {
-      targetFollowers: Math.round(realisticTargetFollowers),
-      followerGain: Math.round(realisticTotalGain),
-      monthlyGain: Math.round(realisticMonthlyGain),
-      monthlyGrowthRate: 5,
+      targetFollowers: conservativeTargetFollowers,
+      followerGain: conservativeIncrease,
+      monthlyGain: Math.round(conservativeIncrease / periodMultiplier),
+      monthlyGrowthRate: conservativeGrowthRate,
       feasibility: "very_realistic",
+      probability: "80%",
+      weeklyMinutes: conservativeTime.weeklyMinutes,
+      dailyMinutes: conservativeTime.dailyMinutes,
+      postingDescription: "週3回フィード + 週1回リール + 週3-4回ストーリーズ",
       recommendation:
-        "無理なく継続できる現実的な目標です。一貫した投稿とエンゲージメント向上に集中しましょう。",
+        "無理なく継続できる現実的な目標です。週3〜4回の投稿とストーリーズを週3〜4回投稿することで達成可能です。",
       pros: [
         "継続しやすい投稿ペース",
         "リスクが低く確実な成長",
@@ -513,16 +646,21 @@ function generateAlternativeOptions(
         "フォロワーの質を維持できる",
       ],
       cons: ["成長ペースがゆっくり", "期間が長くかかる可能性"],
+      suitableFor: "初心者・副業・時間が限られている方",
     },
 
     moderate: {
-      targetFollowers: Math.round(moderateTargetFollowers),
-      followerGain: Math.round(moderateTotalGain),
-      monthlyGain: Math.round(moderateMonthlyGain),
-      monthlyGrowthRate: 10,
+      targetFollowers: realisticTargetFollowers,
+      followerGain: realisticIncrease,
+      monthlyGain: Math.round(realisticIncrease / periodMultiplier),
+      monthlyGrowthRate: realisticGrowthRate,
       feasibility: "moderate",
+      probability: "50%",
+      weeklyMinutes: realisticTime.weeklyMinutes,
+      dailyMinutes: realisticTime.dailyMinutes,
+      postingDescription: "週4-5回フィード + 週2回リール + ほぼ毎日ストーリーズ",
       recommendation:
-        "やや挑戦的ですが、集中的な努力で達成可能な目標です。リール投稿の強化やエンゲージメント戦略の最適化を検討しましょう。",
+        "業界平均並みの成長を目指す標準プランです。リール投稿を週2回、フィード投稿を週4〜5回、ストーリーズをほぼ毎日投稿することで達成可能です。",
       pros: [
         "現実的な成長を期待できる",
         "適度な挑戦でモチベーション維持",
@@ -530,32 +668,37 @@ function generateAlternativeOptions(
         "短期間で成果が見える",
       ],
       cons: ["やや高負荷な投稿ペースが必要", "一貫した戦略実行が必須"],
+      suitableFor: "中級者・本格的に成長させたい方",
     },
 
     phased: {
       phase1: {
         targetFollowers: phasedFirstTarget,
-        followerGain: Math.ceil(followerGain / 2),
+        followerGain: Math.ceil(conservativeIncrease),
         duration: planPeriod,
         description: "第一段階：基礎を固める期間",
       },
       phase2: {
         targetFollowers: phasedSecondTarget,
-        followerGain: Math.ceil(followerGain / 2),
+        followerGain: aggressiveIncrease,
         duration: planPeriod,
         description: "第二段階：成長を加速させる期間",
       },
       totalDuration: getDoubledPeriod(planPeriod),
-      feasibility: "moderate",
+      feasibility: "challenging",
+      probability: "20%",
+      weeklyMinutes: aggressiveTime.weeklyMinutes,
+      dailyMinutes: aggressiveTime.dailyMinutes,
+      postingDescription: "週5-7回フィード + 週3回以上リール + 毎日複数回ストーリーズ",
       recommendation:
-        "目標を半分ずつ達成する段階的アプローチ。第一段階で基盤を固めてから、第二段階で成長を加速させます。",
+        "高頻度投稿とエンゲージメント強化が必須の挑戦的プランです。リールを週3回以上、フィードを週5〜7回、ストーリーズを毎日複数回投稿することで達成可能です。",
       pros: [
-        "リスク分散で達成しやすい",
-        "中間的な成功体験を得られる",
-        "戦略を調整できる機会がある",
-        "学習しながら成長できる",
+        "短期間で大きな成長を期待できる",
+        "バイラル性の高いコンテンツで加速",
+        "積極的なアプローチで成果を最大化",
       ],
-      cons: ["目標達成までに期間が2倍必要", "長期的な継続が必要"],
+      cons: ["高い負荷が必要", "時間と労力の投資が大きい", "継続が困難な可能性"],
+      suitableFor: "経験者・専任担当者・予算がある方",
     },
 
     extendedPeriod: {
@@ -577,6 +720,14 @@ function generateAlternativeOptions(
           "Instagram広告を活用して、オーガニックな成長を補完します。月1-2万円程度の予算で成長ペースを加速できます。",
         estimatedBoost: "月間+10-20%の成長促進",
         cost: "月1-5万円",
+        feasibility: "realistic",
+      },
+      {
+        title: "リール投稿を増やす",
+        description:
+          "リールは画像投稿の2倍以上のリーチを獲得できます。週2回から週4回に増やすことで、新規フォロワー獲得を加速できます。",
+        estimatedBoost: "リーチ率30.81%（画像投稿の2.3倍）",
+        cost: "時間のみ",
         feasibility: "realistic",
       },
     ],

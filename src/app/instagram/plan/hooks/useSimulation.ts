@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { SimulationResult, SimulationRequest, DebugInfo } from "../types/plan";
 import { authFetch } from "../../../../utils/authFetch";
+import { TIMEOUT_MS } from "../constants/plan";
+import { logger } from "../utils/logger";
 
 export const useSimulation = () => {
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
@@ -9,9 +11,9 @@ export const useSimulation = () => {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
 
   // シミュレーション実行
-  const runSimulation = async (requestData: SimulationRequest) => {
-    console.log("=== シミュレーション実行開始 ===");
-    console.log("requestData:", requestData);
+  const runSimulation = async (requestData: SimulationRequest): Promise<SimulationResult | null> => {
+    logger.log("=== シミュレーション実行開始 ===");
+    logger.log("requestData:", requestData);
 
     // バリデーション
     if (!requestData.followerGain || !requestData.planPeriod) {
@@ -20,16 +22,16 @@ export const useSimulation = () => {
         planPeriod: requestData.planPeriod,
       });
       setSimulationError("目標フォロワー数と期間を入力してください");
-      return;
+      return null;
     }
 
     if (!requestData.currentFollowers) {
       console.error("現在のフォロワー数が未入力です");
       setSimulationError("現在のフォロワー数を入力してください");
-      return;
+      return null;
     }
 
-    console.log("バリデーション通過、シミュレーション実行中...");
+    logger.log("バリデーション通過、シミュレーション実行中...");
     setIsSimulating(true);
     setSimulationError("");
     setDebugInfo(null);
@@ -42,7 +44,7 @@ export const useSimulation = () => {
         setSimulationError("シミュレーション処理がタイムアウトしました。しばらく待ってから再度お試しください。");
         console.error("シミュレーションタイムアウト");
         reject(new Error("シミュレーション処理がタイムアウトしました"));
-      }, 60000);
+      }, TIMEOUT_MS.SIMULATION);
     });
 
     try {
@@ -63,9 +65,7 @@ export const useSimulation = () => {
       ]) as Response;
 
       if (timeoutId) {
-        if (timeoutId) {
         clearTimeout(timeoutId);
-      }
       }
 
       if (!response.ok) {
@@ -90,6 +90,7 @@ export const useSimulation = () => {
       );
 
       setIsSimulating(false);
+      return result;
     } catch (error) {
       if (timeoutId) {
         clearTimeout(timeoutId);
@@ -111,6 +112,7 @@ export const useSimulation = () => {
       );
 
       setIsSimulating(false);
+      return null;
     }
   };
 

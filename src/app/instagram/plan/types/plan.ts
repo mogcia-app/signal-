@@ -1,27 +1,54 @@
-// フォームデータの型定義
+// フォームデータの型定義（新バージョン：ステップ式ウィザード）
 export interface PlanFormData {
-  planPeriod: string;
-  currentFollowers: string;
-  followerGain: string;
-  goalCategory: string;
-  otherGoal: string;
-  targetAudience: string;
-  aiHelpRequest: string;
-  pastLearnings: string;
-  brandConcept: string;
-  colorVisual: string;
-  tone: string;
-  weeklyFocus: string;
-  feedFreq: string;
-  reelFreq: string;
-  storyFreq: string;
-  saveGoal: string;
-  likeGoal: string;
-  reachGoal: string;
-  referenceAccounts: string;
-  hashtagStrategy: string;
-  constraints: string;
-  freeMemo: string;
+  // ステップ1: 基本情報
+  planPeriod: string; // "1ヶ月" | "3ヶ月" | "6ヶ月" | "1年"
+  startDate?: string; // 開始日（YYYY-MM-DD形式）
+  
+  // ステップ2: 目標設定
+  mainGoal?: string; // 一番叶えたいこと
+  currentFollowers: string; // 現在のフォロワー数
+  targetFollowers?: string; // 目標フォロワー数（AI提案または手動入力）
+  targetFollowersAuto?: boolean; // AI自動提案を使用するか
+  
+  // ステップ3: 投稿頻度
+  availableTime?: string; // 投稿に使える時間
+  reelCapability?: string; // リール対応可否
+  storyFrequency?: string; // ストーリーズの頻度
+  postingTimePreference?: string[]; // 投稿時間の希望（複数選択可）
+  
+  // ステップ4: ターゲット設定
+  targetAudience: string; // ターゲット層
+  targetRegion?: string; // 地域（任意）
+  targetRegionEnabled?: boolean; // 地域を限定するか
+  
+  // ステップ5: 投稿内容
+  postContentTypes?: string[]; // 投稿したい内容（複数選択可）
+  avoidContent?: string; // 避けたいこと（任意）
+  
+  // 任意項目: アカウント情報
+  accountCreationDate?: string; // アカウント開設日（YYYY-MM-DD形式、任意）
+  currentEngagementRate?: string; // 現在のエンゲージメント率（%形式、任意）
+  
+  // 旧フィールド（後方互換性のため保持）
+  followerGain?: string;
+  goalCategory?: string;
+  otherGoal?: string;
+  aiHelpRequest?: string;
+  pastLearnings?: string;
+  brandConcept?: string;
+  colorVisual?: string;
+  tone?: string;
+  weeklyFocus?: string;
+  feedFreq?: string;
+  reelFreq?: string;
+  storyFreq?: string;
+  saveGoal?: string;
+  likeGoal?: string;
+  reachGoal?: string;
+  referenceAccounts?: string;
+  hashtagStrategy?: string;
+  constraints?: string;
+  freeMemo?: string;
 }
 
 // シミュレーション結果の型定義
@@ -66,6 +93,7 @@ export interface SimulationResult {
 // 代替案の型定義
 export interface AlternativeOptions {
   whyDifficult: string;
+  recommendedAction?: string; // 推奨アクション
   realistic: AlternativeOption;
   moderate: AlternativeOption;
   phased: PhasedOption;
@@ -79,9 +107,14 @@ export interface AlternativeOption {
   monthlyGain: number;
   monthlyGrowthRate: number;
   feasibility: string;
+  probability?: string; // 達成確率（例: "80%", "50%", "20%"）
+  weeklyMinutes?: number; // 週あたりの所要時間（分）
+  dailyMinutes?: number; // 1日あたりの所要時間（分）
+  postingDescription?: string; // 投稿計画の説明
   recommendation: string;
   pros: string[];
   cons: string[];
+  suitableFor?: string; // 対象ユーザー
 }
 
 export interface PhasedOption {
@@ -99,9 +132,14 @@ export interface PhasedOption {
   };
   totalDuration: string;
   feasibility: string;
+  probability?: string; // 達成確率（例: "20%"）
+  weeklyMinutes?: number; // 週あたりの所要時間（分）
+  dailyMinutes?: number; // 1日あたりの所要時間（分）
+  postingDescription?: string; // 投稿計画の説明
   recommendation: string;
   pros: string[];
   cons: string[];
+  suitableFor?: string; // 対象ユーザー
 }
 
 export interface ExtendedPeriodOption {
@@ -142,6 +180,11 @@ export interface SimulationRequest {
   postCategories: string[];
   hashtagStrategy: string;
   referenceAccounts: string;
+  // ウィザードからの入力データ（オプション）
+  availableTime?: string; // 投稿に使える時間
+  reelCapability?: string; // リール作成可否
+  storyFrequency?: string; // ストーリーズ頻度
+  postingTimePreference?: string[]; // 投稿時間の希望
   // 拡張要素（オプション）
   accountAge?: number; // アカウント開設からの月数
   currentEngagementRate?: number; // 現在のエンゲージメント率

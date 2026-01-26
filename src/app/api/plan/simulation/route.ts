@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthContext } from "@/lib/server/auth-context";
+import { getPostTypePerformance, getEngagementRateForFollowers } from "@/lib/instagram-benchmarks";
 
 interface SimulationCalculationRequest {
   followerGain: number;
@@ -60,11 +61,77 @@ interface SimulationCalculationResponse {
 }
 
 // 成長係数（週1本あたりのフォロワー増加数）
-// より現実的な値に調整
+// 2026年ベンチマークデータに基づく計算
+function getGrowthRateForPostType(
+  postType: "reel" | "feed" | "story",
+  currentFollowers: number
+): { min: number; max: number } {
+  const engagementRate = getEngagementRateForFollowers(currentFollowers);
+  
+  // 投稿タイプ別のパフォーマンスを取得
+  const reelPerformance = getPostTypePerformance("reel");
+  const carouselPerformance = getPostTypePerformance("carousel");
+  const imagePerformance = getPostTypePerformance("image");
+  
+  // リーチ率とエンゲージメント率からフォロワー増加数を推定
+  // リーチ数 = フォロワー数 × リーチ率
+  // エンゲージメント数 = リーチ数 × エンゲージメント率
+  // フォロワー増加数 ≈ エンゲージメント数 × コンバージョン率（推定2-5%）
+  
+  if (postType === "reel" && reelPerformance) {
+    const reachRate = reelPerformance.averageReachRate / 100;
+    const engagementRateAvg = (reelPerformance.engagementRate.min + reelPerformance.engagementRate.max) / 2 / 100;
+    const conversionRate = 0.03; // 3%のコンバージョン率を仮定
+    const expectedReach = currentFollowers * reachRate;
+    const expectedEngagement = expectedReach * engagementRateAvg;
+    const expectedFollowers = expectedEngagement * conversionRate;
+    return {
+      min: Math.max(0.5, expectedFollowers * 0.7), // 最小値は70%の期待値
+      max: expectedFollowers * 1.3, // 最大値は130%の期待値
+    };
+  }
+  
+  if (postType === "feed") {
+    // フィード投稿はカルーセルまたは画像の平均を使用
+    const avgReachRate = ((carouselPerformance?.averageReachRate || 0) + (imagePerformance?.averageReachRate || 0)) / 2 / 100;
+    const avgEngagementRate = ((carouselPerformance?.engagementRate.min || 0) + (imagePerformance?.engagementRate.min || 0)) / 2 / 100;
+    const conversionRate = 0.02; // 2%のコンバージョン率を仮定（リールより低い）
+    const expectedReach = currentFollowers * avgReachRate;
+    const expectedEngagement = expectedReach * avgEngagementRate;
+    const expectedFollowers = expectedEngagement * conversionRate;
+    return {
+      min: Math.max(0.3, expectedFollowers * 0.6),
+      max: expectedFollowers * 1.2,
+    };
+  }
+  
+  if (postType === "story") {
+    // ストーリーズはリーチ率が高いが、エンゲージメント率は低い
+    const storyReachRate = 0.15; // ストーリーズのリーチ率（推定15%）
+    const storyEngagementRate = engagementRate.min / 100; // エンゲージメント率は低め
+    const conversionRate = 0.01; // 1%のコンバージョン率を仮定（最も低い）
+    const expectedReach = currentFollowers * storyReachRate;
+    const expectedEngagement = expectedReach * storyEngagementRate;
+    const expectedFollowers = expectedEngagement * conversionRate;
+    return {
+      min: Math.max(0.05, expectedFollowers * 0.5),
+      max: expectedFollowers * 1.0,
+    };
+  }
+  
+  // フォールバック値
+  return {
+    reel: { min: 1.0, max: 2.0 },
+    feed: { min: 0.5, max: 1.5 },
+    story: { min: 0.07, max: 0.14 },
+  }[postType];
+}
+
+// 後方互換性のため、デフォルト値も保持
 const GROWTH_RATE = {
-  reel: { min: 1.0, max: 2.0 },     // リール1本あたり: 週に1〜2人
-  feed: { min: 0.5, max: 1.5 },     // フィード1本あたり: 週に0.5〜1.5人（週2回で1〜3人）
-  story: { min: 0.07, max: 0.14 },  // ストーリー1本あたり: 週に0.07〜0.14人（毎日で0.5〜1人）
+  reel: { min: 1.0, max: 2.0 },
+  feed: { min: 0.5, max: 1.5 },
+  story: { min: 0.07, max: 0.14 },
 };
 
 // 期待値計算の共通関数
@@ -161,15 +228,20 @@ export async function POST(request: NextRequest) {
       ? body.postsPerWeek.story
       : 0;
 
+    // ベンチマークデータに基づく成長係数を取得
+    const reelGrowthRate = getGrowthRateForPostType("reel", body.currentFollowers);
+    const feedGrowthRate = getGrowthRateForPostType("feed", body.currentFollowers);
+    const storyGrowthRate = getGrowthRateForPostType("story", body.currentFollowers);
+
     // 週あたりの予測増加数（1週間分）
-    const reelExpectedPerWeek = calcExpected(reel, 1, GROWTH_RATE.reel);
-    const feedExpectedPerWeek = calcExpected(feed, 1, GROWTH_RATE.feed);
-    const storyExpectedPerWeek = calcExpected(story, 1, GROWTH_RATE.story);
+    const reelExpectedPerWeek = calcExpected(reel, 1, reelGrowthRate);
+    const feedExpectedPerWeek = calcExpected(feed, 1, feedGrowthRate);
+    const storyExpectedPerWeek = calcExpected(story, 1, storyGrowthRate);
 
     // 期間全体の予測増加数（実際の週数で計算）
-    const reelExpectedTotal = calcExpected(reel, weeksRemaining, GROWTH_RATE.reel);
-    const feedExpectedTotal = calcExpected(feed, weeksRemaining, GROWTH_RATE.feed);
-    const storyExpectedTotal = calcExpected(story, weeksRemaining, GROWTH_RATE.story);
+    const reelExpectedTotal = calcExpected(reel, weeksRemaining, reelGrowthRate);
+    const feedExpectedTotal = calcExpected(feed, weeksRemaining, feedGrowthRate);
+    const storyExpectedTotal = calcExpected(story, weeksRemaining, storyGrowthRate);
 
     const postBreakdown: PostBreakdown = {
       reel: {
@@ -228,15 +300,17 @@ export async function POST(request: NextRequest) {
       : target;
 
     // 実行負荷（工数）を計算
-    // 投稿タイプごとの制作時間（時間）
-    const REEL_HOURS_PER_POST = 2.0;   // リール: 1本あたり2時間（企画・撮影・編集）
-    const FEED_HOURS_PER_POST = 0.75;  // フィード: 1本あたり0.75時間（45分）
-    const STORY_HOURS_PER_POST = 0.2;  // ストーリー: 1本あたり0.2時間（12分）
+    // Signal.でできること：投稿文生成時間のみ（分単位で計算）
+    const REEL_MINUTES_PER_POST = 1;   // リール: Signal.での投稿文生成約1分
+    const FEED_MINUTES_PER_POST = 1;   // フィード: Signal.での投稿文生成約1分
+    const STORY_MINUTES_PER_POST = 0.5; // ストーリー: Signal.での投稿文生成約30秒
+    const ENGAGEMENT_MINUTES_PER_WEEK = 5; // コメント返信: Signal.での返信文生成週5分
 
-    const reelWeeklyHours = reel * REEL_HOURS_PER_POST;
-    const feedWeeklyHours = feed * FEED_HOURS_PER_POST;
-    const storyWeeklyHours = story * STORY_HOURS_PER_POST;
-    const weeklyHours = reelWeeklyHours + feedWeeklyHours + storyWeeklyHours;
+    const reelWeeklyMinutes = reel * REEL_MINUTES_PER_POST;
+    const feedWeeklyMinutes = feed * FEED_MINUTES_PER_POST;
+    const storyWeeklyMinutes = story * STORY_MINUTES_PER_POST;
+    const weeklyMinutes = reelWeeklyMinutes + feedWeeklyMinutes + storyWeeklyMinutes + ENGAGEMENT_MINUTES_PER_WEEK;
+    const weeklyHours = weeklyMinutes / 60; // 時間に変換（互換性のため）
 
     // 月間時間（週数 × 週間時間）
     const monthlyHours = Math.round((weeklyHours * (weeksRemaining / 4)) * 10) / 10;
@@ -246,16 +320,16 @@ export async function POST(request: NextRequest) {
       monthlyHours,
       breakdown: {
         reel: {
-          hours: Math.round(reelWeeklyHours * 10) / 10,
-          perPost: REEL_HOURS_PER_POST,
+          hours: Math.round(reelWeeklyMinutes / 60 * 10) / 10,
+          perPost: REEL_MINUTES_PER_POST / 60, // 時間単位に変換
         },
         feed: {
-          hours: Math.round(feedWeeklyHours * 10) / 10,
-          perPost: FEED_HOURS_PER_POST,
+          hours: Math.round(feedWeeklyMinutes / 60 * 10) / 10,
+          perPost: FEED_MINUTES_PER_POST / 60, // 時間単位に変換
         },
         story: {
-          hours: Math.round(storyWeeklyHours * 10) / 10,
-          perPost: STORY_HOURS_PER_POST,
+          hours: Math.round(storyWeeklyMinutes / 60 * 10) / 10,
+          perPost: STORY_MINUTES_PER_POST / 60, // 時間単位に変換
         },
       },
     };

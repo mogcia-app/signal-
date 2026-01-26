@@ -42,10 +42,16 @@ export default function LoginPage() {
 
       if (errorMessage === "CONTRACT_EXPIRED" || errorCode === "auth/contract-expired") {
         setError("契約期間が終了しています。管理者にご連絡ください。");
+      } else if (errorMessage === "NETWORK_OFFLINE") {
+        setError("インターネット接続を確認してください。オフラインのようです。");
+      } else if (errorCode === "auth/network-request-failed") {
+        setError("ネットワークエラーが発生しました。インターネット接続とFirebaseサービスのステータスを確認してください。");
       } else if (errorCode === "auth/user-not-found" || errorCode === "auth/wrong-password") {
         setError("メールアドレスまたはパスワードが正しくありません。");
       } else if (errorCode === "auth/invalid-email") {
         setError("無効なメールアドレスです。");
+      } else if (errorCode === "auth/too-many-requests") {
+        setError("ログイン試行回数が多すぎます。しばらく待ってから再度お試しください。");
       } else {
         setError("ログインに失敗しました。メールアドレスとパスワードを確認してください。");
       }

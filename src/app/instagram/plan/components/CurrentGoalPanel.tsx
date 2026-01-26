@@ -47,7 +47,15 @@ export const CurrentGoalPanel: React.FC<CurrentGoalPanelProps> = ({
             <div>
               <span className="text-black">目標フォロワー数</span>
               <div className="font-medium">
-                {parseInt(formData.currentFollowers) + parseInt(formData.followerGain)}人
+                {(() => {
+                  const current = parseInt(formData.currentFollowers || "0", 10);
+                  const target = formData.targetFollowers 
+                    ? parseInt(formData.targetFollowers, 10)
+                    : formData.followerGain
+                    ? current + parseInt(formData.followerGain, 10)
+                    : current;
+                  return target.toLocaleString();
+                })()}人
               </div>
             </div>
             <div>

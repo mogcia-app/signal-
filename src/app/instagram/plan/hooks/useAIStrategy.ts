@@ -15,7 +15,7 @@ interface UseAIStrategyReturn {
     selectedStrategies: string[],
     selectedCategories: string[],
     simulationResult: SimulationResult | null
-  ) => Promise<void>;
+  ) => Promise<string | null>;
   clearStrategy: () => void;
 }
 
@@ -31,7 +31,7 @@ export function useAIStrategy(): UseAIStrategyReturn {
     selectedStrategies: string[],
     selectedCategories: string[],
     simulationResult: SimulationResult | null
-  ): Promise<void> => {
+  ): Promise<string | null> => {
     setStrategyState({
       strategy: null,
       isLoading: true,
@@ -55,20 +55,26 @@ export function useAIStrategy(): UseAIStrategyReturn {
       }
 
       const data = await response.json();
+      const strategy = data.strategy || null;
 
       setStrategyState({
-        strategy: data.strategy,
+        strategy: strategy,
         isLoading: false,
         error: null,
       });
+
+      return strategy;
     } catch (error) {
       console.error("AI Strategy generation error:", error);
+      const errorMessage = error instanceof Error ? error.message : "戦略生成に失敗しました";
 
       setStrategyState({
         strategy: null,
         isLoading: false,
-        error: error instanceof Error ? error.message : "戦略生成に失敗しました",
+        error: errorMessage,
       });
+
+      return null;
     }
   };
 

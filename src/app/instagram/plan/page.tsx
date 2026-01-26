@@ -10,12 +10,15 @@ import SNSLayout from "../../../components/sns-layout";
 import { usePlanForm } from "./hooks/usePlanForm";
 import { useSimulation } from "./hooks/useSimulation";
 import { useAIDiagnosis } from "./hooks/useAIDiagnosis";
-import { PlanForm } from "./components/PlanForm";
-// import { CurrentGoalPanel } from './components/CurrentGoalPanel'
+import { useAIStrategy } from "./hooks/useAIStrategy";
+import { PlanFormThreeColumn } from "./components/PlanFormThreeColumn";
 import { SimulationPanel } from "./components/SimulationPanel";
 import { AIDiagnosisPanel } from "./components/AIDiagnosisPanel";
-import { SimulationRequest } from "./types/plan";
+import { SimulationRequest, SimulationResult } from "./types/plan";
 import { CheckCircle, X } from "lucide-react";
+import { TIMEOUT_MS, DELAY_MS } from "./constants/plan";
+import { logger } from "./utils/logger";
+import { validateFollowerInputs, prepareSimulationRequest } from "./utils/planGeneration";
 
 export default function InstagramPlanPage() {
   const { user } = useAuth();
@@ -26,10 +29,8 @@ export default function InstagramPlanPage() {
   const [activeTab, setActiveTab] = useState<"simulation" | "ai">("simulation");
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false);
-  // const [analyticsData, setAnalyticsData] = useState<Array<{
-  //   followerIncrease?: number;
-  //   [key: string]: unknown;
-  // }>>([])
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [planGenerated, setPlanGenerated] = useState(false);
 
   // カスタムフックの使用
   const {
@@ -37,8 +38,6 @@ export default function InstagramPlanPage() {
     selectedStrategies,
     selectedCategories,
     isSaving,
-    // saveError,
-    // saveSuccess,
     isLoadingPlan,
     loadedPlanId,
     planStartDate,
@@ -49,6 +48,8 @@ export default function InstagramPlanPage() {
     handleInputChange,
     handleStrategyToggle,
     handleCategoryToggle,
+    setSelectedStrategiesDirect,
+    setSelectedCategoriesDirect,
     savePlan,
     setSimulationResultData,
     updateSimulationResultInPlan,
@@ -68,6 +69,25 @@ export default function InstagramPlanPage() {
   const simulationResult = savedSimulationResult || newSimulationResult;
 
   const { isAiLoading, handleStartAiDiagnosis, handleSaveAdviceAndContinue } = useAIDiagnosis();
+  const { generateStrategy: generateAIStrategy, strategyState: aiStrategyState } = useAIStrategy();
+  
+  // 計画生成の進捗状態
+  const [generationProgress, setGenerationProgress] = useState<{
+    simulation: 'pending' | 'running' | 'completed' | 'error';
+    aiStrategy: 'pending' | 'running' | 'completed' | 'error';
+    overallProgress: number; // 0-100
+  }>({
+    simulation: 'pending',
+    aiStrategy: 'pending',
+    overallProgress: 0,
+  });
+  
+  // AI戦略が生成されたら、setGeneratedStrategyに反映
+  React.useEffect(() => {
+    if (aiStrategyState.strategy) {
+      setGeneratedStrategy(aiStrategyState.strategy);
+    }
+  }, [aiStrategyState.strategy, setGeneratedStrategy]);
 
   // 計画期間が終了した場合、自動的にリセット（リアルタイムチェック）
   useEffect(() => {
@@ -78,7 +98,7 @@ export default function InstagramPlanPage() {
       const endDate = new Date(planEndDate);
       
       if (endDate < now) {
-        console.log("計画期間が終了しました。自動リセットを実行します。", {
+        logger.log("計画期間が終了しました。自動リセットを実行します。", {
           endDate: endDate.toISOString(),
           now: now.toISOString(),
         });
@@ -88,7 +108,7 @@ export default function InstagramPlanPage() {
     };
 
     // 定期的に期間切れをチェック（1分ごと）
-    const checkInterval = setInterval(checkAndReset, 60000); // 1分ごとにチェック
+    const checkInterval = setInterval(checkAndReset, TIMEOUT_MS.PLAN_EXPIRY_CHECK);
 
     // 初回チェック
     checkAndReset();
@@ -161,25 +181,29 @@ export default function InstagramPlanPage() {
       return;
     }
 
-    console.log("=== シミュレーション実行デバッグ ===");
-    console.log("formData:", formData);
-    console.log("selectedStrategies:", selectedStrategies);
-    console.log("selectedCategories:", selectedCategories);
-    console.log("followerGain:", formData.followerGain, "type:", typeof formData.followerGain);
-    console.log(
+    logger.log("=== シミュレーション実行デバッグ ===");
+    logger.log("formData:", formData);
+    logger.log("selectedStrategies:", selectedStrategies);
+    logger.log("selectedCategories:", selectedCategories);
+    logger.log("followerGain:", formData.followerGain, "type:", typeof formData.followerGain);
+    logger.log(
       "currentFollowers:",
       formData.currentFollowers,
       "type:",
       typeof formData.currentFollowers
     );
-    console.log("planPeriod:", formData.planPeriod, "type:", typeof formData.planPeriod);
+    logger.log("planPeriod:", formData.planPeriod, "type:", typeof formData.planPeriod);
 
     // バリデーションチェック
-    const followerGainNum = parseInt(formData.followerGain, 10);
-    const currentFollowersNum = parseInt(formData.currentFollowers, 10);
+    const currentFollowersNum = parseInt(formData.currentFollowers || "0", 10);
+    const targetFollowersNum = formData.targetFollowers 
+      ? parseInt(formData.targetFollowers, 10)
+      : formData.followerGain
+      ? currentFollowersNum + parseInt(formData.followerGain, 10)
+      : currentFollowersNum;
+    const followerGainNum = targetFollowersNum - currentFollowersNum;
     
     if (
-      !formData.followerGain || 
       isNaN(followerGainNum) || 
       followerGainNum <= 0 ||
       !formData.currentFollowers || 
@@ -189,6 +213,7 @@ export default function InstagramPlanPage() {
     ) {
       console.error("必須項目が未入力です:", {
         followerGain: formData.followerGain,
+        targetFollowers: formData.targetFollowers,
         followerGainNum,
         currentFollowers: formData.currentFollowers,
         currentFollowersNum,
@@ -196,23 +221,23 @@ export default function InstagramPlanPage() {
       });
       // エラーメッセージを表示
       setSimulationError(
-        "必須項目（現在のフォロワー数、フォロワー増加目標、期間）を入力してください"
+        "必須項目（現在のフォロワー数、目標フォロワー数、期間）を入力してください"
       );
       return;
     }
 
     const requestData: SimulationRequest = {
-      followerGain: parseInt(formData.followerGain, 10),
-      currentFollowers: parseInt(formData.currentFollowers, 10) || 0,
+      followerGain: followerGainNum,
+      currentFollowers: currentFollowersNum,
       planPeriod: formData.planPeriod,
-      goalCategory: formData.goalCategory,
+      goalCategory: formData.goalCategory || formData.mainGoal || "",
       strategyValues: selectedStrategies,
       postCategories: selectedCategories,
-      hashtagStrategy: formData.tone,
-      referenceAccounts: formData.brandConcept,
+      hashtagStrategy: formData.tone || "",
+      referenceAccounts: formData.brandConcept || "",
     };
 
-    console.log("requestData:", requestData);
+    logger.log("requestData:", requestData);
     await runSimulation(requestData);
   };
 
@@ -229,7 +254,7 @@ export default function InstagramPlanPage() {
 
   // 現在の計画編集
   const handleEditCurrentPlan = () => {
-    console.log("現在の計画を編集");
+    logger.log("現在の計画を編集");
     // フォームを編集可能な状態にする
     // 現在は保存された計画をフォームに反映するだけ
     setToastMessage({ message: "編集機能は開発中です。現在は計画を再設定して新しく作成してください。", type: 'error' });
@@ -238,7 +263,7 @@ export default function InstagramPlanPage() {
 
   // 現在の計画削除
   const handleDeleteCurrentPlan = async () => {
-    console.log("現在の計画を削除");
+    logger.log("現在の計画を削除");
     setDeleteConfirm(true);
   };
 
@@ -278,11 +303,11 @@ export default function InstagramPlanPage() {
 
   // 計画保存ハンドラー
   const handleSavePlan = async (): Promise<boolean> => {
-    console.log("[PlanPage] 計画保存を開始します");
+    logger.log("[PlanPage] 計画保存を開始します");
     const success = await savePlan();
     if (success) {
       // 保存成功時の処理
-      console.log("[PlanPage] 計画が正常に保存されました。月次レポートページで計画が反映されるまで数秒かかる場合があります。");
+      logger.log("[PlanPage] 計画が正常に保存されました。月次レポートページで計画が反映されるまで数秒かかる場合があります。");
       // 保存後は計画IDが設定されるため、シミュレーション結果は保持される
       // ページリロードは行わない（表示を維持）
       
@@ -292,19 +317,19 @@ export default function InstagramPlanPage() {
           const checkResponse = await authFetch(`/api/plans?snsType=instagram&status=active&limit=1`);
           if (checkResponse.ok) {
             const checkData = await checkResponse.json();
-            console.log("[PlanPage] 保存後の計画確認:", {
+            logger.log("[PlanPage] 保存後の計画確認:", {
               plansFound: checkData.plans?.length || 0,
               planIds: checkData.plans?.map((p: { id: string }) => p.id) || [],
             });
           } else {
-            console.error("[PlanPage] 計画確認API エラー:", checkResponse.status);
+            logger.error("[PlanPage] 計画確認API エラー:", checkResponse.status);
           }
         } catch (error) {
-          console.error("[PlanPage] 計画確認エラー:", error);
+          logger.error("[PlanPage] 計画確認エラー:", error);
         }
       }, 2000);
     } else {
-      console.error("[PlanPage] 計画の保存に失敗しました");
+      logger.error("[PlanPage] 計画の保存に失敗しました");
     }
     return success;
   };
@@ -384,269 +409,185 @@ export default function InstagramPlanPage() {
           </div>
         )}
 
-        {/* 計画読み込み中 */}
-        {isLoadingPlan && (
-          <div className="mb-6 bg-orange-50 border border-orange-200 p-4 rounded-lg text-center">
-            <p className="text-orange-700">保存された計画を読み込んでいます...</p>
-          </div>
-        )}
 
-        {/* 運用計画実行中 */}
-        {!isPlanExpired &&
-          (loadedPlanId ||
-            (formData.planPeriod && formData.currentFollowers && formData.followerGain)) && (
-          <div className="mb-8 bg-white border border-gray-200 p-6">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    {loadedPlanId ? "運用計画実行中" : "Instagram運用計画"}
-                  </h3>
-                  {loadedPlanId && (
-                    <span className="px-2.5 py-1 text-xs font-medium bg-[#FF8A15] text-white">
-                      実行中
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-4 text-sm text-gray-700">
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4 text-[#FF8A15]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {planStartDate && planEndDate
-                      ? `${planStartDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })} 〜 ${planEndDate.toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}`
-                      : `期間: ${formData.planPeriod}`}
-                  </span>
-                  {planStartDate && planEndDate && (
-                    <span className="px-2.5 py-1 text-xs font-medium bg-white border border-[#FF8A15] text-[#FF8A15]">
-                      残り {Math.ceil(
-                        (planEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-                      )} 日
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handleEditCurrentPlan}
-                  className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200 relative group"
-                  title="編集"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    編集
-                  </span>
-                </button>
-                <button
-                  onClick={handleDeleteCurrentPlan}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 relative group"
-                  title="削除"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    削除
-                  </span>
-                </button>
-                {!loadedPlanId && (
-                  <button
-                    onClick={handleSavePlan}
-                    disabled={isSaving}
-                    className="p-2 text-gray-400 hover:text-[#FF8A15] hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-transparent hover:border-[#FF8A15] relative group"
-                    title="保存"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      保存
-                    </span>
-                  </button>
-                )}
-                <button
-                  onClick={resetPlan}
-                  className="p-2 text-gray-400 hover:text-[#FF8A15] hover:bg-orange-50 transition-colors border border-transparent hover:border-[#FF8A15] relative group"
-                  title="再設定"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    再設定
-                  </span>
-                </button>
-              </div>
-            </div>
 
-            {/* 計画の詳細表示 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
-              {/* 目標 */}
-              <div className="p-4">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">目標</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {formData.currentFollowers && formData.followerGain && !isNaN(parseInt(formData.currentFollowers)) && !isNaN(parseInt(formData.followerGain))
-                    ? (
-                        <>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-gray-600">{parseInt(formData.currentFollowers).toLocaleString()}人</span>
-                            <span className="text-gray-400">→</span>
-                            <span className="text-[#FF8A15]">{(parseInt(formData.currentFollowers) + parseInt(formData.followerGain)).toLocaleString()}人</span>
-                          </div>
-                          <div className="text-sm font-medium text-[#FF8A15]">
-                            +{parseInt(formData.followerGain).toLocaleString()}人増加
-                          </div>
-                        </>
-                      )
-                    : "未設定"}
-                </div>
-              </div>
-
-              {/* 重視する指標 */}
-              {formData.goalCategory && (
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">KPI</div>
-                  <div className="text-base font-light text-gray-900">
-                    {formData.goalCategory === "follower"
-                      ? "フォロワー獲得"
-                      : formData.goalCategory === "engagement"
-                        ? "エンゲージ促進"
-                        : formData.goalCategory === "like"
-                          ? "いいねを増やす"
-                          : formData.goalCategory === "save"
-                            ? "保存率向上"
-                            : formData.goalCategory === "reach"
-                              ? "リーチを増やす"
-                              : formData.goalCategory === "impressions"
-                                ? "インプレッションを増やす"
-                                : formData.goalCategory === "branding"
-                                  ? "ブランド認知を広める"
-                                  : formData.goalCategory === "profile"
-                                    ? "プロフィール誘導"
-                                    : formData.goalCategory === "other"
-                                      ? formData.otherGoal || "その他"
-                                      : formData.goalCategory}
-                  </div>
-                </div>
-              )}
-
-              {/* ターゲット層 */}
-              {formData.targetAudience && (
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">ターゲット層</div>
-                  <div className="text-base font-light text-gray-900">{formData.targetAudience}</div>
-                </div>
-              )}
-
-              {/* 取り組みたいこと */}
-              {selectedStrategies.length > 0 && (
-                <div className="p-4">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">取り組みたいこと</div>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedStrategies.map((strategy, index) => (
-                      <span
-                        key={index}
-                        className="inline-block bg-white border border-gray-200 text-gray-700 text-xs px-3 py-1.5 font-medium"
-                      >
-                        {strategy}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 投稿したい内容 */}
-              {selectedCategories.length > 0 && (
-                <div className="p-4">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">投稿したい内容</div>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCategories.map((category, index) => (
-                      <span
-                        key={index}
-                        className="inline-block bg-white border border-gray-200 text-gray-700 text-xs px-3 py-1.5 font-medium"
-                      >
-                        {category}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        <main className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8 items-start">
-          {/* 左カラム：計画作成フォーム */}
-          <div className="space-y-6">
-            <PlanForm
-              formData={formData}
-              selectedStrategies={selectedStrategies}
-              selectedCategories={selectedCategories}
-              onInputChange={handleInputChange}
-              onStrategyToggle={handleStrategyToggle}
-              onCategoryToggle={handleCategoryToggle}
-            />
-          </div>
-
-          {/* 右カラム：タブ式UI */}
-          <div className="space-y-4">
-            {/* タブヘッダー */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="flex flex-col sm:flex-row border-b border-gray-200">
-                <button
-                  onClick={() => setActiveTab("simulation")}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                    activeTab === "simulation"
-                      ? "bg-[#FF8A15] text-white"
-                      : "text-black hover:bg-gray-50"
-                  }`}
-                >
-                  シミュレーション
-                </button>
-                <button
-                  onClick={() => setActiveTab("ai")}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-t sm:border-t-0 sm:border-l border-gray-200 ${
-                    activeTab === "ai" ? "bg-[#FF8A15] text-white" : "text-black hover:bg-gray-50"
-                  }`}
-                >
-                  AI戦略
-                </button>
-              </div>
-
-              {/* タブコンテンツ */}
-              <div className="p-0">
-                {activeTab === "simulation" && (
-                  <SimulationPanel
-                    result={simulationResult}
-                    formData={formData}
-                    onRunSimulation={handleRunSimulation}
-                    isSimulating={isSimulating}
-                    simulationError={simulationError}
-                    hasActivePlan={!!loadedPlanId}
-                    onSave={handleSavePlan}
-                    isSaving={isSaving}
-                    planEndDate={planEndDate}
-                  />
-                )}
-
-                {activeTab === "ai" && (
-                  <AIDiagnosisPanel
-                    isLoading={isAiLoading}
-                    onStartDiagnosis={() => handleStartAiDiagnosis(formData)}
-                    onSaveAdvice={handleSaveAdviceAndContinue}
-                    formData={formData}
-                    selectedStrategies={selectedStrategies}
-                    selectedCategories={selectedCategories}
-                    simulationResult={simulationResult}
-                    generatedStrategy={generatedStrategy}
-                    setGeneratedStrategy={setGeneratedStrategy}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+        <main>
+          <PlanFormThreeColumn
+                  formData={formData}
+                  onInputChange={handleInputChange}
+                  planGenerated={planGenerated}
+                  simulationResult={simulationResult}
+                  generatedStrategy={generatedStrategy || undefined}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  onRunSimulation={handleRunSimulation}
+                  isSimulating={isSimulating}
+                  simulationError={simulationError}
+                  onSave={handleSavePlan}
+                  isSaving={isSaving}
+                  planEndDate={planEndDate}
+                  selectedStrategies={selectedStrategies}
+                  selectedCategories={selectedCategories}
+                  onStartAiDiagnosis={handleStartAiDiagnosis}
+                  onSaveAdvice={handleSaveAdviceAndContinue}
+                  setGeneratedStrategy={setGeneratedStrategy}
+                  isAiLoading={isAiLoading}
+                  isGeneratingPlan={isGeneratingPlan}
+                  onComplete={async () => {
+                    setIsGeneratingPlan(true);
+                    setGenerationProgress({
+                      simulation: 'pending',
+                      aiStrategy: 'pending',
+                      overallProgress: 0,
+                    });
+                    
+                    try {
+                      // 1. データ準備とバリデーション
+                      const postContentTypes = formData.postContentTypes || [];
+                      setSelectedStrategiesDirect(postContentTypes);
+                      setSelectedCategoriesDirect(postContentTypes);
+                      
+                      const { requestData, current, target, mappedFormData } = prepareSimulationRequest(
+                        formData,
+                        postContentTypes
+                      );
+                      
+                      const validation = validateFollowerInputs(current, target);
+                      if (!validation.isValid) {
+                        logger.warn("シミュレーション実行条件を満たしていません:", { current, target });
+                        setToastMessage({ 
+                          message: validation.error || "現在のフォロワー数と目標フォロワー数を正しく入力してください", 
+                          type: 'error' 
+                        });
+                        setIsGeneratingPlan(false);
+                        setGenerationProgress({
+                          simulation: 'error',
+                          aiStrategy: 'error',
+                          overallProgress: 0,
+                        });
+                        return;
+                      }
+                      
+                      logger.log("ウィザード完了: シミュレーションとAI戦略を並列実行", requestData);
+                      
+                      // 2. シミュレーション実行
+                      setGenerationProgress({
+                        simulation: 'running',
+                        aiStrategy: 'pending',
+                        overallProgress: 10,
+                      });
+                      
+                      let finalSimulationResult: SimulationResult | null = null;
+                      try {
+                        setGenerationProgress(prev => ({ 
+                          ...prev, 
+                          simulation: 'running',
+                          overallProgress: 20 
+                        }));
+                        
+                        finalSimulationResult = await runSimulation(requestData);
+                        
+                        setGenerationProgress(prev => ({ ...prev, overallProgress: 40 }));
+                        
+                        if (!finalSimulationResult) {
+                          if (simulationError) {
+                            throw new Error(`シミュレーションエラー: ${simulationError}`);
+                          }
+                          throw new Error("シミュレーション結果が取得できませんでした");
+                        }
+                        
+                        logger.log("シミュレーション結果を取得:", finalSimulationResult);
+                        
+                        setSimulationResultData(finalSimulationResult);
+                        if (loadedPlanId) {
+                          updateSimulationResultInPlan(finalSimulationResult);
+                        }
+                        
+                        setGenerationProgress(prev => ({ 
+                          ...prev, 
+                          simulation: 'completed',
+                          overallProgress: 60,
+                        }));
+                      } catch (error) {
+                        logger.error("シミュレーションエラー:", error);
+                        setGenerationProgress(prev => ({ ...prev, simulation: 'error' }));
+                        throw error;
+                      }
+                      
+                      // フォールバック
+                      if (!finalSimulationResult) {
+                        finalSimulationResult = savedSimulationResult;
+                      }
+                      
+                      // 3. AI戦略生成
+                      setGenerationProgress(prev => ({ 
+                        ...prev, 
+                        aiStrategy: 'running',
+                        overallProgress: 70,
+                      }));
+                      
+                      try {
+                        setGenerationProgress(prev => ({ ...prev, overallProgress: 75 }));
+                        
+                        const generatedStrategyResult: string | null = await generateAIStrategy(
+                          mappedFormData,
+                          postContentTypes,
+                          postContentTypes,
+                          finalSimulationResult
+                        );
+                        
+                        setGenerationProgress(prev => ({ ...prev, overallProgress: 85 }));
+                        
+                        if (!generatedStrategyResult) {
+                          if (aiStrategyState.error) {
+                            throw new Error(`AI戦略生成エラー: ${aiStrategyState.error}`);
+                          }
+                          logger.warn("AI戦略が生成されませんでした");
+                        } else {
+                          setGeneratedStrategy(generatedStrategyResult);
+                        }
+                        
+                        setGenerationProgress(prev => ({ 
+                          ...prev, 
+                          aiStrategy: 'completed',
+                          overallProgress: 95,
+                        }));
+                      } catch (error) {
+                        logger.error("AI戦略生成エラー:", error);
+                        setGenerationProgress(prev => ({ ...prev, aiStrategy: 'error' }));
+                        // AI戦略生成エラーでも続行
+                      }
+                      
+                      // 4. 計画保存と完了
+                      setGenerationProgress(prev => ({ ...prev, overallProgress: 98 }));
+                      const saveSuccess = await handleSavePlan();
+                      
+                      if (saveSuccess) {
+                        setGenerationProgress(prev => ({ ...prev, overallProgress: 100 }));
+                        await new Promise(resolve => setTimeout(resolve, DELAY_MS.UI_TRANSITION));
+                        setIsGeneratingPlan(false);
+                        setPlanGenerated(true);
+                        setActiveTab("simulation");
+                      } else {
+                        throw new Error("計画の保存に失敗しました");
+                      }
+                      
+                    } catch (error) {
+                      logger.error("計画生成エラー:", error);
+                      setIsGeneratingPlan(false);
+                      setGenerationProgress({
+                        simulation: 'error',
+                        aiStrategy: 'error',
+                        overallProgress: 0,
+                      });
+                      setToastMessage({ 
+                        message: error instanceof Error ? error.message : "計画の生成に失敗しました", 
+                        type: 'error' 
+                      });
+                    }
+                  }}
+                  generationProgress={generationProgress}
+                />
         </main>
       </div>
       </SNSLayout>

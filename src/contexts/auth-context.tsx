@@ -221,6 +221,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // ネットワーク接続を確認
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        throw new Error("NETWORK_OFFLINE");
+      }
+
       // まずFirebase認証を実行
       await signInWithEmailAndPassword(auth, email, password);
 
@@ -242,9 +247,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem("signal_session_start", Date.now().toString());
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      // エラーの詳細をログに記録
       if (process.env.NODE_ENV === "development") {
         console.error("Sign in error:", error);
+        
+        // Firebaseエラーの詳細を確認
+        if (error && typeof error === "object" && "code" in error) {
+          const firebaseError = error as { code: string; message: string };
+          console.error("Firebase error code:", firebaseError.code);
+          console.error("Firebase error message:", firebaseError.message);
+          
+          // ネットワークエラーの場合、追加情報を表示
+          if (firebaseError.code === "auth/network-request-failed") {
+            console.error("ネットワークエラーの可能性:");
+            console.error("- インターネット接続を確認してください");
+            console.error("- ファイアウォールやプロキシの設定を確認してください");
+            console.error("- Firebase設定（APIキー、プロジェクトID）を確認してください");
+            console.error("- Firebaseサービスのステータスを確認してください: https://status.firebase.google.com/");
+          }
+        }
       }
       throw error;
     }
