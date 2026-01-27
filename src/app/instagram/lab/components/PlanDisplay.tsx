@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { type ReactElement } from "react";
 import { Calendar, Target, TrendingUp, User, Tag } from "lucide-react";
 interface PlanDisplayProps {
   planData?: Record<string, unknown> | null;
 }
 
-export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
+export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }): React.ReactElement => {
   if (!planData || typeof planData !== "object" || planData === null) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -47,7 +47,8 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   };
 
   // planDataがnullでないことを確認済みなので、型アサーションを適用
-  const plan: Record<string, unknown> = planData as Record<string, unknown>;
+  // TypeScriptの型推論を改善するため、明示的に型を指定
+  const plan = planData as Record<string, unknown>;
   
   // すべての値を事前に計算して、型エラーを回避
   const currentFollowers = safeNumber(plan.currentFollowers, 0);
@@ -68,7 +69,8 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   const planTargetAudience: string = String(plan.targetAudience || "");
   const planCategory: string = String(plan.category || "");
 
-  return (
+  // JSX要素を返す前に、型を明示的に指定
+  const content: ReactElement = (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="px-6 py-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-black">現在の運用計画</h3>
@@ -201,6 +203,8 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
       </div>
     </div>
   );
+  
+  return content;
 };
 
 export default PlanDisplay;
