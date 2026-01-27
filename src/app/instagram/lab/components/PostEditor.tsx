@@ -527,15 +527,17 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     }
 
     // 目標が不明確
-    if (!plan.targetAudience || plan.targetAudience.trim().length < 5) {
+    const targetAudience = typeof plan.targetAudience === "string" ? plan.targetAudience : "";
+    if (!targetAudience || targetAudience.trim().length < 5) {
       return {
-        feedback: `運用計画の「ターゲット層」が不明確です（現在: ${plan.targetAudience || "未設定"}）。具体的なターゲット層（例：「20代の女性、朝の時間にSNSをチェックする習慣がある」）を設定すると、より適切な投稿文が生成されます。運用計画ページでターゲット層を詳しく設定してください。`,
+        feedback: `運用計画の「ターゲット層」が不明確です（現在: ${targetAudience || "未設定"}）。具体的なターゲット層（例：「20代の女性、朝の時間にSNSをチェックする習慣がある」）を設定すると、より適切な投稿文が生成されます。運用計画ページでターゲット層を詳しく設定してください。`,
         category: "unclear_target",
       };
     }
 
     // 戦略が不足
-    if (!plan.strategies || plan.strategies.length === 0) {
+    const strategies = Array.isArray(plan.strategies) ? plan.strategies : [];
+    if (strategies.length === 0) {
       return {
         feedback: `運用計画の「取り組みたいこと」が設定されていません。具体的な戦略（例：「写真をたくさん投稿する」「動画（リール）を中心に投稿する」）を設定すると、より効果的な投稿文が生成されます。運用計画ページで戦略を設定してください。`,
         category: "no_strategy",
@@ -543,7 +545,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     }
 
     // カテゴリが不足
-    if (!plan.category || plan.category.trim().length < 3) {
+    const category = typeof plan.category === "string" ? plan.category : "";
+    if (!category || category.trim().length < 3) {
       return {
         feedback: `運用計画の「投稿したい内容」が設定されていません。具体的なカテゴリ（例：「興味を引く内容」「ブランドの世界観」）を設定すると、より魅力的な投稿文が生成されます。運用計画ページでカテゴリを設定してください。`,
         category: "no_category",
