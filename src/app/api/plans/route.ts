@@ -26,6 +26,10 @@ interface PlanData {
 
   // シミュレーション結果
   simulationResult?: Record<string, unknown> | null;
+  
+  // 日付情報
+  startDate?: Date | null;
+  endDate?: Date | null;
 
   // フォームデータ全体
   formData?: Record<string, unknown>;

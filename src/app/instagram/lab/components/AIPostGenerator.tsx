@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Sparkles } from "lucide-react";
-import { PlanData } from "../../plan/types/plan";
+// PlanData型は使用しないため削除
 import { notify } from "../../../../lib/ui/notifications";
 
 interface AIPostGeneratorProps {
@@ -15,7 +15,7 @@ interface AIPostGeneratorProps {
     scheduledDate: string,
     scheduledTime: string
   ) => void;
-  planData?: PlanData | null;
+  planData?: Record<string, unknown> | null;
 }
 
 export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({

@@ -124,13 +124,29 @@ async function runSimulation(
   // 目標達成日を計算
   const targetDate = calculateTargetDate(planPeriod);
 
+  // levelからcolorを決定
+  const getDifficultyColor = (level: string): "green" | "yellow" | "orange" | "red" => {
+    if (level === "realistic" || level === "moderate") return "green";
+    if (level === "challenging") return "yellow";
+    if (level === "very_challenging") return "orange";
+    return "red";
+  };
+
+  // levelからmessageを生成
+  const getDifficultyMessage = (level: string, label: string): string => {
+    return label || `達成難易度: ${level}`;
+  };
+
+  // graphDataからweeklyPredictionsを生成
+  const weeklyPredictions = graphData.data.map((d: any) => d.userTarget);
+
   return {
     requiredMonthlyGrowthRate: requiredGrowthRate,
-    difficultyScore: feasibility.feasibilityScore.score,
+    difficultyScore: feasibility.feasibilityScore.difficultyRatio,
     difficultyLevel: feasibility.level as "realistic" | "challenging" | "very-challenging" | "unrealistic",
-    difficultyMessage: feasibility.feasibilityScore.message,
-    difficultyColor: feasibility.feasibilityScore.color as "green" | "yellow" | "orange" | "red",
-    weeklyPredictions: graphData.weeklyPredictions,
+    difficultyMessage: getDifficultyMessage(feasibility.level, feasibility.feasibilityScore.label),
+    difficultyColor: getDifficultyColor(feasibility.level),
+    weeklyPredictions: weeklyPredictions,
     estimatedWeeklyMinutes: postsPerWeek.feed * 10 + postsPerWeek.reel * 15 + postsPerWeek.story * 5 + 10,
     timeBreakdown: {
       feed: postsPerWeek.feed * 10,
@@ -138,8 +154,8 @@ async function runSimulation(
       story: postsPerWeek.story * 5,
       comments: 10,
     },
-    requiredActions: feasibility.feasibilityScore.requiredActions || [],
-    alternativeOptions,
+    requiredActions: [],
+    alternativePlans: alternativeOptions ? [] : undefined, // TODO: alternativeOptionsをAlternativePlan[]に変換
   };
 }
 
