@@ -628,7 +628,7 @@ export default function ReelLabPage() {
               scheduledTime={scheduledTime}
               onScheduledTimeChange={setScheduledTime}
               isAIGenerated={isAIGenerated}
-              planData={planData}
+              planData={planData as PlanData | null}
               aiPromptPlaceholder="例: 商品の使い方、おすすめポイント、バックステージ、チュートリアル、トレンド動画など..."
               onVideoStructureGenerate={generateVideoStructure}
               videoStructure={videoStructure}

@@ -2,8 +2,8 @@
 
 import React from "react";
 import { Target, Calendar, Users, Tag } from "lucide-react";
-// PlanData型定義
-type PlanData = Record<string, unknown>;
+// PlanData型をusePlanDataからインポート
+import type { PlanData } from "../hooks/usePlanData";
 
 interface CurrentPlanCardProps {
   planData: PlanData | null;

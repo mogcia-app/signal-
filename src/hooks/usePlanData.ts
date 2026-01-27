@@ -5,7 +5,7 @@ import { useUserProfile } from "./useUserProfile";
 import { canAccessFeature } from "../lib/plan-access";
 
 // 統一された計画データの型定義
-interface PlanData {
+export interface PlanData {
   id: string;
   userId: string;
   snsType: string;
