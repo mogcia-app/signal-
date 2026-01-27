@@ -47,7 +47,9 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   };
 
   // planDataがnullでないことを確認済みなので、型アサーションを適用
-  const plan: Record<string, unknown> = planData;
+  const plan: Record<string, unknown> = planData as Record<string, unknown>;
+  
+  // すべての値を事前に計算して、型エラーを回避
   const currentFollowers = safeNumber(plan.currentFollowers, 0);
   const analyticsFollowerIncrease = safeNumber(plan.analyticsFollowerIncrease, 0);
   const actualFollowers =
@@ -60,11 +62,17 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
   // シミュレーション結果があるか確認
   const hasSimulation = plan.simulationResult && typeof plan.simulationResult === "object";
 
+  // ReactNode型エラーを回避するため、明示的に型アサーションを追加
+  const planTitle: string = String(plan.title || "");
+  const planPeriod: string = String(plan.planPeriod || "");
+  const planTargetAudience: string = String(plan.targetAudience || "");
+  const planCategory: string = String(plan.category || "");
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="px-6 py-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-black">現在の運用計画</h3>
-        <p className="text-sm text-black mt-1">{String(plan.title || "")}</p>
+        <p className="text-sm text-black mt-1">{planTitle}</p>
       </div>
 
       <div className="p-6">
@@ -97,7 +105,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
             <Calendar className="w-4 h-4 text-black" />
             <div>
               <div className="text-xs text-black">期間</div>
-              <div className="text-sm font-medium text-black">{String(plan.planPeriod || "")}</div>
+              <div className="text-sm font-medium text-black">{planPeriod}</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -111,14 +119,14 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
             <User className="w-4 h-4 text-black" />
             <div>
               <div className="text-xs text-black">ターゲット</div>
-              <div className="text-sm font-medium text-black">{String(plan.targetAudience || "")}</div>
+              <div className="text-sm font-medium text-black">{planTargetAudience}</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <Tag className="w-4 h-4 text-black" />
             <div>
               <div className="text-xs text-black">カテゴリ</div>
-              <div className="text-sm font-medium text-black">{String(plan.category || "")}</div>
+              <div className="text-sm font-medium text-black">{planCategory}</div>
             </div>
           </div>
         </div>
