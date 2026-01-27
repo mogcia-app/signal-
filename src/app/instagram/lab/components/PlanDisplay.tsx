@@ -7,7 +7,7 @@ interface PlanDisplayProps {
 }
 
 export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
-  if (!planData || typeof planData !== "object") {
+  if (!planData || typeof planData !== "object" || planData === null) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6">
@@ -46,7 +46,8 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
     return fallback;
   };
 
-  const plan = planData;
+  // planDataがnullでないことを確認済みなので、型アサーションを適用
+  const plan: Record<string, unknown> = planData;
   const currentFollowers = safeNumber(plan.currentFollowers, 0);
   const analyticsFollowerIncrease = safeNumber(plan.analyticsFollowerIncrease, 0);
   const actualFollowers =
