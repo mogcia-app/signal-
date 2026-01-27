@@ -2,7 +2,8 @@
 
 import React from "react";
 import { Target, Calendar, Users, Tag } from "lucide-react";
-import { PlanData } from "../app/instagram/plan/types/plan";
+// PlanData型定義
+type PlanData = Record<string, unknown>;
 
 interface CurrentPlanCardProps {
   planData: PlanData | null;

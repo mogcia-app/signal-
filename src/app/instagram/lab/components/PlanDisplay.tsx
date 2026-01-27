@@ -2,14 +2,12 @@
 
 import React from "react";
 import { Calendar, Target, TrendingUp, User, Tag } from "lucide-react";
-import { PlanData } from "../../plan/types/plan";
-
 interface PlanDisplayProps {
-  planData?: PlanData | null;
+  planData?: Record<string, unknown> | null;
 }
 
 export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
-  if (!planData) {
+  if (!planData || typeof planData !== "object") {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6">
@@ -48,23 +46,24 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
     return fallback;
   };
 
-  const currentFollowers = safeNumber(planData.currentFollowers, 0);
-  const analyticsFollowerIncrease = safeNumber(planData.analyticsFollowerIncrease, 0);
+  const plan = planData;
+  const currentFollowers = safeNumber(plan.currentFollowers, 0);
+  const analyticsFollowerIncrease = safeNumber(plan.analyticsFollowerIncrease, 0);
   const actualFollowers =
-    planData.actualFollowers !== undefined
-      ? safeNumber(planData.actualFollowers, currentFollowers + analyticsFollowerIncrease)
+    plan.actualFollowers !== undefined
+      ? safeNumber(plan.actualFollowers, currentFollowers + analyticsFollowerIncrease)
       : currentFollowers + analyticsFollowerIncrease;
-  const targetFollowers = safeNumber(planData.targetFollowers, 0);
-  const strategies = planData.strategies || [];
+  const targetFollowers = safeNumber(plan.targetFollowers, 0);
+  const strategies = (plan.strategies as string[]) || [];
 
   // シミュレーション結果があるか確認
-  const hasSimulation = planData.simulationResult && typeof planData.simulationResult === "object";
+  const hasSimulation = plan.simulationResult && typeof plan.simulationResult === "object";
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="px-6 py-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-black">現在の運用計画</h3>
-        <p className="text-sm text-black mt-1">{planData.title}</p>
+        <p className="text-sm text-black mt-1">{String(plan.title || "")}</p>
       </div>
 
       <div className="p-6">
@@ -97,7 +96,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
             <Calendar className="w-4 h-4 text-black" />
             <div>
               <div className="text-xs text-black">期間</div>
-              <div className="text-sm font-medium text-black">{planData.planPeriod}</div>
+              <div className="text-sm font-medium text-black">{String(plan.planPeriod || "")}</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -111,14 +110,14 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
             <User className="w-4 h-4 text-black" />
             <div>
               <div className="text-xs text-black">ターゲット</div>
-              <div className="text-sm font-medium text-black">{planData.targetAudience}</div>
+              <div className="text-sm font-medium text-black">{String(plan.targetAudience || "")}</div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <Tag className="w-4 h-4 text-black" />
             <div>
               <div className="text-xs text-black">カテゴリ</div>
-              <div className="text-sm font-medium text-black">{planData.category}</div>
+              <div className="text-sm font-medium text-black">{String(plan.category || "")}</div>
             </div>
           </div>
         </div>
@@ -150,7 +149,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
                   <span className="text-black">月間目標:</span>
                   <span className="font-medium text-black">
                     {String(
-                      (planData.simulationResult as Record<string, unknown>).monthlyTarget || "N/A"
+                      (plan.simulationResult as Record<string, unknown>).monthlyTarget || "N/A"
                     )}
                   </span>
                 </div>
@@ -158,17 +157,17 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }) => {
                   <span className="text-black">達成可能性:</span>
                   <span
                     className={`font-medium ${
-                      (planData.simulationResult as Record<string, unknown>).feasibilityLevel ===
+                      (plan.simulationResult as Record<string, unknown>).feasibilityLevel ===
                       "high"
                         ? "text-green-600"
-                        : (planData.simulationResult as Record<string, unknown>)
+                        : (plan.simulationResult as Record<string, unknown>)
                               .feasibilityLevel === "medium"
                           ? "text-yellow-600"
                           : "text-red-600"
                     }`}
                   >
                     {String(
-                      (planData.simulationResult as Record<string, unknown>).feasibilityBadge ||
+                      (plan.simulationResult as Record<string, unknown>).feasibilityBadge ||
                         "N/A"
                     )}
                   </span>

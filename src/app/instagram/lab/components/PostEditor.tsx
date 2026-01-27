@@ -7,7 +7,8 @@ import { postsApi } from "../../../../lib/api";
 import { useAuth } from "../../../../contexts/auth-context";
 import { notify } from "../../../../lib/ui/notifications";
 import Image from "next/image";
-import type { PlanData } from "../../plan/types/plan";
+// PlanData型定義
+type PlanData = Record<string, unknown>;
 import type {
   AIGenerationResponse,
   AIReference,
