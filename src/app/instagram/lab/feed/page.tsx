@@ -779,7 +779,7 @@ export default function FeedLabPage() {
               scheduledTime={scheduledTime}
               onScheduledTimeChange={setScheduledTime}
               isAIGenerated={isAIGenerated}
-              planData={planData as Record<string, unknown> | null}
+              planData={planData}
               aiPromptPlaceholder="例: 新商品の紹介、ブランドストーリー、お客様の声、会社の取り組みなど..."
               imageVideoSuggestions={imageVideoSuggestions}
               onImageVideoSuggestionsGenerate={generateImageVideoSuggestions}
