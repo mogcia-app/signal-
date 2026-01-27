@@ -6,7 +6,7 @@ import PostEditor from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
 import CommentReplyAssistant from "../components/CommentReplyAssistant";
 import ABTestSidebarSection from "../components/ABTestSidebarSection";
-import { usePlanData } from "../../../../hooks/usePlanData";
+import { usePlanData, type PlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
 import { notify } from "../../../../lib/ui/notifications";
@@ -628,7 +628,7 @@ export default function ReelLabPage() {
               scheduledTime={scheduledTime}
               onScheduledTimeChange={setScheduledTime}
               isAIGenerated={isAIGenerated}
-              planData={planData as PlanData | null}
+              planData={planData}
               aiPromptPlaceholder="例: 商品の使い方、おすすめポイント、バックステージ、チュートリアル、トレンド動画など..."
               onVideoStructureGenerate={generateVideoStructure}
               videoStructure={videoStructure}

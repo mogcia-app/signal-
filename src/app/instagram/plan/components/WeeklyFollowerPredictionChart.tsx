@@ -117,7 +117,7 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
           padding: 16,
           font: {
             size: 12,
-            weight: "400" as const,
+            weight: "normal" as const,
             family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
           },
           color: "#64748B",
@@ -146,7 +146,7 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
         },
         titleFont: {
           size: 11,
-          weight: "500" as const,
+          weight: "bold" as const,
           family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         },
         bodyFont: {
@@ -186,7 +186,7 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
         ticks: {
           font: {
             size: 11,
-            weight: "400" as const,
+            weight: "normal" as const,
             family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
           },
           color: "#94A3B8",
@@ -204,7 +204,7 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
         ticks: {
           font: {
             size: 11,
-            weight: "400" as const,
+            weight: "normal" as const,
             family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
           },
           color: "#94A3B8",
