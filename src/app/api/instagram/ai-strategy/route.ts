@@ -333,6 +333,10 @@ async function generateAIStrategy(
     systemPrompt += patternLearningContext;
   }
 
+  const planPeriod = (formData.planPeriod as string) || "1ヶ月";
+  const months = planPeriod.includes("3") ? 3 : planPeriod.includes("6") ? 6 : planPeriod.includes("1年") ? 12 : 1;
+  const totalWeeks = months * 4;
+
   const userPrompt = `
 【重要】以下の点を必ず守って、**3段階の情報提示形式**で戦略を提案してください：
 
@@ -342,17 +346,29 @@ async function generateAIStrategy(
 
 ### 【レベル1】超シンプル版（初心者向け）
 ━━━━━━━━━━━━━━━━━━━━
-📅 今週やること
+📅 今週やること（第1週目）
 - 具体的な曜日と行動を記載（例: 月曜: ストーリーで「今日のコーヒー」を投稿）
 - 専門用語は一切使わない
 - コピペで使える具体的な内容
 
-🎯 今月の目標
+🎯 今月の目標（1ヶ月目）
 - わかりやすい言葉で（例: ストーリーを見てくれる人: 60%以上）
 - 数値目標に「なぜこの数字?」の説明を併記
 
 💡 一番大事なこと
 - 1行で簡潔に（例: 毎日ストーリーを投稿して、お客さんとの接点を増やしましょう！）
+
+${months > 1 ? `【重要】計画期間が${months}ヶ月のため、${months}ヶ月分（全${totalWeeks}週分）の週次・月次データも生成してください：
+
+📅 週次データ（${months}ヶ月分、全${totalWeeks}週の「今週やること」）
+- 第1週: 月曜: ..., 水曜: ..., 金曜: ...
+- 第2週: 月曜: ..., 水曜: ..., 金曜: ...
+- ...（全${totalWeeks}週分、各週で具体的な曜日と行動を記載）
+
+🎯 月次データ（${months}ヶ月分、各月の「今月の目標」）
+- 1ヶ月目: ・ストーリーの反応: 30%以上、・投稿へのいいね: 50個以上、・プロフィール閲覧: 2倍に
+- 2ヶ月目: ...（目標を段階的に上げる）
+- ...（${months}ヶ月分、各月で具体的な目標を記載）` : '【重要】計画期間が1ヶ月のため、週次・月次データは第1週と1ヶ月目のみで問題ありません。'}
 
 ### 【レベル2】詳細版（中級者向け）
 ━━━━━━━━━━━━━━━━━━━━
@@ -423,8 +439,19 @@ async function generateAIStrategy(
     const data = await response.json();
     const generatedStrategy = data.choices[0]?.message?.content || "戦略の生成に失敗しました。";
 
+    // 週次・月次データを抽出して構造化
+    const { extractAllWeeklyTasks, extractAllMonthlyGoals } = await import(
+      "../../../instagram/plan/utils/weeklyMonthlyParser"
+    );
+    const weeklyTasks = extractAllWeeklyTasks(generatedStrategy, formData);
+    const monthlyGoals = extractAllMonthlyGoals(generatedStrategy, formData);
+
     // ✅ 運用計画をFirestoreに保存（PDCAのP - Plan）
     try {
+      const startDate = formData.startDate
+        ? new Date(formData.startDate as string)
+        : new Date();
+      
       await adminDb.collection("plans").add({
         userId,
         snsType: "instagram",
@@ -432,11 +459,15 @@ async function generateAIStrategy(
         formData,
         simulationResult: simulationResult || {},
         generatedStrategy,
+        // 週次・月次データを構造化して保存
+        weeklyTasks: weeklyTasks.length > 0 ? weeklyTasks : undefined,
+        monthlyGoals: monthlyGoals.length > 0 ? monthlyGoals : undefined,
+        startDate,
         createdAt: new Date(),
         updatedAt: new Date(),
         status: "active", // active, archived, draft
       });
-      console.log("✅ 運用計画をFirestoreに保存しました");
+      console.log("✅ 運用計画をFirestoreに保存しました（週次・月次データ含む）");
     } catch (saveError) {
       console.error("⚠️ 運用計画の保存エラー:", saveError);
       // エラーでも戦略生成は成功として扱う

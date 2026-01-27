@@ -67,7 +67,7 @@ async function runSimulation(
   );
 
   // 投稿頻度の計算（先に計算してfeasibility計算に使用）
-  const postsPerWeek = calculatePostFrequency(strategyValues, postCategories, followerGain);
+  const postsPerWeek = calculatePostFrequency(strategyValues || [], postCategories || [], followerGain);
   const totalPostingFrequency = postsPerWeek.reel + postsPerWeek.feed + postsPerWeek.story;
 
   // 実現可能性の判定（新しいベンチマークデータに基づく、目標タイプと投稿頻度を考慮）
@@ -118,25 +118,27 @@ async function runSimulation(
 
   // アドバイス生成（テンプレートベース - AIは使用しない）
   // パフォーマンス向上のため、AI呼び出しを削除しテンプレートアドバイスを使用
-  const mainAdvice = generateMainAdvice(strategyValues, goalCategory, followerGain);
-  const improvementTips = generateImprovementTips(strategyValues, hashtagStrategy, postCategories);
+  const mainAdvice = generateMainAdvice(strategyValues || [], goalCategory || "", followerGain);
+  const improvementTips = generateImprovementTips(strategyValues || [], hashtagStrategy || "", postCategories || []);
 
   // 目標達成日を計算
   const targetDate = calculateTargetDate(planPeriod);
 
   return {
-    targetDate,
-    monthlyTarget,
-    weeklyTarget,
-    feasibilityLevel: feasibility.level,
-    feasibilityBadge: feasibility.badge,
-    postsPerWeek,
-    monthlyPostCount,
-    workloadMessage,
-    mainAdvice,
-    improvementTips,
-    graphData,
-    onePointAdvice,
+    requiredMonthlyGrowthRate: requiredGrowthRate,
+    difficultyScore: feasibility.feasibilityScore.score,
+    difficultyLevel: feasibility.level as "realistic" | "challenging" | "very-challenging" | "unrealistic",
+    difficultyMessage: feasibility.feasibilityScore.message,
+    difficultyColor: feasibility.feasibilityScore.color as "green" | "yellow" | "orange" | "red",
+    weeklyPredictions: graphData.weeklyPredictions,
+    estimatedWeeklyMinutes: postsPerWeek.feed * 10 + postsPerWeek.reel * 15 + postsPerWeek.story * 5 + 10,
+    timeBreakdown: {
+      feed: postsPerWeek.feed * 10,
+      reel: postsPerWeek.reel * 15,
+      story: postsPerWeek.story * 5,
+      comments: 10,
+    },
+    requiredActions: feasibility.feasibilityScore.requiredActions || [],
     alternativeOptions,
   };
 }

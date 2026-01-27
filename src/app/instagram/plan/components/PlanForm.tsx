@@ -1,428 +1,916 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import React, { useState } from "react";
 import { PlanFormData } from "../types/plan";
-import { InfoTooltip } from "./InfoTooltip";
+import { TargetFollowerAutoInput } from "./TargetFollowerAutoInput";
 
 interface PlanFormProps {
-  formData: PlanFormData;
-  selectedStrategies: string[];
-  selectedCategories: string[];
-  onInputChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => void;
-  onStrategyToggle: (strategy: string) => void;
-  onCategoryToggle: (category: string) => void;
+  onSubmit: (data: PlanFormData, aiSuggestedTarget?: number) => void;
+  isLoading?: boolean;
 }
 
-export const PlanForm: React.FC<PlanFormProps> = ({
-  formData,
-  selectedStrategies,
-  selectedCategories,
-  onInputChange,
-  onStrategyToggle,
-  onCategoryToggle,
-}) => {
+export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false }) => {
+  const [formData, setFormData] = useState<PlanFormData>({
+    currentFollowers: 0,
+    targetFollowers: 0,
+    periodMonths: 1,
+    weeklyFeedPosts: 3,
+    weeklyReelPosts: 1,
+    weeklyStoryPosts: 7,
+    mainGoal: "",
+    preferredPostingTimes: [],
+    targetAudience: "",
+    regionRestriction: {
+      enabled: false,
+    },
+    contentTypes: [],
+  });
+
+  const [mainGoalType, setMainGoalType] = useState<string>("");
+  const [mainGoalOther, setMainGoalOther] = useState<string>("");
+  const [availableTime, setAvailableTime] = useState<string>("");
+  const [reelCapability, setReelCapability] = useState<string>("");
+  const [storyFrequency, setStoryFrequency] = useState<string>("");
+  const [preferredPostingTimes, setPreferredPostingTimes] = useState<string[]>([]);
+  const [regionRestrictionEnabled, setRegionRestrictionEnabled] = useState<boolean>(false);
+  const [regionPrefecture, setRegionPrefecture] = useState<string>("");
+  const [regionCity, setRegionCity] = useState<string>("");
+  const [contentTypes, setContentTypes] = useState<string[]>([]);
+  const [contentTypeOther, setContentTypeOther] = useState<string>("");
+  const [aiSuggestedTarget, setAiSuggestedTarget] = useState<number | undefined>(undefined);
+
+  // mainGoalTypeが変更されたときにformDataを更新
+  React.useEffect(() => {
+    if (mainGoalType === "other") {
+      setFormData((prev) => ({ ...prev, mainGoal: mainGoalOther }));
+    } else if (mainGoalType) {
+      setFormData((prev) => ({ ...prev, mainGoal: mainGoalType }));
+    } else {
+      setFormData((prev) => ({ ...prev, mainGoal: "" }));
+    }
+  }, [mainGoalType, mainGoalOther]);
+
+  // 投稿頻度の選択に応じてformDataを更新
+  React.useEffect(() => {
+    // 投稿に使える時間に応じてフィード投稿頻度を設定
+    if (availableTime === "low") {
+      setFormData((prev) => ({ ...prev, weeklyFeedPosts: 2 }));
+    } else if (availableTime === "medium") {
+      setFormData((prev) => ({ ...prev, weeklyFeedPosts: 4 }));
+    } else if (availableTime === "high") {
+      setFormData((prev) => ({ ...prev, weeklyFeedPosts: 7 }));
+    }
+
+    // リール能力に応じてリール投稿頻度を設定
+    if (reelCapability === "none") {
+      setFormData((prev) => ({ ...prev, weeklyReelPosts: 0 }));
+    } else if (reelCapability === "low") {
+      setFormData((prev) => ({ ...prev, weeklyReelPosts: 1 }));
+    } else if (reelCapability === "high") {
+      setFormData((prev) => ({ ...prev, weeklyReelPosts: 3 }));
+    }
+
+    // ストーリーズ頻度に応じてストーリーズ投稿頻度を設定
+    if (storyFrequency === "none") {
+      setFormData((prev) => ({ ...prev, weeklyStoryPosts: 0 }));
+    } else if (storyFrequency === "low") {
+      setFormData((prev) => ({ ...prev, weeklyStoryPosts: 2 }));
+    } else if (storyFrequency === "medium") {
+      setFormData((prev) => ({ ...prev, weeklyStoryPosts: 4 }));
+    } else if (storyFrequency === "daily") {
+      setFormData((prev) => ({ ...prev, weeklyStoryPosts: 7 }));
+    }
+  }, [availableTime, reelCapability, storyFrequency]);
+
+  // 新しい必須項目をformDataに反映
+  React.useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      preferredPostingTimes,
+      regionRestriction: {
+        enabled: regionRestrictionEnabled,
+        prefecture: regionPrefecture,
+        city: regionCity,
+      },
+      contentTypes,
+      contentTypeOther: contentTypes.includes("other") ? contentTypeOther : undefined,
+    }));
+  }, [preferredPostingTimes, regionRestrictionEnabled, regionPrefecture, regionCity, contentTypes, contentTypeOther]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData, aiSuggestedTarget);
+  };
 
   return (
-    <div className="bg-white border border-gray-200 p-6">
-      <div className="mb-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">計画を立てる</h3>
-      </div>
-
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* 新しく計画を立てる */}
       <div className="space-y-6">
-        {/* 期間 */}
+        <div className="border-b border-gray-200 pb-4">
+          <h2 className="text-2xl font-bold text-gray-900">新しく計画を立てる</h2>
+          <p className="text-sm text-gray-600 mt-2">
+            目標達成のための計画を作成します。各項目を入力してください。
+          </p>
+        </div>
+        
+        {/* 目標達成期間 */}
         <div>
-          <label htmlFor="planPeriod" className="block text-sm font-bold text-gray-900 mb-2">
-            期間
-            <InfoTooltip content="計画を実行する期間を選択してください。1ヶ月から始めることをおすすめします。期間が長いほど、より多くのフォロワーを獲得できますが、継続が重要です。" />
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            目標達成期間 <span className="text-red-500">*</span>
           </label>
           <select
-            id="planPeriod"
-            name="planPeriod"
-            value={formData.planPeriod}
-            onChange={onInputChange}
-            className="w-full px-4 py-3 border border-gray-300 bg-white"
+            required
+            value={formData.periodMonths}
+            onChange={(e) => setFormData({ ...formData, periodMonths: parseInt(e.target.value) })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
           >
-            <option value="1ヶ月">1ヶ月（おすすめ）</option>
-            <option value="3ヶ月">3ヶ月</option>
-            <option value="6ヶ月">6ヶ月</option>
-            <option value="1年">1年</option>
+            <option value={1}>1ヶ月 ⭐おすすめ</option>
+            <option value={3}>3ヶ月</option>
+            <option value={6}>6ヶ月</option>
+            <option value={12}>12ヶ月</option>
           </select>
         </div>
 
-        {/* 目標 */}
+        {/* 現在のフォロワー数 */}
         <div>
-          <label className="block text-sm font-bold text-gray-900 mb-2">
-            目標
-            <InfoTooltip content="現在のフォロワー数と目標増加数を入力してください。" />
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            現在のフォロワー数 <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="currentFollowers" className="block text-xs text-gray-600 mb-1">
-                現在のフォロワー数
-              </label>
+          <input
+            type="number"
+            required
+            min="1"
+            value={formData.currentFollowers || ""}
+            onChange={(e) => setFormData({ ...formData, currentFollowers: parseInt(e.target.value) || 0 })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+            placeholder="例: 1000"
+          />
+        </div>
+
+        {/* 目標フォロワー数（自動計算） */}
+        <TargetFollowerAutoInput
+          currentFollowers={formData.currentFollowers}
+          periodMonths={formData.periodMonths}
+          value={formData.targetFollowers}
+          onChange={(value) => setFormData({ ...formData, targetFollowers: value })}
+          onAISuggested={(suggestedValue) => setAiSuggestedTarget(suggestedValue)}
+        />
+
+        {/* セクション区切り */}
+        <div className="border-t border-gray-200 pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">投稿頻度の設定</h3>
+        </div>
+
+        {/* 投稿に使える時間 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            1週間で、どのくらい投稿に時間を使えますか？ <span className="text-red-500">*</span>
+          </label>
+          
+          <div className="space-y-3">
+            <label className="flex items-start cursor-pointer group">
               <input
-                type="number"
-                id="currentFollowers"
-                name="currentFollowers"
-                value={formData.currentFollowers}
-                onChange={onInputChange}
-                placeholder="例: 100"
-                className="w-full px-4 py-3 border border-gray-300 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                type="radio"
+                name="availableTime"
+                value="low"
+                checked={availableTime === "low"}
+                onChange={(e) => setAvailableTime(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  週1〜2回
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  「忙しいけど、無理なく続けたい」 → 週2投稿
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="availableTime"
+                value="medium"
+                checked={availableTime === "medium"}
+                onChange={(e) => setAvailableTime(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  週3〜4回<span className="text-[#FF8A15] ml-2">⭐おすすめ</span>
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  「しっかり取り組みたい」 → 週4投稿
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="availableTime"
+                value="high"
+                checked={availableTime === "high"}
+                onChange={(e) => setAvailableTime(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  ほぼ毎日
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  「本気で伸ばしたい」 → 週7投稿
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div className="mt-3 p-3 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-orange-500 mr-2">💡</span>
+              <div className="text-xs text-orange-800">
+                初めての方は、週3〜4回がおすすめです。無理なく続けられるペースが一番大事です。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* リール（動画）は作れますか？ */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            動画（リール）の投稿は可能ですか？ <span className="text-red-500">*</span>
+          </label>
+          
+          <div className="space-y-3">
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="reelCapability"
+                value="none"
+                checked={reelCapability === "none"}
+                onChange={(e) => setReelCapability(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  動画はちょっと苦手...
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  「写真メインの投稿計画にします」 → フィードとストーリーズのみ
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="reelCapability"
+                value="low"
+                checked={reelCapability === "low"}
+                onChange={(e) => setReelCapability(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  週1回くらいなら頑張れる <span className="text-[#FF8A15] ml-2">⭐おすすめ</span>
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  「週1回リール + 写真投稿の組み合わせ」 → フィード + リール + ストーリーズ
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="reelCapability"
+                value="high"
+                checked={reelCapability === "high"}
+                onChange={(e) => setReelCapability(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  動画もどんどん作りたい！
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  「リール中心の成長プランにします」 → リール中心 + ストーリーズ
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div className="mt-3 p-3 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-orange-500 mr-2">💡</span>
+              <div className="text-xs text-orange-800">
+                動画は伸びやすいですが、無理せず続けられる方が大事です。まずは週1回から始めてみましょう。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ストーリーズの頻度 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            ストーリーズはどのくらい投稿できますか？ <span className="text-red-500">*</span>
+          </label>
+          
+          <div className="space-y-3">
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="storyFrequency"
+                value="none"
+                checked={storyFrequency === "none"}
+                onChange={(e) => setStoryFrequency(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  ストーリーズは使わない
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → ストーリーズなし
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="storyFrequency"
+                value="low"
+                checked={storyFrequency === "low"}
+                onChange={(e) => setStoryFrequency(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  週1〜2回
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → 週2回
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="storyFrequency"
+                value="medium"
+                checked={storyFrequency === "medium"}
+                onChange={(e) => setStoryFrequency(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  週3〜4回
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → 週4回
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="storyFrequency"
+                value="daily"
+                checked={storyFrequency === "daily"}
+                onChange={(e) => setStoryFrequency(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  毎日 <span className="text-[#FF8A15] ml-2">⭐おすすめ</span>
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → 毎日1〜3回
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div className="mt-3 p-3 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-orange-500 mr-2">💡</span>
+              <div className="text-xs text-orange-800">
+                ストーリーズは、フォロワーとの距離を縮めるのに最適です。毎日投稿すると、反応が良くなります。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* セクション区切り */}
+        <div className="border-t border-gray-200 pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">目標とターゲット設定</h3>
+        </div>
+
+        {/* 一番叶えたいこと */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            この期間で、一番叶えたいことは何ですか？ <span className="text-red-500">*</span>
+          </label>
+          
+          <div className="space-y-3">
+            {/* 選択肢1: フォロワーを増やしたい */}
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="mainGoal"
+                value="follower"
+                checked={mainGoalType === "follower"}
+                onChange={(e) => setMainGoalType(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  フォロワーを増やしたい
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → 新規を増やして認知度アップ
+                </div>
+              </div>
+            </label>
+
+            {/* 選択肢2: 今のフォロワーともっと仲良くなりたい */}
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="mainGoal"
+                value="engagement"
+                checked={mainGoalType === "engagement"}
+                onChange={(e) => setMainGoalType(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  今のフォロワーともっと仲良くなりたい
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → いいねやコメントを増やして関係強化
+                </div>
+              </div>
+            </label>
+
+            {/* 選択肢3: 商品やサービスを広めたい */}
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="mainGoal"
+                value="reach"
+                checked={mainGoalType === "reach"}
+                onChange={(e) => setMainGoalType(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  商品やサービスを広めたい
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → 投稿を多くの人に見てもらう
+                </div>
+              </div>
+            </label>
+
+            {/* 選択肢4: ブランドのファンを作りたい */}
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="mainGoal"
+                value="brand"
+                checked={mainGoalType === "brand"}
+                onChange={(e) => setMainGoalType(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  ブランドのファンを作りたい
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → 保存・シェアされる投稿で信頼構築
+                </div>
+              </div>
+            </label>
+
+            {/* 選択肢5: 問い合わせを増やしたい */}
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="mainGoal"
+                value="inquiry"
+                checked={mainGoalType === "inquiry"}
+                onChange={(e) => setMainGoalType(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  問い合わせを増やしたい
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → プロフィールへのアクセスを増やす
+                </div>
+              </div>
+            </label>
+
+            {/* 選択肢6: 来店を増やしたい */}
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="mainGoal"
+                value="visit"
+                checked={mainGoalType === "visit"}
+                onChange={(e) => setMainGoalType(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  来店を増やしたい
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → 外部リンクのタップを増やす
+                </div>
+              </div>
+            </label>
+
+            {/* 選択肢7: その他 */}
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="mainGoal"
+                value="other"
+                checked={mainGoalType === "other"}
+                onChange={(e) => setMainGoalType(e.target.value)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  その他
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → 自由入力
+                </div>
+              </div>
+            </label>
+          </div>
+
+          {/* その他を選んだ場合の自由入力欄 */}
+          {mainGoalType === "other" && (
+            <div className="mt-4">
+              <textarea
+                value={mainGoalOther}
+                onChange={(e) => setMainGoalOther(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
+                placeholder="その他の目標を入力してください"
               />
             </div>
-            <div>
-              <label htmlFor="followerGain" className="block text-xs text-gray-600 mb-1">
-                目標増加数
-              </label>
-              <input
-                type="number"
-                id="followerGain"
-                name="followerGain"
-                value={formData.followerGain}
-                onChange={onInputChange}
-                placeholder="例: 30"
-                className="w-full px-4 py-3 border border-gray-300 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              {formData.currentFollowers && formData.followerGain && (
-                <p className="text-xs text-gray-500 mt-1">
-                  目標: {parseInt(formData.currentFollowers).toLocaleString()}人 → {(parseInt(formData.currentFollowers) + parseInt(formData.followerGain)).toLocaleString()}人
-                </p>
-              )}
+          )}
+
+          {/* ヒント */}
+          <div className="mt-4 p-3 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-orange-500 mr-2">💡</span>
+              <div className="text-xs text-orange-800">
+                迷ったら、「フォロワーを増やしたい」を選びましょう。フォロワーが増えれば、他の目標も達成しやすくなります。
+              </div>
             </div>
           </div>
         </div>
 
-        {/* KPI */}
-        <div>
-          <label htmlFor="goalCategorySelect" className="block text-sm font-bold text-gray-900 mb-2">
-            KPI
-            <InfoTooltip content="最も重視したい指標を選択してください。" />
-          </label>
-          <select
-            id="goalCategorySelect"
-            name="goalCategory"
-            value={formData.goalCategory}
-            onChange={onInputChange}
-            className="w-full px-4 py-3 border border-gray-300 bg-white"
-          >
-            <option value="">選択してください</option>
-            <option value="follower">フォロワー獲得</option>
-            <option value="engagement">エンゲージ促進</option>
-            <option value="like">いいねを増やす</option>
-            <option value="save">保存率向上</option>
-            <option value="reach">リーチを増やす</option>
-            <option value="impressions">インプレッションを増やす</option>
-            <option value="branding">ブランド認知を広める</option>
-            <option value="profile">プロフィール誘導</option>
-            <option value="other">その他</option>
-          </select>
-          {formData.goalCategory === "other" && (
-            <input
-              type="text"
-              id="otherGoalInput"
-              name="otherGoal"
-              placeholder="その他の目標カテゴリ"
-              value={formData.otherGoal}
-              onChange={onInputChange}
-              className="w-full px-4 py-3 border border-gray-300 bg-white mt-2"
-            />
-          )}
+        {/* セクション区切り */}
+        <div className="border-t border-gray-200 pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">投稿内容とスケジュール設定</h3>
         </div>
 
-        {/* 取り組みたいこと */}
+        {/* 投稿時間の希望 */}
         <div>
-          <label className="block text-sm font-bold text-gray-900 mb-3">
-            取り組みたいこと
-            <InfoTooltip content="Instagramで取り組みたいことを複数選択してください。複数選択可能です。" />
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            投稿時間の希望はありますか？ <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[
-              "写真をたくさん投稿する",
-              "動画（リール）を中心に投稿する",
-              "ストーリーでフォロワーと交流する",
-              "お客様の投稿を紹介する",
-              "キャンペーンやイベントを開催する",
-              "広告を出して認知度を上げる",
-              "コメントに積極的に返信する",
-              "複数枚の写真で商品を紹介する",
-              "ハッシュタグを工夫する",
-              "その他",
-            ].map((strategy) => (
-              <button
-                key={strategy}
-                type="button"
-                onClick={() => onStrategyToggle(strategy)}
-                className={`px-4 py-3 text-sm text-left border transition-colors ${
-                  selectedStrategies.includes(strategy)
-                    ? "bg-[#FF8A15] text-white border-[#FF8A15]"
-                    : "bg-white text-gray-900 border-gray-300 hover:border-[#FF8A15]"
-                }`}
-              >
-                {strategy}
-              </button>
-            ))}
-          </div>
-          {selectedStrategies.includes("その他") && (
-            <input
-              type="text"
-              placeholder="その他の取り組みたいことを入力してください"
-              className="w-full px-4 py-3 border border-gray-300 bg-white mt-2"
-              onChange={(e) => {
-                if (e.target.value.trim()) {
-                  const customStrategy = e.target.value.trim();
-                  if (!selectedStrategies.includes(customStrategy)) {
-                    onStrategyToggle(customStrategy);
+          
+          <div className="space-y-3">
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={preferredPostingTimes.includes("ai")}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setPreferredPostingTimes([...preferredPostingTimes, "ai"]);
+                  } else {
+                    setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "ai"));
                   }
-                }
-              }}
-            />
-          )}
-        </div>
+                }}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  AIに任せる <span className="text-[#FF8A15] ml-2">⭐おすすめ</span>
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  → AIが最適な時間を提案
+                </div>
+              </div>
+            </label>
 
-        {/* 投稿したい内容 */}
-        <div>
-          <label className="block text-sm font-bold text-gray-900 mb-3">
-            投稿したい内容
-            <InfoTooltip content="投稿したい内容の種類を複数選択してください。複数選択可能です。" />
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[
-              "役立つ情報やコツ",
-              "実績や成果の紹介",
-              "ブランドの世界観",
-              "興味を引く内容",
-              "商品の比較",
-              "お悩みの解決方法",
-              "ビフォーアフター",
-              "共感できるメッセージ",
-              "お客様の声やレビュー",
-              "キャンペーンやお知らせ",
-              "話題のトレンド",
-              "その他",
-            ].map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => onCategoryToggle(category)}
-                className={`px-4 py-3 text-sm text-left border transition-colors ${
-                  selectedCategories.includes(category)
-                    ? "bg-[#FF8A15] text-white border-[#FF8A15]"
-                    : "bg-white text-gray-900 border-gray-300 hover:border-[#FF8A15]"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-          {selectedCategories.includes("その他") && (
-            <input
-              type="text"
-              placeholder="その他の投稿したい内容を入力してください"
-              className="w-full px-4 py-3 border border-gray-300 bg-white mt-2"
-              onChange={(e) => {
-                if (e.target.value.trim()) {
-                  const customCategory = e.target.value.trim();
-                  if (!selectedCategories.includes(customCategory)) {
-                    onCategoryToggle(customCategory);
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={preferredPostingTimes.includes("morning")}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setPreferredPostingTimes([...preferredPostingTimes, "morning"]);
+                  } else {
+                    setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "morning"));
                   }
-                }
-              }}
-            />
-          )}
+                }}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  午前中（9:00〜12:00）
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={preferredPostingTimes.includes("noon")}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setPreferredPostingTimes([...preferredPostingTimes, "noon"]);
+                  } else {
+                    setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "noon"));
+                  }
+                }}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  昼（12:00〜15:00）
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={preferredPostingTimes.includes("evening")}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setPreferredPostingTimes([...preferredPostingTimes, "evening"]);
+                  } else {
+                    setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "evening"));
+                  }
+                }}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  夕方（15:00〜18:00）
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={preferredPostingTimes.includes("night")}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setPreferredPostingTimes([...preferredPostingTimes, "night"]);
+                  } else {
+                    setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "night"));
+                  }
+                }}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  夜（18:00〜21:00）
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={preferredPostingTimes.includes("late")}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setPreferredPostingTimes([...preferredPostingTimes, "late"]);
+                  } else {
+                    setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "late"));
+                  }
+                }}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  深夜（21:00〜24:00）
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div className="mt-3 p-3 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-orange-500 mr-2">💡</span>
+              <div className="text-xs text-orange-800">
+                「AIに任せる」を選ぶと、過去のデータから最も反応が良い時間を自動で提案します。
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* ターゲット層 */}
+        {/* どんな人に投稿を見てもらいたいか */}
         <div>
-          <label htmlFor="targetAudienceInput" className="block text-sm font-bold text-gray-900 mb-2">
-            ターゲット層
-            <InfoTooltip content="あなたの投稿を見てほしい人、フォローしてほしい人を具体的に書いてください。年齢、性別、興味、職業など、できるだけ具体的に書くほど効果的です。" />
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            どんな人に投稿を見てもらいたいですか？ <span className="text-red-500">*</span>
           </label>
           <textarea
-            id="targetAudienceInput"
-            name="targetAudience"
             value={formData.targetAudience}
-            onChange={onInputChange}
-            onFocus={(e) => {
-              // フォーカス時の自動スクロールを防ぐ
-              // 現在のスクロール位置を保存
-              const scrollY = window.scrollY;
-              // 次のフレームでスクロール位置を元に戻す
-              requestAnimationFrame(() => {
-                window.scrollTo({ top: scrollY, behavior: 'instant' });
-              });
-            }}
-            placeholder="例：ブランドの認知拡大"
+            onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
             rows={4}
-            className="w-full px-4 py-3 border border-gray-300 bg-white resize-none"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
+            placeholder="例: 30代のママさん。子育てに忙しいけど、自分の時間も大切にしたい人。美味しいコーヒーを飲んでリラックスしたい。"
           />
+          <div className="mt-2 p-3 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-orange-500 mr-2">💡</span>
+              <div className="text-xs text-orange-800">
+                具体的に書くほど、AIが最適な投稿文を作れます。年齢、性別、興味、悩みなどを書いてください。
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 投稿頻度 */}
-        {/* <div>
-          <label className="block text-sm font-medium mb-2">投稿頻度（週あたり）</label>
-          <div className="grid grid-cols-3 gap-4">
-            <input
-              type="number"
-              id="feedFreq"
-              name="feedFreq"
-              placeholder="フィード"
-              value={formData.feedFreq}
-              onChange={onInputChange}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-            <input
-              type="number"
-              id="reelFreq"
-              name="reelFreq"
-              placeholder="リール"
-              value={formData.reelFreq}
-              onChange={onInputChange}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-            <input
-              type="number"
-              id="storyFreq"
-              name="storyFreq"
-              placeholder="ストーリー"
-              value={formData.storyFreq}
-              onChange={onInputChange}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-          </div>
-        </div> */}
-
-        {/* 目標数値 */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="saveGoalInput" className="block text-sm font-medium mb-1">目標保存数</label>
-            <input
-              type="number"
-              id="saveGoalInput"
-              name="saveGoal"
-              value={formData.saveGoal}
-              onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label htmlFor="likeGoalInput" className="block text-sm font-medium mb-1">目標いいね数</label>
-            <input
-              type="number"
-              id="likeGoalInput"
-              name="likeGoal"
-              value={formData.likeGoal}
-              onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label htmlFor="reachGoalInput" className="block text-sm font-medium mb-1">目標リーチ数</label>
-            <input
-              type="number"
-              id="reachGoalInput"
-              name="reachGoal"
-              value={formData.reachGoal}
-              onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-            />
-          </div>
-        </div> */}
-
-        {/* AI相談 */}
-        {/* <div>
-          <label htmlFor="aiHelpRequest" className="block text-sm font-medium mb-1">
-            AIに相談したいこと
+        {/* 地域を限定しますか？ */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            地域を限定しますか？ <span className="text-red-500">*</span>
           </label>
-          <textarea
-            id="aiHelpRequest"
-            name="aiHelpRequest"
-            value={formData.aiHelpRequest}
-            onChange={onInputChange}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-          />
-        </div> */}
+          
+          <div className="space-y-3">
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="regionRestriction"
+                value="none"
+                checked={!regionRestrictionEnabled}
+                onChange={() => setRegionRestrictionEnabled(false)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  地域は限定しない
+                </div>
+              </div>
+            </label>
 
-        {/* 前回の振り返り */}
-        {/* <div>
-          <label htmlFor="pastLearnings" className="block text-sm font-medium mb-1">
-            前回の振り返り・学び
-          </label>
-          <textarea
-            id="pastLearnings"
-            name="pastLearnings"
-            value={formData.pastLearnings}
-            onChange={onInputChange}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-          />
-        </div> */}
-
-        {/* 参考アカウント */}
-        {/* <div>
-          <label htmlFor="referenceAccounts" className="block text-sm font-medium mb-1">参考にするアカウント・競合</label>
-          <textarea
-            id="referenceAccounts"
-            name="referenceAccounts"
-            value={formData.referenceAccounts}
-            onChange={onInputChange}
-            rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-          />
-        </div> */}
-
-        {/* ハッシュタグ戦略 */}
-        {/* <div>
-          <label htmlFor="hashtagStrategy" className="block text-sm font-medium mb-1">ハッシュタグ戦略</label>
-          <textarea
-            id="hashtagStrategy"
-            name="hashtagStrategy"
-            value={formData.hashtagStrategy}
-            onChange={onInputChange}
-            rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-          />
-        </div> */}
-
-        {/* 制約条件 */}
-        {/* <div>
-          <label htmlFor="constraints" className="block text-sm font-medium mb-1">運用リソース・制約条件</label>
-          <textarea
-            id="constraints"
-            name="constraints"
-            value={formData.constraints}
-            onChange={onInputChange}
-            rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-          />
-        </div> */}
-
-        {/* メモ */}
-        {/* <div>
-          <label htmlFor="freeMemo" className="block text-sm font-medium mb-1">メモ・補足</label>
-          <textarea
-            id="freeMemo"
-            name="freeMemo"
-            value={formData.freeMemo}
-            onChange={onInputChange}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ff8a15] focus:border-transparent"
-          />
-        </div> */}
-
-        {/* フォーム完了メッセージ */}
-        {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center">
-            <div className="text-blue-600 mr-2">💡</div>
-            <p className="text-blue-800 text-sm">
-              フォーム入力が完了しました。右側のパネルでシミュレーションを実行し、計画を保存してください。
-            </p>
+            <label className="flex items-start cursor-pointer group">
+              <input
+                type="radio"
+                name="regionRestriction"
+                value="enabled"
+                checked={regionRestrictionEnabled}
+                onChange={() => setRegionRestrictionEnabled(true)}
+                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                  地域を限定する
+                </div>
+              </div>
+            </label>
           </div>
-        </div> */}
 
-        {/* デバッグ情報表示 */}
+          {regionRestrictionEnabled && (
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  都道府県
+                </label>
+                <input
+                  type="text"
+                  value={regionPrefecture}
+                  onChange={(e) => setRegionPrefecture(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+                  placeholder="例: 東京都"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  市区町村
+                </label>
+                <input
+                  type="text"
+                  value={regionCity}
+                  onChange={(e) => setRegionCity(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+                  placeholder="例: 渋谷区"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-3 p-3 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-orange-500 mr-2">💡</span>
+              <div className="text-xs text-orange-800">
+                実店舗がある場合は、地域を限定すると来店につながりやすくなります。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* どんな内容を投稿したいか */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            どんな内容を投稿したいですか？ <span className="text-red-500">*</span>
+          </label>
+          
+          <div className="space-y-3">
+            {[
+              { value: "product", label: "商品・サービスの紹介" },
+              { value: "testimonial", label: "お客様の声" },
+              { value: "staff", label: "スタッフの日常" },
+              { value: "knowledge", label: "豆知識・ノウハウ" },
+              { value: "event", label: "イベント・キャンペーン情報" },
+              { value: "beforeafter", label: "ビフォーアフター" },
+              { value: "behind", label: "舞台裏・制作過程" },
+              { value: "other", label: "その他" },
+            ].map((option) => (
+              <label key={option.value} className="flex items-start cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={contentTypes.includes(option.value)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setContentTypes([...contentTypes, option.value]);
+                    } else {
+                      setContentTypes(contentTypes.filter((t) => t !== option.value));
+                    }
+                  }}
+                  className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 group-hover:text-[#FF8A15] transition-colors">
+                    {option.label}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {contentTypes.includes("other") && (
+            <div className="mt-4">
+              <textarea
+                value={contentTypeOther}
+                onChange={(e) => setContentTypeOther(e.target.value)}
+                rows={2}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
+                placeholder="その他の内容を入力してください"
+              />
+            </div>
+          )}
+
+          <div className="mt-3 p-3 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-orange-500 mr-2">💡</span>
+              <div className="text-xs text-orange-800">
+                複数選択すると、投稿のバリエーションが増えて、フォロワーが飽きにくくなります。
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* 送信ボタン */}
+      <button
+        type="submit"
+        disabled={
+          isLoading || 
+          formData.currentFollowers <= 0 || 
+          formData.targetFollowers <= 0 ||
+          !availableTime ||
+          !reelCapability ||
+          !storyFrequency ||
+          !mainGoalType ||
+          preferredPostingTimes.length === 0 ||
+          !formData.targetAudience ||
+          contentTypes.length === 0
+        }
+        className="w-full bg-[#FF8A15] hover:bg-[#E67A0A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-6 py-3 rounded-md transition-colors"
+      >
+        {isLoading ? "計算中..." : "シミュレーション実行"}
+      </button>
+    </form>
   );
 };
 

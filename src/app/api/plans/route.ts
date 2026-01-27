@@ -32,6 +32,22 @@ interface PlanData {
 
   // AI戦略
   generatedStrategy?: string | null;
+  
+  // 週次・月次データ
+  generatedStrategyData?: {
+    allWeeklyTasks?: any[];
+    allMonthlyGoals?: any[];
+  } | null;
+
+  // AI提案データ（新規）
+  aiSuggestion?: {
+    weeklyTasks?: any[];
+    monthlyGoals?: any[];
+    keyMessage?: string;
+    monthlyStrategy?: any[];
+    weeklyPlans?: any[];
+    recommendedPostingTimes?: any[];
+  } | null;
 }
 
 type FirestoreTimestampLike = {
@@ -76,6 +92,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "目標フォロワー数は必須です" }, { status: 400 });
     }
 
+    // startDateのバリデーション
+    if (!body.startDate || body.startDate.trim() === '') {
+      return NextResponse.json({ error: "開始日は必須です" }, { status: 400 });
+    }
+
+    // startDateが有効な日付かチェック
+    const startDate = new Date(body.startDate);
+    if (isNaN(startDate.getTime())) {
+      return NextResponse.json({ error: "開始日が無効です" }, { status: 400 });
+    }
+
     const snsType = body.snsType || "instagram";
 
     // currentFollowersが指定されていない場合、follower_countsから最新の値を取得
@@ -114,6 +141,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // startDateとendDateを設定
+    const planStartDate = startDate;
+    const planEndDate = body.endDate ? new Date(body.endDate) : (() => {
+      const end = new Date(planStartDate);
+      const period = body.planPeriod || "6ヶ月";
+      if (period === "1ヶ月") {
+        end.setMonth(end.getMonth() + 1);
+      } else if (period === "3ヶ月") {
+        end.setMonth(end.getMonth() + 3);
+      } else if (period === "6ヶ月") {
+        end.setMonth(end.getMonth() + 6);
+      } else if (period === "1年") {
+        end.setFullYear(end.getFullYear() + 1);
+      } else {
+        end.setMonth(end.getMonth() + 1);
+      }
+      return end;
+    })();
+
     const planData: Omit<PlanData, "id"> = {
       userId,
       snsType,
@@ -131,9 +177,24 @@ export async function POST(request: NextRequest) {
       simulationResult: body.simulationResult || null,
       formData: body.formData || {},
       generatedStrategy: body.generatedStrategy || null,
-      createdAt: new Date(),
+      generatedStrategyData: body.generatedStrategyData || null,
+      aiSuggestion: body.aiSuggestion || null, // AI提案データを保存
+      startDate: planStartDate,
+      endDate: planEndDate,
+      createdAt: planStartDate,
       updatedAt: new Date(),
     };
+
+    // デバッグログ：保存されるデータを確認
+    console.log("[API] 計画保存データ:", {
+      hasSimulationResult: !!planData.simulationResult,
+      simulationResultKeys: planData.simulationResult ? Object.keys(planData.simulationResult) : [],
+      hasGeneratedStrategy: !!planData.generatedStrategy,
+      generatedStrategyLength: planData.generatedStrategy?.length || 0,
+      hasGeneratedStrategyData: !!planData.generatedStrategyData,
+      weeklyTasksCount: planData.generatedStrategyData?.allWeeklyTasks?.length || 0,
+      monthlyGoalsCount: planData.generatedStrategyData?.allMonthlyGoals?.length || 0,
+    });
 
     const docRef = await adminDb.collection("plans").add(planData);
 
@@ -144,8 +205,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("計画作成エラー:", error);
-    const { status, body } = buildErrorResponse(error);
-    return NextResponse.json(body, { status });
+    console.error("エラー詳細:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    const { status, body: errorBody } = buildErrorResponse(error);
+    return NextResponse.json(errorBody, { status });
   }
 }
 

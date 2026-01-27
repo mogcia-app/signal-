@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
-import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
-import * as admin from "firebase-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,229 +10,289 @@ export async function GET(request: NextRequest) {
       auditEventName: "home_dashboard_access",
     });
 
-    const { searchParams } = new URL(request.url);
-    const currentMonth = searchParams.get("month");
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
-    if (!currentMonth) {
-      return NextResponse.json(
-        { success: false, error: "month parameter is required" },
-        { status: 400 }
-      );
-    }
+    // 今週の開始日と終了日を計算（日曜日始まり）
+    const startOfWeek = new Date(today);
+    const dayOfWeek = today.getDay();
+    startOfWeek.setDate(today.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    // 先週の期間
+    const startOfLastWeek = new Date(startOfWeek);
+    startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+    const endOfLastWeek = new Date(startOfWeek);
+    endOfLastWeek.setDate(startOfWeek.getDate() - 1);
+    endOfLastWeek.setHours(23, 59, 59, 999);
 
-    // 先月を計算
-    const [year, month] = currentMonth.split("-").map(Number);
-    const lastMonthDate = new Date(year, month - 2, 1);
-    const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+    // 今月の開始日と終了日
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     // 並列でデータを取得
-    const [
-      followerCountsSnapshot,
-      monthlyReviewSnapshot,
-      actionLogsSnapshot,
-      kpiBreakdownSnapshot,
-    ] = await Promise.all([
-      // フォロワー数取得
-      adminDb
-        .collection("follower_counts")
+    const [analyticsSnapshot, postsSnapshot, plansSnapshot, followerCountsSnapshot] = await Promise.all([
+      adminDb.collection("analytics").where("userId", "==", uid).get(),
+      adminDb.collection("posts").where("userId", "==", uid).get(),
+      adminDb.collection("plans")
         .where("userId", "==", uid)
-        .where("month", "==", currentMonth)
         .where("snsType", "==", "instagram")
+        .where("status", "==", "active")
+        .orderBy("createdAt", "desc")
         .limit(1)
         .get(),
-      // 月次レビュー（アクションプラン用）
-      adminDb
-        .collection("monthly_reviews")
+      adminDb.collection("followerCounts")
         .where("userId", "==", uid)
-        .where("month", "==", lastMonth)
-        .limit(1)
-        .get(),
-      // アクションログ取得
-      adminDb
-        .collection("ai_action_logs")
-        .where("userId", "==", uid)
-        .limit(100)
-        .get(),
-      // KPI分解データ（簡易版 - breakdownsのみ）
-      adminDb
-        .collection("analytics")
-        .where("userId", "==", uid)
+        .orderBy("date", "desc")
+        .limit(2)
         .get(),
     ]);
 
-    // ===== 1. フォロワー数データ =====
-    const followerCountData = followerCountsSnapshot.empty
-      ? null
-      : {
-          followers: followerCountsSnapshot.docs[0].data().followers || 0,
-          profileVisits: followerCountsSnapshot.docs[0].data().profileVisits,
-          externalLinkTaps: followerCountsSnapshot.docs[0].data().externalLinkTaps,
-          updatedAt: followerCountsSnapshot.docs[0].data().updatedAt?.toDate?.()?.toISOString() || 
-                     followerCountsSnapshot.docs[0].data().updatedAt,
-        };
-
-    // ===== 2. アクションプラン（先月の月次レビューから） =====
-    let actionPlans: Array<{ title: string; description: string; action: string }> = [];
-    
-    // 月次レビューからアクションプランを取得
-    if (!monthlyReviewSnapshot.empty) {
-      const reviewData = monthlyReviewSnapshot.docs[0].data();
-      if (reviewData.actionPlans && Array.isArray(reviewData.actionPlans)) {
-        actionPlans = reviewData.actionPlans;
-      }
-    }
-
-    // ===== 3. アクションログ =====
-    const actionLogs = actionLogsSnapshot.docs.map((doc) => {
+    const analytics = analyticsSnapshot.docs.map((doc) => {
       const data = doc.data();
+      const publishedAt = data.publishedAt?.toDate?.() || data.publishedAt;
       return {
-        id: doc.id,
-        actionId: data.actionId || doc.id,
-        title: data.title || "",
-        focusArea: data.focusArea || "",
-        applied: Boolean(data.applied),
-        resultDelta: typeof data.resultDelta === "number" ? data.resultDelta : null,
-        feedback: data.feedback || "",
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+        ...data,
+        likes: data.likes || 0,
+        comments: data.comments || 0,
+        shares: data.shares || 0,
+        reach: data.reach || 0,
+        saves: data.saves || 0,
+        followers: data.followers || 0,
+        publishedAt: publishedAt instanceof Date ? publishedAt : new Date(publishedAt),
       };
     });
 
-    // アクションログマップを作成（actionIdをキーに）
-    const actionLogMap = new Map<string, { applied: boolean }>();
-    actionLogs.forEach((log) => {
-      if (log.actionId) {
-        actionLogMap.set(log.actionId, { applied: log.applied });
-      }
+    const posts = postsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt?.toDate?.() || data.createdAt;
+      const scheduledDate = data.scheduledDate?.toDate?.() || data.scheduledDate;
+      return {
+        ...data,
+        id: doc.id,
+        postType: data.postType || "feed",
+        title: data.title || "",
+        content: data.content || "",
+        createdAt: createdAt instanceof Date ? createdAt : new Date(createdAt),
+        scheduledDate: scheduledDate instanceof Date ? scheduledDate : (scheduledDate ? new Date(scheduledDate) : null),
+      };
     });
 
-    // ===== 4. KPIサマリー（breakdownsのみ） =====
-    // 現在の月の範囲を計算
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-    const startTimestamp = admin.firestore.Timestamp.fromDate(startDate);
-    const endTimestamp = admin.firestore.Timestamp.fromDate(endDate);
+    // 今週の分析データ
+    const thisWeekAnalytics = analytics.filter((a) => {
+      const date = a.publishedAt instanceof Date ? a.publishedAt : new Date(a.publishedAt);
+      return date >= startOfWeek && date <= endOfWeek;
+    });
 
-    // 期間内の分析データをフィルタリング
-    const analyticsInMonth = kpiBreakdownSnapshot.docs
-      .filter((doc) => {
-        const data = doc.data();
-        const publishedAt = data.publishedAt?.toDate?.() || new Date(data.publishedAt);
-        const publishedAtTimestamp = admin.firestore.Timestamp.fromDate(publishedAt);
-        return publishedAtTimestamp >= startTimestamp && publishedAtTimestamp <= endTimestamp;
+    // 先週の分析データ
+    const lastWeekAnalytics = analytics.filter((a) => {
+      const date = a.publishedAt instanceof Date ? a.publishedAt : new Date(a.publishedAt);
+      return date >= startOfLastWeek && date <= endOfLastWeek;
+    });
+
+    // 今週のKPI計算
+    const thisWeekKPIs = {
+      likes: thisWeekAnalytics.reduce((sum, a) => sum + (a.likes || 0), 0),
+      comments: thisWeekAnalytics.reduce((sum, a) => sum + (a.comments || 0), 0),
+      followers: 0,
+    };
+
+    // 先週のKPI計算
+    const lastWeekKPIs = {
+      likes: lastWeekAnalytics.reduce((sum, a) => sum + (a.likes || 0), 0),
+      comments: lastWeekAnalytics.reduce((sum, a) => sum + (a.comments || 0), 0),
+      followers: 0,
+    };
+
+    // フォロワー数の変化を計算
+    const followerCounts = followerCountsSnapshot.docs.map((doc) => doc.data());
+    if (followerCounts.length >= 2) {
+      const currentFollowers = followerCounts[0].followers || 0;
+      const previousFollowers = followerCounts[1].followers || 0;
+      thisWeekKPIs.followers = currentFollowers;
+      lastWeekKPIs.followers = previousFollowers;
+    } else if (followerCounts.length === 1) {
+      thisWeekKPIs.followers = followerCounts[0].followers || 0;
+    }
+
+    // 今日のタスク（投稿予定）
+    const todayTasks = posts
+      .filter((post) => {
+        const scheduledDate = post.scheduledDate;
+        if (!scheduledDate) return false;
+        const scheduled = scheduledDate instanceof Date ? scheduledDate : new Date(scheduledDate);
+        return (
+          scheduled.getFullYear() === today.getFullYear() &&
+          scheduled.getMonth() === today.getMonth() &&
+          scheduled.getDate() === today.getDate()
+        );
       })
-      .map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          postId: data.postId,
-          likes: data.likes || 0,
-          comments: data.comments || 0,
-          shares: data.shares || 0,
-          saves: data.saves || 0,
-          reach: data.reach || 0,
-          followerIncrease: parseInt(data.followerIncrease) || 0,
-          publishedAt: data.publishedAt?.toDate?.() || new Date(data.publishedAt),
-        };
+      .map((post) => ({
+        id: post.id,
+        type: post.postType || "feed",
+        title: post.title || "",
+        content: post.content || "",
+        scheduledTime: post.scheduledDate,
+      }));
+
+    // 今週の予定
+    const weeklySchedule = posts
+      .filter((post) => {
+        const scheduledDate = post.scheduledDate;
+        if (!scheduledDate) return false;
+        const scheduled = scheduledDate instanceof Date ? scheduledDate : new Date(scheduledDate);
+        return scheduled >= startOfWeek && scheduled <= endOfWeek;
+      })
+      .map((post) => ({
+        id: post.id,
+        date: post.scheduledDate,
+        type: post.postType || "feed",
+        title: post.title || "",
+        scheduledTime: post.scheduledDate,
+      }))
+      .sort((a, b) => {
+        if (!a.date || !b.date) return 0;
+        const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+        const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+        return dateA.getTime() - dateB.getTime();
       });
 
-    // KPI分解データを計算（常に全てのKPI項目を返す）
-    const kpiBreakdowns: Array<{
-      key: string;
-      label: string;
-      value: number;
-      unit?: string;
-      changePct?: number;
-    }> = [];
+    // 運用計画の取得
+    let currentPlan = null;
+    let allWeeklyTasks: Array<{ week: number; tasks: Array<{ day: string; task: string }> }> = [];
+    let allMonthlyGoals: Array<{ month: number; goals: Array<{ goal: string; description?: string }> }> = [];
+    let planStartDate: Date | null = null;
+    
+    if (!plansSnapshot.empty) {
+      const planDoc = plansSnapshot.docs[0];
+      const planData = planDoc.data();
+      const generatedStrategyData = planData.generatedStrategyData || {};
+      
+      // 計画開始日を取得（formData.startDateまたはcreatedAtから）
+      const formData = planData.formData || {};
+      if (formData.startDate) {
+        planStartDate = new Date(formData.startDate);
+      } else if (planData.createdAt) {
+        planStartDate = planData.createdAt?.toDate?.() || new Date(planData.createdAt);
+      } else {
+        planStartDate = new Date();
+      }
+      
+      allWeeklyTasks = generatedStrategyData.allWeeklyTasks || [];
+      allMonthlyGoals = generatedStrategyData.allMonthlyGoals || [];
+      
+      currentPlan = {
+        id: planDoc.id,
+        title: planData.title || "運用計画",
+        strategy: planData.generatedStrategy || "",
+        startDate: planStartDate,
+        endDate: planData.endDate?.toDate?.() || planData.endDate,
+        weeklyTasks: allWeeklyTasks,
+        monthlyGoals: allMonthlyGoals,
+        aiSuggestion: planData.aiSuggestion || null,
+      };
+    }
 
-    // リーチ
-    const totalReach = analyticsInMonth.reduce((sum, a) => sum + a.reach, 0);
-    kpiBreakdowns.push({
-      key: "reach",
-      label: "リーチ",
-      value: totalReach,
-      unit: "count",
-    });
+    // 今月の戦略進捗（簡易版）
+    const monthlyProgress = currentPlan
+      ? {
+          strategy: "ストーリーズを毎日投稿",
+          progress: 0,
+          totalDays: 0,
+          completedDays: 0,
+        }
+      : null;
 
-    // いいね
-    const totalLikes = analyticsInMonth.reduce((sum, a) => sum + a.likes, 0);
-    kpiBreakdowns.push({
-      key: "likes",
-      label: "いいね",
-      value: totalLikes,
-      unit: "count",
-    });
-
-    // コメント
-    const totalComments = analyticsInMonth.reduce((sum, a) => sum + (a.comments || 0), 0);
-    kpiBreakdowns.push({
-      key: "comments",
-      label: "コメント",
-      value: totalComments,
-      unit: "count",
-    });
-
-    // 保存
-    const totalSaves = analyticsInMonth.reduce((sum, a) => sum + a.saves, 0);
-    kpiBreakdowns.push({
-      key: "saves",
-      label: "保存",
-      value: totalSaves,
-      unit: "count",
-    });
-
-    // フォロワー増加
-    const totalFollowerIncrease = analyticsInMonth.reduce((sum, a) => sum + a.followerIncrease, 0);
-    kpiBreakdowns.push({
-      key: "followers",
-      label: "フォロワー増加",
-      value: totalFollowerIncrease,
-      unit: "count",
-    });
-
-    // エンゲージメント
-    const totalEngagement = analyticsInMonth.reduce(
-      (sum, a) => sum + a.likes + a.comments + a.shares + a.saves,
-      0
-    );
-    const avgEngagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0;
-    kpiBreakdowns.push({
-      key: "engagement",
-      label: "エンゲージメント率",
-      value: avgEngagementRate,
-      unit: "percent",
-    });
-
-    // プロフィールアクセス数
-    const profileVisits = followerCountData?.profileVisits || 0;
-    kpiBreakdowns.push({
-      key: "profileVisits",
-      label: "プロフィールアクセス",
-      value: profileVisits,
-      unit: "count",
-    });
-
-    // 外部リンクタップ数
-    const externalLinkTaps = followerCountData?.externalLinkTaps || 0;
-    kpiBreakdowns.push({
-      key: "externalLinkTaps",
-      label: "外部リンクタップ",
-      value: externalLinkTaps,
-      unit: "count",
-    });
+    // AI提案データを取得
+    let currentWeekTasks: Array<{ day: string; task: string }> = [];
+    let currentMonthGoals: Array<{ metric?: string; target?: string; goal?: string; description?: string }> = [];
+    let keyMessage: string | null = null;
+    let aiSuggestion: any = null;
+    
+    // planDataから直接aiSuggestionを取得
+    const planData = plansSnapshot.empty ? null : plansSnapshot.docs[0].data();
+    if (planData?.aiSuggestion) {
+      aiSuggestion = planData.aiSuggestion;
+      keyMessage = aiSuggestion.keyMessage || null;
+      
+      // 今月の目標を取得
+      if (aiSuggestion.monthlyGoals && Array.isArray(aiSuggestion.monthlyGoals)) {
+        currentMonthGoals = aiSuggestion.monthlyGoals;
+      }
+      
+      // 今週のタスクを取得（週次計画から）
+      if (aiSuggestion.weeklyPlans && Array.isArray(aiSuggestion.weeklyPlans)) {
+        const now = new Date();
+        const planStart = planStartDate || now;
+        const diffTime = now.getTime() - planStart.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+        
+        // 現在の週の計画を取得
+        const weekPlan = aiSuggestion.weeklyPlans.find((p: any) => p.week === currentWeek);
+        if (weekPlan && weekPlan.tasks) {
+          const typeLabels: Record<string, string> = {
+            feed: "フィード投稿",
+            reel: "リール",
+            story: "ストーリーズ",
+            "feed+reel": "フィード投稿 + リール",
+          };
+          
+          currentWeekTasks = weekPlan.tasks.map((task: any) => ({
+            day: task.day,
+            task: `${typeLabels[task.type] || task.type}（${task.time}）「${task.description}」`,
+          }));
+        }
+      }
+    } else if (planStartDate && allWeeklyTasks.length > 0 && allMonthlyGoals.length > 0) {
+      // 既存のデータ構造を使用（後方互換性）
+      const now = new Date();
+      const diffTime = now.getTime() - planStartDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+      const currentMonth = Math.max(1, Math.floor(diffDays / 30) + 1);
+      
+      // 現在の週のタスクを取得
+      const weekData = allWeeklyTasks.find((w: any) => w.week === currentWeek);
+      if (weekData) {
+        currentWeekTasks = weekData.tasks || [];
+      }
+      
+      // 現在の月の目標を取得
+      const monthData = allMonthlyGoals.find((m: any) => m.month === currentMonth);
+      if (monthData) {
+        currentMonthGoals = monthData.goals || [];
+      }
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        followerCount: followerCountData,
-        actionPlans,
-        actionLogs,
-        actionLogMap: Object.fromEntries(actionLogMap),
-        kpiBreakdowns,
+        todayTasks,
+        weeklyKPIs: {
+          thisWeek: thisWeekKPIs,
+          lastWeek: lastWeekKPIs,
+          changes: {
+            likes: thisWeekKPIs.likes - lastWeekKPIs.likes,
+            comments: thisWeekKPIs.comments - lastWeekKPIs.comments,
+            followers: thisWeekKPIs.followers - lastWeekKPIs.followers,
+          },
+        },
+        weeklySchedule,
+        currentPlan,
+        monthlyProgress,
+        currentWeekTasks,
+        currentMonthGoals,
+        keyMessage,
+        aiSuggestion,
       },
     });
   } catch (error) {
-    console.error("❌ Home dashboard error:", error);
+    console.error("Home dashboard error:", error);
     const { status, body } = buildErrorResponse(error);
     return NextResponse.json(body, { status });
   }
