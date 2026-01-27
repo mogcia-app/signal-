@@ -151,7 +151,7 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
         },
         bodyFont: {
           size: 13,
-          weight: "400" as const,
+          weight: "normal" as const,
           family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         },
         titleColor: "#94A3B8",
