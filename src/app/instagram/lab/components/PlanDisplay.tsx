@@ -46,28 +46,31 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }): React.Rea
     return fallback;
   };
 
-  // planDataがnullでないことを確認済みなので、型アサーションを適用
-  // TypeScriptの型推論を改善するため、明示的に型を指定
-  const plan = planData as Record<string, unknown>;
-  
-  // すべての値を事前に計算して、型エラーを回避
-  const currentFollowers = safeNumber(plan.currentFollowers, 0);
-  const analyticsFollowerIncrease = safeNumber(plan.analyticsFollowerIncrease, 0);
+  // planDataがnullでないことを確認済みなので、すべての値を事前に計算
+  // plan変数を使用せず、直接planDataから値を取得して型安全にする
+  const currentFollowers = safeNumber(planData.currentFollowers, 0);
+  const analyticsFollowerIncrease = safeNumber(planData.analyticsFollowerIncrease, 0);
   const actualFollowers =
-    plan.actualFollowers !== undefined
-      ? safeNumber(plan.actualFollowers, currentFollowers + analyticsFollowerIncrease)
+    planData.actualFollowers !== undefined
+      ? safeNumber(planData.actualFollowers, currentFollowers + analyticsFollowerIncrease)
       : currentFollowers + analyticsFollowerIncrease;
-  const targetFollowers = safeNumber(plan.targetFollowers, 0);
-  const strategies = (plan.strategies as string[]) || [];
+  const targetFollowers = safeNumber(planData.targetFollowers, 0);
+  const strategies = (planData.strategies as string[]) || [];
 
   // シミュレーション結果があるか確認
-  const hasSimulation = plan.simulationResult && typeof plan.simulationResult === "object";
+  const hasSimulation = planData.simulationResult && typeof planData.simulationResult === "object";
 
   // ReactNode型エラーを回避するため、明示的に型アサーションを追加
-  const planTitle: string = String(plan.title || "");
-  const planPeriod: string = String(plan.planPeriod || "");
-  const planTargetAudience: string = String(plan.targetAudience || "");
-  const planCategory: string = String(plan.category || "");
+  const planTitle: string = String(planData.title || "");
+  const planPeriod: string = String(planData.planPeriod || "");
+  const planTargetAudience: string = String(planData.targetAudience || "");
+  const planCategory: string = String(planData.category || "");
+  
+  // シミュレーション結果の値を事前に計算
+  const simulationResult = planData.simulationResult as Record<string, unknown> | null | undefined;
+  const monthlyTarget: string = simulationResult?.monthlyTarget ? String(simulationResult.monthlyTarget) : "N/A";
+  const feasibilityLevel: string = simulationResult?.feasibilityLevel ? String(simulationResult.feasibilityLevel) : "";
+  const feasibilityBadge: string = simulationResult?.feasibilityBadge ? String(simulationResult.feasibilityBadge) : "N/A";
 
   // JSX要素を返す前に、型を明示的に指定
   const content: ReactElement = (
@@ -159,28 +162,21 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planData }): React.Rea
                 <div className="flex justify-between">
                   <span className="text-black">月間目標:</span>
                   <span className="font-medium text-black">
-                    {String(
-                      (plan.simulationResult as Record<string, unknown>).monthlyTarget || "N/A"
-                    )}
+                    {monthlyTarget}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-black">達成可能性:</span>
                   <span
                     className={`font-medium ${
-                      (plan.simulationResult as Record<string, unknown>).feasibilityLevel ===
-                      "high"
+                      feasibilityLevel === "high"
                         ? "text-green-600"
-                        : (plan.simulationResult as Record<string, unknown>)
-                              .feasibilityLevel === "medium"
+                        : feasibilityLevel === "medium"
                           ? "text-yellow-600"
                           : "text-red-600"
                     }`}
                   >
-                    {String(
-                      (plan.simulationResult as Record<string, unknown>).feasibilityBadge ||
-                        "N/A"
-                    )}
+                    {feasibilityBadge}
                   </span>
                 </div>
               </div>
