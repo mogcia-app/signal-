@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
       aiSuggestion: body.aiSuggestion || null, // AI提案データを保存
       startDate: planStartDate,
       endDate: planEndDate,
-      createdAt: planStartDate,
+      createdAt: new Date(), // 作成日時（重要: startDateではない）
       updatedAt: new Date(),
     };
 
@@ -193,11 +193,17 @@ export async function POST(request: NextRequest) {
     console.log("[API] 計画保存データ:", {
       hasSimulationResult: !!planData.simulationResult,
       simulationResultKeys: planData.simulationResult ? Object.keys(planData.simulationResult) : [],
-      hasGeneratedStrategy: !!planData.generatedStrategy,
-      generatedStrategyLength: planData.generatedStrategy?.length || 0,
-      hasGeneratedStrategyData: !!planData.generatedStrategyData,
-      weeklyTasksCount: planData.generatedStrategyData?.allWeeklyTasks?.length || 0,
-      monthlyGoalsCount: planData.generatedStrategyData?.allMonthlyGoals?.length || 0,
+      hasAiSuggestion: !!planData.aiSuggestion,
+      hasWeeklyPlans: !!planData.aiSuggestion?.weeklyPlans,
+      weeklyPlansCount: planData.aiSuggestion?.weeklyPlans?.length || 0,
+      hasMonthlyGoals: !!planData.aiSuggestion?.monthlyGoals,
+      monthlyGoalsCount: planData.aiSuggestion?.monthlyGoals?.length || 0,
+      createdAt: planData.createdAt,
+      startDate: planData.startDate,
+      endDate: planData.endDate,
+      hasFormData: !!planData.formData,
+      formDataKeys: planData.formData ? Object.keys(planData.formData) : [],
+      userId: planData.userId,
     });
 
     const docRef = await adminDb.collection("plans").add(planData);
@@ -292,6 +298,14 @@ export async function GET(request: NextRequest) {
     }
 
     const snapshot = await query.get();
+    
+    console.log("[API] 計画取得クエリ:", {
+      userId: uid,
+      snsType,
+      status,
+      limit,
+      docsCount: snapshot.docs.length,
+    });
 
     const mappedPlans = snapshot.docs
       .map((doc) => {
@@ -322,11 +336,38 @@ export async function GET(request: NextRequest) {
           updatedAtValue = new Date();
         }
 
+        // startDateとendDateを正しく変換
+        let startDateValue: Date | null = null;
+        if (data.startDate) {
+          if (data.startDate instanceof Date) {
+            startDateValue = data.startDate;
+          } else if (isFirestoreTimestamp(data.startDate)) {
+            const timestamp = data.startDate as FirestoreTimestampLike;
+            startDateValue = timestamp.toDate ? timestamp.toDate() : new Date();
+          } else if (data.startDate) {
+            startDateValue = new Date(data.startDate as string | number);
+          }
+        }
+        
+        let endDateValue: Date | null = null;
+        if (data.endDate) {
+          if (data.endDate instanceof Date) {
+            endDateValue = data.endDate;
+          } else if (isFirestoreTimestamp(data.endDate)) {
+            const timestamp = data.endDate as FirestoreTimestampLike;
+            endDateValue = timestamp.toDate ? timestamp.toDate() : new Date();
+          } else if (data.endDate) {
+            endDateValue = new Date(data.endDate as string | number);
+          }
+        }
+
         return {
           id: doc.id,
           ...data,
           createdAt: createdAtValue,
           updatedAt: updatedAtValue,
+          startDate: startDateValue,
+          endDate: endDateValue,
         };
       })
       .filter((plan) => {
@@ -363,6 +404,22 @@ export async function GET(request: NextRequest) {
         return bTime - aTime; // 降順（新しい順）
       })
       .slice(0, limit);
+    
+    console.log("[API] 計画取得結果:", {
+      plansCount: plans.length,
+      planIds: plans.map(p => p.id),
+      firstPlan: plans[0] ? {
+        id: plans[0].id,
+        hasFormData: !!plans[0].formData,
+        hasSimulationResult: !!plans[0].simulationResult,
+        hasAiSuggestion: !!plans[0].aiSuggestion,
+        hasStartDate: !!plans[0].startDate,
+        hasEndDate: !!plans[0].endDate,
+        createdAt: plans[0].createdAt,
+        startDate: plans[0].startDate,
+        endDate: plans[0].endDate,
+      } : null,
+    });
 
     // 指定した月に該当する計画が存在しない場合、直近の過去の計画を返す
     if (

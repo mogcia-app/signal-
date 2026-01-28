@@ -59,9 +59,69 @@ export function SuccessImprovementGallery({
           ]}
         />
       ) : (
-        <div className="space-y-6">
-          <SuccessGrid title="成功パターン（GOLD）" icon={<Crown className="h-4 w-4 text-amber-500" />} signals={goldSignals} tone="gold" />
-          <SuccessGrid title="改善優先パターン（RED）" icon={<AlertTriangle className="h-4 w-4 text-red-500" />} signals={redSignals} tone="red" />
+        <div className="space-y-8">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              🏆 成功パターン（GOLD）
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              AIが見つけた、あなたの成功パターンです。次の投稿に活かしましょう。
+            </p>
+            <SuccessGrid title="" icon={<Crown className="h-4 w-4 text-amber-500" />} signals={goldSignals} tone="gold" />
+            {goldSignals.length > 0 && (
+              <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-amber-900 mb-2">💡 共通点:</p>
+                <ul className="space-y-1 text-xs text-amber-800">
+                  {(() => {
+                    // 共通点を抽出（簡易版）
+                    const commonHashtags = goldSignals
+                      .flatMap((s) => s.hashtags)
+                      .filter((tag, index, self) => self.indexOf(tag) === index)
+                      .slice(0, 3);
+                    return [
+                      goldSignals[0]?.category === "reel" ? "- リール形式を使用" : "- フィード投稿形式を使用",
+                      "- ポジティブな感情を引き出す",
+                      commonHashtags.length > 0 ? `- ${commonHashtags.join("、")}などのハッシュタグを活用` : "- 効果的なハッシュタグを活用",
+                    ];
+                  })().map((point, index) => (
+                    <li key={index}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              🔴 改善が必要な投稿（RED）
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              AIが見つけた、改善すべき投稿です。
+            </p>
+            <SuccessGrid title="" icon={<AlertTriangle className="h-4 w-4 text-red-500" />} signals={redSignals} tone="red" />
+            {redSignals.length > 0 && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-red-900 mb-2">💡 共通の改善点:</p>
+                <ul className="space-y-1 text-xs text-red-800 mb-4">
+                  <li>- 保存率が低い</li>
+                  <li>- コメント率が低い</li>
+                </ul>
+                <p className="text-sm font-semibold text-red-900 mb-2">💡 次に試すこと:</p>
+                <ul className="space-y-1 text-xs text-red-800">
+                  <li>- 質問を投げかけてコメントを促す</li>
+                  <li>- 「保存してね」と明示的に伝える</li>
+                  <li>- より魅力的なビジュアルを使用する</li>
+                </ul>
+                <div className="mt-4">
+                  <Link
+                    href="/instagram/lab/feed"
+                    className="inline-block text-sm font-medium text-white bg-[#FF8A15] hover:bg-[#E67A0A] px-4 py-2 rounded-md transition-colors"
+                  >
+                    👉 改善案をAIに作ってもらう
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>
@@ -157,7 +217,7 @@ function SuccessGrid({ title, icon, signals, tone }: SuccessGridProps) {
                   <Metric label="ER" value={`${signal.engagementRate.toFixed(1)}%`} />
                   <Metric label="保存率" value={formatRate(signal.metrics?.savesRate)} />
                   <Metric label="コメント率" value={formatRate(signal.metrics?.commentsRate)} />
-                  <Metric label="クラスタ比較" value={formatDiff(signal.comparisons?.engagementRateDiff, { signed: true })} />
+                  <Metric label="似た投稿との比較" value={formatDiff(signal.comparisons?.engagementRateDiff, { signed: true })} />
                 </div>
                 <p className={`text-xs font-medium mt-3 ${sentimentColorMap[signal.sentimentLabel]}`}>
                   {sentimentLabelMap[signal.sentimentLabel]} ({signal.sentimentScore.toFixed(2)})

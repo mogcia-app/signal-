@@ -9,12 +9,11 @@ import { HashtagAnalysis } from "./components/HashtagAnalysis";
 import { ContentPerformance } from "./components/ContentPerformance";
 import { AudienceBreakdownComponent } from "./components/AudienceBreakdown";
 import { DailyKPITrend } from "./components/DailyKPITrend";
-import { GoalAchievementComponent } from "./components/GoalAchievement";
 import { useAuth } from "../../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { authFetch } from "../../../utils/authFetch";
-import type { KPIBreakdown, TimeSlotEntry, FeedStats, ReelStats, AudienceBreakdown, DailyKPI, GoalAchievement } from "@/app/api/analytics/kpi-breakdown/route";
+import type { KPIBreakdown, TimeSlotEntry, FeedStats, ReelStats, AudienceBreakdown, DailyKPI } from "@/app/api/analytics/kpi-breakdown/route";
 
 export default function InstagramKPIPage() {
   const { user } = useAuth();
@@ -41,7 +40,6 @@ export default function InstagramKPIPage() {
     feedAudience: AudienceBreakdown | null;
     reelAudience: AudienceBreakdown | null;
     dailyKPIs: DailyKPI[];
-    goalAchievements: GoalAchievement[];
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +73,6 @@ export default function InstagramKPIPage() {
               feedAudience: result.data.feedAudience || null,
               reelAudience: result.data.reelAudience || null,
               dailyKPIs: result.data.dailyKPIs || [],
-              goalAchievements: result.data.goalAchievements || [],
             });
           } else {
             setError("データの取得に失敗しました");
@@ -168,12 +165,6 @@ export default function InstagramKPIPage() {
           breakdowns={kpiData?.breakdowns || []}
           isLoading={isLoading}
           error={error}
-        />
-
-        {/* KPI目標達成度 */}
-        <GoalAchievementComponent
-          goalAchievements={kpiData?.goalAchievements || []}
-          isLoading={isLoading}
         />
 
         {/* フィード/リール統計サマリー */}

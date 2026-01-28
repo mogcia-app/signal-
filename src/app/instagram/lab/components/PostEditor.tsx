@@ -1255,13 +1255,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </div>
               ) : null}
 
-              {autoGenerateFeedback ? (
-                <div className="border border-blue-200 bg-blue-50 text-blue-800 text-xs px-3 py-2 mt-2">
-                  <p className="font-bold mb-1">💡 より良い投稿文を得るために</p>
-                  <p className="whitespace-pre-wrap">{autoGenerateFeedback}</p>
-                  <p className="mt-2 text-blue-700">このフィードバックを参考に、運用計画をより具体的にしてみてください。</p>
-                </div>
-              ) : null}
 
               {/* テーマ指定生成ボタン */}
               <button
@@ -1295,13 +1288,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </div>
               ) : null}
 
-              {aiGenerateFeedback ? (
-                <div className="border border-blue-200 bg-blue-50 text-blue-800 text-xs px-3 py-2 mt-2">
-                  <p className="font-bold mb-1">💡 より良い投稿文を得るために</p>
-                  <p className="whitespace-pre-wrap">{aiGenerateFeedback}</p>
-                  <p className="mt-2 text-blue-700">このフィードバックを参考に、プロンプトをより具体的にしてみてください。</p>
-                </div>
-              ) : null}
             </div>
           </div>
 
@@ -1370,119 +1356,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </label>
               </div>
             )}
-          </div>
-
-          {/* プレビュー */}
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              プレビュー
-            </h3>
-            <div className="bg-gradient-to-br from-gray-50 to-white p-6 border-2 border-gray-100">
-              {/* 投稿情報ヘッダー */}
-              <div className="mb-4 pb-3 border-b border-gray-200">
-                <div className="flex items-center justify-between text-xs text-black">
-                  <div className="flex items-center space-x-3">
-                    <span className="font-medium">
-                      {postType === "feed"
-                        ? "📸 フィード"
-                        : postType === "reel"
-                          ? "🎬 リール"
-                          : "📱 ストーリーズ"}
-                    </span>
-                    {scheduledDate && scheduledTime && (
-                      <span className="text-black">
-                        📅 {new Date(scheduledDate).toLocaleDateString("ja-JP")} {scheduledTime}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-black">
-                    {scheduledDate
-                      ? new Date(scheduledDate).toLocaleDateString("ja-JP")
-                      : new Date().toLocaleDateString("ja-JP")}
-                  </div>
-                </div>
-              </div>
-
-              {/* 投稿内容 */}
-              {title && (
-                <div className="text-lg font-semibold text-black mb-3">
-                  {title
-                    .replace(/^[\s#-]+|[\s#-]+$/g, "")
-                    .replace(/^#+/g, "")
-                    .trim()}
-                </div>
-              )}
-
-              {/* 画像プレビュー */}
-              {image && (
-                <div className="mb-3">
-                  <Image
-                    src={image}
-                    alt="投稿画像"
-                    width={400}
-                    height={192}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                </div>
-              )}
-
-              {content ? (
-                <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                  {content
-                    .replace(/^[\s#-]+|[\s#-]+$/g, "")
-                    .replace(/^#+/g, "")
-                    .trim()}
-                </div>
-              ) : (
-                <div className="text-black italic text-center py-4">
-                  📝 投稿文を入力するとプレビューが表示されます
-                </div>
-              )}
-              {hashtags.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-gray-200">
-                  <div className="text-sm text-orange-600 flex flex-wrap gap-1">
-                    {hashtags
-                      .map((hashtag) => {
-                        // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
-                        const cleanHashtag = hashtag.replace(/^#+/, "").trim();
-                        return `#${cleanHashtag}`;
-                      })
-                      .join(" ")}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 文字数カウンター */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">文字数</span>
-                <span
-                  className={`text-sm font-semibold ${isOverLimit ? "text-red-600" : characterCount > maxCharacters * 0.9 ? "text-yellow-600" : "text-green-600"}`}
-                >
-                  {characterCount} / {maxCharacters}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ease-out ${
-                    isOverLimit
-                      ? "bg-gradient-to-r from-red-400 to-red-600"
-                      : characterCount > maxCharacters * 0.9
-                        ? "bg-gradient-to-r from-yellow-400 to-orange-500"
-                        : "bg-gradient-to-r from-green-400 to-blue-500"
-                  }`}
-                  style={{ width: `${Math.min((characterCount / maxCharacters) * 100, 100)}%` }}
-                />
-              </div>
-              {isOverLimit && (
-                <div className="mt-2 flex items-center text-red-600 text-xs">
-                  <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                  文字数制限を超過しています
-                </div>
-              )}
-            </div>
           </div>
 
           {/* 保存された投稿一覧 */}

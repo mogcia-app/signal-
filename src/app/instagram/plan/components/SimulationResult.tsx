@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SimulationResult as SimulationResultType, PlanFormData, AIPlanSuggestion } from "../types/plan";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { WeeklyFollowerPredictionChart } from "./WeeklyFollowerPredictionChart";
 import { AIPlanSuggestion as AIPlanSuggestionComponent } from "./AIPlanSuggestion";
+import { authFetch } from "../../../../utils/authFetch";
+import { useUserProfile } from "../../../../hooks/useUserProfile";
 
 interface SimulationResultProps {
   result: SimulationResultType;
@@ -16,6 +18,7 @@ interface SimulationResultProps {
   };
   fullFormData?: PlanFormData; // AI提案に必要な完全なフォームデータ
   aiSuggestedTarget?: number; // AIが自動提案した目標フォロワー数
+  aiSuggestion?: AIPlanSuggestion | null; // AI提案（親コンポーネントから渡される場合）
   onSelectAlternative?: (planId: string) => void;
   onStartPlan?: (suggestion: AIPlanSuggestion) => void; // この計画で始めるボタンのハンドラー
   isSaving?: boolean; // 保存中かどうか
@@ -26,12 +29,55 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
   formData,
   fullFormData,
   aiSuggestedTarget,
+  aiSuggestion: externalAiSuggestion,
   onSelectAlternative,
   onStartPlan,
   isSaving = false,
 }) => {
-  const [showLevel2, setShowLevel2] = useState(false);
-  const [showLevel3, setShowLevel3] = useState(false);
+  const { userProfile } = useUserProfile();
+  const [aiSuggestion, setAiSuggestion] = useState<AIPlanSuggestion | null>(null);
+  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+
+  // 外部から渡されたAI提案を使用、なければ取得
+  useEffect(() => {
+    if (externalAiSuggestion) {
+      setAiSuggestion(externalAiSuggestion);
+      setIsLoadingSuggestion(false); // ローディング状態を解除
+      return;
+    }
+
+    if (fullFormData) {
+      const fetchSuggestion = async () => {
+        setIsLoadingSuggestion(true);
+        try {
+          const response = await authFetch("/api/instagram/plan-suggestion", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              formData: fullFormData,
+              simulationResult: result,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setAiSuggestion(data.suggestion);
+          }
+        } catch (error) {
+          console.error("AI提案取得エラー:", error);
+        } finally {
+          setIsLoadingSuggestion(false);
+        }
+      };
+
+      fetchSuggestion();
+    }
+  }, [fullFormData, result, externalAiSuggestion]);
+
+  // 使用するAI提案（外部から渡されたものか、内部で取得したものか）
+  const currentAiSuggestion = externalAiSuggestion || aiSuggestion;
 
   // 開始日と終了日を計算
   const startDate = formData.startDate 
@@ -44,6 +90,20 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
     return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
   };
 
+  // 業界平均成長率を取得
+  const getIndustryAverage = () => {
+    if (formData.currentFollowers < 1000) {
+      return "1.5〜3.0%";
+    } else if (formData.currentFollowers < 10000) {
+      return "1.5〜2.5%";
+    } else if (formData.currentFollowers < 100000) {
+      return "0.8〜1.5%";
+    } else {
+      return "0.5〜1.0%";
+    }
+  };
+
+
   const colorClasses = {
     green: "bg-green-100 text-green-800 border-green-300",
     yellow: "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -52,128 +112,152 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* レベル1: 基本情報（常に表示） */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          ✨ 目標達成シミュレーション
-        </h2>
+    <div className="space-y-6">
+      {/* メインセクション */}
+      <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-8">
+        {/* ヘッダー */}
+        <div className="text-center pb-6 border-b border-gray-100">
+          <h2 className="text-2xl font-light text-gray-900 tracking-wide">
+            {userProfile?.name || "あなた"}の{formData.periodMonths}ヶ月プラン
+          </h2>
+        </div>
 
-        {/* 基本情報 */}
-        <div className="mb-4 space-y-2">
-          <div className="text-sm text-gray-600">
-            <span className="font-medium">期間:</span> {formatDate(startDate)} → {formatDate(endDate)}（{formData.periodMonths}ヶ月）
+        {/* 目標フォロワー数 */}
+        <div className="text-center py-6 px-4">
+          <div className="inline-flex items-baseline gap-3 mb-3">
+            <span className="text-3xl font-light text-gray-900">
+              {formData.currentFollowers.toLocaleString()}
+            </span>
+            <span className="text-gray-400 text-sm">人</span>
+            <span className="text-gray-300 mx-2">→</span>
+            <span className="text-3xl font-light text-[#FF8A15]">
+              {formData.targetFollowers.toLocaleString()}
+            </span>
+            <span className="text-gray-400 text-sm">人</span>
           </div>
-          <div className="text-sm text-gray-600">
-            <span className="font-medium">現在:</span> {formData.currentFollowers.toLocaleString()}人
-          </div>
-          <div className="text-sm text-gray-600">
-            <span className="font-medium">目標:</span> {formData.targetFollowers.toLocaleString()}人（+{(formData.targetFollowers - formData.currentFollowers).toLocaleString()}人）
+          <p className="text-xs text-gray-400 tracking-wide uppercase mt-2">
+            業界平均より無理のないペース
+          </p>
+          <p className="text-xs text-gray-500 mt-3">
+            {formatDate(startDate)} 〜 {formatDate(endDate)}
+          </p>
+        </div>
+
+        {/* 達成難易度 */}
+        <div className="pt-2">
+          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
+            達成難易度
+          </h3>
+          <div className="border border-gray-200 rounded-lg p-6 bg-gray-50/50">
+            <div className="mb-4">
+              <p className="text-base font-medium text-gray-900">
+                {result.difficultyMessage}
+              </p>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <span className="text-gray-600">あなたの目標</span>
+                <span className="font-medium text-gray-900">月{result.requiredMonthlyGrowthRate}%成長</span>
+              </div>
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <span className="text-gray-600">業界平均</span>
+                <span className="font-medium text-gray-900">月{getIndustryAverage()}成長</span>
+              </div>
+              <div className="pt-2">
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  {(() => {
+                    const industryMin = parseFloat(getIndustryAverage().split("〜")[0]);
+                    const isLower = result.requiredMonthlyGrowthRate < industryMin;
+                    return (
+                      <>
+                        業界平均より{isLower ? "低め" : "高め"}のため、{isLower ? "無理なく" : "努力が必要ですが"}達成可能です
+                      </>
+                    );
+                  })()}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 達成可能性 */}
-        <div className={`border rounded-lg p-4 ${colorClasses[result.difficultyColor]}`}>
-          <div className="font-semibold mb-2">{result.difficultyMessage}</div>
-          <div className="text-sm space-y-1">
-            <div>必要な月間成長率: {result.requiredMonthlyGrowthRate}%</div>
-            <div>業界平均: {(() => {
-              // フォロワー数に応じた業界平均を表示
-              if (formData.currentFollowers < 1000) {
-                return "2.0〜3.0%";
-              } else if (formData.currentFollowers < 10000) {
-                return "1.5〜2.5%";
-              } else if (formData.currentFollowers < 100000) {
-                return "1.0〜1.5%";
-              } else {
-                return "0.6〜1.0%";
-              }
-            })()}</div>
-            <div>達成難易度スコア: {result.difficultyScore}%</div>
-          </div>
-        </div>
-
-        {/* レベル2展開ボタン */}
-        <button
-          type="button"
-          onClick={() => setShowLevel2(!showLevel2)}
-          className="mt-4 w-full flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          {showLevel2 ? (
-            <>
-              <ChevronUp className="w-4 h-4" />
-              <span>詳しく見る（閉じる）</span>
-            </>
-          ) : (
-            <>
-              <ChevronDown className="w-4 h-4" />
-              <span>詳しく見る</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* レベル2: 詳細情報（クリックで表示） */}
-      {showLevel2 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
-          {/* 週次フォロワー増加予測 */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              週次フォロワー増加予測
-            </h3>
-            <WeeklyFollowerPredictionChart
-              currentFollowers={formData.currentFollowers}
-              targetFollowers={formData.targetFollowers}
-              periodMonths={formData.periodMonths}
-              aiSuggestedTarget={aiSuggestedTarget}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* AI提案セクション（常に表示） */}
-      {fullFormData && (
+        {/* 週ごとの予測 */}
         <div>
-          <AIPlanSuggestionComponent 
-            formData={fullFormData} 
-            simulationResult={result}
-            onStartPlan={onStartPlan}
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            📈 週ごとの予測
+          </h3>
+          <div className="space-y-2 mb-4">
+            {result.weeklyPredictions && result.weeklyPredictions.length > 0 ? (
+              result.weeklyPredictions.map((prediction, index) => {
+                const weekNumber = index + 1;
+                const previousFollowers = index === 0 
+                  ? formData.currentFollowers 
+                  : result.weeklyPredictions[index - 1];
+                const gain = Math.round(prediction - previousFollowers);
+                const isLastWeek = weekNumber === formData.periodMonths * 4;
+
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-700">
+                      第{weekNumber}週: <strong className="text-[#FF8A15]">+{gain}人</strong>（{Math.round(prediction).toLocaleString()}人）
+                    </span>
+                    {isLastWeek && <span className="text-[#FF8A15]">🎉</span>}
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-gray-500">週ごとの予測データがありません</p>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 italic">
+            このペースなら、毎週少しずつ増やせます！
+          </p>
+        </div>
+
+        {/* 週次フォロワー増加予測グラフ */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            週次フォロワー増加予測グラフ
+          </h3>
+          <WeeklyFollowerPredictionChart
+            currentFollowers={formData.currentFollowers}
+            targetFollowers={formData.targetFollowers}
+            periodMonths={formData.periodMonths}
+            aiSuggestedTarget={aiSuggestedTarget}
           />
         </div>
+        
+        {/* この計画で始めるボタン */}
+        {onStartPlan && currentAiSuggestion && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => onStartPlan(currentAiSuggestion)}
+              disabled={isSaving}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#FF8A15] hover:bg-[#E67A0A] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CheckCircle className="w-4 h-4" />
+              {isSaving ? "保存中..." : "この計画で始める"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* AI提案セクション（最適な投稿時間など、週ごとの詳細計画がない場合のみ） */}
+      {fullFormData && !isLoadingSuggestion && currentAiSuggestion && 
+       (!currentAiSuggestion.weeklyPlans || currentAiSuggestion.weeklyPlans.length === 0) && (
+        <AIPlanSuggestionComponent 
+          formData={fullFormData} 
+          simulationResult={result}
+          suggestion={currentAiSuggestion}
+          onStartPlan={onStartPlan}
+          showWeeklyPlans={false}
+        />
       )}
 
-      {/* レベル3: 詳細な計算根拠（さらにクリックで表示） */}
-      {showLevel3 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            詳細な計算根拠
-          </h3>
-          <div className="space-y-3 text-sm text-gray-700">
-            <div>
-              <div className="font-medium mb-1">必要月間成長率の計算式:</div>
-              <div className="bg-gray-50 p-3 rounded font-mono text-xs">
-                ((目標フォロワー数 / 現在フォロワー数) ^ (1 / 期間月数) - 1) × 100
-              </div>
-            </div>
-            <div>
-              <div className="font-medium mb-1">達成難易度スコアの計算式:</div>
-              <div className="bg-gray-50 p-3 rounded font-mono text-xs">
-                (必要月間成長率 / 業界平均成長率) × 100
-              </div>
-            </div>
-            <div>
-              <div className="font-medium mb-1">業界平均データの出典:</div>
-              <div className="text-gray-600">
-                Instagram公式データおよび業界レポートに基づく統計値
-              </div>
-            </div>
-            <div>
-              <div className="font-medium mb-1">エンゲージメント率の想定値:</div>
-              <div className="text-gray-600">
-                業界平均: 4.3%（フォロワー数に応じて変動）
-              </div>
-            </div>
-          </div>
+      {/* ローディング状態 */}
+      {isLoadingSuggestion && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+          <div className="text-gray-500">AI提案を生成中...</div>
         </div>
       )}
 

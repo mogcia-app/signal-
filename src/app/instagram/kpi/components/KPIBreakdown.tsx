@@ -150,7 +150,11 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                     )}
                   </div>
                   <p className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mt-1 break-all">
-                    {formatValue(item.value, item.unit)}
+                    {item.key === "current_followers"
+                      ? item.value > 0
+                        ? `+${item.value.toLocaleString()}人`
+                        : `${item.value.toLocaleString()}人`
+                      : formatValue(item.value, item.unit)}
                   </p>
                   {item.key === "engagement" && (
                     <p className="mt-1 text-[10px] text-gray-500">

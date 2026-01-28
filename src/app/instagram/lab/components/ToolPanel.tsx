@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Copy, Tag } from "lucide-react";
+import { useAuth } from "../../../../contexts/auth-context";
+import { authFetch } from "../../../../utils/authFetch";
 
 interface ToolPanelProps {
   onTemplateSelect: (template: string) => void;
@@ -19,66 +21,76 @@ const DEFAULT_TEMPLATES = [
   "素敵な週末をお過ごしください🌅",
 ];
 
-const STORAGE_KEY_TEMPLATES = "instagram_lab_templates";
-const STORAGE_KEY_HASHTAGS = "instagram_lab_hashtags";
-
 export const ToolPanel: React.FC<ToolPanelProps> = ({
   onTemplateSelect,
   onHashtagSelect,
 }) => {
-  // localStorageから読み込み
-  const loadTemplates = (): string[] => {
-    if (typeof window === "undefined") {return DEFAULT_TEMPLATES;}
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_TEMPLATES);
-      return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
-    } catch {
-      return DEFAULT_TEMPLATES;
-    }
-  };
-
-  const loadHashtags = (): string[] => {
-    if (typeof window === "undefined") {return [];}
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_HASHTAGS);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  };
-
+  const { user } = useAuth();
   const [templates, setTemplates] = useState<string[]>([]);
   const [hashtags, setHashtags] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 初回マウント時にlocalStorageから読み込む
+  // APIから読み込み
   useEffect(() => {
-    setTemplates(loadTemplates());
-    setHashtags(loadHashtags());
-  }, []);
+    const loadSettings = async () => {
+      if (!user?.uid) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await authFetch("/api/user/lab-settings");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setTemplates(data.data.templates || DEFAULT_TEMPLATES);
+            setHashtags(data.data.hashtags || []);
+          }
+        } else {
+          // エラー時はデフォルト値を設定
+          setTemplates(DEFAULT_TEMPLATES);
+          setHashtags([]);
+        }
+      } catch (error) {
+        console.error("ラボ設定読み込みエラー:", error);
+        // エラー時はデフォルト値を設定
+        setTemplates(DEFAULT_TEMPLATES);
+        setHashtags([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [user?.uid]);
 
   const [newTemplate, setNewTemplate] = useState("");
   const [newHashtag, setNewHashtag] = useState("");
   const [editingTemplate, setEditingTemplate] = useState<number | null>(null);
   const [editingHashtag, setEditingHashtag] = useState<number | null>(null);
 
-  // localStorageに保存
-  const saveTemplates = (newTemplates: string[]) => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(newTemplates));
-      } catch (error) {
-        console.error("Failed to save templates:", error);
-      }
+  // APIに保存
+  const saveSettings = async (newTemplates: string[], newHashtags: string[]) => {
+    if (!user?.uid) {
+      console.warn("ユーザーがログインしていないため、保存できません");
+      return;
     }
-  };
 
-  const saveHashtags = (newHashtags: string[]) => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(STORAGE_KEY_HASHTAGS, JSON.stringify(newHashtags));
-      } catch (error) {
-        console.error("Failed to save hashtags:", error);
+    try {
+      const response = await authFetch("/api/user/lab-settings", {
+        method: "POST",
+        body: JSON.stringify({
+          templates: newTemplates,
+          hashtags: newHashtags,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("ラボ設定保存エラー:", await response.text());
       }
+    } catch (error) {
+      console.error("ラボ設定保存エラー:", error);
     }
   };
 
@@ -86,7 +98,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
     if (newTemplate.trim()) {
       const updated = [...templates, newTemplate.trim()];
       setTemplates(updated);
-      saveTemplates(updated);
+      saveSettings(updated, hashtags);
       setNewTemplate("");
     }
   };
@@ -94,14 +106,14 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
   const handleEditTemplate = (index: number, newValue: string) => {
     const updated = templates.map((template, i) => (i === index ? newValue : template));
     setTemplates(updated);
-    saveTemplates(updated);
+    saveSettings(updated, hashtags);
     setEditingTemplate(null);
   };
 
   const handleDeleteTemplate = (index: number) => {
     const updated = templates.filter((_, i) => i !== index);
     setTemplates(updated);
-    saveTemplates(updated);
+    saveSettings(updated, hashtags);
   };
 
   const handleAddHashtag = () => {
@@ -109,7 +121,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
       const hashtag = newHashtag.trim().replace("#", "");
       const updated = [...hashtags, hashtag];
       setHashtags(updated);
-      saveHashtags(updated);
+      saveSettings(templates, updated);
       setNewHashtag("");
     }
   };
@@ -117,14 +129,14 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
   const handleEditHashtag = (index: number, newValue: string) => {
     const updated = hashtags.map((hashtag, i) => (i === index ? newValue : hashtag));
     setHashtags(updated);
-    saveHashtags(updated);
+    saveSettings(templates, updated);
     setEditingHashtag(null);
   };
 
   const handleDeleteHashtag = (index: number) => {
     const updated = hashtags.filter((_, i) => i !== index);
     setHashtags(updated);
-    saveHashtags(updated);
+    saveSettings(templates, updated);
   };
 
   // コピー機能は将来実装予定
@@ -135,6 +147,17 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
   // const handleCopyHashtag = (hashtag: string) => {
   //   navigator.clipboard.writeText(`#${hashtag}`);
   // };
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff8a15] mx-auto mb-2"></div>
+          <p className="text-sm">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col space-y-6">

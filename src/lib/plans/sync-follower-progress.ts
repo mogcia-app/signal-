@@ -1,5 +1,6 @@
 "use server";
 
+import * as admin from "firebase-admin";
 import { adminDb } from "../firebase-admin";
 
 function parseFollowerValue(value: unknown): number | null {
@@ -62,29 +63,64 @@ export async function syncPlanFollowerProgress(userId: string) {
 
     const planData = planDoc.data() || {};
 
-    let analyticsSnapshot = await adminDb
+    // initialFollowersを取得
+    let initialFollowers = 0;
+    try {
+      const userDoc = await adminDb.collection("users").doc(userId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        initialFollowers = userData?.businessInfo?.initialFollowers || 0;
+      }
+    } catch (error) {
+      console.error("ユーザー情報取得エラー:", error);
+    }
+
+    // 今月の増加数を計算（今月のanalyticsデータのみを使用）
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const [year, month] = currentMonth.split("-").map(Number);
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const startTimestamp = admin.firestore.Timestamp.fromDate(startDate);
+    const endTimestamp = admin.firestore.Timestamp.fromDate(endDate);
+
+    const monthlyAnalyticsSnapshot = await adminDb
       .collection("analytics")
       .where("userId", "==", userId)
       .where("snsType", "==", "instagram")
+      .where("publishedAt", ">=", startTimestamp)
+      .where("publishedAt", "<=", endTimestamp)
       .get();
 
-    if (analyticsSnapshot.empty) {
-      analyticsSnapshot = await adminDb.collection("analytics").where("userId", "==", userId).get();
-    }
-
-    const totalFollowerIncrease = analyticsSnapshot.docs.reduce((sum, doc) => {
+    // 今月の増加数の合計を計算
+    const monthlyFollowerIncrease = monthlyAnalyticsSnapshot.docs.reduce((sum, doc) => {
       const value = Number(doc.data().followerIncrease) || 0;
       return sum + value;
     }, 0);
 
-    const formCurrent = planData?.formData?.currentFollowers;
-    const parsedFormCurrent = parseFollowerValue(formCurrent);
-    const baselineFollowers =
-      parsedFormCurrent ?? (Number(planData.currentFollowers) || 0);
-    const actualFollowers = Math.max(0, baselineFollowers + totalFollowerIncrease);
+    // /homeで入力された値（その他からの増加数）を取得
+    const followerCountSnapshot = await adminDb
+      .collection("follower_counts")
+      .where("userId", "==", userId)
+      .where("snsType", "==", "instagram")
+      .where("month", "==", currentMonth)
+      .limit(1)
+      .get();
+
+    let followerIncreaseFromOther = 0;
+    if (!followerCountSnapshot.empty) {
+      const followerCountData = followerCountSnapshot.docs[0].data();
+      followerIncreaseFromOther = followerCountData.followers || 0;
+    }
+
+    // 今月の合計増加数 = 投稿からの増加数 + その他からの増加数
+    const totalMonthlyFollowerIncrease = monthlyFollowerIncrease + followerIncreaseFromOther;
+
+    // プランの現在のフォロワー数 = initialFollowers + 今月の増加数
+    const actualFollowers = Math.max(0, initialFollowers + totalMonthlyFollowerIncrease);
 
     await planDoc.ref.update({
-      analyticsFollowerIncrease: totalFollowerIncrease,
+      analyticsFollowerIncrease: totalMonthlyFollowerIncrease,
       actualFollowers,
       updatedAt: new Date(),
     });

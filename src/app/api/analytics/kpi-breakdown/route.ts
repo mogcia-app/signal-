@@ -547,7 +547,7 @@ function buildKpiBreakdowns(params: {
   // これにより、valueとsegmentsの整合性が取れる
   const currentFollowersBreakdown: KPIBreakdown = {
     key: "current_followers",
-    label: "フォロワー数",
+    label: "今月の増加数",
     value: totalFollowerIncrease, // 増加数の合計を表示
     unit: "count",
     changePct: currentFollowersChange,
@@ -1250,8 +1250,17 @@ export async function GET(request: NextRequest) {
       .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
     const followerIncreaseFromPosts = followerIncreaseFromReel + followerIncreaseFromFeed;
     
-    // /homeで入力された値（currentFollowers）は「その他からの増加数」を表す
-    const followerIncreaseFromOther = currentFollowers || 0;
+    // その他からの増加数を計算
+    // 初回ログイン月の場合：/homeで入力された値は「現在のフォロワー数」なので、増加数として扱わない（0）
+    // 2ヶ月目以降の場合：/homeで入力された値 - 前月の/homeで入力された値 = 「その他からの増加数」
+    let followerIncreaseFromOther = 0;
+    if (isFirstMonth) {
+      // 初回ログイン月：増加数として扱わない
+      followerIncreaseFromOther = 0;
+    } else {
+      // 2ヶ月目以降：今月の値 - 前月の値 = 増加数
+      followerIncreaseFromOther = Math.max(0, currentFollowers - previousCurrentFollowers);
+    }
     
     // 合計増加数の計算（月ごとにリセット、その月の増加数のみを表示）
     // すべての月で、その月の投稿からの増加数 + その他からの増加数のみを計算

@@ -151,6 +151,11 @@ export const TargetFollowerAutoInput: React.FC<TargetFollowerAutoInputProps> = (
           </button>
         )}
       </div>
+      {isAutoCalculated && !isLoading && (
+        <p className="text-xs text-gray-500 mt-1">
+          ※ この増加数は保証するものではありません。あくまで目安としてご利用ください。
+        </p>
+      )}
     </div>
   );
 };

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import SNSLayout from "../../../../components/sns-layout";
 import PostEditor from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
-import CommentReplyAssistant from "../components/CommentReplyAssistant";
+import PostPreview from "../components/PostPreview";
 import ABTestSidebarSection from "../components/ABTestSidebarSection";
 import { usePlanData, type PlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
@@ -376,239 +376,6 @@ export default function ReelLabPage() {
       contentClassName="py-0 sm:py-0"
     >
       <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen pt-4 pb-0">
-        {/* リール投稿計画提案 */}
-        <div className="bg-white border border-gray-200 p-6 mb-4">
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900">リール投稿計画</h2>
-            <p className="text-sm text-gray-700 mt-1">1ヶ月のリール投稿スケジュールを提案します</p>
-          </div>
-
-          {/* 投稿頻度設定 */}
-          <div className="mb-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">投稿頻度設定</h3>
-
-            {/* 投稿頻度の概要表示 */}
-            <div className="mb-6 p-4 bg-white border border-gray-200">
-              <div className="mb-2">
-                <span className="text-sm font-bold text-gray-900">投稿スケジュール概要</span>
-              </div>
-              <div className="text-sm text-gray-700">
-                <p>
-                  週の投稿回数:{" "}
-                  <span className="font-bold">{Math.round(monthlyPosts / 4)}回</span>（月
-                  {monthlyPosts}回）
-                </p>
-                <p>
-                  1日の投稿回数: <span className="font-bold">{dailyPosts}回</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white border border-gray-200 p-4">
-                <label className="block text-sm font-bold text-gray-900 mb-2">
-                  1ヶ月の投稿回数
-                </label>
-                <select
-                  value={monthlyPosts}
-                  onChange={(e) => setMonthlyPosts(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 bg-white focus:outline-none focus:border-[#ff8a15]"
-                >
-                  <option value="4">4回（週1回）</option>
-                  <option value="8">8回（週2回）</option>
-                  <option value="16">16回（週4回）</option>
-                  <option value="24">24回（週6回）</option>
-                  <option value="28">28回（毎日）</option>
-                </select>
-              </div>
-              <div className="bg-white border border-gray-200 p-4">
-                <label className="block text-sm font-bold text-gray-900 mb-2">
-                  1日の投稿回数
-                </label>
-                <select
-                  value={dailyPosts}
-                  onChange={(e) => setDailyPosts(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 bg-white focus:outline-none focus:border-[#ff8a15]"
-                >
-                  <option value="1">1回</option>
-                  <option value="2">2回</option>
-                  <option value="3">3回</option>
-                  <option value="4">4回</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* 曜日別投稿提案カード */}
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">週間投稿スケジュール</h3>
-            {generatedSchedule.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {generatedSchedule
-                  .filter((daySchedule) => daySchedule.posts && daySchedule.posts.length > 0)
-                  .map((daySchedule) => (
-                    <div
-                      key={daySchedule.day}
-                      className="border border-gray-200 p-4 bg-white"
-                    >
-                      <div className="space-y-2">
-                        {daySchedule.posts.map((post, postIndex: number) => (
-                            <div
-                              key={postIndex}
-                              className="bg-white border border-gray-100 p-2 text-sm text-gray-900"
-                            >
-                              {post.emoji} {post.title}
-                              <div className="text-xs text-gray-600 mt-1">{post.description}</div>
-                            </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-700">
-                <button
-                  onClick={generateSchedule}
-                  disabled={isGeneratingSchedule}
-                  className="px-6 py-3 bg-[#ff8a15] text-white hover:bg-[#e67a0f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4 flex items-center justify-center gap-2 mx-auto font-medium"
-                >
-                  {isGeneratingSchedule && (
-                    <svg
-                      className="animate-spin h-5 w-5"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  )}
-                  <span>{isGeneratingSchedule ? "生成中..." : "AIでスケジュールを生成"}</span>
-                </button>
-                <p className="text-sm">あなたに最適な投稿スケジュールを作成しましょう</p>
-                
-                {showScheduleAdminWarning ? (
-                  <div className="mt-4 p-3 border border-orange-300 bg-orange-50 text-orange-800 text-xs">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-bold mb-1">同じような改善提案が3回続いています</p>
-                        <p>投稿頻度設定を改善しても、期待するスケジュールが得られない場合は、ビジネス情報やAI設定が適切でない可能性があります。マイアカウントページで設定を確認するか、管理者にお問い合わせください。</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
-                {scheduleFeedback ? (
-                  <div className="mt-4 p-3 border border-blue-200 bg-blue-50 text-blue-800 text-xs">
-                    <p className="font-bold mb-1">💡 より良いスケジュールを得るために</p>
-                    <p className="whitespace-pre-wrap">{scheduleFeedback}</p>
-                    <p className="mt-2 text-blue-700">このフィードバックを参考に、投稿頻度設定を調整してみてください。</p>
-                  </div>
-                ) : null}
-
-                {scheduleError && (
-                  <div className="mt-4 p-3 bg-white border border-red-200 text-red-700 text-sm">
-                    {scheduleError}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* アクションボタン */}
-          <div className="flex space-x-3">
-            <button
-              onClick={saveSchedule}
-              disabled={isSavingSchedule || generatedSchedule.length === 0}
-              className="px-4 py-2 bg-[#ff8a15] text-white hover:bg-[#e67a0f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium"
-            >
-              {isSavingSchedule && (
-                <svg
-                  className="animate-spin h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              )}
-              <span>{isSavingSchedule ? "保存中..." : "スケジュールを保存"}</span>
-            </button>
-            <button
-              onClick={generateSchedule}
-              disabled={isGeneratingSchedule}
-              className="px-4 py-2 text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              {isGeneratingSchedule && (
-                <svg
-                  className="animate-spin h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              )}
-              <span>{isGeneratingSchedule ? "生成中..." : "再生成"}</span>
-            </button>
-            <button
-              onClick={loadSavedSchedule}
-              className="px-4 py-2 text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors font-medium"
-            >
-              保存済みを読み込み
-            </button>
-          </div>
-
-          {/* 保存メッセージ */}
-          {saveMessage && !saveMessage.includes("保存されたスケジュールを読み込みました") && (
-            <div
-              className={`mt-3 p-3 border text-sm ${
-                saveMessage.includes("✅")
-                  ? "bg-white border-green-200 text-green-700"
-                  : "bg-white border-red-200 text-red-700"
-              }`}
-            >
-              {saveMessage}
-            </div>
-          )}
-        </div>
-
         {/* 2カラムレイアウト */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*:last-child]:mb-0" style={{ alignItems: 'stretch' }}>
           {/* 左カラム: リール投稿エディター */}
@@ -637,18 +404,22 @@ export default function ReelLabPage() {
             />
           </div>
 
-          {/* 右カラム: ツールパネル */}
+          {/* 右カラム: プレビューとツールパネル */}
           <div className="flex flex-col h-full">
+            {/* プレビュー */}
+            <div className="mb-6 flex-shrink-0">
+              <PostPreview
+                title={postTitle}
+                content={postContent}
+                image={postImage}
+                hashtags={selectedHashtags}
+                postType={postType}
+                scheduledDate={scheduledDate}
+                scheduledTime={scheduledTime}
+              />
+            </div>
             <div className="flex-shrink-0">
               <ABTestSidebarSection currentPostTitle={postTitle} />
-            </div>
-            <div className="flex-1 flex flex-col min-h-0">
-              <CommentReplyAssistant
-                postTitle={postTitle}
-                postContent={postContent}
-                postType={postType}
-                hashtags={selectedHashtags}
-              />
             </div>
             <div className="mt-6 flex-shrink-0">
               <ToolPanel

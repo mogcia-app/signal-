@@ -245,13 +245,14 @@ export async function POST(request: NextRequest) {
           ? "20-50文字程度、1-2行の短い一言二言"
           : postType === "reel"
             ? "50-150文字程度、エンゲージメント重視"
-            : "150文字以内";
+            : "100-150文字程度、詳細で魅力的な内容";
 
       systemPrompt += `
 
 【投稿生成の指示】
 - 投稿タイプ: ${postTypeLabel}
 ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文字、1-2行）にしてください" : ""}
+${postType === "feed" ? "- **重要**: フィード投稿文は100-150文字程度で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
 - 投稿日時: ${scheduledDate ? `${scheduledDate} ${scheduledTime}` : "未設定"}
 - テーマ: ${prompt}
 
@@ -347,6 +348,7 @@ AIペルソナ:
 5. エンゲージメントを促進する要素を含める
 6. 必ず5個のハッシュタグを含める（企業ハッシュタグ1個、トレンドハッシュタグ1個、補助的ハッシュタグ3個）
 ${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文字、1-2行）にする" : ""}
+${postType === "feed" ? "7. **重要**: フィード投稿文は必ず150文字以内で生成してください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
 ${(() => {
   const profile = userProfile as UserProfile | null;
   return profile?.businessInfo?.productsOrServices && Array.isArray(profile.businessInfo.productsOrServices) && profile.businessInfo.productsOrServices.length > 0;
@@ -504,6 +506,22 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
 
     let title = parsedData.title || "";
     let content = parsedData.body || "";
+    
+    // フィードの場合は150文字以内に制限
+    if (postType === "feed" && content.length > 150) {
+      // 150文字を超えている場合は、文の区切り（句点、改行）で切り詰める
+      let truncated = content.substring(0, 150);
+      // 最後の句点や改行の位置を探して、そこまでで切り詰める
+      const lastPeriod = truncated.lastIndexOf("。");
+      const lastNewline = truncated.lastIndexOf("\n");
+      const lastBreak = Math.max(lastPeriod, lastNewline);
+      if (lastBreak > 100) {
+        // 100文字以上ある場合は、句点や改行の位置で切り詰める
+        truncated = truncated.substring(0, lastBreak + 1);
+      }
+      content = truncated;
+    }
+    
     let hashtags: string[] = [];
     let hashtagExplanations: Array<{ hashtag: string; category: "brand" | "trending" | "supporting"; reason: string }> = [];
 

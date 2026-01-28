@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Loader2, Calendar, Target, Lightbulb, FileText, CheckCircle } from "lucide-react";
+import { Loader2, Calendar, FileText, CheckCircle } from "lucide-react";
 import { PlanFormData, SimulationResult, AIPlanSuggestion as AIPlanSuggestionType } from "../types/plan";
 import { authFetch } from "../../../../utils/authFetch";
 
 interface AIPlanSuggestionProps {
   formData: PlanFormData;
   simulationResult: SimulationResult;
+  suggestion?: AIPlanSuggestionType | null; // 親から渡されたAI提案（オプション）
   isLoading?: boolean;
   showWeeklyTasksOnly?: boolean; // 今週やることのみ表示
   showWeeklyPlans?: boolean; // 週ごとの詳細計画のみ表示
@@ -17,6 +18,7 @@ interface AIPlanSuggestionProps {
 export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
   formData,
   simulationResult,
+  suggestion: externalSuggestion,
   isLoading: externalLoading,
   showWeeklyTasksOnly = false,
   showWeeklyPlans = false,
@@ -26,7 +28,21 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 外部から渡された提案を使用
   useEffect(() => {
+    if (externalSuggestion) {
+      setSuggestion(externalSuggestion);
+      setIsLoading(false);
+      return;
+    }
+  }, [externalSuggestion]);
+
+  useEffect(() => {
+    // 外部から渡された提案がある場合は取得をスキップ
+    if (externalSuggestion) {
+      return;
+    }
+
     const fetchSuggestion = async () => {
       setIsLoading(true);
       setError(null);
@@ -66,7 +82,10 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
     if (formData && simulationResult && !externalLoading) {
       fetchSuggestion();
     }
-  }, [formData, simulationResult, externalLoading]);
+  }, [formData, simulationResult, externalLoading, externalSuggestion]);
+
+  // 使用する提案（外部から渡されたものか、内部で取得したものか）
+  const currentSuggestion = externalSuggestion || suggestion;
 
   if (isLoading || externalLoading) {
     return (
@@ -87,39 +106,21 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
     );
   }
 
-  if (!suggestion) {
+  if (!currentSuggestion) {
     return null;
   }
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
-      {/* 今月の目標 */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Target className="w-5 h-5 text-[#FF8A15]" />
-          <h3 className="text-base font-semibold text-gray-900">今月の目標</h3>
-        </div>
-        <div className="space-y-2">
-          {suggestion.monthlyGoals.map((goal, index) => (
-            <div key={index} className="text-sm text-gray-700 flex items-start gap-2">
-              <span className="text-gray-500">・</span>
-              <span>
-                <span className="font-medium text-gray-900">{goal.metric}:</span> {goal.target}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* 最適な投稿時間（AIに任せる場合） */}
-      {suggestion.recommendedPostingTimes && suggestion.recommendedPostingTimes.length > 0 && (
+      {currentSuggestion.recommendedPostingTimes && currentSuggestion.recommendedPostingTimes.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Calendar className="w-5 h-5 text-[#FF8A15]" />
             <h3 className="text-base font-semibold text-gray-900">最適な投稿時間</h3>
           </div>
           <div className="space-y-2">
-            {suggestion.recommendedPostingTimes.map((timeRec, index) => {
+            {currentSuggestion.recommendedPostingTimes.map((timeRec, index) => {
               const typeLabels = {
                 feed: "写真",
                 reel: "リール",
@@ -136,79 +137,11 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
         </div>
       )}
 
-      {/* 一番大事なこと */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Lightbulb className="w-5 h-5 text-[#FF8A15]" />
-          <h3 className="text-base font-semibold text-gray-900">一番大事なこと</h3>
-        </div>
-        <p className="text-sm text-gray-700 leading-relaxed">{suggestion.keyMessage}</p>
-      </div>
-
-      {/* 月次戦略 */}
-      {suggestion.monthlyStrategy && suggestion.monthlyStrategy.length > 0 && (
-        <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-3">月次戦略</h3>
-          <div className="space-y-4">
-            {suggestion.monthlyStrategy.map((strategy, index) => (
-              <div key={index} className="border-l-4 border-[#FF8A15] pl-4">
-                <div className="font-semibold text-gray-900 mb-2">
-                  【{strategy.week}週目】: {strategy.theme}
-                </div>
-                <ul className="space-y-1">
-                  {strategy.actions.map((action, actionIndex) => (
-                    <li key={actionIndex} className="text-sm text-gray-700">
-                      - {action}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 週次計画 */}
-      {suggestion.weeklyPlans && suggestion.weeklyPlans.length > 0 && (
-        <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-3">週次計画</h3>
-          <div className="space-y-4">
-            {suggestion.weeklyPlans.map((plan, planIndex) => {
-              const typeLabels: Record<string, string> = {
-                feed: "フィード投稿",
-                reel: "リール",
-                story: "ストーリーズのみ",
-                "feed+reel": "フィード投稿 + リール",
-              };
-
-              return (
-                <div key={planIndex} className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-3">
-                    第{plan.week}週（{plan.startDate}〜{plan.endDate}）の計画
-                  </h4>
-                  <div className="space-y-2">
-                    {plan.tasks.map((task, taskIndex) => (
-                      <div key={taskIndex} className="text-sm text-gray-700">
-                        <div className="font-medium text-gray-900">{task.day}:</div>
-                        <div className="ml-4 text-gray-600">
-                          {typeLabels[task.type] || task.type}（{task.time}）
-                        </div>
-                        <div className="ml-4 text-gray-600">「{task.description}」</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* アクションボタン */}
       <div className="flex gap-3 pt-4 border-t border-gray-200">
-        {suggestion.strategyUrl && (
+        {currentSuggestion.strategyUrl && (
           <a
-            href={suggestion.strategyUrl}
+            href={currentSuggestion.strategyUrl}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-md transition-colors"
           >
             <FileText className="w-4 h-4" />
@@ -218,8 +151,8 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
         <button
           type="button"
           onClick={() => {
-            if (onStartPlan && suggestion) {
-              onStartPlan(suggestion);
+            if (onStartPlan && currentSuggestion) {
+              onStartPlan(currentSuggestion);
             }
           }}
           className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#FF8A15] hover:bg-[#E67A0A] rounded-md transition-colors"

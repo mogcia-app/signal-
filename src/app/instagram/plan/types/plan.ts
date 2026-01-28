@@ -3,7 +3,8 @@ export interface PlanFormData {
   // 必須項目
   currentFollowers: number;
   targetFollowers: number;
-  periodMonths: number; // 1, 3, 6, 12
+  periodMonths: number; // 1固定（1ヶ月）
+  startDate: string; // 開始日（YYYY-MM-DD形式）
   weeklyFeedPosts: number; // 0-7
   weeklyReelPosts: number; // 0-7
   weeklyStoryPosts: number; // 0-7
@@ -146,7 +147,6 @@ export interface AIPlanSuggestion {
     metric: string;
     target: string;
   }>;
-  keyMessage: string;
   recommendedPostingTimes?: Array<{
     type: "feed" | "reel" | "story";
     times: string[]; // 例: ["9:00", "18:00"]

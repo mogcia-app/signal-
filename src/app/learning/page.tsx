@@ -53,6 +53,9 @@ import {
   FlaskConical,
   Users,
   Brain,
+  ChevronUp,
+  ChevronDown,
+  Bot,
 } from "lucide-react";
 import {
   sentimentLabelMap,
@@ -66,7 +69,6 @@ import { InfoTooltip } from "./components/InfoTooltip";
 import { SuccessImprovementGallery } from "./components/SuccessImprovementGallery";
 import { PostPatternLearningSection } from "./components/PostPatternLearningSection";
 import { PostDeepDiveSection } from "./components/PostDeepDiveSection";
-import { HistorySection } from "./components/HistorySection";
 
 type ActionLogEntry = AIActionLog;
 
@@ -131,11 +133,11 @@ export default function LearningDashboardPage() {
   const [actionHistory, setActionHistory] = useState<ActionLogEntry[]>([]);
   const [actionLogPendingId, setActionLogPendingId] = useState<string | null>(null);
   const [actionLogError, setActionLogError] = useState<string | null>(null);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [historyError, setHistoryError] = useState<string | null>(null);
   const [sharedLearningContext, setSharedLearningContext] = useState<LearningContextCardData | null>(
     null
   );
+  const [showAdvancedSections, setShowAdvancedSections] = useState(false);
+  const [showOtherBadges, setShowOtherBadges] = useState(false);
 
   const isAuthReady = useMemo(() => Boolean(user?.uid), [user?.uid]);
 
@@ -270,9 +272,7 @@ export default function LearningDashboardPage() {
     let isCancelled = false;
     const fetchDashboardData = async () => {
       setIsContextLoading(true);
-      setIsHistoryLoading(true);
       setContextError(null);
-      setHistoryError(null);
 
       try {
         const params = new URLSearchParams({
@@ -341,7 +341,6 @@ export default function LearningDashboardPage() {
           const errorMessage =
             error instanceof Error ? error.message : "学習ダッシュボードデータの取得に失敗しました";
           setContextError(errorMessage);
-          setHistoryError(errorMessage);
           setContextData(null);
           setSharedLearningContext(null);
           setFeedbackHistory([]);
@@ -350,7 +349,6 @@ export default function LearningDashboardPage() {
       } finally {
         if (!isCancelled) {
           setIsContextLoading(false);
-          setIsHistoryLoading(false);
         }
       }
     };
@@ -505,183 +503,506 @@ const goldSampleSignals = useMemo(() => {
   }, [patternInsights]);
 
   return (
-    <SNSLayout customTitle="学習ダッシュボード" customDescription="AIと一緒に成長するための学習ログと振り返り">
+    <SNSLayout customTitle="学習ダッシュボード" customDescription="AIがあなたの投稿から学習し、どんどん賢くなっていきます">
       <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
         <div className="space-y-6">
-        <section className="border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">AIとの学習状況</h2>
-          <p className="text-sm text-gray-700 leading-relaxed">
-            AIが生成したサマリーや提案、あなたのフィードバックがどのように蓄積されているかを確認できます。
-            今後、投稿への主観的評価や提案実行率などもここで追跡できる予定です。
-          </p>
-          <div className="flex flex-wrap items-center gap-3 mt-4">
-            <button
-              onClick={() => setRefreshKey((prev) => prev + 1)}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#ff8a15] hover:bg-[#e6760f] transition-colors border border-[#ff8a15]"
-            >
-              最新の履歴を再取得
-            </button>
-            {contextData ? (
-              <div className="text-xs text-gray-500">
-                学習フェーズ:{" "}
-                <span className="font-semibold text-gray-700">
-                  {getLearningPhaseLabel(contextData.learningPhase)}
-                </span>{" "}
-                /
-                RAG精度: <span className="font-semibold text-gray-700">{Math.round((contextData.ragHitRate || 0) * 100)}%</span> /
-                蓄積分析: <span className="font-semibold text-gray-700">{contextData.totalInteractions}</span>件
+        {/* AIの成長状況セクション（最上部） */}
+        <section className="border border-gray-100 bg-white p-8 rounded-lg shadow-sm">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-[#FF8A15] rounded flex items-center justify-center flex-shrink-0">
+                <Bot className="h-5 w-5 text-white" />
               </div>
-            ) : null}
+              <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">
+                AIがあなたから学習中
+              </h2>
+            </div>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              AIがあなたの投稿から学習し、どんどん賢くなっていきます
+            </p>
           </div>
+
+          {contextData ? (
+            <div className="space-y-6">
+              {/* 学習フェーズのプログレスバー */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-600">学習フェーズ</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {getLearningPhaseLabel(contextData.learningPhase)}
+                  </span>
+                </div>
+                <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="absolute top-0 left-0 h-full bg-gray-400 transition-all duration-700 ease-out"
+                    style={{
+                      width: `${
+                        (() => {
+                          const total = contextData.totalInteractions || 0;
+                          // バックエンドのロジックに合わせて:
+                          // initial: 0-3件 → 0-25%
+                          // learning: 4-7件 → 25-50%
+                          // optimized: 8-11件 → 50-75%
+                          // master: 12件以上 → 75-100%
+                          if (total >= 12) {
+                            // 12件以上は75%から100%まで（12件で75%、20件で100%を想定）
+                            return Math.min(100, 75 + ((total - 12) / 8) * 25);
+                          } else if (total >= 8) {
+                            // 8-11件: 50%から75%まで
+                            return 50 + ((total - 8) / 4) * 25;
+                          } else if (total >= 4) {
+                            // 4-7件: 25%から50%まで
+                            return 25 + ((total - 4) / 4) * 25;
+                          } else {
+                            // 0-3件: 0%から25%まで
+                            return (total / 4) * 25;
+                          }
+                        })()
+                      }%`,
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] text-gray-400">
+                    <span>初期</span>
+                    <span>成長期</span>
+                    <span>成熟期</span>
+                    <span>マスター期</span>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-gray-500">
+                  {contextData.learningPhase === "initial" && (
+                    <>あと{Math.max(0, 4 - (contextData.totalInteractions || 0))}件分析すると、成長期に進みます（現在: {contextData.totalInteractions || 0}件 / 4件）</>
+                  )}
+                  {contextData.learningPhase === "learning" && (
+                    <>あと{Math.max(0, 8 - (contextData.totalInteractions || 0))}件分析すると、成熟期に進みます（現在: {contextData.totalInteractions || 0}件 / 8件）</>
+                  )}
+                  {contextData.learningPhase === "optimized" && (
+                    <>あと{Math.max(0, 12 - (contextData.totalInteractions || 0))}件分析すると、マスター期に進みます（現在: {contextData.totalInteractions || 0}件 / 12件）</>
+                  )}
+                  {contextData.learningPhase === "master" && (
+                    <>マスター期に到達しました。AIの提案が最高精度になっています。</>
+                  )}
+                </div>
+              </div>
+
+              {/* 統計情報 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 border border-gray-100 rounded-lg p-5">
+                  <div className="text-xs text-gray-500 mb-2 font-medium">分析した投稿数</div>
+                  <div className="text-3xl font-semibold text-gray-900 mb-2">
+                    {contextData.totalInteractions || 0}
+                    <span className="text-lg text-gray-500 ml-1">件</span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    AIが学習した投稿の数
+                  </div>
+                </div>
+                <div className="bg-gray-50 border border-gray-100 rounded-lg p-5">
+                  <div className="text-xs text-gray-500 mb-2 font-medium">AIの記憶精度</div>
+                  <div className="text-3xl font-semibold text-gray-900 mb-2">
+                    {Math.round((contextData.ragHitRate || 0) * 100)}
+                    <span className="text-lg text-gray-500 ml-1">%</span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    過去の成功パターンを覚えている割合
+                  </div>
+                </div>
+              </div>
+
+              {/* あなた専用のAI - */}
+              {(goldSignals.length > 0 || redSignals.length > 0 || achievements.length > 0) && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <div className="mb-5">
+                    <h3 className="text-base font-semibold text-gray-900 mb-2">
+                      このAIは、あなただけのために育っています
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      あなたの投稿から学んだ、あなた専用の成功パターンと改善ポイントです
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {goldSignals.length > 0 && (
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="text-xs text-gray-500 mb-2 font-medium">成功パターン</div>
+                        <div className="text-2xl font-semibold text-gray-900">
+                          {goldSignals.length}
+                          <span className="text-sm text-gray-500 ml-1">件</span>
+                        </div>
+                      </div>
+                    )}
+                    {redSignals.length > 0 && (
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="text-xs text-gray-500 mb-2 font-medium">改善ポイント</div>
+                        <div className="text-2xl font-semibold text-gray-900">
+                          {redSignals.length}
+                          <span className="text-sm text-gray-500 ml-1">件</span>
+                        </div>
+                      </div>
+                    )}
+                    {achievements.length > 0 && (
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="text-xs text-gray-500 mb-2 font-medium">達成バッジ</div>
+                        <div className="text-2xl font-semibold text-gray-900">
+                          {achievements.filter((b) => (b.progress || 0) >= 100).length}
+                          <span className="text-sm text-gray-500 ml-1">件</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <div className="text-xs text-gray-500 mb-2 font-medium">学習データ</div>
+                      <div className="text-2xl font-semibold text-gray-900">
+                        {contextData.totalInteractions || 0}
+                        <span className="text-sm text-gray-500 ml-1">件</span>
+                      </div>
+                    </div>
+                  </div>
+                  {contextData.learningPhase !== "master" && (
+                    <div className="mt-5 pt-5 border-t border-gray-200">
+                      <p className="text-xs text-gray-600 text-center">
+                        <span className="font-medium">もっと使うほど、AIがあなたに最適化されます</span>
+                        <br className="mt-1" />
+                        <span className="text-gray-500">
+                          {contextData.learningPhase === "initial" && "あと" + Math.max(0, 4 - (contextData.totalInteractions || 0)) + "件で成長期に"}
+                          {contextData.learningPhase === "learning" && "あと" + Math.max(0, 8 - (contextData.totalInteractions || 0)) + "件で成熟期に"}
+                          {contextData.learningPhase === "optimized" && "あと" + Math.max(0, 12 - (contextData.totalInteractions || 0)) + "件でマスター期に"}
+                          {"到達します"}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* AIの学習が進むと */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
+                <div className="text-sm font-semibold text-gray-900 mb-3">
+                  AIの学習が進むと
+                </div>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start">
+                    <span className="text-gray-400 mr-2">•</span>
+                    <span>より正確な提案ができるようになります</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-gray-400 mr-2">•</span>
+                    <span>あなたの成功パターンを自動で見つけます</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-gray-400 mr-2">•</span>
+                    <span>失敗を減らすアドバイスができます</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="w-5 h-5 border-2 border-[#ff8a15] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <span className="text-sm">AIの学習状況を取得中...</span>
+            </div>
+          )}
         </section>
 
         {/* LearningReferenceCard コンポーネントは削除されました */}
 
-        <section className="border border-gray-200 bg-white p-6 mb-6">
-          <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
-                  <Award className="h-5 w-5 text-white" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900">学習バッジ</h2>
-                <InfoTooltip text="ゴールド投稿数やフィードバック件数など、AIとの学習進捗に応じてアンロックされるバッジです。" />
+        {/* 学習目標（3つのバッジ） */}
+        <section className="border border-gray-100 bg-white p-8 mb-6 rounded-lg shadow-sm">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-[#FF8A15] rounded flex items-center justify-center flex-shrink-0">
+                <Target className="h-5 w-5 text-white" />
               </div>
-              <p className="mt-2 text-sm text-gray-700">
-                AIとの学習度合いや活用状況に応じてバッジがアンロックされます。進捗を確認し、次のマイルストーンを目指しましょう。
-              </p>
+              <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
+                AIを育てる3つのコツ
+              </h2>
             </div>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              この3つを続けるだけで、AIがあなた専用にどんどん賢くなります。
+            </p>
           </div>
+
           {isContextLoading && achievements.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-gray-700">
               <div className="w-5 h-5 border-2 border-[#ff8a15] border-t-transparent rounded-full animate-spin mr-2" />
               <span className="text-sm">バッジ情報を取得しています...</span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {achievements.map((badge) => {
-                const icon = badgeIconMap[badge.icon] ?? badgeIconMap.default;
-                const progressPercent = Math.round(Math.min(1, badge.progress) * 100);
-                const statusLabel =
-                  badge.status === "earned" ? "達成済み" : `進行中（${progressPercent}%）`;
+            <>
+              {/* 優先バッジ（3つ） */}
+              <div className="space-y-4 mb-6">
+                {(() => {
+                  // 優先バッジのIDリスト
+                  const priorityBadgeIds = ["feedback-creator", "gold-master", "continuous-learning"];
+                  
+                  // バッジが存在しない場合でも、デフォルトのバッジ情報を表示
+                  const priorityBadges = priorityBadgeIds.map((id) => {
+                    const existingBadge = achievements.find((b) => b.id === id);
+                    if (existingBadge) {
+                      return existingBadge;
+                    }
+                    // バッジが存在しない場合は、デフォルトのバッジ情報を作成
+                    const defaultBadges: Record<string, Partial<LearningBadge>> = {
+                      "feedback-creator": {
+                        id: "feedback-creator",
+                        title: "気づきクリエイター",
+                        description: "コメント付きフィードバックを10件蓄積",
+                        icon: "message",
+                        status: "in_progress",
+                        progress: 0,
+                        current: 0,
+                        target: 10,
+                        shortcuts: [{ label: "フィードバックを入力する", href: "/analytics/feed" }],
+                      },
+                      "gold-master": {
+                        id: "gold-master",
+                        title: "ゴールド投稿10件",
+                        description: "成功パターンとして抽出されたゴールド投稿を10件以上蓄積",
+                        icon: "crown",
+                        status: "in_progress",
+                        progress: 0,
+                        current: 0,
+                        target: 10,
+                        shortcuts: [{ label: "投稿ラボで投稿を作成", href: "/instagram/lab/feed" }],
+                      },
+                      "continuous-learning": {
+                        id: "continuous-learning",
+                        title: "継続学習トラック",
+                        description: "直近4ヶ月分の学習データが蓄積",
+                        icon: "calendar",
+                        status: "in_progress",
+                        progress: 0,
+                        current: 0,
+                        target: 4,
+                        shortcuts: [],
+                      },
+                    };
+                    return defaultBadges[id] as LearningBadge;
+                  });
+
+                  return priorityBadges.map((badge, index) => {
+                    const icon = badgeIconMap[badge.icon] ?? badgeIconMap.default;
+                    const progressPercent = Math.round(Math.min(1, badge.progress) * 100);
+                    const remaining = Math.max(0, badge.target - badge.current);
+                    const badgeNumber = index + 1;
+
+                    // バッジタイトルの翻訳
+                    const badgeTitleMap: Record<string, string> = {
+                      "feedback-creator": "気づきクリエイター",
+                      "gold-master": "ゴールド投稿10件",
+                      "continuous-learning": "継続学習トラック",
+                    };
+
+                    // バッジ説明の翻訳（コツとして表現）
+                    const badgeDescriptionMap: Record<string, string> = {
+                      "feedback-creator": "投稿に「良かった」「改善したい」とコメントを残すと、AIが何が良かったか・悪かったかを学習します",
+                      "gold-master": "投稿を続けると、AIが成功パターンを見つけられます",
+                      "continuous-learning": "継続的に使うと、AIがあなた専用に最適化されます",
+                    };
+
+                    return (
+                      <div
+                        key={badge.id}
+                        className={`border border-gray-200 rounded-lg p-6 transition-all ${
+                          badge.status === "earned"
+                            ? "bg-gray-50 border-gray-300"
+                            : "bg-white hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-start gap-5">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                            <span className="text-gray-600 font-semibold text-sm">{badgeNumber}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-3">
+                              <h3 className="text-base font-semibold text-gray-900 leading-tight">
+                                {badgeTitleMap[badge.id] || badge.title}
+                              </h3>
+                              {badge.status === "earned" && (
+                                <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full flex-shrink-0 ml-2">
+                                  達成
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 leading-relaxed mb-5">
+                              {badgeDescriptionMap[badge.id] || badge.description}
+                            </p>
+                            <div className="mb-5">
+                              <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-700 ease-out ${
+                                    badge.status === "earned" ? "bg-emerald-500" : "bg-gray-400"
+                                  }`}
+                                  style={{ width: `${progressPercent}%` }}
+                                />
+                              </div>
+                              <div className="mt-3 flex items-center justify-between text-xs">
+                                <span className="text-gray-500 font-medium">
+                                  {formatAchievementValue(badge)}
+                                </span>
+                                {badge.status !== "earned" && remaining > 0 && (
+                                  <span className="text-gray-400">
+                                    あと{remaining}{badge.id === "continuous-learning" ? "ヶ月" : "件"}
+                                    {badge.id === "continuous-learning" && "（自動）"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* その他のバッジ（折りたたみ可能） */}
+              {(() => {
+                const priorityBadgeIds = ["feedback-creator", "gold-master", "continuous-learning"];
+                const otherBadges = achievements.filter((b) => !priorityBadgeIds.includes(b.id));
+
+                if (otherBadges.length === 0) return null;
 
                 return (
-                  <div
-                    key={badge.id}
-                    className={`border p-4 ${
-                      badge.status === "earned" ? "border-emerald-200 bg-emerald-50" : "border-gray-200 bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1">{icon}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-semibold text-gray-800">{badge.title}</h3>
-                          <span
-                            className={`text-[11px] font-semibold ${
-                              badge.status === "earned" ? "text-emerald-600" : "text-slate-500"
-                            }`}
-                          >
-                            {badge.status === "earned" ? "達成！" : "進行中"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-600 mt-1">{badge.description}</p>
-                        {badge.id === "feedback-balance" && (
-                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200">
-                            <p className="text-[10px] text-blue-800 font-semibold mb-1">💡 計算方法</p>
-                            <p className="text-[10px] text-blue-700">
-                              ポジティブとネガティブのフィードバック重みの「最小値」がポイントになります。
-                              {getFeedbackBalanceDetail(badge) && (
-                                <span className="block mt-1">{getFeedbackBalanceDetail(badge)}</span>
-                              )}
-                            </p>
-                          </div>
-                        )}
-                        <div className="mt-3">
-                          <div className="h-2 w-full bg-white border border-gray-200">
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowOtherBadges(!showOtherBadges)}
+                      className="w-full flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors py-2"
+                    >
+                      {showOtherBadges ? (
+                        <>
+                          <ChevronUp className="w-4 h-4" />
+                          <span>その他のバッジを閉じる</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4" />
+                          <span>その他のバッジを見る（{otherBadges.length}個）</span>
+                        </>
+                      )}
+                    </button>
+                    {showOtherBadges && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                        {otherBadges.map((badge) => {
+                          const icon = badgeIconMap[badge.icon] ?? badgeIconMap.default;
+                          const progressPercent = Math.round(Math.min(1, badge.progress) * 100);
+
+                          return (
                             <div
-                              className={`h-[6px] ${badge.status === "earned" ? "bg-emerald-500" : "bg-slate-500"}`}
-                              style={{ width: `${progressPercent}%` }}
-                            />
-                          </div>
-                          <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500">
-                            <span>{formatAchievementValue(badge)}</span>
-                            <span>{statusLabel}</span>
-                          </div>
-                        </div>
-                        {badge.condition && (
-                          <p className="text-[11px] text-slate-500 mt-2">{badge.condition}</p>
-                        )}
-                        {badge.shortcuts && badge.shortcuts.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {badge.shortcuts.map((shortcut) => (
-                              <Link
-                                key={`${badge.id}-${shortcut.label}`}
-                                href={shortcut.href}
-                                className="text-[11px] font-semibold text-slate-700 border border-slate-300 bg-white px-2.5 py-1 rounded-none hover:bg-slate-100 transition-colors"
-                              >
-                                {shortcut.label}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
+                              key={badge.id}
+                              className={`border p-4 ${
+                                badge.status === "earned"
+                                  ? "border-emerald-200 bg-emerald-50"
+                                  : "border-gray-200 bg-gray-50"
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="mt-1">{icon}</div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-gray-800">{badge.title}</h3>
+                                    <span
+                                      className={`text-[11px] font-semibold ${
+                                        badge.status === "earned" ? "text-emerald-600" : "text-slate-500"
+                                      }`}
+                                    >
+                                      {badge.status === "earned" ? "達成！" : `${progressPercent}%`}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600 mt-1">{badge.description}</p>
+                                  <div className="mt-3">
+                                    <div className="h-2 w-full bg-white border border-gray-200">
+                                      <div
+                                        className={`h-[6px] ${
+                                          badge.status === "earned" ? "bg-emerald-500" : "bg-slate-500"
+                                        }`}
+                                        style={{ width: `${progressPercent}%` }}
+                                      />
+                                    </div>
+                                    <div className="mt-1 text-[11px] text-gray-500">
+                                      {formatAchievementValue(badge)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
-              })}
-              {achievements.length === 0 ? (
-                <div className="border border-gray-200 bg-white rounded-none p-4 text-xs text-gray-500">
-                  まだバッジはありません。投稿とフィードバックを重ねて最初のバッジを獲得しましょう。
-                </div>
-              ) : null}
-            </div>
+              })()}
+            </>
           )}
         </section>
 
-        <section className="border border-gray-200 bg-white p-6 mb-6">
-          <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
-                  <History className="h-5 w-5 text-white" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900">学習進捗タイムライン</h2>
-                <InfoTooltip text="月次・週次のフィードバック量やAI提案の採用率を追跡し、学習の定着度を確認できます。" />
+        {/* 上級者向けセクション（折りたたみ可能） */}
+        <section className="border border-gray-100 bg-white p-8 mb-6 rounded-lg shadow-sm">
+          <button
+            type="button"
+            onClick={() => setShowAdvancedSections(!showAdvancedSections)}
+            className="w-full flex items-center justify-between mb-6 py-2 hover:opacity-70 transition-opacity"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#FF8A15] rounded flex items-center justify-center flex-shrink-0">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
-              <p className="mt-2 text-sm text-gray-700">
-                月次・週次のフィードバック量とAI提案の採用率を可視化しています。AIとの学習曲線を一緒に追いかけましょう。
-              </p>
+              <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
+                その他の分析（上級者向け）
+              </h2>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setTimelineMode("monthly")}
-                className={`px-3 py-1 text-xs font-medium border transition-colors ${
-                  resolvedTimelineMode === "monthly"
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                月次
-              </button>
-              <button
-                onClick={() => setTimelineMode("weekly")}
-                disabled={!hasWeeklyTimeline}
-                className={`px-3 py-1 text-xs font-medium border transition-colors ${
-                  resolvedTimelineMode === "weekly"
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                } ${!hasWeeklyTimeline ? "opacity-50 cursor-not-allowed" : ""}`}
-                title={
-                  hasWeeklyTimeline
-                    ? undefined
-                    : "週次データが蓄積されると表示できるようになります"
-                }
-              >
-                週次
-              </button>
-            </div>
-          </div>
+            {showAdvancedSections ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+
+          {showAdvancedSections && (
+            <div className="space-y-6">
+              {/* 学習進捗タイムライン */}
+              <div>
+                <div className="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
+                        <History className="h-5 w-5 text-white" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900">学習進捗タイムライン</h3>
+                      <InfoTooltip text="月次・週次のフィードバック量やAI提案の採用率を追跡し、学習の定着度を確認できます。" />
+                    </div>
+                    <p className="mt-2 text-sm text-gray-700">
+                      月次・週次のフィードバック量とAI提案の採用率を可視化しています。AIとの学習曲線を一緒に追いかけましょう。
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setTimelineMode("monthly")}
+                      className={`px-3 py-1 text-xs font-medium border transition-colors ${
+                        resolvedTimelineMode === "monthly"
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      月次
+                    </button>
+                    <button
+                      onClick={() => setTimelineMode("weekly")}
+                      disabled={!hasWeeklyTimeline}
+                      className={`px-3 py-1 text-xs font-medium border transition-colors ${
+                        resolvedTimelineMode === "weekly"
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      } ${!hasWeeklyTimeline ? "opacity-50 cursor-not-allowed" : ""}`}
+                      title={
+                        hasWeeklyTimeline
+                          ? undefined
+                          : "週次データが蓄積されると表示できるようになります"
+                      }
+                    >
+                      週次
+                    </button>
+                  </div>
+                </div>
 
           {isContextLoading ? (
             <div className="flex items-center justify-center py-10 text-gray-700">
@@ -756,7 +1077,7 @@ const goldSampleSignals = useMemo(() => {
                   <div className="border border-gray-200 bg-gray-50 p-4">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-xs text-gray-700">AI提案の採用状況</p>
-                      <InfoTooltip text="月次レポートや投稿ディープダイブセクションで「実行した」にチェックを入れると、ここに採用として記録されます。詳細は「フィードバック & アクション履歴」セクションで確認できます。" />
+                      <InfoTooltip text="月次レポートや投稿ディープダイブセクションで「実行した」にチェックを入れると、ここに採用として記録されます。" />
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
                       {latestTimelinePoint.appliedCount}
@@ -805,8 +1126,38 @@ const goldSampleSignals = useMemo(() => {
               ) : null}
             </div>
           )}
+              </div>
+
+              {/* 投稿パターン学習 */}
+              <PostPatternLearningSection
+                patternInsights={patternInsights}
+                patternCounts={patternCounts}
+                goldSampleSignals={goldSampleSignals}
+                topHashtagEntries={topHashtagEntries}
+                isLoading={isContextLoading}
+                error={contextError}
+                tagMeta={tagMeta}
+              />
+
+              {/* 投稿ディープダイブ */}
+              <PostDeepDiveSection
+                signals={patternInsights?.signals ?? []}
+                postInsights={postInsights}
+                actionLogMap={actionLogMap}
+                handleActionLogToggle={handleActionLogToggle}
+                onGenerateInsight={handleGenerateInsight}
+                generatingInsightId={generatingInsightId}
+                actionLogPendingId={actionLogPendingId}
+                actionLogError={actionLogError}
+                isLoading={isContextLoading}
+                error={contextError}
+              />
+
+            </div>
+          )}
         </section>
 
+        {/* 成功 & 改善投稿ギャラリー（メインセクション） */}
         <SuccessImprovementGallery
           goldSignals={goldSignals}
           redSignals={redSignals}
@@ -814,39 +1165,7 @@ const goldSampleSignals = useMemo(() => {
           isLoading={isContextLoading}
           error={contextError}
         />
-
-        <PostPatternLearningSection
-          patternInsights={patternInsights}
-          patternCounts={patternCounts}
-          goldSampleSignals={goldSampleSignals}
-          topHashtagEntries={topHashtagEntries}
-          isLoading={isContextLoading}
-          error={contextError}
-          tagMeta={tagMeta}
-        />
-
-        <PostDeepDiveSection
-          signals={patternInsights?.signals ?? []}
-          postInsights={postInsights}
-          actionLogMap={actionLogMap}
-          handleActionLogToggle={handleActionLogToggle}
-          onGenerateInsight={handleGenerateInsight}
-          generatingInsightId={generatingInsightId}
-          actionLogPendingId={actionLogPendingId}
-          actionLogError={actionLogError}
-          isLoading={isContextLoading}
-          error={contextError}
-        />
-
-        <div id="history-section">
-          <HistorySection
-            feedbackHistory={feedbackHistory}
-            actionHistory={actionHistory}
-            isLoading={isHistoryLoading}
-            error={historyError}
-          />
-        </div>
-        </div>
+      </div>
       </div>
     </SNSLayout>
   );
