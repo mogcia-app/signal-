@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import { buildAIContext } from "@/lib/ai/context";
-import * as admin from "firebase-admin";
-
-// 月の範囲を計算
-function getMonthRange(date: string): { start: Date; end: Date } {
-  const [yearStr, monthStr] = date.split("-").map(Number);
-  const start = new Date(Date.UTC(yearStr, monthStr - 1, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(yearStr, monthStr, 0, 23, 59, 59, 999));
-  return { start, end };
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,8 +32,7 @@ export async function GET(request: NextRequest) {
     });
 
     // 月の範囲を計算（スナップショットを期間でフィルタリング）
-    const { start, end } = getMonthRange(date);
-    // startTimestamp and endTimestamp removed (unused)
+    // start and end removed (unused, filtering is done by date comparison in snapshot references)
 
     // 期間内のスナップショットのみをフィルタリングし、重複を排除
     // 同じ投稿IDのスナップショットは1つだけを保持（最初に見つかったもの）

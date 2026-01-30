@@ -34,9 +34,6 @@ export async function GET(request: NextRequest) {
     const today = new Date(jstTime.getFullYear(), jstTime.getMonth(), jstTime.getDate());
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
-
-    // キャッシュキーを生成（ユーザーID + 日付 + 週）
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     
     // 現在の計画を取得
     const plansSnapshot = await adminDb
@@ -490,7 +487,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       const strategyActions = currentMonthStrategy?.actions || [];
 
       // AIに計画達成のためのヒントを生成してもらう + 投稿文とハッシュタグを自動生成
-      let postGenerationMap = new Map<number, { content: string; hashtags: string[] }>();
+      const postGenerationMap = new Map<number, { content: string; hashtags: string[] }>();
       
       console.log(`[今日やること] 条件チェック: todayTasksFromPlan.length=${todayTasksFromPlan.length}, openai=${!!openai}, userProfile=${!!userProfile}`);
       

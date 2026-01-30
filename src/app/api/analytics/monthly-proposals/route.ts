@@ -162,9 +162,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // KPIデータが提供されている場合でも、シェア数は計算が必要
-      analyticsByPostId.forEach((data) => {
-        // totalShares is not available in analytics data
-      });
+      // totalShares is not available in analytics data, so no calculation needed
     }
 
     // 投稿タイプ別の統計を計算（analyticsコレクションのデータのみを使用）

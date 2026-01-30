@@ -310,30 +310,7 @@ export async function GET(request: NextRequest) {
       // homeで入力された現在のフォロワー数 + アナリティクスからの増加数
       // 初回ログイン月：initialFollowers + followerIncreaseFromPosts + currentFollowersFromHome
       // 2ヶ月目以降：initialFollowers + followerIncreaseFromPosts + (currentFollowersFromHome - previousFollowersFromHome)
-      let currentTotalFollowers = 0;
-      if (isFirstMonth && initialFollowers > 0) {
-        currentTotalFollowers = initialFollowers + followerIncreaseFromPosts + currentFollowersFromHome;
-      } else {
-        // 2ヶ月目以降：initialFollowers + 投稿からの増加数 + (homeで入力された現在のフォロワー数 - 前月のhomeで入力されたフォロワー数)
-        // つまり、initialFollowers + followerIncreaseFromPosts + followerIncreaseFromOther
-        // でも、これはtotalFollowerIncreaseと同じなので、initialFollowers + totalFollowerIncreaseで計算
-        currentTotalFollowers = initialFollowers + totalFollowerIncrease;
-      }
-      
-      // ただし、homeで入力された現在のフォロワー数が直接利用可能な場合はそれを使用
-      if (currentFollowersFromHome > 0) {
-        // homeで入力された現在のフォロワー数は、既にinitialFollowers + 投稿からの増加数 + その他からの増加数を含んでいる可能性がある
-        // より正確には、follower_counts.followersが現在のフォロワー数なので、それを使用
-        if (isFirstMonth) {
-          currentTotalFollowers = initialFollowers + followerIncreaseFromPosts + currentFollowersFromHome;
-        } else {
-          // 2ヶ月目以降：前月のフォロワー数 + 今月の増加数
-          // 前月のフォロワー数 = initialFollowers + (前月までの投稿からの増加数 + 前月までのhomeで入力された増加数)
-          // 今月の増加数 = followerIncreaseFromPosts + followerIncreaseFromOther
-          // でも、これは複雑なので、homeで入力された現在のフォロワー数を使用
-          // currentTotalFollowers removed (unused)
-        }
-      }
+      // currentTotalFollowers removed (unused)
     } else {
       // KPIデータが提供されている場合でも、シェア数は計算が必要
       analyticsByPostId.forEach((data) => {
@@ -342,22 +319,7 @@ export async function GET(request: NextRequest) {
       
       // currentTotalFollowersを計算（useProvidedKpisがtrueの場合）
       // performance-scoreから渡されたtotalFollowerIncreaseを使用
-      // 初回ログイン月かどうかを判定するために、前月のデータを確認
-      const [yearStr, monthStr] = date.split("-").map(Number);
-      const prevMonth = new Date(yearStr, monthStr - 2, 1);
-      const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
-      
-      const prevMonthSnapshot = await adminDb
-        .collection("follower_counts")
-        .where("userId", "==", uid)
-        .where("snsType", "==", "instagram")
-        .where("month", "==", prevMonthStr)
-        .limit(1)
-        .get();
-      
-      const isFirstMonth = prevMonthSnapshot.empty;
-      
-      // currentTotalFollowers removed (unused)
+      // prevMonthStr, prevMonthSnapshot, isFirstMonth, currentTotalFollowers removed (unused)
     }
 
     // 投稿タイプ別の統計を計算（analyticsコレクションのデータのみを使用）
@@ -568,14 +530,14 @@ export async function GET(request: NextRequest) {
       : 0;
 
     // フォロワー数を取得（follower_countsから、なければanalyticsから計算）
-    let currentFollowers = 0;
+    // currentFollowers, followerData, and latestAnalytics removed (unused)
     if (!followerCountSnapshot.empty) {
-      const followerData = followerCountSnapshot.docs[0].data();
-      currentFollowers = followerData.followers || followerData.startFollowers || 0;
+      // followerData removed (unused)
     } else {
       // follower_countsがない場合、analyticsから最新のフォロワー数を取得
       // ただし、これは正確ではない可能性があるため、0の場合は表示しない
-      const latestAnalytics = analyticsSnapshot.docs
+      // latestAnalytics removed (unused)
+      analyticsSnapshot.docs
         .map((doc) => {
           const data = doc.data();
           const publishedAt = data.publishedAt;
