@@ -3,7 +3,7 @@ import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
-import { buildAIContext } from "@/lib/ai/context";
+// buildAIContext removed (unused)
 import OpenAI from "openai";
 
 const openai = process.env.OPENAI_API_KEY
@@ -263,16 +263,22 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
           
           // タスクを日付順にソート
           const sortedTasks = tasksWithDates.sort((a: any, b: any) => {
-            if (!a.date || !b.date) return 0;
+            if (!a.date || !b.date) {
+              return 0;
+            }
             // 日付文字列から日付を抽出して比較
             const dateA = a.date.match(/(\d+)\/(\d+)/);
             const dateB = b.date.match(/(\d+)\/(\d+)/);
-            if (!dateA || !dateB) return 0;
+            if (!dateA || !dateB) {
+              return 0;
+            }
             const monthA = parseInt(dateA[1]);
             const dayA = parseInt(dateA[2]);
             const monthB = parseInt(dateB[1]);
             const dayB = parseInt(dateB[2]);
-            if (monthA !== monthB) return monthA - monthB;
+            if (monthA !== monthB) {
+              return monthA - monthB;
+            }
             return dayA - dayB;
           });
           
@@ -330,15 +336,21 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
         
         // タスクを日付順にソート
         const sortedTasks = tasksWithDates.sort((a: any, b: any) => {
-          if (!a.date || !b.date) return 0;
+          if (!a.date || !b.date) {
+            return 0;
+          }
           const dateA = a.date.match(/(\d+)\/(\d+)/);
           const dateB = b.date.match(/(\d+)\/(\d+)/);
-          if (!dateA || !dateB) return 0;
+          if (!dateA || !dateB) {
+            return 0;
+          }
           const monthA = parseInt(dateA[1]);
           const dayA = parseInt(dateA[2]);
           const monthB = parseInt(dateB[1]);
           const dayB = parseInt(dateB[2]);
-          if (monthA !== monthB) return monthA - monthB;
+          if (monthA !== monthB) {
+            return monthA - monthB;
+          }
           return dayA - dayB;
         });
         
@@ -391,15 +403,21 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       
       // タスクを日付順にソート
       const sortedTasks = tasksWithDates.sort((a: any, b: any) => {
-        if (!a.date || !b.date) return 0;
+        if (!a.date || !b.date) {
+          return 0;
+        }
         const dateA = a.date.match(/(\d+)\/(\d+)/);
         const dateB = b.date.match(/(\d+)\/(\d+)/);
-        if (!dateA || !dateB) return 0;
+        if (!dateA || !dateB) {
+          return 0;
+        }
         const monthA = parseInt(dateA[1]);
         const dayA = parseInt(dateA[2]);
         const monthB = parseInt(dateB[1]);
         const dayB = parseInt(dateB[2]);
-        if (monthA !== monthB) return monthA - monthB;
+        if (monthA !== monthB) {
+          return monthA - monthB;
+        }
         return dayA - dayB;
       });
       

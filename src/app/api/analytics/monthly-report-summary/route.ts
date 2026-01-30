@@ -3,7 +3,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import { buildAIContext } from "@/lib/ai/context";
 import { fetchAbTestSummaries, mapAbTestResultsByPost } from "@/lib/analytics/ab-test-utils";
-import type { ABTestResultTag, ABTestSummary } from "@/types/ab-test";
+import type { ABTestResultTag } from "@/types/ab-test";
 import type { AIReference } from "@/types/ai";
 
 interface AnalyticsData {
@@ -743,11 +743,11 @@ async function buildFeedbackSentimentSummary(params: {
     list
       .sort((a, b) => b.createdAtMs - a.createdAtMs)
       .slice(0, 3)
-      .map(({ createdAtMs, ...rest }) => rest);
+      .map(({ createdAtMs: _createdAtMs, ...rest }) => rest);
 
   const postsArray = Array.from(postStats.values())
     .map((entry) => {
-      const { lastCommentDate, ...rest } = entry;
+      const { lastCommentDate: _lastCommentDate, ...rest } = entry;
       return rest;
     })
     .sort((a, b) => {
@@ -903,9 +903,10 @@ function calculateFeedPerformanceStats(analytics: AnalyticsData[]) {
   );
 
   const feedAudience = calculateAudienceAnalysis(feedData);
-  const reelAudience = calculateAudienceAnalysis(
-    analytics.filter((data) => data.category === "reel")
-  );
+  // reelAudience removed (unused)
+  // const reelAudience = calculateAudienceAnalysis(
+  //   analytics.filter((data) => data.category === "reel")
+  // );
 
   return {
     totalLikes,
@@ -983,9 +984,10 @@ function calculateReelPerformanceStats(analytics: AnalyticsData[]) {
     reelData.reduce((sum, data) => sum + safeNumber(data.reelNormalSkipRate), 0) /
     reelData.length;
 
-  const reelAudience = calculateAudienceAnalysis(
-    analytics.filter((data) => data.category === "reel")
-  );
+  // reelAudience removed (unused)
+  // const reelAudience = calculateAudienceAnalysis(
+  //   analytics.filter((data) => data.category === "reel")
+  // );
 
   return {
     totalLikes,
@@ -1169,7 +1171,7 @@ function calculateTimeSlotAnalysis(analytics: AnalyticsData[]) {
 }
 
 // 投稿タイプ別統計を計算
-function calculatePostTypeStats(analytics: AnalyticsData[], posts: PostData[]) {
+function calculatePostTypeStats(analytics: AnalyticsData[], _posts: PostData[]) {
   // analyticsから投稿タイプを集計（categoryフィールドを使用）
   // analyticsに存在する投稿のみをカウント（analyticsで削除されたものはカウントしない）
   // postsから追加でカウントしないことで、analyticsで削除された投稿がカウントされないようにする

@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
       snapshotLimit: 5,
       includeMasterContext: true,
     });
-    const userProfile = aiContext.userProfile ?? null;
-    const latestPlan = aiContext.latestPlan ?? null;
+    const _userProfile = aiContext.userProfile ?? null;
+    const _latestPlan = aiContext.latestPlan ?? null;
 
     // ✅ 最近の投稿データを取得（PDCA - Do）
     let recentPosts: Array<{

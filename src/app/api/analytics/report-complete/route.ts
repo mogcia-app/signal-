@@ -499,14 +499,13 @@ export async function GET(request: NextRequest) {
     let prevTotalLikes = 0;
     let prevTotalReach = 0;
     let prevTotalComments = 0;
-    let prevTotalSaves = 0;
     let prevTotalFollowerIncrease = 0;
+    // prevTotalSaves removed (unused)
 
     prevAnalyticsByPostId.forEach((data) => {
       prevTotalLikes += data.likes || 0;
       prevTotalReach += data.reach || 0;
       prevTotalComments += data.comments || 0;
-      prevTotalSaves += data.saves || 0;
       prevTotalFollowerIncrease += data.followerIncrease || 0;
     });
 
@@ -1006,11 +1005,21 @@ export async function GET(request: NextRequest) {
 
         // ビジネス情報を構築
         const businessInfoParts: string[] = [];
-        if (businessInfo.industry) businessInfoParts.push(`業種: ${businessInfo.industry}`);
-        if (businessInfo.companySize) businessInfoParts.push(`会社規模: ${businessInfo.companySize}`);
-        if (businessInfo.businessType) businessInfoParts.push(`事業形態: ${businessInfo.businessType}`);
-        if (businessInfo.description) businessInfoParts.push(`事業内容: ${businessInfo.description}`);
-        if (businessInfo.catchphrase) businessInfoParts.push(`キャッチコピー: ${businessInfo.catchphrase}`);
+        if (businessInfo.industry) {
+          businessInfoParts.push(`業種: ${businessInfo.industry}`);
+        }
+        if (businessInfo.companySize) {
+          businessInfoParts.push(`会社規模: ${businessInfo.companySize}`);
+        }
+        if (businessInfo.businessType) {
+          businessInfoParts.push(`事業形態: ${businessInfo.businessType}`);
+        }
+        if (businessInfo.description) {
+          businessInfoParts.push(`事業内容: ${businessInfo.description}`);
+        }
+        if (businessInfo.catchphrase) {
+          businessInfoParts.push(`キャッチコピー: ${businessInfo.catchphrase}`);
+        }
         if (Array.isArray(businessInfo.targetMarket) && businessInfo.targetMarket.length > 0) {
           businessInfoParts.push(`ターゲット市場: ${businessInfo.targetMarket.join("、")}`);
         }
@@ -1052,11 +1061,21 @@ export async function GET(request: NextRequest) {
 
         // AI設定を構築
         const aiSettingsParts: string[] = [];
-        if (snsAISettings.tone) aiSettingsParts.push(`トーン: ${snsAISettings.tone}`);
-        if (snsAISettings.manner) aiSettingsParts.push(`マナー・ルール: ${snsAISettings.manner}`);
-        if (snsAISettings.goals) aiSettingsParts.push(`Instagram運用の目標: ${snsAISettings.goals}`);
-        if (snsAISettings.motivation) aiSettingsParts.push(`運用動機: ${snsAISettings.motivation}`);
-        if (snsAISettings.additionalInfo) aiSettingsParts.push(`その他参考情報: ${snsAISettings.additionalInfo}`);
+        if (snsAISettings.tone) {
+          aiSettingsParts.push(`トーン: ${snsAISettings.tone}`);
+        }
+        if (snsAISettings.manner) {
+          aiSettingsParts.push(`マナー・ルール: ${snsAISettings.manner}`);
+        }
+        if (snsAISettings.goals) {
+          aiSettingsParts.push(`Instagram運用の目標: ${snsAISettings.goals}`);
+        }
+        if (snsAISettings.motivation) {
+          aiSettingsParts.push(`運用動機: ${snsAISettings.motivation}`);
+        }
+        if (snsAISettings.additionalInfo) {
+          aiSettingsParts.push(`その他参考情報: ${snsAISettings.additionalInfo}`);
+        }
 
         if (aiSettingsParts.length > 0) {
           aiSettingsText = `\n【Instagram AI設定】\n${aiSettingsParts.join("\n")}`;

@@ -15,7 +15,7 @@ import type {
   LearningBadge,
   OverviewHighlight,
 } from "../../types";
-import type { AnalyticsRecord, FeedbackAggregate } from "../../domain/metrics/engagement";
+import type { AnalyticsRecord } from "../../domain/metrics/engagement";
 import {
   aggregateFeedbackData,
   computeBaselineMetrics,
@@ -30,7 +30,6 @@ import {
   weekKeyFromUnknown,
   monthLabelFromKey,
   weekLabelFromKey,
-  parseFirestoreDate,
 } from "../../utils/date-utils";
 import { ensureArray, toNumber } from "../../utils/validation";
 
@@ -136,7 +135,6 @@ function buildLearningAchievements(params: {
     clusterBreakthroughCount,
     completedAbTests,
     personaResonanceSegments,
-    ragReferenceDiversity,
     ragHitRate,
   } = params;
 
@@ -839,7 +837,7 @@ export async function getMasterContext(
     const focusAreaCounts: Record<string, number> = {};
     const watchoutCounts: Record<string, number> = {};
     const highlightCounts: Record<string, number> = {};
-    let confidenceSum = 0;
+    // confidenceSum removed (unused)
 
     for (const entry of entries) {
       for (const plan of entry.actionPlans) {
@@ -868,9 +866,7 @@ export async function getMasterContext(
         }
       });
 
-      const confidenceScore =
-        typeof entry.confidenceSnapshot?.score === "number" ? entry.confidenceSnapshot.score : 0;
-      confidenceSum += confidenceScore;
+      // confidenceScore calculation removed (unused)
     }
 
     let positiveWeight = 0;

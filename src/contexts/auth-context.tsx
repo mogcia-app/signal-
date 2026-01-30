@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ユーザードキュメントを作成または更新する関数
-  const ensureUserDocument = async (user: User) => {
+  const ensureUserDocument = useCallback(async (user: User) => {
     const userDocRef = doc(db, "users", user.uid);
     
     try {
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     }
-  };
+  }, []);
 
   // ユーザードキュメント作成のヘルパー関数
   const createUserDocument = async (userDocRef: DocumentReference, user: User) => {
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, ensureUserDocument]);
 
   // 6時間で自動ログアウト機能
   useEffect(() => {
@@ -195,16 +195,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const sessionStartTime = parseInt(sessionStart, 10);
         const currentTime = Date.now();
         const elapsedTime = currentTime - sessionStartTime;
-        const sixHoursInMs = 6 * 60 * 60 * 1000; // 6時間
+        const sixHoursInMs = 3 * 60 * 60 * 1000; // 6時間
 
         if (elapsedTime >= sixHoursInMs) {
           // 6時間経過したら自動ログアウト
           firebaseSignOut(auth);
           localStorage.removeItem("signal_session_start");
 
-          // ログイン画面に自動リダイレクト
+          // ポータルページに自動リダイレクト
           if (typeof window !== "undefined") {
-            router.push("/login");
+            window.location.href = "https://signal-portal.vercel.app/";
           }
         }
       }

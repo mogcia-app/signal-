@@ -160,18 +160,26 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-sm font-semibold text-gray-900">{post.title || "投稿"}</p>
-            <p className="text-xs text-gray-500">
-              {post.positive}件ポジ / {post.negative}件ネガ
-            </p>
+           
           </div>
           <span
-            className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+            className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md ${
               post.score >= 0
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-rose-200 bg-rose-50 text-rose-700"
+                ? "bg-emerald-500/10 text-emerald-700 border border-emerald-200/50"
+                : "bg-rose-500/10 text-rose-700 border border-rose-200/50"
             }`}
           >
-            {post.score >= 0 ? "好感" : "要改善"}
+            {post.score >= 0 ? (
+              <>
+                <Smile className="w-3 h-3" />
+                好感
+              </>
+            ) : (
+              <>
+                <Frown className="w-3 h-3" />
+                要改善
+              </>
+            )}
           </span>
         </div>
         {post.lastComment && (
@@ -179,26 +187,7 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
             &quot;{post.lastComment || ""}&quot;
           </p>
         )}
-        <div className="flex items-center gap-2">
-          {labHref && (
-            <Link
-              href={labHref}
-              className="text-xs font-semibold text-gray-700 border border-gray-300 bg-white px-2.5 py-1 rounded hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
-            >
-              Lab
-              <ExternalLink className="w-3 h-3" />
-            </Link>
-          )}
-          {analyticsHref && (
-            <Link
-              href={analyticsHref}
-              className="text-xs font-semibold text-gray-700 border border-gray-300 bg-white px-2.5 py-1 rounded hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
-            >
-              分析
-              <ExternalLink className="w-3 h-3" />
-            </Link>
-          )}
-        </div>
+       
       </div>
     );
   };

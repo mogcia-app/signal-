@@ -3,7 +3,8 @@
 import * as admin from "firebase-admin";
 import { adminDb } from "../firebase-admin";
 
-function parseFollowerValue(value: unknown): number | null {
+// parseFollowerValue removed (unused)
+function _parseFollowerValue(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -61,7 +62,7 @@ export async function syncPlanFollowerProgress(userId: string) {
       return;
     }
 
-    const planData = planDoc.data() || {};
+    // planData removed (unused)
 
     // initialFollowersを取得
     let initialFollowers = 0;

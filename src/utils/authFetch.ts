@@ -18,8 +18,7 @@ const defaultFetch: typeof fetch | undefined =
 
 type FetchImpl = typeof fetch;
 
-// リクエスト間隔制御用のキュー
-const requestQueue: Array<{ resolve: () => void; timestamp: number }> = [];
+// requestQueue removed (unused)
 // サーバー側のレート制限に合わせて、200ms間隔（1秒に5回）に設定
 // サーバー側は主に30-60回/60秒（1-2回/秒）なので、余裕を持たせて200ms
 const MIN_REQUEST_INTERVAL = 200; // 最小リクエスト間隔（ミリ秒）= 1秒に5回まで
@@ -117,8 +116,6 @@ const isApiRequest = (input: RequestInfo | URL): boolean => {
 const waitForUser = async (auth: ReturnType<typeof getAuth>, timeoutMs = 7000) =>
   new Promise<User | null>((resolve) => {
     let resolved = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
-    let unsubscribe: Unsubscribe | undefined;
 
     const finish = (user: User | null) => {
       if (resolved) {
@@ -134,8 +131,8 @@ const waitForUser = async (auth: ReturnType<typeof getAuth>, timeoutMs = 7000) =
       resolve(user);
     };
 
-    timeoutId = setTimeout(() => finish(null), timeoutMs);
-    unsubscribe = onAuthStateChanged(auth, (user) => {
+    const timeoutId = setTimeout(() => finish(null), timeoutMs);
+    const unsubscribe: Unsubscribe | undefined = onAuthStateChanged(auth, (user) => {
       finish(user);
     });
   });

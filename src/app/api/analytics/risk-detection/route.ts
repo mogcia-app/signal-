@@ -81,15 +81,15 @@ export async function GET(request: NextRequest) {
     let totalLikes = useProvidedKpis ? providedKpis.totalLikes! : 0;
     let totalReach = useProvidedKpis ? providedKpis.totalReach! : 0;
     let totalComments = useProvidedKpis ? providedKpis.totalComments! : 0;
-    let totalSaves = useProvidedKpis ? providedKpis.totalSaves! : 0;
     let totalFollowerIncrease = useProvidedKpis ? providedKpis.totalFollowerIncrease! : 0;
+    // totalSaves removed (unused)
 
     if (!useProvidedKpis) {
       analyticsByPostId.forEach((data) => {
         totalLikes += data.likes || 0;
         totalReach += data.reach || 0;
         totalComments += data.comments || 0;
-        totalSaves += data.saves || 0;
+        // totalSaves removed (unused)
         totalFollowerIncrease += data.followerIncrease || 0;
       });
     }
@@ -126,14 +126,14 @@ export async function GET(request: NextRequest) {
     let prevTotalLikes = 0;
     let prevTotalReach = 0;
     let prevTotalComments = 0;
-    let prevTotalSaves = 0;
     let prevTotalFollowerIncrease = 0;
+    // prevTotalSaves removed (unused)
 
     prevAnalyticsByPostId.forEach((data) => {
       prevTotalLikes += data.likes || 0;
       prevTotalReach += data.reach || 0;
       prevTotalComments += data.comments || 0;
-      prevTotalSaves += data.saves || 0;
+      // prevTotalSaves removed (unused)
       prevTotalFollowerIncrease += data.followerIncrease || 0;
     });
 

@@ -147,7 +147,7 @@ export const usePlanData = (
           if (text) {
             errorText += ` - ${text}`;
           }
-        } catch (err) {
+        } catch (_err) {
           // bodyが既に読み込まれている場合は、ステータステキストを使用
           errorText += ` - ${response.statusText || "Unknown error"}`;
         }

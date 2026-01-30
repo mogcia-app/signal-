@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
     });
 
     const now = new Date();
+    // today removed (unused)
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     // 今月の期間を計算

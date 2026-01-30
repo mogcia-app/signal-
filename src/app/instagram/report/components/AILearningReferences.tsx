@@ -81,7 +81,7 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
         <div>
           <h2 className="text-base font-bold text-gray-900">AI学習リファレンス</h2>
           <p className="text-xs text-gray-600 mt-0.5">
-            今月のAIがどのデータを参照して提案を出したかを可視化します
+            AIが提案を出す際に参照したデータを確認できます
           </p>
         </div>
       </div>

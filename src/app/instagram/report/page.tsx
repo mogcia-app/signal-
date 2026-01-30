@@ -9,8 +9,6 @@ import { MonthlyReview } from "./components/MonthlyReview";
 import { MonthlyActionPlans } from "./components/MonthlyActionPlans";
 import { RiskDetection } from "./components/RiskDetection";
 import { PostSummaryInsights } from "./components/PostSummaryInsights";
-import { PostDeepDive } from "./components/PostDeepDive";
-import { AILearningReferences } from "./components/AILearningReferences";
 import { FeedbackSentiment } from "./components/FeedbackSentiment";
 import { useAuth } from "../../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -254,18 +252,6 @@ export default function InstagramReportPage() {
 
         {/* フィードバック感情トラッキング */}
         <FeedbackSentiment 
-          selectedMonth={selectedMonth} 
-          reportData={reportData}
-        />
-
-        {/* 投稿ディープダイブ */}
-        <PostDeepDive 
-          selectedMonth={selectedMonth} 
-          reportData={reportData}
-        />
-
-        {/* AI学習リファレンス */}
-        <AILearningReferences 
           selectedMonth={selectedMonth} 
           reportData={reportData}
         />

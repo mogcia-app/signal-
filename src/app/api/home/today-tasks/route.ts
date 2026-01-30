@@ -339,7 +339,7 @@ function shouldPostToday(frequency: string, dayOfWeek: number): boolean {
  */
 function extractStoryContentFromStrategy(
   strategy: string,
-  dayName: string
+  _dayName: string
 ): { title: string; content: string } {
   // 簡易的な抽出ロジック（後で改善可能）
   if (!strategy) {
@@ -369,7 +369,7 @@ function extractStoryContentFromStrategy(
  */
 function extractFeedContentFromStrategy(
   strategy: string,
-  dayName: string
+  _dayName: string
 ): { title: string; content: string } {
   if (!strategy) {
     return {

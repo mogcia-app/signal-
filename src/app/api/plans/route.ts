@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     if (!currentFollowersValue) {
       // follower_countsから最新の値を取得
-      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      // currentMonth removed (unused)
       const followerCountSnapshot = await adminDb
         .collection("follower_counts")
         .where("userId", "==", userId)

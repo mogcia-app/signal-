@@ -3,7 +3,7 @@
  * 副作用なしの数値計算関数
  */
 
-import type { PostLearningSignal, PostPerformanceTag } from "../../types";
+import type { PostLearningSignal } from "../../types";
 
 /**
  * トップハッシュタグを集計

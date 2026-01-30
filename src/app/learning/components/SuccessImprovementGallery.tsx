@@ -1,13 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { Crown, AlertTriangle, Sparkles } from "lucide-react";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
-import { getLabEditorHref } from "@/utils/links";
 import type { PatternSignal, PostPatternInsights } from "../types";
-import { sentimentColorMap, sentimentLabelMap, renderSignificanceBadge } from "../utils";
-import { InfoTooltip } from "./InfoTooltip";
 
 interface SuccessImprovementGalleryProps {
   goldSignals: PatternSignal[];
@@ -33,10 +29,9 @@ export function SuccessImprovementGallery({
               <Crown className="h-5 w-5 text-white" />
             </div>
             <h2 className="text-lg font-bold text-gray-900">成功 & 改善投稿ギャラリー</h2>
-            <InfoTooltip text="ゴールド投稿（成功パターン）とレッド投稿（改善余地があるパターン）を一覧で確認できます。" />
           </div>
           <p className="mt-2 text-sm text-gray-700">
-            ゴールド（成功）とレッド（改善が必要）投稿をピックアップしました。AIが学習したポイントを振り返り、次の投稿に活かしましょう。
+            ゴールド（成功）とレッド（改善が必要）投稿をピックアップしました。
           </p>
         </div>
       </div>
@@ -68,27 +63,6 @@ export function SuccessImprovementGallery({
               AIが見つけた、あなたの成功パターンです。次の投稿に活かしましょう。
             </p>
             <SuccessGrid title="" icon={<Crown className="h-4 w-4 text-amber-500" />} signals={goldSignals} tone="gold" />
-            {goldSignals.length > 0 && (
-              <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-amber-900 mb-2">💡 共通点:</p>
-                <ul className="space-y-1 text-xs text-amber-800">
-                  {(() => {
-                    // 共通点を抽出（簡易版）
-                    const commonHashtags = goldSignals
-                      .flatMap((s) => s.hashtags)
-                      .filter((tag, index, self) => self.indexOf(tag) === index)
-                      .slice(0, 3);
-                    return [
-                      goldSignals[0]?.category === "reel" ? "- リール形式を使用" : "- フィード投稿形式を使用",
-                      "- ポジティブな感情を引き出す",
-                      commonHashtags.length > 0 ? `- ${commonHashtags.join("、")}などのハッシュタグを活用` : "- 効果的なハッシュタグを活用",
-                    ];
-                  })().map((point, index) => (
-                    <li key={index}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
@@ -98,29 +72,6 @@ export function SuccessImprovementGallery({
               AIが見つけた、改善すべき投稿です。
             </p>
             <SuccessGrid title="" icon={<AlertTriangle className="h-4 w-4 text-red-500" />} signals={redSignals} tone="red" />
-            {redSignals.length > 0 && (
-              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-red-900 mb-2">💡 共通の改善点:</p>
-                <ul className="space-y-1 text-xs text-red-800 mb-4">
-                  <li>- 保存率が低い</li>
-                  <li>- コメント率が低い</li>
-                </ul>
-                <p className="text-sm font-semibold text-red-900 mb-2">💡 次に試すこと:</p>
-                <ul className="space-y-1 text-xs text-red-800">
-                  <li>- 質問を投げかけてコメントを促す</li>
-                  <li>- 「保存してね」と明示的に伝える</li>
-                  <li>- より魅力的なビジュアルを使用する</li>
-                </ul>
-                <div className="mt-4">
-                  <Link
-                    href="/instagram/lab/feed"
-                    className="inline-block text-sm font-medium text-white bg-[#FF8A15] hover:bg-[#E67A0A] px-4 py-2 rounded-md transition-colors"
-                  >
-                    👉 改善案をAIに作ってもらう
-                  </Link>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -182,13 +133,6 @@ function SuccessGrid({ title, icon, signals, tone }: SuccessGridProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {signals.map((signal) => {
-            const analyticsHref = signal.postId
-              ? signal.category === "reel"
-                ? `/instagram/analytics/reel?postId=${signal.postId}`
-                : `/analytics/feed?postId=${signal.postId}`
-              : "#";
-            const labHref = getLabEditorHref(signal.category, signal.postId);
-
             return (
               <div
                 key={`${tone}-${signal.postId}`}
@@ -211,35 +155,6 @@ function SuccessGrid({ title, icon, signals, tone }: SuccessGridProps) {
                 <h4 className="text-sm font-semibold text-slate-900 line-clamp-2 mb-3">
                   {signal.title || "タイトル未設定"}
                 </h4>
-                <div
-                  className={`grid grid-cols-2 gap-3 text-xs text-slate-600 border ${styles.metricBg} p-3 rounded-none`}
-                >
-                  <Metric label="ER" value={`${signal.engagementRate.toFixed(1)}%`} />
-                  <Metric label="保存率" value={formatRate(signal.metrics?.savesRate)} />
-                  <Metric label="コメント率" value={formatRate(signal.metrics?.commentsRate)} />
-                  <Metric label="似た投稿との比較" value={formatDiff(signal.comparisons?.engagementRateDiff, { signed: true })} />
-                </div>
-                <p className={`text-xs font-medium mt-3 ${sentimentColorMap[signal.sentimentLabel]}`}>
-                  {sentimentLabelMap[signal.sentimentLabel]} ({signal.sentimentScore.toFixed(2)})
-                </p>
-                {tone === "red" && signal.feedbackCounts ? (
-                  <p className="text-xs text-gray-600 mt-2">
-                    ポジティブ {signal.feedbackCounts.positive}件 / ネガティブ {signal.feedbackCounts.negative}件
-                  </p>
-                ) : null}
-                {tone === "red" ? (
-                  <div className={`mt-3 rounded-none ${styles.hintBg} p-3 space-y-1 text-xs text-slate-700`}>
-                    <p className="font-semibold text-slate-900">改善ヒント</p>
-                    <p>・リーチ差分: {formatDiff(signal.comparisons?.reachDiff, { signed: true })}</p>
-                    <p>・保存/コメント率に課題。導入とCTAを簡潔にして再テスト。</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1 mt-2">
-                    {renderSignificanceBadge("リーチ差分", signal.comparisons?.reachDiff, signal.significance?.reach)}
-                    {renderSignificanceBadge("エンゲージ差分", signal.comparisons?.engagementRateDiff, signal.significance?.engagement)}
-                    {renderSignificanceBadge("保存率差分", signal.comparisons?.savesRateDiff, signal.significance?.savesRate)}
-                  </div>
-                )}
 
                 {signal.hashtags.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -250,60 +165,11 @@ function SuccessGrid({ title, icon, signals, tone }: SuccessGridProps) {
                     ))}
                   </div>
                 ) : null}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {signal.postId ? (
-                    <>
-                      {labHref && (
-                        <Link
-                          href={labHref}
-                          target="_blank"
-                          className="text-[11px] font-semibold text-slate-800 border border-slate-300 bg-white px-3 py-1 rounded-none hover:bg-slate-100 transition-colors"
-                        >
-                          {tone === "gold" ? "Labで再編集" : "Labで改善案を作る"}
-                        </Link>
-                      )}
-                      <Link href={`/instagram/posts/${signal.postId}`} target="_blank" className={`text-[11px] font-semibold border bg-white px-3 py-1 rounded-none transition-colors ${styles.button}`}>
-                        投稿詳細を見る
-                      </Link>
-                      <Link href={analyticsHref} target="_blank" className="text-[11px] font-semibold text-slate-700 border border-slate-300 bg-white px-3 py-1 rounded-none hover:bg-slate-100 transition-colors">
-                        分析で開く
-                      </Link>
-                    </>
-                  ) : (
-                    <span className="text-[11px] text-gray-400">関連する投稿IDがありません</span>
-                  )}
-                </div>
               </div>
             );
           })}
         </div>
       )}
-    </div>
-  );
-}
-
-function formatRate(value?: number) {
-  if (typeof value !== "number") {
-    return "-";
-  }
-  return `${(value * 100).toFixed(1)}%`;
-}
-
-function formatDiff(value?: number, options: { signed?: boolean } = {}) {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return "データ不足";
-  }
-  const { signed = false } = options;
-  const formatted = (value * 100).toFixed(1);
-  const sign = signed && value > 0 ? "+" : "";
-  return `${sign}${formatted}ポイント`;
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[11px] text-slate-500">{label}</p>
-      <p className="text-sm font-semibold text-slate-900">{value}</p>
     </div>
   );
 }

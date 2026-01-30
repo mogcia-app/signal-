@@ -147,7 +147,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
         <div className="pt-2">
           <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
             達成難易度
-          </h3>
+            </h3>
           <div className="border border-gray-200 rounded-lg p-6 bg-gray-50/50">
             <div className="mb-4">
               <p className="text-base font-medium text-gray-900">
@@ -158,7 +158,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                 <span className="text-gray-600">あなたの目標</span>
                 <span className="font-medium text-gray-900">月{result.requiredMonthlyGrowthRate}%成長</span>
-              </div>
+          </div>
               <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                 <span className="text-gray-600">業界平均</span>
                 <span className="font-medium text-gray-900">月{getIndustryAverage()}成長</span>
@@ -175,17 +175,17 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
                     );
                   })()}
                 </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* 週ごとの予測 */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            📈 週ごとの予測
-          </h3>
-          <div className="space-y-2 mb-4">
+          {/* 週ごとの予測 */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              📈 週ごとの予測
+            </h3>
+            <div className="space-y-2 mb-4">
             {result.weeklyPredictions && result.weeklyPredictions.length > 0 ? (
               result.weeklyPredictions.map((prediction, index) => {
                 const weekNumber = index + 1;
@@ -207,24 +207,24 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
             ) : (
               <p className="text-sm text-gray-500">週ごとの予測データがありません</p>
             )}
+            </div>
+            <p className="text-sm text-gray-500 italic">
+              このペースなら、毎週少しずつ増やせます！
+            </p>
           </div>
-          <p className="text-sm text-gray-500 italic">
-            このペースなら、毎週少しずつ増やせます！
-          </p>
-        </div>
 
-        {/* 週次フォロワー増加予測グラフ */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            週次フォロワー増加予測グラフ
-          </h3>
-          <WeeklyFollowerPredictionChart
-            currentFollowers={formData.currentFollowers}
-            targetFollowers={formData.targetFollowers}
-            periodMonths={formData.periodMonths}
-            aiSuggestedTarget={aiSuggestedTarget}
-          />
-        </div>
+          {/* 週次フォロワー増加予測グラフ */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              週次フォロワー増加予測グラフ
+            </h3>
+            <WeeklyFollowerPredictionChart
+              currentFollowers={formData.currentFollowers}
+              targetFollowers={formData.targetFollowers}
+              periodMonths={formData.periodMonths}
+              aiSuggestedTarget={aiSuggestedTarget}
+            />
+          </div>
         
         {/* この計画で始めるボタン */}
         {onStartPlan && currentAiSuggestion && (
@@ -238,20 +238,20 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
               <CheckCircle className="w-4 h-4" />
               {isSaving ? "保存中..." : "この計画で始める"}
             </button>
-          </div>
-        )}
+        </div>
+      )}
       </div>
 
       {/* AI提案セクション（最適な投稿時間など、週ごとの詳細計画がない場合のみ） */}
       {fullFormData && !isLoadingSuggestion && currentAiSuggestion && 
        (!currentAiSuggestion.weeklyPlans || currentAiSuggestion.weeklyPlans.length === 0) && (
-        <AIPlanSuggestionComponent 
-          formData={fullFormData} 
-          simulationResult={result}
+          <AIPlanSuggestionComponent 
+            formData={fullFormData} 
+            simulationResult={result}
           suggestion={currentAiSuggestion}
-          onStartPlan={onStartPlan}
+            onStartPlan={onStartPlan}
           showWeeklyPlans={false}
-        />
+          />
       )}
 
       {/* ローディング状態 */}

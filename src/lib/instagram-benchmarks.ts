@@ -186,9 +186,15 @@ export const RECOMMENDED_POST_FREQUENCY: RecommendedPostFrequency[] = [
 
 // アカウント規模を判定
 export function getAccountSize(followers: number): AccountSize {
-  if (followers < 1000) return "nano";
-  if (followers < 10000) return "micro";
-  if (followers < 100000) return "middle";
+  if (followers < 1000) {
+    return "nano";
+  }
+  if (followers < 10000) {
+    return "micro";
+  }
+  if (followers < 100000) {
+    return "middle";
+  }
   return "mega";
 }
 
@@ -262,7 +268,9 @@ export function calculateRequiredMonthlyGrowthRate(
   targetFollowers: number,
   months: number
 ): number {
-  if (currentFollowers <= 0 || months <= 0) return 0;
+  if (currentFollowers <= 0 || months <= 0) {
+    return 0;
+  }
   
   // 必要月間成長率 = ((目標フォロワー数 / 現在フォロワー数) ^ (1/期間月数) - 1) × 100
   const ratio = targetFollowers / currentFollowers;
@@ -344,29 +352,19 @@ export function calculateFeasibilityScore(
   // 151以上	非現実的	🔴 非常に困難な目標です
   let level: "very_easy" | "easy" | "realistic" | "challenging" | "very_challenging" | "unrealistic";
   let label: string;
-  let color: string;
-  let icon: string;
 
   if (difficultyRatio <= 70) {
     level = "easy";
     label = "達成しやすい目標です。余裕を持って取り組めます";
-    color = "#4CAF50";
-    icon = "🟢";
   } else if (difficultyRatio <= 110) {
     level = "realistic";
     label = "現実的な目標です。継続的な投稿で達成可能";
-    color = "#2196F3";
-    icon = "🔵";
   } else if (difficultyRatio <= 150) {
     level = "challenging";
     label = "挑戦的な目標です。高品質な投稿と積極的なエンゲージメントが必要";
-    color = "#FF9800";
-    icon = "🟡";
   } else {
     level = "unrealistic";
     label = "非常に困難な目標です。より現実的な代替案を検討してください";
-    color = "#F44336";
-    icon = "🔴";
   }
 
   // アカウント規模カテゴリを取得
@@ -481,33 +479,27 @@ export function calculateRecommendedPostingFrequency(
   // 難易度に応じて投稿頻度を調整
   let feedMultiplier = 1.0;
   let reelMultiplier = 1.0;
-  let storyMultiplier = 1.0;
 
   if (difficultyRatio < 50) {
     // 簡単すぎる: 標準的な投稿頻度
     feedMultiplier = 1.0;
     reelMultiplier = 1.0;
-    storyMultiplier = 1.0;
   } else if (difficultyRatio < 100) {
     // 現実的: 標準的な投稿頻度
     feedMultiplier = 1.0;
     reelMultiplier = 1.0;
-    storyMultiplier = 1.0;
   } else if (difficultyRatio < 150) {
     // やや厳しい: やや多めの投稿頻度
     feedMultiplier = 1.2;
     reelMultiplier = 1.3;
-    storyMultiplier = 1.0; // ストーリーは既に毎日推奨
   } else if (difficultyRatio < 200) {
     // かなり厳しい: かなり多めの投稿頻度
     feedMultiplier = 1.5;
     reelMultiplier = 1.8;
-    storyMultiplier = 1.0;
   } else {
     // 非現実的: 非常に多めの投稿頻度
     feedMultiplier = 2.0;
     reelMultiplier = 2.5;
-    storyMultiplier = 1.0;
   }
 
   // フォロワー規模に応じた調整

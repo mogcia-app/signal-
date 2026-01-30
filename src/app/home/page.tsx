@@ -35,7 +35,7 @@ export default function HomePage() {
     currentPlan?: {
       planPeriod?: string;
       [key: string]: unknown;
-    };
+    } | null;
     weeklyKPIs?: {
       thisWeek: { likes: number; comments: number; followers: number };
       changes?: { likes: number; comments: number; followers: number };
@@ -67,25 +67,32 @@ export default function HomePage() {
   const [isLoadingAiSections, setIsLoadingAiSections] = useState(true);
   const [copiedTaskIndex, setCopiedTaskIndex] = useState<number | null>(null);
   const [savingTaskIndex, setSavingTaskIndex] = useState<number | null>(null);
+  
+  // その他KPI入力用のstate
+  const [otherFollowerCount, setOtherFollowerCount] = useState<number | "">("");
+  const [otherProfileVisits, setOtherProfileVisits] = useState<number | "">("");
+  const [otherExternalLinkTaps, setOtherExternalLinkTaps] = useState<number | "">("");
+  const [isSavingOtherKPI, setIsSavingOtherKPI] = useState(false);
+  const [isLoadingOtherKPI, setIsLoadingOtherKPI] = useState(false);
 
 
   // ダッシュボードデータを取得
-  const fetchDashboard = async () => {
-    try {
-      setIsLoadingDashboard(true);
-      const response = await authFetch("/api/home/dashboard");
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setDashboardData(data.data);
+    const fetchDashboard = async () => {
+      try {
+        setIsLoadingDashboard(true);
+        const response = await authFetch("/api/home/dashboard");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setDashboardData(data.data);
+          }
         }
+      } catch (error) {
+        console.error("ダッシュボードデータ取得エラー:", error);
+      } finally {
+        setIsLoadingDashboard(false);
       }
-    } catch (error) {
-      console.error("ダッシュボードデータ取得エラー:", error);
-    } finally {
-      setIsLoadingDashboard(false);
-    }
-  };
+    };
 
   useEffect(() => {
     fetchDashboard();
@@ -140,16 +147,100 @@ export default function HomePage() {
     fetchAiSections();
   }, []);
 
+  // その他KPIデータを取得
+  const fetchOtherKPI = async () => {
+    try {
+      setIsLoadingOtherKPI(true);
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      
+      const response = await authFetch(`/api/follower-counts?month=${month}&snsType=instagram`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setOtherFollowerCount(data.data.followers || "");
+          setOtherProfileVisits(data.data.profileVisits || "");
+          setOtherExternalLinkTaps(data.data.externalLinkTaps || "");
+        } else {
+          setOtherFollowerCount("");
+          setOtherProfileVisits("");
+          setOtherExternalLinkTaps("");
+        }
+      }
+    } catch (error) {
+      console.error("その他KPIデータ取得エラー:", error);
+    } finally {
+      setIsLoadingOtherKPI(false);
+    }
+  };
+
+  // その他KPIデータを保存
+  const saveOtherKPI = async () => {
+    if (!user?.uid) {
+      toast.error("ログインが必要です");
+      return;
+    }
+
+    setIsSavingOtherKPI(true);
+    try {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      
+      const response = await authFetch("/api/follower-counts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          followers: Number(otherFollowerCount) || 0,
+          month,
+          snsType: "instagram",
+          source: "manual",
+          profileVisits: Number(otherProfileVisits) || 0,
+          externalLinkTaps: Number(otherExternalLinkTaps) || 0,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("保存しました");
+        fetchDashboard(); // ダッシュボードデータを再取得
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "保存に失敗しました");
+      }
+    } catch (error) {
+      console.error("その他KPI保存エラー:", error);
+      toast.error("保存に失敗しました");
+    } finally {
+      setIsSavingOtherKPI(false);
+    }
+  };
+
   // 計画削除を検知してデータを再取得（ページフォーカス時）
   useEffect(() => {
     const handleFocus = () => {
       // ページがフォーカスされたときにデータを再取得
       fetchDashboard();
+      fetchOtherKPI();
     };
 
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
   }, []);
+
+  // 初回ロード時にその他KPIデータを取得
+  useEffect(() => {
+    if (user) {
+      fetchOtherKPI();
+    }
+  }, [user]);
+
+  // 初回ロード時にその他KPIデータを取得
+  useEffect(() => {
+    if (user) {
+      fetchOtherKPI();
+    }
+  }, [user]);
 
 
   // 週間成果データ（ダッシュボードから取得）
@@ -159,7 +250,7 @@ export default function HomePage() {
           metric: "いいね数",
           value: dashboardData.weeklyKPIs.thisWeek.likes || 0,
           change: dashboardData.weeklyKPIs.changes?.likes || 0,
-          icon: "👍",
+          icon: "🩷",
         },
         {
           metric: "コメント数",
@@ -171,13 +262,13 @@ export default function HomePage() {
           metric: "フォロワー数",
           value: dashboardData.weeklyKPIs.thisWeek.followers || 0,
           change: dashboardData.weeklyKPIs.changes?.followers || 0,
-          icon: "👥",
+          icon: "📈",
         },
       ]
     : [
-        { metric: "いいね数", value: 0, change: 0, icon: "👍" },
+        { metric: "いいね数", value: 0, change: 0, icon: "🩷" },
         { metric: "コメント数", value: 0, change: 0, icon: "💬" },
-        { metric: "フォロワー数", value: 0, change: 0, icon: "👥" },
+        { metric: "フォロワー数", value: 0, change: 0, icon: "📈" },
       ];
 
 
@@ -188,9 +279,12 @@ export default function HomePage() {
         {/* 挨拶セクション */}
         <div className="mb-6">
           <h1 className="text-2xl font-light text-gray-900 mb-1">
-            おはようございます、{userName}さん
+            <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0s' }}>こんにちは</span>
+            <span className="inline-block animate-fade-in-up ml-2" style={{ animationDelay: '0.2s' }}>、</span>
+            <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{userName}</span>
+            <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0.4s' }}>さん</span>
           </h1>
-          <p className="text-sm text-gray-500 font-light">今日は {dateStr}</p>
+          <p className="text-sm text-gray-500 font-light animate-fade-in-up" style={{ animationDelay: '0.5s' }}>今日は {dateStr}</p>
         </div>
 
         <div className="space-y-6">
@@ -237,20 +331,26 @@ export default function HomePage() {
                   >
                     計画を作成する →
                   </button>
-                </div>
+                  </div>
               </div>
             </div>
           )}
 
           {/* 今週の成果 */}
-          {dashboardData?.weeklyKPIs && weeklyResults.length > 0 && (
+          {(dashboardData?.weeklyKPIs || isLoadingDashboard) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
                 <span>📊</span>
                 今週の成果
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {weeklyResults.map((result, index) => (
+              {isLoadingDashboard ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
+                  <span className="text-sm text-gray-500">読み込み中...</span>
+                </div>
+              ) : weeklyResults.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {weeklyResults.map((result, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-sm font-light text-gray-600">{result.metric}</div>
@@ -266,8 +366,8 @@ export default function HomePage() {
                         <TrendingUp className={`w-3 h-3 ${result.change < 0 ? "rotate-180" : ""}`} />
                         {result.change > 0 ? "+" : ""}{result.change.toLocaleString()}
                         <span className="text-gray-500">（先週比）</span>
-                      </div>
-                    )}
+                          </div>
+                        )}
                     {result.change === 0 && (
                       <div className="text-xs font-light text-gray-400">
                         先週と変動なし
@@ -275,31 +375,31 @@ export default function HomePage() {
                     )}
                   </div>
                 ))}
-              </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  データがありません
+                </p>
+              )}
             </div>
           )}
 
-          {/* 今日やること */}
-          {dashboardData?.currentPlan && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
-                <span>📅</span>
-                今日やること
-              </h2>
-              {isLoadingAiSections ? (
+          {/* 今日やることと明日の準備（2カラム） */}
+          {(dashboardData?.currentPlan || isLoadingDashboard) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 今日やること */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>📅</span>
+                  今日やること
+                </h2>
+              {(isLoadingAiSections || isLoadingDashboard) ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mb-2" />
                   <p className="text-xs text-gray-500 font-light">AIが計画を生成中...</p>
                 </div>
               ) : !aiSections || aiSections.todayTasks.length === 0 ? (
                 <div className="space-y-4">
-                  {(!aiSections || aiSections.tomorrowPreparation.length === 0) && (
-                    <div className="text-center py-2 mb-2">
-                      <p className="text-sm text-gray-500 font-light">
-                        今日はお休みですね✨
-                      </p>
-                    </div>
-                  )}
                   <div className="border-l-2 border-[#FF8A15] pl-4">
                     <div className="flex items-start gap-2 mb-2">
                       <div className="flex-1">
@@ -323,7 +423,7 @@ export default function HomePage() {
                         </p>
                       </div>
                     </div>
-                  </div>
+            </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -336,22 +436,22 @@ export default function HomePage() {
                     return (
                       <div key={index} className="border-l-2 border-[#FF8A15] pl-4">
                         <div className="flex items-start gap-2 mb-2">
-                          <div className="flex-1">
+                    <div className="flex-1">
                             <div className="text-sm font-medium text-gray-900 mb-1">
                               {typeLabels[task.type] || task.type}
                               {task.time && (
                                 <span className="text-xs font-light text-gray-500 ml-2">
                                   ({task.time})
-                                </span>
-                              )}
-                            </div>
+                          </span>
+                        )}
+                      </div>
                             <p className="text-sm font-light text-gray-700 mb-2">
                               「{task.description}」
                             </p>
                             {(task.generatedContent || (task.generatedHashtags && task.generatedHashtags.length > 0)) && (
                               <div className="bg-gray-50 border border-gray-200 rounded-md p-3 mb-2 relative">
                                 <div className="absolute top-2 right-2 flex gap-1">
-                                  <button
+                        <button
                                     onClick={async () => {
                                       if (!user?.uid) {
                                         toast.error("ログインが必要です");
@@ -398,10 +498,10 @@ export default function HomePage() {
                                   >
                                     {savingTaskIndex === index ? (
                                       <Loader2 className="w-4 h-4 text-orange-600 animate-spin" />
-                                    ) : (
+                          ) : (
                                       <Save className="w-4 h-4 text-orange-600" />
-                                    )}
-                                  </button>
+                          )}
+                        </button>
                                   <button
                                     onClick={async () => {
                                       const content = task.generatedContent || "";
@@ -426,7 +526,7 @@ export default function HomePage() {
                                     ) : (
                                       <Copy className="w-4 h-4 text-gray-600" />
                                     )}
-                                  </button>
+                        </button>
                                 </div>
                                 {task.generatedContent && (
                                   <div className="mb-2 pr-20">
@@ -454,25 +554,23 @@ export default function HomePage() {
                               <p className="text-xs text-gray-500 font-light">
                                 → {task.tip}
                               </p>
-                            )}
-                          </div>
-                        </div>
+                      )}
+                    </div>
+                  </div>
                       </div>
                     );
                   })}
                 </div>
               )}
-            </div>
-          )}
+              </div>
 
-          {/* 明日の準備 */}
-          {dashboardData?.currentPlan && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
-                <span>🔮</span>
-                明日の準備
-              </h2>
-              {isLoadingAiSections ? (
+              {/* 明日の準備 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>🔮</span>
+                  明日の準備
+                </h2>
+              {(isLoadingAiSections || isLoadingDashboard) ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-blue-400 mb-2" />
                   <p className="text-xs text-gray-500 font-light">AIが準備タスクを生成中...</p>
@@ -484,16 +582,16 @@ export default function HomePage() {
                       <div className="flex-1">
                         <div className="text-sm font-medium text-gray-900 mb-1">
                           【分析・確認】
-                        </div>
+            </div>
                         <p className="text-sm font-light text-gray-700 mb-2">
                           「投稿後の分析はできていますか？見直してみましょう！」
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              </p>
+            </div>
+          </div>
+            </div>
                   <div className="border-l-2 border-blue-400 pl-4">
                     <div className="flex items-start gap-2 mb-2">
-                      <div className="flex-1">
+              <div className="flex-1">
                         <div className="text-sm font-medium text-gray-900 mb-1">
                           【エンゲージメント】
                         </div>
@@ -501,8 +599,8 @@ export default function HomePage() {
                           「コメントには返信を忘れずに！」
                         </p>
                       </div>
-                    </div>
-                  </div>
+                </div>
+              </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -515,7 +613,7 @@ export default function HomePage() {
                     return (
                       <div key={index} className="border-l-2 border-blue-400 pl-4">
                         <div className="flex items-start gap-2 mb-2">
-                          <div className="flex-1">
+              <div className="flex-1">
                             <div className="text-sm font-medium text-gray-900 mb-1">
                               {typeLabels[prep.type] || prep.type}
                               {prep.time && (
@@ -523,35 +621,38 @@ export default function HomePage() {
                                   ({prep.time})
                                 </span>
                               )}
-                            </div>
+                </div>
                             <p className="text-sm font-light text-gray-700 mb-2">
                               「{prep.description}」
                             </p>
                             <p className="text-xs text-blue-600 font-light">
                               ✓ {prep.preparation}
                             </p>
-                          </div>
-                        </div>
-                      </div>
+                </div>
+              </div>
+            </div>
                     );
                   })}
                 </div>
               )}
+              </div>
             </div>
           )}
 
-          {/* 今月の目標 */}
-          {dashboardData?.currentPlan && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
-                <span>🎯</span>
-                今月の目標
-              </h2>
-              {isLoadingAiSections ? (
+          {/* 今月の目標と今週の予定（2カラム） */}
+          {(dashboardData?.currentPlan || isLoadingDashboard) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 今月の目標 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>🎯</span>
+                  今月の目標
+                </h2>
+              {(isLoadingAiSections || isLoadingDashboard) ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-orange-400 mb-2" />
                   <p className="text-xs text-gray-500 font-light">データを読み込み中...</p>
-                </div>
+            </div>
               ) : !aiSections || aiSections.monthlyGoals.length === 0 ? (
                 <p className="text-sm text-gray-500 font-light text-center py-4">
                   今月の目標は設定されていません
@@ -564,26 +665,24 @@ export default function HomePage() {
                       <div className="flex-1">
                         <div className="text-sm font-medium text-gray-900">
                           {goal.metric}
-                        </div>
+                  </div>
                         <div className="text-sm font-light text-gray-700">
                           {goal.target}
-                        </div>
-                      </div>
-                    </div>
+                  </div>
+                  </div>
+                  </div>
                   ))}
-                </div>
+              </div>
               )}
-            </div>
-          )}
+              </div>
 
-          {/* 今週の予定 */}
-          {dashboardData?.currentPlan && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
-                <span>📅</span>
-                今週の予定
-              </h2>
-              {isLoadingAiSections ? (
+              {/* 今週の予定 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>📅</span>
+                  今週の予定
+                </h2>
+              {(isLoadingAiSections || isLoadingDashboard) ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-purple-400 mb-2" />
                   <p className="text-xs text-gray-500 font-light">AIが今週の予定を生成中...</p>
@@ -608,9 +707,9 @@ export default function HomePage() {
                         </div>
                       ))}
                     </div>
-                  </div>
+            </div>
                   {aiSections.weeklySchedule.tasks && aiSections.weeklySchedule.tasks.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="text-xs font-medium text-gray-700 mb-2">📋 今週の投稿スケジュール</div>
                       <div className="space-y-2">
                         {aiSections.weeklySchedule.tasks.map((task, taskIndex) => {
@@ -629,18 +728,104 @@ export default function HomePage() {
                             </div>
                           );
                         })}
-                      </div>
-                    </div>
+            </div>
+          </div>
                   )}
                 </div>
               )}
+              </div>
             </div>
           )}
 
-          {/* コメント返信アシスト */}
-          <div className="bg-white rounded-lg border border-gray-200">
-            <CommentReplyAssistant postType="feed" />
-          </div>
+          {/* その他KPI入力とコメント返信アシスト（2カラム） */}
+          {(dashboardData?.currentPlan || isLoadingDashboard) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* その他KPI入力 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>📝</span>
+                  投稿に紐づかない数値入力
+                </h2>
+                {dashboardData?.currentPlan ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        その他フォロワー数
+                      </label>
+                      <input
+                        type="number"
+                        value={otherFollowerCount}
+                        onChange={(e) => setOtherFollowerCount(e.target.value === "" ? "" : Number(e.target.value))}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかないフォロワー増加数を入力</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        その他のプロフィール閲覧数
+                      </label>
+                      <input
+                        type="number"
+                        value={otherProfileVisits}
+                        onChange={(e) => setOtherProfileVisits(e.target.value === "" ? "" : Number(e.target.value))}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかないプロフィール閲覧数を入力</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        その他の外部リンクタップ数
+                      </label>
+                      <input
+                        type="number"
+                        value={otherExternalLinkTaps}
+                        onChange={(e) => setOtherExternalLinkTaps(e.target.value === "" ? "" : Number(e.target.value))}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかない外部リンクタップ数を入力</p>
+                    </div>
+                    <button
+                      onClick={saveOtherKPI}
+                      disabled={isSavingOtherKPI}
+                      className="w-full py-2 px-4 bg-[#FF8A15] text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {isSavingOtherKPI ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          保存中...
+                        </>
+                      ) : (
+                        "保存"
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    計画が作成されていません
+                  </p>
+                )}
+              </div>
+
+              {/* コメント返信アシスト */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                <CommentReplyAssistant postType="feed" />
+              </div>
+            </div>
+          )}
+
+          {/* コメント返信アシスト（計画がない場合のみ表示） */}
+          {!dashboardData?.currentPlan && !isLoadingDashboard && (
+            <div className="bg-white rounded-lg border border-gray-200">
+              <CommentReplyAssistant postType="feed" />
+            </div>
+          )}
+
         </div>
       </div>
     </SNSLayout>

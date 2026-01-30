@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMasterContext } from "../monthly-analysis/infra/firestore/master-context";
 import type { PostLearningSignal } from "../monthly-analysis/types";
+import { adminDb } from "@/lib/firebase-admin";
+import { getUserProfile } from "@/lib/server/user-profile";
 
 interface PostInsightRequest {
   userId?: string;
@@ -23,11 +25,11 @@ async function callOpenAIForPostInsight(prompt: string): Promise<string> {
     body: JSON.stringify({
       model: "gpt-4o-mini",
       temperature: 0.2,
-      max_tokens: 800,
+      max_tokens: 1200,
       messages: [
         {
           role: "system",
-          content: `あなたはInstagram運用のエキスパートアナリストです。投稿データを基に、強み・改善点・次のアクションを簡潔に提案してください。出力はJSONのみ。`,
+          content: `あなたはInstagram運用のエキスパートアナリストです。投稿データ、分析データ、フィードバック、計画情報、事業内容を総合的に分析し、この投稿の良かった部分、改善すべきポイント、次は何をすべきか（次の一手）を具体的に提案してください。出力はJSONのみ。`,
         },
         {
           role: "user",
@@ -58,7 +60,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const masterContext = await getMasterContext(userId, { forceRefresh });
+    // 並列でデータを取得
+    const [
+      masterContext,
+      postDoc,
+      analyticsDoc,
+      planDoc,
+      followerCountDoc,
+      userProfile,
+    ] = await Promise.all([
+      getMasterContext(userId, { forceRefresh }),
+      adminDb.collection("posts").doc(postId).get(),
+      adminDb.collection("analytics").where("userId", "==", userId).where("postId", "==", postId).limit(1).get(),
+      adminDb.collection("plans").where("userId", "==", userId).where("snsType", "==", "instagram").where("status", "==", "active").orderBy("createdAt", "desc").limit(1).get(),
+      adminDb.collection("follower_counts").where("userId", "==", userId).where("snsType", "==", "instagram").orderBy("date", "desc").limit(1).get(),
+      getUserProfile(userId),
+    ]);
 
     if (!masterContext?.postPatterns?.signals?.length) {
       return NextResponse.json(
@@ -167,11 +184,89 @@ export async function POST(request: NextRequest) {
           similarPosts: [],
         };
 
+    // 投稿データを取得
+    const postData = postDoc.exists ? postDoc.data() : null;
+    const postTitle = postData?.title || signal.title || "タイトル未設定";
+    const postContent = postData?.content || "";
+    const postHashtags = Array.isArray(postData?.hashtags) ? postData.hashtags : (Array.isArray(signal.hashtags) ? signal.hashtags : []);
+    const postScheduledDate = postData?.scheduledDate?.toDate?.() || postData?.scheduledDate || postData?.publishedAt?.toDate?.() || postData?.publishedAt || null;
+    const postScheduledTime = postData?.scheduledTime || postData?.publishedTime || "";
+
+    // 分析データを取得
+    const analyticsData = analyticsDoc.empty ? null : analyticsDoc.docs[0].data();
+    const analyticsMetrics = analyticsData ? {
+      likes: analyticsData.likes || 0,
+      comments: analyticsData.comments || 0,
+      shares: analyticsData.shares || 0,
+      reach: analyticsData.reach || 0,
+      saves: analyticsData.saves || 0,
+      followerIncrease: analyticsData.followerIncrease || 0,
+      engagementRate: analyticsData.engagementRate || 0,
+      reachFollowerPercent: analyticsData.reachFollowerPercent || 0,
+      interactionCount: analyticsData.interactionCount || 0,
+      interactionFollowerPercent: analyticsData.interactionFollowerPercent || 0,
+      audience: analyticsData.audience || null,
+      reachSource: analyticsData.reachSource || null,
+    } : null;
+
+    // フィードバックデータを取得
+    const feedbackSentiment = analyticsData?.sentiment || null;
+    const feedbackMemo = analyticsData?.sentimentMemo || "";
+
+    // 計画データを取得
+    const planData = planDoc.empty ? null : planDoc.docs[0].data();
+    const planInfo = planData ? {
+      targetFollowers: planData.targetFollowers || 0,
+      targetAudience: planData.targetAudience || planData.formData?.targetAudience || "",
+      kpi: {
+        targetFollowers: planData.targetFollowers || 0,
+        strategies: Array.isArray(planData.strategies) ? planData.strategies : [],
+        postCategories: Array.isArray(planData.postCategories) ? planData.postCategories : [],
+      },
+    } : null;
+
+    // 現在のフォロワー数を取得
+    let currentFollowers = 0;
+    if (!followerCountDoc.empty) {
+      const followerData = followerCountDoc.docs[0].data();
+      currentFollowers = followerData.followers || followerData.startFollowers || 0;
+    } else if (userProfile?.businessInfo?.initialFollowers) {
+      currentFollowers = userProfile.businessInfo.initialFollowers;
+    }
+
+    // 事業内容を取得
+    const businessInfo = userProfile?.businessInfo ? {
+      industry: userProfile.businessInfo.industry || "",
+      companySize: userProfile.businessInfo.companySize || "",
+      businessType: userProfile.businessInfo.businessType || "",
+      description: userProfile.businessInfo.description || "",
+      targetMarket: Array.isArray(userProfile.businessInfo.targetMarket) 
+        ? userProfile.businessInfo.targetMarket 
+        : (userProfile.businessInfo.targetMarket ? [userProfile.businessInfo.targetMarket] : []),
+      catchphrase: userProfile.businessInfo.catchphrase || "",
+      goals: Array.isArray(userProfile.businessInfo.goals) ? userProfile.businessInfo.goals : [],
+      challenges: Array.isArray(userProfile.businessInfo.challenges) ? userProfile.businessInfo.challenges : [],
+    } : null;
+
     const payload = {
-      id: signal.postId ?? "",
-      title: signal.title ?? "タイトル未設定",
-      category: signal.category ?? "feed",
-      hashtags: Array.isArray(signal.hashtags) ? signal.hashtags : [],
+      // 投稿情報
+      post: {
+        id: signal.postId ?? "",
+        title: postTitle,
+        content: postContent,
+        hashtags: postHashtags,
+        category: signal.category ?? "feed",
+        scheduledDate: postScheduledDate ? (postScheduledDate instanceof Date ? postScheduledDate.toISOString().split("T")[0] : String(postScheduledDate).split("T")[0]) : null,
+        scheduledTime: postScheduledTime,
+      },
+      // 分析データ（分析ページで入力したデータ）
+      analytics: analyticsMetrics,
+      // フィードバック
+      feedback: {
+        sentiment: feedbackSentiment,
+        memo: feedbackMemo,
+      },
+      // メトリクス（masterContextから）
       metrics,
       comparisons,
       significance,
@@ -180,28 +275,97 @@ export async function POST(request: NextRequest) {
         score: signal.sentimentScore ?? 0,
         label: signal.sentimentLabel ?? "neutral",
       },
+      // 計画情報
+      plan: planInfo,
+      // 現在のフォロワー数
+      currentFollowers,
+      // 事業内容
+      businessInfo,
     };
 
     const prompt = `以下のInstagram投稿データを分析し、JSON形式で出力してください。
+
+【分析のポイント】
+- 投稿内容・ハッシュタグ・投稿日時を確認
+- 分析ページで入力された分析データ（いいね数、コメント数、リーチ数など）を評価
+- フィードバック（満足度・メモ）を考慮
+- 計画の目標フォロワー数・KPI・ターゲット層と比較
+- 現在のフォロワー数と目標の差を考慮
+- 事業内容・ターゲット市場を踏まえた提案
+
 出力形式:
 {
   "summary": "投稿全体の一言まとめ（30-60文字程度）",
-  "strengths": ["強み1", "強み2"],
-  "improvements": ["改善点1", "改善点2"],
-  "nextActions": ["次のアクション1", "次のアクション2"]
+  "strengths": ["この投稿の良かった部分1", "この投稿の良かった部分2"],
+  "improvements": ["改善すべきポイント1", "改善すべきポイント2"],
+  "nextActions": ["次は何をすべきか？（次の一手）1", "次は何をすべきか？（次の一手）2"]
 }
 条件:
 - 箇条書きは2-3個に収める
 - 具体的かつ実行しやすい表現にする
 - 日本語で記述する
+- 事業内容・ターゲット層・計画の目標を踏まえた提案にする
+- 分析データの数値を具体的に参照する
 
 投稿データ:
 ${JSON.stringify(payload, null, 2)}`;
 
     const rawResponse = await callOpenAIForPostInsight(prompt);
     const trimmed = rawResponse.trim();
-    const jsonText = trimmed.startsWith("{") ? trimmed : trimmed.slice(trimmed.indexOf("{"));
-    const parsed = JSON.parse(jsonText);
+    
+    // JSONを抽出（マークダウンコードブロックや余分なテキストを処理）
+    let jsonText = trimmed;
+    
+    // マークダウンコードブロックからJSONを抽出
+    const codeBlockMatch = trimmed.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+    if (codeBlockMatch) {
+      jsonText = codeBlockMatch[1];
+    } else {
+      // コードブロックがない場合、最初の{から最後の}までを抽出
+      const firstBrace = trimmed.indexOf("{");
+      if (firstBrace !== -1) {
+        let braceCount = 0;
+        let lastBrace = -1;
+        for (let i = firstBrace; i < trimmed.length; i++) {
+          if (trimmed[i] === "{") {
+            braceCount++;
+          }
+          if (trimmed[i] === "}") {
+            braceCount--;
+            if (braceCount === 0) {
+              lastBrace = i;
+              break;
+            }
+          }
+        }
+        if (lastBrace !== -1) {
+          jsonText = trimmed.slice(firstBrace, lastBrace + 1);
+        } else {
+          // 最後の}が見つからない場合、正規表現で試す
+          const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            jsonText = jsonMatch[0];
+          }
+        }
+      }
+    }
+    
+    // JSONパース（エラーハンドリング付き）
+    let parsed: {
+      summary?: string;
+      strengths?: string[];
+      improvements?: string[];
+      nextActions?: string[];
+    };
+    
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error("JSONパースエラー:", parseError);
+      console.error("元のレスポンス:", rawResponse);
+      console.error("抽出したJSON:", jsonText);
+      throw new Error("AIの応答を解析できませんでした。再度お試しください。");
+    }
 
     return NextResponse.json({
       success: true,
@@ -261,5 +425,3 @@ ${JSON.stringify(payload, null, 2)}`;
     );
   }
 }
-
-

@@ -26,7 +26,9 @@ export default function OnboardingPage() {
 
   // 表示用の変換関数（英語キーを日本語に変換、既に日本語の場合はそのまま返す）
   const getIndustryLabel = (value: string) => {
-    if (!value) return "";
+    if (!value) {
+      return "";
+    }
     const map: Record<string, string> = {
       it: "IT・テクノロジー",
       retail: "小売・EC",
@@ -47,7 +49,9 @@ export default function OnboardingPage() {
   };
 
   const getCompanySizeLabel = (value: string) => {
-    if (!value) return "";
+    if (!value) {
+      return "";
+    }
     const map: Record<string, string> = {
       individual: "個人",
       small: "2-10名",
@@ -64,7 +68,9 @@ export default function OnboardingPage() {
   };
 
   const getBusinessTypeLabel = (value: string) => {
-    if (!value) return "";
+    if (!value) {
+      return "";
+    }
     const map: Record<string, string> = {
       btoc: "BtoC",
       btob: "BtoB",
@@ -127,320 +133,320 @@ export default function OnboardingPage() {
       customDescription="御社専用AIの設定情報を確認できます"
     >
       <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
-        {/* ユーザー情報セクション */}
-        {userProfile && (
-          <div className="mb-4 bg-white border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">ユーザー情報</h2>
-              <div className="flex items-center space-x-2">
-                <span
-                  className={`px-3 py-1.5 text-xs font-medium ${
-                    userProfile.status === "active"
-                      ? "bg-green-50 text-green-700 border border-green-200"
-                      : "bg-[#FF8A15] text-white"
-                  }`}
-                >
-                  {userProfile.status === "active" ? "✓ アクティブ" : "初期設定待ち"}
-                </span>
-                <span className="px-3 py-1.5 border border-gray-300 text-gray-700 text-xs font-medium bg-white">
-                  {userProfile.contractType === "annual" ? "年間契約" : "トライアル"}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {/* 名前 */}
-              <div className="border border-gray-200 p-4 bg-white hover:border-gray-300 transition-colors">
-                <label className="flex items-center text-xs font-medium text-gray-500 mb-2">
-                  <User className="h-3 w-3 mr-1 text-[#FF8A15]" />
-                  名前
-                </label>
-                <p className="text-gray-900 font-medium text-base">{userProfile.name}</p>
-              </div>
-
-              {/* メールアドレス */}
-              <div className="border border-gray-200 p-4 bg-white hover:border-gray-300 transition-colors">
-                <label className="flex items-center text-xs font-medium text-gray-500 mb-2">
-                  <Mail className="h-3 w-3 mr-1 text-[#FF8A15]" />
-                  メールアドレス
-                </label>
-                <p className="text-gray-900 font-medium text-sm break-all">{userProfile.email}</p>
-              </div>
-
-              {/* 契約期間 */}
-              <div className="border border-gray-200 p-4 bg-white hover:border-gray-300 transition-colors">
-                <label className="flex items-center text-xs font-medium text-gray-500 mb-2">
-                  <Calendar className="h-3 w-3 mr-1 text-[#FF8A15]" />
-                  契約期間
-                </label>
-                <p className="text-gray-900 font-medium text-sm">
-                  {new Date(userProfile.contractStartDate).toLocaleDateString("ja-JP", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                  })}
-                  {" 〜 "}
-                  {new Date(userProfile.contractEndDate).toLocaleDateString("ja-JP", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                  })}
-                </p>
-              </div>
-            </div>
-
-            {/* 契約SNS */}
-            {userProfile.contractSNS && userProfile.contractSNS.length > 0 && (
-              <div className="pt-4 border-t border-gray-200">
-                <label className="block text-xs font-medium text-gray-500 mb-3">契約SNS</label>
-                <div className="flex flex-wrap gap-2">
-                  {userProfile.contractSNS.map((sns) => (
-                    <div
-                      key={sns}
-                      className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-200 hover:border-gray-300 transition-colors"
-                    >
-                      <span className="text-lg">
-                        {sns === "instagram"
-                          ? "📷"
-                          : sns === "x"
-                            ? "🐦"
-                            : sns === "tiktok"
-                              ? "🎵"
-                              : sns === "youtube"
-                                ? "📺"
-                                : "📱"}
-                      </span>
-                      <span className="font-medium text-gray-900 text-sm capitalize">
-                        {sns === "x" ? "X (Twitter)" : sns}
-                      </span>
-                    </div>
-                  ))}
+          {/* ユーザー情報セクション */}
+          {userProfile && (
+            <div className="mb-4 bg-white border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">ユーザー情報</h2>
+                <div className="flex items-center space-x-2">
+                  <span
+                    className={`px-3 py-1.5 text-xs font-medium ${
+                      userProfile.status === "active"
+                        ? "bg-green-50 text-green-700 border border-green-200"
+                        : "bg-[#FF8A15] text-white"
+                    }`}
+                  >
+                    {userProfile.status === "active" ? "✓ アクティブ" : "初期設定待ち"}
+                  </span>
+                  <span className="px-3 py-1.5 border border-gray-300 text-gray-700 text-xs font-medium bg-white">
+                    {userProfile.contractType === "annual" ? "年間契約" : "トライアル"}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {/* 名前 */}
+                <div className="border border-gray-200 p-4 bg-white hover:border-gray-300 transition-colors">
+                  <label className="flex items-center text-xs font-medium text-gray-500 mb-2">
+                    <User className="h-3 w-3 mr-1 text-[#FF8A15]" />
+                    名前
+                  </label>
+                  <p className="text-gray-900 font-medium text-base">{userProfile.name}</p>
+                </div>
+
+                {/* メールアドレス */}
+                <div className="border border-gray-200 p-4 bg-white hover:border-gray-300 transition-colors">
+                  <label className="flex items-center text-xs font-medium text-gray-500 mb-2">
+                    <Mail className="h-3 w-3 mr-1 text-[#FF8A15]" />
+                    メールアドレス
+                  </label>
+                  <p className="text-gray-900 font-medium text-sm break-all">{userProfile.email}</p>
+                </div>
+
+                {/* 契約期間 */}
+                <div className="border border-gray-200 p-4 bg-white hover:border-gray-300 transition-colors">
+                  <label className="flex items-center text-xs font-medium text-gray-500 mb-2">
+                    <Calendar className="h-3 w-3 mr-1 text-[#FF8A15]" />
+                    契約期間
+                  </label>
+                  <p className="text-gray-900 font-medium text-sm">
+                    {new Date(userProfile.contractStartDate).toLocaleDateString("ja-JP", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                    })}
+                    {" 〜 "}
+                    {new Date(userProfile.contractEndDate).toLocaleDateString("ja-JP", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* 契約SNS */}
+              {userProfile.contractSNS && userProfile.contractSNS.length > 0 && (
+                <div className="pt-4 border-t border-gray-200">
+                  <label className="block text-xs font-medium text-gray-500 mb-3">契約SNS</label>
+                  <div className="flex flex-wrap gap-2">
+                    {userProfile.contractSNS.map((sns) => (
+                      <div
+                        key={sns}
+                        className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-200 hover:border-gray-300 transition-colors"
+                      >
+                        <span className="text-lg">
+                          {sns === "instagram"
+                            ? "📷"
+                            : sns === "x"
+                              ? "🐦"
+                              : sns === "tiktok"
+                                ? "🎵"
+                                : sns === "youtube"
+                                  ? "📺"
+                                  : "📱"}
+                        </span>
+                        <span className="font-medium text-gray-900 text-sm capitalize">
+                          {sns === "x" ? "X (Twitter)" : sns}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
         {/* 御社専用AI設定 */}
-        <div className="bg-white border border-gray-200 p-6">
-          {/* ヘッダー */}
-          <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <Sparkles className="w-5 h-5 text-[#FF8A15]" />
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">御社専用AI設定</h2>
-                <p className="text-sm text-gray-500 mt-0.5">
+            <div className="bg-white border border-gray-200 p-6">
+              {/* ヘッダー */}
+              <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <Sparkles className="w-5 h-5 text-[#FF8A15]" />
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">御社専用AI設定</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">
                   {businessInfo.industry
                     ? "adminで設定された情報を表示しています"
                     : "adminで設定された情報が表示されます"}
-                </p>
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* ビジネス情報 */}
-          <div className="mb-6 pb-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">ビジネス情報</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">業種</label>
-                <p className="text-gray-900 font-medium">
+              
+              {/* ビジネス情報 */}
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">ビジネス情報</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">業種</label>
+                    <p className="text-gray-900 font-medium">
                   {businessInfo.industry ? getIndustryLabel(businessInfo.industry) : "未設定"}
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">会社規模</label>
-                <p className="text-gray-900 font-medium">
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">会社規模</label>
+                    <p className="text-gray-900 font-medium">
                   {businessInfo.companySize ? getCompanySizeLabel(businessInfo.companySize) : "未設定"}
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">事業形態</label>
-                <p className="text-gray-900 font-medium">
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">事業形態</label>
+                    <p className="text-gray-900 font-medium">
                   {businessInfo.businessType ? getBusinessTypeLabel(businessInfo.businessType) : "未設定"}
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  ターゲット市場
-                </label>
-                <div className="flex flex-wrap gap-2">
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      ターゲット市場
+                    </label>
+                    <div className="flex flex-wrap gap-2">
                   {Array.isArray(businessInfo.targetMarket) && businessInfo.targetMarket.length > 0 ? (
                     businessInfo.targetMarket.map((market: string, index: number) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium"
-                      >
-                        {market}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-900">未設定</span>
-                  )}
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  💬 キャッチコピー
-                </label>
-                <p className="text-gray-900 font-medium">{businessInfo.catchphrase || "未設定"}</p>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-500 mb-1">事業内容</label>
-                <p className="text-gray-900">{businessInfo.description || "未設定"}</p>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  👥 利用開始日時点のフォロワー数
-                </label>
-                <p className="text-gray-900 font-medium">
-                  {businessInfo.initialFollowers
-                    ? `${businessInfo.initialFollowers.toLocaleString()}人`
-                    : "未設定"}
-                </p>
-              </div>
-            </div>
-
-            {/* 商品・サービス情報 */}
-            {productsOrServices.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <label className="block text-xs font-medium text-gray-500 mb-3">
-                  📦 商品・サービス情報
-                </label>
-                <div className="space-y-3">
-                  {productsOrServices.map((item: { id: string; name: string; details: string; price?: string }) => (
-                    <div key={item.id} className="bg-gray-50 border border-gray-200 p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg">🏷️</span>
-                        <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
-                        {item.price && (
-                          <span className="text-black font-semibold text-sm ml-2">
-                            {item.price}円（税込）
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium"
+                          >
+                            {market}
                           </span>
-                        )}
-                      </div>
-                      {item.details && (
-                        <p className="text-sm text-gray-700 mt-1 ml-7 mb-2">{item.details}</p>
+                        ))
+                      ) : (
+                        <span className="text-gray-900">未設定</span>
                       )}
                     </div>
-                  ))}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      💬 キャッチコピー
+                    </label>
+                    <p className="text-gray-900 font-medium">{businessInfo.catchphrase || "未設定"}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">事業内容</label>
+                    <p className="text-gray-900">{businessInfo.description || "未設定"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      👥 利用開始日時点のフォロワー数
+                    </label>
+                    <p className="text-gray-900 font-medium">
+                      {businessInfo.initialFollowers
+                    ? `${businessInfo.initialFollowers.toLocaleString()}人`
+                        : "未設定"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
 
-          {/* 目標・課題 */}
-          <div className="mb-6 pb-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">目標と課題</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-2">目標</label>
-                <div className="flex flex-wrap gap-2">
-                  {goals.length > 0 ? (
-                    goals.map((goal: string, index: number) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium"
-                      >
-                        {goal}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-900">未設定</span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-2">課題</label>
-                <div className="flex flex-wrap gap-2">
-                  {challenges.length > 0 ? (
-                    challenges.map((challenge: string, index: number) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium"
-                      >
-                        {challenge}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-900">未設定</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Instagram AI設定 */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Instagram AI設定</h3>
-            <div className="space-y-4">
-              {snsAISettings.instagram ? (
-                <div className="p-4 border border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl">📷</span>
-                      <span className="font-semibold text-gray-900 text-lg">Instagram</span>
+                {/* 商品・サービス情報 */}
+                {productsOrServices.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <label className="block text-xs font-medium text-gray-500 mb-3">
+                      📦 商品・サービス情報
+                    </label>
+                    <div className="space-y-3">
+                  {productsOrServices.map((item: { id: string; name: string; details: string; price?: string }) => (
+                    <div key={item.id} className="bg-gray-50 border border-gray-200 p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">🏷️</span>
+                            <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
+                            {item.price && (
+                              <span className="text-black font-semibold text-sm ml-2">
+                                {item.price}円（税込）
+                              </span>
+                            )}
+                          </div>
+                          {item.details && (
+                            <p className="text-sm text-gray-700 mt-1 ml-7 mb-2">{item.details}</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <span className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                      ✓ 有効
-                    </span>
                   </div>
-                  <div className="space-y-3 text-sm">
-                    {snsAISettings.instagram.tone && (
-                      <div className="pb-3 border-b border-gray-200">
-                        <span className="text-gray-700 font-medium">トーン:</span>
-                        <p className="text-gray-900 mt-1">{snsAISettings.instagram.tone}</p>
-                      </div>
-                    )}
-                    {"manner" in snsAISettings.instagram && snsAISettings.instagram.manner && (
-                      <div className="pb-3 border-b border-gray-200">
-                        <span className="text-gray-700 font-medium">マナー・ルール:</span>
-                        <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                          {snsAISettings.instagram.manner}
-                        </p>
-                      </div>
-                    )}
-                    {"cautions" in snsAISettings.instagram && snsAISettings.instagram.cautions && (
-                      <div className="pb-3 border-b border-gray-200">
-                        <span className="text-gray-700 font-medium">注意事項・NGワード:</span>
-                        <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                          {snsAISettings.instagram.cautions}
-                        </p>
-                      </div>
-                    )}
-                    {"goals" in snsAISettings.instagram && snsAISettings.instagram.goals && (
-                      <div className="pb-3 border-b border-gray-200">
-                        <span className="text-gray-700 font-medium">Instagram運用の目標:</span>
-                        <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                          {snsAISettings.instagram.goals}
-                        </p>
-                      </div>
-                    )}
-                    {"motivation" in snsAISettings.instagram && snsAISettings.instagram.motivation && (
-                      <div className="pb-3 border-b border-gray-200">
-                        <span className="text-gray-700 font-medium">活動の動機:</span>
-                        <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                          {snsAISettings.instagram.motivation}
-                        </p>
-                      </div>
-                    )}
-                    {"additionalInfo" in snsAISettings.instagram && snsAISettings.instagram.additionalInfo && (
-                      <div className="pb-3">
-                        <span className="text-gray-700 font-medium">その他AI参考情報:</span>
-                        <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                          {snsAISettings.instagram.additionalInfo}
-                        </p>
-                      </div>
-                    )}
+                )}
+              </div>
+
+              {/* 目標・課題 */}
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">目標と課題</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-2">目標</label>
+                    <div className="flex flex-wrap gap-2">
+                      {goals.length > 0 ? (
+                    goals.map((goal: string, index: number) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium"
+                          >
+                            {goal}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-900">未設定</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-2">課題</label>
+                    <div className="flex flex-wrap gap-2">
+                      {challenges.length > 0 ? (
+                    challenges.map((challenge: string, index: number) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium"
+                          >
+                            {challenge}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-900">未設定</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <p className="text-gray-900">未設定</p>
-              )}
-            </div>
+              </div>
+
+              {/* Instagram AI設定 */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Instagram AI設定</h3>
+                <div className="space-y-4">
+                  {snsAISettings.instagram ? (
+                    <div className="p-4 border border-gray-200 bg-gray-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">📷</span>
+                          <span className="font-semibold text-gray-900 text-lg">Instagram</span>
+                        </div>
+                        <span className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                          ✓ 有効
+                        </span>
+                      </div>
+                      <div className="space-y-3 text-sm">
+                        {snsAISettings.instagram.tone && (
+                          <div className="pb-3 border-b border-gray-200">
+                            <span className="text-gray-700 font-medium">トーン:</span>
+                            <p className="text-gray-900 mt-1">{snsAISettings.instagram.tone}</p>
+                          </div>
+                        )}
+                    {"manner" in snsAISettings.instagram && snsAISettings.instagram.manner && (
+                          <div className="pb-3 border-b border-gray-200">
+                            <span className="text-gray-700 font-medium">マナー・ルール:</span>
+                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
+                              {snsAISettings.instagram.manner}
+                            </p>
+                          </div>
+                        )}
+                    {"cautions" in snsAISettings.instagram && snsAISettings.instagram.cautions && (
+                          <div className="pb-3 border-b border-gray-200">
+                            <span className="text-gray-700 font-medium">注意事項・NGワード:</span>
+                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
+                              {snsAISettings.instagram.cautions}
+                            </p>
+                          </div>
+                        )}
+                    {"goals" in snsAISettings.instagram && snsAISettings.instagram.goals && (
+                          <div className="pb-3 border-b border-gray-200">
+                            <span className="text-gray-700 font-medium">Instagram運用の目標:</span>
+                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
+                              {snsAISettings.instagram.goals}
+                            </p>
+                          </div>
+                        )}
+                    {"motivation" in snsAISettings.instagram && snsAISettings.instagram.motivation && (
+                          <div className="pb-3 border-b border-gray-200">
+                            <span className="text-gray-700 font-medium">活動の動機:</span>
+                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
+                              {snsAISettings.instagram.motivation}
+                            </p>
+                          </div>
+                        )}
+                    {"additionalInfo" in snsAISettings.instagram && snsAISettings.instagram.additionalInfo && (
+                          <div className="pb-3">
+                            <span className="text-gray-700 font-medium">その他AI参考情報:</span>
+                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
+                              {snsAISettings.instagram.additionalInfo}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-900">未設定</p>
+                  )}
+                </div>
+              </div>
           </div>
         </div>
-      </div>
     </SNSLayout>
   );
 }

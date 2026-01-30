@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import { getMasterContext } from "../../ai/monthly-analysis/infra/firestore/master-context";
-import type { PostLearningSignal, PatternSummary } from "../../ai/monthly-analysis/types";
+// PostLearningSignal and PatternSummary are imported but not used
+// import type { PostLearningSignal, PatternSummary } from "../../ai/monthly-analysis/types";
 
 // 先月の日付を取得（YYYY-MM形式）
 function getLastMonth(): string {
@@ -140,7 +141,9 @@ export async function GET(request: NextRequest) {
     // 先月の投稿のみをフィルタリング
     const lastMonthSignals = masterContext.postPatterns.signals.filter((signal) => {
       const postDate = postIdToDateMap.get(signal.postId);
-      if (!postDate) return false;
+      if (!postDate) {
+        return false;
+      }
       return postDate >= lastMonthStart && postDate <= lastMonthEnd;
     });
 
@@ -164,7 +167,8 @@ export async function GET(request: NextRequest) {
     // パターンサマリーを取得
     const goldSummary = masterContext.postPatterns.summaries?.gold;
     const redSummary = masterContext.postPatterns.summaries?.red;
-    const graySummary = masterContext.postPatterns.summaries?.gray;
+    // graySummary removed (unused)
+    // const graySummary = masterContext.postPatterns.summaries?.gray;
 
     // 先月のアクションプランを取得（monthly_reviewsコレクションから）
     const monthlyReviewDoc = await adminDb

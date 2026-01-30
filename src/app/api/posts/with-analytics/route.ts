@@ -98,16 +98,25 @@ export async function GET(request: NextRequest) {
         .filter((postId): postId is string => Boolean(postId))
     );
 
-    // 投稿をソート（createdステータスを最優先、その後作成日時降順）
+    // 投稿をソート（作成日時降順：最新が上）
     const sortedPosts = [...posts].sort((a, b) => {
-      // createdステータスを最優先
-      if (a.status === "created" && b.status !== "created") return -1;
-      if (b.status === "created" && a.status !== "created") return 1;
+      const getDate = (post: PostData): number => {
+        if (post.createdAt instanceof Date) {
+          return post.createdAt.getTime();
+        }
+        if (post.createdAt && typeof post.createdAt === "object" && "toDate" in post.createdAt) {
+          return (post.createdAt as { toDate(): Date }).toDate().getTime();
+        }
+        if (typeof post.createdAt === "string") {
+          const date = new Date(post.createdAt);
+          return isNaN(date.getTime()) ? 0 : date.getTime();
+        }
+        return 0;
+      };
 
-      // 同じステータスの場合は作成日時で降順
-      const aCreatedAt = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt as string);
-      const bCreatedAt = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt as string);
-      return bCreatedAt.getTime() - aCreatedAt.getTime();
+      const aTime = getDate(a);
+      const bTime = getDate(b);
+      return bTime - aTime; // 降順（新しい順）
     });
 
     // 分析済み投稿と未分析投稿を分類

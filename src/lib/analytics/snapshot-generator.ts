@@ -1,6 +1,6 @@
 import { adminDb } from "../firebase-admin";
 
-type FirestoreTimestamp = FirebaseFirestore.Timestamp | FirebaseFirestore.FieldValue;
+// FirestoreTimestamp removed (unused)
 
 interface SnapshotGenerationOptions {
   windowDays?: number;

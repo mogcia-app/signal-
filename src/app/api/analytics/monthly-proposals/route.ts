@@ -146,7 +146,8 @@ export async function GET(request: NextRequest) {
     let totalReach = useProvidedKpis ? providedKpis.totalReach! : 0;
     let totalComments = useProvidedKpis ? providedKpis.totalComments! : 0;
     let totalSaves = useProvidedKpis ? providedKpis.totalSaves! : 0;
-    let totalShares = 0; // シェア数は提供されていないので計算
+    // totalShares is assigned but not used
+    // let totalShares = 0; // シェア数は提供されていないので計算
     let totalFollowerIncrease = useProvidedKpis ? providedKpis.totalFollowerIncrease! : 0;
 
     if (!useProvidedKpis) {
@@ -156,20 +157,20 @@ export async function GET(request: NextRequest) {
         totalReach += data.reach || 0;
         totalComments += data.comments || 0;
         totalSaves += data.saves || 0;
-        totalShares += data.shares || 0;
+        // totalShares is not available in analytics data
         totalFollowerIncrease += data.followerIncrease || 0;
       });
     } else {
       // KPIデータが提供されている場合でも、シェア数は計算が必要
       analyticsByPostId.forEach((data) => {
-        totalShares += data.shares || 0;
+        // totalShares is not available in analytics data
       });
     }
 
     // 投稿タイプ別の統計を計算（analyticsコレクションのデータのみを使用）
     const postTypeStats: Record<string, { count: number; totalReach: number }> = {};
 
-    analyticsByPostId.forEach((analytics, postId) => {
+    analyticsByPostId.forEach((analytics, _postId) => {
       const postType = analytics.category || analytics.postType || "unknown";
       const reach = analytics.reach || 0;
 
@@ -231,15 +232,15 @@ export async function GET(request: NextRequest) {
       : "";
 
     // 運用計画の情報を取得
-    let planInfo = null;
     if (hasPlan) {
       const planDoc = plansSnapshot.docs[0];
-      const planData = planDoc.data();
-      planInfo = {
-        title: planData.title || "運用計画",
-        targetFollowers: planData.targetFollowers || 0,
-        currentFollowers: planData.currentFollowers || 0,
-      };
+      const _planData = planDoc.data();
+      // planInfo is assigned but not used
+      // planInfo = {
+      //   title: planData.title || "運用計画",
+      //   targetFollowers: planData.targetFollowers || 0,
+      //   currentFollowers: planData.currentFollowers || 0,
+      // };
     }
 
     // AI生成で提案セクションを生成

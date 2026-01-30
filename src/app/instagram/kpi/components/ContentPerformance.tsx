@@ -88,17 +88,19 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
       {/* フィード統計サマリー */}
-      {feedStats ? (
-        <div className="bg-white border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
-              <Eye className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">フィード統計サマリー</h2>
-              <p className="text-sm text-gray-700 mt-0.5">フィード投稿の総合統計</p>
-            </div>
+      <div className="bg-white border border-gray-200 p-6">
+        <div className="flex items-center mb-4">
+          <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
+            <Eye className="w-5 h-5 text-white" />
           </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">フィード統計サマリー</h2>
+            <p className="text-sm text-gray-700 mt-0.5">フィード投稿の総合統計</p>
+          </div>
+        </div>
+
+        {feedStats ? (
+          <>
 
           <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
             <StatGrid
@@ -189,21 +191,28 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 flex-shrink-0 ml-2" />
             </div>
           </div>
-        </div>
-      ) : null}
+          </>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-sm">データがありません</p>
+          </div>
+        )}
+      </div>
 
       {/* リール統計サマリー */}
-      {reelStats ? (
-        <div className="bg-white border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">リール統計サマリー</h2>
-              <p className="text-sm text-gray-700 mt-0.5">リール投稿の総合統計</p>
-            </div>
+      <div className="bg-white border border-gray-200 p-6">
+        <div className="flex items-center mb-4">
+          <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
+            <Clock className="w-5 h-5 text-white" />
           </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">リール統計サマリー</h2>
+            <p className="text-sm text-gray-700 mt-0.5">リール投稿の総合統計</p>
+          </div>
+        </div>
+
+        {reelStats ? (
+          <>
 
           <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
             <StatGrid
@@ -313,8 +322,13 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
               <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500 flex-shrink-0 ml-2" />
             </div>
           </div>
-        </div>
-      ) : null}
+          </>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-sm">データがありません</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

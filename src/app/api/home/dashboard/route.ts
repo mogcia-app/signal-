@@ -30,9 +30,7 @@ export async function GET(request: NextRequest) {
     endOfLastWeek.setDate(startOfWeek.getDate() - 1);
     endOfLastWeek.setHours(23, 59, 59, 999);
 
-    // 今月の開始日と終了日
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    // startOfMonth and endOfMonth removed (unused)
 
     // 並列でデータを取得
     const [analyticsSnapshot, postsSnapshot, plansSnapshot, followerCountsSnapshot] = await Promise.all([
@@ -63,6 +61,7 @@ export async function GET(request: NextRequest) {
         reach: data.reach || 0,
         saves: data.saves || 0,
         followers: data.followers || 0,
+        followerIncrease: data.followerIncrease || 0,
         publishedAt: publishedAt instanceof Date ? publishedAt : new Date(publishedAt),
       };
     });
@@ -95,29 +94,59 @@ export async function GET(request: NextRequest) {
     });
 
     // 今週のKPI計算
+    // フォロワー数は分析ページの値（analyticsのfollowerIncrease）とhomeページの値（follower_counts）を合算
+    // KPIコンソールと同じロジックを使用
+    const thisWeekFollowerIncreaseFromPosts = thisWeekAnalytics.reduce((sum, a) => sum + (a.followerIncrease || 0), 0);
+    const lastWeekFollowerIncreaseFromPosts = lastWeekAnalytics.reduce((sum, a) => sum + (a.followerIncrease || 0), 0);
+    
+    // follower_countsから取得（homeページで入力された値）
+    // 注意: follower_countsは月単位のデータなので、週単位の正確な計算は難しい
+    // 暫定的に、今月のfollower_countsの値を使用（より正確な実装には週単位のデータが必要）
+    const followerCounts = followerCountsSnapshot.docs.map((doc) => doc.data());
+    let thisWeekFollowerIncreaseFromOther = 0;
+    let lastWeekFollowerIncreaseFromOther = 0;
+    
+    if (followerCounts.length >= 1) {
+      const currentFollowers = followerCounts[0].followers || 0;
+      const startFollowers = followerCounts[0].startFollowers || currentFollowers;
+      // 今月の増加数（その他からの増加数）
+      const monthFollowerIncrease = currentFollowers - startFollowers;
+      // 週単位の概算: 今月の増加数を週数で割る（簡易計算）
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const daysSinceMonthStart = Math.floor((today.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const weeksSinceMonthStart = Math.ceil(daysSinceMonthStart / 7);
+      // 今週の増加数を概算（今月の増加数 / 今月の週数）
+      if (weeksSinceMonthStart > 0) {
+        thisWeekFollowerIncreaseFromOther = Math.round(monthFollowerIncrease / weeksSinceMonthStart);
+      }
+      
+      if (followerCounts.length >= 2) {
+        const previousFollowers = followerCounts[1].followers || 0;
+        const previousStartFollowers = followerCounts[1].startFollowers || previousFollowers;
+        const previousMonthFollowerIncrease = previousFollowers - previousStartFollowers;
+        // 先週の増加数も同様に概算（前月の増加数を週数で割る）
+        const _previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        const daysInPreviousMonth = previousMonthEnd.getDate();
+        const weeksInPreviousMonth = Math.ceil(daysInPreviousMonth / 7);
+        if (weeksInPreviousMonth > 0) {
+          lastWeekFollowerIncreaseFromOther = Math.round(previousMonthFollowerIncrease / weeksInPreviousMonth);
+        }
+      }
+    }
+    
     const thisWeekKPIs = {
       likes: thisWeekAnalytics.reduce((sum, a) => sum + (a.likes || 0), 0),
       comments: thisWeekAnalytics.reduce((sum, a) => sum + (a.comments || 0), 0),
-      followers: 0,
+      followers: thisWeekFollowerIncreaseFromPosts + thisWeekFollowerIncreaseFromOther,
     };
 
     // 先週のKPI計算
     const lastWeekKPIs = {
       likes: lastWeekAnalytics.reduce((sum, a) => sum + (a.likes || 0), 0),
       comments: lastWeekAnalytics.reduce((sum, a) => sum + (a.comments || 0), 0),
-      followers: 0,
+      followers: lastWeekFollowerIncreaseFromPosts + lastWeekFollowerIncreaseFromOther,
     };
-
-    // フォロワー数の変化を計算
-    const followerCounts = followerCountsSnapshot.docs.map((doc) => doc.data());
-    if (followerCounts.length >= 2) {
-      const currentFollowers = followerCounts[0].followers || 0;
-      const previousFollowers = followerCounts[1].followers || 0;
-      thisWeekKPIs.followers = currentFollowers;
-      lastWeekKPIs.followers = previousFollowers;
-    } else if (followerCounts.length === 1) {
-      thisWeekKPIs.followers = followerCounts[0].followers || 0;
-    }
 
     // 今日のタスク（投稿予定）
     const todayTasks = posts
@@ -192,6 +221,9 @@ export async function GET(request: NextRequest) {
         planDataStartDate: planData.startDate,
         planStartDate: planStartDate?.toISOString(),
         planId: planDoc.id,
+        hasFormData: !!planData.formData,
+        hasAiSuggestion: !!planData.aiSuggestion,
+        plansSnapshotEmpty: plansSnapshot.empty,
       });
       
       // generatedStrategyDataは廃止。aiSuggestionのみを使用
@@ -331,7 +363,7 @@ export async function GET(request: NextRequest) {
             
             return {
               day: `${month}/${day}（${task.day}）`,
-              task: `${typeLabels[task.type] || task.type}（${task.time}）「${task.description}」`,
+            task: `${typeLabels[task.type] || task.type}（${task.time}）「${task.description}」`,
             };
           });
         } else {
@@ -340,10 +372,17 @@ export async function GET(request: NextRequest) {
             availableWeeks: aiSuggestion.weeklyPlans.map((p: any) => p.week),
             hasWeekPlan: !!weekPlan,
           });
-        }
+      }
       }
     }
     // generatedStrategyDataは使用しない（aiSuggestion一本化）
+
+    // 計画の有無をログに記録
+    console.log("[Home Dashboard] 計画の有無デバッグ:", {
+      plansSnapshotEmpty: plansSnapshot.empty,
+      currentPlanExists: !!currentPlan,
+      currentPlanId: currentPlan?.id || null,
+    });
 
     return NextResponse.json({
       success: true,
@@ -359,7 +398,7 @@ export async function GET(request: NextRequest) {
           },
         },
         weeklySchedule,
-        currentPlan,
+        currentPlan: plansSnapshot.empty ? null : currentPlan,
         monthlyProgress,
         currentWeekTasks,
         currentMonthGoals,

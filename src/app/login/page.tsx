@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useAuth } from "../../contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
-import { notify } from "../../lib/ui/notifications";
 
 const loginMaintenanceEnabled = process.env.NEXT_PUBLIC_LOGIN_MAINTENANCE === "true";
 const isProductionBuild = process.env.NODE_ENV === "production";
@@ -30,10 +28,9 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       setLoginSuccess(true);
-      // 2秒後に投稿ラボ（フィード）に遷移（全プラン共通）
-      // URLパラメータにログイン成功フラグを追加
+      // 2秒後にホームページに遷移
       setTimeout(() => {
-        router.push("/instagram/lab/feed?login=success");
+        router.push("/home");
       }, 2000);
     } catch (error: unknown) {
       // 契約期間切れのエラーの場合

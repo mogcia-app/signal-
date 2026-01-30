@@ -179,7 +179,9 @@ export async function POST(request: NextRequest) {
 
     // undefinedをnullに変換するヘルパー関数
     const cleanValue = (value: unknown): unknown => {
-      if (value === undefined) return null;
+      if (value === undefined) {
+        return null;
+      }
       if (Array.isArray(value)) {
         return value.map((item) => {
           if (typeof item === "object" && item !== null) {

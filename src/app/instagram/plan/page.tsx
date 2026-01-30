@@ -575,12 +575,12 @@ export default function InstagramPlanPage() {
             body: JSON.stringify(planData),
           })
         : await authFetch("/api/plans", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(planData),
-          });
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(planData),
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -604,7 +604,7 @@ export default function InstagramPlanPage() {
       // フォームデータを確実に更新（保存内容を反映）
       // formDataは既にstateに保持されているが、念のため明示的に更新
       setFormData(formData);
-      
+
       // 成功メッセージをトースト通知で表示
       toast.success(
         savedPlanId ? "計画を更新しました！" : "計画を保存しました！ホーム画面で確認できます。",
@@ -693,32 +693,32 @@ export default function InstagramPlanPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
 
         {/* タブコンテンツ */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 h-full overflow-y-auto">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 h-full overflow-y-auto">
           {activeTab === "form" ? (
             <PlanForm onSubmit={handleSubmit} isLoading={isLoading} initialData={formData} />
           ) : (
             <div>
-              {simulationResult && formData ? (
-                <SimulationResult
-                  result={simulationResult}
-                  formData={{
-                    currentFollowers: formData.currentFollowers,
-                    targetFollowers: formData.targetFollowers,
-                    periodMonths: formData.periodMonths,
-                    startDate: formData.startDate,
-                  }}
-                  fullFormData={formData}
-                  aiSuggestedTarget={aiSuggestedTarget}
+            {simulationResult && formData ? (
+              <SimulationResult
+                result={simulationResult}
+                formData={{
+                  currentFollowers: formData.currentFollowers,
+                  targetFollowers: formData.targetFollowers,
+                  periodMonths: formData.periodMonths,
+                  startDate: formData.startDate,
+                }}
+                fullFormData={formData}
+                aiSuggestedTarget={aiSuggestedTarget}
                   aiSuggestion={aiSuggestion}
-                  onSelectAlternative={handleSelectAlternative}
-                  onStartPlan={handleStartPlan}
-                  isSaving={isSaving}
-                />
-              ) : (
-                <div className="text-center py-12 text-gray-500">
+                onSelectAlternative={handleSelectAlternative}
+                onStartPlan={handleStartPlan}
+                isSaving={isSaving}
+              />
+            ) : (
+              <div className="text-center py-12 text-gray-500">
                   <p className="text-sm mb-4">フォームに入力して、シミュレーションを実行してください</p>
                   <button
                     onClick={() => setActiveTab("form")}
@@ -726,9 +726,9 @@ export default function InstagramPlanPage() {
                   >
                     計画を立てるタブに戻る
                   </button>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
           )}
         </div>
       </div>

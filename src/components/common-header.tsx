@@ -8,7 +8,7 @@ interface CommonHeaderProps {
   unreadCount?: number;
 }
 
-export default function CommonHeader({ unreadCount = 0 }: CommonHeaderProps) {
+export default function CommonHeader({ unreadCount: _unreadCount = 0 }: CommonHeaderProps) {
   const { user } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
 

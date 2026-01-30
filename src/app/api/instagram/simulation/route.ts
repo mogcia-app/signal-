@@ -6,11 +6,8 @@ import { UserProfile } from "../../../../types/user";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import {
   calculateFeasibilityScore,
-  suggestRealisticTarget,
-  getGrowthRateForAccountSize,
-  getPostTypePerformance,
   calculateRequiredMonthlyGrowthRate,
-  RECOMMENDED_POST_FREQUENCY,
+  getGrowthRateForAccountSize,
 } from "../../../../lib/instagram-benchmarks";
 
 export async function POST(request: NextRequest) {
@@ -94,35 +91,8 @@ async function runSimulation(
       )
     : null;
 
-  // 投稿頻度は既に計算済み（feasibility計算で使用）
-  const monthlyPostCount = totalPostingFrequency * 4;
-
-  // ワークロード判定
-  const workloadMessage = calculateWorkload(monthlyPostCount);
-
   // グラフデータ生成
   const graphData = generateGraphData(currentFollowers, followerGain, planPeriod);
-
-  // ワンポイントアドバイス生成
-  const onePointAdvice = generateOnePointAdvice(
-    graphData.isRealistic,
-    graphData.growthRateComparison
-  );
-
-  // シミュレーション結果を準備
-  const simulationResultData = {
-    monthlyTarget,
-    feasibilityLevel: feasibility.level,
-    postsPerWeek: postsPerWeek,
-  };
-
-  // アドバイス生成（テンプレートベース - AIは使用しない）
-  // パフォーマンス向上のため、AI呼び出しを削除しテンプレートアドバイスを使用
-  const mainAdvice = generateMainAdvice(strategyValues || [], goalCategory || "", followerGain);
-  const improvementTips = generateImprovementTips(strategyValues || [], hashtagStrategy || "", postCategories || []);
-
-  // 目標達成日を計算
-  const targetDate = calculateTargetDate(planPeriod);
 
   // levelからcolorを決定
   const getDifficultyColor = (level: string): "green" | "yellow" | "orange" | "red" => {
@@ -138,7 +108,7 @@ async function runSimulation(
   };
 
   // graphDataからweeklyPredictionsを生成
-  const weeklyPredictions = graphData.data.map((d: any) => d.userTarget);
+  const weeklyPredictions = graphData.data.map((d: { userTarget: number }) => d.userTarget);
 
   return {
     requiredMonthlyGrowthRate: requiredGrowthRate,

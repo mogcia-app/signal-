@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
-import { History, HelpCircle } from "lucide-react";
+import { History } from "lucide-react";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import { getLabEditorHref, getAnalyticsHref } from "@/utils/links";
 import type { PatternSignal, PostInsight } from "../types";

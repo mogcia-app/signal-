@@ -37,10 +37,6 @@ export default function FeedLabPage() {
       }>;
     }>
   >([]);
-  const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
-  const [scheduleError, setScheduleError] = useState("");
-  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
 
   // AIヒント関連の状態
   const [imageVideoSuggestions, setImageVideoSuggestions] = useState<AIHintSuggestion | null>(null);
@@ -50,12 +46,15 @@ export default function FeedLabPage() {
 
   // フィードバック関連の状態
   const [scheduleFeedback, setScheduleFeedback] = useState<string | null>(null);
-  const [showScheduleAdminWarning, setShowScheduleAdminWarning] = useState(false);
   const scheduleFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
+  const [showScheduleAdminWarning, setShowScheduleAdminWarning] = useState(false);
+  const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
   
   const [suggestionsFeedback, setSuggestionsFeedback] = useState<string | null>(null);
-  const [showSuggestionsAdminWarning, setShowSuggestionsAdminWarning] = useState(false);
   const suggestionsFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
+  const [showSuggestionsAdminWarning, setShowSuggestionsAdminWarning] = useState(false);
 
   // 計画データを取得
   const { planData } = usePlanData("instagram");
@@ -249,7 +248,7 @@ export default function FeedLabPage() {
     }
 
     setIsGeneratingSchedule(true);
-    setScheduleError("");
+    // scheduleError removed (unused, only setScheduleError is used)
 
     try {
       // ビジネス情報を取得
@@ -320,14 +319,15 @@ export default function FeedLabPage() {
       console.error("💥 Schedule generation error:", error);
       const errorMessage =
         error instanceof Error ? error.message : "スケジュール生成に失敗しました";
-      setScheduleError(errorMessage);
+      // scheduleError removed (unused, only setScheduleError is used)
+      // setScheduleError(errorMessage);
 
       // iPad Safari用の追加デバッグ情報
       if (error instanceof TypeError && error.message.includes("fetch")) {
         console.error("🌐 Network error detected - possible iPad Safari issue");
-        setScheduleError(
-          "ネットワークエラーが発生しました。iPad Safariの場合、ページを再読み込みしてください。"
-        );
+        // setScheduleError(
+        //   "ネットワークエラーが発生しました。iPad Safariの場合、ページを再読み込みしてください。"
+        // );
       }
     } finally {
       setIsGeneratingSchedule(false);

@@ -89,7 +89,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
       if (!response.ok) {
         console.error("ラボ設定保存エラー:", await response.text());
       }
-    } catch (error) {
+      } catch (error) {
       console.error("ラボ設定保存エラー:", error);
     }
   };

@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
     let totalSaves = useProvidedKpis ? providedKpis.totalSaves! : 0;
     let totalShares = 0; // シェア数は提供されていないので計算
     let totalFollowerIncrease = useProvidedKpis ? providedKpis.totalFollowerIncrease! : 0;
-    let currentTotalFollowers = 0; // 現在のフォロワー数（表示用）
+    // currentTotalFollowers removed (unused)
 
     if (!useProvidedKpis) {
       // KPIデータが提供されていない場合は計算
@@ -331,8 +331,7 @@ export async function GET(request: NextRequest) {
           // 前月のフォロワー数 = initialFollowers + (前月までの投稿からの増加数 + 前月までのhomeで入力された増加数)
           // 今月の増加数 = followerIncreaseFromPosts + followerIncreaseFromOther
           // でも、これは複雑なので、homeで入力された現在のフォロワー数を使用
-          // ただし、homeで入力された値が正確な現在のフォロワー数であることを前提とする
-          currentTotalFollowers = currentFollowersFromHome + followerIncreaseFromPosts;
+          // currentTotalFollowers removed (unused)
         }
       }
     } else {
@@ -358,14 +357,7 @@ export async function GET(request: NextRequest) {
       
       const isFirstMonth = prevMonthSnapshot.empty;
       
-      let currentTotalFollowers = 0;
-      if (isFirstMonth && initialFollowers > 0) {
-        // 初回ログイン月：totalFollowerIncreaseが既に現在のフォロワー数
-        currentTotalFollowers = totalFollowerIncrease;
-      } else {
-        // 2ヶ月目以降：initialFollowers + totalFollowerIncrease
-        currentTotalFollowers = initialFollowers + totalFollowerIncrease;
-      }
+      // currentTotalFollowers removed (unused)
     }
 
     // 投稿タイプ別の統計を計算（analyticsコレクションのデータのみを使用）
@@ -591,7 +583,9 @@ export async function GET(request: NextRequest) {
         })
         .filter((item) => item.followers > 0)
         .sort((a, b) => {
-          if (!a.publishedAt || !b.publishedAt) return 0;
+          if (!a.publishedAt || !b.publishedAt) {
+            return 0;
+          }
           const aTime = a.publishedAt instanceof admin.firestore.Timestamp
             ? a.publishedAt.toMillis()
             : a.publishedAt.getTime?.() || 0;
@@ -600,9 +594,7 @@ export async function GET(request: NextRequest) {
             : b.publishedAt.getTime?.() || 0;
           return bTime - aTime;
         });
-      if (latestAnalytics.length > 0) {
-        currentFollowers = latestAnalytics[0].followers;
-      }
+      // currentFollowers removed (unused)
     }
 
     // 運用計画の情報を取得
@@ -647,11 +639,21 @@ export async function GET(request: NextRequest) {
 
       // ビジネス情報を構築
       const businessInfoParts: string[] = [];
-      if (businessInfo.industry) businessInfoParts.push(`業種: ${businessInfo.industry}`);
-      if (businessInfo.companySize) businessInfoParts.push(`会社規模: ${businessInfo.companySize}`);
-      if (businessInfo.businessType) businessInfoParts.push(`事業形態: ${businessInfo.businessType}`);
-      if (businessInfo.description) businessInfoParts.push(`事業内容: ${businessInfo.description}`);
-      if (businessInfo.catchphrase) businessInfoParts.push(`キャッチコピー: ${businessInfo.catchphrase}`);
+      if (businessInfo.industry) {
+        businessInfoParts.push(`業種: ${businessInfo.industry}`);
+      }
+      if (businessInfo.companySize) {
+        businessInfoParts.push(`会社規模: ${businessInfo.companySize}`);
+      }
+      if (businessInfo.businessType) {
+        businessInfoParts.push(`事業形態: ${businessInfo.businessType}`);
+      }
+      if (businessInfo.description) {
+        businessInfoParts.push(`事業内容: ${businessInfo.description}`);
+      }
+      if (businessInfo.catchphrase) {
+        businessInfoParts.push(`キャッチコピー: ${businessInfo.catchphrase}`);
+      }
       if (Array.isArray(businessInfo.targetMarket) && businessInfo.targetMarket.length > 0) {
         businessInfoParts.push(`ターゲット市場: ${businessInfo.targetMarket.join("、")}`);
       }
@@ -695,11 +697,21 @@ export async function GET(request: NextRequest) {
 
       // AI設定を構築
       const aiSettingsParts: string[] = [];
-      if (snsAISettings.tone) aiSettingsParts.push(`トーン: ${snsAISettings.tone}`);
-      if (snsAISettings.manner) aiSettingsParts.push(`マナー・ルール: ${snsAISettings.manner}`);
-      if (snsAISettings.goals) aiSettingsParts.push(`Instagram運用の目標: ${snsAISettings.goals}`);
-      if (snsAISettings.motivation) aiSettingsParts.push(`運用動機: ${snsAISettings.motivation}`);
-      if (snsAISettings.additionalInfo) aiSettingsParts.push(`その他参考情報: ${snsAISettings.additionalInfo}`);
+      if (snsAISettings.tone) {
+        aiSettingsParts.push(`トーン: ${snsAISettings.tone}`);
+      }
+      if (snsAISettings.manner) {
+        aiSettingsParts.push(`マナー・ルール: ${snsAISettings.manner}`);
+      }
+      if (snsAISettings.goals) {
+        aiSettingsParts.push(`Instagram運用の目標: ${snsAISettings.goals}`);
+      }
+      if (snsAISettings.motivation) {
+        aiSettingsParts.push(`運用動機: ${snsAISettings.motivation}`);
+      }
+      if (snsAISettings.additionalInfo) {
+        aiSettingsParts.push(`その他参考情報: ${snsAISettings.additionalInfo}`);
+      }
 
       if (aiSettingsParts.length > 0) {
         aiSettingsText = `\n【Instagram AI設定】\n${aiSettingsParts.join("\n")}`;

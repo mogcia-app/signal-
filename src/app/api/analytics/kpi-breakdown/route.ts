@@ -404,7 +404,9 @@ function buildKpiBreakdowns(params: {
   const totalInteractionByType = posts.reduce<Record<string, number>>((acc, post) => {
     const type = post.postType || "feed";
     const summary = post.analyticsSummary;
-    if (!summary) return acc;
+    if (!summary) {
+      return acc;
+    }
     const interaction = (summary.likes || 0) + (summary.saves || 0) + (summary.comments || 0) + (summary.shares || 0);
     acc[type] = (acc[type] || 0) + interaction;
     return acc;
@@ -612,7 +614,9 @@ function calculateTimeSlotAnalysis(
         ? postsInRange.reduce(
             (sum, post) => {
               const summary = post.analyticsSummary;
-              if (!summary) return sum;
+              if (!summary) {
+                return sum;
+              }
               return (
                 sum +
                 ((summary.likes || 0) + (summary.comments || 0) + (summary.shares || 0))
@@ -629,7 +633,9 @@ function calculateTimeSlotAnalysis(
           ? typePosts.reduce(
               (sum, post) => {
                 const summary = post.analyticsSummary;
-                if (!summary) return sum;
+                if (!summary) {
+                return sum;
+              }
                 return (
                   sum +
                   ((summary.likes || 0) + (summary.comments || 0) + (summary.shares || 0))
@@ -678,14 +684,18 @@ function calculateHashtagStats(posts: PostWithAnalytics[]): Array<{ hashtag: str
               // 複数の#で始まるハッシュタグ
               matches.forEach((match) => {
                 const tag = match[1].trim();
-                if (tag) hashtagsArray.push(tag);
+                if (tag) {
+                  hashtagsArray.push(tag);
+                }
               });
             } else {
               // 最初に#が1つだけ付いている場合
               text = text.replace(/^#+/, "").trim();
               text.split(/[\s,]+/).forEach((tag) => {
                 const cleanedTag = tag.replace(/^#+/, "").trim();
-                if (cleanedTag) hashtagsArray.push(cleanedTag);
+                if (cleanedTag) {
+                  hashtagsArray.push(cleanedTag);
+                }
               });
             }
           } else {
@@ -945,7 +955,9 @@ export async function GET(request: NextRequest) {
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;
-      if (!postId) return;
+      if (!postId) {
+        return;
+      }
 
       const publishedAt = data.publishedAt
         ? data.publishedAt instanceof admin.firestore.Timestamp
@@ -953,7 +965,9 @@ export async function GET(request: NextRequest) {
           : data.publishedAt
         : null;
 
-      if (!publishedAt) return;
+      if (!publishedAt) {
+        return;
+      }
 
       const existing = analyticsByPostId.get(postId);
       if (!existing || publishedAt > existing.publishedAt) {
@@ -1037,7 +1051,9 @@ export async function GET(request: NextRequest) {
     previousAnalyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;
-      if (!postId) return;
+      if (!postId) {
+        return;
+      }
 
       const publishedAt = data.publishedAt
         ? data.publishedAt instanceof admin.firestore.Timestamp
@@ -1045,7 +1061,9 @@ export async function GET(request: NextRequest) {
           : data.publishedAt
         : null;
 
-      if (!publishedAt) return;
+      if (!publishedAt) {
+        return;
+      }
 
       const existing = previousAnalyticsByPostId.get(postId);
       if (!existing || publishedAt > existing.publishedAt) {
@@ -1068,7 +1086,9 @@ export async function GET(request: NextRequest) {
       // 総合インタラクション数（フィード+リール合わせた、いいね+保存+コメント+シェアのトータル）
       totalInteraction: postsWithAnalytics.reduce((sum, post) => {
         const summary = post.analyticsSummary;
-        if (!summary) return sum;
+                if (!summary) {
+                  return sum;
+                }
         return sum + (summary.likes || 0) + (summary.saves || 0) + (summary.comments || 0) + (summary.shares || 0);
       }, 0),
       // 外部リンク数（フィードのみ）
@@ -1163,13 +1183,11 @@ export async function GET(request: NextRequest) {
     let profileVisitsFromHome = 0;
     let externalLinkTapsFromHome = 0;
     let currentFollowers = 0;
-    let startFollowers = 0;
     if (!followerCountSnapshot.empty) {
       const followerCountData = followerCountSnapshot.docs[0].data();
       profileVisitsFromHome = followerCountData.profileVisits || 0;
       externalLinkTapsFromHome = followerCountData.externalLinkTaps || 0;
       currentFollowers = followerCountData.followers || 0;
-      startFollowers = followerCountData.startFollowers || followerCountData.followers || 0;
     }
 
     // プロフィール閲覧数に投稿に紐づかない全体の数値を追加
@@ -1188,13 +1206,13 @@ export async function GET(request: NextRequest) {
     let previousProfileVisitsFromHome = 0;
     let previousExternalLinkTapsFromHome = 0;
     let previousCurrentFollowers = 0;
-    let previousStartFollowers = 0;
     if (!previousFollowerCountSnapshot.empty) {
       const previousFollowerCountData = previousFollowerCountSnapshot.docs[0].data();
       previousProfileVisitsFromHome = previousFollowerCountData.profileVisits || 0;
       previousExternalLinkTapsFromHome = previousFollowerCountData.externalLinkTaps || 0;
       previousCurrentFollowers = previousFollowerCountData.followers || 0;
-      previousStartFollowers = previousFollowerCountData.startFollowers || previousFollowerCountData.followers || 0;
+      // previousStartFollowers is assigned but not used
+      // previousStartFollowers = previousFollowerCountData.startFollowers || previousFollowerCountData.followers || 0;
     }
 
     // 前期間のプロフィール閲覧数に投稿に紐づかない全体の数値を追加
@@ -1343,7 +1361,9 @@ export async function GET(request: NextRequest) {
           : data.publishedAt
         : null;
       
-      if (!publishedAt) return;
+      if (!publishedAt) {
+        return;
+      }
       
       const dayKey = publishedAt.toISOString().split("T")[0];
       if (!analyticsByDay.has(dayKey)) {

@@ -96,7 +96,9 @@ export async function POST(request: NextRequest) {
         };
       })
       .filter((post) => {
-        if (!post.createdAt) return false;
+        if (!post.createdAt) {
+          return false;
+        }
         return post.createdAt >= startDate && post.createdAt <= endDate;
       });
 
@@ -231,10 +233,9 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .get();
 
-    let previousTarget = 0;
+    // previousTarget calculation removed (unused)
     if (!planSnapshot.empty) {
-      const plan = planSnapshot.docs[0].data();
-      previousTarget = plan.targetFollowers || 0;
+      // plan data retrieved but not used
     }
 
     // AIに来月の目標を提案させる
@@ -349,7 +350,7 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
         // フォールバック: シンプルな計算
         const suggestedGain = Math.max(10, Math.floor(followerIncrease * 1.2));
         const reachKPI = kpiBreakdowns.find((k: any) => k.key === "reach");
-        const engagementKPI = kpiBreakdowns.find((k: any) => k.key === "engagement");
+        // engagementKPI removed (unused)
         
         proposal = {
           currentFollowers: totalCurrentFollowers,
@@ -394,7 +395,8 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
       console.warn("OpenAI API key not configured, using fallback calculation");
       const suggestedGain = Math.max(10, Math.floor(followerIncrease * 1.2));
       const reachKPI = kpiBreakdowns.find((k: any) => k.key === "reach");
-      const engagementKPI = kpiBreakdowns.find((k: any) => k.key === "engagement");
+      // engagementKPI removed (unused)
+      // const engagementKPI = kpiBreakdowns.find((k: any) => k.key === "engagement");
       
       proposal = {
         currentFollowers: totalCurrentFollowers,

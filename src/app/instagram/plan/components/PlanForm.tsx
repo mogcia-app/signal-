@@ -31,20 +31,20 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
       return initialData;
     }
     return {
-      currentFollowers: 0,
-      targetFollowers: 0,
-      periodMonths: 1, // 1ヶ月固定
-      startDate: getDefaultStartDate(),
-      weeklyFeedPosts: 3,
-      weeklyReelPosts: 1,
-      weeklyStoryPosts: 7,
-      mainGoal: "",
-      preferredPostingTimes: [],
-      targetAudience: "",
-      regionRestriction: {
-        enabled: false,
-      },
-      contentTypes: [],
+    currentFollowers: 0,
+    targetFollowers: 0,
+    periodMonths: 1, // 1ヶ月固定
+    startDate: getDefaultStartDate(),
+    weeklyFeedPosts: 3,
+    weeklyReelPosts: 1,
+    weeklyStoryPosts: 7,
+    mainGoal: "",
+    preferredPostingTimes: [],
+    targetAudience: "",
+    regionRestriction: {
+      enabled: false,
+    },
+    contentTypes: [],
     };
   };
 

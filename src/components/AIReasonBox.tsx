@@ -37,10 +37,11 @@ interface AIReasonBoxProps {
 export const AIReasonBox: React.FC<AIReasonBoxProps> = ({ reasons, className = "" }) => {
   // 理由が1つの場合はそのまま表示、2つ以上の場合は時間差でランダムに1つずつ表示
   const [displayedReason, setDisplayedReason] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   useEffect(() => {
-    if (reasons.length === 0) return;
+    if (reasons.length === 0) {
+      return;
+    }
 
     // 理由が1つの場合は即座に表示
     if (reasons.length === 1) {
@@ -50,7 +51,6 @@ export const AIReasonBox: React.FC<AIReasonBoxProps> = ({ reasons, className = "
 
     // 理由が2つ以上の場合は、最初にランダムに1つ選んで表示
     const randomIndex = Math.floor(Math.random() * reasons.length);
-    setCurrentIndex(randomIndex);
     setDisplayedReason(reasons[randomIndex]);
 
     // 2秒後に次の理由を表示（ランダムに選ぶ）
@@ -59,8 +59,6 @@ export const AIReasonBox: React.FC<AIReasonBoxProps> = ({ reasons, className = "
       if (remainingReasons.length > 0) {
         const nextRandomIndex = Math.floor(Math.random() * remainingReasons.length);
         const nextReason = remainingReasons[nextRandomIndex];
-        const nextIndex = reasons.findIndex(r => r === nextReason);
-        setCurrentIndex(nextIndex);
         setDisplayedReason(nextReason);
       }
     }, 2000);
@@ -68,7 +66,9 @@ export const AIReasonBox: React.FC<AIReasonBoxProps> = ({ reasons, className = "
     return () => clearTimeout(timer);
   }, [reasons]);
 
-  if (!displayedReason) return null;
+  if (!displayedReason) {
+    return null;
+  }
 
   return (
     <div className={`${className}`}>

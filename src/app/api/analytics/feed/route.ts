@@ -11,6 +11,8 @@ interface PostData {
   postType: "feed" | "reel" | "story";
   publishedAt: string | null;
   publishedTime: string | null;
+  scheduledDate?: Date | string | admin.firestore.Timestamp | null;
+  scheduledTime?: string | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -34,14 +36,48 @@ export async function GET(request: NextRequest) {
     const postsMap = new Map<string, PostData>();
     postsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
+      
+      // publishedAt/publishedTimeがなければ、scheduledDate/scheduledTimeを使用
+      let publishedAt: string | null = null;
+      let publishedTime: string | null = null;
+      
+      // scheduledDate/scheduledTimeを取得（フォールバック用）
+      const scheduledDate = data.scheduledDate?.toDate?.() || data.scheduledDate || null;
+      const scheduledTime = data.scheduledTime || null;
+      
+      if (data.publishedAt) {
+        const pubDate = data.publishedAt?.toDate?.() || data.publishedAt;
+        if (pubDate instanceof Date) {
+          publishedAt = pubDate.toISOString().split("T")[0]; // YYYY-MM-DD形式
+        } else if (typeof pubDate === "string") {
+          publishedAt = pubDate.split("T")[0]; // ISO文字列から日付部分を抽出
+        } else {
+          publishedAt = pubDate;
+        }
+        publishedTime = data.publishedTime || null;
+      } else if (scheduledDate) {
+        // scheduledDateをpublishedAtとして使用
+        if (scheduledDate instanceof Date) {
+          publishedAt = scheduledDate.toISOString().split("T")[0]; // YYYY-MM-DD形式
+        } else if (typeof scheduledDate === "string") {
+          publishedAt = scheduledDate.split("T")[0]; // ISO文字列から日付部分を抽出
+        } else {
+          publishedAt = scheduledDate;
+        }
+        // scheduledTimeをpublishedTimeとして使用
+        publishedTime = scheduledTime;
+      }
+      
       postsMap.set(doc.id, {
         id: doc.id,
         title: data.title || "",
         content: data.content || "",
         hashtags: Array.isArray(data.hashtags) ? data.hashtags : [],
         postType: data.postType || "feed",
-        publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
-        publishedTime: data.publishedTime || null,
+        publishedAt,
+        publishedTime,
+        scheduledDate: scheduledDate instanceof Date ? scheduledDate.toISOString().split("T")[0] : (typeof scheduledDate === "string" ? scheduledDate.split("T")[0] : scheduledDate),
+        scheduledTime,
       });
     });
 

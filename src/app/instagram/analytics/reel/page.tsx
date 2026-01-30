@@ -230,8 +230,25 @@ function AnalyticsReelContent() {
             postType: post.postType || "reel",
             publishedAt: post.publishedAt || null,
             publishedTime: post.publishedTime || null,
+            scheduledDate: post.scheduledDate || null,
+            scheduledTime: post.scheduledTime || null,
           };
           setPostData(postData);
+
+          // publishedAt/publishedTimeがなければ、scheduledDate/scheduledTimeを使用
+          let publishedAtValue: string | null = postData.publishedAt;
+          let publishedTimeValue: string | null = postData.publishedTime;
+          
+          if (!publishedAtValue && postData.scheduledDate) {
+            // scheduledDateをpublishedAtとして使用
+            const scheduledDate = postData.scheduledDate;
+            if (scheduledDate instanceof Date) {
+              publishedAtValue = scheduledDate.toISOString().split("T")[0];
+            } else if (typeof scheduledDate === "string") {
+              publishedAtValue = scheduledDate.split("T")[0];
+            }
+            publishedTimeValue = postData.scheduledTime || publishedTimeValue;
+          }
 
           // inputDataを更新
           setInputData((prev) => ({
@@ -244,11 +261,11 @@ function AnalyticsReelContent() {
             category:
               postData.postType === "feed" ? "feed" : postData.postType === "reel" ? "reel" : "story",
             publishedAt:
-              postData.publishedAt ??
+              publishedAtValue ??
               prev.publishedAt ??
               new Date().toISOString().split("T")[0],
             publishedTime:
-              postData.publishedTime ??
+              publishedTimeValue ??
               prev.publishedTime ??
               new Date().toTimeString().slice(0, 5),
           }));
@@ -461,10 +478,6 @@ function AnalyticsReelContent() {
     }
     if (!inputData.reach) {
       notify({ type: "error", message: "閲覧数を入力してください" });
-      return;
-    }
-    if (sentimentData?.sentiment && !sentimentData.memo.trim()) {
-      notify({ type: "error", message: "満足度を選んだ場合、メモは必須です" });
       return;
     }
 

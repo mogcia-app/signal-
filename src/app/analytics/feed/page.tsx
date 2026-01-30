@@ -177,7 +177,7 @@ function createDefaultInputData(): FeedInputData {
 function AnalyticsFeedContent() {
   const { user } = useAuth();
   const router = useRouter();
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [postData, setPostData] = useState<{
@@ -226,8 +226,25 @@ function AnalyticsFeedContent() {
             postType: post.postType || "feed",
             publishedAt: post.publishedAt || null,
             publishedTime: post.publishedTime || null,
+            scheduledDate: post.scheduledDate || null,
+            scheduledTime: post.scheduledTime || null,
           };
           setPostData(postData);
+
+          // publishedAt/publishedTimeがなければ、scheduledDate/scheduledTimeを使用
+          let publishedAtValue: string | null = postData.publishedAt;
+          let publishedTimeValue: string | null = postData.publishedTime;
+          
+          if (!publishedAtValue && postData.scheduledDate) {
+            // scheduledDateをpublishedAtとして使用
+            const scheduledDate = postData.scheduledDate;
+            if (scheduledDate instanceof Date) {
+              publishedAtValue = scheduledDate.toISOString().split("T")[0];
+            } else if (typeof scheduledDate === "string") {
+              publishedAtValue = scheduledDate.split("T")[0];
+            }
+            publishedTimeValue = postData.scheduledTime || publishedTimeValue;
+          }
 
           // inputDataを更新
           setInputData((prev) => ({
@@ -240,11 +257,11 @@ function AnalyticsFeedContent() {
             category:
               postData.postType === "feed" ? "feed" : postData.postType === "reel" ? "reel" : "story",
             publishedAt:
-              postData.publishedAt ??
+              publishedAtValue ??
               prev.publishedAt ??
               new Date().toISOString().split("T")[0],
             publishedTime:
-              postData.publishedTime ??
+              publishedTimeValue ??
               prev.publishedTime ??
               new Date().toTimeString().slice(0, 5),
           }));
@@ -478,11 +495,6 @@ function AnalyticsFeedContent() {
     }
     if (!inputData.reach) {
       setToastMessage({ message: "閲覧数を入力してください", type: 'error' });
-      setTimeout(() => setToastMessage(null), 3000);
-      return;
-    }
-    if (sentimentData?.sentiment && !sentimentData.memo.trim()) {
-      setToastMessage({ message: "満足度を選んだ場合、メモは必須です", type: "error" });
       setTimeout(() => setToastMessage(null), 3000);
       return;
     }

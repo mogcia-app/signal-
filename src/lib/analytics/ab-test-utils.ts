@@ -4,7 +4,6 @@ import type {
   ABTestVariantMetrics,
   ABTestResultTag,
   ABTestVariantResult,
-  ABTestVariant,
 } from "@/types/ab-test";
 
 function formatMetricSummary(metrics?: ABTestVariantMetrics | null) {
@@ -75,10 +74,10 @@ export async function fetchAbTestSummaries(
     if (winnerVariant?.label) {
       summaryParts.push(`勝者: ${winnerVariant.label}`);
     }
-    if (winnerVariant?.metrics?.engagementRate != null) {
+    if (winnerVariant?.metrics?.engagementRate !== null && winnerVariant?.metrics?.engagementRate !== undefined) {
       summaryParts.push(`ER ${Number(winnerVariant.metrics.engagementRate).toFixed(1)}%`);
     }
-    if (winnerVariant?.metrics?.saveRate != null) {
+    if (winnerVariant?.metrics?.saveRate !== null && winnerVariant?.metrics?.saveRate !== undefined) {
       summaryParts.push(`保存率 ${Number(winnerVariant.metrics.saveRate).toFixed(1)}%`);
     }
 

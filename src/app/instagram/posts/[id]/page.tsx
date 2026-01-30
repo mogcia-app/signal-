@@ -186,7 +186,6 @@ export default function PostDetailPage() {
   const [postAnalytics, setPostAnalytics] = useState<PostAnalyticsRecord | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
-  const [summaryTab, setSummaryTab] = useState<"saved" | "latest">("saved");
   const [resettingAnalytics, setResettingAnalytics] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [autoGenerateScheduled, setAutoGenerateScheduled] = useState(false);
@@ -441,7 +440,6 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     if (savedSummary) {
-      setSummaryTab("saved");
       // 保存されたサマリーがある場合、postInsightも設定（リロード時に復元）
       if (!postInsight) {
         setPostInsight({
@@ -452,7 +450,6 @@ export default function PostDetailPage() {
         });
       }
     } else if (postInsight) {
-      setSummaryTab("latest");
     }
   }, [savedSummary, postInsight]);
 
@@ -579,7 +576,6 @@ export default function PostDetailPage() {
       setPostAnalytics(null);
       setPostInsight(null);
       setSavedSummary(null);
-      setSummaryTab("saved");
       notify({ type: "success", message: "分析データを削除しました" });
     } catch (error) {
       console.error("Analytics reset error:", error);
@@ -647,40 +643,39 @@ export default function PostDetailPage() {
     <SNSLayout customTitle="投稿詳細" customDescription="投稿の詳細情報を表示">
       <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
         {/* ヘッダー */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <button
                 onClick={() => router.back()}
-                className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+                className="flex items-center text-gray-500 hover:text-gray-900 mb-3 transition-colors text-sm"
               >
-                <ArrowLeft size={20} className="mr-2" />
+                <ArrowLeft size={16} className="mr-1.5" />
                 投稿一覧に戻る
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">投稿詳細</h1>
+              <h1 className="text-3xl font-light text-gray-900 tracking-tight">投稿詳細</h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleResetAnalytics}
                 disabled={resettingAnalytics}
-                className="inline-flex items-center px-4 py-2 text-sm font-semibold border border-red-500 text-red-600 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${resettingAnalytics ? "animate-spin" : ""}`} />
+                <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${resettingAnalytics ? "animate-spin" : ""}`} />
                 {resettingAnalytics ? "リセット中..." : "分析データをリセット"}
               </button>
             </div>
           </div>
           {resetError ? (
-            <p className="mt-2 text-sm text-red-600">{resetError}</p>
+            <p className="mt-3 text-xs text-red-600">{resetError}</p>
           ) : null}
         </div>
 
-        {/* 投稿カード */}
-        <div className="bg-white shadow-sm border border-orange-200 overflow-hidden">
-          {/* サムネ画像 */}
-          {post.imageData || post.imageUrl ? (
-            <div className="aspect-video bg-gray-100 relative overflow-hidden">
+        {/* 画像セクション */}
+        {post.imageData || post.imageUrl ? (
+          <div className="mb-8">
+            <div className="w-full max-w-lg mx-auto aspect-square bg-gray-50 relative overflow-hidden">
               <Image
                 src={post.imageData || post.imageUrl || ""}
                 alt={post.title}
@@ -689,19 +684,26 @@ export default function PostDetailPage() {
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </div>
-          ) : (
-            <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 relative flex items-center justify-center">
+          </div>
+        ) : (
+          <div className="mb-8">
+            <div className="w-full max-w-lg mx-auto aspect-square bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 relative flex items-center justify-center">
               <div className="text-center">
-                <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">画像なし</p>
+                <div className="bg-white/80 backdrop-blur-sm p-4 inline-block">
+                  <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                </div>
+                <p className="text-gray-400 text-xs font-medium mt-2">画像なし</p>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
+        {/* 投稿カード */}
+        <div className="bg-white border border-gray-200">
           {/* コンテンツ */}
-          <div className="p-6">
+          <div className="p-8">
             {/* タイトル */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 break-words">
+            <h2 className="text-2xl font-light text-gray-900 mb-6 break-words leading-relaxed tracking-tight">
               {(() => {
                 // タイトルから先頭・末尾の「##」「-」「空白」を削除
                 return post.title
@@ -712,10 +714,10 @@ export default function PostDetailPage() {
             </h2>
 
             {/* 投稿文全文 */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">投稿文</h3>
-              <div className="bg-orange-50 p-4 border-l-4 border-orange-500">
-                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+            <div className="mb-8">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">投稿文</h3>
+              <div className="bg-gray-50 p-5 border-l border-gray-300">
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm">
                   {(() => {
                     const cleanedContent = removeHashtagsFromContent(post.content);
                     // 投稿文から先頭・末尾の「##」「-」「空白」を削除
@@ -729,14 +731,14 @@ export default function PostDetailPage() {
             </div>
 
             {/* 投稿タイプ */}
-            <div className="mb-4">
+            <div className="mb-6">
               <span
-                className={`inline-block px-3 py-1 text-sm font-medium ${
+                className={`inline-block px-3 py-1 text-xs font-medium tracking-wide ${
                   post.postType === "feed"
-                    ? "bg-orange-100 text-orange-800"
+                    ? "bg-gray-100 text-gray-700"
                     : post.postType === "reel"
-                      ? "bg-orange-200 text-orange-900"
-                      : "bg-orange-300 text-orange-900"
+                      ? "bg-gray-100 text-gray-700"
+                      : "bg-gray-100 text-gray-700"
                 }`}
               >
                 {post.postType === "feed"
@@ -774,8 +776,8 @@ export default function PostDetailPage() {
 
               return (
                 uniqueHashtags.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">ハッシュタグ</h3>
+                  <div className="mb-8">
+                    <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">ハッシュタグ</h3>
                     <div className="flex flex-wrap gap-2">
                       {uniqueHashtags.map((tag, index) => {
                         // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
@@ -783,7 +785,7 @@ export default function PostDetailPage() {
                         return (
                           <span
                             key={index}
-                            className="inline-block px-3 py-1 bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100 transition-colors"
+                            className="inline-block px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200 transition-colors"
                           >
                             #{cleanTag}
                           </span>
@@ -795,98 +797,74 @@ export default function PostDetailPage() {
               );
             })()}
 
-            {/* スケジュール情報 */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">スケジュール情報</h3>
-              <div className="bg-orange-50 p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center text-gray-700">
-                    <Calendar size={18} className="mr-3 text-orange-500" />
-                    <div>
-                      <div className="text-sm text-gray-500">投稿予定日</div>
-                      <div className="font-medium">{formatDate(post.scheduledDate)}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-gray-700">
-                    <Clock size={18} className="mr-3 text-orange-600" />
-                    <div>
-                      <div className="text-sm text-gray-500">投稿予定時刻</div>
-                      <div className="font-medium">{formatTime(post.scheduledTime)}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* 分析データ */}
             {post.analytics && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">分析データ</h3>
-                <div className="bg-orange-50 p-4">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {post.analytics.likes !== undefined && (
-                      <div className="text-center p-3 bg-white border border-orange-200">
-                        <Heart size={24} className="text-orange-500 mx-auto mb-2" />
-                        <div className="text-sm text-gray-600 mb-1">いいね</div>
-                        <div className="text-xl font-bold text-gray-900">
-                          {post.analytics.likes.toLocaleString()}
-                        </div>
+              <div className="mb-8 pt-6 border-t border-gray-200">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">分析データ</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {post.analytics.likes !== undefined && (
+                    <div className="text-center p-4 bg-gray-50 border border-gray-200">
+                      <Heart size={18} className="text-gray-600 mx-auto mb-2" />
+                      <div className="text-xs text-gray-500 mb-1.5">いいね</div>
+                      <div className="text-lg font-light text-gray-900">
+                        {post.analytics.likes.toLocaleString()}
                       </div>
-                    )}
-                    {post.analytics.comments !== undefined && (
-                      <div className="text-center p-3 bg-white border border-orange-200">
-                        <MessageCircle size={24} className="text-orange-600 mx-auto mb-2" />
-                        <div className="text-sm text-gray-600 mb-1">コメント</div>
-                        <div className="text-xl font-bold text-gray-900">
-                          {post.analytics.comments.toLocaleString()}
-                        </div>
+                    </div>
+                  )}
+                  {post.analytics.comments !== undefined && (
+                    <div className="text-center p-4 bg-gray-50 border border-gray-200">
+                      <MessageCircle size={18} className="text-gray-600 mx-auto mb-2" />
+                      <div className="text-xs text-gray-500 mb-1.5">コメント</div>
+                      <div className="text-lg font-light text-gray-900">
+                        {post.analytics.comments.toLocaleString()}
                       </div>
-                    )}
-                    {post.analytics.shares !== undefined && (
-                      <div className="text-center p-3 bg-white border border-orange-200">
-                        <Share size={24} className="text-orange-700 mx-auto mb-2" />
-                        <div className="text-sm text-gray-600 mb-1">シェア</div>
-                        <div className="text-xl font-bold text-gray-900">
-                          {post.analytics.shares.toLocaleString()}
-                        </div>
+                    </div>
+                  )}
+                  {post.analytics.shares !== undefined && (
+                    <div className="text-center p-4 bg-gray-50 border border-gray-200">
+                      <Share size={18} className="text-gray-600 mx-auto mb-2" />
+                      <div className="text-xs text-gray-500 mb-1.5">シェア</div>
+                      <div className="text-lg font-light text-gray-900">
+                        {post.analytics.shares.toLocaleString()}
                       </div>
-                    )}
-                    {post.analytics.reach !== undefined && (
-                      <div className="text-center p-3 bg-white border border-orange-200">
-                        <EyeIcon size={24} className="text-orange-800 mx-auto mb-2" />
-                        <div className="text-sm text-gray-600 mb-1">リーチ</div>
-                        <div className="text-xl font-bold text-gray-900">
-                          {post.analytics.reach.toLocaleString()}
-                        </div>
+                    </div>
+                  )}
+                  {post.analytics.reach !== undefined && (
+                    <div className="text-center p-4 bg-gray-50 border border-gray-200">
+                      <EyeIcon size={18} className="text-gray-600 mx-auto mb-2" />
+                      <div className="text-xs text-gray-500 mb-1.5">リーチ</div>
+                      <div className="text-lg font-light text-gray-900">
+                        {post.analytics.reach.toLocaleString()}
                       </div>
-                    )}
-                    {post.analytics.engagementRate !== undefined && (
-                      <div className="text-center p-3 bg-white border border-orange-200">
-                        <div className="w-6 h-6 bg-orange-500 mx-auto mb-2 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">%</span>
-                        </div>
-                        <div className="text-sm text-gray-600 mb-1">エンゲージメント率</div>
-                        <div className="text-xl font-bold text-gray-900">
-                          {post.analytics.engagementRate.toFixed(1)}%
-                        </div>
+                    </div>
+                  )}
+                  {post.analytics.engagementRate !== undefined && (
+                    <div className="text-center p-4 bg-gray-50 border border-gray-200">
+                      <div className="w-5 h-5 bg-gray-600 mx-auto mb-2 flex items-center justify-center">
+                        <span className="text-white text-[10px] font-medium">%</span>
                       </div>
-                    )}
-                    {post.analytics.publishedAt && (
-                      <div className="text-center p-3 bg-white border border-orange-200">
-                        <Calendar size={24} className="text-orange-600 mx-auto mb-2" />
-                        <div className="text-sm text-gray-600 mb-1">投稿日時</div>
-                        <div className="text-sm font-bold text-gray-900">
-                          {new Date(post.analytics.publishedAt).toLocaleDateString("ja-JP")}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {new Date(post.analytics.publishedAt).toLocaleTimeString("ja-JP", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
+                      <div className="text-xs text-gray-500 mb-1.5">エンゲージメント率</div>
+                      <div className="text-lg font-light text-gray-900">
+                        {post.analytics.engagementRate.toFixed(1)}%
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  {post.analytics.publishedAt && (
+                    <div className="text-center p-4 bg-gray-50 border border-gray-200">
+                      <Calendar size={18} className="text-gray-600 mx-auto mb-2" />
+                      <div className="text-xs text-gray-500 mb-1.5">投稿日時</div>
+                      <div className="text-xs font-light text-gray-900">
+                        {new Date(post.analytics.publishedAt).toLocaleDateString("ja-JP")}
+                      </div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        {new Date(post.analytics.publishedAt).toLocaleTimeString("ja-JP", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -894,10 +872,10 @@ export default function PostDetailPage() {
           </div>
         </div>
 
-        <div className="mt-8 space-y-6">
-          <div className="border border-gray-200 bg-white shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-[#ff8a15]" />
+        <div className="mt-12 space-y-8">
+          <div className="border border-gray-200 bg-white p-8">
+            <h2 className="text-lg font-light text-gray-900 mb-6 flex items-center gap-2 tracking-tight">
+              <BarChart3 className="w-4 h-4 text-gray-600" />
               保存済み分析データ
             </h2>
             {analyticsLoading ? (
@@ -910,135 +888,135 @@ export default function PostDetailPage() {
             ) : postAnalytics ? (
               <div className="space-y-5">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                       <Heart className="w-3 h-3" />
                       いいね
                     </p>
-                    <p className="text-lg font-semibold text-gray-800">
+                    <p className="text-lg font-light text-gray-900">
                       {postAnalytics.likes.toLocaleString()}
                     </p>
                   </div>
-                  <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                       <MessageCircle className="w-3 h-3" />
                       コメント
                     </p>
-                    <p className="text-lg font-semibold text-gray-800">
+                    <p className="text-lg font-light text-gray-900">
                       {postAnalytics.comments.toLocaleString()}
                     </p>
                   </div>
-                  <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                       <Share className="w-3 h-3" />
                       シェア
                     </p>
-                    <p className="text-lg font-semibold text-gray-800">
+                    <p className="text-lg font-light text-gray-900">
                       {postAnalytics.shares.toLocaleString()}
                     </p>
                   </div>
-                  <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                       <Save className="w-3 h-3" />
                       保存
                     </p>
-                    <p className="text-lg font-semibold text-gray-800">
+                    <p className="text-lg font-light text-gray-900">
                       {postAnalytics.saves.toLocaleString()}
                     </p>
                   </div>
-                  <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                       <EyeIcon className="w-3 h-3" />
                       リーチ
                     </p>
-                    <p className="text-lg font-semibold text-gray-800">
+                    <p className="text-lg font-light text-gray-900">
                       {postAnalytics.reach.toLocaleString()}
                     </p>
                   </div>
                   {postAnalytics.followerIncrease !== undefined && (
-                    <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <div className="border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                         <TrendingUp className="w-3 h-3" />
                         フォロワー増加
                       </p>
-                      <p className="text-lg font-semibold text-gray-800">
+                      <p className="text-lg font-light text-gray-900">
                         {postAnalytics.followerIncrease > 0 ? "+" : ""}
                         {postAnalytics.followerIncrease.toLocaleString()}
                       </p>
                     </div>
                   )}
                   {postAnalytics.interactionCount !== undefined && (
-                    <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <div className="border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                         <BarChart3 className="w-3 h-3" />
                         インタラクション
                       </p>
-                      <p className="text-lg font-semibold text-gray-800">
+                      <p className="text-lg font-light text-gray-900">
                         {postAnalytics.interactionCount.toLocaleString()}
                       </p>
                     </div>
                   )}
                   {postAnalytics.reachFollowerPercent !== undefined && (
-                    <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <div className="border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                         <Users className="w-3 h-3" />
                         リーチ/フォロワー率
                       </p>
-                      <p className="text-lg font-semibold text-gray-800">
+                      <p className="text-lg font-light text-gray-900">
                         {postAnalytics.reachFollowerPercent.toFixed(1)}%
                       </p>
                     </div>
                   )}
                   {postAnalytics.interactionFollowerPercent !== undefined && (
-                    <div className="border border-gray-200 bg-gray-50 p-3 rounded-none">
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <div className="border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
                         <BarChart3 className="w-3 h-3" />
                         インタラクション/フォロワー率
                       </p>
-                      <p className="text-lg font-semibold text-gray-800">
+                      <p className="text-lg font-light text-gray-900">
                         {postAnalytics.interactionFollowerPercent.toFixed(1)}%
                       </p>
                     </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-gray-600">
-                  <div className="border border-dashed border-gray-200 bg-gray-50 p-3">
-                    <p className="font-semibold text-gray-600 mb-2">満足度フィードバック</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs font-medium text-gray-600 mb-3 uppercase tracking-wider">満足度フィードバック</p>
                     {postAnalytics.sentiment ? (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <span
-                          className={`inline-flex px-2 py-1 rounded-full ${
+                          className={`inline-flex px-3 py-1 text-xs font-medium ${
                             postAnalytics.sentiment === "satisfied"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
+                              ? "bg-gray-200 text-gray-700"
+                              : "bg-gray-200 text-gray-700"
                           }`}
                         >
                           {postAnalytics.sentiment === "satisfied" ? "満足" : "改善したい"}
                         </span>
-                        <p className="text-gray-600 whitespace-pre-wrap">
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
                           {postAnalytics.sentimentMemo?.trim()
                             ? postAnalytics.sentimentMemo
                             : "メモは記録されていません。"}
                         </p>
                       </div>
                     ) : (
-                      <p className="text-gray-500">この投稿には満足度フィードバックがまだありません。</p>
+                      <p className="text-sm text-gray-500">この投稿には満足度フィードバックがまだありません。</p>
                     )}
                   </div>
                   {postAnalytics.category && (
-                    <div className="border border-dashed border-gray-200 bg-gray-50 p-3">
-                      <p className="font-semibold text-gray-600 mb-2 flex items-center gap-1">
+                    <div className="border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs font-medium text-gray-600 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
                         <Tag className="w-3 h-3" />
                         カテゴリー
                       </p>
-                      <p className="text-gray-700">{postAnalytics.category}</p>
+                      <p className="text-sm text-gray-700">{postAnalytics.category}</p>
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1">
+                <div className="mt-6">
+                  <p className="text-xs font-medium text-gray-600 mb-4 flex items-center gap-1.5 uppercase tracking-wider">
                     <MessageCircle className="w-3 h-3" />
                     コメントと返信ログ
                   </p>
@@ -1047,21 +1025,21 @@ export default function PostDetailPage() {
                       {postAnalytics.commentThreads.map((thread, idx) => (
                         <li
                           key={`thread-${idx}`}
-                          className="border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 rounded-none"
+                          className="border border-gray-200 bg-gray-50 p-4"
                         >
-                          <p className="font-semibold text-gray-600 mb-1">コメント</p>
-                          <p className="mb-2 whitespace-pre-wrap">
+                          <p className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wider">コメント</p>
+                          <p className="mb-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                             {thread.comment?.trim() || "（未入力）"}
                           </p>
-                          <p className="font-semibold text-gray-600 mb-1">返信・フォロー</p>
-                          <p className="whitespace-pre-wrap">
+                          <p className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wider">返信・フォロー</p>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                             {thread.reply?.trim() || "（未入力）"}
                           </p>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm text-gray-500">
                       コメントログはまだ登録されていません。分析ページで記録するとここに表示されます。
                     </p>
                   )}
@@ -1075,218 +1053,55 @@ export default function PostDetailPage() {
           </div>
         </div>
 
-        <section className="mt-8 border border-gray-200 bg-white rounded-none shadow-sm">
-          <div className="border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">AI投稿ディープダイブ</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                この投稿の指標やクラスタ比較、AIが抽出した強み・改善点を確認できます。
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleGenerateInsight}
-              disabled={isGeneratingInsight || !deepDiveSignal}
-              className="px-4 py-2 text-sm font-semibold text-white bg-slate-700 hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isGeneratingInsight
-                ? "AIサマリー生成中..."
-                : postInsight
-                  ? "AIサマリーを再生成"
-                  : "AIサマリーを生成"}
-            </button>
+        {/* AI投稿分析セクション */}
+        <section className="mt-12 border border-gray-200 bg-white">
+          <div className="border-b border-gray-200 px-8 py-6">
+            <h2 className="text-lg font-light text-gray-900 tracking-tight mb-1">AI投稿分析</h2>
+            <p className="text-sm text-gray-500">
+              分析ページで生成されたAIアドバイスを表示します。
+            </p>
           </div>
 
-          {insightError ? (
-            <div className="px-6 py-3 text-sm text-red-700 bg-red-50 border-b border-red-100">
-              {insightError}
-            </div>
-          ) : null}
-
-          <div className="px-6 py-6">
-            {isDeepDiveLoading ? (
-              <div className="flex items-center justify-center py-12 text-gray-600 text-sm">
-                <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
-                <span>AIディープダイブを読み込んでいます...</span>
-              </div>
-            ) : deepDiveError ? (
-              <div className="border border-dashed border-gray-300 bg-gray-50 p-6 text-sm text-gray-600">
-                {deepDiveError}
-              </div>
-            ) : deepDiveSignal ? (
-              (() => {
-                const clusterInfo = deepDiveSignal.cluster ?? null;
-                const similarPosts = clusterInfo?.similarPosts ?? [];
-                return (
+          <div className="px-8 py-8">
+            {savedSummaryError && !savedSummary ? (
+              <p className="text-xs text-red-500 mb-4">{savedSummaryError}</p>
+            ) : null}
+            
+            {savedSummary ? (
               <div className="space-y-6">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                  <span className="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700">
-                    クラスタ: {clusterInfo?.label ?? "分析中"}
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700">
-                    パフォーマンスタグ: {deepDiveSignal.tag.toUpperCase()}
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700">
-                    KPIスコア: {deepDiveSignal.kpiScore.toFixed(2)}
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700">
-                    エンゲージ率: {deepDiveSignal.engagementRate.toFixed(2)}%
-                  </span>
+                <div className="bg-gray-50 p-6 border-l-4 border-gray-400">
+                  <p className="text-base text-gray-800 leading-relaxed font-light">{savedSummary.summary}</p>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
-                  <div className="border border-dashed border-gray-200 bg-gray-50 p-4">
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">指標の差分と意味</h3>
-                    {renderSignificanceBadge(
-                      "リーチ差分",
-                      deepDiveSignal.comparisons?.reachDiff ?? 0,
-                      deepDiveSignal.significance?.reach ?? "neutral"
-                    )}
-                    {renderSignificanceBadge(
-                      "エンゲージ差分",
-                      deepDiveSignal.comparisons?.engagementRateDiff ?? 0,
-                      deepDiveSignal.significance?.engagement ?? "neutral"
-                    )}
-                    {renderSignificanceBadge(
-                      "保存率差分",
-                      deepDiveSignal.comparisons?.savesRateDiff ?? 0,
-                      deepDiveSignal.significance?.savesRate ?? "neutral"
-                    )}
-                    {renderSignificanceBadge(
-                      "コメント率差分",
-                      deepDiveSignal.comparisons?.commentsRateDiff ?? 0,
-                      deepDiveSignal.significance?.commentsRate ?? "neutral"
-                    )}
+                {savedSummary.insights?.length ? (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3 uppercase tracking-wider">強み</h3>
+                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-2 leading-relaxed pl-2">
+                      {savedSummary.insights.map((item, idx) => (
+                        <li key={`saved-insight-${idx}`}>{item}</li>
+                      ))}
+                    </ul>
                   </div>
-
-                  <div className="border border-dashed border-gray-200 bg-gray-50 p-4">
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">クラスタ & 類似投稿</h3>
-                    <p className="text-xs text-gray-600 mb-2">
-                      クラスタ基準スコア:{" "}
-                      {clusterInfo ? clusterInfo.baselinePerformance.toFixed(2) : "N/A"}
-                    </p>
-                    {similarPosts.length ? (
-                      <ul className="space-y-1 text-xs text-gray-600">
-                        {similarPosts.map((item) => (
-                          <li key={`similar-${item.postId}`}>
-                            {item.title} ({item.performanceScore.toFixed(2)})
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-gray-500">同クラスタで比較できる投稿がまだありません。</p>
-                    )}
+                ) : null}
+                {savedSummary.recommendedActions?.length ? (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3 uppercase tracking-wider">次のアクション</h3>
+                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-2 leading-relaxed pl-2">
+                      {savedSummary.recommendedActions.map((item, idx) => (
+                        <li key={`saved-action-${idx}`}>{item}</li>
+                      ))}
+                    </ul>
                   </div>
-
-                  <div className="border border-dashed border-gray-200 bg-gray-50 p-4">
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">AIサマリー</h3>
-                    {savedSummaryError && !savedSummary ? (
-                      <p className="text-xs text-red-500 mb-3">{savedSummaryError}</p>
-                    ) : null}
-                    <div className="flex items-center space-x-3 border-b border-gray-200 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setSummaryTab("saved")}
-                        className={`px-3 py-2 text-xs font-semibold border-b-2 ${
-                          summaryTab === "saved"
-                            ? "border-[#ff8a15] text-[#ff8a15]"
-                            : "border-transparent text-gray-500 hover:text-[#ff8a15]"
-                        }`}
-                        disabled={!savedSummary}
-                      >
-                        保存済み
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSummaryTab("latest")}
-                        className={`px-3 py-2 text-xs font-semibold border-b-2 ${
-                          summaryTab === "latest"
-                            ? "border-[#ff8a15] text-[#ff8a15]"
-                            : "border-transparent text-gray-500 hover:text-[#ff8a15]"
-                        }`}
-                        disabled={!postInsight}
-                      >
-                        最新生成
-                      </button>
-                    </div>
-                    {summaryTab === "saved" && savedSummary ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span className="font-semibold text-gray-600">保存済みAIまとめ</span>
-                        </div>
-                        <p className="text-sm text-gray-700">{savedSummary.summary}</p>
-                        {savedSummary.insights?.length ? (
-                          <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1">注目ポイント</p>
-                            <ul className="list-disc list-inside text-xs text-gray-700 space-y-1">
-                              {savedSummary.insights.map((item, idx) => (
-                                <li key={`saved-insight-${idx}`}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : null}
-                        {savedSummary.recommendedActions?.length ? (
-                          <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1">推奨アクション</p>
-                            <ul className="list-disc list-inside text-xs text-gray-700 space-y-1">
-                              {savedSummary.recommendedActions.map((item, idx) => (
-                                <li key={`saved-action-${idx}`}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-                    {summaryTab === "latest" ? (
-                      postInsight ? (
-                        <div className="space-y-3">
-                          <p className="text-sm text-gray-700">{postInsight.summary}</p>
-                          {postInsight.strengths.length ? (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-600 mb-1">強み</p>
-                              <ul className="list-disc list-inside text-xs text-gray-700 space-y-1">
-                                {postInsight.strengths.map((item, idx) => (
-                                  <li key={`strength-${idx}`}>{item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : null}
-                          {postInsight.improvements.length ? (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-600 mb-1">改善ポイント</p>
-                              <ul className="list-disc list-inside text-xs text-gray-700 space-y-1">
-                                {postInsight.improvements.map((item, idx) => (
-                                  <li key={`improve-${idx}`}>{item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : null}
-                          {postInsight.nextActions.length ? (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-600 mb-1">次のアクション</p>
-                              <ul className="list-disc list-inside text-xs text-gray-700 space-y-1">
-                                {postInsight.nextActions.map((item, idx) => (
-                                  <li key={`next-${idx}`}>{item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-gray-500">
-                          まだAIサマリーが生成されていません。上部のボタンから生成できます。
-                        </p>
-                      )
-                    ) : null}
-                  </div>
-                </div>
+                ) : null}
               </div>
-                );
-              })()
             ) : (
-              <p className="text-sm text-gray-500">
-                ディープダイブ情報がありません。投稿に対する分析データやフィードバックが蓄積されると表示されます。
-              </p>
+              <div className="text-center py-12">
+                <p className="text-sm text-gray-500 mb-4">
+                  まだAIアドバイスが生成されていません。
+                </p>
+                <p className="text-xs text-gray-400">
+                  分析ページでフィードバックを入力し、AIアドバイスを生成してください。
+                </p>
+              </div>
             )}
           </div>
         </section>

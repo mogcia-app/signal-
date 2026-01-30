@@ -212,6 +212,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [aiGenerateFeedback, setAiGenerateFeedback] = useState<string | null>(null);
+  const [writingStyle, setWritingStyle] = useState<"casual" | "sincere" | null>(null);
   const [showAiAdminWarning, setShowAiAdminWarning] = useState(false);
   const aiFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
   
@@ -607,6 +608,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           scheduledDate,
           scheduledTime,
           autoGenerate: true, // 自動生成フラグ
+          writingStyle: writingStyle || undefined,
         }),
       });
 
@@ -786,6 +788,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           scheduledDate,
           scheduledTime,
           action: "generatePost",
+          writingStyle: writingStyle || undefined,
         }),
       });
 
@@ -1073,66 +1076,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
           )}
 
-          {/* AIヒントセクション（ストーリー・フィード） */}
-          {(postType === "story" || postType === "feed") && (
-            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4">
-              <div className="flex items-center mb-4">
-                <span className="text-2xl mr-3">💡</span>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">AIヒント</h3>
-                  <p className="text-sm text-gray-600">
-                    {postType === "story"
-                      ? "投稿文に合う画像・動画のアイデアとストーリーのヒント"
-                      : "投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒント"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white p-4 border border-orange-100">
-                {isGeneratingSuggestions ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mr-3"></div>
-                    <span className="text-sm text-gray-600">AIヒントを生成中...</span>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="text-sm text-gray-700 whitespace-pre-line">
-                      {imageVideoSuggestions?.content || "AI投稿文生成で自動提案されます"}
-                    </div>
-                    {imageVideoSuggestions?.rationale && (
-                      <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-300 text-sm text-orange-800 whitespace-pre-line">
-                        <p className="font-medium text-orange-900 mb-1">今回の提案理由</p>
-                        {imageVideoSuggestions.rationale}
-                      </div>
-                    )}
-                    {latestGeneration?.draft?.hashtagExplanations && latestGeneration.draft.hashtagExplanations.length > 0 && (
-                      <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-300">
-                        <p className="font-medium text-blue-900 mb-2 text-sm">ハッシュタグ根拠</p>
-                        <div className="space-y-2">
-                          {latestGeneration.draft.hashtagExplanations.map((explanation, index) => {
-                            const categoryLabel = explanation.category === "brand" ? "企業" : explanation.category === "trending" ? "トレンド" : "補助";
-                            const hashtagWithoutHash = explanation.hashtag.replace(/^#+/, "");
-                            // Markdown形式の装飾記号を除去
-                            const cleanReason = explanation.reason.replace(/\*\*/g, "").replace(/\*/g, "").replace(/_/g, "").trim();
-                            return (
-                              <div key={index} className="text-xs text-blue-800">
-                                <span className="font-medium">#{hashtagWithoutHash}</span>
-                                <span className="mx-2 inline-block px-1.5 py-0.5 bg-blue-100 rounded text-blue-700">
-                                  {categoryLabel}
-                                </span>
-                                <span>{cleanReason}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* ハッシュタグ表示・編集 */}
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-800 mb-3">ハッシュタグ</label>
@@ -1221,6 +1164,43 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               )}
             </div>
 
+            {/* スタイル選択（フィードのみ） */}
+            {postType === "feed" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  文字数・スタイル
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setWritingStyle("casual")}
+                    disabled={!planData}
+                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
+                      writingStyle === "casual"
+                        ? "bg-orange-100 border-orange-500 text-orange-700"
+                        : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
+                    } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    カジュアル
+                    <span className="block text-xs mt-1 text-gray-500">150-200文字</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWritingStyle("sincere")}
+                    disabled={!planData}
+                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
+                      writingStyle === "sincere"
+                        ? "bg-orange-100 border-orange-500 text-orange-700"
+                        : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
+                    } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    誠実
+                    <span className="block text-xs mt-1 text-gray-500">250-400文字</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* 生成ボタン */}
             <div className="space-y-3">
               {/* 自動生成ボタン */}
@@ -1291,72 +1271,65 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
           </div>
 
-          {/* 画像アップロード */}
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-800 mb-3">
-              画像（サムネイル）
-            </label>
+          {/* AIヒントセクション（ストーリー・フィード） */}
+          {(postType === "story" || postType === "feed") && (
+            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4">
+              <div className="flex items-center mb-4">
+                <span className="text-2xl mr-3">💡</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">AIヒント</h3>
+                  <p className="text-sm text-gray-600">
+                    {postType === "story"
+                      ? "投稿文に合う画像・動画のアイデアとストーリーのヒント"
+                      : "投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒント"}
+                  </p>
+                </div>
+              </div>
 
-            {image ? (
-              <div className="relative">
-                <div className="w-full max-w-md mx-auto">
-                  <Image
-                    src={image}
-                    alt="投稿画像プレビュー"
-                    width={400}
-                    height={192}
-                    className="w-full h-48 object-cover border-2 border-gray-200"
-                  />
-                  <button
-                    onClick={handleImageRemove}
-                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="mt-2 text-center">
-                  <button
-                    onClick={() => document.getElementById("image-upload")?.click()}
-                    className="text-sm text-orange-600 hover:text-orange-800 transition-colors"
-                  >
-                    別の画像を選択
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 p-8 text-center hover:border-gray-400 transition-colors">
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  disabled={isUploading}
-                />
-                <label
-                  htmlFor="image-upload"
-                  className="cursor-pointer flex flex-col items-center space-y-3"
-                >
-                  {isUploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff8a15]"></div>
-                      <span className="text-black">アップロード中...</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <Upload className="w-6 h-6 text-orange-400" />
+              <div className="bg-white p-4 border border-orange-100">
+                {isGeneratingSuggestions ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mr-3"></div>
+                    <span className="text-sm text-gray-600">AIヒントを生成中...</span>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-sm text-gray-700 whitespace-pre-line">
+                      {imageVideoSuggestions?.content || "AI投稿文生成で自動提案されます"}
+                    </div>
+                    {imageVideoSuggestions?.rationale && (
+                      <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-300 text-sm text-orange-800 whitespace-pre-line">
+                        <p className="font-medium text-orange-900 mb-1">今回の提案理由</p>
+                        {imageVideoSuggestions.rationale}
                       </div>
-                      <div>
-                        <p className="text-black font-medium">画像をアップロード</p>
-                        <p className="text-sm text-black">クリックしてファイルを選択（5MB以下）</p>
+                    )}
+                    {latestGeneration?.draft?.hashtagExplanations && latestGeneration.draft.hashtagExplanations.length > 0 && (
+                      <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-300">
+                        <p className="font-medium text-blue-900 mb-2 text-sm">ハッシュタグ根拠</p>
+                        <div className="space-y-2">
+                          {latestGeneration.draft.hashtagExplanations.map((explanation, index) => {
+                            const categoryLabel = explanation.category === "brand" ? "企業" : explanation.category === "trending" ? "トレンド" : "補助";
+                            const hashtagWithoutHash = explanation.hashtag.replace(/^#+/, "");
+                            // Markdown形式の装飾記号を除去
+                            const cleanReason = explanation.reason.replace(/\*\*/g, "").replace(/\*/g, "").replace(/_/g, "").trim();
+                            return (
+                              <div key={index} className="text-xs text-blue-800">
+                                <span className="font-medium">#{hashtagWithoutHash}</span>
+                                <span className="mx-2 inline-block px-1.5 py-0.5 bg-blue-100 rounded text-blue-700">
+                                  {categoryLabel}
+                                </span>
+                                <span className="text-blue-600">{cleanReason}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </>
-                  )}
-                </label>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* 保存された投稿一覧 */}
           {savedPosts.length > 0 && (

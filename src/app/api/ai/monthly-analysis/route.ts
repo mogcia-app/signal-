@@ -19,12 +19,7 @@ import { callOpenAI } from "./domain/ai/client";
 // サービス層: AI分析のオーケストレーション
 import { performAIAnalysis as performAIAnalysisService } from "./services/analysis-service";
 
-// 型定義
-import type {
-  MasterContext,
-  ReportSummary,
-  PlanSummary,
-} from "./types";
+// 型定義はservicesで使用
 
 export async function GET(request: NextRequest) {
   try {

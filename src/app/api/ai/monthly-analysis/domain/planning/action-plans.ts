@@ -6,7 +6,6 @@
 import type {
   AnalysisAlert,
   PostTypeHighlight,
-  PostTypeHighlightStatus,
   ActionPlanPriority,
 } from "../../types";
 

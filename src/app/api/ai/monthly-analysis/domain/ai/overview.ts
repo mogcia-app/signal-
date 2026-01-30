@@ -9,9 +9,7 @@ import { AIGenerationResponse } from "@/types/ai";
 import { callOpenAI } from "./client";
 import type {
   ReportSummary,
-  PlanSummary,
   ActionPlan,
-  PostPerformanceTag,
   PatternSummary,
   AnalysisAlert,
   PostTypeHighlight,
@@ -20,6 +18,7 @@ import type {
   PlanReflectionStatus,
   PlanCheckpoint,
   PlanReflection,
+  PostPerformanceTag,
   OverviewHighlight,
   AnalysisOverview,
 } from "../../types";
@@ -90,7 +89,7 @@ function buildMetricHighlights(
   return highlightCandidates
     .sort((a, b) => b.absChange - a.absChange)
     .slice(0, 3)
-    .map(({ absChange, ...rest }) => rest);
+    .map(({ absChange: _absChange, ...rest }) => rest);
 }
 
 /**

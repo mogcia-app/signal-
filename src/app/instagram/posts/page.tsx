@@ -215,7 +215,30 @@ export default function InstagramPostsPage() {
       const result = await response.json();
       if (result.success && result.data) {
         // BFF APIから取得したデータを設定
-        setPosts(result.data.posts || []);
+        const fetchedPosts = result.data.posts || [];
+        
+        // 日付で降順ソート（最新が上）
+        const sortedPosts = [...fetchedPosts].sort((a, b) => {
+          const getDate = (post: PostData): number => {
+            if (post.createdAt instanceof Date) {
+              return post.createdAt.getTime();
+            }
+            if (post.createdAt && typeof post.createdAt === "object" && "toDate" in post.createdAt) {
+              return (post.createdAt as { toDate(): Date }).toDate().getTime();
+            }
+            if (typeof post.createdAt === "string") {
+              const date = new Date(post.createdAt);
+              return isNaN(date.getTime()) ? 0 : date.getTime();
+            }
+            return 0;
+          };
+
+          const aTime = getDate(a);
+          const bTime = getDate(b);
+          return bTime - aTime; // 降順（新しい順）
+        });
+        
+        setPosts(sortedPosts);
         setAnalyticsData(result.data.analytics || []);
         setScheduledPosts(result.data.scheduledPosts || []);
         setUnanalyzedPosts(result.data.unanalyzedPosts || []);
@@ -246,29 +269,23 @@ export default function InstagramPostsPage() {
         if (prevPosts.length === 0) {return prevPosts;}
 
         return [...prevPosts].sort((a: PostData, b: PostData) => {
-          // 作成済み（created）を最優先
-          if (a.status === "created" && b.status !== "created") {return -1;}
-          if (b.status === "created" && a.status !== "created") {return 1;}
+          const getDate = (post: PostData): number => {
+            if (post.createdAt instanceof Date) {
+              return post.createdAt.getTime();
+            }
+            if (post.createdAt && typeof post.createdAt === "object" && "toDate" in post.createdAt) {
+              return (post.createdAt as { toDate(): Date }).toDate().getTime();
+            }
+            if (typeof post.createdAt === "string") {
+              const date = new Date(post.createdAt);
+              return isNaN(date.getTime()) ? 0 : date.getTime();
+            }
+            return 0;
+          };
 
-          // 同じステータスの場合は、作成日時で降順（新しい順）
-          const aCreatedAt =
-            a.createdAt instanceof Date
-              ? a.createdAt
-              : typeof a.createdAt === "string"
-                ? new Date(a.createdAt)
-                : a.createdAt?.toDate
-                  ? a.createdAt.toDate()
-                  : new Date(0);
-          const bCreatedAt =
-            b.createdAt instanceof Date
-              ? b.createdAt
-              : typeof b.createdAt === "string"
-                ? new Date(b.createdAt)
-                : b.createdAt?.toDate
-                  ? b.createdAt.toDate()
-                  : new Date(0);
-
-          return bCreatedAt.getTime() - aCreatedAt.getTime();
+          const aTime = getDate(a);
+          const bTime = getDate(b);
+          return bTime - aTime; // 降順（新しい順）
         });
       });
     }, 30000); // 30秒ごと
@@ -407,14 +424,35 @@ export default function InstagramPostsPage() {
       return shouldShow;
     });
 
+    // 日付で降順ソート（最新が上）
+    const sorted = [...filtered].sort((a, b) => {
+      const getDate = (post: PostData): number => {
+        if (post.createdAt instanceof Date) {
+          return post.createdAt.getTime();
+        }
+        if (post.createdAt && typeof post.createdAt === "object" && "toDate" in post.createdAt) {
+          return (post.createdAt as { toDate(): Date }).toDate().getTime();
+        }
+        if (typeof post.createdAt === "string") {
+          const date = new Date(post.createdAt);
+          return isNaN(date.getTime()) ? 0 : date.getTime();
+        }
+        return 0;
+      };
+
+      const aTime = getDate(a);
+      const bTime = getDate(b);
+      return bTime - aTime; // 降順（新しい順）
+    });
+
     console.log("Filtered posts result:", {
       activeTab,
       totalPosts: posts.length,
-      filteredCount: filtered.length,
+      filteredCount: sorted.length,
       manualAnalyticsCount: manualAnalyticsData.length,
     });
 
-    return filtered;
+    return sorted;
   }, [posts, analyticsData, activeTab, manualAnalyticsData]);
 
   return (

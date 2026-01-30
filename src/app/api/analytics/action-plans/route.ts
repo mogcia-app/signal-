@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     let totalReach = 0;
     let totalComments = 0;
     let totalSaves = 0;
-    let totalShares = 0;
+    // totalShares removed (unused)
     let totalFollowerIncrease = 0;
 
     analyticsByPostId.forEach((data) => {
@@ -114,14 +114,14 @@ export async function GET(request: NextRequest) {
       totalReach += data.reach || 0;
       totalComments += data.comments || 0;
       totalSaves += data.saves || 0;
-      totalShares += data.shares || 0;
+      // totalShares is not available in analytics data
       totalFollowerIncrease += data.followerIncrease || 0;
     });
 
     // 投稿タイプ別の統計を計算（analyticsコレクションのデータのみを使用）
     const postTypeStats: Record<string, { count: number; totalReach: number }> = {};
 
-    analyticsByPostId.forEach((analytics, postId) => {
+    analyticsByPostId.forEach((analytics) => {
       const postType = analytics.category || analytics.postType || "unknown";
       const reach = analytics.reach || 0;
 
@@ -194,7 +194,7 @@ export async function GET(request: NextRequest) {
     let actionPlans: ActionPlan[] = [];
     if (openai && analyzedCount > 0) {
       try {
-        const currentMonth = getMonthName(date);
+        // currentMonth removed (unused)
         const nextMonth = getNextMonthName(date);
 
         const prompt = `以下のInstagram運用データを基に、${nextMonth}に向けた優先度の高いアクションプランを最大3件生成してください。

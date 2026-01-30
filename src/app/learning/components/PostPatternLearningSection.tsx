@@ -8,7 +8,6 @@ interface PostPatternLearningSectionProps {
   patternInsights?: PostPatternInsights | null;
   patternCounts: Record<PatternTag, number>;
   goldSampleSignals: PatternSignal[];
-  topHashtagEntries: Array<[string, number]>;
   isLoading: boolean;
   error: string | null;
   tagMeta: Record<
@@ -28,7 +27,6 @@ export function PostPatternLearningSection({
   patternInsights,
   patternCounts,
   goldSampleSignals,
-  topHashtagEntries,
   isLoading,
   error,
   tagMeta,
@@ -171,22 +169,6 @@ export function PostPatternLearningSection({
             );
           })}
         </div>
-
-        {topHashtagEntries.length ? (
-          <div className="border border-dashed border-slate-300 rounded-none p-4 bg-slate-50">
-            <p className="text-xs font-semibold text-slate-600 mb-2">よく使われたハッシュタグ（重み順）</p>
-            <div className="flex flex-wrap gap-2">
-              {topHashtagEntries.map(([tag, weight]) => (
-                <span
-                  key={`hashtag-${tag}`}
-                  className="px-3 py-1 text-xs font-medium bg-white border border-slate-200 rounded-none text-slate-700"
-                >
-                  #{tag} <span className="text-[11px] text-gray-500">×{weight.toFixed(2)}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        ) : null}
       </div>
     </section>
   );

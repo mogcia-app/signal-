@@ -9,7 +9,6 @@ import type {
   ActionPlanPriority,
   AnalysisAlert,
   PostTypeHighlight,
-  PostTypeHighlightStatus,
   ReportSummary,
   MasterContext,
 } from "../../types";

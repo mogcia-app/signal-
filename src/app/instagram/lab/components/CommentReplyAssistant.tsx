@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useState, useRef } from "react";
-import { Loader2, MessageCircleReply, Sparkle, Copy, Check, AlertTriangle } from "lucide-react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
+import { Loader2, MessageCircleReply, Sparkle, Copy, Check, AlertTriangle, ChevronDown } from "lucide-react";
 
 import { authFetch } from "../../../../utils/authFetch";
 
@@ -40,6 +40,7 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
 }) => {
   const [commentText, setCommentText] = useState("");
   const [tone, setTone] = useState<string>("friendly");
+  const [isToneDropdownOpen, setIsToneDropdownOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
@@ -50,10 +51,28 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
 
   // 連続フィードバックの追跡
   const feedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
+  const toneDropdownRef = useRef<HTMLDivElement>(null);
+
+  // ドロップダウン外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (toneDropdownRef.current && !toneDropdownRef.current.contains(event.target as Node)) {
+        setIsToneDropdownOpen(false);
+      }
+    };
+
+    if (isToneDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isToneDropdownOpen]);
 
   const placeholder = useMemo(
     () =>
-      "例：\nいつも投稿楽しみにしています！今回のレシピも真似してみました！\n\nまたは\nこの商品、どこで買えますか？価格が知りたいです。",
+      "例：いつも投稿楽しみにしています！",
     [],
   );
 
@@ -206,31 +225,44 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
           <textarea
             value={commentText}
             onChange={(event) => setCommentText(event.target.value)}
-            rows={5}
+            rows={3}
             className="w-full border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[#ff8a15] focus:outline-none"
             placeholder={placeholder}
           />
         </div>
 
-        <div>
+        <div className="relative" ref={toneDropdownRef}>
           <label className="block text-xs font-bold text-gray-900 mb-2">返信トーンの希望</label>
-          <div className="grid grid-cols-2 gap-2">
-            {toneOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setTone(option.value)}
-                className={`border px-3 py-2 text-xs text-left transition-colors ${
-                  tone === option.value
-                    ? "border-[#ff8a15] bg-orange-50 text-orange-700"
-                    : "border-gray-300 hover:border-[#ff8a15] text-gray-700 bg-white"
-                }`}
-              >
-                <p className="font-bold">{option.label}</p>
-                <p className="text-[11px] text-gray-600 mt-1">{option.description}</p>
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsToneDropdownOpen(!isToneDropdownOpen)}
+            className="w-full border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[#ff8a15] focus:outline-none flex items-center justify-between"
+          >
+            <span>
+              {toneOptions.find((opt) => opt.value === tone)?.label || "選択してください"}
+            </span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${isToneDropdownOpen ? "rotate-180" : ""}`} />
+          </button>
+          {isToneDropdownOpen && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+              {toneOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setTone(option.value);
+                    setIsToneDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                    tone === option.value ? "bg-orange-50 text-orange-700" : "text-gray-700"
+                  }`}
+                >
+                  <p className="font-bold">{option.label}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">{option.description}</p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <button

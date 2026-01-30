@@ -23,7 +23,6 @@ import type {
   ActionPlanPriority,
   PlanContextPayload,
   PDCAMetrics,
-  OverviewHighlight,
   AnalysisOverview,
 } from "../types";
 import { parseFirestoreDate, getPeriodRange } from "../utils/date-utils";
@@ -81,9 +80,10 @@ export async function performAIAnalysis(
   const totals = { ...(reportSummary?.totals || {}) };
   const changes = reportSummary?.changes || {};
 
-  const totalLikes = totals.totalLikes || 0;
-  const totalComments = totals.totalComments || 0;
-  const totalShares = totals.totalShares || 0;
+  // totalLikes, totalComments, totalShares are calculated but not used
+  // const totalLikes = totals.totalLikes || 0;
+  // const totalComments = totals.totalComments || 0;
+  // const totalShares = totals.totalShares || 0;
   const totalReach = totals.totalReach || 0;
   let totalPosts = totals.totalPosts || 0;
   // 総合エンゲージメント（総和）を明示的に計算して totals に追加
@@ -174,9 +174,10 @@ export async function performAIAnalysis(
   }
   const engagementRate = totals.avgEngagementRate || 0;
   const postTypeStats = reportSummary?.postTypeStats || [];
-  const postTypeCountSum = Array.isArray(postTypeStats)
-    ? postTypeStats.reduce((sum, item) => sum + (typeof item?.count === "number" ? item.count : 0), 0)
-    : 0;
+  // postTypeCountSum is calculated but not used
+  // const postTypeCountSum = Array.isArray(postTypeStats)
+  //   ? postTypeStats.reduce((sum, item) => sum + (typeof item?.count === "number" ? item.count : 0), 0)
+  //   : 0;
   const dataPointCount =
     (reportSummary?.totals?.totalPosts || 0) +
     (reportSummary?.hashtagStats?.length || 0) +
@@ -750,8 +751,9 @@ export async function performAIAnalysis(
   }
 
   // プロンプトを構築（学習段階に応じて最適化）
-  const postsArrayCount =
-    (Array.isArray(summaryExtras?.posts) ? summaryExtras.posts.length : 0) +
+  // postsArrayCount is calculated but not used
+  // const postsArrayCount =
+  //   (Array.isArray(summaryExtras?.posts) ? summaryExtras.posts.length : 0) +
     (Array.isArray(summaryExtras?.postDeepDive) ? summaryExtras.postDeepDive.length : 0);
   // 低データ判定は「投稿は0だが、他のKPIが存在する」ケースに限定
   const lowDataMode = totalPosts === 0 && totalReach > 0;
@@ -827,13 +829,8 @@ ${
 過去の学習データを活用し、簡潔で的確な分析を提供してください。`;
   }
 
-  const hasFollowerGain = (totals.totalFollowerIncrease || 0) > 0;
-  const totalEngagementCount =
-    (totals.totalLikes || 0) +
-    (totals.totalComments || 0) +
-    (totals.totalShares || 0) +
-    (totals.totalSaves || 0);
-  const hasEngagement = totalEngagementCount > 0 || (engagementRate || 0) > 0;
+  // totalEngagementCount calculation removed (unused)
+  // const hasEngagement = totalEngagementCount > 0 || (engagementRate || 0) > 0;
   // 固定テンプレの洞察/推奨は廃止（出力のテンプレ感を防ぎ、LLM+参照データに委ねる）
   const insightMessages: string[] = [];
   const recommendationMessages: string[] = [];

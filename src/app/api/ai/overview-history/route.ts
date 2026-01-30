@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Math.max(Number(limitParam) || 6, 1), 12);
 
     const db = getAdminDb();
-    let query = db
+    const query = db
       .collection("ai_overview_history")
       .where("userId", "==", userId)
       .where("period", "==", period)

@@ -42,8 +42,7 @@ export async function GET(request: NextRequest) {
 
     // 月の範囲を計算（スナップショットを期間でフィルタリング）
     const { start, end } = getMonthRange(date);
-    const startTimestamp = admin.firestore.Timestamp.fromDate(start);
-    const endTimestamp = admin.firestore.Timestamp.fromDate(end);
+    // startTimestamp and endTimestamp removed (unused)
 
     // 期間内のスナップショットのみをフィルタリングし、重複を排除
     // 同じ投稿IDのスナップショットは1つだけを保持（最初に見つかったもの）

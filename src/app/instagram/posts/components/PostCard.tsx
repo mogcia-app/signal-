@@ -12,6 +12,8 @@ import {
   MessageCircle,
   Share,
   Eye as EyeIcon,
+  Edit,
+  BarChart3,
 } from "lucide-react";
 import type { AIReference } from "@/types/ai";
 
@@ -244,20 +246,19 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
     referenceTypeMeta[sourceType] ?? referenceTypeMeta.default;
 
   return (
-    <div className="relative bg-white shadow-sm border border-gray-200 overflow-visible hover:shadow-md transition-shadow">
-      {/* ラベルをカードの外枠の上に配置 */}
-      <div className="absolute -top-3 left-4 flex items-center space-x-2 z-10">
+    <div className="relative bg-white shadow-sm border border-gray-100 overflow-visible hover:shadow-md transition-all duration-200 aspect-square flex flex-col">
+      {/* バッジをカード上部から少しはみ出すように配置 */}
+      <div className="absolute -top-2 left-2 flex items-center space-x-1.5 z-10 flex-wrap gap-1">
         {post.isAIGenerated && (
-          <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 flex items-center shadow-sm">
-            <span className="mr-1">🤖</span>
-            AI生成
+          <span className="px-2.5 py-1 text-[10px] font-medium bg-purple-100 text-purple-700 shadow-sm">
+            🤖 AI生成
           </span>
         )}
-        <span className={`px-2 py-1 text-xs font-medium ${getStatusColor(post.status)} shadow-sm`}>
+        <span className={`px-2.5 py-1 text-[10px] font-medium ${getStatusColor(post.status)} shadow-sm`}>
           {getStatusLabel(post.status)}
         </span>
         {hasAnalytics && post.postType !== "story" && (
-          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 font-medium shadow-sm">
+          <span className="px-2.5 py-1 text-[10px] bg-green-100 text-green-700 font-medium shadow-sm">
             分析済み
           </span>
         )}
@@ -268,7 +269,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
             const sentimentDisplay = getSentimentDisplay(postAnalytics.sentiment);
             return sentimentDisplay ? (
               <span
-                className={`px-2 py-1 text-xs font-medium ${sentimentDisplay.bgColor} ${sentimentDisplay.textColor} shadow-sm`}
+                className={`px-2.5 py-1 text-[10px] font-medium ${sentimentDisplay.bgColor} ${sentimentDisplay.textColor} shadow-sm`}
               >
                 {sentimentDisplay.icon} {sentimentDisplay.text}
               </span>
@@ -276,34 +277,70 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
           })()}
       </div>
 
-      {/* カードヘッダー */}
-      <div className="p-4 border-b border-gray-100">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
-            <span className="text-2xl flex-shrink-0">{getPostTypeIcon(post.postType)}</span>
-            <h3 className="text-lg font-semibold text-black line-clamp-2 break-words">
-              {(() => {
-                const title = post.title || "タイトルなし";
-                // タイトルから先頭・末尾の「##」「-」「空白」を削除
-                const cleanedTitle =
-                  title
-                    .replace(/^[\s#-]+|[\s#-]+$/g, "")
-                    .replace(/^#+/g, "")
-                    .trim() || "タイトルなし";
-
-                // 最大文字数制限（50文字）
-                const maxLength = 50;
-                if (cleanedTitle.length > maxLength) {
-                  return cleanedTitle.substring(0, maxLength) + "...";
-                }
-                return cleanedTitle;
-              })()}
-            </h3>
+      {/* 画像（正方形） */}
+      {(post.imageData || post.imageUrl) ? (
+        <div className="w-full aspect-square bg-gray-100 relative overflow-hidden">
+          {post.imageData ? (
+            <Image
+              src={post.imageData}
+              alt="投稿画像"
+              fill
+              quality={90}
+              className="object-cover"
+            />
+          ) : post.imageUrl ? (
+            <Image
+              src={post.imageUrl}
+              alt="投稿画像"
+              fill
+              quality={90}
+              className="object-cover"
+            />
+          ) : null}
+        </div>
+      ) : (
+        <div className="w-full aspect-square bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 relative overflow-hidden flex items-center justify-center border border-gray-200">
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center">
+              <div className="bg-white/60 backdrop-blur-sm p-4 rounded-lg shadow-sm">
+                <span className="text-4xl">{getPostTypeIcon(post.postType)}</span>
+              </div>
+            </div>
+            <p className="text-xs font-medium text-gray-400">画像なし</p>
+          </div>
+          {/* 装飾的なパターン */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-0 left-0 w-full h-full" style={{
+              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)`
+            }}></div>
           </div>
         </div>
-        <div className="flex items-center space-x-4 text-sm text-black">
-          <span className="flex items-center">
-            <Calendar size={14} className="mr-1" />
+      )}
+
+      {/* カードコンテンツ */}
+      <div className="p-3 flex-1 flex flex-col">
+        {/* タイトル */}
+        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 break-words leading-snug mb-1.5">
+          {(() => {
+            const title = post.title || "タイトルなし";
+            const cleanedTitle =
+              title
+                .replace(/^[\s#-]+|[\s#-]+$/g, "")
+                .replace(/^#+/g, "")
+                .trim() || "タイトルなし";
+
+            const maxLength = 40;
+            if (cleanedTitle.length > maxLength) {
+              return cleanedTitle.substring(0, maxLength) + "...";
+            }
+            return cleanedTitle;
+          })()}
+        </h3>
+
+        {/* 日付と投稿時間 */}
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
+          <span className="flex items-center gap-1">
+            <Calendar size={10} />
             {(() => {
               try {
                 if (!post.scheduledDate) {return "記録なし";}
@@ -321,7 +358,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
                   date = new Date(post.scheduledDate);
                 }
 
-                // Invalid Date チェック
                 if (isNaN(date.getTime())) {
                   return "記録なし";
                 }
@@ -332,46 +368,18 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
               }
             })()}
           </span>
-          <span className="flex items-center">
-            <Clock size={14} className="mr-1" />
-            {post.scheduledTime || "記録なし"}
-          </span>
-        </div>
-      </div>
-
-      {/* 投稿内容 */}
-      <div className="p-4">
-        {/* 画像プレビュー */}
-        <div className="mb-3">
-          <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
-            {post.imageData || post.imageUrl ? (
-              post.imageData ? (
-                <Image
-                  src={post.imageData}
-                  alt="投稿画像"
-                  width={400}
-                  height={400}
-                  quality={90}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <ImageIcon size={24} className="text-black" />
-              )
-            ) : (
-              <div className="text-center text-black">
-                <ImageIcon size={24} className="mx-auto mb-1 text-black" />
-                <div className="text-xs">サムネがありません</div>
-              </div>
-            )}
-          </div>
+          {post.scheduledTime && (
+            <span className="text-xs text-gray-500">
+              {post.scheduledTime}
+            </span>
+          )}
         </div>
 
         {/* 投稿文 */}
-        <div className="mb-3">
-          <p className="text-gray-700 text-sm">
+        <div className="mb-2 flex-1">
+          <p className="text-gray-600 text-xs leading-relaxed line-clamp-2">
             {(() => {
               const content = post.content || "投稿内容がありません";
-              // 投稿文から先頭・末尾の「##」「-」「空白」を削除
               const cleanedContent = content
                 .replace(/^[\s#-]+|[\s#-]+$/g, "")
                 .replace(/^#+/g, "")
@@ -396,18 +404,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
           if (hashtags.length === 0) {return null;}
 
           return (
-            <div className="mb-3">
+            <div className="mb-2">
               <div className="flex flex-wrap gap-1">
                 {hashtags
                   .slice(0, 3)
                   .map((hashtag: string, index: number) => {
-                    // ハッシュタグから先頭の#を全て削除してから表示時に#を追加
                     const cleanHashtag = hashtag.replace(/^#+/, "").trim();
                     if (!cleanHashtag) {return null;}
                     return (
                       <span
                         key={index}
-                        className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full"
+                        className="px-1.5 py-0.5 bg-orange-50 text-orange-700 text-[10px] rounded border border-orange-200"
                       >
                         #{cleanHashtag}
                       </span>
@@ -415,7 +422,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
                   })
                   .filter(Boolean)}
                 {hashtags.length > 3 && (
-                  <span className="px-2 py-1 bg-gray-100 text-black text-xs rounded-full">
+                  <span className="px-1.5 py-0.5 bg-gray-50 text-gray-600 text-[10px] rounded border border-gray-200">
                     +{hashtags.length - 3}
                   </span>
                 )}
@@ -424,131 +431,49 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
           );
         })()}
 
-        {/* AI参照データ */}
-        {post.generationReferences && post.generationReferences.length > 0 && (
-          <div className="mb-3">
-            <p className="text-[11px] text-slate-500 mb-1">AI参照データ</p>
-            <div className="flex flex-wrap gap-1.5">
-              {post.generationReferences.slice(0, 5).map((reference) => {
-                const meta = getReferenceMeta(reference.sourceType);
-                return (
-                  <span
-                    key={`${post.id}-${reference.id}`}
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${meta.badgeClass}`}
-                    title={reference.summary || meta.label}
-                  >
-                    {reference.label || meta.label}
-                  </span>
-                );
-              })}
-              {post.generationReferences.length > 5 && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium border border-slate-200 bg-white text-slate-600">
-                  +{post.generationReferences.length - 5}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 分析データ（分析済みの場合のみ、ストーリーは除く） */}
-        {hasAnalytics && postAnalytics && post.postType !== "story" && (
-          <div className="mb-3">
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="flex items-center justify-center mb-1">
-                  <Heart size={16} className="text-red-500" />
-                </div>
-                <div className="text-lg font-bold text-black">
-                  {postAnalytics.likes.toLocaleString()}
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center justify-center mb-1">
-                  <MessageCircle size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-bold text-black">
-                  {postAnalytics.comments.toLocaleString()}
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center justify-center mb-1">
-                  <Share size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-bold text-black">
-                  {postAnalytics.shares.toLocaleString()}
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center justify-center mb-1">
-                  <EyeIcon size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-bold text-black">
-                  {postAnalytics.reach.toLocaleString()}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* アクションボタン */}
-      <div className="px-4 pb-4">
-        <div className="flex items-center justify-end space-x-2">
-          {/* 編集ボタン（すべてのカードに表示） */}
-          <a
-            href={`/instagram/lab/${post.postType}?edit=${post.id}`}
-            className="px-2 py-1 text-xs text-gray-700 bg-white border border-gray-300 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-300 transition-colors"
-          >
-            編集
-          </a>
-
-          {/* 詳細表示ボタン（すべてのカードに表示） */}
-          <a
-            href={`/instagram/posts/${post.id}`}
-            className="px-2 py-1 text-xs text-gray-700 bg-white border border-gray-300 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-300 transition-colors"
-          >
-            詳細
-          </a>
-
-          {!hasAnalytics && (
-            <>
-              {/* 分析ボタン（ストーリー以外） */}
-              {post.postType !== "story" && (
-                <a
-                  href={`${post.postType === "feed" ? "/analytics/feed" : "/instagram/analytics/reel"}?postId=${post.id}`}
-                  className="px-2 py-1 text-xs text-gray-700 bg-white border border-gray-300 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-300 transition-colors"
-                >
-                  分析
-                </a>
-              )}
-              <button
-                onClick={() => onDeletePost(post.id)}
-                className="px-2 py-1 text-xs text-gray-700 bg-white border border-gray-300 hover:text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+        {/* アクションボタン */}
+        <div className="mt-auto pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-1.5">
+            <a
+              href={`/instagram/lab/${post.postType}?edit=${post.id}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all"
+            >
+              <Edit size={12} />
+              編集
+            </a>
+            <a
+              href={`/instagram/posts/${post.id}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all"
+            >
+              <Eye size={12} />
+              詳細
+            </a>
+            {!hasAnalytics && post.postType !== "story" && (
+              <a
+                href={`${post.postType === "feed" ? "/analytics/feed" : "/instagram/analytics/reel"}?postId=${post.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all"
               >
-                削除
-              </button>
-            </>
-          )}
-
-          {hasAnalytics && (
-            <>
-              {/* 分析済みの場合のボタン */}
-              {post.postType !== "story" && (
-                <a
-                  href={`${post.postType === "feed" ? "/analytics/feed" : "/instagram/analytics/reel"}?postId=${post.id}`}
-                  className="px-2 py-1 text-xs text-gray-700 bg-white border border-gray-300 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-300 transition-colors"
-                >
-                  分析編集
-                </a>
-              )}
-              <button
-                onClick={() => onDeletePost(post.id)}
-                className="px-2 py-1 text-xs text-gray-700 bg-white border border-gray-300 hover:text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                <BarChart3 size={12} />
+                分析
+              </a>
+            )}
+            {hasAnalytics && post.postType !== "story" && (
+              <a
+                href={`${post.postType === "feed" ? "/analytics/feed" : "/instagram/analytics/reel"}?postId=${post.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all"
               >
-                削除
-              </button>
-            </>
-          )}
+                <BarChart3 size={12} />
+                分析編集
+              </a>
+            )}
+            <button
+              onClick={() => onDeletePost(post.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+            >
+              <Trash2 size={12} />
+              削除
+            </button>
+          </div>
         </div>
       </div>
     </div>

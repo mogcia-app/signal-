@@ -258,11 +258,11 @@ export async function GET(request: NextRequest) {
       list
         .sort((a, b) => b.createdAtMs - a.createdAtMs)
         .slice(0, 3)
-        .map(({ createdAtMs, ...rest }) => rest);
+        .map(({ createdAtMs: _createdAtMs, ...rest }) => rest);
 
     const postsArray = Array.from(postStats.values())
       .map((entry) => {
-        const { lastCommentDate, ...rest } = entry;
+        const { lastCommentDate: _lastCommentDate, ...rest } = entry;
         return rest;
       })
       .sort((a, b) => {

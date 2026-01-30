@@ -43,6 +43,7 @@ interface PostGenerationRequest {
   scheduledTime?: string;
   action?: "suggestTime" | "generatePost";
   autoGenerate?: boolean;
+  writingStyle?: "casual" | "sincere";
 }
 
 export async function POST(request: NextRequest) {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const body: PostGenerationRequest = await request.json();
     let { prompt } = body;
-    const { postType, planData, scheduledDate, scheduledTime, action = "generatePost" } = body;
+    const { postType, planData, scheduledDate, scheduledTime, action = "generatePost", writingStyle } = body;
 
     let userProfile: Awaited<ReturnType<typeof buildAIContext>>["userProfile"];
     let latestPlan: Awaited<ReturnType<typeof buildAIContext>>["latestPlan"];
@@ -240,21 +241,37 @@ export async function POST(request: NextRequest) {
       // 投稿タイプ別の追加指示
       const postTypeLabel =
         postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード";
-      const textLengthGuide =
-        postType === "story"
-          ? "20-50文字程度、1-2行の短い一言二言"
-          : postType === "reel"
-            ? "50-150文字程度、エンゲージメント重視"
-            : "100-150文字程度、詳細で魅力的な内容";
+      
+      // スタイルに応じた文字数制限（フィードのみ）
+      let textLengthGuide: string;
+      if (postType === "story") {
+        textLengthGuide = "20-50文字程度、1-2行の短い一言二言";
+      } else if (postType === "reel") {
+        textLengthGuide = "50-150文字程度、エンゲージメント重視";
+      } else if (postType === "feed") {
+        if (writingStyle === "casual") {
+          textLengthGuide = "150-200文字程度、カジュアルで親しみやすい表現";
+        } else if (writingStyle === "sincere") {
+          textLengthGuide = "250-400文字程度、誠実で丁寧な表現";
+        } else {
+          textLengthGuide = "100-150文字程度、詳細で魅力的な内容";
+        }
+      } else {
+        textLengthGuide = "100-150文字程度、詳細で魅力的な内容";
+      }
 
       systemPrompt += `
 
 【投稿生成の指示】
 - 投稿タイプ: ${postTypeLabel}
 ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文字、1-2行）にしてください" : ""}
-${postType === "feed" ? "- **重要**: フィード投稿文は100-150文字程度で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
+${postType === "feed" && writingStyle === "casual" ? "- **重要**: フィード投稿文は150-200文字程度で生成してください。カジュアルで親しみやすい表現を使い、フォロワーとの距離感を縮めるような内容にしてください。" : ""}
+${postType === "feed" && writingStyle === "sincere" ? "- **重要**: フィード投稿文は250-400文字程度で生成してください。誠実で丁寧な表現を使い、商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが信頼感を持てるような内容にしてください。" : ""}
+${postType === "feed" && !writingStyle ? "- **重要**: フィード投稿文は100-150文字程度で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
 - 投稿日時: ${scheduledDate ? `${scheduledDate} ${scheduledTime}` : "未設定"}
 - テーマ: ${prompt}
+${writingStyle === "casual" ? "- スタイル: カジュアル（親しみやすく、フレンドリーな表現）" : ""}
+${writingStyle === "sincere" ? "- スタイル: 誠実（丁寧で信頼感のある表現）" : ""}
 
 必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
 

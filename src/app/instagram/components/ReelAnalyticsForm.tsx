@@ -2,8 +2,10 @@
 
 import React, { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { Heart, MessageCircle, Share, Save, ThumbsUp, ThumbsDown, CheckCircle, X, Plus, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Share, Save, ThumbsUp, ThumbsDown, CheckCircle, X, Plus, Trash2, Sparkles, Clipboard } from "lucide-react";
 import { InputData } from "./types";
+import { useAuth } from "../../../contexts/auth-context";
+import { authFetch } from "../../../utils/authFetch";
 
 interface ReelAnalyticsFormProps {
   data: InputData;
@@ -35,9 +37,271 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
   aiInsightsTitle = "AI分析（リールまとめ）",
   aiInsightsDescription,
 }) => {
+  const { user } = useAuth();
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [sentiment, setSentiment] = useState<"satisfied" | "dissatisfied" | null>(null);
   const [memo, setMemo] = useState("");
+  const [aiAdvice, setAiAdvice] = useState<{
+    summary: string;
+    strengths: string[];
+    improvements: string[];
+    nextActions: string[];
+  } | null>(null);
+  const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
+  const [adviceError, setAdviceError] = useState<string | null>(null);
+  const [pasteSuccess, setPasteSuccess] = useState<string | null>(null);
+
+  // Instagram分析データの貼り付け処理
+  const handlePasteInstagramData = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const parsed = parseInstagramReelData(text);
+      
+      if (!parsed.hasData) {
+        setToastMessage({ 
+          message: "クリップボードにInstagram分析データが見つかりませんでした。", 
+          type: "error" 
+        });
+        setTimeout(() => setToastMessage(null), 3000);
+        return;
+      }
+
+      // データをフォームに反映
+      const updatedData = { ...data };
+      
+      if (parsed.reach !== null) {
+        updatedData.reach = String(parsed.reach);
+      }
+      if (parsed.reelReachFollowerPercent !== null) {
+        updatedData.reelReachFollowerPercent = String(parsed.reelReachFollowerPercent);
+      }
+      if (parsed.reelReachedAccounts !== null) {
+        updatedData.reelReachedAccounts = String(parsed.reelReachedAccounts);
+      }
+      if (parsed.reelInteractionCount !== null) {
+        updatedData.reelInteractionCount = String(parsed.reelInteractionCount);
+      }
+      if (parsed.reelInteractionFollowerPercent !== null) {
+        updatedData.reelInteractionFollowerPercent = String(parsed.reelInteractionFollowerPercent);
+      }
+      if (parsed.likes !== null) {
+        updatedData.likes = String(parsed.likes);
+      }
+      if (parsed.comments !== null) {
+        updatedData.comments = String(parsed.comments);
+      }
+      if (parsed.saves !== null) {
+        updatedData.saves = String(parsed.saves);
+      }
+      if (parsed.shares !== null) {
+        updatedData.shares = String(parsed.shares);
+      }
+      if (parsed.reelReachSourceProfile !== null) {
+        updatedData.reelReachSourceProfile = String(parsed.reelReachSourceProfile);
+      }
+      if (parsed.reelReachSourceReel !== null) {
+        updatedData.reelReachSourceReel = String(parsed.reelReachSourceReel);
+      }
+      if (parsed.reelReachSourceExplore !== null) {
+        updatedData.reelReachSourceExplore = String(parsed.reelReachSourceExplore);
+      }
+      if (parsed.reelReachSourceSearch !== null) {
+        updatedData.reelReachSourceSearch = String(parsed.reelReachSourceSearch);
+      }
+      if (parsed.reelReachSourceOther !== null) {
+        updatedData.reelReachSourceOther = String(parsed.reelReachSourceOther);
+      }
+      if (parsed.profileVisits !== null) {
+        updatedData.profileVisits = String(parsed.profileVisits);
+      }
+      if (parsed.externalLinkTaps !== null) {
+        updatedData.externalLinkTaps = String(parsed.externalLinkTaps);
+      }
+      if (parsed.profileFollows !== null) {
+        updatedData.profileFollows = String(parsed.profileFollows);
+      }
+
+      onChange(updatedData);
+      
+      const filledFields = Object.values(parsed).filter(v => v !== null && v !== false).length - 1; // hasDataを除く
+      setPasteSuccess(`${filledFields}個のフィールドにデータを入力しました`);
+      setToastMessage({ 
+        message: `${filledFields}個のフィールドにデータを入力しました`, 
+        type: "success" 
+      });
+      setTimeout(() => {
+        setToastMessage(null);
+        setPasteSuccess(null);
+      }, 3000);
+    } catch (error) {
+      console.error("貼り付けエラー:", error);
+      setToastMessage({ 
+        message: "クリップボードの読み取りに失敗しました。", 
+        type: "error" 
+      });
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
+
+  // Instagram分析データの解析（リール用）
+  const parseInstagramReelData = (text: string) => {
+    const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+    const result: {
+      hasData: boolean;
+      reach: number | null;
+      reelReachFollowerPercent: number | null;
+      reelReachedAccounts: number | null;
+      reelInteractionCount: number | null;
+      reelInteractionFollowerPercent: number | null;
+      likes: number | null;
+      comments: number | null;
+      saves: number | null;
+      shares: number | null;
+      reelReachSourceProfile: number | null;
+      reelReachSourceReel: number | null;
+      reelReachSourceExplore: number | null;
+      reelReachSourceSearch: number | null;
+      reelReachSourceOther: number | null;
+      profileVisits: number | null;
+      externalLinkTaps: number | null;
+      profileFollows: number | null;
+    } = {
+      hasData: false,
+      reach: null,
+      reelReachFollowerPercent: null,
+      reelReachedAccounts: null,
+      reelInteractionCount: null,
+      reelInteractionFollowerPercent: null,
+      likes: null,
+      comments: null,
+      saves: null,
+      shares: null,
+      reelReachSourceProfile: null,
+      reelReachSourceReel: null,
+      reelReachSourceExplore: null,
+      reelReachSourceSearch: null,
+      reelReachSourceOther: null,
+      profileVisits: null,
+      externalLinkTaps: null,
+      profileFollows: null,
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const nextLine = lines[i + 1];
+      const prevLine = lines[i - 1];
+
+      // ビュー/閲覧数
+      if ((line === "ビュー" || line.includes("閲覧数")) && nextLine && /^\d+$/.test(nextLine)) {
+        result.reach = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // フォロワー以外（閲覧数の） - ビューの下にある場合
+      if (line === "フォロワー以外" && nextLine && prevLine && (prevLine === "ビュー" || prevLine.includes("閲覧数"))) {
+        const percent = parseFloat(nextLine.replace("%", ""));
+        if (!isNaN(percent)) {
+          result.reelReachFollowerPercent = percent;
+          result.hasData = true;
+        }
+      }
+
+      // プロフィール（閲覧ソース）
+      if (line === "プロフィール" && nextLine && /^\d+$/.test(nextLine) && prevLine !== "プロフィールのアクティビティ" && !prevLine?.includes("プロフィールへの")) {
+        result.reelReachSourceProfile = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // リール（閲覧ソース）
+      if (line === "リール" && nextLine && /^\d+$/.test(nextLine) && !prevLine?.includes("閲覧")) {
+        result.reelReachSourceReel = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // 発見（閲覧ソース）
+      if (line === "発見" && nextLine && /^\d+$/.test(nextLine)) {
+        result.reelReachSourceExplore = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // 検索（閲覧ソース）
+      if (line === "検索" && nextLine && /^\d+$/.test(nextLine)) {
+        result.reelReachSourceSearch = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // その他（閲覧ソース）
+      if (line === "その他" && nextLine && /^\d+$/.test(nextLine) && !prevLine?.includes("フォロワー")) {
+        result.reelReachSourceOther = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // リーチしたアカウント数
+      if (line.includes("リーチしたアカウント数") && nextLine && /^\d+$/.test(nextLine)) {
+        result.reelReachedAccounts = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // インタラクション数（単独の行）
+      if (line === "インタラクション" && nextLine && /^\d+$/.test(nextLine)) {
+        result.reelInteractionCount = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // インタラクションのフォロワー以外
+      if (line === "フォロワー以外" && prevLine === "インタラクション" && nextLine) {
+        const percent = parseFloat(nextLine.replace("%", ""));
+        if (!isNaN(percent)) {
+          result.reelInteractionFollowerPercent = percent;
+          result.hasData = true;
+        }
+      }
+
+      // いいね
+      if ((line.includes("いいね") || line === "「いいね！」") && nextLine && /^\d+$/.test(nextLine)) {
+        result.likes = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // コメント
+      if (line === "コメント" && nextLine && /^\d+$/.test(nextLine) && !prevLine?.includes("インタラクション")) {
+        result.comments = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // 保存数
+      if (line === "保存数" && nextLine && /^\d+$/.test(nextLine)) {
+        result.saves = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // シェア数
+      if (line === "シェア数" && nextLine && /^\d+$/.test(nextLine)) {
+        result.shares = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // プロフィールへのアクセス
+      if (line === "プロフィールへのアクセス" && nextLine && /^\d+$/.test(nextLine)) {
+        result.profileVisits = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // 外部リンクのタップ数
+      if (line === "外部リンクのタップ数" && nextLine && /^\d+$/.test(nextLine)) {
+        result.externalLinkTaps = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+
+      // フォロー数
+      if (line === "フォロー数" && nextLine && /^\d+$/.test(nextLine)) {
+        result.profileFollows = parseInt(nextLine, 10);
+        result.hasData = true;
+      }
+    }
+
+    return result;
+  };
 
   const handleInputChange = (field: keyof InputData, value: string) => {
     onChange({
@@ -109,7 +373,97 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
     });
   };
 
-  const handleSave = () => {
+  const handleGenerateAdvice = async () => {
+    if (!user?.uid || !postData?.id) {
+      setAdviceError("ユーザー情報または投稿情報が不足しています");
+      return;
+    }
+
+    setIsGeneratingAdvice(true);
+    setAdviceError(null);
+
+    try {
+      const response = await authFetch("/api/ai/post-insight", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          postId: postData.id,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorText = "";
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          // レスポンスの読み取りに失敗した場合は無視
+        }
+        console.error("AIアドバイス生成エラー詳細:", {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          errorText,
+        });
+        throw new Error(`AIアドバイス生成エラー: ${response.status}${errorText ? ` - ${errorText}` : ""}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "AIアドバイスの生成に失敗しました");
+      }
+
+      const insightData = result.data;
+      setAiAdvice({
+        summary: insightData.summary,
+        strengths: insightData.strengths || [],
+        improvements: insightData.improvements || [],
+        nextActions: insightData.nextActions || [],
+      });
+    } catch (err) {
+      console.error("AIアドバイス生成エラー:", err);
+      let errorMessage = "AIアドバイスの生成に失敗しました";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "string") {
+        errorMessage = err;
+      } else if (err && typeof err === "object" && "message" in err) {
+        errorMessage = String(err.message);
+      }
+      setAdviceError(errorMessage);
+    } finally {
+      setIsGeneratingAdvice(false);
+    }
+  };
+
+  const handleSave = async () => {
+    // AIアドバイスを保存
+    if (aiAdvice && user?.uid && postData?.id) {
+      try {
+        await authFetch("/api/ai/post-summaries", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            postId: postData.id,
+            summary: aiAdvice.summary,
+            insights: aiAdvice.strengths || [],
+            recommendedActions: [...(aiAdvice.improvements || []), ...(aiAdvice.nextActions || [])],
+            category: postData.postType || "reel",
+            postTitle: postData.title || "",
+            postHashtags: postData.hashtags || [],
+          }),
+        });
+      } catch (error) {
+        console.error("AIアドバイス保存エラー:", error);
+        // 保存に失敗しても続行
+      }
+    }
+
     onSave({ sentiment, memo });
   };
 
@@ -313,6 +667,27 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
           </div>
         </div>
 
+        {/* Instagram分析データの貼り付け */}
+        <div className="p-4 border-t border-gray-200 bg-orange-50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-800">Instagram分析データの貼り付け</h3>
+            <button
+              type="button"
+              onClick={handlePasteInstagramData}
+              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#ff8a15] hover:bg-[#e6760f] transition-colors gap-1.5"
+            >
+              <Clipboard size={14} />
+              Instagram分析データを貼り付け
+            </button>
+          </div>
+          <p className="text-xs text-gray-600">
+            Instagramの分析画面からデータをコピーして、このボタンをクリックすると自動で入力されます。
+          </p>
+          {pasteSuccess && (
+            <p className="text-xs text-green-600 mt-2">{pasteSuccess}</p>
+          )}
+        </div>
+
         {/* リール反応データ */}
         <div className="p-4 border-t border-gray-200">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">リール反応データ</h3>
@@ -408,7 +783,7 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
         <div className="p-4 border-t border-gray-200">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">概要</h3>
           <div className="space-y-4">
-            {/* 閲覧数・フォロワー% */}
+            {/* 閲覧数・フォロワー外 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">閲覧数</label>
@@ -422,7 +797,7 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">フォロワー%</label>
+                <label className="block text-sm font-medium text-gray-700 mb-3">フォロワー外</label>
                 <input
                   type="number"
                   min="0"
@@ -435,7 +810,7 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
                 />
               </div>
             </div>
-            {/* インタラクション数・フォロワー% */}
+            {/* インタラクション数・フォロワー外 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -451,7 +826,7 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">フォロワー%</label>
+                <label className="block text-sm font-medium text-gray-700 mb-3">フォロワー外</label>
                 <input
                   type="number"
                   min="0"
@@ -465,57 +840,6 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
                   placeholder="0"
                 />
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* オーディエンス分析入力 */}
-        <div className="p-4 border-t border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">オーディエンス分析</h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {["male", "female", "other"].map((key) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {key === "male" ? "男性 (%)" : key === "female" ? "女性 (%)" : "その他 (%)"}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={data.audience.gender[key as keyof InputData["audience"]["gender"]]}
-                    onChange={(e) =>
-                      handleAudienceGenderChange(
-                        key as keyof InputData["audience"]["gender"],
-                        e.target.value,
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    placeholder="0"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.keys(data.audience.age).map((key) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{key} (%)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={data.audience.age[key as keyof InputData["audience"]["age"]]}
-                    onChange={(e) =>
-                      handleAudienceAgeChange(key as keyof InputData["audience"]["age"], e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    placeholder="0"
-                  />
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -757,6 +1081,57 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
           )}
         </div>
 
+        {/* オーディエンス分析入力 */}
+        <div className="p-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">オーディエンス分析</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {["male", "female", "other"].map((key) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {key === "male" ? "男性 (%)" : key === "female" ? "女性 (%)" : "その他 (%)"}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={data.audience.gender[key as keyof InputData["audience"]["gender"]]}
+                    onChange={(e) =>
+                      handleAudienceGenderChange(
+                        key as keyof InputData["audience"]["gender"],
+                        e.target.value,
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.keys(data.audience.age).map((key) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{key} (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={data.audience.age[key as keyof InputData["audience"]["age"]]}
+                    onChange={(e) =>
+                      handleAudienceAgeChange(key as keyof InputData["audience"]["age"], e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* この投稿についてのフィードバックを書きましょう */}
         <div className="p-4 border-t border-gray-200">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">この投稿についてのフィードバックを書きましょう</h3>
@@ -794,11 +1169,89 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15]"
-                rows={3}
+                rows={2}
                 placeholder="投稿についてのフィードバックを入力..."
               />
             </div>
           </div>
+        </div>
+
+        {/* AIアドバイスセクション */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center">
+              <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
+              AIアドバイス
+            </h3>
+            <button
+              type="button"
+              onClick={handleGenerateAdvice}
+              disabled={isGeneratingAdvice || !sentiment || !postData?.id}
+              className="px-4 py-2 text-sm font-semibold text-white bg-[#ff8a15] hover:bg-[#e6760f] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#ff8a15] transition-colors flex items-center gap-2 shadow-sm hover:shadow-md"
+            >
+              {isGeneratingAdvice ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  生成中...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  AIアドバイスを生成
+                </>
+              )}
+            </button>
+          </div>
+
+          {adviceError && (
+            <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-700 text-xs">
+              {adviceError}
+            </div>
+          )}
+
+          {aiAdvice ? (
+            <div className="space-y-4 bg-gray-50 p-4">
+              <div className="border-l-4 border-gray-400 pl-4">
+                <p className="text-sm text-gray-800 leading-relaxed">{aiAdvice.summary}</p>
+              </div>
+              {aiAdvice.strengths.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">強み</h4>
+                  <ul className="list-disc list-inside text-xs text-gray-700 space-y-1 pl-2">
+                    {aiAdvice.strengths.map((item, idx) => (
+                      <li key={`strength-${idx}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {aiAdvice.improvements.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">改善ポイント</h4>
+                  <ul className="list-disc list-inside text-xs text-gray-700 space-y-1 pl-2">
+                    {aiAdvice.improvements.map((item, idx) => (
+                      <li key={`improve-${idx}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {aiAdvice.nextActions.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">次のアクション</h4>
+                  <ul className="list-disc list-inside text-xs text-gray-700 space-y-1 pl-2">
+                    {aiAdvice.nextActions.map((item, idx) => (
+                      <li key={`action-${idx}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-gray-50 p-4 text-xs text-gray-500">
+              {sentiment
+                ? "「AIアドバイスを生成」ボタンをクリックして、この投稿の分析とアドバイスを取得できます。"
+                : "まず、上記のフィードバック（満足/不満足）を選択してください。"}
+            </div>
+          )}
         </div>
 
         {/* AI分析セクション */}
