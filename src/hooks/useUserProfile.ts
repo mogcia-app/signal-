@@ -1,14 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { UserProfile } from "../types/user";
 import { useAuth } from "../contexts/auth-context";
+import toast from "react-hot-toast";
 
 export const useUserProfile = () => {
   const { user, loading: authLoading } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const lastNetworkErrorTimeRef = useRef<number>(0);
+  const networkErrorToastIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // 認証の読み込み中は待機
@@ -119,7 +122,58 @@ export const useUserProfile = () => {
         setLoading(false);
       },
       (err) => {
-        console.error("ユーザー情報の取得エラー:", err);
+        // ネットワーク関連のエラーは無視（一時的な接続問題の可能性が高い）
+        const errorCode = (err as { code?: string })?.code;
+        const errorMessage = (err as { message?: string })?.message || "";
+        
+        // ネットワーク関連のエラーは開発環境でのみログ出力
+        const isNetworkError = 
+          errorCode === "unavailable" ||
+          errorMessage.includes("network") ||
+          errorMessage.includes("disconnected") ||
+          errorMessage.includes("QUIC") ||
+          errorMessage.includes("ERR_INTERNET_DISCONNECTED") ||
+          errorMessage.includes("ERR_NETWORK_IO_SUSPENDED");
+        
+        if (isNetworkError) {
+          // ネットワークエラーは一時的なものなので、エラーを設定せずに既存のデータを保持
+          if (process.env.NODE_ENV === "development") {
+            console.warn("⚠️ Firestore接続エラー（ネットワーク）:", errorMessage);
+          }
+          
+          // ネットワークエラーのトースト通知（30秒に1回まで）
+          const now = Date.now();
+          if (now - lastNetworkErrorTimeRef.current > 30000) {
+            lastNetworkErrorTimeRef.current = now;
+            
+            // 既存のトーストがあれば削除
+            if (networkErrorToastIdRef.current) {
+              toast.dismiss(networkErrorToastIdRef.current);
+            }
+            
+            // 新しいトーストを表示
+            networkErrorToastIdRef.current = toast(
+              "ネットワークが不安定です",
+              {
+                icon: "⚠️",
+                duration: 5000,
+                style: {
+                  background: "#fef3c7",
+                  color: "#92400e",
+                  border: "1px solid #fbbf24",
+                },
+              }
+            );
+          }
+          
+          // エラーを設定しない（既存のデータを保持）
+          return;
+        }
+        
+        // その他のエラーのみログ出力
+        if (process.env.NODE_ENV === "development") {
+          console.error("❌ ユーザー情報の取得エラー:", err);
+        }
         setError("ユーザー情報の取得に失敗しました");
         setLoading(false);
       }
