@@ -5,6 +5,7 @@ import { getUserProfile } from "@/lib/server/user-profile";
 import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
 // buildAIContext removed (unused)
 import OpenAI from "openai";
+import { cache, generateCacheKey } from "../../../../lib/cache";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -34,6 +35,9 @@ export async function GET(request: NextRequest) {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
 
+    // キャッシュキーを生成（ユーザーID + 日付 + 週）
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    
     // 現在の計画を取得
     const plansSnapshot = await adminDb
       .collection("plans")
@@ -61,40 +65,7 @@ export async function GET(request: NextRequest) {
     const aiSuggestion = planData.aiSuggestion;
     const formData = planData.formData || {};
 
-    // ユーザープロフィールを取得（ビジネス情報を含む）
-    const userProfile = await getUserProfile(uid);
-    console.log(`[ユーザープロフィール] 取得結果: ${userProfile ? "成功" : "失敗"}`);
-    if (userProfile) {
-      console.log(`[ユーザープロフィール] ビジネス情報: ${userProfile.businessInfo ? "あり" : "なし"}`);
-    }
-    const businessInfo = userProfile?.businessInfo || {};
-    const businessDescription = (businessInfo as { description?: string })?.description || "";
-    const businessCatchphrase = (businessInfo as { catchphrase?: string })?.catchphrase || "";
-
-    if (!aiSuggestion) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          todayTasks: [],
-          tomorrowPreparation: [],
-          monthlyGoals: [],
-          weeklySchedule: null,
-        },
-      });
-    }
-
-    // 今日の曜日を取得（"月"形式に統一）
-    const dayOfWeek = today.getDay();
-    const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
-    const todayDayName = dayNames[dayOfWeek];
-    const tomorrowDayName = dayNames[(dayOfWeek + 1) % 7];
-    
-    // 曜日マッチング用のヘルパー関数（"月曜"と"月"の両方に対応）
-    const matchDay = (taskDay: string, targetDay: string): boolean => {
-      return taskDay === targetDay || taskDay.startsWith(targetDay) || taskDay === `${targetDay}曜`;
-    };
-
-    // 現在の週を計算
+    // 現在の週を計算（キャッシュキーに含めるため先に計算）
     const planStart = planData.startDate 
       ? (planData.startDate instanceof Date 
           ? planData.startDate 
@@ -112,6 +83,66 @@ export async function GET(request: NextRequest) {
     const diffTime = today.getTime() - planStart.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+
+    // 現在の月を取得（今月の目標用）
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
+    // キャッシュキーを生成
+    // - 「今日やること」「明日の準備」「今週の予定」は週単位（週が変わったら再生成）
+    // - 「今月の目標」は月単位（月が変わったら再生成、または計画が新しくなったら再生成）
+    const planId = planDoc.id;
+    const cacheKey = generateCacheKey("home-ai-sections", {
+      userId: uid,
+      week: currentWeek, // 週単位（日付ではなく週）
+      month: currentMonth, // 月単位（今月の目標用）
+      planId, // 計画が変わったら再生成
+    });
+
+    // キャッシュから取得を試みる（24時間有効）
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Home AI Sections] キャッシュヒット: ${cacheKey}`);
+      return NextResponse.json({
+        success: true,
+        data: cached,
+      });
+    }
+
+    // ユーザープロフィールを取得（ビジネス情報を含む）
+    const userProfile = await getUserProfile(uid);
+    console.log(`[ユーザープロフィール] 取得結果: ${userProfile ? "成功" : "失敗"}`);
+    if (userProfile) {
+      console.log(`[ユーザープロフィール] ビジネス情報: ${userProfile.businessInfo ? "あり" : "なし"}`);
+    }
+    const businessInfo = userProfile?.businessInfo || {};
+    const businessDescription = (businessInfo as { description?: string })?.description || "";
+    const businessCatchphrase = (businessInfo as { catchphrase?: string })?.catchphrase || "";
+
+    if (!aiSuggestion) {
+      const emptyData = {
+        todayTasks: [],
+        tomorrowPreparation: [],
+        monthlyGoals: [],
+        weeklySchedule: null,
+      };
+      // 空データもキャッシュ（1時間）
+      cache.set(cacheKey, emptyData, 60 * 60 * 1000);
+      return NextResponse.json({
+        success: true,
+        data: emptyData,
+      });
+    }
+
+    // 今日の曜日を取得（"月"形式に統一）
+    const dayOfWeek = today.getDay();
+    const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+    const todayDayName = dayNames[dayOfWeek];
+    const tomorrowDayName = dayNames[(dayOfWeek + 1) % 7];
+    
+    // 曜日マッチング用のヘルパー関数（"月曜"と"月"の両方に対応）
+    const matchDay = (taskDay: string, targetDay: string): boolean => {
+      return taskDay === targetDay || taskDay.startsWith(targetDay) || taskDay === `${targetDay}曜`;
+    };
 
     // 今週の計画を取得
     const weekPlan = aiSuggestion.weeklyPlans?.find((p: any) => p.week === currentWeek);
@@ -908,14 +939,20 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       console.log(`[レスポンス] タスク${index}: type=${task.type}, description=${task.description}, hasContent=${!!task.generatedContent}, hasHashtags=${!!task.generatedHashtags && task.generatedHashtags.length > 0}`);
     });
 
+    const responseData = {
+      todayTasks,
+      tomorrowPreparation,
+      monthlyGoals,
+      weeklySchedule,
+    };
+
+    // キャッシュに保存（24時間有効 - 同じ日・同じ週の間は同じ内容を返す）
+    cache.set(cacheKey, responseData, 24 * 60 * 60 * 1000);
+    console.log(`[Home AI Sections] キャッシュ保存: ${cacheKey}`);
+
     return NextResponse.json({
       success: true,
-      data: {
-        todayTasks,
-        tomorrowPreparation,
-        monthlyGoals,
-        weeklySchedule,
-      },
+      data: responseData,
     });
   } catch (error) {
     console.error("AI生成セクション取得エラー:", error);
