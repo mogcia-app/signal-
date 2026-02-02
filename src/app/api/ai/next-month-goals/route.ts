@@ -349,7 +349,7 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
         console.error("OpenAI API error:", aiError);
         // フォールバック: シンプルな計算
         const suggestedGain = Math.max(10, Math.floor(followerIncrease * 1.2));
-        const reachKPI = kpiBreakdowns.find((k: any) => k.key === "reach");
+        const reachKPI = kpiBreakdowns.find((k: KPIBreakdown) => k.key === "reach");
         // engagementKPI removed (unused)
         
         proposal = {
@@ -394,9 +394,9 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
       // OpenAI APIキーが設定されていない場合のフォールバック
       console.warn("OpenAI API key not configured, using fallback calculation");
       const suggestedGain = Math.max(10, Math.floor(followerIncrease * 1.2));
-      const reachKPI = kpiBreakdowns.find((k: any) => k.key === "reach");
+      const reachKPI = kpiBreakdowns.find((k: KPIBreakdown) => k.key === "reach");
       // engagementKPI removed (unused)
-      // const engagementKPI = kpiBreakdowns.find((k: any) => k.key === "engagement");
+      // const engagementKPI = kpiBreakdowns.find((k: KPIBreakdown) => k.key === "engagement");
       
       proposal = {
         currentFollowers: totalCurrentFollowers,

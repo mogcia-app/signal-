@@ -6,6 +6,7 @@ import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
 // buildAIContext removed (unused)
 import OpenAI from "openai";
 import { cache, generateCacheKey } from "../../../../lib/cache";
+import type { AIPlanSuggestion } from "../../../instagram/plan/types/plan";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -59,8 +60,8 @@ export async function GET(request: NextRequest) {
 
     const planDoc = plansSnapshot.docs[0];
     const planData = planDoc.data();
-    const aiSuggestion = planData.aiSuggestion;
-    const formData = planData.formData || {};
+    const aiSuggestion = planData.aiSuggestion as AIPlanSuggestion | undefined;
+    const formData = (planData.formData || {}) as Record<string, unknown>;
 
     // 現在の週を計算（キャッシュキーに含めるため先に計算）
     const planStart = planData.startDate 
@@ -142,7 +143,7 @@ export async function GET(request: NextRequest) {
     };
 
     // 今週の計画を取得
-    const weekPlan = aiSuggestion.weeklyPlans?.find((p: any) => p.week === currentWeek);
+    const weekPlan = aiSuggestion?.weeklyPlans?.find((p) => p.week === currentWeek);
     
     // ============================================
     // 解決策B: 今週の予定を先に生成してから、今日・明日を参照
@@ -176,9 +177,9 @@ export async function GET(request: NextRequest) {
           return `${month}/${day}（${dayNames[dayOfWeek]}）`;
         };
 
-        const mainGoal = formData.mainGoal || "フォロワーを増やす";
-        const targetAudience = formData.targetAudience || "";
-        const currentMonthStrategy = aiSuggestion.monthlyStrategy?.find((s: any) => s.week === currentWeek);
+        const mainGoal = (formData.mainGoal as string) || "フォロワーを増やす";
+        const targetAudience = (formData.targetAudience as string) || "";
+        const currentMonthStrategy = aiSuggestion?.monthlyStrategy?.find((s) => s.week === currentWeek);
         const strategyTheme = currentMonthStrategy?.theme || "";
         const strategyActions = currentMonthStrategy?.actions || [];
         const weeklyFeedPosts = formData.weeklyFeedPosts || 0;
@@ -265,7 +266,8 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
           const parsedResponse = JSON.parse(aiResponse);
           
           // 各タスクに日付を追加（計画開始日の曜日を基準にする）
-          const tasksWithDates = (parsedResponse.tasks || weekPlan.tasks || []).map((task: any) => {
+          type TaskWithDate = { day: string; time: string; type: string; description: string; date?: string };
+          const tasksWithDates = ((parsedResponse.tasks as TaskWithDate[]) || (weekPlan?.tasks as TaskWithDate[]) || []).map((task) => {
             const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
             // task.dayから「曜」を除去（「月曜」→「月」）
             const dayName = task.day.replace(/曜$/, "");
@@ -290,7 +292,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
           });
           
           // タスクを日付順にソート
-          const sortedTasks = tasksWithDates.sort((a: any, b: any) => {
+          const sortedTasks = tasksWithDates.sort((a, b) => {
             if (!a.date || !b.date) {
               return 0;
             }
@@ -336,11 +338,12 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
           return `${month}/${day}（${dayNames[dayOfWeek]}）`;
         };
 
-        const currentMonthStrategy = aiSuggestion.monthlyStrategy?.find((s: any) => s.week === currentWeek);
+        const currentMonthStrategy = aiSuggestion?.monthlyStrategy?.find((s) => s.week === currentWeek);
         
         // 各タスクに日付を追加（計画開始日の曜日を基準にする）
         const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
-        const tasksWithDates = (weekPlan.tasks || []).map((task: any) => {
+        type TaskWithDate = { day: string; time: string; type: string; description: string; date?: string };
+        const tasksWithDates = ((weekPlan?.tasks as TaskWithDate[]) || []).map((task) => {
           // task.dayから「曜」を除去（「月曜」→「月」）
           const dayName = task.day.replace(/曜$/, "");
           const taskDayIndex = dayNames.indexOf(dayName);
@@ -363,7 +366,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
         });
         
         // タスクを日付順にソート
-        const sortedTasks = tasksWithDates.sort((a: any, b: any) => {
+        const sortedTasks = tasksWithDates.sort((a, b) => {
           if (!a.date || !b.date) {
             return 0;
           }
@@ -403,11 +406,12 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
         return `${date.getMonth() + 1}/${date.getDate()}`;
       };
 
-      const currentMonthStrategy = aiSuggestion.monthlyStrategy?.find((s: any) => s.week === currentWeek);
+      const currentMonthStrategy = aiSuggestion?.monthlyStrategy?.find((s) => s.week === currentWeek);
       
       // 各タスクに日付を追加（計画開始日の曜日を基準にする）
       const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
-      const tasksWithDates = (weekPlan.tasks || []).map((task: any) => {
+      type TaskWithDate = { day: string; time: string; type: string; description: string; date?: string };
+      const tasksWithDates = ((weekPlan?.tasks as TaskWithDate[]) || []).map((task) => {
         // task.dayから「曜」を除去（「月曜」→「月」）
         const dayName = task.day.replace(/曜$/, "");
         const taskDayIndex = dayNames.indexOf(dayName);
@@ -430,7 +434,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       });
       
       // タスクを日付順にソート
-      const sortedTasks = tasksWithDates.sort((a: any, b: any) => {
+      const sortedTasks = tasksWithDates.sort((a, b) => {
         if (!a.date || !b.date) {
           return 0;
         }
@@ -477,12 +481,13 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
 
     if (sourceTasks.length > 0) {
       // 曜日マッチング（"月"と"月曜"の両方に対応）
-      const todayTasksFromPlan = sourceTasks.filter((task: any) => matchDay(task.day, todayDayName));
+      type Task = { day: string; time: string; type: string; description: string };
+      const todayTasksFromPlan = sourceTasks.filter((task: Task) => matchDay(task.day, todayDayName));
       
       // 計画達成のためのコンテキストを構築
-      const mainGoal = formData.mainGoal || "フォロワーを増やす";
-      const targetAudience = formData.targetAudience || "";
-      const currentMonthStrategy = aiSuggestion.monthlyStrategy?.find((s: any) => s.week === currentWeek);
+      const mainGoal = (formData.mainGoal as string) || "フォロワーを増やす";
+      const targetAudience = (formData.targetAudience as string) || "";
+      const currentMonthStrategy = aiSuggestion?.monthlyStrategy?.find((s) => s.week === currentWeek);
       const strategyTheme = currentMonthStrategy?.theme || "";
       const strategyActions = currentMonthStrategy?.actions || [];
 
@@ -494,15 +499,15 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       if (todayTasksFromPlan.length > 0 && openai && userProfile) {
         try {
           // 投稿タイプがfeed/reel/storyの場合、ラボのAIで投稿文とハッシュタグを生成
-          const postTasks = todayTasksFromPlan.filter((task: any) => 
+          const postTasks = todayTasksFromPlan.filter((task) => 
             task.type === "feed" || task.type === "reel" || task.type === "story"
           );
 
           console.log(`[今日やること] 投稿タスク数: ${postTasks.length}, 全タスク数: ${todayTasksFromPlan.length}`);
-          console.log(`[今日やること] 投稿タスク詳細:`, postTasks.map((t: any) => ({ type: t.type, description: t.description })));
+          console.log(`[今日やること] 投稿タスク詳細:`, postTasks.map((t) => ({ type: t.type, description: t.description })));
 
           // 投稿文とハッシュタグを並列で生成（ラボのAIエンドポイントと同じロジックを使用）
-          const postGenerationPromises = postTasks.map(async (task: any, postTaskIndex: number) => {
+          const postGenerationPromises = postTasks.map(async (task) => {
             try {
               const postType = task.type as "feed" | "reel" | "story";
               
@@ -690,7 +695,7 @@ ${strategyTheme || "未設定"}
 ${strategyActions.length > 0 ? strategyActions.map((a: string) => `- ${a}`).join("\n") : "未設定"}
 
 【今日のタスク】
-${todayTasksFromPlan.map((task: any, index: number) => 
+${todayTasksFromPlan.map((task, index: number) => 
   `${index + 1}. ${task.time} - ${task.type === "feed" ? "フィード投稿" : task.type === "reel" ? "リール" : "ストーリーズ"}: ${task.description}`
 ).join("\n")}
 
@@ -729,10 +734,10 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
 
           const aiResponse = completion.choices[0]?.message?.content;
           if (aiResponse) {
-            const parsedResponse = JSON.parse(aiResponse);
+            const parsedResponse = JSON.parse(aiResponse) as { tips?: Array<{ taskIndex: number; tip: string }> };
             if (parsedResponse.tips && Array.isArray(parsedResponse.tips)) {
-              todayTasksFromPlan.forEach((task: any, index: number) => {
-                const tip = parsedResponse.tips.find((t: any) => t.taskIndex === index + 1) || parsedResponse.tips[0];
+              todayTasksFromPlan.forEach((task, index: number) => {
+                const tip = parsedResponse.tips?.find((t) => t.taskIndex === index + 1) || parsedResponse.tips?.[0];
                 const postGeneration = postGenerationMap.get(index);
                 console.log(`[今日やること] タスク追加: index=${index}, type=${task.type}, description=${task.description}, hasContent=${!!postGeneration?.content}, hasHashtags=${!!postGeneration?.hashtags && postGeneration.hashtags.length > 0}`);
                 todayTasks.push({
@@ -750,7 +755,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
               });
             } else {
               // フォールバック
-              todayTasksFromPlan.forEach((task: any, index: number) => {
+              todayTasksFromPlan.forEach((task, index: number) => {
                 const postGeneration = postGenerationMap.get(index);
                 todayTasks.push({
                   time: task.time || "",
@@ -770,7 +775,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
         } catch (error) {
           console.error("今日のタスクAI生成エラー:", error);
           // フォールバック（投稿文生成は試行済みの場合のみ含める）
-          todayTasksFromPlan.forEach((task: any, index: number) => {
+          todayTasksFromPlan.forEach((task, index: number) => {
             const postGeneration = postGenerationMap.get(index);
             todayTasks.push({
               time: task.time || "",
@@ -788,7 +793,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
         }
       } else {
         // AIが使えない場合のフォールバック
-        todayTasksFromPlan.forEach((task: any) => {
+        todayTasksFromPlan.forEach((task) => {
           todayTasks.push({
             time: task.time || "",
             type: task.type || "feed",
@@ -813,13 +818,14 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
 
     if (sourceTasks.length > 0) {
       // 曜日マッチング（"月"と"月曜"の両方に対応）
-      const tomorrowTasksFromPlan = sourceTasks.filter((task: any) => matchDay(task.day, tomorrowDayName));
+      type Task = { day: string; time: string; type: string; description: string };
+      const tomorrowTasksFromPlan = sourceTasks.filter((task: Task) => matchDay(task.day, tomorrowDayName));
       
       // AIに明日の準備を生成してもらう（計画達成のための準備）
       if (tomorrowTasksFromPlan.length > 0) {
-        const mainGoal = formData.mainGoal || "フォロワーを増やす";
-        const targetAudience = formData.targetAudience || "";
-        const currentMonthStrategy = aiSuggestion.monthlyStrategy?.find((s: any) => s.week === currentWeek);
+        const mainGoal = (formData.mainGoal as string) || "フォロワーを増やす";
+        const targetAudience = (formData.targetAudience as string) || "";
+        const currentMonthStrategy = aiSuggestion?.monthlyStrategy?.find((s) => s.week === currentWeek);
         const strategyTheme = currentMonthStrategy?.theme || "";
         const strategyActions = currentMonthStrategy?.actions || [];
 
@@ -838,7 +844,7 @@ ${strategyTheme || "未設定"}
 ${strategyActions.length > 0 ? strategyActions.map((a: string) => `- ${a}`).join("\n") : "未設定"}
 
 【明日の投稿予定】
-${tomorrowTasksFromPlan.map((task: any, index: number) => 
+${tomorrowTasksFromPlan.map((task, index: number) => 
   `${index + 1}. ${task.time} - ${task.type === "feed" ? "フィード投稿" : task.type === "reel" ? "リール" : "ストーリーズ"}: ${task.description}`
 ).join("\n")}
 
@@ -879,16 +885,18 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
 
             const aiResponse = completion.choices[0]?.message?.content;
             if (aiResponse) {
-              const parsedResponse = JSON.parse(aiResponse);
-              if (parsedResponse.preparations) {
-                tomorrowTasksFromPlan.forEach((task: any, index: number) => {
-                  const prep = parsedResponse.preparations[index] || parsedResponse.preparations[0];
-                  tomorrowPreparation.push({
-                    time: task.time || "",
-                    type: task.type || "feed",
-                    description: task.description || "",
-                    preparation: prep?.task || "コンテンツの準備をしましょう",
-                  });
+              const parsedResponse = JSON.parse(aiResponse) as { preparations?: Array<{ task: string; reason?: string }> };
+              if (parsedResponse.preparations && parsedResponse.preparations.length > 0) {
+                tomorrowTasksFromPlan.forEach((task, index: number) => {
+                  const prep = parsedResponse.preparations?.[index] || parsedResponse.preparations?.[0];
+                  if (prep) {
+                    tomorrowPreparation.push({
+                      time: task.time || "",
+                      type: task.type || "feed",
+                      description: task.description || "",
+                      preparation: prep.task || "コンテンツの準備をしましょう",
+                    });
+                  }
                 });
               }
             }
@@ -898,7 +906,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
         } catch (error) {
           console.error("AI生成エラー:", error);
           // フォールバック: デフォルトの準備タスク
-          tomorrowTasksFromPlan.forEach((task: any) => {
+          tomorrowTasksFromPlan.forEach((task) => {
             tomorrowPreparation.push({
               time: task.time || "",
               type: task.type || "feed",
@@ -921,8 +929,8 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       progress?: number;
     }> = [];
 
-    if (aiSuggestion.monthlyGoals) {
-      aiSuggestion.monthlyGoals.forEach((goal: any) => {
+    if (aiSuggestion?.monthlyGoals) {
+      aiSuggestion.monthlyGoals.forEach((goal) => {
         monthlyGoals.push({
           metric: goal.metric || "",
           target: goal.target || "",

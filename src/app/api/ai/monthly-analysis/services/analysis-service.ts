@@ -667,7 +667,7 @@ export async function performAIAnalysis(
   if (overview) {
     const newWatchouts: string[] = [];
     const er = engagementRate || 0;
-    const totalEng = (totals as any)?.totalEngagement || 0;
+    const totalEng = totalsWithEngagement.totalEngagement || 0;
     const followerInc = totals.totalFollowerIncrease || 0;
     // エンゲージメントが完全にゼロの場合のみ注意喚起
     if (er === 0 && totalEng === 0) {

@@ -1047,10 +1047,23 @@ export async function GET(request: NextRequest) {
       .where("publishedAt", "<=", previousEndTimestamp)
       .get();
 
-    const previousAnalyticsByPostId = new Map<string, any>();
+    type PreviousAnalyticsData = {
+      postId: string;
+      publishedAt: Date;
+      likes?: number;
+      comments?: number;
+      shares?: number;
+      reach?: number;
+      saves?: number;
+      followerIncrease?: number;
+      profileVisits?: number;
+      externalLinkTaps?: number;
+      [key: string]: unknown;
+    };
+    const previousAnalyticsByPostId = new Map<string, PreviousAnalyticsData>();
     previousAnalyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
-      const postId = data.postId;
+      const postId = data.postId as string | undefined;
       if (!postId) {
         return;
       }
@@ -1058,7 +1071,9 @@ export async function GET(request: NextRequest) {
       const publishedAt = data.publishedAt
         ? data.publishedAt instanceof admin.firestore.Timestamp
           ? data.publishedAt.toDate()
-          : data.publishedAt
+          : data.publishedAt instanceof Date
+            ? data.publishedAt
+            : null
         : null;
 
       if (!publishedAt) {
@@ -1069,8 +1084,9 @@ export async function GET(request: NextRequest) {
       if (!existing || publishedAt > existing.publishedAt) {
         previousAnalyticsByPostId.set(postId, {
           ...data,
+          postId,
           publishedAt,
-        });
+        } as PreviousAnalyticsData);
       }
     });
 
@@ -1432,7 +1448,7 @@ export async function GET(request: NextRequest) {
         });
 
         // 投稿数目標（シミュレーション結果から取得、またはデフォルト値）
-        const simulationResult = plan.simulationResult as any;
+        const simulationResult = plan.simulationResult as { monthlyPostCount?: number } | null | undefined;
         const targetPosts = simulationResult?.monthlyPostCount || 20; // デフォルト20投稿/月
         const actualPosts = posts.length;
         const postsAchievementRate = targetPosts > 0

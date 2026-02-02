@@ -14,6 +14,7 @@ interface SNSLayoutProps {
   customDescription?: string;
   isOnboarding?: boolean;
   contentClassName?: string;
+  hideMobileNav?: boolean; // モックアップ用: モバイルナビゲーションボタンを非表示
 }
 
 export default function SNSLayout({
@@ -21,6 +22,7 @@ export default function SNSLayout({
   customTitle,
   customDescription,
   contentClassName,
+  hideMobileNav = false,
 }: SNSLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -29,6 +31,10 @@ export default function SNSLayout({
 
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
+
+  // URLパラメータでモックアップモードを検出
+  const isMockupMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mockup") === "true";
+  const shouldHideNav = hideMobileNav || isMockupMode;
 
   // パスが変更されたらサイドバーを閉じる（スマホ用）
   useEffect(() => {
@@ -59,13 +65,15 @@ export default function SNSLayout({
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row">
       {/* ハンバーガーメニューボタン（スマホのみ表示） */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
-        aria-label="メニューを開く"
-      >
-        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+      {!shouldHideNav && (
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
+          aria-label="メニューを開く"
+        >
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      )}
 
       {/* オーバーレイ（スマホのみ、サイドバーが開いているとき表示） */}
       {isSidebarOpen && (

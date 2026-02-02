@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import type { AIPlanSuggestion } from "../../../instagram/plan/types/plan";
 
 export async function GET(request: NextRequest) {
   try {
@@ -152,7 +153,9 @@ export async function GET(request: NextRequest) {
     const todayTasks = posts
       .filter((post) => {
         const scheduledDate = post.scheduledDate;
-        if (!scheduledDate) return false;
+        if (!scheduledDate) {
+          return false;
+        }
         const scheduled = scheduledDate instanceof Date ? scheduledDate : new Date(scheduledDate);
         return (
           scheduled.getFullYear() === today.getFullYear() &&
@@ -172,7 +175,9 @@ export async function GET(request: NextRequest) {
     const weeklySchedule = posts
       .filter((post) => {
         const scheduledDate = post.scheduledDate;
-        if (!scheduledDate) return false;
+        if (!scheduledDate) {
+          return false;
+        }
         const scheduled = scheduledDate instanceof Date ? scheduledDate : new Date(scheduledDate);
         return scheduled >= startOfWeek && scheduled <= endOfWeek;
       })
@@ -184,7 +189,9 @@ export async function GET(request: NextRequest) {
         scheduledTime: post.scheduledDate,
       }))
       .sort((a, b) => {
-        if (!a.date || !b.date) return 0;
+        if (!a.date || !b.date) {
+          return 0;
+        }
         const dateA = a.date instanceof Date ? a.date : new Date(a.date);
         const dateB = b.date instanceof Date ? b.date : new Date(b.date);
         return dateA.getTime() - dateB.getTime();
@@ -260,30 +267,32 @@ export async function GET(request: NextRequest) {
     // AI提案データを取得
     let currentWeekTasks: Array<{ day: string; task: string }> = [];
     let currentMonthGoals: Array<{ metric?: string; target?: string; goal?: string; description?: string }> = [];
-    let aiSuggestion: any = null;
+    let aiSuggestion: AIPlanSuggestion | null = null;
     
     // planDataから直接aiSuggestionを取得
     const planData = plansSnapshot.empty ? null : plansSnapshot.docs[0].data();
     if (planData?.aiSuggestion) {
-      aiSuggestion = planData.aiSuggestion;
+      aiSuggestion = planData.aiSuggestion as AIPlanSuggestion;
       
       // デバッグログ：aiSuggestionの構造を確認
-      console.log("[Home Dashboard] aiSuggestion確認:", {
-        hasWeeklyPlans: !!aiSuggestion.weeklyPlans,
-        weeklyPlansCount: aiSuggestion.weeklyPlans?.length || 0,
-        hasMonthlyGoals: !!aiSuggestion.monthlyGoals,
-        monthlyGoalsCount: aiSuggestion.monthlyGoals?.length || 0,
-        weeklyPlansWeeks: aiSuggestion.weeklyPlans?.map((p: any) => p.week) || [],
-      });
+      if (aiSuggestion) {
+        console.log("[Home Dashboard] aiSuggestion確認:", {
+          hasWeeklyPlans: !!aiSuggestion.weeklyPlans,
+          weeklyPlansCount: aiSuggestion.weeklyPlans?.length || 0,
+          hasMonthlyGoals: !!aiSuggestion.monthlyGoals,
+          monthlyGoalsCount: aiSuggestion.monthlyGoals?.length || 0,
+          weeklyPlansWeeks: aiSuggestion.weeklyPlans?.map((p) => p.week) || [],
+        });
+      }
       
       // 今月の目標を取得
-      if (aiSuggestion.monthlyGoals && Array.isArray(aiSuggestion.monthlyGoals)) {
+      if (aiSuggestion && aiSuggestion.monthlyGoals && Array.isArray(aiSuggestion.monthlyGoals)) {
         currentMonthGoals = aiSuggestion.monthlyGoals;
       }
       
       // 今週のタスクを取得（週次計画から）
       // 重要: 週番号で日付を逆算するのではなく、開始日 + offsetで日付を確定する
-      if (aiSuggestion.weeklyPlans && Array.isArray(aiSuggestion.weeklyPlans)) {
+      if (aiSuggestion && aiSuggestion.weeklyPlans && Array.isArray(aiSuggestion.weeklyPlans)) {
         const now = new Date();
         const planStart = planStartDate || now;
         
@@ -298,11 +307,12 @@ export async function GET(request: NextRequest) {
           now: now.toISOString(),
           diffDays,
           currentWeek,
-          weeklyPlansWeeks: aiSuggestion.weeklyPlans.map((p: any) => p.week),
+          weeklyPlansWeeks: aiSuggestion.weeklyPlans.map((p) => p.week),
         });
         
         // 現在の週の計画を取得
-        const weekPlan = aiSuggestion.weeklyPlans.find((p: any) => p.week === currentWeek);
+        type WeeklyPlan = NonNullable<AIPlanSuggestion["weeklyPlans"]>[number];
+        const weekPlan = aiSuggestion.weeklyPlans.find((p: WeeklyPlan) => p.week === currentWeek);
         
         if (weekPlan && weekPlan.tasks) {
           const typeLabels: Record<string, string> = {
@@ -343,7 +353,7 @@ export async function GET(request: NextRequest) {
             "月": 0, "火": 1, "水": 2, "木": 3, "金": 4, "土": 5, "日": 6,
           };
           
-          currentWeekTasks = weekPlan.tasks.map((task: any) => {
+          currentWeekTasks = weekPlan.tasks.map((task) => {
             // 曜日から日付を計算（currentWeekMondayは現在の週の月曜日）
             const dayIndex = dayNameToIndex[task.day] ?? 0;
             const taskDate = new Date(currentWeekMonday);
@@ -369,7 +379,7 @@ export async function GET(request: NextRequest) {
         } else {
           console.warn("[Home Dashboard] 週計画が見つかりません:", {
             currentWeek,
-            availableWeeks: aiSuggestion.weeklyPlans.map((p: any) => p.week),
+            availableWeeks: aiSuggestion.weeklyPlans.map((p) => p.week),
             hasWeekPlan: !!weekPlan,
           });
       }

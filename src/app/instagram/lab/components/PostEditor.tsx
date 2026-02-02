@@ -6,6 +6,7 @@ import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles, AlertTriangle }
 import { postsApi } from "../../../../lib/api";
 import { useAuth } from "../../../../contexts/auth-context";
 import { notify } from "../../../../lib/ui/notifications";
+import { authFetch } from "../../../../utils/authFetch";
 import Image from "next/image";
 // PlanData型をusePlanDataからインポート
 import type { PlanData } from "../../../../hooks/usePlanData";
@@ -16,6 +17,14 @@ import type {
   AIInsightBlock,
 } from "@/types/ai";
 import { AIReferenceBadge } from "@/components/AIReferenceBadge";
+import { PostEditorToast } from "./PostEditorToast";
+import { PostEditorHeader } from "./PostEditorHeader";
+import { PostEditorSuccessMessage } from "./PostEditorSuccessMessage";
+import { PostEditorActions } from "./PostEditorActions";
+import { PostEditorContentInput } from "./PostEditorContentInput";
+import { PostEditorScheduleSettings } from "./PostEditorScheduleSettings";
+import { PostEditorHashtags } from "./PostEditorHashtags";
+import { PostEditorImageUpload } from "./PostEditorImageUpload";
 
 export type AIHintSuggestion = {
   content: string;
@@ -90,7 +99,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [internalScheduledDate, setInternalScheduledDate] = useState("");
   const [internalScheduledTime, setInternalScheduledTime] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [toastMessage, setToastMessage] = useState<{
@@ -262,8 +270,30 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   };
 
   const characterCount = content.length;
-  const maxCharacters = 2200;
-  const isOverLimit = characterCount > maxCharacters;
+  const [maxCharacters, setMaxCharacters] = useState(2200);
+  const [isOverLimit, setIsOverLimit] = useState(false);
+
+  // バリデーションルールをバックエンドから取得
+  useEffect(() => {
+    const fetchValidationRules = async () => {
+      try {
+        const response = await authFetch(`/api/post-editor/validation?postType=${postType || "feed"}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.limits?.maxCharacters) {
+            setMaxCharacters(data.limits.maxCharacters);
+          }
+        }
+      } catch (error) {
+        console.error("バリデーションルール取得エラー:", error);
+      }
+    };
+    fetchValidationRules();
+  }, [postType]);
+
+  useEffect(() => {
+    setIsOverLimit(characterCount > maxCharacters);
+  }, [characterCount, maxCharacters]);
 
   const handleSave = async () => {
     if (!user?.uid) {
@@ -399,124 +429,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     setLatestGeneration(null);
   };
 
-  // 画像圧縮関数
-  const compressImage = (
-    file: File,
-    maxWidth: number = 1920,
-    maxHeight: number = 1920,
-    quality: number = 0.8
-  ): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = document.createElement("img");
-        img.onload = () => {
-          // 画像のサイズを計算
-          let width = img.width;
-          let height = img.height;
-
-          // 最大サイズを超えている場合はリサイズ
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = width * ratio;
-            height = height * ratio;
-          }
-
-          // Canvasで画像を描画
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-
-          if (!ctx) {
-            reject(new Error("Canvas context not available"));
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // JPEG形式で圧縮（PNGの場合はJPEGに変換）
-          const mimeType = file.type === "image/png" ? "image/jpeg" : file.type;
-          const compressedDataUrl = canvas.toDataURL(mimeType, quality);
-
-          resolve(compressedDataUrl);
-        };
-        img.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(new Error("ファイルの読み込みに失敗しました"));
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // 画像アップロード処理
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {return;}
-
-    // ファイルサイズチェック（10MB制限）
-    if (file.size > 10 * 1024 * 1024) {
-      showToast("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
-      return;
-    }
-
-    // 画像ファイルチェック
-    if (!file.type.startsWith("image/")) {
-      showToast("画像ファイルを選択してください。");
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      // 画像を圧縮（800KB以下になるように調整）
-      const compressedImage = await compressImage(file, 1920, 1920, 0.8);
-
-      // 圧縮後のサイズをチェック
-      const base64Size = compressedImage.length * 0.75;
-      const maxSize = 800 * 1024; // 800KB制限
-
-      if (base64Size > maxSize) {
-        // さらに圧縮を試みる
-        const moreCompressed = await compressImage(file, 1600, 1600, 0.7);
-        const moreCompressedSize = moreCompressed.length * 0.75;
-
-        if (moreCompressedSize > maxSize) {
-          // 最終的な圧縮
-          const finalCompressed = await compressImage(file, 1280, 1280, 0.6);
-          onImageChange?.(finalCompressed);
-        } else {
-          onImageChange?.(moreCompressed);
-        }
-      } else {
-        onImageChange?.(compressedImage);
-      }
-
-      setIsUploading(false);
-    } catch (error) {
-      console.error("画像アップロードエラー:", error);
-      showToast("画像のアップロードに失敗しました。もう一度お試しください。");
-      setIsUploading(false);
-    }
-  };
-
-  // 画像削除
-  const handleImageRemove = () => {
-    onImageChange?.(null);
-  };
-
-  const handleHashtagRemove = (index: number) => {
-    onHashtagsChange(hashtags.filter((_, i) => i !== index));
-  };
-
-  const handleHashtagAdd = (hashtag: string) => {
-    if (hashtag.trim() && !hashtags.includes(hashtag)) {
-      // フィードとリールの場合はハッシュタグを5個までに制限
-      const maxHashtags = postType === "feed" || postType === "reel" ? 5 : Infinity;
-      if (hashtags.length < maxHashtags) {
-      onHashtagsChange([...hashtags, hashtag]);
-      }
-    }
-  };
+  // 画像アップロード処理は PostEditorImageUpload コンポーネントに移動
+  // ハッシュタグ処理は PostEditorHashtags コンポーネントに移動
 
   // 運用計画データを分析してフィードバックを生成
   const analyzePlanData = (plan: PlanData | null): { feedback: string | null; category: string } => {
@@ -692,46 +606,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     }
   };
 
-  // プロンプト内容を分析してフィードバックを生成
-  const analyzePrompt = (prompt: string): { feedback: string | null; category: string } => {
-    const trimmed = prompt.trim();
-    const length = trimmed.length;
-
-    if (length === 0) {
-      return { feedback: null, category: "" };
-    }
-
-    // 短すぎる場合
-    if (length < 10) {
-      return {
-        feedback: `プロンプトが短すぎるようです（${length}文字）。以下のような情報を含めると、より具体的で効果的な投稿文が生成されます：\n• 何について投稿したいか（商品、イベント、日常など）\n• 伝えたいメッセージや感情（「感動した」「おすすめしたい」など）\n• ターゲット層（「若い女性」「ビジネスパーソン」など）\n• 具体的な内容（「新商品のコーヒー豆、深煎りでコクがある」など）\n\n例：「新商品のコーヒー豆を紹介したい。深煎りでコクがあり、朝の時間にぴったり。30代の女性向けに、日常の小さな幸せを感じられる投稿にしてほしい」`,
-        category: "too_short",
-      };
-    }
-
-    // 曖昧な表現が多い
-    const vagueWords = /(いい|良い|すごい|すごく|なんか|なんとなく|ちょっと|まあ|適当|いい感じ)/g;
-    const vagueCount = (trimmed.match(vagueWords) || []).length;
-    
-    if (vagueCount >= 2 && length < 50) {
-      return {
-        feedback: `プロンプトに曖昧な表現が多いようです。「いい感じ」「すごい」などの抽象的な言葉ではなく、具体的な情報を含めると、より効果的な投稿文が生成されます：\n• 商品の場合：価格、特徴、使った感想、おすすめポイント\n• イベントの場合：日時、場所、参加方法、どんな内容か\n• 日常の場合：何が起きたか、なぜ印象的だったか、何を感じたか\n• ターゲット層：誰に伝えたいのか、どんな価値を提供したいのか`,
-        category: "vague",
-      };
-    }
-
-    // 具体的な情報が不足
-    const hasSpecificInfo = /\d+|(日時|場所|価格|特徴|感想|おすすめ)/g.test(trimmed);
-    if (!hasSpecificInfo && length < 40) {
-      return {
-        feedback: `プロンプトに具体的な情報が不足しているようです。以下のような詳細を追加すると、より魅力的な投稿文が生成されます：\n• 数字やデータ（「1000円」「3日間限定」「累計1万個販売」など）\n• 具体的な特徴や違い（「他にはない香り」「30分で完成」など）\n• 実体験や感想（「使ってみたら」「実際に感じたことは」など）\n• ターゲット層との接点（「忙しい朝に」「仕事帰りに」など）`,
-        category: "lack_details",
-      };
-    }
-
-    // 問題なし
-    return { feedback: null, category: "" };
-  };
+  // プロンプト分析関数は utils/post-editor-utils.ts からインポート済み
 
   // AI投稿文生成（テーマ指定）
   const handleAIGenerate = async () => {
@@ -742,8 +617,27 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       return;
     }
 
-    // プロンプト内容を分析
-    const analysis = analyzePrompt(trimmedPrompt);
+    // プロンプト内容を分析（バックエンドAPI経由）
+    let analysis = { feedback: null as string | null, category: "" };
+    try {
+      const response = await authFetch("/api/post-editor/validation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "prompt",
+          prompt: trimmedPrompt,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        analysis = data.feedback || { feedback: null, category: "" };
+      }
+    } catch (error) {
+      console.error("プロンプト分析エラー:", error);
+    }
     setAiGenerateFeedback(analysis.feedback);
 
     // 連続フィードバックの追跡
@@ -843,66 +737,19 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     <>
       {/* トースト通知 */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 animate-fade-in">
-          <div
-            className={`flex items-center space-x-3 px-4 py-3 min-w-[300px] max-w-md ${
-              toastMessage.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
-            }`}
-          >
-            {toastMessage.type === "success" ? (
-              <CheckCircle size={20} className="flex-shrink-0" />
-            ) : (
-              <X size={20} className="flex-shrink-0" />
-            )}
-            <p className="font-medium flex-1">{toastMessage.message}</p>
-            <button
-              onClick={() => setToastMessage(null)}
-              className="ml-2 text-white hover:text-gray-200 transition-colors flex-shrink-0"
-              aria-label="閉じる"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
+        <PostEditorToast
+          message={toastMessage.message}
+          type={toastMessage.type}
+          onClose={() => setToastMessage(null)}
+        />
       )}
 
       <div className="bg-white border border-gray-200 flex flex-col">
         {/* ヘッダー */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-sm">📝</span>
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">投稿文エディター</h2>
-                <p className="text-sm text-gray-700">投稿文を作成・編集しましょう</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PostEditorHeader />
 
         {/* 成功メッセージ */}
-        {showSuccessMessage && (
-          <div className="mx-6 mb-4 p-4 bg-white border border-orange-200">
-            <div className="flex items-center">
-              <CheckCircle size={20} className="text-orange-600 mr-3" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-orange-800">投稿が保存されました！</p>
-                <p className="text-xs text-orange-600 mt-1">投稿一覧ページで確認できます。</p>
-              </div>
-              <div className="flex space-x-2">
-                <Link
-                  href="/instagram/posts"
-                  className="inline-flex items-center px-3 py-1 text-xs bg-[#ff8a15] text-white hover:bg-orange-600 transition-colors"
-                >
-                  <Eye size={12} className="mr-1" />
-                  投稿一覧を見る
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
+        <PostEditorSuccessMessage show={showSuccessMessage} />
 
         <div className="p-6 flex-1 flex flex-col min-h-0 overflow-auto">
           {snapshotReferences.length > 0 && (
@@ -956,55 +803,21 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           ) : null}
 
           {/* 投稿設定 */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">投稿設定</label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-black mb-1">投稿日</label>
-                <input
-                  type="date"
-                  value={scheduledDate}
-                  onChange={(e) => handleScheduledDateChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 bg-white focus:outline-none focus:border-[#ff8a15] text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-black mb-1">投稿時間</label>
-                <input
-                  type="time"
-                  value={scheduledTime}
-                  onChange={(e) => handleScheduledTimeChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 bg-white focus:outline-none focus:border-[#ff8a15] text-sm"
-                />
-              </div>
-            </div>
-          </div>
+          <PostEditorScheduleSettings
+            scheduledDate={scheduledDate}
+            onScheduledDateChange={handleScheduledDateChange}
+            scheduledTime={scheduledTime}
+            onScheduledTimeChange={handleScheduledTimeChange}
+          />
 
-          {/* タイトル入力 */}
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-800 mb-3">タイトル</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => onTitleChange?.(e.target.value)}
-              placeholder={`${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}のタイトルを入力してください...`}
-              className="w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
-            />
-          </div>
-
-          {/* 投稿文入力エリア */}
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-800 mb-3">投稿文</label>
-            <div className="relative">
-              <textarea
-                value={content}
-                onChange={(e) => onContentChange(e.target.value)}
-                placeholder={`${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}の投稿文を入力してください...`}
-                className="w-full h-32 p-4 border-2 border-gray-200 resize-none focus:outline-none focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm"
-                style={{ fontFamily: "inherit" }}
-              />
-            </div>
-          </div>
+          {/* タイトル・投稿文入力 */}
+          <PostEditorContentInput
+            title={title}
+            onTitleChange={onTitleChange}
+            content={content}
+            onContentChange={onContentChange}
+            postType={postType}
+          />
 
           {/* 動画構成セクション（リールのみ） */}
           {postType === "reel" && (
@@ -1077,63 +890,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           )}
 
           {/* ハッシュタグ表示・編集 */}
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-800 mb-3">ハッシュタグ</label>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {hashtags.map((hashtag, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 text-sm border border-orange-200"
-                >
-                  <span className="text-orange-600 mr-1">#</span>
-                  {hashtag.replace(/^#+/, "")}
-                  <button
-                    onClick={() => handleHashtagRemove(index)}
-                    className="ml-2 text-orange-600 hover:text-orange-800 hover:bg-orange-200 w-4 h-4 flex items-center justify-center transition-colors"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex space-x-3">
-              <div className="flex-1">
-              <input
-                type="text"
-                  placeholder={postType === "feed" || postType === "reel" ? "ハッシュタグを入力...（最大5個）" : "ハッシュタグを入力..."}
-                  className="w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
-                  disabled={postType === "feed" || postType === "reel" ? hashtags.length >= 5 : false}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    const hashtag = e.currentTarget.value.trim().replace("#", "");
-                    if (hashtag) {
-                      handleHashtagAdd(hashtag);
-                      e.currentTarget.value = "";
-                    }
-                  }
-                }}
-              />
-                {(postType === "feed" || postType === "reel") && hashtags.length >= 5 && (
-                  <p className="text-xs text-gray-500 mt-1">ハッシュタグは最大5個までです</p>
-                )}
-              </div>
-              <button
-                onClick={() => {
-                  const input = document.querySelector(
-                    'input[placeholder="ハッシュタグを入力..."]'
-                  ) as HTMLInputElement;
-                  const hashtag = input.value.trim().replace("#", "");
-                  if (hashtag) {
-                    handleHashtagAdd(hashtag);
-                    input.value = "";
-                  }
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                追加
-              </button>
-            </div>
-          </div>
+          <PostEditorHashtags
+            hashtags={hashtags}
+            onHashtagsChange={onHashtagsChange}
+            postType={postType}
+          />
 
           {/* AI投稿文生成 */}
           <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
@@ -1355,32 +1116,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           )}
 
           {/* アクションボタン */}
-          <div className="flex space-x-3 mt-6">
-            <button
-              onClick={handleSave}
-              disabled={!content.trim() || isSaving}
-              className="flex items-center space-x-2 px-4 py-2 bg-[#ff8a15] text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>保存中...</span>
-                </>
-              ) : (
-                <>
-                  <Save size={14} />
-                  <span>保存</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleClear}
-              className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
-            >
-              <RefreshCw size={14} />
-              <span>クリア</span>
-            </button>
-          </div>
+          <PostEditorActions
+            onSave={handleSave}
+            onClear={handleClear}
+            isSaving={isSaving}
+            canSave={!!content.trim()}
+          />
         </div>
       </div>
     </>

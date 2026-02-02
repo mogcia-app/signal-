@@ -1,367 +1,76 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useEffect, useMemo } from "react";
 import SNSLayout from "../../../../components/sns-layout";
 import PostEditor from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
 import PostPreview from "../components/PostPreview";
 import ABTestSidebarSection from "../components/ABTestSidebarSection";
-import { usePlanData, type PlanData } from "../../../../hooks/usePlanData";
+import { usePlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
-import { authFetch } from "../../../../utils/authFetch";
-import { notify } from "../../../../lib/ui/notifications";
-import { AlertTriangle } from "lucide-react";
+import { useReelLabStore } from "@/stores/reel-lab-store";
 
 export default function ReelLabPage() {
-  const [postContent, setPostContent] = useState("");
-  const [postTitle, setPostTitle] = useState("");
-  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-  const [postType] = useState<"feed" | "reel" | "story">("reel");
-  const [postImage, setPostImage] = useState<string | null>(null);
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [scheduledTime, setScheduledTime] = useState("");
-  const [isAIGenerated] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  // スケジュール関連の状態
-  const [monthlyPosts, setMonthlyPosts] = useState(8);
-  const [dailyPosts, setDailyPosts] = useState(1);
-  const [generatedSchedule, setGeneratedSchedule] = useState<
-    Array<{
-      day: string;
-      dayName: string;
-      posts: Array<{
-        title: string;
-        description: string;
-        emoji: string;
-        category: string;
-      }>;
-    }>
-  >([]);
-  const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
-  const [scheduleError, setScheduleError] = useState("");
-  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
-  const [editingPostId, setEditingPostId] = useState<string | null>(null);
-
-  // フィードバック関連の状態
-  const [scheduleFeedback, setScheduleFeedback] = useState<string | null>(null);
-  const [showScheduleAdminWarning, setShowScheduleAdminWarning] = useState(false);
-  const scheduleFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
-
-  // 動画構成関連の状態
-  const [videoStructure, setVideoStructure] = useState({
-    introduction: "", // 起
-    development: "", // 承
-    twist: "", // 転
-    conclusion: "", // 結
-  });
-  const [videoFlow, setVideoFlow] = useState(""); // 動画構成の流れ
+  const postType: "feed" | "reel" | "story" = "reel";
+  const isAIGenerated = false;
 
   // 計画データを取得
   const { planData } = usePlanData("instagram");
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
 
-  // 投稿データを取得する関数
-  const fetchPostData = useCallback(
-    async (postId: string) => {
-      if (!isAuthReady) {return;}
+  // Zustandストアから状態を取得
+  const postContent = useReelLabStore((state) => state.postContent);
+  const postTitle = useReelLabStore((state) => state.postTitle);
+  const selectedHashtags = useReelLabStore((state) => state.selectedHashtags);
+  const postImage = useReelLabStore((state) => state.postImage);
+  const scheduledDate = useReelLabStore((state) => state.scheduledDate);
+  const scheduledTime = useReelLabStore((state) => state.scheduledTime);
+  const editingPostId = useReelLabStore((state) => state.editingPostId);
+  const videoStructure = useReelLabStore((state) => state.videoStructure);
+  const videoFlow = useReelLabStore((state) => state.videoFlow);
+  const isMounted = useReelLabStore((state) => state.isMounted);
 
-      try {
-        const response = await authFetch("/api/posts");
+  // セッター
+  const setPostContent = useReelLabStore((state) => state.setPostContent);
+  const setPostTitle = useReelLabStore((state) => state.setPostTitle);
+  const setSelectedHashtags = useReelLabStore((state) => state.setSelectedHashtags);
+  const setPostImage = useReelLabStore((state) => state.setPostImage);
+  const setScheduledDate = useReelLabStore((state) => state.setScheduledDate);
+  const setScheduledTime = useReelLabStore((state) => state.setScheduledTime);
+  const setIsMounted = useReelLabStore((state) => state.setIsMounted);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log("API Response:", result);
-
-        if (result.posts && Array.isArray(result.posts)) {
-          const post = result.posts.find((p: { id: string }) => p.id === postId);
-          console.log("Found post for editing:", post);
-
-          if (post) {
-            // 投稿データをフォームに設定
-            console.log("Setting form data:", {
-              title: post.title,
-              content: post.content,
-              hashtags: post.hashtags,
-              scheduledDate: post.scheduledDate,
-              scheduledTime: post.scheduledTime,
-              imageData: post.imageData ? "exists" : "none",
-            });
-
-            setPostTitle(post.title || "");
-            setPostContent(post.content || "");
-
-            // ハッシュタグを配列に変換
-            const hashtags = Array.isArray(post.hashtags)
-              ? post.hashtags
-              : typeof post.hashtags === "string"
-                ? post.hashtags
-                    .split(" ")
-                    .filter((tag: string) => tag.trim() !== "")
-                    .map((tag: string) => tag.replace("#", ""))
-                : [];
-            setSelectedHashtags(hashtags);
-
-            // スケジュール情報を設定
-            if (post.scheduledDate) {
-              const scheduledDate =
-                post.scheduledDate instanceof Date
-                  ? post.scheduledDate
-                  : typeof post.scheduledDate === "string"
-                    ? new Date(post.scheduledDate)
-                    : post.scheduledDate?.toDate
-                      ? post.scheduledDate.toDate()
-                      : null;
-              if (scheduledDate) {
-                setScheduledDate(scheduledDate.toISOString().split("T")[0]);
-              }
-            }
-
-            if (post.scheduledTime) {
-              setScheduledTime(post.scheduledTime);
-            }
-
-            // 画像データを設定（imageDataまたはimageUrl）
-            if (post.imageData) {
-              setPostImage(post.imageData);
-            } else if (post.imageUrl) {
-              // imageUrlがある場合は、Base64に変換するか、そのまま使用
-              // 注意: imageUrlは外部URLの可能性があるため、そのまま使用
-              setPostImage(post.imageUrl);
-            }
-
-            console.log("Form data set successfully");
-          } else {
-            console.error("Post not found with ID:", postId);
-          }
-        } else {
-          console.error("Invalid API response structure:", result);
-        }
-      } catch (error) {
-        console.error("投稿データ取得エラー:", error);
-      }
-    },
-    [isAuthReady]
-  );
+  // データ取得・操作関数
+  const fetchPostData = useReelLabStore((state) => state.fetchPostData);
+  const generateVideoStructure = useReelLabStore((state) => state.generateVideoStructure);
+  const loadSavedSchedule = useReelLabStore((state) => state.loadSavedSchedule);
 
   // URLパラメータから投稿IDを取得して投稿データを読み込む
   useEffect(() => {
+    const setEditingPostId = useReelLabStore.getState().setEditingPostId;
+    
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get("edit");
       const postId = urlParams.get("postId");
 
-      console.log("URL parameters:", { editId, postId });
-
-      // editまたはpostIdパラメータがある場合に投稿データを取得
       const targetId = editId || postId;
       if (targetId && isAuthReady) {
-        console.log("Loading post data for ID:", targetId);
         setEditingPostId(targetId);
-        fetchPostData(targetId);
+        fetchPostData(targetId, isAuthReady);
       } else {
         setEditingPostId(null);
       }
     }
   }, [isAuthReady, fetchPostData]);
 
-  // 分析データを取得
-  // スケジュール設定を分析してフィードバックを生成
-  const analyzeScheduleSettings = (): { feedback: string | null; category: string } => {
-    if (monthlyPosts < 4) {
-      return {
-        feedback: `投稿頻度が低すぎるようです（月${monthlyPosts}回）。週1回（月4回）以上に設定すると、より効果的なスケジュールが生成されます。継続的な投稿がフォロワー獲得には重要です。`,
-        category: "low_frequency",
-      };
-    }
-    if (dailyPosts > 3) {
-      return {
-        feedback: `1日の投稿回数が多すぎるようです（${dailyPosts}回）。1日1-2回程度が推奨です。投稿の質を保つためにも、無理のない頻度に設定してください。`,
-        category: "too_many_daily",
-      };
-    }
-    return { feedback: null, category: "" };
-  };
-
-  // スケジュール生成関数
-  const generateSchedule = useCallback(async () => {
-    if (!isAuthReady) {return;}
-
-    // スケジュール設定を分析
-    const analysis = analyzeScheduleSettings();
-    setScheduleFeedback(analysis.feedback);
-
-    // 連続フィードバックの追跡
-    if (analysis.feedback) {
-      const now = Date.now();
-      scheduleFeedbackHistoryRef.current.push({ category: analysis.category, timestamp: now });
-      const recentSameCategory = scheduleFeedbackHistoryRef.current.filter(
-        (f) => f.category === analysis.category && (now - f.timestamp) < 180000
-      );
-      if (recentSameCategory.length >= 3) {
-        setShowScheduleAdminWarning(true);
-      } else {
-        setShowScheduleAdminWarning(false);
-      }
-    } else {
-      scheduleFeedbackHistoryRef.current = [];
-      setShowScheduleAdminWarning(false);
-    }
-
-    setIsGeneratingSchedule(true);
-    setScheduleError("");
-
-    try {
-      // ビジネス情報を取得
-      const businessResponse = await authFetch("/api/user/business-info");
-
-      if (!businessResponse.ok) {
-        throw new Error("ビジネス情報の取得に失敗しました");
-      }
-
-      const businessData = await businessResponse.json();
-
-      // スケジュール生成APIを呼び出し
-      const scheduleResponse = await authFetch("/api/instagram/reel-schedule", {
-        method: "POST",
-        body: JSON.stringify({
-          monthlyPosts,
-          dailyPosts,
-          businessInfo: businessData.businessInfo,
-        }),
-      });
-
-      if (!scheduleResponse.ok) {
-        throw new Error("スケジュール生成に失敗しました");
-      }
-
-      const scheduleData = await scheduleResponse.json();
-      setGeneratedSchedule(scheduleData.schedule || []);
-      
-      // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
-      if (!scheduleFeedback) {
-        scheduleFeedbackHistoryRef.current = [];
-        setShowScheduleAdminWarning(false);
-      }
-    } catch (error) {
-      console.error("スケジュール生成エラー:", error);
-      setScheduleError(error instanceof Error ? error.message : "スケジュール生成に失敗しました");
-    } finally {
-      setIsGeneratingSchedule(false);
-    }
-  }, [isAuthReady, monthlyPosts, dailyPosts, analyzeScheduleSettings, scheduleFeedback]);
-
-  // スケジュール保存関数
-  const saveSchedule = useCallback(async () => {
-    if (!isAuthReady || generatedSchedule.length === 0) {
-      setSaveMessage("スケジュールが生成されていません");
-      return;
-    }
-
-    setIsSavingSchedule(true);
-    setSaveMessage("");
-
-    try {
-      // ビジネス情報を取得
-      const businessResponse = await authFetch("/api/user/business-info");
-
-      if (!businessResponse.ok) {
-        throw new Error("ビジネス情報の取得に失敗しました");
-      }
-
-      const businessData = await businessResponse.json();
-
-      // スケジュール保存APIを呼び出し
-      const saveResponse = await authFetch("/api/instagram/schedule-save", {
-        method: "POST",
-        body: JSON.stringify({
-          scheduleType: "reel",
-          scheduleData: generatedSchedule,
-          monthlyPosts,
-          dailyPosts,
-          businessInfo: businessData.businessInfo,
-        }),
-      });
-
-      if (!saveResponse.ok) {
-        throw new Error("スケジュール保存に失敗しました");
-      }
-
-      await saveResponse.json();
-      setSaveMessage("✅ スケジュールが保存されました！");
-    } catch (error) {
-      console.error("スケジュール保存エラー:", error);
-      setSaveMessage("❌ スケジュール保存に失敗しました");
-    } finally {
-      setIsSavingSchedule(false);
-    }
-  }, [isAuthReady, generatedSchedule, monthlyPosts, dailyPosts]);
-
-  // 保存されたスケジュールを読み込む関数
-  const loadSavedSchedule = useCallback(async () => {
-    if (!isAuthReady) {return;}
-
-    try {
-      const response = await authFetch(`/api/instagram/schedule-save?scheduleType=reel`);
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.schedule) {
-          setGeneratedSchedule(result.schedule.schedule || []);
-          setMonthlyPosts(result.schedule.monthlyPosts || 8);
-          setDailyPosts(result.schedule.dailyPosts || 1);
-          notify({ type: "success", message: "保存されたスケジュールを読み込みました" });
-        }
-      }
-    } catch (error) {
-      console.error("スケジュール読み込みエラー:", error);
-    }
-  }, [isAuthReady]);
-
-  // 動画構成生成関数
-  const generateVideoStructure = useCallback(
-    async (prompt: string) => {
-      if (!isAuthReady || !prompt.trim()) {return;}
-
-      try {
-        const response = await authFetch("/api/instagram/reel-structure", {
-          method: "POST",
-          body: JSON.stringify({
-            prompt,
-            businessInfo: planData,
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          setVideoStructure(
-            result.structure || {
-              introduction: "",
-              development: "",
-              twist: "",
-              conclusion: "",
-            },
-          );
-          setVideoFlow(result.flow || "");
-        }
-      } catch (error) {
-        console.error("動画構成生成エラー:", error);
-      }
-    },
-    [isAuthReady, planData],
-  );
-
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+  }, [setIsMounted]);
 
   useEffect(() => {
     if (isAuthReady) {
-      loadSavedSchedule(); // 保存されたスケジュールを読み込み
+      loadSavedSchedule(isAuthReady); // 保存されたスケジュールを読み込み
     }
   }, [isAuthReady, loadSavedSchedule]);
 
@@ -397,7 +106,7 @@ export default function ReelLabPage() {
               isAIGenerated={isAIGenerated}
               planData={planData}
               aiPromptPlaceholder="例: 商品の使い方、おすすめポイント、バックステージ、チュートリアル、トレンド動画など..."
-              onVideoStructureGenerate={generateVideoStructure}
+              onVideoStructureGenerate={(prompt) => generateVideoStructure(prompt, isAuthReady, planData)}
               videoStructure={videoStructure}
               videoFlow={videoFlow}
               editingPostId={editingPostId}

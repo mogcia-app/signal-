@@ -52,9 +52,6 @@ export async function GET(request: NextRequest) {
     });
 
     const now = new Date();
-    // today removed (unused)
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
     // 今月の期間を計算
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -86,17 +83,17 @@ export async function GET(request: NextRequest) {
         .get(),
       // フィードバック（今月）
       adminDb
-        .collection("feedback")
+        .collection("ai_post_feedback")
         .where("userId", "==", uid)
         .where("createdAt", ">=", startTimestamp)
         .where("createdAt", "<=", endTimestamp)
         .get(),
       // アクションログ（今月）
       adminDb
-        .collection("actionLogs")
+        .collection("ai_action_logs")
         .where("userId", "==", uid)
-        .where("createdAt", ">=", startTimestamp)
-        .where("createdAt", "<=", endTimestamp)
+        .where("updatedAt", ">=", startTimestamp)
+        .where("updatedAt", "<=", endTimestamp)
         .get(),
     ]);
 

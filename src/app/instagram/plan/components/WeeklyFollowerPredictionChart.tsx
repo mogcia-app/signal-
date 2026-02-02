@@ -11,6 +11,9 @@ import {
   Tooltip,
   Legend,
   Filler,
+  type Chart,
+  type LegendItem,
+  type TooltipItem,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { calculateAIPredictionWeekly, calculateTargetWeeklyPredictions } from "../utils/followerGrowth";
@@ -123,10 +126,10 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
           color: "#64748B",
           boxWidth: 8,
           boxHeight: 8,
-          generateLabels: function (chart: any) {
+          generateLabels: function (chart: Chart) {
             const original = ChartJS.defaults.plugins.legend.labels.generateLabels;
             const labels = original.call(this, chart);
-            return labels.map((label: any) => {
+            return labels.map((label: LegendItem) => {
               label.fillStyle = label.strokeStyle;
               label.lineWidth = 0;
               return label;
@@ -162,13 +165,19 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
         displayColors: true,
         boxPadding: 6,
         callbacks: {
-          label: function (context: any) {
+          label: function (context: TooltipItem<"line">) {
             return `${context.parsed.y.toLocaleString()}人`;
           },
-          labelColor: function (context: any) {
+          labelColor: function (context: TooltipItem<"line">) {
+            const borderColor = typeof context.dataset.borderColor === "string" 
+              ? context.dataset.borderColor 
+              : undefined;
+            const backgroundColor = typeof context.dataset.borderColor === "string"
+              ? context.dataset.borderColor
+              : undefined;
             return {
-              borderColor: context.dataset.borderColor,
-              backgroundColor: context.dataset.borderColor,
+              borderColor: borderColor || "#000",
+              backgroundColor: backgroundColor || "#000",
               borderWidth: 2,
             };
           },
@@ -191,8 +200,8 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
           },
           color: "#94A3B8",
           padding: 12,
-          callback: function (value: any) {
-            return value.toLocaleString() + "人";
+          callback: function (value: string | number) {
+            return typeof value === "number" ? value.toLocaleString() + "人" : value;
           },
         },
       },

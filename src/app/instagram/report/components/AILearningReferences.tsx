@@ -3,10 +3,11 @@
 import React from "react";
 import { Brain, Layers, ListChecks, Target, Award, Sparkles, Loader2 } from "lucide-react";
 import { getLearningPhaseLabel } from "../../../../utils/learningPhase";
+import type { ReportData } from "../../../../types/report";
 
 interface AILearningReferencesProps {
   selectedMonth: string;
-  reportData?: any;
+  reportData?: ReportData | null;
 }
 
 interface AIReference {

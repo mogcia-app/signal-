@@ -4,51 +4,19 @@ import React from "react";
 import Link from "next/link";
 import { MessageCircle, Smile, Frown, Meh, ExternalLink, AlertTriangle, Loader2 } from "lucide-react";
 import { getLabEditorHref, getAnalyticsHref } from "../../../../utils/links";
+import type {
+  ReportData,
+  FeedbackSentimentSummary,
+  FeedbackSentimentComment,
+  FeedbackPostSentimentEntry,
+} from "../../../../types/report";
 
 interface FeedbackSentimentProps {
   selectedMonth: string;
-  reportData?: any;
+  reportData?: ReportData | null;
 }
 
 type SentimentType = "positive" | "negative" | "neutral";
-
-interface FeedbackSentimentComment {
-  postId: string;
-  title: string;
-  comment: string;
-  sentiment: SentimentType;
-  createdAt?: string;
-  postType?: "feed" | "reel" | "story";
-}
-
-interface FeedbackPostSentimentEntry {
-  postId: string;
-  title: string;
-  postType?: "feed" | "reel" | "story";
-  total: number;
-  positive: number;
-  negative: number;
-  neutral: number;
-  score: number;
-  lastComment?: string;
-  lastCommentAt?: string;
-  lastSentiment?: SentimentType;
-  status?: "gold" | "negative" | "normal";
-}
-
-interface FeedbackSentimentSummary {
-  total: number;
-  positive: number;
-  negative: number;
-  neutral: number;
-  positiveRate: number;
-  withCommentCount: number;
-  commentHighlights?: {
-    positive: FeedbackSentimentComment[];
-    negative: FeedbackSentimentComment[];
-  };
-  posts?: FeedbackPostSentimentEntry[];
-}
 
 const sentimentMeta: Record<
   SentimentType,
@@ -129,9 +97,9 @@ function CommentList({
   );
 }
 
-export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMonth, reportData }) => {
+export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ reportData }) => {
   // reportDataからフィードバック感情分析データを取得
-  const summary: FeedbackSentimentSummary | null = reportData?.feedbackSentiment || null;
+  const summary = reportData?.feedbackSentiment || null;
 
   // データがない場合は非表示
   if (!summary || summary.total === 0) {
@@ -145,12 +113,13 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
   ].filter((item) => item.value > 0); // 0の場合は表示しない
 
   const posts = summary.posts ?? [];
-  const positiveLeaders = posts.filter((post) => post.score >= 0).slice(0, 3);
-  const attentionPosts = posts.filter((post) => post.score < 0).slice(0, 3);
+  const positiveLeaders = posts.filter((post) => (post.score ?? 0) >= 0).slice(0, 3);
+  const attentionPosts = posts.filter((post) => (post.score ?? 0) < 0).slice(0, 3);
 
   const renderPostRow = (post: FeedbackPostSentimentEntry) => {
-    const labHref = getLabEditorHref(post.postType || "feed", post.postId);
-    const analyticsHref = getAnalyticsHref(post.postType || "feed", post.postId);
+    // labHrefとanalyticsHrefは将来的に使用予定のため、コメントアウト
+    // const labHref = getLabEditorHref(post.postType || "feed", post.postId);
+    // const analyticsHref = getAnalyticsHref(post.postType || "feed", post.postId);
 
     return (
       <div
@@ -164,12 +133,12 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
           </div>
           <span
             className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md ${
-              post.score >= 0
+              (post.score ?? 0) >= 0
                 ? "bg-emerald-500/10 text-emerald-700 border border-emerald-200/50"
                 : "bg-rose-500/10 text-rose-700 border border-rose-200/50"
             }`}
           >
-            {post.score >= 0 ? (
+            {(post.score ?? 0) >= 0 ? (
               <>
                 <Smile className="w-3 h-3" />
                 好感
@@ -182,12 +151,6 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
             )}
           </span>
         </div>
-        {post.lastComment && (
-          <p className="text-xs text-gray-600 line-clamp-2 whitespace-pre-wrap">
-            &quot;{post.lastComment || ""}&quot;
-          </p>
-        )}
-       
       </div>
     );
   };

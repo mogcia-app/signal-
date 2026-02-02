@@ -2,10 +2,11 @@
 
 import React from "react";
 import { FileText, TrendingUp, AlertCircle, Lightbulb } from "lucide-react";
+import type { ReportData } from "../../../../types/report";
 
 interface PostSummaryInsightsProps {
   selectedMonth: string;
-  reportData?: any;
+  reportData?: ReportData | null;
 }
 
 interface PostSummaryData {

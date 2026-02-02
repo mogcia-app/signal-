@@ -6,6 +6,8 @@ import { TargetFollowerAutoInput } from "./TargetFollowerAutoInput";
 import { useAuth } from "../../../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { authFetch } from "../../../../utils/authFetch";
+import { PlanFormSubmitButton } from "./PlanFormSubmitButton";
+import { PlanFormBasicInfo } from "./PlanFormBasicInfo";
 
 interface PlanFormProps {
   onSubmit: (data: PlanFormData, aiSuggestedTarget?: number) => void;
@@ -265,6 +267,17 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
     e.preventDefault();
     onSubmit(formData, aiSuggestedTarget);
   };
+
+  const isFormValid = 
+    formData.currentFollowers > 0 && 
+    formData.targetFollowers > 0 &&
+    Boolean(availableTime) &&
+    Boolean(reelCapability) &&
+    Boolean(storyFrequency) &&
+    Boolean(mainGoalType) &&
+    preferredPostingTimes.length > 0 &&
+    Boolean(formData.targetAudience) &&
+    contentTypes.length > 0;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -1206,36 +1219,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
       </div>
 
       {/* 送信ボタン */}
-      <div className="pt-6 border-t border-gray-200">
-        <button
-          type="submit"
-          disabled={
-            isLoading || 
-            formData.currentFollowers <= 0 || 
-            formData.targetFollowers <= 0 ||
-            !availableTime ||
-            !reelCapability ||
-            !storyFrequency ||
-            !mainGoalType ||
-            preferredPostingTimes.length === 0 ||
-            !formData.targetAudience ||
-            contentTypes.length === 0
-          }
-          className="w-full bg-[#FF8A15] hover:bg-[#E67A0A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-4 rounded-lg transition-all shadow-md hover:shadow-lg disabled:shadow-none text-base"
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              計算中...
-            </span>
-          ) : (
-            "シミュレーション実行"
-          )}
-        </button>
-      </div>
+      <PlanFormSubmitButton
+        isLoading={isLoading}
+        isValid={isFormValid}
+        onSubmit={handleSubmit}
+      />
     </form>
   );
 };

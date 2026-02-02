@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Lightbulb, ArrowRight, RefreshCw } from "lucide-react";
+import type { ActionPlan } from "../../../../types/report";
 
 // マークダウン記法を削除する関数
 const removeMarkdown = (text: string): string => {
@@ -18,6 +19,8 @@ const removeMarkdown = (text: string): string => {
     .trim();
 };
 
+import type { ReportData } from "../../../../types/report";
+
 interface MonthlyActionPlansProps {
   selectedMonth: string;
   kpis?: {
@@ -27,14 +30,8 @@ interface MonthlyActionPlansProps {
     totalComments: number;
     totalFollowerIncrease: number;
   } | null;
-  reportData?: any;
+  reportData?: ReportData | null;
   onRegenerate?: () => void;
-}
-
-interface ActionPlan {
-  title: string;
-  description: string;
-  action: string;
 }
 
 export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selectedMonth, kpis, reportData, onRegenerate }) => {

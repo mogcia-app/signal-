@@ -155,5 +155,7 @@ export interface MasterContextResponse {
   achievements: LearningBadge[] | null;
   postInsights?: Record<string, PostInsight>;
   learningContext?: LearningContextCardData | null;
+  actionHistory?: Array<Record<string, unknown>>;
+  feedbackHistory?: Array<Record<string, unknown>>;
 }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import SNSLayout from "../../../components/sns-layout";
 import { ReportHeader } from "./components/ReportHeader";
 import { PerformanceScore } from "./components/PerformanceScore";
@@ -11,11 +10,26 @@ import { RiskDetection } from "./components/RiskDetection";
 import { PostSummaryInsights } from "./components/PostSummaryInsights";
 import { FeedbackSentiment } from "./components/FeedbackSentiment";
 import { useAuth } from "../../../contexts/auth-context";
-import { useUserProfile } from "@/hooks/useUserProfile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { authFetch } from "../../../utils/authFetch";
+import { getCurrentMonth, getMonthDisplayName } from "../../../utils/date-utils";
+import { useMonthAutoUpdate } from "../../../hooks/useMonthAutoUpdate";
+import type {
+  ActionPlan,
+  RiskAlert,
+  FeedbackSentimentComment,
+  FeedbackPostSentimentEntry,
+  FeedbackSentimentSummary,
+  PostDeepDiveData,
+  AIReference,
+  SnapshotReference,
+  MasterContextSummary,
+  PostSummaryData,
+  MonthlyReviewData,
+  ReportData,
+} from "../../../types/report";
 
-interface PerformanceScoreData {
+interface PerformanceScoreDataLocal {
   score: number;
   rating: "S" | "A" | "B" | "C" | "D" | "F";
   label: string;
@@ -40,74 +54,20 @@ interface PerformanceScoreData {
   };
 }
 
+// ローカル型定義（PerformanceScoreDataLocalは上で定義済み）
+// その他の型定義は src/types/report.ts からインポート済み
+
 export default function InstagramReportPage() {
   const { user } = useAuth();
-  const router = useRouter();
-  const { userProfile, loading: profileLoading } = useUserProfile();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
 
-  // 現在の月を取得する関数（ローカルタイムゾーンを使用）
-  const getCurrentMonth = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`; // YYYY-MM形式
-  };
-  
-  // すべてのHooksを早期リターンの前に定義
-  const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
-  const [performanceScore, setPerformanceScore] = useState<PerformanceScoreData | null>(null);
-  const [reportData, setReportData] = useState<any>(null);
+  // 月の自動更新フックを使用
+  const [selectedMonth, setSelectedMonth] = useMonthAutoUpdate();
+  const [performanceScore, setPerformanceScore] = useState<PerformanceScoreDataLocal | null>(null);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 月が変わったら自動的に現在の月に更新（過去の月を選択している場合はスキップ）
-  useEffect(() => {
-    const checkMonthChange = () => {
-      const currentMonth = getCurrentMonth();
-      // 選択された月が現在の月より古い（過去）場合は、自動更新をスキップ
-      // 過去の月のデータを見ている場合は、そのまま維持する
-      if (selectedMonth < currentMonth) {
-        return;
-      }
-      // 選択された月が現在の月と同じか未来の場合は、現在の月に更新
-      if (selectedMonth !== currentMonth) {
-        setSelectedMonth(currentMonth);
-      }
-    };
-
-    // 初回チェック
-    checkMonthChange();
-
-    // ページがフォーカスされた時にチェック
-    const handleFocus = () => {
-      checkMonthChange();
-    };
-    window.addEventListener("focus", handleFocus);
-
-    // ページが表示されている時（visibilitychange）にもチェック
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        checkMonthChange();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // 5分ごとにチェック（月が変わるのは1日0時なので、より頻繁にチェック）
-    const interval = setInterval(checkMonthChange, 5 * 60 * 1000);
-
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      clearInterval(interval);
-    };
-  }, [selectedMonth]);
-
-  // 月の表示名を取得
-  const getMonthDisplayName = (monthStr: string) => {
-    const date = new Date(monthStr + "-01");
-    return date.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
-  };
 
   // BFF APIから全データを取得
   const fetchReportData = useCallback(

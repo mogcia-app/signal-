@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import SNSLayout from "../../../components/sns-layout";
 import { KPIHeader } from "./components/KPIHeader";
 import { KPIBreakdownComponent } from "./components/KPIBreakdown";
@@ -10,27 +9,20 @@ import { ContentPerformance } from "./components/ContentPerformance";
 import { AudienceBreakdownComponent } from "./components/AudienceBreakdown";
 import { DailyKPITrend } from "./components/DailyKPITrend";
 import { useAuth } from "../../../contexts/auth-context";
-import { useUserProfile } from "@/hooks/useUserProfile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { authFetch } from "../../../utils/authFetch";
+import { notify } from "../../../lib/ui/notifications";
+import { getCurrentMonth, getMonthDisplayName } from "../../../utils/date-utils";
+import { handleError } from "../../../utils/error-handling";
+import { useMonthAutoUpdate } from "../../../hooks/useMonthAutoUpdate";
 import type { KPIBreakdown, TimeSlotEntry, FeedStats, ReelStats, AudienceBreakdown, DailyKPI } from "@/app/api/analytics/kpi-breakdown/route";
 
 export default function InstagramKPIPage() {
   const { user } = useAuth();
-  const router = useRouter();
-  const { userProfile, loading: profileLoading } = useUserProfile();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
 
-  // 現在の月を取得する関数（ローカルタイムゾーンを使用）
-  const getCurrentMonth = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`; // YYYY-MM形式
-  };
-  
-  // すべてのHooksを早期リターンの前に定義
-  const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
+  // 月の自動更新フックを使用
+  const [selectedMonth, setSelectedMonth] = useMonthAutoUpdate();
   const [kpiData, setKpiData] = useState<{
     breakdowns: KPIBreakdown[];
     timeSlotAnalysis: TimeSlotEntry[];
@@ -44,12 +36,6 @@ export default function InstagramKPIPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 月の表示名を取得
-  const getMonthDisplayName = (monthStr: string) => {
-    const date = new Date(monthStr + "-01");
-    return date.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
-  };
-
   // KPI分解データを取得
   const fetchKPIBreakdown = useCallback(
     async (date: string) => {
@@ -61,31 +47,80 @@ export default function InstagramKPIPage() {
       try {
         const response = await authFetch(`/api/analytics/kpi-breakdown?date=${date}`);
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.data) {
-            setKpiData({
-              breakdowns: result.data.breakdowns || [],
-              timeSlotAnalysis: result.data.timeSlotAnalysis || [],
-              hashtagStats: result.data.hashtagStats || [],
-              feedStats: result.data.feedStats || null,
-              reelStats: result.data.reelStats || null,
-              feedAudience: result.data.feedAudience || null,
-              reelAudience: result.data.reelAudience || null,
-              dailyKPIs: result.data.dailyKPIs || [],
-            });
-          } else {
-            setError("データの取得に失敗しました");
-            setKpiData(null);
+        if (!response.ok) {
+          // HTTPエラーの詳細を取得
+          let errorMessage = "データの取得に失敗しました";
+          try {
+            const errorData = await response.json() as { error?: string };
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            // JSONパースに失敗した場合は、ステータスコードから判断
+            if (response.status === 401) {
+              errorMessage = "認証が必要です。再度ログインしてください。";
+            } else if (response.status === 403) {
+              errorMessage = "この機能にアクセスする権限がありません。";
+            } else if (response.status === 404) {
+              errorMessage = "データが見つかりませんでした。";
+            } else if (response.status >= 500) {
+              errorMessage = "サーバーエラーが発生しました。しばらくしてから再度お試しください。";
+            } else {
+              errorMessage = `データの取得に失敗しました（エラーコード: ${response.status}）`;
+            }
           }
+          
+          setError(errorMessage);
+          notify({ type: "error", message: errorMessage });
+          setKpiData(null);
+          return;
+        }
+
+        const result = await response.json() as {
+          success?: boolean;
+          data?: {
+            breakdowns?: KPIBreakdown[];
+            timeSlotAnalysis?: TimeSlotEntry[];
+            hashtagStats?: Array<{ hashtag: string; count: number }>;
+            feedStats?: FeedStats | null;
+            reelStats?: ReelStats | null;
+            feedAudience?: AudienceBreakdown | null;
+            reelAudience?: AudienceBreakdown | null;
+            dailyKPIs?: DailyKPI[];
+          };
+          error?: string;
+        };
+
+        if (result.success && result.data) {
+          setKpiData({
+            breakdowns: result.data.breakdowns || [],
+            timeSlotAnalysis: result.data.timeSlotAnalysis || [],
+            hashtagStats: result.data.hashtagStats || [],
+            feedStats: result.data.feedStats || null,
+            reelStats: result.data.reelStats || null,
+            feedAudience: result.data.feedAudience || null,
+            reelAudience: result.data.reelAudience || null,
+            dailyKPIs: result.data.dailyKPIs || [],
+          });
+          setError(null); // 成功時はエラーをクリア
         } else {
-          const errorData = await response.json().catch(() => ({}));
-          setError(errorData.error || "データの取得に失敗しました");
+          const errorMessage = result.error || "データの形式が正しくありません";
+          setError(errorMessage);
+          notify({ type: "error", message: errorMessage });
           setKpiData(null);
         }
       } catch (err) {
         console.error("KPI分解データ取得エラー:", err);
-        setError("データの取得中にエラーが発生しました");
+        const errorMessage = handleError(err, "データの取得中にエラーが発生しました");
+        
+        // ネットワークエラーの場合の詳細メッセージ
+        if (err instanceof TypeError && err.message.includes("fetch")) {
+          const networkErrorMessage = "ネットワークエラーが発生しました。インターネット接続を確認してください。";
+          setError(networkErrorMessage);
+          notify({ type: "error", message: networkErrorMessage });
+        } else {
+          setError(errorMessage);
+          notify({ type: "error", message: errorMessage });
+        }
+        
         setKpiData(null);
       } finally {
         setIsLoading(false);
@@ -100,48 +135,6 @@ export default function InstagramKPIPage() {
       fetchKPIBreakdown(selectedMonth);
     }
   }, [isAuthReady, selectedMonth, fetchKPIBreakdown]);
-
-  // 月が変わったら自動的に現在の月に更新（過去の月を選択している場合はスキップ）
-  useEffect(() => {
-    const checkMonthChange = () => {
-      const currentMonth = getCurrentMonth();
-      // 選択された月が現在の月より古い（過去）場合は、自動更新をスキップ
-      // 過去の月のデータを見ている場合は、そのまま維持する
-      if (selectedMonth < currentMonth) {
-        return;
-      }
-      // 選択された月が現在の月と同じか未来の場合は、現在の月に更新
-      if (selectedMonth !== currentMonth) {
-        setSelectedMonth(currentMonth);
-      }
-    };
-
-    // 初回チェック
-    checkMonthChange();
-
-    // ページがフォーカスされた時にチェック
-    const handleFocus = () => {
-      checkMonthChange();
-    };
-    window.addEventListener("focus", handleFocus);
-
-    // ページが表示されている時（visibilitychange）にもチェック
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        checkMonthChange();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // 5分ごとにチェック（月が変わるのは1日0時なので、より頻繁にチェック）
-    const interval = setInterval(checkMonthChange, 5 * 60 * 1000);
-
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      clearInterval(interval);
-    };
-  }, [selectedMonth]);
 
   return (
     <SNSLayout customTitle="KPIコンソール" customDescription="主要KPIを要素ごとに分解し、何が伸びたか／落ちたかを素早く把握できます">

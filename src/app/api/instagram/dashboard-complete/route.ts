@@ -59,9 +59,8 @@ export async function GET(request: NextRequest) {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
 
-    // 今月の開始日と終了日を計算
+    // 今月の開始日を計算
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     // 並列でデータを取得
     const [postsSnapshot, analyticsSnapshot, goalDoc, followerCountsSnapshot] = await Promise.all([

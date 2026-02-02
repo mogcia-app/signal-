@@ -27,7 +27,9 @@ interface PostData {
   scheduledDate?:
     | Date
     | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
-    | string;
+    | { toDate?: () => Date }
+    | string
+    | null;
   scheduledTime?: string;
   status: "draft" | "created" | "scheduled" | "published";
   imageUrl?: string | null;
@@ -35,7 +37,9 @@ interface PostData {
   createdAt:
     | Date
     | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
-    | string;
+    | { toDate?: () => Date }
+    | string
+    | null;
   updatedAt: Date;
   isAIGenerated?: boolean;
   analytics?: {
@@ -353,9 +357,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
                   typeof post.scheduledDate === "object" &&
                   "toDate" in post.scheduledDate
                 ) {
-                  date = post.scheduledDate.toDate();
-                } else {
+                  const toDateFunc = post.scheduledDate.toDate;
+                  if (toDateFunc) {
+                    date = toDateFunc();
+                  } else {
+                    return "記録なし";
+                  }
+                } else if (typeof post.scheduledDate === "string") {
                   date = new Date(post.scheduledDate);
+                } else {
+                  return "記録なし";
                 }
 
                 if (isNaN(date.getTime())) {

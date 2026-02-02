@@ -1,14 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import SNSLayout from "../../../components/sns-layout";
-import { postsApi } from "../../../lib/api";
 import { useAuth } from "../../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { canAccessFeature } from "@/lib/plan-access";
-import { notify } from "../../../lib/ui/notifications";
 import {
   Image as ImageIcon,
   Heart,
@@ -18,77 +14,15 @@ import {
   Calendar,
   Clock,
   Trash2,
-  CheckCircle,
-  X,
 } from "lucide-react";
-import type { AIReference, SnapshotReference } from "@/types/ai";
+import { parseFirestoreDate } from "../../api/ai/monthly-analysis/utils/date-utils";
+import { usePostsStore, type PostData, type AnalyticsData } from "@/stores/posts-store";
 
 // コンポーネントのインポート
 import PostCard from "./components/PostCard";
 import PostStats from "./components/PostStats";
-
-interface PostData {
-  id: string;
-  userId: string;
-  title: string;
-  content: string;
-  hashtags?: string[] | string | null;
-  postType: "feed" | "reel" | "story";
-  scheduledDate?:
-    | Date
-    | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
-    | string;
-  scheduledTime?: string;
-  status: "draft" | "created" | "scheduled" | "published";
-  imageUrl?: string | null;
-  imageData?: string | null;
-  createdAt:
-    | Date
-    | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
-    | string;
-  updatedAt: Date;
-  isAIGenerated?: boolean;
-  analytics?: {
-    likes: number;
-    comments: number;
-    shares: number;
-    views: number;
-    reach: number;
-    engagementRate: number;
-    publishedAt: Date;
-    audience?: {
-      gender: {
-        male: number;
-        female: number;
-        other: number;
-      };
-      age: {
-        "13-17": number;
-        "18-24": number;
-        "25-34": number;
-        "35-44": number;
-        "45-54": number;
-        "55-64": number;
-        "65+": number;
-      };
-    };
-    reachSource?: {
-      sources: {
-        posts: number;
-        profile: number;
-        explore: number;
-        search: number;
-        other: number;
-      };
-      followers: {
-        followers: number;
-        nonFollowers: number;
-      };
-    };
-  };
-  snapshotReferences?: SnapshotReference[];
-  generationReferences?: AIReference[];
-}
+import { ToastNotification } from "./components/ToastNotification";
+import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 
 const normalizeHashtags = (hashtags: PostData["hashtags"]): string[] => {
   if (Array.isArray(hashtags)) {
@@ -107,409 +41,94 @@ const normalizeHashtags = (hashtags: PostData["hashtags"]): string[] => {
   return [];
 };
 
-interface AnalyticsData {
-  id: string;
-  postId?: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  reach: number;
-  engagementRate: number;
-  publishedAt: Date;
-  title?: string;
-  content?: string;
-  hashtags?: string[];
-  category?: string;
-  thumbnail?: string;
-  sentiment?: "satisfied" | "dissatisfied" | null;
-  memo?: string;
-  followerIncrease?: number;
-  audience?: {
-    gender: {
-      male: number;
-      female: number;
-      other: number;
-    };
-    age: {
-      "13-17": number;
-      "18-24": number;
-      "25-34": number;
-      "35-44": number;
-      "45-54": number;
-      "55-64": number;
-      "65+": number;
-    };
-  };
-  reachSource?: {
-    sources: {
-      posts: number;
-      profile: number;
-      explore: number;
-      search: number;
-      other: number;
-    };
-    followers: {
-      followers: number;
-      nonFollowers: number;
-    };
-  };
-}
-
 export default function InstagramPostsPage() {
   const { user } = useAuth();
   const { userProfile, loading: profileLoading } = useUserProfile();
-  const router = useRouter();
 
-  // すべてのHooksを早期リターンの前に定義
-  const [posts, setPosts] = useState<PostData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "analyzed" | "created">("all");
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
-  const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'post' | 'analytics'; id: string; onConfirm: () => void } | null>(null);
+  // Zustandストアから状態を取得
+  const posts = usePostsStore((state) => state.posts);
+  const loading = usePostsStore((state) => state.loading);
+  const activeTab = usePostsStore((state) => state.activeTab);
+  const analyticsData = usePostsStore((state) => state.analyticsData);
+  const scheduledPosts = usePostsStore((state) => state.scheduledPosts);
+  const unanalyzedPosts = usePostsStore((state) => state.unanalyzedPosts);
+  const toastMessage = usePostsStore((state) => state.toastMessage);
+  const deleteConfirm = usePostsStore((state) => state.deleteConfirm);
+  const fetchPosts = usePostsStore((state) => state.fetchPosts);
+  const deletePost = usePostsStore((state) => state.deletePost);
+  const deleteManualAnalytics = usePostsStore((state) => state.deleteManualAnalytics);
+  const setActiveTab = usePostsStore((state) => state.setActiveTab);
+  const setDeleteConfirm = usePostsStore((state) => state.setDeleteConfirm);
+  const setToastMessage = usePostsStore((state) => state.setToastMessage);
+  const getManualAnalyticsData = usePostsStore((state) => state.getManualAnalyticsData);
+  const getTabCounts = usePostsStore((state) => state.getTabCounts);
+  const getFilteredPosts = usePostsStore((state) => state.getFilteredPosts);
 
-  const [scheduledPosts, setScheduledPosts] = useState<
-    Array<{
-      day: string;
-      date: string;
-      type: string;
-      title: string;
-      time: string;
-      status: string;
-    }>
-  >([]);
-
-  const [unanalyzedPosts, setUnanalyzedPosts] = useState<
-    Array<{
-      id: string;
-      title: string;
-      type: string;
-      imageUrl: string | null;
-      createdAt: string;
-      status: string;
-    }>
-  >([]);
-
-  // BFF APIから投稿一覧と分析データを取得
-  const fetchPosts = useCallback(async () => {
-    if (!user?.uid) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const response = await fetch(`/api/posts/with-analytics`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API Error Response:", errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-
-      const result = await response.json();
-      if (result.success && result.data) {
-        // BFF APIから取得したデータを設定
-        const fetchedPosts = result.data.posts || [];
-        
-        // 日付で降順ソート（最新が上）
-        const sortedPosts = [...fetchedPosts].sort((a, b) => {
-          const getDate = (post: PostData): number => {
-            if (post.createdAt instanceof Date) {
-              return post.createdAt.getTime();
-            }
-            if (post.createdAt && typeof post.createdAt === "object" && "toDate" in post.createdAt) {
-              return (post.createdAt as { toDate(): Date }).toDate().getTime();
-            }
-            if (typeof post.createdAt === "string") {
-              const date = new Date(post.createdAt);
-              return isNaN(date.getTime()) ? 0 : date.getTime();
-            }
-            return 0;
-          };
-
-          const aTime = getDate(a);
-          const bTime = getDate(b);
-          return bTime - aTime; // 降順（新しい順）
-        });
-        
-        setPosts(sortedPosts);
-        setAnalyticsData(result.data.analytics || []);
-        setScheduledPosts(result.data.scheduledPosts || []);
-        setUnanalyzedPosts(result.data.unanalyzedPosts || []);
-        
-        // 手動入力の分析データも設定（BFF APIから取得済み）
-        // manualAnalyticsDataはanalyticsDataからフィルタリングして取得
-      }
-    } catch (error) {
-      console.error("投稿取得エラー:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.uid]);
-
-  // BFF APIから既に計算済みのデータを使用するため、processPostsDataは削除済み
-
+  // データ取得
   useEffect(() => {
     if (user?.uid) {
-      fetchPosts();
+      fetchPosts(user.uid);
     }
   }, [user?.uid, fetchPosts]);
 
-  // リアルタイムソート更新（30秒ごと）
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPosts((prevPosts) => {
-        // 投稿が存在しない場合はソートしない
-        if (prevPosts.length === 0) {return prevPosts;}
-
-        return [...prevPosts].sort((a: PostData, b: PostData) => {
-          const getDate = (post: PostData): number => {
-            if (post.createdAt instanceof Date) {
-              return post.createdAt.getTime();
-            }
-            if (post.createdAt && typeof post.createdAt === "object" && "toDate" in post.createdAt) {
-              return (post.createdAt as { toDate(): Date }).toDate().getTime();
-            }
-            if (typeof post.createdAt === "string") {
-              const date = new Date(post.createdAt);
-              return isNaN(date.getTime()) ? 0 : date.getTime();
-            }
-            return 0;
-          };
-
-          const aTime = getDate(a);
-          const bTime = getDate(b);
-          return bTime - aTime; // 降順（新しい順）
-        });
-      });
-    }, 30000); // 30秒ごと
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, []); // 依存配列を空にして、マウント時のみ実行
-
 
   // 投稿削除
-  const handleDeletePost = async (postId: string) => {
+  const handleDeletePost = (postId: string) => {
     setDeleteConfirm({
-      type: 'post',
+      type: "post",
       id: postId,
       onConfirm: async () => {
         try {
-          await postsApi.delete(postId);
-          setPosts(posts.filter((post) => post.id !== postId));
-          notify({ type: "success", message: "投稿を削除しました" });
-
-          // 次のアクションを即座に更新
-          if (
-            typeof window !== "undefined" &&
-            (window as Window & { refreshNextActions?: () => void }).refreshNextActions
-          ) {
-            console.log("🔄 Triggering next actions refresh after post deletion");
-            (window as Window & { refreshNextActions?: () => void }).refreshNextActions!();
-          }
+          await deletePost(postId);
         } catch (error) {
-          console.error("削除エラー:", error);
-          notify({ type: "error", message: "削除に失敗しました" });
+          // エラーはストア内で処理済み
         } finally {
           setDeleteConfirm(null);
         }
-      }
+      },
     });
   };
 
   // 手動入力データ削除
-  const handleDeleteManualAnalytics = async (analyticsId: string) => {
+  const handleDeleteManualAnalytics = (analyticsId: string) => {
     setDeleteConfirm({
-      type: 'analytics',
+      type: "analytics",
       id: analyticsId,
       onConfirm: async () => {
         try {
-          console.log("Deleting analytics with ID:", analyticsId);
-          console.log("User ID:", user?.uid);
-
-          const response = await fetch(`/api/analytics/${analyticsId}`, {
-            method: "DELETE",
-          });
-
-          console.log("Delete response status:", response.status);
-
-          if (response.ok) {
-            const result = await response.json();
-            console.log("Delete result:", result);
-            setAnalyticsData(analyticsData.filter((a) => a.id !== analyticsId));
-            notify({ type: "success", message: "分析データを削除しました" });
-
-            // 次のアクションを即座に更新
-            if (
-              typeof window !== "undefined" &&
-              (window as Window & { refreshNextActions?: () => void }).refreshNextActions
-            ) {
-              console.log("🔄 Triggering next actions refresh after analytics deletion");
-              (window as Window & { refreshNextActions?: () => void }).refreshNextActions!();
-            }
-          } else {
-            const errorText = await response.text();
-            console.error("Delete error response:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-          }
+          await deleteManualAnalytics(analyticsId);
         } catch (error) {
-          console.error("削除エラー:", error);
-          const errorMessage = error instanceof Error ? error.message : "Unknown error";
-          setToastMessage({ message: `削除に失敗しました: ${errorMessage}`, type: 'error' });
-          setTimeout(() => setToastMessage(null), 5000);
+          // エラーはストア内で処理済み
         } finally {
           setDeleteConfirm(null);
         }
-      }
+      },
     });
   };
 
-  // 手動入力の分析データ
-  const manualAnalyticsData = analyticsData.filter(
-    (a) => a.postId === null || a.postId === "" || a.postId === undefined
-  );
-
-  // タブの投稿数を計算（BFF APIから取得したデータを使用）
-  const tabCounts = React.useMemo(() => {
-    // BFF APIから既に計算済みのデータを使用するため、ここでは簡易的に計算
-    // 実際の値はBFF APIから取得するが、フロントエンドでも再計算する
-    const manualAnalyticsData = analyticsData.filter(
-      (a) => a.postId === null || a.postId === "" || a.postId === undefined
-    );
-
-    const allPostsCount = posts.length + manualAnalyticsData.length;
-
-    const analyzedPostsCount =
-      posts.filter((post) => {
-        const hasAnalytics = analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
-        return hasAnalytics;
-      }).length + manualAnalyticsData.length;
-
-    const createdOnlyCount = posts.filter((post) => {
-      const hasAnalytics = analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
-      return !hasAnalytics;
-    }).length;
-
-    return {
-      all: allPostsCount,
-      analyzed: analyzedPostsCount,
-      created: createdOnlyCount,
-    };
-  }, [posts, analyticsData]);
-
-  // フィルタリングされた投稿を効率的に計算
-  const filteredPosts = React.useMemo(() => {
-    const filtered = posts.filter((post) => {
-      if (activeTab === "all") {return true;}
-      const hasAnalytics = analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
-      const shouldShow = activeTab === "analyzed" ? hasAnalytics : !hasAnalytics;
-
-      // デバッグログ
-      console.log("Post filtering:", {
-        postId: post.id,
-        title: post.title,
-        activeTab,
-        hasAnalytics,
-        shouldShow,
-      });
-
-      return shouldShow;
-    });
-
-    // 日付で降順ソート（最新が上）
-    const sorted = [...filtered].sort((a, b) => {
-      const getDate = (post: PostData): number => {
-        if (post.createdAt instanceof Date) {
-          return post.createdAt.getTime();
-        }
-        if (post.createdAt && typeof post.createdAt === "object" && "toDate" in post.createdAt) {
-          return (post.createdAt as { toDate(): Date }).toDate().getTime();
-        }
-        if (typeof post.createdAt === "string") {
-          const date = new Date(post.createdAt);
-          return isNaN(date.getTime()) ? 0 : date.getTime();
-        }
-        return 0;
-      };
-
-      const aTime = getDate(a);
-      const bTime = getDate(b);
-      return bTime - aTime; // 降順（新しい順）
-    });
-
-    console.log("Filtered posts result:", {
-      activeTab,
-      totalPosts: posts.length,
-      filteredCount: sorted.length,
-      manualAnalyticsCount: manualAnalyticsData.length,
-    });
-
-    return sorted;
-  }, [posts, analyticsData, activeTab, manualAnalyticsData]);
+  // 計算プロパティ
+  const manualAnalyticsData = getManualAnalyticsData();
+  const tabCounts = getTabCounts();
+  const filteredPosts = getFilteredPosts();
 
   return (
     <>
       {/* トースト通知 */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 animate-fade-in">
-          <div className={`flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg min-w-[300px] max-w-md ${
-            toastMessage.type === 'success' 
-              ? 'bg-green-500 text-white' 
-              : 'bg-red-500 text-white'
-          }`}>
-            {toastMessage.type === 'success' ? (
-              <CheckCircle size={20} className="flex-shrink-0" />
-            ) : (
-              <X size={20} className="flex-shrink-0" />
-            )}
-            <p className="font-medium flex-1">{toastMessage.message}</p>
-            <button
-              onClick={() => setToastMessage(null)}
-              className="ml-2 text-white hover:text-gray-200 transition-colors flex-shrink-0"
-              aria-label="閉じる"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
+        <ToastNotification
+          message={toastMessage.message}
+          type={toastMessage.type}
+          onClose={() => setToastMessage(null)}
+        />
       )}
 
       {/* 削除確認モーダル */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {deleteConfirm.type === 'post' ? '投稿を削除' : '分析データを削除'}
-            </h3>
-            <p className="text-gray-700 mb-6">
-              {deleteConfirm.type === 'post' 
-                ? 'この投稿を削除しますか？この操作は取り消せません。'
-                : 'この分析データを削除しますか？この操作は取り消せません。'}
-            </p>
-            <div className="flex space-x-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={() => deleteConfirm.onConfirm()}
-                className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors"
-              >
-                削除する
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmModal
+          type={deleteConfirm.type}
+          onConfirm={deleteConfirm.onConfirm}
+          onCancel={() => setDeleteConfirm(null)}
+        />
       )}
 
       <SNSLayout
@@ -803,16 +422,8 @@ export default function InstagramPostsPage() {
                           if (publishedAt) {
                             return publishedAt instanceof Date ? publishedAt : new Date(publishedAt);
                           }
-                          if (post.scheduledDate instanceof Date) {
-                            return post.scheduledDate;
-                          }
-                          if (typeof post.scheduledDate === 'string') {
-                            return new Date(post.scheduledDate);
-                          }
-                          if (post.scheduledDate && typeof post.scheduledDate === 'object' && 'toDate' in post.scheduledDate) {
-                            return post.scheduledDate.toDate();
-                          }
-                          return new Date();
+                          const parsedScheduledDate = parseFirestoreDate(post.scheduledDate);
+                          return parsedScheduledDate || new Date();
                         })(),
                         title: (analyticsFromData as { title?: string })?.title,
                         content: (analyticsFromData as { content?: string })?.content,

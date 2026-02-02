@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
+import { authFetch } from "../../../../utils/authFetch";
 
 interface TargetFollowerAutoInputProps {
   currentFollowers: number;
@@ -32,17 +33,39 @@ export const TargetFollowerAutoInput: React.FC<TargetFollowerAutoInputProps> = (
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * 目標フォロワー数を自動計算
-   * 月間成長率0.8%を適用
+   * 目標フォロワー数を自動計算（バックエンドAPI経由）
    */
-  const calculateTargetFollowers = (current: number, months: number): number => {
+  const calculateTargetFollowers = async (current: number, months: number): Promise<number> => {
     if (current <= 0 || months <= 0) {
       return 0;
     }
-    // 月間成長率0.8% = 0.008
-    const monthlyGrowthRate = 0.008;
-    const target = current * Math.pow(1 + monthlyGrowthRate, months);
-    return Math.round(target);
+    
+    try {
+      const response = await authFetch("/api/instagram/target-followers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentFollowers: current,
+          periodMonths: months,
+          calculationType: "ai",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("目標フォロワー数の計算に失敗しました");
+      }
+
+      const data = await response.json();
+      return data.targetFollowers;
+    } catch (error) {
+      console.error("目標フォロワー数計算エラー:", error);
+      // フォールバック: 簡易計算（本番環境では使用されない）
+      const monthlyGrowthRate = 0.008;
+      const target = current * Math.pow(1 + monthlyGrowthRate, months);
+      return Math.round(target);
+    }
   };
 
   /**
@@ -57,15 +80,20 @@ export const TargetFollowerAutoInput: React.FC<TargetFollowerAutoInputProps> = (
     if (currentFollowers > 0 && periodMonths > 0) {
       setIsLoading(true);
       
-      // 1秒後に計算を実行
-      timeoutRef.current = setTimeout(() => {
-        const calculatedTarget = calculateTargetFollowers(currentFollowers, periodMonths);
-        onChange(calculatedTarget);
-        setIsAutoCalculated(true);
-        setIsLoading(false);
-        // AI提案値を親コンポーネントに通知
-        if (onAISuggested) {
-          onAISuggested(calculatedTarget);
+      // 1秒後に計算を実行（バックエンドAPI経由）
+      timeoutRef.current = setTimeout(async () => {
+        try {
+          const calculatedTarget = await calculateTargetFollowers(currentFollowers, periodMonths);
+          onChange(calculatedTarget);
+          setIsAutoCalculated(true);
+          setIsLoading(false);
+          // AI提案値を親コンポーネントに通知
+          if (onAISuggested) {
+            onAISuggested(calculatedTarget);
+          }
+        } catch (error) {
+          console.error("目標フォロワー数計算エラー:", error);
+          setIsLoading(false);
         }
       }, 1000);
     } else {
@@ -91,16 +119,23 @@ export const TargetFollowerAutoInput: React.FC<TargetFollowerAutoInputProps> = (
   };
 
   /**
-   * 再計算ボタン
+   * 再計算ボタン（バックエンドAPI経由）
    */
-  const handleRecalculate = () => {
+  const handleRecalculate = async () => {
     if (currentFollowers > 0 && periodMonths > 0) {
-      const calculatedTarget = calculateTargetFollowers(currentFollowers, periodMonths);
-      onChange(calculatedTarget);
-      setIsAutoCalculated(true);
-      // AI提案値を親コンポーネントに通知
-      if (onAISuggested) {
-        onAISuggested(calculatedTarget);
+      setIsLoading(true);
+      try {
+        const calculatedTarget = await calculateTargetFollowers(currentFollowers, periodMonths);
+        onChange(calculatedTarget);
+        setIsAutoCalculated(true);
+        // AI提案値を親コンポーネントに通知
+        if (onAISuggested) {
+          onAISuggested(calculatedTarget);
+        }
+      } catch (error) {
+        console.error("目標フォロワー数計算エラー:", error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };

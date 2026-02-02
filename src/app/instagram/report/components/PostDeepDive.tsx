@@ -3,10 +3,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { BarChart3, Sparkles, TrendingDown, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import type { ReportData } from "../../../../types/report";
 
 interface PostDeepDiveProps {
   selectedMonth: string;
-  reportData?: any;
+  reportData?: ReportData | null;
 }
 
 interface PostDeepDiveData {

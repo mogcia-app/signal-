@@ -258,22 +258,34 @@ ${postTypeArray.length > 0
         });
 
         const responseText = completion.choices[0]?.message?.content || "";
-        const parsed = JSON.parse(responseText);
+        const parsed = JSON.parse(responseText) as {
+          actionPlans?: Array<{
+            id?: string;
+            title?: string;
+            description?: string;
+            priority?: string;
+            focusArea?: string;
+            expectedImpact?: string;
+            recommendedActions?: unknown[];
+          }>;
+        };
 
         if (Array.isArray(parsed?.actionPlans)) {
-          actionPlans = parsed.actionPlans.map((plan: any, index: number) => ({
-            id: plan.id || `action-plan-${index}`,
-            title: plan.title || "",
-            description: plan.description || "",
-            priority: (plan.priority === "high" || plan.priority === "medium" || plan.priority === "low")
-              ? plan.priority
-              : "medium",
-            focusArea: plan.focusArea || "全体",
-            expectedImpact: plan.expectedImpact || "",
-            recommendedActions: Array.isArray(plan.recommendedActions)
-              ? plan.recommendedActions.filter((action: any) => typeof action === "string")
-              : [],
-          })).filter((plan: ActionPlan) => plan.title && plan.recommendedActions.length > 0);
+          actionPlans = parsed.actionPlans
+            .map((plan, index: number): ActionPlan => ({
+              id: plan.id || `action-plan-${index}`,
+              title: plan.title || "",
+              description: plan.description || "",
+              priority: (plan.priority === "high" || plan.priority === "medium" || plan.priority === "low")
+                ? plan.priority
+                : "medium",
+              focusArea: plan.focusArea || "全体",
+              expectedImpact: plan.expectedImpact || "",
+              recommendedActions: Array.isArray(plan.recommendedActions)
+                ? plan.recommendedActions.filter((action): action is string => typeof action === "string")
+                : [],
+            }))
+            .filter((plan) => plan.title && plan.recommendedActions.length > 0);
         }
       } catch (aiError) {
         console.error("AIアクションプラン生成エラー:", aiError);

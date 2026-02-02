@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { logger } from "../../../../lib/logger";
+import type { AIPlanSuggestion } from "../../../instagram/plan/types/plan";
 
 /**
  * 今日やることを生成するAPI
@@ -63,7 +64,9 @@ export async function GET(request: NextRequest) {
       .map((doc) => {
         const data = doc.data();
         const scheduledDate = data.scheduledDate?.toDate?.() || data.scheduledDate;
-        if (!scheduledDate) return null;
+        if (!scheduledDate) {
+          return null;
+        }
         const scheduled = scheduledDate instanceof Date ? scheduledDate : new Date(scheduledDate);
         if (
           scheduled.getFullYear() === today.getFullYear() &&
@@ -91,7 +94,6 @@ export async function GET(request: NextRequest) {
     // 3. 運用計画から今日の投稿タスクを生成
     if (currentPlan) {
       const formData = currentPlan.formData || {};
-      const simulationResult = currentPlan.simulationResult || {};
       const aiSuggestion = currentPlan.aiSuggestion || null;
       
       // AI提案の週次計画から今日のタスクを取得
@@ -103,14 +105,16 @@ export async function GET(request: NextRequest) {
         const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
         
         // 現在の週の計画を取得
-        const weekPlan = aiSuggestion.weeklyPlans.find((p: any) => p.week === currentWeek);
+        type WeeklyPlan = NonNullable<AIPlanSuggestion["weeklyPlans"]>[number];
+        const weekPlan = aiSuggestion.weeklyPlans.find((p: WeeklyPlan) => p.week === currentWeek);
         if (weekPlan && weekPlan.tasks) {
           const dayOfWeek = today.getDay(); // 0=日曜, 1=月曜, ...
           const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
           const dayName = dayNames[dayOfWeek];
           
           // 今日のタスクを取得
-          const todayTasksFromPlan = weekPlan.tasks.filter((task: any) => task.day === dayName);
+          type Task = NonNullable<AIPlanSuggestion["weeklyPlans"]>[number]["tasks"][number];
+          const todayTasksFromPlan = weekPlan.tasks.filter((task: Task) => task.day === dayName);
           
           const typeLabels: Record<string, string> = {
             feed: "フィード投稿",
@@ -126,7 +130,7 @@ export async function GET(request: NextRequest) {
             "feed+reel": "feed",
           };
           
-          todayTasksFromPlan.forEach((task: any) => {
+          todayTasksFromPlan.forEach((task: Task) => {
             const taskType = typeTaskTypes[task.type] || "feed";
             const hasScheduled = todayScheduledPosts.some(
               (post) => post.type === taskType
