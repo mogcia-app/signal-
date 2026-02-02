@@ -4,12 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { MessageCircle, Smile, Frown, Meh, ExternalLink, AlertTriangle, Loader2 } from "lucide-react";
 import { getLabEditorHref, getAnalyticsHref } from "../../../../utils/links";
-import type {
-  ReportData,
-  FeedbackSentimentSummary,
-  FeedbackSentimentComment,
-  FeedbackPostSentimentEntry,
-} from "../../../../types/report";
+import type { ReportData, FeedbackSentimentSummary, FeedbackPostSentimentEntry, FeedbackSentimentComment } from "../../../../types/report";
 
 interface FeedbackSentimentProps {
   selectedMonth: string;
@@ -17,6 +12,8 @@ interface FeedbackSentimentProps {
 }
 
 type SentimentType = "positive" | "negative" | "neutral";
+
+// 型定義は src/types/report.ts からインポート
 
 const sentimentMeta: Record<
   SentimentType,
@@ -97,9 +94,9 @@ function CommentList({
   );
 }
 
-export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ reportData }) => {
+export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMonth, reportData }) => {
   // reportDataからフィードバック感情分析データを取得
-  const summary = reportData?.feedbackSentiment || null;
+  const summary: FeedbackSentimentSummary | null = reportData?.feedbackSentiment || null;
 
   // データがない場合は非表示
   if (!summary || summary.total === 0) {
@@ -117,9 +114,9 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ reportData
   const attentionPosts = posts.filter((post) => (post.score ?? 0) < 0).slice(0, 3);
 
   const renderPostRow = (post: FeedbackPostSentimentEntry) => {
-    // labHrefとanalyticsHrefは将来的に使用予定のため、コメントアウト
-    // const labHref = getLabEditorHref(post.postType || "feed", post.postId);
-    // const analyticsHref = getAnalyticsHref(post.postType || "feed", post.postId);
+    const postScore = post.score ?? 0;
+    const labHref = getLabEditorHref(post.postType || "feed", post.postId);
+    const analyticsHref = getAnalyticsHref(post.postType || "feed", post.postId);
 
     return (
       <div
@@ -133,12 +130,12 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ reportData
           </div>
           <span
             className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md ${
-              (post.score ?? 0) >= 0
+              postScore >= 0
                 ? "bg-emerald-500/10 text-emerald-700 border border-emerald-200/50"
                 : "bg-rose-500/10 text-rose-700 border border-rose-200/50"
             }`}
           >
-            {(post.score ?? 0) >= 0 ? (
+            {postScore >= 0 ? (
               <>
                 <Smile className="w-3 h-3" />
                 好感
@@ -151,6 +148,12 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ reportData
             )}
           </span>
         </div>
+        {post.lastComment && (
+          <p className="text-xs text-gray-600 line-clamp-2 whitespace-pre-wrap">
+            &quot;{post.lastComment || ""}&quot;
+          </p>
+        )}
+       
       </div>
     );
   };
@@ -214,7 +217,13 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ reportData
                 <span>感情内訳</span>
                 <span>100%</span>
               </div>
-              <div className="h-3 rounded-full bg-gray-100 overflow-hidden flex">
+              <div 
+                className="h-3 rounded-full bg-gray-100 overflow-hidden flex"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="感情内訳"
+              >
                 {sentimentTotals.map((item) => {
                   const width = summary.total > 0 ? (item.value / summary.total) * 100 : 0;
                   return (
@@ -222,6 +231,7 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ reportData
                       key={item.type}
                       className={`${sentimentMeta[item.type].barClass} h-full`}
                       style={{ width: `${width}%` }}
+                      aria-label={`${sentimentMeta[item.type].label}: ${width.toFixed(1)}%`}
                     />
                   );
                 })}

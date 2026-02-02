@@ -1,18 +1,23 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { X } from "lucide-react";
+import { authFetch } from "../../utils/authFetch";
+import { handleError } from "../../utils/error-handling";
+import { ERROR_MESSAGES } from "../../constants/error-messages";
+import { TrendingUp, Loader2, X, Copy, Check, Save } from "lucide-react";
+// Client-side logging - use console.error directly
 import CommentReplyAssistant from "../instagram/lab/components/CommentReplyAssistant";
-import { useHomeStore } from "@/stores/home-store";
-import { WeeklyKPISection } from "./components/WeeklyKPISection";
-import { TodayTasksSection } from "./components/TodayTasksSection";
-import { TomorrowPreparationSection } from "./components/TomorrowPreparationSection";
-import { MonthlyGoalsSection } from "./components/MonthlyGoalsSection";
-import { WeeklyScheduleSection } from "./components/WeeklyScheduleSection";
-import { OtherKPISection } from "./components/OtherKPISection";
+import { SkeletonLoader } from "../../components/ui/SkeletonLoader";
+import type {
+  DashboardData,
+  DashboardResponse,
+  AISections,
+  AISectionsResponse,
+} from "../../types/home";
 
 interface WeeklyResult {
   metric: string;
@@ -21,18 +26,10 @@ interface WeeklyResult {
   icon: string;
 }
 
+
 export default function HomePage() {
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
-
-  // Zustandストアから状態を取得
-  const dashboardData = useHomeStore((state) => state.dashboardData);
-  const isLoadingDashboard = useHomeStore((state) => state.isLoadingDashboard);
-  const showPlanCreatedBanner = useHomeStore((state) => state.showPlanCreatedBanner);
-  const setShowPlanCreatedBanner = useHomeStore((state) => state.setShowPlanCreatedBanner);
-  const fetchDashboard = useHomeStore((state) => state.fetchDashboard);
-  const fetchAiSections = useHomeStore((state) => state.fetchAiSections);
-  const fetchOtherKPI = useHomeStore((state) => state.fetchOtherKPI);
 
   // 今日の日付を取得
   const today = new Date();
@@ -42,28 +39,288 @@ export default function HomePage() {
   // ユーザー名を取得
   const userName = userProfile?.name || user?.displayName || "ユーザー";
 
-  // データ取得
-  useEffect(() => {
-    fetchDashboard();
-    fetchAiSections();
-  }, [fetchDashboard, fetchAiSections]);
+  // 状態管理
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
+  const [showPlanCreatedBanner, setShowPlanCreatedBanner] = useState(false);
+  const [aiSections, setAiSections] = useState<AISections | null>(null);
+  const [isLoadingAiSections, setIsLoadingAiSections] = useState(true);
+  const [copiedTaskIndex, setCopiedTaskIndex] = useState<number | null>(null);
+  const [savingTaskIndex, setSavingTaskIndex] = useState<number | null>(null);
+  
+  // その他KPI入力用のstate
+  const [otherFollowerCount, setOtherFollowerCount] = useState<number | "">("");
+  const [otherProfileVisits, setOtherProfileVisits] = useState<number | "">("");
+  const [otherExternalLinkTaps, setOtherExternalLinkTaps] = useState<number | "">("");
+  const [isSavingOtherKPI, setIsSavingOtherKPI] = useState(false);
+  const [isLoadingOtherKPI, setIsLoadingOtherKPI] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchOtherKPI();
+
+  // ダッシュボードデータを取得
+  const fetchDashboard = async () => {
+    try {
+      setIsLoadingDashboard(true);
+      const response = await authFetch("/api/home/dashboard");
+      if (response.ok) {
+        const data = (await response.json()) as DashboardResponse;
+        if (data.success && data.data) {
+          setDashboardData(data.data);
+        } else {
+          const errorMessage = handleError(
+            data.error || ERROR_MESSAGES.DASHBOARD_FETCH_FAILED,
+            ERROR_MESSAGES.DASHBOARD_FETCH_FAILED
+          );
+          toast.error(errorMessage);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = handleError(
+          errorData.error || ERROR_MESSAGES.DASHBOARD_FETCH_FAILED,
+          ERROR_MESSAGES.DASHBOARD_FETCH_FAILED
+        );
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("ダッシュボードデータ取得エラー:", error);
+      const errorMessage = handleError(
+        error,
+        ERROR_MESSAGES.DASHBOARD_FETCH_FAILED
+      );
+      toast.error(errorMessage);
+    } finally {
+      setIsLoadingDashboard(false);
     }
-  }, [user, fetchOtherKPI]);
+  };
+
+  // ダッシュボードデータとAI生成セクションを並列取得
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoadingDashboard(true);
+        setIsLoadingAiSections(true);
+        
+        const [dashboardResponse, aiSectionsResponse] = await Promise.all([
+          authFetch("/api/home/dashboard"),
+          authFetch("/api/home/ai-generated-sections"),
+        ]);
+
+        // ダッシュボードデータの処理
+        if (dashboardResponse.ok) {
+          const dashboardData = (await dashboardResponse.json()) as DashboardResponse;
+          if (dashboardData.success && dashboardData.data) {
+            setDashboardData(dashboardData.data);
+          } else {
+            const errorMessage = handleError(
+              dashboardData.error || "ダッシュボードデータの取得に失敗しました",
+              "ダッシュボードデータの取得に失敗しました"
+            );
+            toast.error(errorMessage);
+          }
+        } else {
+          const errorData = await dashboardResponse.json().catch(() => ({}));
+          const errorMessage = handleError(
+            errorData.error || "ダッシュボードデータの取得に失敗しました",
+            "ダッシュボードデータの取得に失敗しました"
+          );
+          toast.error(errorMessage);
+        }
+
+        // AI生成セクションの処理
+        if (aiSectionsResponse.ok) {
+          const aiSectionsData = (await aiSectionsResponse.json()) as AISectionsResponse;
+          if (aiSectionsData.success && aiSectionsData.data) {
+            setAiSections(aiSectionsData.data);
+          } else {
+            const errorMessage = handleError(
+              aiSectionsData.error || ERROR_MESSAGES.AI_SECTIONS_FETCH_FAILED,
+              ERROR_MESSAGES.AI_SECTIONS_FETCH_FAILED
+            );
+            toast.error(errorMessage);
+          }
+        } else {
+          const errorData = await aiSectionsResponse.json().catch(() => ({}));
+          const errorMessage = handleError(
+            errorData.error || ERROR_MESSAGES.AI_SECTIONS_FETCH_FAILED,
+            ERROR_MESSAGES.AI_SECTIONS_FETCH_FAILED
+          );
+          toast.error(errorMessage);
+        }
+      } catch (error) {
+        console.error("データ取得エラー:", error);
+        const errorMessage = handleError(
+          error,
+          ERROR_MESSAGES.DASHBOARD_FETCH_FAILED
+        );
+        toast.error(errorMessage);
+      } finally {
+        setIsLoadingDashboard(false);
+        setIsLoadingAiSections(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // AI生成セクションを取得
+  useEffect(() => {
+    const fetchAiSections = async () => {
+      try {
+        setIsLoadingAiSections(true);
+        const response = await authFetch("/api/home/ai-generated-sections");
+        if (response.ok) {
+          const data = (await response.json()) as AISectionsResponse;
+          console.log("[Home] AI生成セクション取得成功:", data);
+          if (data.success && data.data) {
+            console.log("[Home] todayTasks:", data.data.todayTasks);
+            data.data.todayTasks?.forEach((task, index: number) => {
+              console.log(`[Home] タスク${index}: type=${task.type}, description=${task.description}, hasContent=${!!task.generatedContent}, hasHashtags=${!!task.generatedHashtags && task.generatedHashtags.length > 0}`);
+            });
+            setAiSections(data.data);
+          } else {
+            const errorMessage = handleError(
+              data.error || "AI生成セクションの取得に失敗しました",
+              "AI生成セクションの取得に失敗しました"
+            );
+            toast.error(errorMessage);
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = handleError(
+            errorData.error || "AI生成セクションの取得に失敗しました",
+            "AI生成セクションの取得に失敗しました"
+          );
+          toast.error(errorMessage);
+        }
+      } catch (error) {
+        console.error("AI生成セクション取得エラー:", error);
+        const errorMessage = handleError(
+          error,
+          "AI生成セクションの取得に失敗しました"
+        );
+        toast.error(errorMessage);
+      } finally {
+        setIsLoadingAiSections(false);
+      }
+    };
+
+    fetchAiSections();
+  }, []);
+
+  // その他KPIデータを取得
+  const fetchOtherKPI = async () => {
+    try {
+      setIsLoadingOtherKPI(true);
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      
+      const response = await authFetch(`/api/follower-counts?month=${month}&snsType=instagram`);
+      if (response.ok) {
+        const data = await response.json() as {
+          success?: boolean;
+          data?: {
+            followers?: number;
+            profileVisits?: number;
+            externalLinkTaps?: number;
+          };
+        };
+        if (data.success && data.data) {
+          setOtherFollowerCount(data.data.followers || "");
+          setOtherProfileVisits(data.data.profileVisits || "");
+          setOtherExternalLinkTaps(data.data.externalLinkTaps || "");
+        } else {
+          setOtherFollowerCount("");
+          setOtherProfileVisits("");
+          setOtherExternalLinkTaps("");
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = handleError(
+          errorData.error || ERROR_MESSAGES.KPI_FETCH_FAILED,
+          ERROR_MESSAGES.KPI_FETCH_FAILED
+        );
+        console.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("その他KPIデータ取得エラー:", error);
+      const errorMessage = handleError(
+        error,
+        ERROR_MESSAGES.KPI_FETCH_FAILED
+      );
+      console.error(errorMessage);
+    } finally {
+      setIsLoadingOtherKPI(false);
+    }
+  };
+
+  // その他KPIデータを保存
+  const saveOtherKPI = async () => {
+    if (!user?.uid) {
+      toast.error("ログインが必要です");
+      return;
+    }
+
+    setIsSavingOtherKPI(true);
+    try {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      
+      const response = await authFetch("/api/follower-counts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          followers: Number(otherFollowerCount) || 0,
+          month,
+          snsType: "instagram",
+          source: "manual",
+          profileVisits: Number(otherProfileVisits) || 0,
+          externalLinkTaps: Number(otherExternalLinkTaps) || 0,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("保存しました");
+        fetchDashboard(); // ダッシュボードデータを再取得
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = handleError(
+          errorData.error || ERROR_MESSAGES.KPI_SAVE_FAILED,
+          ERROR_MESSAGES.KPI_SAVE_FAILED
+        );
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("その他KPI保存エラー:", error);
+      const errorMessage = handleError(
+        error,
+        ERROR_MESSAGES.KPI_SAVE_FAILED
+      );
+      toast.error(errorMessage);
+    } finally {
+      setIsSavingOtherKPI(false);
+    }
+  };
 
   // 計画削除を検知してデータを再取得（ページフォーカス時）
   useEffect(() => {
     const handleFocus = () => {
+      // ページがフォーカスされたときにデータを再取得
       fetchDashboard();
       fetchOtherKPI();
     };
 
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [fetchDashboard, fetchOtherKPI]);
+  }, []);
+
+  // 初回ロード時にその他KPIデータを取得
+  useEffect(() => {
+    if (user) {
+      fetchOtherKPI();
+    }
+  }, [user]);
+
 
   // 週間成果データ（ダッシュボードから取得）
   const weeklyResults: WeeklyResult[] = dashboardData?.weeklyKPIs
@@ -122,6 +379,7 @@ export default function HomePage() {
                   <button
                     onClick={() => setShowPlanCreatedBanner(false)}
                     className="text-sm font-light underline hover:no-underline"
+                    aria-label="今日やることを見る"
                   >
                     今日やることを見る
                   </button>
@@ -129,6 +387,7 @@ export default function HomePage() {
                 <button
                   onClick={() => setShowPlanCreatedBanner(false)}
                   className="text-white hover:opacity-70 transition-opacity"
+                  aria-label="バナーを閉じる"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -150,6 +409,7 @@ export default function HomePage() {
                       window.location.href = "/instagram/plan";
                     }}
                     className="bg-white text-[#FF8A15] px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors"
+                    aria-label="運用計画を作成する"
                   >
                     計画を作成する →
                   </button>
@@ -159,28 +419,518 @@ export default function HomePage() {
           )}
 
           {/* 今週の成果 */}
-          <WeeklyKPISection weeklyResults={weeklyResults} />
+          {(dashboardData?.weeklyKPIs || isLoadingDashboard) && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                <span>📊</span>
+                今週の成果
+              </h2>
+              {isLoadingDashboard ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="border border-gray-200 rounded-lg p-4">
+                      <SkeletonLoader height="1rem" width="40%" className="mb-2" />
+                      <SkeletonLoader height="2rem" width="60%" className="mb-2" />
+                      <SkeletonLoader height="0.75rem" width="50%" />
+                    </div>
+                  ))}
+                </div>
+              ) : weeklyResults.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {weeklyResults.map((result, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm font-light text-gray-600">{result.metric}</div>
+                      <span className="text-2xl">{result.icon}</span>
+                    </div>
+                    <div className="text-2xl font-light text-gray-900 mb-1">
+                      {result.value.toLocaleString()}
+                    </div>
+                    {result.change !== 0 && (
+                      <div className={`text-xs font-light flex items-center gap-1 ${
+                        result.change > 0 ? "text-green-600" : "text-red-600"
+                      }`}>
+                        <TrendingUp className={`w-3 h-3 ${result.change < 0 ? "rotate-180" : ""}`} />
+                        {result.change > 0 ? "+" : ""}{result.change.toLocaleString()}
+                        <span className="text-gray-500">（先週比）</span>
+                          </div>
+                        )}
+                    {result.change === 0 && (
+                      <div className="text-xs font-light text-gray-400">
+                        先週と変動なし
+                      </div>
+                    )}
+                  </div>
+                ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  データがありません
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 今日やることと明日の準備（2カラム） */}
           {(dashboardData?.currentPlan || isLoadingDashboard) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TodayTasksSection />
-              <TomorrowPreparationSection />
+              {/* 今日やること */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>📅</span>
+                  今日やること
+                </h2>
+              {(isLoadingAiSections || isLoadingDashboard) ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="border-l-2 border-[#FF8A15] pl-4">
+                      <SkeletonLoader height="1rem" width="40%" className="mb-2" />
+                      <SkeletonLoader height="1rem" width="80%" className="mb-2" />
+                      <SkeletonLoader height="1rem" width="60%" />
+                    </div>
+                  ))}
+                </div>
+              ) : !aiSections || aiSections.todayTasks.length === 0 ? (
+                <div className="space-y-4">
+                  <div className="border-l-2 border-[#FF8A15] pl-4">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900 mb-1">
+                          【分析・確認】
+                        </div>
+                        <p className="text-sm font-light text-gray-700 mb-2">
+                          「投稿後の分析はできていますか？見直してみましょう！」
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-l-2 border-[#FF8A15] pl-4">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900 mb-1">
+                          【エンゲージメント】
+                        </div>
+                        <p className="text-sm font-light text-gray-700 mb-2">
+                          「コメントには返信を忘れずに！」
+                        </p>
+                      </div>
+                    </div>
+            </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {aiSections.todayTasks.map((task, index) => {
+                    const typeLabels: Record<string, string> = {
+                      feed: "フィード投稿",
+                      reel: "リール",
+                      story: "ストーリーズ",
+                    };
+                    return (
+                      <div key={index} className="border-l-2 border-[#FF8A15] pl-4">
+                        <div className="flex items-start gap-2 mb-2">
+                    <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900 mb-1">
+                              {typeLabels[task.type] || task.type}
+                              {task.time && (
+                                <span className="text-xs font-light text-gray-500 ml-2">
+                                  ({task.time})
+                          </span>
+                        )}
+                      </div>
+                            <p className="text-sm font-light text-gray-700 mb-2">
+                              「{task.description}」
+                            </p>
+                            {(task.generatedContent || (task.generatedHashtags && task.generatedHashtags.length > 0)) && (
+                              <div className="bg-gray-50 border border-gray-200 rounded-md p-3 mb-2 relative">
+                                <div className="absolute top-2 right-2 flex gap-1">
+                        <button
+                                    onClick={async () => {
+                                      if (!user?.uid) {
+                                        toast.error(ERROR_MESSAGES.AUTH_REQUIRED);
+                                        return;
+                                      }
+
+                                      setSavingTaskIndex(index);
+                                      try {
+                                        const postData = {
+                                          userId: user.uid,
+                                          title: task.description || "投稿",
+                                          content: task.generatedContent || "",
+                                          hashtags: task.generatedHashtags || [],
+                                          postType: task.type as "feed" | "reel" | "story",
+                                          status: "draft",
+                                          scheduledDate: new Date().toISOString().split("T")[0],
+                                          scheduledTime: task.time || new Date().toTimeString().slice(0, 5),
+                                        };
+
+                                        const response = await authFetch("/api/posts", {
+                                          method: "POST",
+                                          headers: {
+                                            "Content-Type": "application/json",
+                                          },
+                                          body: JSON.stringify(postData),
+                                        });
+
+                                        if (response.ok) {
+                                          toast.success("投稿を保存しました！投稿一覧で確認できます。");
+                                        } else {
+                                          const errorData = await response.json().catch(() => ({}));
+                                          const errorMessage = handleError(
+                                            errorData.error || ERROR_MESSAGES.POST_SAVE_FAILED,
+                                            ERROR_MESSAGES.POST_SAVE_FAILED
+                                          );
+                                          toast.error(errorMessage);
+                                        }
+                                      } catch (error) {
+                                        console.error("投稿保存エラー:", error);
+                                        const errorMessage = handleError(
+                                          error,
+                                          ERROR_MESSAGES.POST_SAVE_FAILED
+                                        );
+                                        toast.error(errorMessage);
+                                      } finally {
+                                        setSavingTaskIndex(null);
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-md hover:bg-gray-200 transition-colors"
+                                    title="投稿一覧に保存"
+                                    disabled={savingTaskIndex === index}
+                                  >
+                                    {savingTaskIndex === index ? (
+                                      <Loader2 className="w-4 h-4 text-orange-600 animate-spin" />
+                          ) : (
+                                      <Save className="w-4 h-4 text-orange-600" />
+                          )}
+                        </button>
+                                  <button
+                                    onClick={async () => {
+                                      const content = task.generatedContent || "";
+                                      const hashtags = task.generatedHashtags?.map(tag => `#${tag}`).join(" ") || "";
+                                      const copyText = `${content}${hashtags ? `\n\n${hashtags}` : ""}`;
+                                      
+                                      try {
+                                        await navigator.clipboard.writeText(copyText);
+                                        setCopiedTaskIndex(index);
+                                        setTimeout(() => setCopiedTaskIndex(null), 2000);
+                                        toast.success("コピーしました");
+                                      } catch (error) {
+                                        console.error("コピーに失敗しました:", error);
+                                        const errorMessage = handleError(
+                                          error,
+                                          ERROR_MESSAGES.POST_COPY_FAILED
+                                        );
+                                        toast.error(errorMessage);
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-md hover:bg-gray-200 transition-colors"
+                                    title="投稿文とハッシュタグをコピー"
+                                    aria-label={`${task.description}の投稿文とハッシュタグをクリップボードにコピー`}
+                                  >
+                                    {copiedTaskIndex === index ? (
+                                      <Check className="w-4 h-4 text-green-600" />
+                                    ) : (
+                                      <Copy className="w-4 h-4 text-gray-600" />
+                                    )}
+                        </button>
+                                </div>
+                                {task.generatedContent && (
+                                  <div className="mb-2 pr-20">
+                                    <div className="text-xs font-medium text-gray-700 mb-1">📝 生成された投稿文:</div>
+                                    <pre className="text-xs font-light text-gray-800 whitespace-pre-wrap font-sans">
+                                      {task.generatedContent}
+                                    </pre>
+                                  </div>
+                                )}
+                                {task.generatedHashtags && task.generatedHashtags.length > 0 && (
+                                  <div className="pr-20">
+                                    <div className="text-xs font-medium text-gray-700 mb-1">🏷️ ハッシュタグ:</div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {task.generatedHashtags.map((tag, tagIndex) => (
+                                        <span key={tagIndex} className="text-xs text-[#FF8A15] font-light">
+                                          #{tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {task.tip && (
+                              <p className="text-xs text-gray-500 font-light">
+                                → {task.tip}
+                              </p>
+                      )}
+                    </div>
+                  </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              </div>
+
+              {/* 明日の準備 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>🔮</span>
+                  明日の準備
+                </h2>
+              {(isLoadingAiSections || isLoadingDashboard) ? (
+                <div className="space-y-4">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="border-l-2 border-blue-400 pl-4">
+                      <SkeletonLoader height="1rem" width="40%" className="mb-2" />
+                      <SkeletonLoader height="1rem" width="80%" className="mb-2" />
+                      <SkeletonLoader height="1rem" width="60%" />
+                    </div>
+                  ))}
+                </div>
+              ) : !aiSections || aiSections.tomorrowPreparation.length === 0 ? (
+                <div className="space-y-4">
+                  <div className="border-l-2 border-blue-400 pl-4">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900 mb-1">
+                          【分析・確認】
+            </div>
+                        <p className="text-sm font-light text-gray-700 mb-2">
+                          「投稿後の分析はできていますか？見直してみましょう！」
+              </p>
+            </div>
+          </div>
+            </div>
+                  <div className="border-l-2 border-blue-400 pl-4">
+                    <div className="flex items-start gap-2 mb-2">
+              <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900 mb-1">
+                          【エンゲージメント】
+                        </div>
+                        <p className="text-sm font-light text-gray-700 mb-2">
+                          「コメントには返信を忘れずに！」
+                        </p>
+                      </div>
+                </div>
+              </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {aiSections.tomorrowPreparation.map((prep, index) => {
+                    const typeLabels: Record<string, string> = {
+                      feed: "フィード投稿",
+                      reel: "リール",
+                      story: "ストーリーズ",
+                    };
+                    return (
+                      <div key={index} className="border-l-2 border-blue-400 pl-4">
+                        <div className="flex items-start gap-2 mb-2">
+              <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900 mb-1">
+                              {typeLabels[prep.type] || prep.type}
+                              {prep.time && (
+                                <span className="text-xs font-light text-gray-500 ml-2">
+                                  ({prep.time})
+                                </span>
+                              )}
+                </div>
+                            <p className="text-sm font-light text-gray-700 mb-2">
+                              「{prep.description}」
+                            </p>
+                            <p className="text-xs text-blue-600 font-light">
+                              ✓ {prep.preparation}
+                            </p>
+                </div>
+              </div>
+            </div>
+                    );
+                  })}
+                </div>
+              )}
+              </div>
             </div>
           )}
 
           {/* 今月の目標と今週の予定（2カラム） */}
           {(dashboardData?.currentPlan || isLoadingDashboard) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <MonthlyGoalsSection />
-              <WeeklyScheduleSection />
+              {/* 今月の目標 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>🎯</span>
+                  今月の目標
+                </h2>
+              {(isLoadingAiSections || isLoadingDashboard) ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <SkeletonLoader height="1rem" width="0.5rem" />
+                      <div className="flex-1">
+                        <SkeletonLoader height="1rem" width="60%" className="mb-1" />
+                        <SkeletonLoader height="1rem" width="80%" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : !aiSections || aiSections.monthlyGoals.length === 0 ? (
+                <p className="text-sm text-gray-500 font-light text-center py-4">
+                  今月の目標は設定されていません
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {aiSections.monthlyGoals.map((goal, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <span className="text-gray-400">・</span>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          {goal.metric}
+                  </div>
+                        <div className="text-sm font-light text-gray-700">
+                          {goal.target}
+                  </div>
+                  </div>
+                  </div>
+                  ))}
+              </div>
+              )}
+              </div>
+
+              {/* 今週の予定 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>📅</span>
+                  今週の予定
+                </h2>
+              {(isLoadingAiSections || isLoadingDashboard) ? (
+                <div className="space-y-4">
+                  <SkeletonLoader height="1.5rem" width="60%" className="mb-2" />
+                  <SkeletonLoader height="1rem" width="100%" className="mb-1" />
+                  <SkeletonLoader height="1rem" width="90%" className="mb-1" />
+                  <SkeletonLoader height="1rem" width="80%" />
+                </div>
+              ) : !aiSections || !aiSections.weeklySchedule ? (
+                <p className="text-sm text-gray-500 font-light text-center py-4">
+                  今週の予定は設定されていません
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border-l-2 border-purple-400 pl-4">
+                    <div className="mb-2">
+                      <div className="text-sm font-medium text-gray-900 mb-1">
+                        第{aiSections.weeklySchedule.week}週: {aiSections.weeklySchedule.theme}
+                      </div>
+                    </div>
+                    <div className="space-y-1 mt-2">
+                      {aiSections.weeklySchedule.actions.map((action, actionIndex) => (
+                        <div key={actionIndex} className="text-xs font-light text-gray-700 flex items-start gap-2">
+                          <span className="text-purple-400 mt-0.5">└</span>
+                          <span>{action}</span>
+                        </div>
+                      ))}
+                    </div>
+            </div>
+                  {aiSections.weeklySchedule.tasks && aiSections.weeklySchedule.tasks.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="text-xs font-medium text-gray-700 mb-2">📋 今週の投稿スケジュール</div>
+                      <div className="space-y-2">
+                        {aiSections.weeklySchedule.tasks.map((task, taskIndex) => {
+                          const typeLabels: Record<string, string> = {
+                            feed: "フィード投稿",
+                            reel: "リール",
+                            story: "ストーリーズ",
+                          };
+                          return (
+                            <div key={taskIndex} className="text-xs font-light text-gray-700">
+                              <span className="text-gray-900">{task.date || task.day}</span>
+                              {task.time && <span className="text-gray-500 ml-1">({task.time})</span>}
+                              <span className="text-gray-500 ml-1">-</span>
+                              <span className="text-gray-700 ml-1">{typeLabels[task.type] || task.type}</span>
+                              <span className="text-gray-600 ml-1">「{task.description}」</span>
+                            </div>
+                          );
+                        })}
+            </div>
+          </div>
+                  )}
+                </div>
+              )}
+              </div>
             </div>
           )}
 
           {/* その他KPI入力とコメント返信アシスト（2カラム） */}
           {(dashboardData?.currentPlan || isLoadingDashboard) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <OtherKPISection />
+              {/* その他KPI入力 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
+                  <span>📝</span>
+                  投稿に紐づかない数値入力
+                </h2>
+                {dashboardData?.currentPlan ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        その他フォロワー数
+                      </label>
+                      <input
+                        type="number"
+                        value={otherFollowerCount}
+                        onChange={(e) => setOtherFollowerCount(e.target.value === "" ? "" : Number(e.target.value))}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかないフォロワー増加数を入力</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        その他のプロフィール閲覧数
+                      </label>
+                      <input
+                        type="number"
+                        value={otherProfileVisits}
+                        onChange={(e) => setOtherProfileVisits(e.target.value === "" ? "" : Number(e.target.value))}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかないプロフィール閲覧数を入力</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        その他の外部リンクタップ数
+                      </label>
+                      <input
+                        type="number"
+                        value={otherExternalLinkTaps}
+                        onChange={(e) => setOtherExternalLinkTaps(e.target.value === "" ? "" : Number(e.target.value))}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかない外部リンクタップ数を入力</p>
+                    </div>
+                    <button
+                      onClick={saveOtherKPI}
+                      disabled={isSavingOtherKPI}
+                      className="w-full py-2 px-4 bg-[#FF8A15] text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      aria-label="KPIデータを保存"
+                    >
+                      {isSavingOtherKPI ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          保存中...
+                        </>
+                      ) : (
+                        "保存"
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    計画が作成されていません
+                  </p>
+                )}
+              </div>
 
               {/* コメント返信アシスト */}
               <div className="bg-white rounded-lg border border-gray-200">

@@ -429,6 +429,22 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     setLatestGeneration(null);
   };
 
+  // キーボードショートカット（Ctrl+S / Cmd+Sで保存）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (user?.uid && !isSaving && content.trim()) {
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, isSaving, content]);
+
   // 画像アップロード処理は PostEditorImageUpload コンポーネントに移動
   // ハッシュタグ処理は PostEditorHashtags コンポーネントに移動
 
@@ -771,7 +787,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                         ? "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     }`}
-                  >
+                  aria-label={`${reference.summary || `${reference.status === "gold" ? "ゴールド" : reference.status === "negative" ? "改善" : "参考"}投稿`}を参照`}
+                >
                     {reference.summary ||
                       `${reference.status === "gold" ? "ゴールド" : reference.status === "negative" ? "改善" : "参考"}投稿 | ER ${
                         reference.metrics?.engagementRate?.toFixed?.(1) ?? "-"
@@ -840,6 +857,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   }}
                   disabled={!content.trim() || !onVideoStructureGenerate}
                   className="px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white hover:from-orange-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+                  aria-label="AIで動画構成を生成"
                 >
                   <Sparkles size={16} />
                   <span>AIで動画構成生成</span>
@@ -941,6 +959,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                         ? "bg-orange-100 border-orange-500 text-orange-700"
                         : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
                     } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                    aria-label="カジュアルスタイル（150-200文字）を選択"
+                    aria-pressed={writingStyle === "casual"}
                   >
                     カジュアル
                     <span className="block text-xs mt-1 text-gray-500">150-200文字</span>
@@ -954,6 +974,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                         ? "bg-orange-100 border-orange-500 text-orange-700"
                         : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
                     } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                    aria-label="誠実スタイル（250-400文字）を選択"
+                    aria-pressed={writingStyle === "sincere"}
                   >
                     誠実
                     <span className="block text-xs mt-1 text-gray-500">250-400文字</span>
@@ -973,6 +995,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     ? "bg-gray-100 text-black cursor-not-allowed border-gray-200"
                     : "bg-gradient-to-r from-orange-400 to-orange-500 text-white border-orange-500 hover:from-orange-500 hover:to-orange-600 hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105"
                 }`}
+                aria-label="投稿文を自動生成（テーマも自動選択）"
               >
                 {isAutoGenerating ? (
                   <>
@@ -1006,6 +1029,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     ? "bg-gray-100 text-black cursor-not-allowed border-gray-200"
                     : "bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white border-[#ff8a15] hover:from-orange-600 hover:to-[#ff8a15] hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105"
                 }`}
+                aria-label="テーマ指定で投稿文を生成"
               >
                 {isGenerating ? (
                   <>
@@ -1106,6 +1130,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     <button
                       onClick={() => handleLoad(savedContent)}
                       className="ml-2 px-2 py-1 text-orange-600 hover:text-orange-800"
+                      aria-label={`保存された投稿「${savedContent.substring(0, 30)}...」を読み込む`}
                     >
                       読み込み
                     </button>

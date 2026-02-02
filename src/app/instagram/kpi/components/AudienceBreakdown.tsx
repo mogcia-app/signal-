@@ -40,6 +40,10 @@ const GenderChart: React.FC<{
     );
   }
 
+  const malePercent = breakdown.gender.male ?? 0;
+  const femalePercent = breakdown.gender.female ?? 0;
+  const otherPercent = breakdown.gender.other ?? 0;
+  
   return (
     <div className="flex flex-col items-center">
       <p className="text-sm font-semibold text-gray-900 mb-4">{title}</p>
@@ -47,11 +51,13 @@ const GenderChart: React.FC<{
         className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 border-gray-200 flex-shrink-0 mb-4"
         style={{
           background: buildConicGradient([
-            { value: breakdown.gender.male ?? 0, color: "#6366F1" },
-            { value: breakdown.gender.female ?? 0, color: "#EC4899" },
-            { value: breakdown.gender.other ?? 0, color: "#475569" },
+            { value: malePercent, color: "#6366F1" },
+            { value: femalePercent, color: "#EC4899" },
+            { value: otherPercent, color: "#475569" },
           ]),
         }}
+        role="img"
+        aria-label={`${title}の性別内訳: 男性${malePercent.toFixed(1)}%、女性${femalePercent.toFixed(1)}%、その他${otherPercent.toFixed(1)}%`}
       />
     </div>
   );

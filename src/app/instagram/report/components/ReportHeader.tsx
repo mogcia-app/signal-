@@ -44,7 +44,8 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
             type="month"
             value={selectedMonth}
             onChange={(e) => onMonthChange(e.target.value)}
-            className="w-full md:w-auto px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 focus:outline-none focus:border-[#ff8a15] transition-colors"
+            className="w-full md:w-auto px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-colors"
+            aria-label="レポートの対象月を選択"
           />
         </div>
       </div>

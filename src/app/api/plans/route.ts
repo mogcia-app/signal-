@@ -4,6 +4,7 @@ import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth
 import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { syncPlanFollowerProgress } from "../../../lib/plans/sync-follower-progress";
+import type { AIPlanSuggestion } from "../../instagram/plan/types/plan";
 
 // 計画データの型定義（統一版）
 interface PlanData {
@@ -44,14 +45,7 @@ interface PlanData {
   } | null;
 
   // AI提案データ（新規）
-  aiSuggestion?: {
-    weeklyTasks?: any[];
-    monthlyGoals?: any[];
-    keyMessage?: string;
-    monthlyStrategy?: any[];
-    weeklyPlans?: any[];
-    recommendedPostingTimes?: any[];
-  } | null;
+  aiSuggestion?: AIPlanSuggestion | null;
 }
 
 type FirestoreTimestampLike = {

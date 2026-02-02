@@ -98,3 +98,4 @@ export const compressImageToSize = async (
   return compressImage(file, 1280, 1280, 0.6);
 };
 
+

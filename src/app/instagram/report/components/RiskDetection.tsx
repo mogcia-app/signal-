@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ShieldAlert, AlertTriangle, Info } from "lucide-react";
+import type { ReportData, RiskAlert } from "../../../../types/report";
 
 interface RiskDetectionProps {
   selectedMonth: string;
@@ -12,20 +13,24 @@ interface RiskDetectionProps {
     totalComments: number;
     totalFollowerIncrease: number;
   } | null;
-  reportData?: Record<string, unknown> | null;
+  reportData?: ReportData | null;
 }
 
-interface RiskAlert {
-  id: string;
-  severity: "critical" | "warning" | "info";
-  metric: string;
-  message: string;
-  change?: number;
-  value?: number;
-}
-
-const severityConfig = {
+const severityConfig: Record<string, {
+  border: string;
+  bg: string;
+  text: string;
+  icon: React.ReactNode;
+  label: string;
+}> = {
   critical: {
+    border: "border-red-300",
+    bg: "bg-red-50",
+    text: "text-red-800",
+    icon: <ShieldAlert className="w-5 h-5 text-red-600" />,
+    label: "高リスク",
+  },
+  high: {
     border: "border-red-300",
     bg: "bg-red-50",
     text: "text-red-800",
@@ -39,6 +44,13 @@ const severityConfig = {
     icon: <AlertTriangle className="w-5 h-5 text-yellow-600" />,
     label: "注意",
   },
+  medium: {
+    border: "border-yellow-300",
+    bg: "bg-yellow-50",
+    text: "text-yellow-800",
+    icon: <AlertTriangle className="w-5 h-5 text-yellow-600" />,
+    label: "注意",
+  },
   info: {
     border: "border-blue-300",
     bg: "bg-blue-50",
@@ -46,11 +58,18 @@ const severityConfig = {
     icon: <Info className="w-5 h-5 text-blue-600" />,
     label: "情報",
   },
-} as const;
+  low: {
+    border: "border-blue-300",
+    bg: "bg-blue-50",
+    text: "text-blue-800",
+    icon: <Info className="w-5 h-5 text-blue-600" />,
+    label: "情報",
+  },
+};
 
 export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpis, reportData }) => {
   // reportDataからリスクアラートを取得
-  const alerts: RiskAlert[] = (Array.isArray(reportData?.riskAlerts) ? reportData.riskAlerts : []) as RiskAlert[];
+  const alerts: RiskAlert[] = Array.isArray(reportData?.riskAlerts) ? reportData.riskAlerts : [];
 
   return (
     <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
@@ -72,7 +91,7 @@ export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpi
           {alerts.length > 0 ? (
             <div className="space-y-2">
               {alerts.map((alert) => {
-                const config = severityConfig[alert.severity];
+                const config = severityConfig[alert.severity] || severityConfig.info;
                 return (
                   <div
                     key={alert.id}
@@ -84,10 +103,10 @@ export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpi
                           {config.icon}
                           <span>{config.label}</span>
                         </span>
-                        <span className="text-xs font-medium text-gray-700">{alert.metric}</span>
+                        <span className="text-xs font-medium text-gray-700">{alert.metric || alert.title}</span>
                       </div>
                     </div>
-                    <p className={`text-xs ${config.text} mt-1.5 leading-relaxed`}>{alert.message}</p>
+                    <p className={`text-xs ${config.text} mt-1.5 leading-relaxed`}>{alert.message || alert.description}</p>
                     {(typeof alert.change === "number" || typeof alert.value === "number") && (
                       <p className="text-xs text-gray-600 mt-2 pt-2 border-t border-gray-200">
                         {typeof alert.change === "number"

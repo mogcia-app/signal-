@@ -145,6 +145,7 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
                 textAnchor={filteredData.length > 14 ? "end" : "middle"}
                 height={filteredData.length > 14 ? 60 : 30}
                 tick={{ fontSize: 10 }}
+                aria-label="日付"
               />
               <YAxis
                 stroke="#6b7280"
@@ -155,6 +156,7 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
                   if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
                   return value.toString();
                 }}
+                aria-label="値"
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend

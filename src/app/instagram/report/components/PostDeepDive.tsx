@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { BarChart3, Sparkles, TrendingDown, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Sparkles, TrendingDown, Loader2 } from "lucide-react";
 import type { ReportData } from "../../../../types/report";
 
 interface PostDeepDiveProps {
@@ -103,7 +103,7 @@ export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth, repor
         <div>
           <h2 className="text-base font-bold text-gray-900">投稿ディープダイブ</h2>
           <p className="text-xs text-gray-600 mt-0.5">
-            各投稿の詳細なパフォーマンス指標を確認できます
+            投稿実績・AI参照元・主要KPIをワンビューで確認できます
           </p>
         </div>
       </div>

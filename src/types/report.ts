@@ -29,13 +29,16 @@ export interface ActionPlan {
 export interface RiskAlert {
   id: string;
   type: "performance_drop" | "engagement_decrease" | "follower_loss" | "content_quality" | "consistency";
-  severity: "high" | "medium" | "low";
+  severity: "high" | "medium" | "low" | "critical" | "warning" | "info";
   title: string;
   description: string;
   recommendation: string;
   affectedMetrics?: string[];
   change?: number;
   value?: number;
+  // 互換性のための追加プロパティ
+  metric?: string;
+  message?: string;
 }
 
 /**
@@ -61,7 +64,10 @@ export interface FeedbackPostSentimentEntry {
   positive: number;
   negative: number;
   neutral: number;
-  score?: number;
+  score?: number; // optional to match usage
+  lastComment?: string;
+  lastCommentAt?: string;
+  lastSentiment?: "positive" | "negative" | "neutral";
   status?: "gold" | "negative" | "normal";
 }
 

@@ -20,8 +20,12 @@ export interface PlanData {
   category: string;
   strategies: string[];
   postCategories: string[];
-  createdAt: string | { toDate?: () => Date };
-  updatedAt: string | { toDate?: () => Date };
+  createdAt: string | Date | { toDate?: () => Date } | null;
+  updatedAt: string | Date | { toDate?: () => Date } | null;
+
+  // 日付情報
+  startDate?: string | Date | { toDate?: () => Date } | null;
+  endDate?: string | Date | { toDate?: () => Date } | null;
 
   // シミュレーション結果（APIから返された完全なデータ）
   simulationResult?: Record<string, unknown> | null;
@@ -31,6 +35,9 @@ export interface PlanData {
 
   // AI戦略
   generatedStrategy?: string | null;
+  
+  // AI提案データ
+  aiSuggestion?: unknown | null;
 }
 
 type UsePlanDataOptions = {

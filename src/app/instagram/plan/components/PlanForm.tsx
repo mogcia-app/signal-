@@ -7,7 +7,7 @@ import { useAuth } from "../../../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { authFetch } from "../../../../utils/authFetch";
 import { PlanFormSubmitButton } from "./PlanFormSubmitButton";
-import { PlanFormBasicInfo } from "./PlanFormBasicInfo";
+// PlanFormBasicInfo is not used
 
 interface PlanFormProps {
   onSubmit: (data: PlanFormData, aiSuggestedTarget?: number) => void;

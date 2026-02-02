@@ -44,7 +44,8 @@ export const KPIHeader: React.FC<KPIHeaderProps> = ({
             type="month"
             value={selectedMonth}
             onChange={(e) => onMonthChange(e.target.value)}
-            className="w-full md:w-auto px-3 py-2 text-sm border border-gray-300 focus:outline-none focus:border-[#ff8a15] transition-colors"
+            className="w-full md:w-auto px-3 py-2 text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-colors"
+            aria-label="KPI分析の対象月を選択"
           />
         </div>
       </div>

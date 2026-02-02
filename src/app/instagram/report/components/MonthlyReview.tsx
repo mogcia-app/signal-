@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Brain, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import type { ReportData } from "../../../../types/report";
 
 interface MonthlyReviewProps {
   selectedMonth: string;
@@ -12,7 +13,7 @@ interface MonthlyReviewProps {
     totalComments: number;
     totalFollowerIncrease: number;
   } | null;
-  reportData?: Record<string, unknown> | null;
+  reportData?: ReportData | null;
   onRegenerate?: () => void;
 }
 

@@ -22,6 +22,7 @@ export const PostEditorActions: React.FC<PostEditorActionsProps> = ({
         onClick={onSave}
         disabled={!canSave || isSaving}
         className="flex items-center space-x-2 px-4 py-2 bg-[#ff8a15] text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        aria-label="投稿を保存（Ctrl+SまたはCmd+S）"
       >
         {isSaving ? (
           <>
@@ -38,6 +39,7 @@ export const PostEditorActions: React.FC<PostEditorActionsProps> = ({
       <button
         onClick={onClear}
         className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
+        aria-label="投稿内容をクリア"
       >
         <RefreshCw size={14} />
         <span>クリア</span>
@@ -45,4 +47,5 @@ export const PostEditorActions: React.FC<PostEditorActionsProps> = ({
     </div>
   );
 };
+
 

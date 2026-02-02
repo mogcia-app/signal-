@@ -250,7 +250,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
     referenceTypeMeta[sourceType] ?? referenceTypeMeta.default;
 
   return (
-    <div className="relative bg-white shadow-sm border border-gray-100 overflow-visible hover:shadow-md transition-all duration-200 aspect-square flex flex-col">
+    <article className="relative bg-white shadow-sm border border-gray-100 overflow-visible hover:shadow-md transition-all duration-200 aspect-square flex flex-col" aria-label={`投稿: ${post.title || "無題"}`}>
       {/* バッジをカード上部から少しはみ出すように配置 */}
       <div className="absolute -top-2 left-2 flex items-center space-x-1.5 z-10 flex-wrap gap-1">
         {post.isAIGenerated && (
@@ -287,16 +287,18 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
           {post.imageData ? (
             <Image
               src={post.imageData}
-              alt="投稿画像"
+              alt={post.title || "投稿画像"}
               fill
               quality={90}
               className="object-cover"
+              loading="lazy"
             />
           ) : post.imageUrl ? (
             <Image
               src={post.imageUrl}
-              alt="投稿画像"
+              alt={post.title || "投稿画像"}
               fill
+              loading="lazy"
               quality={90}
               className="object-cover"
             />
@@ -447,14 +449,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
           <div className="flex items-center justify-end gap-1.5">
             <a
               href={`/instagram/lab/${post.postType}?edit=${post.id}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"
+              aria-label={`投稿「${post.title || "無題"}」を編集`}
             >
               <Edit size={12} />
               編集
             </a>
             <a
               href={`/instagram/posts/${post.id}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"
+              aria-label={`投稿「${post.title || "無題"}」の詳細を表示`}
             >
               <Eye size={12} />
               詳細
@@ -462,7 +466,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
             {!hasAnalytics && post.postType !== "story" && (
               <a
                 href={`${post.postType === "feed" ? "/analytics/feed" : "/instagram/analytics/reel"}?postId=${post.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"
+                aria-label={`投稿「${post.title || "無題"}」の分析を開始`}
               >
                 <BarChart3 size={12} />
                 分析
@@ -471,7 +476,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
             {hasAnalytics && post.postType !== "story" && (
               <a
                 href={`${post.postType === "feed" ? "/analytics/feed" : "/instagram/analytics/reel"}?postId=${post.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"
+                aria-label={`投稿「${post.title || "無題"}」の分析を編集`}
               >
                 <BarChart3 size={12} />
                 分析編集
@@ -479,7 +485,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
             )}
             <button
               onClick={() => onDeletePost(post.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+              aria-label={`投稿「${post.title || "無題"}」を削除`}
             >
               <Trash2 size={12} />
               削除
@@ -487,7 +494,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
           </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 
