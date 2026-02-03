@@ -676,13 +676,22 @@ export default function PostDetailPage() {
         {post.imageData || post.imageUrl ? (
           <div className="mb-8">
             <div className="w-full max-w-lg mx-auto aspect-square bg-gray-50 relative overflow-hidden">
-              <Image
-                src={post.imageData || post.imageUrl || ""}
-                alt={post.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
+              {(post.imageData && post.imageData.startsWith("data:")) || (post.imageUrl && post.imageUrl.startsWith("data:")) ? (
+                <img
+                  src={post.imageData || post.imageUrl || ""}
+                  alt={post.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Image
+                  src={post.imageData || post.imageUrl || ""}
+                  alt={post.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  unoptimized
+                />
+              )}
             </div>
           </div>
         ) : (

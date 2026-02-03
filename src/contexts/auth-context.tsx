@@ -123,6 +123,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           await ensureUserDocument(user);
 
+          // SentryにサポートIDを設定（非同期、エラーが発生しても処理は続行）
+          if (typeof window !== "undefined") {
+            import("@sentry/nextjs")
+              .then((Sentry) => {
+                // ユーザープロファイルからサポートIDを取得
+                import("../lib/firebase")
+                  .then(({ db }) => {
+                    import("firebase/firestore")
+                      .then(({ doc, getDoc }) => {
+                        getDoc(doc(db, "users", user.uid))
+                          .then((userDoc) => {
+                            if (userDoc.exists()) {
+                              const userData = userDoc.data();
+                              const supportId = userData?.supportId;
+                              const planTier = userData?.planTier;
+                              const accountType = userData?.usageType;
+                              
+                              if (supportId) {
+                                Sentry.setUser({
+                                  id: supportId, // サポートIDをSentryのuser.idに設定
+                                  email: user.email ?? undefined,
+                                  username: user.displayName ?? undefined,
+                                });
+                                
+                                // タグを設定
+                                Sentry.setTag("plan", planTier || "unknown");
+                                Sentry.setTag("account_type", accountType || "unknown");
+                                Sentry.setTag("user_id", user.uid);
+                                
+                                if (process.env.NODE_ENV === "development") {
+                                  console.log("✅ SentryにサポートIDを設定:", supportId);
+                                }
+                              }
+                            }
+                          })
+                          .catch((error) => {
+                            console.error("[auth-context] Sentry設定エラー（Firestore取得）:", error);
+                          });
+                      })
+                      .catch((error) => {
+                        console.error("[auth-context] Sentry設定エラー（firebase/firestore読み込み）:", error);
+                      });
+                  })
+                  .catch((error) => {
+                    console.error("[auth-context] Sentry設定エラー（firebase読み込み）:", error);
+                  });
+              })
+              .catch((error) => {
+                console.error("[auth-context] Sentry設定エラー（@sentry/nextjs読み込み）:", error);
+              });
+          }
+
           // 契約期間をチェック
           const isValid = await checkUserContract(user.uid);
           setContractValid(isValid);
@@ -149,6 +201,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // ログアウト時はセッション情報をクリア
         if (typeof window !== "undefined") {
           localStorage.removeItem("signal_session_start");
+          
+          // Sentryのユーザー情報をクリア
+          import("@sentry/nextjs")
+            .then((Sentry) => {
+              Sentry.setUser(null);
+            })
+            .catch(() => {
+              // エラーは無視
+            });
         }
       }
 

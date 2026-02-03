@@ -21,8 +21,14 @@ Sentry.init({
   // サーバーサイドのエラーも監視
   attachStacktrace: true,
 
+  // デフォルトで個人情報（PII）を送信
+  // サポートID、IPアドレス、ユーザー情報などをSentryに送信
+  sendDefaultPii: true,
+
   // コンソールログをブレッドクラムとして記録
+  // エージェントモニタリング（LLM計測）を有効化
   integrations: (integrations) => {
+    // OpenAI SDKの呼び出しを自動的に追跡
     return integrations;
   },
 

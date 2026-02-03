@@ -90,7 +90,7 @@ function AuthCallbackContent() {
             
             // 少し遅延を入れてからリダイレクト（認証状態が完全に反映されるまで待つ）
             setTimeout(() => {
-              router.push("/instagram/lab/feed?login=success");
+              router.push("/home");
             }, 500);
           } else if (!user && !hasRedirected.current) {
             // ユーザーがnullの場合は、まだ認証処理中の可能性があるため待機

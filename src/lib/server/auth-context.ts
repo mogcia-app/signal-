@@ -236,6 +236,24 @@ export async function requireAuthContext(request: NextRequest, options: RequireA
       request.headers.get("x-real-ip") ??
       undefined;
 
+    // IPアドレスを記録（非同期、エラーが発生しても処理は続行）
+    if (clientIp) {
+      import("@/lib/server/ip-tracking")
+        .then(({ recordIpAddress }) => {
+          recordIpAddress(uid, clientIp, {
+            userAgent: request.headers.get("user-agent") ?? undefined,
+            path: request.nextUrl.pathname,
+            method: request.method,
+          }).catch((error) => {
+            // エラーはログに記録するが、処理は続行
+            console.error("[auth-context] IP記録エラー:", error);
+          });
+        })
+        .catch((error) => {
+          console.error("[auth-context] IP記録モジュール読み込みエラー:", error);
+        });
+    }
+
     const isRateLimitDisabled =
       process.env.NODE_ENV !== "production" ||
       process.env.NEXT_PUBLIC_DISABLE_RATE_LIMIT === "true" ||

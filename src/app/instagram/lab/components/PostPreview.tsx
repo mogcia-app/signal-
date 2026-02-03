@@ -173,12 +173,21 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
           {image ? (
             <div className="mb-3 relative">
               <div className="relative w-full aspect-square">
-                <Image
-                  src={image}
-                  alt="投稿画像"
-                  fill
-                  className="object-cover rounded-lg"
-                />
+                {image.startsWith("data:") ? (
+                  <img
+                    src={image}
+                    alt="投稿画像"
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <Image
+                    src={image}
+                    alt="投稿画像"
+                    fill
+                    className="object-cover rounded-lg"
+                    unoptimized
+                  />
+                )}
               </div>
               {onImageChange && (
                 <>

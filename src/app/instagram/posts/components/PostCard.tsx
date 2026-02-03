@@ -285,14 +285,24 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
       {(post.imageData || post.imageUrl) ? (
         <div className="w-full aspect-square bg-gray-100 relative overflow-hidden">
           {post.imageData ? (
-            <Image
-              src={post.imageData}
-              alt={post.title || "投稿画像"}
-              fill
-              quality={90}
-              className="object-cover"
-              loading="lazy"
-            />
+            post.imageData.startsWith("data:") ? (
+              <img
+                src={post.imageData}
+                alt={post.title || "投稿画像"}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <Image
+                src={post.imageData}
+                alt={post.title || "投稿画像"}
+                fill
+                quality={90}
+                className="object-cover"
+                loading="lazy"
+                unoptimized
+              />
+            )
           ) : post.imageUrl ? (
             <Image
               src={post.imageUrl}

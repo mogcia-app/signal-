@@ -199,14 +199,24 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
               <div>
                 <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
                   {selectedPost?.imageData || selectedAnalytics?.thumbnail ? (
-                    <Image
-                      src={selectedPost?.imageData || selectedAnalytics?.thumbnail || ""}
-                      alt="投稿画像"
-                      width={500}
-                      height={500}
-                      quality={95}
-                      className="w-full h-full object-cover"
-                    />
+                    (selectedPost?.imageData && selectedPost.imageData.startsWith("data:")) ||
+                    (selectedAnalytics?.thumbnail && selectedAnalytics.thumbnail.startsWith("data:")) ? (
+                      <img
+                        src={selectedPost?.imageData || selectedAnalytics?.thumbnail || ""}
+                        alt="投稿画像"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={selectedPost?.imageData || selectedAnalytics?.thumbnail || ""}
+                        alt="投稿画像"
+                        width={500}
+                        height={500}
+                        quality={95}
+                        className="w-full h-full object-cover"
+                        unoptimized
+                      />
+                    )
                   ) : (
                     <ImageIcon size={48} className="text-black" />
                   )}

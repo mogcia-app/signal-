@@ -59,13 +59,22 @@ export const PostEditorImageUpload: React.FC<PostEditorImageUploadProps> = ({
       {image ? (
         <div className="relative">
           <div className="relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden">
-            <Image
-              src={image}
-              alt="投稿画像"
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+            {image.startsWith("data:") ? (
+              <img
+                src={image}
+                alt="投稿画像"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <Image
+                src={image}
+                alt="投稿画像"
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                unoptimized
+              />
+            )}
           </div>
           <button
             onClick={handleImageRemove}

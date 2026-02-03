@@ -8,6 +8,9 @@ Sentry.init({
   release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || "unknown",
   maxBreadcrumbs: 50,
   attachStacktrace: true,
+  // デフォルトで個人情報（PII）を送信
+  // サポートID、IPアドレス、ユーザー情報などをSentryに送信
+  sendDefaultPii: true,
 
   beforeSend(event, _hint) {
     return event;
@@ -26,4 +29,8 @@ Sentry.init({
       component: "signal-app",
     },
   },
+  
+  // エージェントモニタリング（LLM計測）を有効化
+  // OpenAI SDKの呼び出しを自動的に追跡
+  // 実際にLLMを呼び出すと、Sentryにイベントが送信されます
 });

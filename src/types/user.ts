@@ -38,6 +38,14 @@ export interface SNSAISettings {
   };
 }
 
+export interface IPHistoryEntry {
+  ip: string; // IPアドレス
+  timestamp: string; // 記録日時（ISO 8601）
+  userAgent?: string; // User-Agent
+  path?: string; // アクセスパス
+  method?: string; // HTTPメソッド
+}
+
 export interface UserProfile {
   id: string; // Firebase Auth UID
   email: string; // ログイン用メールアドレス
@@ -57,6 +65,8 @@ export interface UserProfile {
   notes?: string; // 管理者メモ
   setupRequired?: boolean; // 初期設定が必要かどうか
   planTier?: "ume" | "take" | "matsu"; // プラン階層（梅・竹・松）
+  supportId?: string; // サポートID（UUID v4、adminで付与）
+  ipHistory?: IPHistoryEntry[]; // IPアドレス履歴（最新50件まで）
   createdAt: string; // 作成日時
   updatedAt: string; // 更新日時
 }

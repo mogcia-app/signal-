@@ -424,6 +424,7 @@ export default function StoryLabPage() {
                 postType={postType}
                 scheduledDate={scheduledDate}
                 scheduledTime={scheduledTime}
+                onImageChange={setPostImage}
               />
             </div>
             <div className="flex-shrink-0">
