@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { adminDb } from "../../../lib/firebase-admin";
 
 // キャッシュ用（メモリキャッシュ）
 let cachedStatus: {
@@ -15,13 +16,6 @@ let cachedStatus: {
 
 const CACHE_DURATION = 10 * 1000; // 10秒間キャッシュ
 
-// Cloud FunctionsのURL
-const getCloudFunctionUrl = (functionName: string): string => {
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "signal-v1-fc481";
-  const region = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "asia-northeast1";
-  return `https://${region}-${projectId}.cloudfunctions.net/${functionName}`;
-};
-
 export async function GET() {
   try {
     // キャッシュをチェック
@@ -33,62 +27,57 @@ export async function GET() {
       });
     }
 
-    // Cloud Functionsから取得
-    const functionUrl = getCloudFunctionUrl("getToolMaintenanceStatus");
-    const response = await fetch(functionUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      // サーバーサイドからのリクエストなのでCORS問題なし
-      cache: "no-store",
-    });
+    // Firestoreから直接取得（Cloud Functionに依存しない）
+    const maintenanceDoc = await adminDb.collection("toolMaintenance").doc("current").get();
 
-    if (!response.ok) {
-      // エラー時はキャッシュがあればそれを返す
-      if (cachedStatus) {
-        return NextResponse.json({
-          success: true,
-          data: cachedStatus.data,
-        });
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (result.success && result.data) {
-      // キャッシュを更新
-      cachedStatus = {
-        data: result.data,
-        timestamp: now,
-      };
-
-      return NextResponse.json({
-        success: true,
-        data: result.data,
-      });
-    }
-
-    // デフォルト値
-    const defaultData = {
-      enabled: false,
-      message: "",
-      scheduledStart: null,
-      scheduledEnd: null,
-      updatedBy: "",
-      updatedAt: null,
+    let resultData: {
+      enabled: boolean;
+      message: string;
+      scheduledStart: string | null;
+      scheduledEnd: string | null;
+      updatedBy: string;
+      updatedAt: string | null;
     };
+
+    if (!maintenanceDoc.exists) {
+      // デフォルト値（メンテナンス無効）
+      resultData = {
+        enabled: false,
+        message: "",
+        scheduledStart: null,
+        scheduledEnd: null,
+        updatedBy: "",
+        updatedAt: null,
+      };
+    } else {
+      const data = maintenanceDoc.data();
+      const updatedAt = data?.updatedAt;
+      const updatedAtISO =
+        updatedAt && updatedAt.toDate
+          ? updatedAt.toDate().toISOString()
+          : updatedAt instanceof Date
+            ? updatedAt.toISOString()
+            : updatedAt || null;
+
+      resultData = {
+        enabled: data?.enabled || false,
+        message: data?.message || "",
+        scheduledStart: data?.scheduledStart || null,
+        scheduledEnd: data?.scheduledEnd || null,
+        updatedBy: data?.updatedBy || "",
+        updatedAt: updatedAtISO,
+      };
+    }
 
     // キャッシュを更新
     cachedStatus = {
-      data: defaultData,
+      data: resultData,
       timestamp: now,
     };
 
     return NextResponse.json({
       success: true,
-      data: defaultData,
+      data: resultData,
     });
   } catch (error) {
     console.error("Error fetching tool maintenance status:", error);
