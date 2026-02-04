@@ -7,6 +7,18 @@ import { buildAIContext } from "@/lib/ai/context";
 import { AIGenerationResponse, SnapshotReference, AIReference } from "@/types/ai";
 import { UserProfile } from "@/types/user";
 
+/**
+ * ユーザー名から固定の企業ハッシュタグを生成
+ */
+function generateFixedBrandHashtag(userName: string | null | undefined): string {
+  if (!userName) {
+    return "企業公式";
+  }
+  // 空白を除去し、「公式」が含まれていない場合は追加
+  const normalizedName = userName.replace(/\s+/g, "").replace(/公式$/, "");
+  return normalizedName.endsWith("公式") ? normalizedName : `${normalizedName}公式`;
+}
+
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -332,11 +344,6 @@ ${!feedOptions && writingStyle === "sincere" ? "- スタイル: 誠実（丁寧�
   "body": "計画に沿った投稿文（${textLengthGuide}）",
   "hashtags": [
     {
-      "tag": "企業・ブランドハッシュタグ（${userProfile?.name || "企業名"}に関連する固有のハッシュタグ、#は不要）",
-      "category": "brand",
-      "reason": "選定理由（20文字以内）"
-    },
-    {
       "tag": "トレンド・検索されやすいハッシュタグ（投稿内容のテーマに沿った、検索されやすい大きなハッシュタグ、#は不要）",
       "category": "trending",
       "reason": "選定理由（20文字以内）"
@@ -358,6 +365,8 @@ ${!feedOptions && writingStyle === "sincere" ? "- スタイル: 誠実（丁寧�
     }
   ]
 }
+
+重要: 企業ハッシュタグは固定で使用されるため、上記4つのハッシュタグのみを生成してください。
 
 重要: JSON以外のテキストは一切出力しないでください。`;
     } else {
@@ -430,7 +439,7 @@ ${postType === "feed" && feedOptions ? `
 3. ${resolvedPlanData.targetAudience}との繋がりを深める内容
 4. 目標達成への意識を適度に含める
 5. エンゲージメントを促進する要素を含める
-6. 必ず5個のハッシュタグを含める（企業ハッシュタグ1個、トレンドハッシュタグ1個、補助的ハッシュタグ3個）
+6. 必ず4個のハッシュタグを含める（トレンドハッシュタグ1個、補助的ハッシュタグ3個）。企業ハッシュタグは固定で使用されるため、生成不要です。
 ${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文字、1-2行）にする" : ""}
 ${postType === "feed" && feedOptions ? `7. **重要**: フィード投稿文は${FEED_TEXT_RULES[feedOptions.textVolume]}で生成してください。${FEED_TYPE_GUIDE[feedOptions.feedPostType]}。この役割と文字量を厳守してください。` : ""}
 ${postType === "feed" && !feedOptions ? "7. **重要**: フィード投稿文は必ず150文字以内で生成してください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
@@ -449,33 +458,30 @@ ${(() => {
 {
   "title": "簡潔で魅力的なタイトル",
   "body": "計画に沿った投稿文${postType === "story" ? "（20-50文字程度、2行以内の短い一言二言）" : postType === "feed" && feedOptions ? `（${FEED_TEXT_RULES[feedOptions.textVolume]}）` : postType === "feed" ? "（150文字以内）" : "（100文字以内）"}",
-  "hashtags": [
-    {
-      "tag": "企業・ブランドハッシュタグ（${resolvedPlanData.title || "企業名"}に関連する固有のハッシュタグ、#は不要）",
-      "category": "brand",
-      "reason": "選定理由（20文字以内）"
-    },
-    {
-      "tag": "トレンド・検索されやすいハッシュタグ（投稿内容のテーマに沿った、検索されやすい大きなハッシュタグ、#は不要）",
-      "category": "trending",
-      "reason": "選定理由（20文字以内）"
-    },
-    {
-      "tag": "補助的ハッシュタグ1（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
-      "category": "supporting",
-      "reason": "選定理由（20文字以内）"
-    },
-    {
-      "tag": "補助的ハッシュタグ2（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
-      "category": "supporting",
-      "reason": "選定理由（20文字以内）"
-    },
-    {
-      "tag": "補助的ハッシュタグ3（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
-      "category": "supporting",
-      "reason": "選定理由（20文字以内）"
-    }
-  ]
+        "hashtags": [
+          {
+            "tag": "トレンド・検索されやすいハッシュタグ（投稿内容のテーマに沿った、検索されやすい大きなハッシュタグ、#は不要）",
+            "category": "trending",
+            "reason": "選定理由（20文字以内）"
+          },
+          {
+            "tag": "補助的ハッシュタグ1（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+            "category": "supporting",
+            "reason": "選定理由（20文字以内）"
+          },
+          {
+            "tag": "補助的ハッシュタグ2（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+            "category": "supporting",
+            "reason": "選定理由（20文字以内）"
+          },
+          {
+            "tag": "補助的ハッシュタグ3（投稿内容を補完する、より具体的なハッシュタグ、#は不要）",
+            "category": "supporting",
+            "reason": "選定理由（20文字以内）"
+          }
+        ]
+
+重要: 企業ハッシュタグは固定で使用されるため、上記4つのハッシュタグのみを生成してください。
 }
 
 重要: JSON以外のテキストは一切出力しないでください。`;
@@ -607,10 +613,21 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
       content = truncated;
     }
     
+    // 固定の企業ハッシュタグを生成
+    const fixedBrandHashtag = generateFixedBrandHashtag(userProfile?.name);
+    
     let hashtags: string[] = [];
     let hashtagExplanations: Array<{ hashtag: string; category: "brand" | "trending" | "supporting"; reason: string }> = [];
 
-    // ハッシュタグを抽出
+    // 固定の企業ハッシュタグを最初に追加
+    hashtags.push(fixedBrandHashtag);
+    hashtagExplanations.push({
+      hashtag: fixedBrandHashtag,
+      category: "brand",
+      reason: "企業・ブランドを表す固定ハッシュタグ",
+    });
+
+    // AI生成のハッシュタグを抽出（4つ）
     if (parsedData.hashtags && Array.isArray(parsedData.hashtags)) {
       for (const item of parsedData.hashtags) {
         if (item.tag) {
@@ -635,41 +652,45 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
       fallbackUsed = true;
       title = parsedData.title || `${prompt}${userProfile ? ` - ${userProfile.name}` : ""}`;
       content = parsedData.body || "";
-      // フォールバック時はハッシュタグを生成しない（空配列）
+      // フォールバック時も固定の企業ハッシュタグは追加
       if (hashtags.length === 0) {
-        hashtags = [];
-        hashtagExplanations = [];
+        // 固定の企業ハッシュタグのみ追加
+        const fixedBrandHashtag = generateFixedBrandHashtag(userProfile?.name);
+        hashtags = [fixedBrandHashtag];
+        hashtagExplanations = [{
+          hashtag: fixedBrandHashtag,
+          category: "brand" as const,
+          reason: "企業・ブランドを表す固定ハッシュタグ",
+        }];
       }
     }
 
-    // フィードとリールの場合はハッシュタグを5個までに制限
+    // フィードとリールの場合はハッシュタグを5個までに制限（固定1個 + AI生成4個）
     if (postType === "feed" || postType === "reel") {
-      hashtags = hashtags.slice(0, 5);
-      hashtagExplanations = hashtagExplanations.slice(0, 5);
+      // 固定の企業ハッシュタグ（1個目） + AI生成のハッシュタグ（最大4個）
+      const fixedHashtag = hashtags[0]; // 固定の企業ハッシュタグ
+      const aiGeneratedHashtags = hashtags.slice(1).slice(0, 4); // AI生成のハッシュタグ（最大4個）
+      hashtags = [fixedHashtag, ...aiGeneratedHashtags];
+      
+      const fixedExplanation = hashtagExplanations[0]; // 固定の企業ハッシュタグの説明
+      const aiGeneratedExplanations = hashtagExplanations.slice(1).slice(0, 4); // AI生成のハッシュタグの説明（最大4個）
+      hashtagExplanations = [fixedExplanation, ...aiGeneratedExplanations];
     }
 
-    // 5個保証：ハッシュタグが5個未満の場合、補完ロジック
+    // 5個保証：ハッシュタグが5個未満の場合、補完ロジック（固定1個 + AI生成4個 = 合計5個）
     if ((postType === "feed" || postType === "reel") && hashtags.length < 5) {
       const existingTags = new Set(hashtags);
       
-      // 必要な数だけ補完
+      // AI生成のハッシュタグが4個未満の場合、補完（固定1個 + AI生成4個 = 合計5個）
+      let aiGeneratedCount = hashtags.length - 1; // 固定の企業ハッシュタグを除いた数
+      
       while (hashtags.length < 5) {
-        const index = hashtags.length;
-        let category: "brand" | "trending" | "supporting" = "supporting";
+        const index = aiGeneratedCount + 1; // 固定の企業ハッシュタグを除いたインデックス
+        let category: "trending" | "supporting" = "supporting";
         let tag = "";
         let reason = "";
         
-        if (index === 0) {
-          category = "brand";
-          let brandName = userProfile?.name || "企業";
-          if (!userProfile?.name && planContext && "title" in planContext) {
-            brandName = String(planContext.title);
-          }
-          // ブランド名を正規化（空白除去、既に「公式」が含まれている場合は追加しない）
-          const normalizedName = brandName.replace(/\s+/g, "").replace(/公式$/, "");
-          tag = normalizedName.endsWith("公式") ? normalizedName : `${normalizedName}公式`;
-          reason = "企業・ブランドを表すハッシュタグ";
-        } else if (index === 1) {
+        if (index === 1) {
           category = "trending";
           tag = "インスタグラム";
           reason = "検索されやすいトレンドハッシュタグ";
@@ -688,6 +709,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
             reason,
           });
           existingTags.add(tag);
+          aiGeneratedCount++;
         } else {
           // 重複している場合は番号を追加
           let counter = 1;
@@ -702,6 +724,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
             reason,
           });
           existingTags.add(uniqueTag);
+          aiGeneratedCount++;
         }
       }
     }
