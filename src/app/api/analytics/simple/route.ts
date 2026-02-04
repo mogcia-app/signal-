@@ -7,40 +7,8 @@ import { getUserProfile } from "@/lib/server/user-profile";
 import type { PostLearningSignal } from "../../ai/monthly-analysis/types";
 import * as admin from "firebase-admin";
 
-/**
- * analyticsコレクションのfollowerIncreaseの合計を計算
- * 注意: follower_countsは更新しない（homeページで入力された値はそのまま保持）
- */
-async function calculateMonthlyFollowerIncreaseFromAnalytics(userId: string, publishedAt: Date): Promise<number> {
-  try {
-    // 投稿日から月を取得
-    const month = `${publishedAt.getFullYear()}-${String(publishedAt.getMonth() + 1).padStart(2, "0")}`;
-    const [year, monthNum] = month.split("-").map(Number);
-    const startDate = new Date(year, monthNum - 1, 1);
-    const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
-    const startTimestamp = admin.firestore.Timestamp.fromDate(startDate);
-    const endTimestamp = admin.firestore.Timestamp.fromDate(endDate);
-
-    // 今月のanalyticsデータからfollowerIncreaseの合計を計算
-    const monthlyAnalyticsSnapshot = await adminDb
-      .collection("analytics")
-      .where("userId", "==", userId)
-      .where("snsType", "==", "instagram")
-      .where("publishedAt", ">=", startTimestamp)
-      .where("publishedAt", "<=", endTimestamp)
-      .get();
-
-    const monthlyFollowerIncrease = monthlyAnalyticsSnapshot.docs.reduce((sum, doc) => {
-      const value = Number(doc.data().followerIncrease) || 0;
-      return sum + value;
-    }, 0);
-
-    return monthlyFollowerIncrease;
-  } catch (error) {
-    console.error("analyticsフォロワー増加数計算エラー:", error);
-    return 0;
-  }
-}
+// 注意: follower_countsは更新しない（homeページで入力された値はそのまま保持）
+// analyticsのfollowerIncreaseは各投稿ごとに保存され、集計は表示側（kpi-breakdown等）で行う
 
 /**
  * AIアドバイスを自動生成して保存する（非同期処理）
@@ -457,7 +425,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const now = new Date();
+    const now = admin.firestore.Timestamp.now();
+    // publishedAtをTimestampに統一（Firestoreクエリで正しく動作するため）
+    const publishedAtDate = publishedAt ? new Date(publishedAt) : new Date();
+    const publishedAtTimestamp = admin.firestore.Timestamp.fromDate(publishedAtDate);
+    
     const analyticsData = {
       userId: uid,
       postId: postId || null,
@@ -471,7 +443,7 @@ export async function POST(request: NextRequest) {
       saves: Number.parseInt(saves) || 0,
       followerIncrease: Number.parseInt(followerIncrease) || 0,
       engagementRate: 0,
-      publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
+      publishedAt: publishedAtTimestamp, // Timestamp型で統一
       publishedTime: publishedTime || "",
       title: title || "",
       content: content || "",
@@ -531,9 +503,15 @@ export async function POST(request: NextRequest) {
       if (!existingSnapshot.empty) {
         const existingDoc = existingSnapshot.docs[0];
         const existingData = existingDoc.data();
+        // createdAtは既存の値を保持（新規作成日時を維持）
+        const existingCreatedAt = existingData.createdAt 
+          ? (existingData.createdAt instanceof admin.firestore.Timestamp 
+              ? existingData.createdAt 
+              : admin.firestore.Timestamp.fromDate(existingData.createdAt instanceof Date ? existingData.createdAt : new Date(existingData.createdAt)))
+          : now;
         await existingDoc.ref.update({
           ...analyticsData,
-          createdAt: existingData.createdAt ?? now,
+          createdAt: existingCreatedAt,
         });
         await syncPlanFollowerProgress(uid);
         // follower_countsは更新しない（homeページで入力された値はそのまま保持）
