@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import type { AIPlanSuggestion } from "../../../instagram/plan/types/plan";
+import * as admin from "firebase-admin";
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,7 +54,14 @@ export async function GET(request: NextRequest) {
 
     const analytics = analyticsSnapshot.docs.map((doc) => {
       const data = doc.data();
-      const publishedAt = data.publishedAt?.toDate?.() || data.publishedAt;
+      // publishedAtをDate型に統一（Timestamp型の場合はtoDate()で変換）
+      const publishedAt = data.publishedAt
+        ? data.publishedAt instanceof admin.firestore.Timestamp
+          ? data.publishedAt.toDate()
+          : data.publishedAt instanceof Date
+            ? data.publishedAt
+            : new Date(data.publishedAt)
+        : new Date();
       return {
         ...data,
         likes: data.likes || 0,
@@ -63,7 +71,7 @@ export async function GET(request: NextRequest) {
         saves: data.saves || 0,
         followers: data.followers || 0,
         followerIncrease: data.followerIncrease || 0,
-        publishedAt: publishedAt instanceof Date ? publishedAt : new Date(publishedAt),
+        publishedAt,
       };
     });
 
