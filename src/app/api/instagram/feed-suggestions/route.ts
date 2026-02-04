@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { content, businessInfo } = body;
+    const { content, businessInfo, feedOptions } = body;
 
     if (!content || !businessInfo) {
       return NextResponse.json({ error: "必要なパラメータが不足しています" }, { status: 400 });
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const patternContext = buildPostPatternPromptSection(masterContext?.postPatterns);
 
     // AIプロンプトを構築
-    const prompt = buildSuggestionsPrompt(content, businessContext, patternContext);
+    const prompt = buildSuggestionsPrompt(content, businessContext, patternContext, feedOptions);
 
     // OpenAI APIを呼び出して提案を生成
     const suggestionsResponse = await generateSuggestionsWithAI(prompt);
@@ -82,7 +82,37 @@ function buildBusinessContext(businessInfo: Record<string, unknown>): string {
   return context.join("\n");
 }
 
-function buildSuggestionsPrompt(content: string, context: string, patternContext?: string) {
+// フィード投稿タイプの日本語ラベル
+const FEED_TYPE_LABELS = {
+  value: "情報有益型",
+  empathy: "共感型",
+  story: "ストーリー型",
+  credibility: "実績・信頼型",
+  promo: "告知・CTA型",
+  brand: "ブランド・世界観型",
+} as const;
+
+function buildSuggestionsPrompt(
+  content: string,
+  context: string,
+  patternContext?: string,
+  feedOptions?: {
+    feedPostType: "value" | "empathy" | "story" | "credibility" | "promo" | "brand";
+    textVolume: "short" | "medium" | "long";
+    imageCount: number;
+  }
+) {
+  const feedOptionsSection = feedOptions
+    ? `
+【投稿設定】
+- 投稿の目的: ${FEED_TYPE_LABELS[feedOptions.feedPostType]}
+- 文章量: ${feedOptions.textVolume === "short" ? "軽め（80-120文字）" : feedOptions.textVolume === "medium" ? "ふつう（150-200文字）" : "しっかり（250-400文字）"}
+- 使用する画像の枚数: ${feedOptions.imageCount}枚
+
+重要: 上記の投稿設定を考慮して、特に「${FEED_TYPE_LABELS[feedOptions.feedPostType]}」の目的に合った画像のアイデアを提案してください。
+`
+    : "";
+
   return `
 あなたはInstagramフィード投稿の専門家です。以下の投稿文とビジネス情報を基に、AIが生成した投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒントを簡潔に提案してください。
 
@@ -93,24 +123,25 @@ ${content}
 ${context}
 
 ${patternContext ?? ""}
+${feedOptionsSection}
 
 【要求事項】
-1. 投稿文の内容に合った画像の枚数を提案（1枚〜10枚の範囲）
+1. ${feedOptions ? `指定された画像枚数（${feedOptions.imageCount}枚）を考慮し、` : ""}投稿文の内容に合った画像の枚数を提案（1枚〜10枚の範囲）
 2. Instagramフィードの特徴（正方形、高品質）を考慮
 3. ビジネス情報を参考に、ターゲット層に響く内容
-4. エンゲージメントを高めるための具体的なアイデア（3-5個）
+4. ${feedOptions ? `「${FEED_TYPE_LABELS[feedOptions.feedPostType]}」の目的に沿った` : ""}エンゲージメントを高めるための具体的なアイデア（3-5個）
 
 【出力形式】
 以下の形式で回答し、各セクションは2-3行にまとめてください：
 
 📸 画像の枚数
-[数値]枚
+${feedOptions ? `[指定された${feedOptions.imageCount}枚を考慮し、` : "[数値]枚"}${feedOptions ? "その理由も含めて]" : ""}
 
 🖼️ サムネイルのアイデア
-[具体的なアイデア。2-3行で簡潔に]
+[${feedOptions ? `「${FEED_TYPE_LABELS[feedOptions.feedPostType]}」の目的に合った` : ""}具体的なアイデア。2-3行で簡潔に]
 
 💡 フィードのヒント
-1. [エンゲージメント向上の具体的な方法]
+1. [${feedOptions ? `「${FEED_TYPE_LABELS[feedOptions.feedPostType]}」に適した` : ""}エンゲージメント向上の具体的な方法]
 2. [撮影や構図のコツ]
 3. [投稿タイミングやターゲティング]
 `;

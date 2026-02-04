@@ -329,7 +329,7 @@ export default function FeedLabPage() {
 
   // AIヒント生成関数
   const generateImageVideoSuggestions = useCallback(
-    async (content: string) => {
+    async (content: string, feedOptions?: { feedPostType: "value" | "empathy" | "story" | "credibility" | "promo" | "brand"; textVolume: "short" | "medium" | "long"; imageCount: number }) => {
       if (!isAuthReady) {return;}
 
       // コンテンツを分析
@@ -374,6 +374,7 @@ export default function FeedLabPage() {
           body: JSON.stringify({
             content,
             businessInfo: businessInfo.businessInfo,
+            ...(feedOptions ? { feedOptions } : {}),
           }),
         });
 

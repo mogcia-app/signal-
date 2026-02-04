@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
-import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles, AlertTriangle } from "lucide-react";
+import { Save, RefreshCw, CheckCircle, Upload, X, Eye, Sparkles, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { postsApi } from "../../../../lib/api";
 import { useAuth } from "../../../../contexts/auth-context";
 import { notify } from "../../../../lib/ui/notifications";
@@ -59,7 +59,7 @@ interface PostEditorProps {
   }; // 動画構成データ
   videoFlow?: string; // 動画構成の流れ
   imageVideoSuggestions?: AIHintSuggestion | null; // AIヒントの文章
-  onImageVideoSuggestionsGenerate?: (content: string) => void; // AIヒント生成のコールバック
+  onImageVideoSuggestionsGenerate?: (content: string, feedOptions?: { feedPostType: "value" | "empathy" | "story" | "credibility" | "promo" | "brand"; textVolume: "short" | "medium" | "long"; imageCount: number }) => void; // AIヒント生成のコールバック
   isGeneratingSuggestions?: boolean; // AIヒント生成中のローディング状態
   initialSnapshotReferences?: SnapshotReference[];
   onSnapshotReferencesChange?: (refs: SnapshotReference[]) => void;
@@ -227,6 +227,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [feedPostType, setFeedPostType] = useState<"value" | "empathy" | "story" | "credibility" | "promo" | "brand" | null>(null);
   const [textVolume, setTextVolume] = useState<"short" | "medium" | "long" | null>(null);
   const [imageCount, setImageCount] = useState<number>(1);
+  
+  // 開閉状態管理
+  const [isPostTypeOpen, setIsPostTypeOpen] = useState(false);
+  const [isTextVolumeOpen, setIsTextVolumeOpen] = useState(false);
+  const [isImageCountOpen, setIsImageCountOpen] = useState(false);
   const [showAiAdminWarning, setShowAiAdminWarning] = useState(false);
   const aiFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
   
@@ -847,6 +852,354 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
           ) : null}
 
+          {/* AI投稿文生成 */}
+          <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <Sparkles className="mr-2 text-orange-600" size={20} />
+              AI投稿文生成
+            </h3>
+
+            {/* テーマ入力 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                投稿テーマ（オプション）
+              </label>
+              <input
+                type="text"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder={aiPromptPlaceholder}
+                disabled={!planData}
+                className={`w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 ${
+                  !planData ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              />
+              {!planData && (
+                <p className="text-sm text-orange-600 mt-2">
+                  運用計画を作成してからAI投稿文を生成できます
+                </p>
+              )}
+            </div>
+
+            {/* フィード投稿オプション（フィードのみ） */}
+            {postType === "feed" && (
+              <div className="mb-4 space-y-2">
+                {/* 投稿タイプ選択（開閉式） */}
+                <div className="border border-gray-200 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setIsPostTypeOpen(!isPostTypeOpen)}
+                    disabled={!planData}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors ${
+                      !planData ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <span>投稿の目的は？</span>
+                    {feedPostType && (
+                      <span className="text-xs text-orange-600 mr-2">
+                        {[
+                          { value: "value", label: "情報有益型" },
+                          { value: "empathy", label: "共感型" },
+                          { value: "story", label: "ストーリー型" },
+                          { value: "credibility", label: "実績・信頼型" },
+                          { value: "promo", label: "告知・CTA型" },
+                          { value: "brand", label: "ブランド型" },
+                        ].find((t) => t.value === feedPostType)?.label}
+                      </span>
+                    )}
+                    {isPostTypeOpen ? (
+                      <ChevronUp className="w-4 h-4 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    )}
+                  </button>
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ${
+                      isPostTypeOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="p-4 bg-gray-50">
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: "value", label: "情報有益型", desc: "ノウハウ・Tips" },
+                          { value: "empathy", label: "共感型", desc: "悩み・あるある" },
+                          { value: "story", label: "ストーリー型", desc: "体験・背景" },
+                          { value: "credibility", label: "実績・信頼型", desc: "数字・事例" },
+                          { value: "promo", label: "告知・CTA型", desc: "キャンペーン" },
+                          { value: "brand", label: "ブランド型", desc: "世界観" },
+                        ].map((type) => (
+                          <button
+                            key={type.value}
+                            type="button"
+                            onClick={() => {
+                              setFeedPostType(type.value as typeof feedPostType);
+                              setIsPostTypeOpen(false);
+                            }}
+                            disabled={!planData}
+                            className={`py-2 px-3 text-xs font-medium border-2 transition-all duration-200 ${
+                              feedPostType === type.value
+                                ? "bg-orange-100 border-orange-500 text-orange-700"
+                                : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
+                            } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                            aria-label={`${type.label}を選択`}
+                            aria-pressed={feedPostType === type.value}
+                          >
+                            <div className="font-semibold">{type.label}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{type.desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 文字量選択（開閉式） */}
+                <div className="border border-gray-200 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setIsTextVolumeOpen(!isTextVolumeOpen)}
+                    disabled={!planData}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors ${
+                      !planData ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <span>文章量は？</span>
+                    {textVolume && (
+                      <span className="text-xs text-orange-600 mr-2">
+                        {[
+                          { value: "short", label: "軽め" },
+                          { value: "medium", label: "ふつう" },
+                          { value: "long", label: "しっかり" },
+                        ].find((v) => v.value === textVolume)?.label}
+                      </span>
+                    )}
+                    {isTextVolumeOpen ? (
+                      <ChevronUp className="w-4 h-4 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    )}
+                  </button>
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ${
+                      isTextVolumeOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="p-4 bg-gray-50">
+                      <div className="flex gap-2">
+                        {[
+                          { value: "short", label: "軽め", desc: "80-120文字" },
+                          { value: "medium", label: "ふつう", desc: "150-200文字" },
+                          { value: "long", label: "しっかり", desc: "250-400文字" },
+                        ].map((volume) => (
+                          <button
+                            key={volume.value}
+                            type="button"
+                            onClick={() => {
+                              setTextVolume(volume.value as typeof textVolume);
+                              setIsTextVolumeOpen(false);
+                            }}
+                            disabled={!planData}
+                            className={`flex-1 py-2 px-4 text-sm font-medium border-2 transition-all duration-200 ${
+                              textVolume === volume.value
+                                ? "bg-orange-100 border-orange-500 text-orange-700"
+                                : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
+                            } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                            aria-label={`${volume.label}を選択`}
+                            aria-pressed={textVolume === volume.value}
+                          >
+                            {volume.label}
+                            <span className="block text-xs mt-1 text-gray-500">{volume.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 画像枚数選択（開閉式） */}
+                <div className="border border-gray-200 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setIsImageCountOpen(!isImageCountOpen)}
+                    disabled={!planData}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors ${
+                      !planData ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <span>使用する画像の枚数</span>
+                    {imageCount && (
+                      <span className="text-xs text-orange-600 mr-2">{imageCount}枚</span>
+                    )}
+                    {isImageCountOpen ? (
+                      <ChevronUp className="w-4 h-4 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    )}
+                  </button>
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ${
+                      isImageCountOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="p-4 bg-gray-50">
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map((count) => (
+                          <button
+                            key={count}
+                            type="button"
+                            onClick={() => {
+                              setImageCount(count);
+                              setIsImageCountOpen(false);
+                            }}
+                            disabled={!planData}
+                            className={`flex-1 py-2 px-4 text-sm font-medium border-2 transition-all duration-200 ${
+                              imageCount === count
+                                ? "bg-orange-100 border-orange-500 text-orange-700"
+                                : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
+                            } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                            aria-label={`${count}枚を選択`}
+                            aria-pressed={imageCount === count}
+                          >
+                            {count}枚
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 生成ボタン */}
+            <div className="space-y-3">
+              {/* 自動生成ボタン */}
+              <button
+                onClick={handleAutoGenerate}
+                disabled={isAutoGenerating || !planData}
+                className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
+                  isAutoGenerating || !planData
+                    ? "bg-gray-100 text-black cursor-not-allowed border-gray-200"
+                    : "bg-gradient-to-r from-orange-400 to-orange-500 text-white border-orange-500 hover:from-orange-500 hover:to-orange-600 hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105"
+                }`}
+                aria-label="投稿文を自動生成（テーマも自動選択）"
+              >
+                {isAutoGenerating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <span>生成中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} className="mr-2" />
+                    <span>AIで自動生成</span>
+                  </>
+                )}
+              </button>
+
+              {/* テーマ指定生成ボタン */}
+              <button
+                onClick={handleAIGenerate}
+                disabled={isGenerating || !planData}
+                className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
+                  isGenerating || !planData
+                    ? "bg-gray-100 text-black cursor-not-allowed border-gray-200"
+                    : "bg-white border-orange-500 text-orange-600 hover:bg-orange-50 hover:border-orange-600"
+                }`}
+                aria-label="テーマを指定して投稿文を生成"
+              >
+                {isGenerating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2"></div>
+                    <span>生成中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} className="mr-2" />
+                    <span>テーマを指定して生成</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* フィードバック表示 */}
+            {aiGenerateFeedback && (
+              <div className="mt-4 p-3 bg-amber-50 border-l-4 border-amber-400 text-sm text-amber-800">
+                {aiGenerateFeedback}
+              </div>
+            )}
+
+            {/* 管理者警告 */}
+            {showAiAdminWarning && (
+              <div className="mt-4 p-3 bg-red-50 border-l-4 border-red-400 text-sm text-red-800 flex items-start">
+                <AlertTriangle className="mr-2 mt-0.5 flex-shrink-0" size={16} />
+                <div>
+                  <p className="font-medium">連続して同じフィードバックが表示されています</p>
+                  <p className="mt-1 text-xs">
+                    プロンプトの内容を見直すか、しばらく時間をおいてから再度お試しください。
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* AIヒントセクション（ストーリー・フィード） */}
+          {(postType === "story" || postType === "feed") && (
+            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4">
+              <div className="flex items-center mb-4">
+                <span className="text-2xl mr-3">💡</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">AIヒント</h3>
+                  <p className="text-sm text-gray-600">
+                    {postType === "story"
+                      ? "投稿文に合う画像・動画のアイデアとストーリーのヒント"
+                      : "投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒント"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (onImageVideoSuggestionsGenerate && content.trim()) {
+                    // フィードの場合はfeedOptionsも渡す
+                    const options = postType === "feed" && feedPostType && textVolume
+                      ? {
+                          feedPostType,
+                          textVolume,
+                          imageCount,
+                        }
+                      : undefined;
+                    onImageVideoSuggestionsGenerate(content, options);
+                  } else {
+                    showToast("投稿文を入力してからAIヒントを生成してください");
+                  }
+                }}
+                disabled={!content.trim() || !onImageVideoSuggestionsGenerate || isGeneratingSuggestions}
+                className="w-full mb-4 px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white hover:from-orange-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2"
+                aria-label="AIでヒントを生成"
+              >
+                <Sparkles size={16} />
+                <span>AIでヒント生成</span>
+              </button>
+              {isGeneratingSuggestions ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mr-3"></div>
+                  <span className="text-sm text-gray-600">AIヒントを生成中...</span>
+                </div>
+              ) : (
+                <div>
+                  <div className="text-sm text-gray-700 whitespace-pre-line">
+                    {imageVideoSuggestions?.content || "AI投稿文生成で自動提案されます"}
+                  </div>
+                  {imageVideoSuggestions?.rationale && (
+                    <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-300 text-sm text-orange-800 whitespace-pre-line">
+                      <p className="font-medium text-orange-900 mb-1">今回の提案理由</p>
+                      {imageVideoSuggestions.rationale}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 投稿設定 */}
           <PostEditorScheduleSettings
             scheduledDate={scheduledDate}
@@ -941,263 +1294,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             onHashtagsChange={onHashtagsChange}
             postType={postType}
           />
-
-          {/* AI投稿文生成 */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Sparkles className="mr-2 text-orange-600" size={20} />
-              AI投稿文生成
-            </h3>
-
-            {/* テーマ入力 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                投稿テーマ（オプション）
-              </label>
-              <input
-                type="text"
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder={aiPromptPlaceholder}
-                disabled={!planData}
-                className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 ${
-                  !planData ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              />
-              {!planData && (
-                <p className="text-sm text-orange-600 mt-2">
-                  運用計画を作成してからAI投稿文を生成できます
-                </p>
-              )}
-            </div>
-
-            {/* フィード投稿オプション（フィードのみ） */}
-            {postType === "feed" && (
-              <div className="mb-4 space-y-4">
-                {/* 投稿タイプ選択 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    投稿の目的は？
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { value: "value", label: "情報有益型", desc: "ノウハウ・Tips" },
-                      { value: "empathy", label: "共感型", desc: "悩み・あるある" },
-                      { value: "story", label: "ストーリー型", desc: "体験・背景" },
-                      { value: "credibility", label: "実績・信頼型", desc: "数字・事例" },
-                      { value: "promo", label: "告知・CTA型", desc: "キャンペーン" },
-                      { value: "brand", label: "ブランド型", desc: "世界観" },
-                    ].map((type) => (
-                      <button
-                        key={type.value}
-                        type="button"
-                        onClick={() => setFeedPostType(type.value as typeof feedPostType)}
-                        disabled={!planData}
-                        className={`py-2 px-3 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
-                          feedPostType === type.value
-                            ? "bg-orange-100 border-orange-500 text-orange-700"
-                            : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
-                        } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
-                        aria-label={`${type.label}を選択`}
-                        aria-pressed={feedPostType === type.value}
-                      >
-                        <div className="font-semibold">{type.label}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{type.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 文字量選択 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    文章量は？
-                  </label>
-                  <div className="flex gap-2">
-                    {[
-                      { value: "short", label: "軽め", desc: "80-120文字" },
-                      { value: "medium", label: "ふつう", desc: "150-200文字" },
-                      { value: "long", label: "しっかり", desc: "250-400文字" },
-                    ].map((volume) => (
-                      <button
-                        key={volume.value}
-                        type="button"
-                        onClick={() => setTextVolume(volume.value as typeof textVolume)}
-                        disabled={!planData}
-                        className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
-                          textVolume === volume.value
-                            ? "bg-orange-100 border-orange-500 text-orange-700"
-                            : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
-                        } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
-                        aria-label={`${volume.label}を選択`}
-                        aria-pressed={textVolume === volume.value}
-                      >
-                        {volume.label}
-                        <span className="block text-xs mt-1 text-gray-500">{volume.desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 画像枚数選択 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    使用する画像の枚数
-                  </label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((count) => (
-                      <button
-                        key={count}
-                        type="button"
-                        onClick={() => setImageCount(count)}
-                        disabled={!planData}
-                        className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
-                          imageCount === count
-                            ? "bg-orange-100 border-orange-500 text-orange-700"
-                            : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
-                        } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
-                        aria-label={`${count}枚を選択`}
-                        aria-pressed={imageCount === count}
-                      >
-                        {count}枚
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 生成ボタン */}
-            <div className="space-y-3">
-              {/* 自動生成ボタン */}
-              <button
-                onClick={handleAutoGenerate}
-                disabled={isAutoGenerating || !planData}
-                className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
-                  isAutoGenerating || !planData
-                    ? "bg-gray-100 text-black cursor-not-allowed border-gray-200"
-                    : "bg-gradient-to-r from-orange-400 to-orange-500 text-white border-orange-500 hover:from-orange-500 hover:to-orange-600 hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105"
-                }`}
-                aria-label="投稿文を自動生成（テーマも自動選択）"
-              >
-                {isAutoGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    自動生成中...
-                  </>
-                ) : (
-                  "自動生成（テーマも自動選択）"
-                )}
-              </button>
-
-              {showAutoAdminWarning ? (
-                <div className="border border-orange-300 bg-orange-50 text-orange-800 text-xs px-3 py-2 mt-2">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-bold mb-1">同じような改善提案が3回続いています</p>
-                      <p>運用計画を改善しても、期待する投稿文が得られない場合は、AI設定（トーン、マナー・ルール、目標など）が適切でない可能性があります。マイアカウントページでAI設定を確認するか、管理者にお問い合わせください。</p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-
-              {/* テーマ指定生成ボタン */}
-              <button
-                onClick={handleAIGenerate}
-                disabled={isGenerating || !planData || !aiPrompt.trim()}
-                className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
-                  isGenerating || !planData || !aiPrompt.trim()
-                    ? "bg-gray-100 text-black cursor-not-allowed border-gray-200"
-                    : "bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white border-[#ff8a15] hover:from-orange-600 hover:to-[#ff8a15] hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105"
-                }`}
-                aria-label="テーマ指定で投稿文を生成"
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    生成中...
-                  </>
-                ) : (
-                  "テーマ指定生成"
-                )}
-              </button>
-
-              {showAiAdminWarning ? (
-                <div className="border border-orange-300 bg-orange-50 text-orange-800 text-xs px-3 py-2 mt-2">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-bold mb-1">同じような改善提案が3回続いています</p>
-                      <p>プロンプトを改善しても、期待する投稿文が得られない場合は、AI設定（トーン、マナー・ルール、目標など）が適切でない可能性があります。マイアカウントページでAI設定を確認するか、管理者にお問い合わせください。</p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-            </div>
-          </div>
-
-          {/* AIヒントセクション（ストーリー・フィード） */}
-          {(postType === "story" || postType === "feed") && (
-            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4">
-              <div className="flex items-center mb-4">
-                <span className="text-2xl mr-3">💡</span>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">AIヒント</h3>
-                  <p className="text-sm text-gray-600">
-                    {postType === "story"
-                      ? "投稿文に合う画像・動画のアイデアとストーリーのヒント"
-                      : "投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒント"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white p-4 border border-orange-100">
-                {isGeneratingSuggestions ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mr-3"></div>
-                    <span className="text-sm text-gray-600">AIヒントを生成中...</span>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="text-sm text-gray-700 whitespace-pre-line">
-                      {imageVideoSuggestions?.content || "AI投稿文生成で自動提案されます"}
-                    </div>
-                    {imageVideoSuggestions?.rationale && (
-                      <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-300 text-sm text-orange-800 whitespace-pre-line">
-                        <p className="font-medium text-orange-900 mb-1">今回の提案理由</p>
-                        {imageVideoSuggestions.rationale}
-                      </div>
-                    )}
-                    {latestGeneration?.draft?.hashtagExplanations && latestGeneration.draft.hashtagExplanations.length > 0 && (
-                      <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-300">
-                        <p className="font-medium text-blue-900 mb-2 text-sm">ハッシュタグ根拠</p>
-                        <div className="space-y-2">
-                          {latestGeneration.draft.hashtagExplanations.map((explanation, index) => {
-                            const categoryLabel = explanation.category === "brand" ? "企業" : explanation.category === "trending" ? "トレンド" : "補助";
-                            const hashtagWithoutHash = explanation.hashtag.replace(/^#+/, "");
-                            // Markdown形式の装飾記号を除去
-                            const cleanReason = explanation.reason.replace(/\*\*/g, "").replace(/\*/g, "").replace(/_/g, "").trim();
-                            return (
-                              <div key={index} className="text-xs text-blue-800">
-                                <span className="font-medium">#{hashtagWithoutHash}</span>
-                                <span className="mx-2 inline-block px-1.5 py-0.5 bg-blue-100 rounded text-blue-700">
-                                  {categoryLabel}
-                                </span>
-                                <span className="text-blue-600">{cleanReason}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* 保存された投稿一覧 */}
           {savedPosts.length > 0 && (
