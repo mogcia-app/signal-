@@ -220,7 +220,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [aiGenerateFeedback, setAiGenerateFeedback] = useState<string | null>(null);
+  // 後方互換性のため残す（非推奨）
   const [writingStyle, setWritingStyle] = useState<"casual" | "sincere" | null>(null);
+  
+  // フィード投稿オプション（新規）
+  const [feedPostType, setFeedPostType] = useState<"value" | "empathy" | "story" | "credibility" | "promo" | "brand" | null>(null);
+  const [textVolume, setTextVolume] = useState<"short" | "medium" | "long" | null>(null);
+  const [imageCount, setImageCount] = useState<number>(1);
   const [showAiAdminWarning, setShowAiAdminWarning] = useState(false);
   const aiFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
   
@@ -538,7 +544,18 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           scheduledDate,
           scheduledTime,
           autoGenerate: true, // 自動生成フラグ
-          writingStyle: writingStyle || undefined,
+          // フィードの場合はfeedOptionsを使用、それ以外はwritingStyle（後方互換性）
+          ...(postType === "feed" && feedPostType && textVolume
+            ? {
+                feedOptions: {
+                  feedPostType,
+                  textVolume,
+                  imageCount,
+                },
+              }
+            : {
+                writingStyle: writingStyle || undefined,
+              }),
         }),
       });
 
@@ -698,7 +715,18 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           scheduledDate,
           scheduledTime,
           action: "generatePost",
-          writingStyle: writingStyle || undefined,
+          // フィードの場合はfeedOptionsを使用、それ以外はwritingStyle（後方互換性）
+          ...(postType === "feed" && feedPostType && textVolume
+            ? {
+                feedOptions: {
+                  feedPostType,
+                  textVolume,
+                  imageCount,
+                },
+              }
+            : {
+                writingStyle: writingStyle || undefined,
+              }),
         }),
       });
 
@@ -943,43 +971,98 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               )}
             </div>
 
-            {/* スタイル選択（フィードのみ） */}
+            {/* フィード投稿オプション（フィードのみ） */}
             {postType === "feed" && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  文字数・スタイル
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setWritingStyle("casual")}
-                    disabled={!planData}
-                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
-                      writingStyle === "casual"
-                        ? "bg-orange-100 border-orange-500 text-orange-700"
-                        : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
-                    } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
-                    aria-label="カジュアルスタイル（150-200文字）を選択"
-                    aria-pressed={writingStyle === "casual"}
-                  >
-                    カジュアル
-                    <span className="block text-xs mt-1 text-gray-500">150-200文字</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWritingStyle("sincere")}
-                    disabled={!planData}
-                    className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
-                      writingStyle === "sincere"
-                        ? "bg-orange-100 border-orange-500 text-orange-700"
-                        : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
-                    } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
-                    aria-label="誠実スタイル（250-400文字）を選択"
-                    aria-pressed={writingStyle === "sincere"}
-                  >
-                    誠実
-                    <span className="block text-xs mt-1 text-gray-500">250-400文字</span>
-                  </button>
+              <div className="mb-4 space-y-4">
+                {/* 投稿タイプ選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    投稿の目的は？
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "value", label: "情報有益型", desc: "ノウハウ・Tips" },
+                      { value: "empathy", label: "共感型", desc: "悩み・あるある" },
+                      { value: "story", label: "ストーリー型", desc: "体験・背景" },
+                      { value: "credibility", label: "実績・信頼型", desc: "数字・事例" },
+                      { value: "promo", label: "告知・CTA型", desc: "キャンペーン" },
+                      { value: "brand", label: "ブランド型", desc: "世界観" },
+                    ].map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setFeedPostType(type.value as typeof feedPostType)}
+                        disabled={!planData}
+                        className={`py-2 px-3 text-xs font-medium rounded-lg border-2 transition-all duration-200 ${
+                          feedPostType === type.value
+                            ? "bg-orange-100 border-orange-500 text-orange-700"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
+                        } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                        aria-label={`${type.label}を選択`}
+                        aria-pressed={feedPostType === type.value}
+                      >
+                        <div className="font-semibold">{type.label}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{type.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 文字量選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    文章量は？
+                  </label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: "short", label: "軽め", desc: "80-120文字" },
+                      { value: "medium", label: "ふつう", desc: "150-200文字" },
+                      { value: "long", label: "しっかり", desc: "250-400文字" },
+                    ].map((volume) => (
+                      <button
+                        key={volume.value}
+                        type="button"
+                        onClick={() => setTextVolume(volume.value as typeof textVolume)}
+                        disabled={!planData}
+                        className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
+                          textVolume === volume.value
+                            ? "bg-orange-100 border-orange-500 text-orange-700"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
+                        } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                        aria-label={`${volume.label}を選択`}
+                        aria-pressed={textVolume === volume.value}
+                      >
+                        {volume.label}
+                        <span className="block text-xs mt-1 text-gray-500">{volume.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 画像枚数選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    使用する画像の枚数
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((count) => (
+                      <button
+                        key={count}
+                        type="button"
+                        onClick={() => setImageCount(count)}
+                        disabled={!planData}
+                        className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
+                          imageCount === count
+                            ? "bg-orange-100 border-orange-500 text-orange-700"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
+                        } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                        aria-label={`${count}枚を選択`}
+                        aria-pressed={imageCount === count}
+                      >
+                        {count}枚
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

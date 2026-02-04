@@ -14,6 +14,33 @@ const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
+// フィード投稿の文字数ルール（マップ定義）
+const FEED_TEXT_RULES = {
+  short: "80〜120文字程度",
+  medium: "150〜200文字程度",
+  long: "250〜400文字程度",
+} as const;
+
+// フィード投稿タイプのガイド（マップ定義）
+const FEED_TYPE_GUIDE = {
+  value: "ノウハウ・Tips・保存したくなる有益情報を中心に",
+  empathy: "悩み・あるある・感情に寄り添う共感重視の内容で",
+  story: "体験談や背景をストーリー仕立てで",
+  credibility: "実績・事例・数字を用いて信頼感を高める内容で",
+  promo: "商品・サービスの魅力を伝え、行動を促す内容で",
+  brand: "写真＋一言、ビジュアル重視、価値観・ポリシーを表現する内容で",
+} as const;
+
+// フィード投稿タイプの日本語ラベル
+const FEED_TYPE_LABELS = {
+  value: "情報有益型",
+  empathy: "共感型",
+  story: "ストーリー型",
+  credibility: "実績・信頼型",
+  promo: "告知・CTA型",
+  brand: "ブランド・世界観型",
+} as const;
+
 interface PostGenerationRequest {
   prompt: string;
   postType: "feed" | "reel" | "story";
@@ -43,6 +70,12 @@ interface PostGenerationRequest {
   scheduledTime?: string;
   action?: "suggestTime" | "generatePost";
   autoGenerate?: boolean;
+  feedOptions?: {
+    feedPostType: "value" | "empathy" | "story" | "credibility" | "promo" | "brand";
+    textVolume: "short" | "medium" | "long";
+    imageCount?: number; // 使用する画像の枚数
+  };
+  // 後方互換性のため残す（非推奨）
   writingStyle?: "casual" | "sincere";
 }
 
@@ -56,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const body: PostGenerationRequest = await request.json();
     let { prompt } = body;
-    const { postType, planData, scheduledDate, scheduledTime, action = "generatePost", writingStyle } = body;
+    const { postType, planData, scheduledDate, scheduledTime, action = "generatePost", feedOptions, writingStyle } = body;
 
     let userProfile: Awaited<ReturnType<typeof buildAIContext>>["userProfile"];
     let latestPlan: Awaited<ReturnType<typeof buildAIContext>>["latestPlan"];
@@ -242,19 +275,23 @@ export async function POST(request: NextRequest) {
       const postTypeLabel =
         postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード";
       
-      // スタイルに応じた文字数制限（フィードのみ）
+      // 文字数ガイドを決定（feedOptions優先、後方互換性のためwritingStyleも考慮）
       let textLengthGuide: string;
       if (postType === "story") {
         textLengthGuide = "20-50文字程度、1-2行の短い一言二言";
       } else if (postType === "reel") {
         textLengthGuide = "50-150文字程度、エンゲージメント重視";
       } else if (postType === "feed") {
-        if (writingStyle === "casual") {
-          textLengthGuide = "150-200文字程度、カジュアルで親しみやすい表現";
+        // feedOptionsが指定されている場合はそれを使用
+        if (feedOptions?.textVolume) {
+          textLengthGuide = FEED_TEXT_RULES[feedOptions.textVolume];
+        } else if (writingStyle === "casual") {
+          // 後方互換性: writingStyleをtextVolumeに変換
+          textLengthGuide = FEED_TEXT_RULES.medium;
         } else if (writingStyle === "sincere") {
-          textLengthGuide = "250-400文字程度、誠実で丁寧な表現";
+          textLengthGuide = FEED_TEXT_RULES.long;
         } else {
-          textLengthGuide = "100-150文字程度、詳細で魅力的な内容";
+          textLengthGuide = FEED_TEXT_RULES.short;
         }
       } else {
         textLengthGuide = "100-150文字程度、詳細で魅力的な内容";
@@ -265,13 +302,19 @@ export async function POST(request: NextRequest) {
 【投稿生成の指示】
 - 投稿タイプ: ${postTypeLabel}
 ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文字、1-2行）にしてください" : ""}
-${postType === "feed" && writingStyle === "casual" ? "- **重要**: フィード投稿文は150-200文字程度で生成してください。カジュアルで親しみやすい表現を使い、フォロワーとの距離感を縮めるような内容にしてください。" : ""}
-${postType === "feed" && writingStyle === "sincere" ? "- **重要**: フィード投稿文は250-400文字程度で生成してください。誠実で丁寧な表現を使い、商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが信頼感を持てるような内容にしてください。" : ""}
-${postType === "feed" && !writingStyle ? "- **重要**: フィード投稿文は100-150文字程度で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
+${postType === "feed" && feedOptions ? `
+- **重要**: フィード投稿の役割指定
+  - 投稿タイプ: ${FEED_TYPE_LABELS[feedOptions.feedPostType]}（${FEED_TYPE_GUIDE[feedOptions.feedPostType]}）
+  - 文字量: ${textLengthGuide}
+  - 画像枚数: ${feedOptions.imageCount || 1}枚
+この役割と文字量を厳守してください。` : ""}
+${postType === "feed" && !feedOptions && writingStyle === "casual" ? "- **重要**: フィード投稿文は150-200文字程度で生成してください。カジュアルで親しみやすい表現を使い、フォロワーとの距離感を縮めるような内容にしてください。" : ""}
+${postType === "feed" && !feedOptions && writingStyle === "sincere" ? "- **重要**: フィード投稿文は250-400文字程度で生成してください。誠実で丁寧な表現を使い、商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが信頼感を持てるような内容にしてください。" : ""}
+${postType === "feed" && !feedOptions && !writingStyle ? "- **重要**: フィード投稿文は100-150文字程度で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
 - 投稿日時: ${scheduledDate ? `${scheduledDate} ${scheduledTime}` : "未設定"}
 - テーマ: ${prompt}
-${writingStyle === "casual" ? "- スタイル: カジュアル（親しみやすく、フレンドリーな表現）" : ""}
-${writingStyle === "sincere" ? "- スタイル: 誠実（丁寧で信頼感のある表現）" : ""}
+${!feedOptions && writingStyle === "casual" ? "- スタイル: カジュアル（親しみやすく、フレンドリーな表現）" : ""}
+${!feedOptions && writingStyle === "sincere" ? "- スタイル: 誠実（丁寧で信頼感のある表現）" : ""}
 
 必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
 
@@ -356,6 +399,11 @@ AIペルソナ:
 - 週間投稿数: ${weeklyTarget}回
 - 期待効果: +${followerEffect}人/投稿
 - 投稿日時: ${scheduledDate ? `${scheduledDate} ${scheduledTime}` : "未設定"}
+${postType === "feed" && feedOptions ? `
+- フィード投稿の役割指定:
+  - 投稿タイプ: ${FEED_TYPE_LABELS[feedOptions.feedPostType]}（${FEED_TYPE_GUIDE[feedOptions.feedPostType]}）
+  - 文字量: ${FEED_TEXT_RULES[feedOptions.textVolume]}
+  - 画像枚数: ${feedOptions.imageCount || 1}枚` : ""}
 
 生成する投稿文の要件:
 1. 運用計画の戦略（${strategy}）を意識した内容
@@ -365,7 +413,8 @@ AIペルソナ:
 5. エンゲージメントを促進する要素を含める
 6. 必ず5個のハッシュタグを含める（企業ハッシュタグ1個、トレンドハッシュタグ1個、補助的ハッシュタグ3個）
 ${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文字、1-2行）にする" : ""}
-${postType === "feed" ? "7. **重要**: フィード投稿文は必ず150文字以内で生成してください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
+${postType === "feed" && feedOptions ? `7. **重要**: フィード投稿文は${FEED_TEXT_RULES[feedOptions.textVolume]}で生成してください。${FEED_TYPE_GUIDE[feedOptions.feedPostType]}。この役割と文字量を厳守してください。` : ""}
+${postType === "feed" && !feedOptions ? "7. **重要**: フィード投稿文は必ず150文字以内で生成してください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
 ${(() => {
   const profile = userProfile as UserProfile | null;
   return profile?.businessInfo?.productsOrServices && Array.isArray(profile.businessInfo.productsOrServices) && profile.businessInfo.productsOrServices.length > 0;
@@ -380,7 +429,7 @@ ${(() => {
 
 {
   "title": "簡潔で魅力的なタイトル",
-  "body": "計画に沿った投稿文${postType === "story" ? "（20-50文字程度、2行以内の短い一言二言）" : postType === "feed" ? "（150文字以内）" : "（100文字以内）"}",
+  "body": "計画に沿った投稿文${postType === "story" ? "（20-50文字程度、2行以内の短い一言二言）" : postType === "feed" && feedOptions ? `（${FEED_TEXT_RULES[feedOptions.textVolume]}）` : postType === "feed" ? "（150文字以内）" : "（100文字以内）"}",
   "hashtags": [
     {
       "tag": "企業・ブランドハッシュタグ（${resolvedPlanData.title || "企業名"}に関連する固有のハッシュタグ、#は不要）",
