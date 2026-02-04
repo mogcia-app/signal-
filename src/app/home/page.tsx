@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
@@ -30,6 +31,7 @@ interface MonthlyResult {
 export default function HomePage() {
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
+  const router = useRouter();
 
   // 今日の日付を取得
   const today = new Date();
@@ -312,16 +314,17 @@ export default function HomePage() {
   };
 
   // 計画削除を検知してデータを再取得（ページフォーカス時）
-  useEffect(() => {
-    const handleFocus = () => {
-      // ページがフォーカスされたときにデータを再取得
-      fetchDashboard();
-      fetchOtherKPI();
-    };
+  // 注意: 頻繁なリロードを避けるため、フォーカスイベントでの自動リロードは無効化
+  // useEffect(() => {
+  //   const handleFocus = () => {
+  //     // ページがフォーカスされたときにデータを再取得
+  //     fetchDashboard();
+  //     fetchOtherKPI();
+  //   };
 
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, []);
+  //   window.addEventListener("focus", handleFocus);
+  //   return () => window.removeEventListener("focus", handleFocus);
+  // }, []);
 
   // 初回ロード時にその他KPIデータを取得
   useEffect(() => {
@@ -436,7 +439,7 @@ export default function HomePage() {
                   </p>
                   <button
                     onClick={() => {
-                      window.location.href = "/instagram/plan";
+                      router.push("/instagram/plan");
                     }}
                     className="bg-white text-[#FF8A15] px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors"
                     aria-label="運用計画を作成する"

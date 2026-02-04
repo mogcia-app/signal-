@@ -120,23 +120,28 @@ export async function GET(request: NextRequest) {
     const totalFollowerIncrease = thisMonthTotals.followerIncrease + followerIncreaseFromOther;
     const previousTotalFollowerIncrease = previousMonthTotals.followerIncrease + previousFollowerIncreaseFromOther;
 
+    // 初月かどうかを判定（前月のanalyticsデータが存在しない場合、初月と判断）
+    const isFirstMonth = previousAnalyticsSnapshot.empty;
+
     // デバッグログ
     console.log("[Home Monthly KPIs] フォロワー数内訳:", {
       followerIncreaseFromPosts: thisMonthTotals.followerIncrease,
       followerIncreaseFromOther,
       totalFollowerIncrease,
       previousTotalFollowerIncrease,
+      isFirstMonth,
+      previousAnalyticsCount: previousAnalyticsSnapshot.docs.length,
     });
 
-    // 前月比を計算
+    // 前月比を計算（初月の場合はundefined）
     const changes = {
-      likes: previousMonthTotals.likes === 0 
+      likes: isFirstMonth || previousMonthTotals.likes === 0 
         ? undefined 
         : ((thisMonthTotals.likes - previousMonthTotals.likes) / previousMonthTotals.likes) * 100,
-      comments: previousMonthTotals.comments === 0 
+      comments: isFirstMonth || previousMonthTotals.comments === 0 
         ? undefined 
         : ((thisMonthTotals.comments - previousMonthTotals.comments) / previousMonthTotals.comments) * 100,
-      followers: previousTotalFollowerIncrease === 0 
+      followers: isFirstMonth || previousTotalFollowerIncrease === 0 
         ? undefined 
         : ((totalFollowerIncrease - previousTotalFollowerIncrease) / Math.abs(previousTotalFollowerIncrease)) * 100,
     };
