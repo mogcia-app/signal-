@@ -831,7 +831,9 @@ export async function getMasterContext(
     })();
 
     const goldCount = evaluatedSignals.filter((signal) => signal.tag === "gold").length;
-    const totalInteractions = entries.length;
+    // totalInteractionsは「分析した投稿数」を表すため、analyticsRecordsの数を使用
+    // entries.lengthは月次レビューのエントリ数であり、分析した投稿数とは異なる
+    const totalInteractions = analyticsRecords.length;
     const latestEntry = entries[0];
 
     const focusAreaCounts: Record<string, number> = {};
