@@ -117,16 +117,25 @@ ${
 };
 
 /**
- * 投稿生成用のシステムプロンプト
- * より詳細な指示を含む
+ * 投稿生成用のシステムプロンプト（汎用版・後方互換性のため残す）
+ * @deprecated 投稿タイプ別の関数（buildFeedPrompt, buildReelPrompt, buildStoryPrompt）を使用してください
  */
 export const buildPostGenerationPrompt = (
   userProfile: UserProfile,
   snsType: string,
   postType?: string
 ): string => {
-  const basePrompt = buildSystemPrompt(userProfile, snsType);
+  // 投稿タイプ別の関数に委譲
+  if (postType === "feed") {
+    return buildFeedPrompt(userProfile, snsType);
+  } else if (postType === "reel") {
+    return buildReelPrompt(userProfile, snsType);
+  } else if (postType === "story") {
+    return buildStoryPrompt(userProfile, snsType);
+  }
 
+  // 未指定の場合は汎用版を返す
+  const basePrompt = buildSystemPrompt(userProfile, snsType);
   const additionalInstructions = `
 【投稿生成の指示】
 - 投稿タイプ: ${postType || "未指定"}
@@ -135,8 +144,198 @@ export const buildPostGenerationPrompt = (
 - 課題（${userProfile.businessInfo.challenges.join(", ")}）を解決するヒントを含める
 - エンゲージメントを高める要素を含める
 `;
-
   return basePrompt + additionalInstructions;
+};
+
+/**
+ * フィード投稿生成用のシステムプロンプト
+ * 商品情報を自然に織り込み、魅力的なストーリーを構築
+ */
+export const buildFeedPrompt = (
+  userProfile: UserProfile,
+  snsType: string
+): string => {
+  const basePrompt = buildSystemPrompt(userProfile, snsType);
+  const { businessInfo } = userProfile;
+
+  // 商品情報を自然に組み込むための指示
+  const productGuidance = businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0
+    ? `
+【商品・サービス情報の活かし方】
+以下の商品・サービス情報を「参考資料」として活用してください。機械的に詰め込むのではなく、投稿のテーマやストーリーに自然に織り込んでください。
+
+${businessInfo.productsOrServices.map((p) => {
+  let productInfo = `- ${p.name}`;
+  if (p.details) {
+    productInfo += `: ${p.details}`;
+  }
+  if (p.price) {
+    productInfo += ` [価格: ${p.price}円（税込）]`;
+  }
+  return productInfo;
+}).join("\n")}
+
+重要: 商品情報は「必ず含める」のではなく、「テーマに合う場合のみ自然に言及」してください。無理に詰め込むと不自然になります。
+`
+    : "";
+
+  const feedInstructions = `
+【フィード投稿生成の指示】
+あなたは${businessInfo.industry || "ビジネス"}業界に精通したInstagramコンテンツクリエイターです。
+フォロワーが「保存したくなる」「シェアしたくなる」魅力的なフィード投稿を生成してください。
+
+## フィード投稿の特性
+- **視覚的ストーリーテリング**: 画像と文章で物語を紡ぐ
+- **価値提供**: 読者にとって有益な情報や気づきを含める
+- **感情に訴える**: 共感や感動を生む表現を使う
+- **行動喚起**: 自然な形でフォロワーの行動を促す
+
+## 生成のポイント
+1. **ストーリー性**: 商品・サービスを紹介する際は、その背景や体験談を織り交ぜる
+2. **自然な言及**: 商品情報は「宣伝」ではなく「体験の共有」として表現する
+3. **ターゲット視点**: ${businessInfo.targetMarket || "ターゲット市場"}の視点で「知りたい」「感じたい」ことを意識する
+4. **課題解決**: ${businessInfo.challenges && businessInfo.challenges.length > 0 ? businessInfo.challenges.join(", ") : "課題"}を解決するヒントを自然に含める
+5. **ブランド一貫性**: 「${businessInfo.catchphrase || "ブランドの価値観"}」を体現する表現を使う
+
+## 避けるべき表現
+- ❌ 商品情報の羅列（「〇〇は△△円です。□□も△△円です。」など）
+- ❌ 硬い営業文句（「ぜひご利用ください」「お問い合わせください」など）
+- ❌ 情報の詰め込み（すべての商品を1投稿で紹介するなど）
+
+## 推奨する表現
+- ✅ 体験談やストーリーから始める（「先日、お客様からこんなお声をいただきました...」）
+- ✅ 疑問形で共感を呼ぶ（「こんな悩み、ありませんか？」）
+- ✅ 具体的なシーンを描く（「朝の忙しい時間に...」）
+- ✅ 感情を動かす表現（「嬉しかった」「気づいた」「変わった」など）
+
+${productGuidance}
+`;
+
+  return basePrompt + feedInstructions;
+};
+
+/**
+ * リール投稿生成用のシステムプロンプト
+ * エンゲージメント重視、短くインパクトのある表現
+ */
+export const buildReelPrompt = (
+  userProfile: UserProfile,
+  snsType: string
+): string => {
+  const basePrompt = buildSystemPrompt(userProfile, snsType);
+  const { businessInfo } = userProfile;
+
+  const productGuidance = businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0
+    ? `
+【商品・サービス情報の活かし方】
+リールは「見る・学ぶ・楽しむ」が目的です。商品情報は「ヒント」として活用し、動画のテーマや学びのポイントに自然に織り込んでください。
+
+${businessInfo.productsOrServices.map((p) => {
+  let productInfo = `- ${p.name}`;
+  if (p.details) {
+    productInfo += `: ${p.details}`;
+  }
+  return productInfo;
+}).join("\n")}
+
+重要: リールのテキストは「動画の補足」として機能します。商品名を直接言及するよりも、「こんな方法で解決できます」という形で自然に導いてください。
+`
+    : "";
+
+  const reelInstructions = `
+【リール投稿生成の指示】
+あなたは${businessInfo.industry || "ビジネス"}業界のエキスパートとして、短くてインパクトのあるリール投稿文を生成してください。
+
+## リール投稿の特性
+- **短時間で伝える**: 最初の3秒で興味を引く
+- **学びや気づき**: 「なるほど！」と思える情報を提供
+- **エンゲージメント重視**: コメントやシェアを促す表現
+- **動画の補完**: 動画の内容を補足し、理解を深める
+
+## 生成のポイント
+1. **フック**: 最初の一文で「これは見たい」と思わせる
+2. **簡潔性**: 50-150文字で要点を伝える
+3. **疑問形活用**: 「知ってましたか？」「こんな方法、試したことありますか？」など
+4. **数値や具体例**: 「3つのポイント」「実際の事例」など、具体的な情報を含める
+5. **行動喚起**: 「試してみてください」「感想を聞かせてください」など、自然な形で促す
+
+## 避けるべき表現
+- ❌ 長文の説明（リールは動画が主役）
+- ❌ 商品の詳細な説明（動画で見せるべき内容）
+- ❌ 硬い表現（「ご利用ください」「お問い合わせください」など）
+
+## 推奨する表現
+- ✅ 疑問形で始める（「〇〇って知ってますか？」「こんな悩み、ありませんか？」）
+- ✅ 数値やリスト（「3つのポイント」「5分で分かる」など）
+- ✅ 体験談（「実際に試してみたら...」）
+- ✅ 共感を呼ぶ表現（「あるある」「これ分かる」など）
+
+${productGuidance}
+`;
+
+  return basePrompt + reelInstructions;
+};
+
+/**
+ * ストーリーズ投稿生成用のシステムプロンプト
+ * 短く、親しみやすく、日常感を大切に
+ */
+export const buildStoryPrompt = (
+  userProfile: UserProfile,
+  snsType: string
+): string => {
+  const basePrompt = buildSystemPrompt(userProfile, snsType);
+  const { businessInfo } = userProfile;
+
+  const productGuidance = businessInfo.productsOrServices && businessInfo.productsOrServices.length > 0
+    ? `
+【商品・サービス情報の活かし方】
+ストーリーズは「日常の共有」が目的です。商品情報は「背景」として活用し、自然な会話のように表現してください。
+
+${businessInfo.productsOrServices.map((p) => {
+  let productInfo = `- ${p.name}`;
+  if (p.details) {
+    productInfo += `: ${p.details}`;
+  }
+  return productInfo;
+}).join("\n")}
+
+重要: ストーリーズは「今、何をしているか」を共有する場です。商品を直接紹介するよりも、「今日は〇〇を作っています」という形で自然に織り込んでください。
+`
+    : "";
+
+  const storyInstructions = `
+【ストーリーズ投稿生成の指示】
+あなたは${businessInfo.industry || "ビジネス"}の運営者として、親しみやすく日常感のあるストーリーズ投稿文を生成してください。
+
+## ストーリーズ投稿の特性
+- **短さ**: 20-50文字、1-2行で完結
+- **日常感**: 「今、何をしているか」を共有
+- **親しみやすさ**: フォロワーとの距離感を縮める
+- **リアルタイム感**: 「今」の瞬間を切り取る
+
+## 生成のポイント
+1. **一言で伝える**: 長い説明は不要、シンプルに
+2. **今の気持ち**: 「嬉しい」「楽しい」「頑張ってる」など、感情を込める
+3. **質問形式**: 「どう思いますか？」「どっちがいい？」など、反応を促す
+4. **日常の共有**: 「今日は〇〇しています」「今、〇〇を作っています」など
+5. **親しみやすさ**: カジュアルでフレンドリーな表現
+
+## 避けるべき表現
+- ❌ 長文の説明（ストーリーズは短さが命）
+- ❌ 硬い表現（「ご利用ください」「お問い合わせください」など）
+- ❌ 商品情報の羅列（「〇〇は△△円です」など）
+
+## 推奨する表現
+- ✅ 一言で伝える（「今日は〇〇しています！」「〇〇完成しました✨」）
+- ✅ 質問形式（「どっちがいい？」「どう思いますか？」）
+- ✅ 感情表現（「嬉しい！」「楽しい！」「頑張ってる！」）
+- ✅ 日常の共有（「今、〇〇を作っています」「今日は〇〇の日」）
+
+${productGuidance}
+`;
+
+  return basePrompt + storyInstructions;
 };
 
 /**

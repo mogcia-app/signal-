@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
+import { buildPostGenerationPrompt, buildFeedPrompt, buildReelPrompt, buildStoryPrompt } from "../../../../utils/aiPromptBuilder";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { buildAIContext } from "@/lib/ai/context";
@@ -250,8 +250,17 @@ export async function POST(request: NextRequest) {
     let systemPrompt: string;
 
     if (userProfile) {
-      // ✅ ユーザープロファイル + 運用計画を参照
-      systemPrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
+      // ✅ 投稿タイプ別のプロンプト生成関数を使用
+      if (postType === "feed") {
+        systemPrompt = buildFeedPrompt(userProfile, "instagram");
+      } else if (postType === "reel") {
+        systemPrompt = buildReelPrompt(userProfile, "instagram");
+      } else if (postType === "story") {
+        systemPrompt = buildStoryPrompt(userProfile, "instagram");
+      } else {
+        // フォールバック（後方互換性）
+        systemPrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
+      }
 
       // 運用計画の要約を追加
       if (latestPlan) {
@@ -373,7 +382,17 @@ ${!feedOptions && writingStyle === "sincere" ? "- スタイル: 誠実（丁寧�
       // ユーザープロファイルの商品・サービス情報を含むベースプロンプトを構築
       let basePrompt = "";
       if (userProfile) {
-        basePrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
+        // 投稿タイプ別のプロンプト生成関数を使用
+        if (postType === "feed") {
+          basePrompt = buildFeedPrompt(userProfile, "instagram");
+        } else if (postType === "reel") {
+          basePrompt = buildReelPrompt(userProfile, "instagram");
+        } else if (postType === "story") {
+          basePrompt = buildStoryPrompt(userProfile, "instagram");
+        } else {
+          // フォールバック（後方互換性）
+          basePrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
+        }
       }
 
       systemPrompt = `${basePrompt ? `${basePrompt}\n\n` : ""}あなたはInstagramの運用をサポートするAIアシスタントです。ユーザーの運用計画に基づいて、効果的な投稿文を生成してください。
@@ -419,11 +438,11 @@ ${(() => {
   const profile = userProfile as UserProfile | null;
   return profile?.businessInfo?.productsOrServices && Array.isArray(profile.businessInfo.productsOrServices) && profile.businessInfo.productsOrServices.length > 0;
 })() ? `
-【商品・サービス情報の参照について】
-ユーザーが商品・サービス名を指定した場合（例：「ランチセットの投稿文を作って」）、上記の「商品・サービス情報」セクションから該当する商品・サービスの詳細と価格情報を必ず参照してください。
-- 商品・サービス名が一致する場合は、その詳細（説明文）と価格（税込）を投稿文に自然に含めてください。
-- 価格がある場合は、価格情報も投稿文に含めることを推奨します。
-- 詳細情報を活用して、具体的で魅力的な投稿文を作成してください。` : ""}
+【商品・サービス情報の活かし方（補足）】
+ユーザーが商品・サービス名を指定した場合（例：「ランチセットの投稿文を作って」）、上記の「商品・サービス情報」セクションを参考にしてください。
+- 商品・サービス名が一致する場合は、その詳細や価格を「自然に織り込む」形で活用してください。
+- 機械的に情報を詰め込むのではなく、ストーリーや体験談の中に自然に組み込んでください。
+- 価格情報は「必ず含める」のではなく、「テーマに合う場合のみ自然に言及」してください。` : ""}
 
 必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
 
