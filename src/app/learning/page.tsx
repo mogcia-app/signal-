@@ -129,11 +129,23 @@ export default function LearningDashboardPage() {
     }
 
     let isCancelled = false;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     const fetchDashboardData = async (retryAttempt = 0) => {
+      // タイムアウトを設定（30秒）
+      timeoutId = setTimeout(() => {
+        if (!isCancelled) {
+          console.error("[Learning Dashboard] タイムアウト: 30秒以内にレスポンスがありません");
+          setIsContextLoading(false);
+          setIsPartiallyLoading(false);
+          setContextError("データの取得に時間がかかっています。しばらく待ってから再度お試しください。");
+        }
+      }, 30000);
+
       // キャッシュキーを生成
       const cacheKey = generateCacheKey("learning-dashboard", { userId: user.uid });
 
-      // キャッシュから取得を試みる
+      // キャッシュから取得を試みる（初回のみ）
       const cachedData = clientCache.get<MasterContextResponse>(cacheKey);
       if (cachedData && !isCancelled && !contextData) {
         setContextData(cachedData);
@@ -164,12 +176,20 @@ export default function LearningDashboardPage() {
 
         const response = await authFetch(`/api/learning/dashboard?${params.toString()}`);
 
+        // タイムアウトをクリア
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+
         if (!response.ok) {
           // リトライ可能なエラー（5xx系）の場合はリトライ
           if (response.status >= 500 && retryAttempt < 2) {
             console.log(`[Learning Dashboard] リトライ試行 ${retryAttempt + 1}/2`);
             setTimeout(() => {
-              fetchDashboardData(retryAttempt + 1);
+              if (!isCancelled) {
+                fetchDashboardData(retryAttempt + 1);
+              }
             }, 1000 * (retryAttempt + 1)); // 指数バックオフ
             return;
           }
@@ -232,11 +252,19 @@ export default function LearningDashboardPage() {
       } catch (error) {
         console.error("学習ダッシュボードデータ取得エラー:", error);
         
+        // タイムアウトをクリア
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        
         // リトライ可能なエラーの場合はリトライ
         if (retryAttempt < 2 && !isCancelled) {
           console.log(`[Learning Dashboard] リトライ試行 ${retryAttempt + 1}/2`);
           setTimeout(() => {
-            fetchDashboardData(retryAttempt + 1);
+            if (!isCancelled) {
+              fetchDashboardData(retryAttempt + 1);
+            }
           }, 1000 * (retryAttempt + 1)); // 指数バックオフ
           return;
         }
@@ -247,13 +275,22 @@ export default function LearningDashboardPage() {
             ERROR_MESSAGES.LEARNING_DASHBOARD_FETCH_FAILED
           );
           setContextError(errorMessage);
-          setContextData(null);
-          setSharedLearningContext(null);
-          setFeedbackHistory([]);
-          setActionHistory([]);
+          // エラー時も既存のデータは保持
+          if (!contextData) {
+            setContextData(null);
+            setSharedLearningContext(null);
+            setFeedbackHistory([]);
+            setActionHistory([]);
+          }
           setRetryCount(retryAttempt + 1);
         }
       } finally {
+        // タイムアウトをクリア
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        
         if (!isCancelled) {
           setIsContextLoading(false);
           setIsPartiallyLoading(false);
@@ -264,8 +301,11 @@ export default function LearningDashboardPage() {
     fetchDashboardData();
     return () => {
       isCancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [isAuthReady, user?.uid, contextData]);
+  }, [isAuthReady, user?.uid]); // contextDataを依存配列から削除して無限ループを防止
 
   const patternInsights = contextData?.postPatterns;
 
@@ -351,8 +391,90 @@ export default function LearningDashboardPage() {
 
           {/* 部分ローディング表示 */}
           {isPartiallyLoading && contextData && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded" role="status" aria-live="polite">
-              <p className="text-sm text-blue-700">データを更新中...</p>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded flex items-center justify-between" role="status" aria-live="polite">
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                <p className="text-sm text-blue-700">データを更新中...</p>
+              </div>
+            </div>
+          )}
+          
+          {/* 手動更新ボタン（ローディング中でない場合のみ表示） */}
+          {!isContextLoading && !isPartiallyLoading && contextData && (
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={async () => {
+                  setIsPartiallyLoading(true);
+                  setContextError(null);
+                  try {
+                    const params = new URLSearchParams({
+                      forceRefresh: "1",
+                      limit: "10",
+                    });
+                    const response = await authFetch(`/api/learning/dashboard?${params.toString()}`);
+                    if (response.ok) {
+                      const result = await response.json();
+                      if (result.success && result.data) {
+                        const cacheKey = generateCacheKey("learning-dashboard", { userId: user?.uid || "" });
+                        clientCache.set(cacheKey, result.data, 5 * 60 * 1000);
+                        setContextData(result.data);
+                        setPostInsights(result.data?.postInsights ?? {});
+                        setSharedLearningContext(result.data?.learningContext ?? null);
+                        setRetryCount(0);
+                        
+                        // フィードバック履歴とアクション履歴を設定
+                        const mappedFeedback: FeedbackEntry[] = Array.isArray(result.data.feedbackHistory)
+                          ? result.data.feedbackHistory.map((entry: any) => ({
+                              id: String(entry.id ?? ""),
+                              postId: entry.postId ?? null,
+                              sentiment:
+                                entry.sentiment === "positive" || entry.sentiment === "negative"
+                                  ? entry.sentiment
+                                  : "neutral",
+                              comment: entry.comment ?? "",
+                              weight: typeof entry.weight === "number" ? entry.weight : 1,
+                              createdAt: typeof entry.createdAt === "string" ? entry.createdAt : null,
+                            }))
+                          : [];
+                        const mappedActions: ActionLogEntry[] = Array.isArray(result.data.actionHistory)
+                          ? result.data.actionHistory.map((entry: any) => ({
+                              id: String(entry.id ?? ""),
+                              actionId: String(entry.actionId ?? ""),
+                              title: entry.title ?? "未設定",
+                              focusArea: entry.focusArea ?? "全体",
+                              applied: Boolean(entry.applied),
+                              resultDelta:
+                                typeof entry.resultDelta === "number" ? Number(entry.resultDelta) : null,
+                              feedback: entry.feedback ?? "",
+                              updatedAt:
+                                typeof entry.updatedAt === "string"
+                                  ? entry.updatedAt
+                                  : typeof entry.createdAt === "string"
+                                    ? entry.createdAt
+                                    : null,
+                            }))
+                          : [];
+                        setFeedbackHistory(mappedFeedback);
+                        setActionHistory(mappedActions);
+                      }
+                    } else {
+                      throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                  } catch (error) {
+                    console.error("データ更新エラー:", error);
+                    const errorMessage = handleError(error, ERROR_MESSAGES.LEARNING_DASHBOARD_FETCH_FAILED);
+                    setContextError(errorMessage);
+                  } finally {
+                    setIsPartiallyLoading(false);
+                  }
+                }}
+                disabled={isPartiallyLoading}
+                className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:ring-offset-2 flex items-center gap-2"
+                aria-label="データを更新する"
+              >
+                <RefreshCw className={`h-4 w-4 ${isPartiallyLoading ? "animate-spin" : ""}`} />
+                データを更新
+              </button>
             </div>
           )}
           
