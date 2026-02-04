@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { checkUserContract } from "../lib/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { getToolMaintenanceStatus } from "@/lib/tool-maintenance";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -15,6 +16,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading, contractValid } = useAuth();
   const router = useRouter();
   const [isCheckingContract, setIsCheckingContract] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [checkingMaintenance, setCheckingMaintenance] = useState(false);
 
   // ユーザーが認証済みの場合、契約期間を定期的にチェック
   useEffect(() => {
@@ -33,13 +36,54 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [user, loading, isCheckingContract]);
 
+  // メンテナンス状態をチェック
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      try {
+        const status = await getToolMaintenanceStatus();
+        setMaintenanceMode(status.enabled);
+
+        // スケジュールされたメンテナンスのチェック
+        if (status.scheduledStart && status.scheduledEnd) {
+          const now = new Date();
+          const start = new Date(status.scheduledStart);
+          const end = new Date(status.scheduledEnd);
+
+          if (now >= start && now <= end) {
+            setMaintenanceMode(true);
+          }
+        }
+
+        if (status.enabled && user) {
+          // メンテナンス中はログアウトしてメンテナンス画面にリダイレクト
+          await signOut(auth);
+          router.push("/maintenance");
+        }
+      } catch (error) {
+        console.error("Error checking maintenance:", error);
+      } finally {
+        setCheckingMaintenance(false);
+      }
+    };
+
+    if (user) {
+      setCheckingMaintenance(true);
+      checkMaintenance();
+      // 定期的にチェック（1分ごと）
+      const interval = setInterval(checkMaintenance, 60000);
+      return () => clearInterval(interval);
+    } else {
+      setCheckingMaintenance(false);
+    }
+  }, [user, router]);
+
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
 
-  if (loading) {
+  if (loading || checkingMaintenance) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -55,6 +99,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (!user) {
     return null;
+  }
+
+  if (maintenanceMode) {
+    return null; // メンテナンス画面にリダイレクト中
   }
 
   if (!contractValid) {

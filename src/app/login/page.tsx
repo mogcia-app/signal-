@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { getToolMaintenanceStatus } from "@/lib/tool-maintenance";
 
 const loginMaintenanceEnabled = process.env.NEXT_PUBLIC_LOGIN_MAINTENANCE === "true";
 const isProductionBuild = process.env.NODE_ENV === "production";
@@ -15,15 +16,63 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState("");
+  const [checkingMaintenance, setCheckingMaintenance] = useState(true);
   const isMaintenanceMode = loginMaintenanceEnabled && !isProductionBuild;
 
   const { signIn } = useAuth();
   const router = useRouter();
 
+  // メンテナンス状態をチェック
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      try {
+        const status = await getToolMaintenanceStatus();
+        setMaintenanceMode(status.enabled);
+        setMaintenanceMessage(status.message);
+
+        // スケジュールされたメンテナンスのチェック
+        if (status.scheduledStart && status.scheduledEnd) {
+          const now = new Date();
+          const start = new Date(status.scheduledStart);
+          const end = new Date(status.scheduledEnd);
+
+          if (now >= start && now <= end) {
+            setMaintenanceMode(true);
+            if (!status.message) {
+              setMaintenanceMessage("システムメンテナンス中です。しばらくお待ちください。");
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking maintenance status:", error);
+        // エラー時はメンテナンス無効として扱う
+        setMaintenanceMode(false);
+      } finally {
+        setCheckingMaintenance(false);
+      }
+    };
+
+    checkMaintenance();
+
+    // リアルタイムでメンテナンス状態を監視（30秒ごとにチェック）
+    const interval = setInterval(checkMaintenance, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    // メンテナンス中はログインをブロック
+    if (maintenanceMode || isMaintenanceMode) {
+      setError("現在メンテナンス中です。しばらくお待ちください。");
+      setLoading(false);
+      return;
+    }
 
     try {
       await signIn(email, password);
@@ -57,6 +106,51 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // メンテナンスチェック中
+  if (checkingMaintenance) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#ff8a15]/10">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 border-2 border-gray-200 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm font-medium text-gray-700">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // メンテナンス画面
+  if (maintenanceMode || isMaintenanceMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#ff8a15]/10 p-4 relative overflow-hidden">
+        {/* グリッドパターン */}
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #000 1px, transparent 1px),
+              linear-gradient(to bottom, #000 1px, transparent 1px)
+            `,
+            backgroundSize: "48px 48px",
+          }}
+        ></div>
+
+        <div className="relative max-w-md w-full bg-white border-2 border-gray-900 rounded-lg shadow-lg p-8 text-center">
+          <div className="text-6xl mb-4">🔧</div>
+          <h1 className="text-2xl font-bold mb-4">メンテナンス中</h1>
+          <p className="text-gray-600 mb-6 whitespace-pre-wrap">
+            {maintenanceMessage || "システムメンテナンス中です。しばらくお待ちください。"}
+          </p>
+          <div className="text-sm text-gray-500">
+            メンテナンスが完了次第、サービスを再開いたします。
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ログイン成功画面
   if (loginSuccess) {
@@ -195,14 +289,10 @@ export default function LoginPage() {
             </div>
 
             {/* エラーメッセージ */}
-            {(isMaintenanceMode || error) && (
+            {error && (
               <div className="bg-red-50 border-2 border-red-500 p-4 flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-red-700 font-medium">
-                  {isMaintenanceMode
-                    ? "現在メンテナンス中のためログインできません。時間をおいて再度お試しください。"
-                    : error}
-                </div>
+                <div className="text-sm text-red-700 font-medium">{error}</div>
               </div>
             )}
 
@@ -210,12 +300,10 @@ export default function LoginPage() {
             <div>
               <button
                 type="submit"
-                disabled={loading || isMaintenanceMode}
+                disabled={loading}
                 className="group relative w-full flex justify-center items-center py-4 px-6 border-2 border-gray-900 text-lg font-bold text-white bg-[#ff8a15] hover:bg-black hover:border-[#ff8a15] focus:outline-none focus:ring-4 focus:ring-[#ff8a15]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-[4px_4px_0_0_#000] hover:shadow-[6px_6px_0_0_#ff8a15] active:shadow-[2px_2px_0_0_#ff8a15] active:translate-x-[2px] active:translate-y-[2px] transform"
               >
-                {isMaintenanceMode ? (
-                  "メンテナンス中です"
-                ) : loading ? (
+                {loading ? (
                   <>
                     <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent mr-3"></div>
                     ログイン中...

@@ -125,6 +125,156 @@ ${context ? JSON.stringify(context, null, 2) : "計画情報なし"}
   }
 });
 
+// Tool Maintenance Mode Functions
+// CORS設定のヘルパー関数
+function setCorsHeaders(res: any) {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
+// メンテナンス状態の取得
+export const getToolMaintenanceStatus = onRequest({ cors: true }, async (req, res) => {
+  setCorsHeaders(res);
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "GET") {
+    res.status(405).json({ success: false, error: "Method not allowed" });
+    return;
+  }
+
+  try {
+    // Firestoreからメンテナンス状態を取得
+    const maintenanceDoc = await admin
+      .firestore()
+      .collection("toolMaintenance")
+      .doc("current")
+      .get();
+
+    if (!maintenanceDoc.exists) {
+      // デフォルト値（メンテナンス無効）
+      res.status(200).json({
+        success: true,
+        data: {
+          enabled: false,
+          message: "",
+          scheduledStart: null,
+          scheduledEnd: null,
+          updatedBy: "",
+          updatedAt: null,
+        },
+      });
+      return;
+    }
+
+    const data = maintenanceDoc.data();
+    const updatedAt = data?.updatedAt;
+    const updatedAtISO =
+      updatedAt && updatedAt.toDate
+        ? updatedAt.toDate().toISOString()
+        : updatedAt || null;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        enabled: data?.enabled || false,
+        message: data?.message || "",
+        scheduledStart: data?.scheduledStart || null,
+        scheduledEnd: data?.scheduledEnd || null,
+        updatedBy: data?.updatedBy || "",
+        updatedAt: updatedAtISO,
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("Error fetching tool maintenance status", { error: errorMessage });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch maintenance status",
+    });
+  }
+});
+
+// メンテナンスモードの設定
+export const setToolMaintenanceMode = onRequest({ cors: true }, async (req, res) => {
+  setCorsHeaders(res);
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).json({ success: false, error: "Method not allowed" });
+    return;
+  }
+
+  try {
+    const { enabled, message, scheduledStart, scheduledEnd, updatedBy } = req.body;
+
+    // バリデーション
+    if (typeof enabled !== "boolean") {
+      res.status(400).json({
+        success: false,
+        error: "enabled must be a boolean",
+      });
+      return;
+    }
+
+    // Firestoreに保存
+    const maintenanceRef = admin.firestore().collection("toolMaintenance").doc("current");
+
+    const updateData: any = {
+      enabled,
+      message: message || (enabled ? "システムメンテナンス中です。しばらくお待ちください。" : ""),
+      updatedBy: updatedBy || "admin",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (scheduledStart) {
+      updateData.scheduledStart = scheduledStart;
+    }
+
+    if (scheduledEnd) {
+      updateData.scheduledEnd = scheduledEnd;
+    }
+
+    await maintenanceRef.set(updateData, { merge: true });
+
+    // 更新後のデータを取得して返す
+    const updatedDoc = await maintenanceRef.get();
+    const data = updatedDoc.data();
+    const updatedAt = data?.updatedAt;
+    const updatedAtISO =
+      updatedAt && updatedAt.toDate
+        ? updatedAt.toDate().toISOString()
+        : updatedAt || null;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        enabled: data?.enabled || false,
+        message: data?.message || "",
+        scheduledStart: data?.scheduledStart || null,
+        scheduledEnd: data?.scheduledEnd || null,
+        updatedBy: data?.updatedBy || "",
+        updatedAt: updatedAtISO,
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("Error setting tool maintenance mode", { error: errorMessage });
+    res.status(500).json({
+      success: false,
+      error: "Failed to set maintenance mode",
+    });
+  }
+});
+
 /**
  * 週次バックアップ: Firestore → Cloud Storage (JSON)
  * 毎週日曜日の午前3時（JST）に実行
