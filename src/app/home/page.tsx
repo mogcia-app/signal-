@@ -9,7 +9,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { authFetch } from "../../utils/authFetch";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
-import { TrendingUp, Loader2, X, Copy, Check, Save } from "lucide-react";
+import { TrendingUp, Loader2, X, Copy, Check, Save, Edit } from "lucide-react";
 // Client-side logging - use console.error directly
 import CommentReplyAssistant from "../instagram/lab/components/CommentReplyAssistant";
 import { SkeletonLoader } from "../../components/ui/SkeletonLoader";
@@ -613,7 +613,17 @@ export default function HomePage() {
                                         });
 
                                         if (response.ok) {
-                                          toast.success("投稿を保存しました！投稿一覧で確認できます。");
+                                          const result = await response.json();
+                                          const postId = result.id || result.post?.id;
+                                          
+                                          if (postId) {
+                                            // 保存成功後、ラボページに遷移して編集
+                                            const labPath = `/instagram/lab/${task.type}?edit=${postId}`;
+                                            router.push(labPath);
+                                            toast.success("投稿を保存しました。編集ページに移動します。");
+                                          } else {
+                                            toast.success("投稿を保存しました！投稿一覧で確認できます。");
+                                          }
                                         } else {
                                           const errorData = await response.json().catch(() => ({}));
                                           const errorMessage = handleError(
@@ -634,13 +644,13 @@ export default function HomePage() {
                                       }
                                     }}
                                     className="p-1.5 rounded-md hover:bg-gray-200 transition-colors"
-                                    title="投稿一覧に保存"
+                                    title="保存して編集"
                                     disabled={savingTaskIndex === index}
                                   >
                                     {savingTaskIndex === index ? (
                                       <Loader2 className="w-4 h-4 text-orange-600 animate-spin" />
                           ) : (
-                                      <Save className="w-4 h-4 text-orange-600" />
+                                      <Edit className="w-4 h-4 text-orange-600" />
                           )}
                         </button>
                                   <button
