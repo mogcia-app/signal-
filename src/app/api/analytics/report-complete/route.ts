@@ -457,14 +457,26 @@ export async function GET(request: NextRequest) {
     }
 
     if (isFirstMonth) {
-      followerIncreaseFromOther = currentFollowersFromHome;
+      // 初月の場合、follower_counts.followersは「現在のフォロワー数」を保存している
+      // そのため、その他からの増加数 = 現在のフォロワー数 - initialFollowers
+      // ただし、currentFollowersFromHomeが0の場合は、何も入力されていないので増加数は0
+      if (currentFollowersFromHome > 0 && currentFollowersFromHome > initialFollowers) {
+        followerIncreaseFromOther = currentFollowersFromHome - initialFollowers;
+      } else {
+        followerIncreaseFromOther = 0;
+      }
     } else {
       followerIncreaseFromOther = currentFollowersFromHome - previousFollowersFromHome;
     }
 
     let totalFollowerIncrease: number;
     if (isFirstMonth && initialFollowers > 0) {
-      totalFollowerIncrease = initialFollowers + followerIncreaseFromPosts + followerIncreaseFromOther;
+      // 初月の場合、totalFollowerIncrease = 投稿からの増加数 + その他からの増加数
+      // ただし、その他からの増加数は既に「現在のフォロワー数 - initialFollowers」として計算済み
+      // そのため、totalFollowerIncrease = 投稿からの増加数 + (現在のフォロワー数 - initialFollowers)
+      // これは「増加数」として正しい
+      // ただし、何も増加がない場合（投稿からの増加数 = 0、その他からの増加数 = 0）は、0を表示する
+      totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
     } else {
       totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
     }
