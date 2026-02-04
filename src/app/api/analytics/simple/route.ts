@@ -149,7 +149,7 @@ async function generateAndSaveAIAdvice(
             },
           }
         : null,
-      currentFollowers: 0,
+      currentFollowers: planData?.actualFollowers ?? planData?.currentFollowers ?? 0,
       businessInfo: userProfile?.businessInfo
         ? {
             industry: userProfile.businessInfo.industry || "",
@@ -170,14 +170,20 @@ async function generateAndSaveAIAdvice(
         : null,
     };
 
+    // 現在のフォロワー数と目標フォロワー数を取得
+    const currentFollowers = planData?.actualFollowers ?? planData?.currentFollowers ?? 0;
+    const targetFollowers = planData?.targetFollowers ?? 0;
+    const followerIncrease = analyticsData?.followerIncrease ?? 0;
+
     const prompt = `以下のInstagram投稿データを分析し、JSON形式で出力してください。
 
 【分析のポイント】
 - 投稿内容・ハッシュタグ・投稿日時を確認
-- 分析ページで入力された分析データ（いいね数、コメント数、リーチ数など）を評価
+- 分析ページで入力された分析データ（いいね数、コメント数、リーチ数、フォロワー増加数など）を評価
 - フィードバック（満足度・メモ）を考慮
 - 計画の目標フォロワー数・KPI・ターゲット層と比較
-- 現在のフォロワー数と目標の差を考慮
+- **重要**: 現在のフォロワー数（${currentFollowers}人）と目標フォロワー数（${targetFollowers}人）の差を正確に考慮してください
+- **重要**: この投稿によるフォロワー増加数（${followerIncrease}人）を正確に参照してください
 - 事業内容・ターゲット市場を踏まえた提案
 
 出力形式:
@@ -517,6 +523,7 @@ export async function POST(request: NextRequest) {
         // follower_countsは更新しない（homeページで入力された値はそのまま保持）
 
         // 更新時もAIアドバイスを自動生成・保存
+        // syncPlanFollowerProgress完了後に実行（計画データが更新された後に実行）
         // 非同期で実行（エラーが発生しても保存処理は成功として返す）
         generateAndSaveAIAdvice(uid, analyticsData.postId, category || "feed", title || "", hashtags || []).catch(
           (error) => {
@@ -538,6 +545,7 @@ export async function POST(request: NextRequest) {
     // follower_countsは更新しない（homeページで入力された値はそのまま保持）
 
     // postIdがある場合、バックグラウンドでAIアドバイスを自動生成・保存
+    // syncPlanFollowerProgress完了後に実行（計画データが更新された後に実行）
     if (postId) {
       // 非同期で実行（エラーが発生しても保存処理は成功として返す）
       generateAndSaveAIAdvice(uid, postId, category || "feed", title || "", hashtags || []).catch(
