@@ -367,6 +367,15 @@ export default function LearningDashboardPage() {
     [patternInsights?.signals]
   );
 
+  // 改善パターン: 不満（dissatisfied）を選択した投稿をカウント
+  const improvementPatterns = useMemo(
+    () =>
+      (patternInsights?.signals ?? []).filter(
+        (signal) => signal.sentimentLabel === "negative" || signal.tag === "red"
+      ),
+    [patternInsights?.signals]
+  );
+
 
 
   return (
@@ -642,35 +651,31 @@ export default function LearningDashboardPage() {
               </div>
 
               {/* あなた専用のAI - */}
-              {(goldSignals.length > 0 || redSignals.length > 0 || achievements.length > 0) && (
+              {(goldSignals.length > 0 || improvementPatterns.length > 0 || achievements.length > 0) && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
                   <div className="mb-5">
                     <h3 className="text-base font-semibold text-gray-900 mb-2">
                       このAIは、あなただけのために育っています
                     </h3>
                     <p className="text-sm text-gray-500">
-                      あなたの投稿から学んだ、あなた専用の成功パターンと改善ポイントです
+                      あなたの投稿から学んだ、あなた専用の成功パターンと改善パターンです
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {goldSignals.length > 0 && (
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-2 font-medium">成功パターン</div>
-                        <div className="text-2xl font-semibold text-gray-900">
-                          {goldSignals.length}
-                          <span className="text-sm text-gray-500 ml-1">件</span>
-                        </div>
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <div className="text-xs text-gray-500 mb-2 font-medium">成功パターン</div>
+                      <div className="text-2xl font-semibold text-gray-900">
+                        {goldSignals.length}
+                        <span className="text-sm text-gray-500 ml-1">件</span>
                       </div>
-                    )}
-                    {redSignals.length > 0 && (
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-xs text-gray-500 mb-2 font-medium">改善ポイント</div>
-                        <div className="text-2xl font-semibold text-gray-900">
-                          {redSignals.length}
-                          <span className="text-sm text-gray-500 ml-1">件</span>
-                        </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <div className="text-xs text-gray-500 mb-2 font-medium">改善パターン</div>
+                      <div className="text-2xl font-semibold text-gray-900">
+                        {improvementPatterns.length}
+                        <span className="text-sm text-gray-500 ml-1">件</span>
                       </div>
-                    )}
+                    </div>
                     <div className="bg-white rounded-lg p-4 border border-gray-200">
                       <div className="text-xs text-gray-500 mb-2 font-medium">学習データ</div>
                       <div className="text-2xl font-semibold text-gray-900">
