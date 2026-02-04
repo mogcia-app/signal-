@@ -1,14 +1,7 @@
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
 const MAINTENANCE_DOC_PATH = "toolMaintenance/current";
-
-// Cloud FunctionsのURL（環境変数から取得、なければデフォルト値を使用）
-const getCloudFunctionUrl = (functionName: string): string => {
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "signal-v1-fc481";
-  const region = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "asia-northeast1";
-  return `https://${region}-${projectId}.cloudfunctions.net/${functionName}`;
-};
 
 export interface ToolMaintenance {
   enabled: boolean;
@@ -21,17 +14,20 @@ export interface ToolMaintenance {
 
 /**
  * メンテナンス状態を取得
- * 認証前でもアクセス可能なように、Cloud Functions経由で取得します
+ * Next.js API Route経由で取得（BFFパターン）
+ * - CORS問題を回避
+ * - 429エラーを防ぐためにキャッシュを利用
  */
 export async function getToolMaintenanceStatus(): Promise<ToolMaintenance> {
   try {
-    // Cloud Functions経由で取得（認証不要）
-    const functionUrl = getCloudFunctionUrl("getToolMaintenanceStatus");
-    const response = await fetch(functionUrl, {
+    // Next.js API Route経由で取得（同じドメインなのでCORS問題なし）
+    const response = await fetch("/api/tool-maintenance", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
+      // クライアント側でもキャッシュを利用（10秒間）
+      cache: "no-store",
     });
 
     if (!response.ok) {

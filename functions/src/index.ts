@@ -127,20 +127,37 @@ ${context ? JSON.stringify(context, null, 2) : "計画情報なし"}
 
 // Tool Maintenance Mode Functions
 // CORS設定のヘルパー関数
-function setCorsHeaders(res: any) {
-  res.set("Access-Control-Allow-Origin", "*");
+function setCorsHeaders(req: any, res: any) {
+  // 本番環境では特定のオリジンのみ許可
+  const allowedOrigins = [
+    "https://signaltool.app",
+    "https://signal-portal.vercel.app",
+    "http://localhost:3000", // 開発環境用
+  ];
+  
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.set("Access-Control-Allow-Origin", origin);
+  } else {
+    // 開発環境やその他の場合はワイルドカード
+    res.set("Access-Control-Allow-Origin", "*");
+  }
+  
   res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.set("Access-Control-Max-Age", "3600"); // プリフライトのキャッシュ時間
 }
 
 // メンテナンス状態の取得
 export const getToolMaintenanceStatus = onRequest({ cors: true }, async (req, res) => {
-  setCorsHeaders(res);
-
+  // OPTIONSリクエスト（プリフライト）を先に処理
   if (req.method === "OPTIONS") {
+    setCorsHeaders(req, res);
     res.status(204).send("");
     return;
   }
+
+  setCorsHeaders(req, res);
 
   if (req.method !== "GET") {
     res.status(405).json({ success: false, error: "Method not allowed" });
@@ -201,12 +218,14 @@ export const getToolMaintenanceStatus = onRequest({ cors: true }, async (req, re
 
 // メンテナンスモードの設定
 export const setToolMaintenanceMode = onRequest({ cors: true }, async (req, res) => {
-  setCorsHeaders(res);
-
+  // OPTIONSリクエスト（プリフライト）を先に処理
   if (req.method === "OPTIONS") {
+    setCorsHeaders(req, res);
     res.status(204).send("");
     return;
   }
+
+  setCorsHeaders(req, res);
 
   if (req.method !== "POST") {
     res.status(405).json({ success: false, error: "Method not allowed" });
