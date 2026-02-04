@@ -5,6 +5,114 @@ import { syncPlanFollowerProgress } from "../../../../lib/plans/sync-follower-pr
 import { getMasterContext } from "../../ai/monthly-analysis/infra/firestore/master-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import type { PostLearningSignal } from "../../ai/monthly-analysis/types";
+import * as admin from "firebase-admin";
+
+/**
+ * analyticsコレクションのfollowerIncreaseの合計を計算して、follower_countsを更新
+ */
+async function updateFollowerCountsFromAnalytics(userId: string, publishedAt: Date) {
+  try {
+    // 投稿日から月を取得
+    const month = `${publishedAt.getFullYear()}-${String(publishedAt.getMonth() + 1).padStart(2, "0")}`;
+    const [year, monthNum] = month.split("-").map(Number);
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
+    const startTimestamp = admin.firestore.Timestamp.fromDate(startDate);
+    const endTimestamp = admin.firestore.Timestamp.fromDate(endDate);
+
+    // 今月のanalyticsデータからfollowerIncreaseの合計を計算
+    const monthlyAnalyticsSnapshot = await adminDb
+      .collection("analytics")
+      .where("userId", "==", userId)
+      .where("snsType", "==", "instagram")
+      .where("publishedAt", ">=", startTimestamp)
+      .where("publishedAt", "<=", endTimestamp)
+      .get();
+
+    const monthlyFollowerIncrease = monthlyAnalyticsSnapshot.docs.reduce((sum, doc) => {
+      const value = Number(doc.data().followerIncrease) || 0;
+      return sum + value;
+    }, 0);
+
+    // initialFollowersを取得
+    let initialFollowers = 0;
+    try {
+      const userDoc = await adminDb.collection("users").doc(userId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        initialFollowers = userData?.businessInfo?.initialFollowers || 0;
+      }
+    } catch (error) {
+      console.error("ユーザー情報取得エラー:", error);
+    }
+
+    // /homeで入力された値（現在のフォロワー数）を取得
+    const followerCountSnapshot = await adminDb
+      .collection("follower_counts")
+      .where("userId", "==", userId)
+      .where("snsType", "==", "instagram")
+      .where("month", "==", month)
+      .limit(1)
+      .get();
+
+    let followerIncreaseFromOther = 0;
+    let startFollowers = initialFollowers;
+    let currentFollowersFromHome = 0;
+    if (!followerCountSnapshot.empty) {
+      const followerCountData = followerCountSnapshot.docs[0].data();
+      // follower_counts.followersは「現在のフォロワー数」を保存している（/homeで入力された値）
+      currentFollowersFromHome = followerCountData.followers || 0;
+      startFollowers = followerCountData.startFollowers || initialFollowers;
+      // その他からの増加数 = 現在のフォロワー数 - 月初のフォロワー数 - 投稿からの増加数
+      // ただし、/homeで入力された値が月初のフォロワー数より小さい場合は、その差をその他からの増加数とする
+      followerIncreaseFromOther = Math.max(0, currentFollowersFromHome - startFollowers - monthlyFollowerIncrease);
+    }
+
+    // 現在のフォロワー数 = initialFollowers + 投稿からの増加数 + その他からの増加数
+    // ただし、/homeで入力された値がある場合は、それを優先する
+    const currentFollowers = currentFollowersFromHome > 0 
+      ? currentFollowersFromHome 
+      : Math.max(0, startFollowers + monthlyFollowerIncrease + followerIncreaseFromOther);
+
+    // follower_countsを更新または作成
+    // follower_counts.followersは「現在のフォロワー数」を保存する（/homeで入力された値、または計算値）
+    const now = admin.firestore.Timestamp.now();
+    if (!followerCountSnapshot.empty) {
+      // 既存のドキュメントを更新
+      // /homeで入力された値がある場合はそれを保持、ない場合は計算値を更新
+      const docRef = followerCountSnapshot.docs[0].ref;
+      const existingData = followerCountSnapshot.docs[0].data();
+      const updateData: any = {
+        updatedAt: now,
+      };
+      // /homeで入力された値がない場合（または0の場合）のみ、計算値を更新
+      if (!existingData.followers || existingData.followers === 0) {
+        updateData.followers = currentFollowers;
+      }
+      if (!existingData.startFollowers) {
+        updateData.startFollowers = initialFollowers;
+      }
+      await docRef.update(updateData);
+    } else {
+      // 新規作成
+      await adminDb.collection("follower_counts").add({
+        userId,
+        snsType: "instagram",
+        followers: currentFollowers, // 現在のフォロワー数（計算値）
+        startFollowers: initialFollowers,
+        month,
+        source: "analytics",
+        profileVisits: 0,
+        externalLinkTaps: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  } catch (error) {
+    console.error("follower_counts更新エラー:", error);
+    // エラーが発生してもanalytics保存処理は成功として続行
+  }
+}
 
 /**
  * AIアドバイスを自動生成して保存する（非同期処理）
@@ -500,6 +608,9 @@ export async function POST(request: NextRequest) {
           createdAt: existingData.createdAt ?? now,
         });
         await syncPlanFollowerProgress(uid);
+        
+        // follower_countsも更新（分析ページで入力されたフォロワー増加数を反映）
+        await updateFollowerCountsFromAnalytics(uid, analyticsData.publishedAt);
 
         // 更新時もAIアドバイスを自動生成・保存
         // 非同期で実行（エラーが発生しても保存処理は成功として返す）
@@ -520,6 +631,9 @@ export async function POST(request: NextRequest) {
 
     const docRef = await analyticsCollection.add(analyticsData);
     await syncPlanFollowerProgress(uid);
+    
+    // follower_countsも更新（分析ページで入力されたフォロワー増加数を反映）
+    await updateFollowerCountsFromAnalytics(uid, analyticsData.publishedAt);
 
     // postIdがある場合、バックグラウンドでAIアドバイスを自動生成・保存
     if (postId) {
