@@ -3,6 +3,13 @@ import { db } from "./firebase";
 
 const MAINTENANCE_DOC_PATH = "toolMaintenance/current";
 
+// Cloud FunctionsのURL（環境変数から取得、なければデフォルト値を使用）
+const getCloudFunctionUrl = (functionName: string): string => {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "signal-v1-fc481";
+  const region = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "asia-northeast1";
+  return `https://${region}-${projectId}.cloudfunctions.net/${functionName}`;
+};
+
 export interface ToolMaintenance {
   enabled: boolean;
   message: string;
@@ -14,35 +21,44 @@ export interface ToolMaintenance {
 
 /**
  * メンテナンス状態を取得
+ * 認証前でもアクセス可能なように、Cloud Functions経由で取得します
  */
 export async function getToolMaintenanceStatus(): Promise<ToolMaintenance> {
   try {
-    const docRef = doc(db, MAINTENANCE_DOC_PATH);
-    const docSnap = await getDoc(docRef);
+    // Cloud Functions経由で取得（認証不要）
+    const functionUrl = getCloudFunctionUrl("getToolMaintenanceStatus");
+    const response = await fetch(functionUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-    if (!docSnap.exists()) {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.success && result.data) {
       return {
-        enabled: false,
-        message: "",
-        scheduledStart: null,
-        scheduledEnd: null,
-        updatedBy: "",
-        updatedAt: null,
+        enabled: result.data.enabled || false,
+        message: result.data.message || "",
+        scheduledStart: result.data.scheduledStart || null,
+        scheduledEnd: result.data.scheduledEnd || null,
+        updatedBy: result.data.updatedBy || "",
+        updatedAt: result.data.updatedAt || null,
       };
     }
 
-    const data = docSnap.data();
-    const updatedAt = data.updatedAt;
-    const updatedAtISO =
-      updatedAt && updatedAt.toDate ? updatedAt.toDate().toISOString() : updatedAt || null;
-
+    // デフォルト値（メンテナンス無効）
     return {
-      enabled: data.enabled || false,
-      message: data.message || "",
-      scheduledStart: data.scheduledStart || null,
-      scheduledEnd: data.scheduledEnd || null,
-      updatedBy: data.updatedBy || "",
-      updatedAt: updatedAtISO,
+      enabled: false,
+      message: "",
+      scheduledStart: null,
+      scheduledEnd: null,
+      updatedBy: "",
+      updatedAt: null,
     };
   } catch (error) {
     console.error("Error fetching tool maintenance status:", error);
