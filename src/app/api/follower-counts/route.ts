@@ -118,20 +118,24 @@ export async function POST(request: NextRequest) {
 
     let docRef;
     if (!existingSnapshot.empty) {
-      // 既存のドキュメントを更新
+      // 既存のドキュメントを更新（増加数を加算）
       docRef = existingSnapshot.docs[0].ref;
       const existingData = existingSnapshot.docs[0].data();
-      // 月初の値がまだ設定されていない場合、最初の値を月初として保存
+      const existingFollowers = existingData.followers || 0;
+      const existingProfileVisits = existingData.profileVisits || 0;
+      const existingExternalLinkTaps = existingData.externalLinkTaps || 0;
+      
+      // 増加数として加算（既存の値 + 入力された値）
       const updateData: Partial<FollowerCount> = {
-        followers,
+        followers: existingFollowers + followers, // 既存の値に加算
         source,
         updatedAt: now,
       };
       if (profileVisits !== undefined) {
-        updateData.profileVisits = profileVisits;
+        updateData.profileVisits = existingProfileVisits + profileVisits; // 既存の値に加算
       }
       if (externalLinkTaps !== undefined) {
-        updateData.externalLinkTaps = externalLinkTaps;
+        updateData.externalLinkTaps = existingExternalLinkTaps + externalLinkTaps; // 既存の値に加算
       }
       if (!existingData.startFollowers) {
         updateData.startFollowers = existingData.followers; // 最初の値を月初として保存

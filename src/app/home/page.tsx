@@ -292,6 +292,9 @@ export default function HomePage() {
 
       if (response.ok) {
         toast.success("保存しました");
+        // 保存後に再取得して表示を更新
+        await fetchOtherKPI();
+        await fetchMonthlyKPIs();
         fetchDashboard(); // ダッシュボードデータを再取得
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -907,17 +910,19 @@ export default function HomePage() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        その他フォロワー数
+                        その他フォロワー増加数
                       </label>
                       <input
                         type="number"
                         value={otherFollowerCount}
                         onChange={(e) => setOtherFollowerCount(e.target.value === "" ? "" : Number(e.target.value))}
-                        placeholder="0"
+                        placeholder="増加数を入力"
                         min="0"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
                       />
-                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかないフォロワー増加数を入力（分析ページで入力した数値とは別に追加されます）</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        投稿に紐づかないフォロワー増加数を入力（既存の値に加算されます）
+                      </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -931,7 +936,7 @@ export default function HomePage() {
                         min="0"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
                       />
-                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかないプロフィール閲覧数を入力</p>
+                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかないプロフィール閲覧数を入力（既存の値に加算されます）</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -945,7 +950,7 @@ export default function HomePage() {
                         min="0"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
                       />
-                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかない外部リンクタップ数を入力</p>
+                      <p className="text-xs text-gray-500 mt-1">投稿に紐づかない外部リンクタップ数を入力（既存の値に加算されます）</p>
                     </div>
                     <button
                       onClick={saveOtherKPI}
