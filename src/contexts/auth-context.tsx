@@ -263,9 +263,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           firebaseSignOut(auth);
           localStorage.removeItem("signal_session_start");
 
-          // ポータルページに自動リダイレクト
+          // ローカル環境の場合は/loginにリダイレクト、本番環境の場合はポータルページに自動リダイレクト
           if (typeof window !== "undefined") {
-            window.location.href = "https://signal-portal.vercel.app/";
+            const isLocal = window.location.hostname === "localhost" || 
+              window.location.hostname === "127.0.0.1" ||
+              process.env.NODE_ENV === "development";
+            
+            if (isLocal) {
+              router.push("/login");
+            } else {
+              window.location.href = "https://signal-portal.vercel.app/";
+            }
           }
         }
       }

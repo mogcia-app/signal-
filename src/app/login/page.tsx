@@ -25,13 +25,22 @@ export default function LoginPage() {
   const router = useRouter();
 
   // 既にログインしている場合は/homeにリダイレクト
-  // 未ログインの場合はポータルサイトにリダイレクト
+  // 未ログインの場合はローカル環境ではそのまま表示、本番環境ではポータルサイトにリダイレクト
   useEffect(() => {
     if (!authLoading) {
       if (user) {
         router.push("/home");
       } else {
-        window.location.href = "https://signal-portal.vercel.app/";
+        // ローカル環境の場合はそのまま表示、本番環境の場合はポータルサイトにリダイレクト
+        const isLocal = typeof window !== "undefined" && 
+          (window.location.hostname === "localhost" || 
+           window.location.hostname === "127.0.0.1" ||
+           process.env.NODE_ENV === "development");
+        
+        if (!isLocal) {
+          window.location.href = "https://signal-portal.vercel.app/";
+        }
+        // ローカル環境の場合はそのまま表示（何もしない）
       }
     }
   }, [user, authLoading, router]);

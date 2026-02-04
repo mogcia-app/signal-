@@ -19,10 +19,10 @@ import type {
   AISectionsResponse,
 } from "../../types/home";
 
-interface WeeklyResult {
+interface MonthlyResult {
   metric: string;
   value: number;
-  change: number;
+  change: number | undefined;
   icon: string;
 }
 
@@ -54,6 +54,15 @@ export default function HomePage() {
   const [otherExternalLinkTaps, setOtherExternalLinkTaps] = useState<number | "">("");
   const [isSavingOtherKPI, setIsSavingOtherKPI] = useState(false);
   const [isLoadingOtherKPI, setIsLoadingOtherKPI] = useState(false);
+  
+  // 今月のKPIデータ
+  const [monthlyKPIs, setMonthlyKPIs] = useState<{
+    thisMonth: { likes: number; comments: number; followers: number };
+    previousMonth: { likes: number; comments: number; followers: number };
+    changes: { likes?: number; comments?: number; followers?: number };
+    breakdown: { followerIncreaseFromPosts: number; followerIncreaseFromOther: number };
+  } | null>(null);
+  const [isLoadingMonthlyKPIs, setIsLoadingMonthlyKPIs] = useState(true);
 
 
   // ダッシュボードデータを取得
@@ -318,36 +327,57 @@ export default function HomePage() {
   useEffect(() => {
     if (user) {
       fetchOtherKPI();
+      fetchMonthlyKPIs();
     }
   }, [user]);
 
+  // 今月のKPIデータを取得
+  const fetchMonthlyKPIs = async () => {
+    try {
+      setIsLoadingMonthlyKPIs(true);
+      const response = await authFetch("/api/home/monthly-kpis");
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setMonthlyKPIs(result.data);
+        }
+      } else {
+        console.error("今月のKPIデータ取得エラー:", response.status);
+      }
+    } catch (error) {
+      console.error("今月のKPIデータ取得エラー:", error);
+    } finally {
+      setIsLoadingMonthlyKPIs(false);
+    }
+  };
 
-  // 週間成果データ（ダッシュボードから取得）
-  const weeklyResults: WeeklyResult[] = dashboardData?.weeklyKPIs
+
+  // 今月の成果データ（月単位のKPIデータから取得）
+  const monthlyResults: MonthlyResult[] = monthlyKPIs
     ? [
         {
           metric: "いいね数",
-          value: dashboardData.weeklyKPIs.thisWeek.likes || 0,
-          change: dashboardData.weeklyKPIs.changes?.likes || 0,
+          value: monthlyKPIs.thisMonth.likes || 0,
+          change: monthlyKPIs.changes?.likes,
           icon: "🩷",
         },
         {
           metric: "コメント数",
-          value: dashboardData.weeklyKPIs.thisWeek.comments || 0,
-          change: dashboardData.weeklyKPIs.changes?.comments || 0,
+          value: monthlyKPIs.thisMonth.comments || 0,
+          change: monthlyKPIs.changes?.comments,
           icon: "💬",
         },
         {
           metric: "フォロワー数",
-          value: dashboardData.weeklyKPIs.thisWeek.followers || 0,
-          change: dashboardData.weeklyKPIs.changes?.followers || 0,
+          value: monthlyKPIs.thisMonth.followers || 0,
+          change: monthlyKPIs.changes?.followers,
           icon: "📈",
         },
       ]
     : [
-        { metric: "いいね数", value: 0, change: 0, icon: "🩷" },
-        { metric: "コメント数", value: 0, change: 0, icon: "💬" },
-        { metric: "フォロワー数", value: 0, change: 0, icon: "📈" },
+        { metric: "いいね数", value: 0, change: undefined, icon: "🩷" },
+        { metric: "コメント数", value: 0, change: undefined, icon: "💬" },
+        { metric: "フォロワー数", value: 0, change: undefined, icon: "📈" },
       ];
 
 
@@ -418,14 +448,14 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* 今週の成果 */}
-          {(dashboardData?.weeklyKPIs || isLoadingDashboard) && (
+          {/* 今月の成果 */}
+          {(monthlyKPIs || isLoadingMonthlyKPIs) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
                 <span>📊</span>
-                今週の成果
+                今月の成果
               </h2>
-              {isLoadingDashboard ? (
+              {isLoadingMonthlyKPIs ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="border border-gray-200 rounded-lg p-4">
@@ -435,9 +465,9 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-              ) : weeklyResults.length > 0 ? (
+              ) : monthlyResults.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {weeklyResults.map((result, index) => (
+                  {monthlyResults.map((result, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-sm font-light text-gray-600">{result.metric}</div>
@@ -446,18 +476,23 @@ export default function HomePage() {
                     <div className="text-2xl font-light text-gray-900 mb-1">
                       {result.value.toLocaleString()}
                     </div>
-                    {result.change !== 0 && (
+                    {result.change !== undefined && result.change !== 0 && (
                       <div className={`text-xs font-light flex items-center gap-1 ${
                         result.change > 0 ? "text-green-600" : "text-red-600"
                       }`}>
                         <TrendingUp className={`w-3 h-3 ${result.change < 0 ? "rotate-180" : ""}`} />
-                        {result.change > 0 ? "+" : ""}{result.change.toLocaleString()}
-                        <span className="text-gray-500">（先週比）</span>
+                        {result.change > 0 ? "+" : ""}{result.change.toFixed(1)}%
+                        <span className="text-gray-500">（前月比）</span>
                           </div>
                         )}
+                    {result.change === undefined && (
+                      <div className="text-xs font-light text-gray-400">
+                        前月データなし
+                      </div>
+                    )}
                     {result.change === 0 && (
                       <div className="text-xs font-light text-gray-400">
-                        先週と変動なし
+                        前月と変動なし
                       </div>
                     )}
                   </div>

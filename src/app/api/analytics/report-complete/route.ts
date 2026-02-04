@@ -398,11 +398,35 @@ export async function GET(request: NextRequest) {
     const analyticsByPostId = new Map<string, admin.firestore.DocumentData>();
     const postIdsInPeriod = new Set(postsSnapshot.docs.map((doc) => doc.id));
 
+    let totalFollowerIncreaseInAnalytics = 0; // デバッグ用
     analyticsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
       const postId = data.postId;
       if (postId && postIdsInPeriod.has(postId)) {
-        const publishedAt = data.publishedAt?.toDate?.() || data.publishedAt || new Date();
+        // publishedAtの型変換（Timestamp型とDate型の両方に対応）
+        let publishedAt: Date;
+        if (data.publishedAt) {
+          if (data.publishedAt instanceof admin.firestore.Timestamp) {
+            publishedAt = data.publishedAt.toDate();
+          } else if (data.publishedAt instanceof Date) {
+            publishedAt = data.publishedAt;
+          } else if (data.publishedAt.toDate && typeof data.publishedAt.toDate === "function") {
+            // Firestore Timestamp型（クライアント側から来た場合）
+            publishedAt = data.publishedAt.toDate();
+          } else {
+            // 文字列やその他の形式の場合
+            publishedAt = new Date(data.publishedAt);
+          }
+        } else {
+          publishedAt = new Date();
+        }
+
+        // デバッグ: followerIncreaseの値を集計
+        const followerIncrease = Number(data.followerIncrease) || 0;
+        if (followerIncrease > 0) {
+          totalFollowerIncreaseInAnalytics += followerIncrease;
+        }
+
         const existing = analyticsByPostId.get(postId);
         if (!existing || publishedAt > existing.publishedAt) {
           analyticsByPostId.set(postId, {
@@ -411,6 +435,15 @@ export async function GET(request: NextRequest) {
           });
         }
       }
+    });
+
+    // デバッグログ
+    console.log("[Report Complete] フォロワー数デバッグ:", {
+      analyticsSnapshotSize: analyticsSnapshot.docs.length,
+      postIdsInPeriodSize: postIdsInPeriod.size,
+      analyticsByPostIdSize: analyticsByPostId.size,
+      totalFollowerIncreaseInAnalytics,
+      currentMonth: date,
     });
 
     // 期間内の投稿に対応する分析データを抽出
@@ -434,6 +467,14 @@ export async function GET(request: NextRequest) {
     const totalSaves = validAnalyticsData.reduce((sum, d) => sum + (d.saves || 0), 0);
     const totalComments = validAnalyticsData.reduce((sum, d) => sum + d.comments, 0);
     const followerIncreaseFromPosts = validAnalyticsData.reduce((sum, d) => sum + (d.followerIncrease || 0), 0);
+
+    // デバッグログ
+    console.log("[Report Complete] フォロワー数内訳:", {
+      validAnalyticsDataCount: validAnalyticsData.length,
+      validAnalyticsDataWithFollowerIncrease: validAnalyticsData.filter((d) => (d.followerIncrease || 0) > 0).length,
+      followerIncreaseFromPosts,
+      followerIncreaseFromOther: 0, // 後で計算される
+    });
 
     // フォロワー増加数の計算
     // follower_counts.followersは「投稿に紐づかない増加数」として保存されている

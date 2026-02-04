@@ -23,8 +23,18 @@ function HomeContent() {
           // 認証コールバックページにリダイレクトして自動ログイン
           router.push(`/auth/callback?userId=${encodeURIComponent(userId)}`);
         } else {
-          // 直接アクセスの場合はポータルサイトにリダイレクト
-          window.location.href = "https://signal-portal.vercel.app/";
+          // ローカル環境の場合は/loginにリダイレクト、本番環境の場合はポータルサイトにリダイレクト
+          const isLocal = typeof window !== "undefined" && 
+            (window.location.hostname === "localhost" || 
+             window.location.hostname === "127.0.0.1" ||
+             process.env.NODE_ENV === "development");
+          
+          if (isLocal) {
+            router.push("/login");
+          } else {
+            // 直接アクセスの場合はポータルサイトにリダイレクト
+            window.location.href = "https://signal-portal.vercel.app/";
+          }
         }
       }
     }
