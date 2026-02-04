@@ -77,6 +77,7 @@ interface AnalyticsData {
   reachedAccounts?: number;
   profileVisits?: number;
   profileFollows?: number;
+  externalLinkTaps?: number;
   // リール専用フィールド
   reelReachFollowerPercent?: number;
   reelInteractionCount?: number;
@@ -177,7 +178,7 @@ function createDefaultInputData(): FeedInputData {
 function AnalyticsFeedContent() {
   const { user } = useAuth();
   const router = useRouter();
-  const [, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [postData, setPostData] = useState<{
@@ -412,6 +413,83 @@ function AnalyticsFeedContent() {
       }));
     }
   }, [postData]);
+
+  // 分析データが取得された時にinputDataを更新（保存済みの分析データをフォームに反映）
+  useEffect(() => {
+    if (analyticsData.length > 0) {
+      // 最新の分析データを取得（createdAtでソート）
+      const latestAnalytics = analyticsData
+        .slice()
+        .sort((a, b) => {
+          const aTime = a.createdAt?.getTime() || 0;
+          const bTime = b.createdAt?.getTime() || 0;
+          return bTime - aTime; // 新しい順
+        })[0];
+
+      if (latestAnalytics) {
+        setInputData((prev) => ({
+          ...prev,
+          likes: String(latestAnalytics.likes || 0),
+          comments: String(latestAnalytics.comments || 0),
+          shares: String(latestAnalytics.shares || 0),
+          reposts: String(latestAnalytics.reposts || 0),
+          reach: String(latestAnalytics.reach || 0),
+          saves: String(latestAnalytics.saves || 0),
+          followerIncrease: String(latestAnalytics.followerIncrease || 0),
+          reachFollowerPercent: String(latestAnalytics.reachFollowerPercent || 0),
+          interactionCount: String(latestAnalytics.interactionCount || 0),
+          interactionFollowerPercent: String(latestAnalytics.interactionFollowerPercent || 0),
+          reachSourceProfile: String(latestAnalytics.reachSourceProfile || 0),
+          reachSourceFeed: String(latestAnalytics.reachSourceFeed || 0),
+          reachSourceExplore: String(latestAnalytics.reachSourceExplore || 0),
+          reachSourceSearch: String(latestAnalytics.reachSourceSearch || 0),
+          reachSourceOther: String(latestAnalytics.reachSourceOther || 0),
+          reachedAccounts: String(latestAnalytics.reachedAccounts || 0),
+          profileVisits: String(latestAnalytics.profileVisits || 0),
+          profileFollows: String(latestAnalytics.profileFollows || 0),
+          externalLinkTaps: String(latestAnalytics.externalLinkTaps || 0),
+          commentThreads: latestAnalytics.commentThreads || [],
+          sentiment: latestAnalytics.sentiment || null,
+          sentimentMemo: latestAnalytics.sentimentMemo || "",
+          // オーディエンスデータ
+          audience: latestAnalytics.audience
+            ? {
+                gender: {
+                  male: String(latestAnalytics.audience.gender?.male || 0),
+                  female: String(latestAnalytics.audience.gender?.female || 0),
+                  other: String(latestAnalytics.audience.gender?.other || 0),
+                },
+                age: {
+                  "13-17": String(latestAnalytics.audience.age?.["13-17"] || 0),
+                  "18-24": String(latestAnalytics.audience.age?.["18-24"] || 0),
+                  "25-34": String(latestAnalytics.audience.age?.["25-34"] || 0),
+                  "35-44": String(latestAnalytics.audience.age?.["35-44"] || 0),
+                  "45-54": String(latestAnalytics.audience.age?.["45-54"] || 0),
+                  "55-64": String(latestAnalytics.audience.age?.["55-64"] || 0),
+                  "65+": String(latestAnalytics.audience.age?.["65+"] || 0),
+                },
+              }
+            : prev.audience,
+          // リーチソースデータ
+          reachSource: latestAnalytics.reachSource
+            ? {
+                sources: {
+                  posts: String(latestAnalytics.reachSource.sources?.posts || 0),
+                  profile: String(latestAnalytics.reachSource.sources?.profile || 0),
+                  explore: String(latestAnalytics.reachSource.sources?.explore || 0),
+                  search: String(latestAnalytics.reachSource.sources?.search || 0),
+                  other: String(latestAnalytics.reachSource.sources?.other || 0),
+                },
+                followers: {
+                  followers: String(latestAnalytics.reachSource.followers?.followers || 0),
+                  nonFollowers: String(latestAnalytics.reachSource.followers?.nonFollowers || 0),
+                },
+              }
+            : prev.reachSource,
+        }));
+      }
+    }
+  }, [analyticsData]);
 
   const handleResetAnalytics = useCallback(async () => {
     if (!user?.uid) {

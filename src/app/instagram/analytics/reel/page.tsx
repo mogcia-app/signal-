@@ -391,6 +391,85 @@ function AnalyticsReelContent() {
     }
   }, [fetchAnalyticsData, user?.uid]);
 
+  // 分析データが取得された時にinputDataを更新（保存済みの分析データをフォームに反映）
+  useEffect(() => {
+    if (analyticsData.length > 0) {
+      // 最新の分析データを取得（createdAtでソート）
+      const latestAnalytics = analyticsData
+        .slice()
+        .sort((a, b) => {
+          const aTime = a.createdAt?.getTime() || 0;
+          const bTime = b.createdAt?.getTime() || 0;
+          return bTime - aTime; // 新しい順
+        })[0];
+
+      if (latestAnalytics) {
+        setInputData((prev) => ({
+          ...prev,
+          likes: String(latestAnalytics.likes || 0),
+          comments: String(latestAnalytics.comments || 0),
+          shares: String(latestAnalytics.shares || 0),
+          reposts: String(latestAnalytics.reposts || 0),
+          reach: String(latestAnalytics.reach || 0),
+          saves: String(latestAnalytics.saves || 0),
+          followerIncrease: String(latestAnalytics.followerIncrease || 0),
+          // リール専用フィールド
+          reelReachFollowerPercent: String(latestAnalytics.reelReachFollowerPercent || 0),
+          reelInteractionCount: String(latestAnalytics.reelInteractionCount || 0),
+          reelInteractionFollowerPercent: String(latestAnalytics.reelInteractionFollowerPercent || 0),
+          reelReachSourceProfile: String(latestAnalytics.reelReachSourceProfile || 0),
+          reelReachSourceReel: String(latestAnalytics.reelReachSourceReel || 0),
+          reelReachSourceExplore: String(latestAnalytics.reelReachSourceExplore || 0),
+          reelReachSourceSearch: String(latestAnalytics.reelReachSourceSearch || 0),
+          reelReachSourceOther: String(latestAnalytics.reelReachSourceOther || 0),
+          reelReachedAccounts: String(latestAnalytics.reelReachedAccounts || 0),
+          reelSkipRate: String(latestAnalytics.reelSkipRate || 0),
+          reelNormalSkipRate: String(latestAnalytics.reelNormalSkipRate || 0),
+          reelPlayTime: String(latestAnalytics.reelPlayTime || 0),
+          reelAvgPlayTime: String(latestAnalytics.reelAvgPlayTime || 0),
+          commentThreads: latestAnalytics.commentThreads || [],
+          sentiment: latestAnalytics.sentiment || null,
+          sentimentMemo: latestAnalytics.sentimentMemo || "",
+          // オーディエンスデータ
+          audience: latestAnalytics.audience
+            ? {
+                gender: {
+                  male: String(latestAnalytics.audience.gender?.male || 0),
+                  female: String(latestAnalytics.audience.gender?.female || 0),
+                  other: String(latestAnalytics.audience.gender?.other || 0),
+                },
+                age: {
+                  "13-17": String(latestAnalytics.audience.age?.["13-17"] || 0),
+                  "18-24": String(latestAnalytics.audience.age?.["18-24"] || 0),
+                  "25-34": String(latestAnalytics.audience.age?.["25-34"] || 0),
+                  "35-44": String(latestAnalytics.audience.age?.["35-44"] || 0),
+                  "45-54": String(latestAnalytics.audience.age?.["45-54"] || 0),
+                  "55-64": String(latestAnalytics.audience.age?.["55-64"] || 0),
+                  "65+": String(latestAnalytics.audience.age?.["65+"] || 0),
+                },
+              }
+            : prev.audience,
+          // リーチソースデータ
+          reachSource: latestAnalytics.reachSource
+            ? {
+                sources: {
+                  posts: String(latestAnalytics.reachSource.sources?.posts || 0),
+                  profile: String(latestAnalytics.reachSource.sources?.profile || 0),
+                  explore: String(latestAnalytics.reachSource.sources?.explore || 0),
+                  search: String(latestAnalytics.reachSource.sources?.search || 0),
+                  other: String(latestAnalytics.reachSource.sources?.other || 0),
+                },
+                followers: {
+                  followers: String(latestAnalytics.reachSource.followers?.followers || 0),
+                  nonFollowers: String(latestAnalytics.reachSource.followers?.nonFollowers || 0),
+                },
+              }
+            : prev.reachSource,
+        }));
+      }
+    }
+  }, [analyticsData]);
+
   const handleResetAnalytics = useCallback(async () => {
     if (!user?.uid) {
       router.push("/login");
