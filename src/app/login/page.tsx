@@ -38,7 +38,7 @@ export default function LoginPage() {
            process.env.NODE_ENV === "development");
         
         if (!isLocal) {
-          window.location.href = "https://signal-portal.vercel.app/";
+          window.location.href = "https://signal-portal.com/";
         }
         // ローカル環境の場合はそのまま表示（何もしない）
       }

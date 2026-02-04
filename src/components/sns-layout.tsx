@@ -333,7 +333,7 @@ export default function SNSLayout({
         {/* 会員サイトボタン */}
         <div className="px-4 pb-2 mt-4">
           <Link
-            href="https://signal-portal.vercel.app/"
+            href="https://signal-portal.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]"

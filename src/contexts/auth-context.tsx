@@ -272,7 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (isLocal) {
               router.push("/login");
             } else {
-              window.location.href = "https://signal-portal.vercel.app/";
+              window.location.href = "https://signal-portal.com/";
             }
           }
         }

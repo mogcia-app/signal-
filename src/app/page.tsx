@@ -33,7 +33,7 @@ function HomeContent() {
             router.push("/login");
           } else {
             // 直接アクセスの場合はポータルサイトにリダイレクト
-            window.location.href = "https://signal-portal.vercel.app/";
+            window.location.href = "https://signal-portal.com/";
           }
         }
       }

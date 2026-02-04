@@ -131,7 +131,7 @@ function setCorsHeaders(req: any, res: any) {
   // 本番環境では特定のオリジンのみ許可
   const allowedOrigins = [
     "https://signaltool.app",
-    "https://signal-portal.vercel.app",
+    "https://signal-portal.com",
     "http://localhost:3000", // 開発環境用
   ];
   
