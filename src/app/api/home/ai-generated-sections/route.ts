@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import * as admin from "firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
@@ -84,26 +85,25 @@ export async function GET(request: NextRequest) {
 
     // 現在の月を取得（今月の目標用）
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    
+    // 今日の日付を文字列で取得（YYYY-MM-DD形式）
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-    // キャッシュキーを生成
-    // - 「今日やること」「明日の準備」「今週の予定」は週単位（週が変わったら再生成）
-    // - 「今月の目標」は月単位（月が変わったら再生成、または計画が新しくなったら再生成）
-    const planId = planDoc.id;
-    const cacheKey = generateCacheKey("home-ai-sections", {
-      userId: uid,
-      week: currentWeek, // 週単位（日付ではなく週）
-      month: currentMonth, // 月単位（今月の目標用）
-      planId, // 計画が変わったら再生成
-    });
-
-    // キャッシュから取得を試みる（24時間有効）
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      console.log(`[Home AI Sections] キャッシュヒット: ${cacheKey}`);
-      return NextResponse.json({
-        success: true,
-        data: cached,
-      });
+    // Firestoreキャッシュから取得を試みる（日付ベース）
+    // 同じ日は同じ内容を返す（リロードしても変わらない）
+    const cacheDocId = `${uid}_${todayStr}`;
+    const cacheRef = adminDb.collection("homeAiSectionsCache").doc(cacheDocId);
+    const cacheDoc = await cacheRef.get();
+    
+    if (cacheDoc.exists) {
+      const cacheData = cacheDoc.data();
+      if (cacheData?.data && cacheData?.date === todayStr) {
+        console.log(`[Home AI Sections] Firestoreキャッシュヒット: ${cacheDocId}`);
+        return NextResponse.json({
+          success: true,
+          data: cacheData.data,
+        });
+      }
     }
 
     // ユーザープロフィールを取得（ビジネス情報を含む）
@@ -123,8 +123,18 @@ export async function GET(request: NextRequest) {
         monthlyGoals: [],
         weeklySchedule: null,
       };
-      // 空データもキャッシュ（1時間）
-      cache.set(cacheKey, emptyData, 60 * 60 * 1000);
+      // 空データもFirestoreにキャッシュ（同じ日は同じ内容を返す）
+      try {
+        await cacheRef.set({
+          userId: uid,
+          date: todayStr,
+          data: emptyData,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (cacheError) {
+        console.error("Firestoreキャッシュ保存エラー（空データ）:", cacheError);
+      }
       return NextResponse.json({
         success: true,
         data: emptyData,
@@ -951,9 +961,31 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       weeklySchedule,
     };
 
-    // キャッシュに保存（24時間有効 - 同じ日・同じ週の間は同じ内容を返す）
+    // Firestoreに日付ベースでキャッシュを保存（同じ日は同じ内容を返す）
+    try {
+      await cacheRef.set({
+        userId: uid,
+        date: todayStr,
+        data: responseData,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      console.log(`[Home AI Sections] Firestoreキャッシュ保存: ${cacheDocId}`);
+    } catch (cacheError) {
+      console.error("Firestoreキャッシュ保存エラー:", cacheError);
+      // エラーでもレスポンスは返す
+    }
+
+    // メモリキャッシュにも保存（フォールバック用）
+    const planId = planDoc.id;
+    const cacheKey = generateCacheKey("home-ai-sections", {
+      userId: uid,
+      date: todayStr,
+      week: currentWeek,
+      month: currentMonth,
+      planId,
+    });
     cache.set(cacheKey, responseData, 24 * 60 * 60 * 1000);
-    console.log(`[Home AI Sections] キャッシュ保存: ${cacheKey}`);
 
     return NextResponse.json({
       success: true,
