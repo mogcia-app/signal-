@@ -833,263 +833,320 @@ export async function GET(request: NextRequest) {
     }
 
     // 月次レビューが生成されていない場合、または再生成フラグがある場合
+    // ただし、analyzedCountが10件未満の場合はAI生成をスキップ（トークン費削減）
     if (!monthlyReview || forceRegenerate) {
-      // 投稿タイプ別の統計を計算
-      const postTypeStats: Record<string, { count: number; totalReach: number; labels: string[] }> = {};
-      const postReachMap = new Map<string, { reach: number; title: string; type: string }>();
-
-      analyticsByPostId.forEach((analytics, postId) => {
-        const postType = analytics.category || analytics.postType || "unknown";
-        const postTitle = analytics.title || analytics.caption?.substring(0, 50) || "タイトルなし";
-        const reach = analytics.reach || 0;
-
-        if (!postTypeStats[postType]) {
-          postTypeStats[postType] = { count: 0, totalReach: 0, labels: [] };
-        }
-        postTypeStats[postType].count++;
-        postTypeStats[postType].totalReach += reach;
-        if (postTitle && !postTypeStats[postType].labels.includes(postTitle)) {
-          postTypeStats[postType].labels.push(postTitle);
-        }
-
-        postReachMap.set(postId, { reach, title: postTitle, type: postType });
-      });
-
-      // 投稿タイプのラベルを日本語に変換
-      const typeLabelMap: Record<string, string> = {
-        feed: "画像投稿",
-        reel: "リール",
-        story: "ストーリー",
-        carousel: "カルーセル",
-        video: "動画",
-        unknown: "その他",
-      };
-
-      // 投稿タイプ別の統計を配列に変換（リーチ数でソート）
-      const postTypeArray = Object.entries(postTypeStats)
-        .map(([type, stats]) => ({
-          type,
-          label: typeLabelMap[type] || type,
-          count: stats.count,
-          totalReach: stats.totalReach,
-          percentage: totalReach > 0 ? (stats.totalReach / totalReach) * 100 : 0,
-        }))
-        .sort((a, b) => b.totalReach - a.totalReach);
-
-      // 最も閲覧された投稿を取得
-      let topPost = null;
-      if (postReachMap.size > 0) {
-        const sortedPosts = Array.from(postReachMap.entries())
-          .map(([postId, data]) => ({ postId, ...data }))
-          .sort((a, b) => b.reach - a.reach);
-        topPost = sortedPosts[0];
-      }
-
-      // 投稿ごとのAIサマリーを集計
-      const allStrengths: string[] = [];
-      const allRecommendedActions: string[] = [];
-      const highPerformanceStrengths: string[] = [];
-
-      if (validPostSummaries.length > 0) {
-        // リーチ数でソートして、上位・下位を判定
-        const sortedByReach = [...validPostSummaries].sort((a, b) => b.reach - a.reach);
-        const top30Percent = Math.ceil(sortedByReach.length * 0.3);
-
-        validPostSummaries.forEach((summary) => {
-          allStrengths.push(...(summary?.strengths || []));
-          allRecommendedActions.push(...(summary?.recommendedActions || []));
-
-          // 高パフォーマンス投稿の強みを抽出
-          const isHighPerformance = sortedByReach.slice(0, top30Percent).some((p) => p?.postId === summary?.postId);
-          if (isHighPerformance) {
-            highPerformanceStrengths.push(...(summary?.strengths || []));
-          }
+      // 10件未満の場合はAI生成をスキップしてフォールバックメッセージを表示
+      if (analyzedCount < 10) {
+        // 前月比を計算（フォールバックメッセージ用）
+        let prevTotalReach = 0;
+        prevAnalyticsByPostId.forEach((data) => {
+          prevTotalReach += data.reach || 0;
         });
-      }
+        const reachChange = prevTotalReach > 0 ? ((totalReach - prevTotalReach) / prevTotalReach) * 100 : 0;
+        const reachChangeText = prevTotalReach > 0
+          ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）`
+          : "";
 
-      // 頻出する強み・推奨アクションを抽出
-      const strengthFrequency = new Map<string, number>();
-      allStrengths.forEach((strength) => {
-        strengthFrequency.set(strength, (strengthFrequency.get(strength) || 0) + 1);
-      });
-      const topStrengths = Array.from(strengthFrequency.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([strength]) => strength);
+        monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括）
 
-      const actionFrequency = new Map<string, number>();
-      allRecommendedActions.forEach((action) => {
-        actionFrequency.set(action, (actionFrequency.get(action) || 0) + 1);
-      });
-      const topActions = Array.from(actionFrequency.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([action]) => action);
+⸻
 
-      const highPerformanceStrengthFrequency = new Map<string, number>();
-      highPerformanceStrengths.forEach((strength) => {
-        highPerformanceStrengthFrequency.set(strength, (highPerformanceStrengthFrequency.get(strength) || 0) + 1);
-      });
-      const topHighPerformanceStrengths = Array.from(highPerformanceStrengthFrequency.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([strength]) => strength);
+📈 月次トータル数字
+	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
+	•	いいね数：${totalLikes.toLocaleString()}
+	•	保存数：${totalSaves.toLocaleString()}
+	•	コメント数：${totalComments.toLocaleString()}
 
-      // AIサマリー集計結果を文字列化
-      let postSummaryInsights = "";
-      if (validPostSummaries.length > 0) {
-        const insightsParts: string[] = [];
-        insightsParts.push(`投稿ごとのAI分析結果（${validPostSummaries.length}件の投稿から抽出）:`);
+⸻
 
-        if (topStrengths.length > 0) {
-          insightsParts.push(`- 頻出する強み: ${topStrengths.join("、")}`);
+💡 総評
+
+${getMonthName(date)}は分析済み投稿が${analyzedCount}件と、まだデータが少ない状態です。より精度の高い分析とAIによる振り返り・アクションプラン生成のためには、最低10件以上の分析済み投稿が必要です。
+
+引き続き投稿を分析してデータを蓄積していきましょう。`;
+        actionPlans = [];
+        
+        // フォールバックメッセージもFirestoreに保存（次回以降の表示用）
+        try {
+          const reviewDocRef = adminDb
+            .collection("monthly_reviews")
+            .doc(`${uid}_${date}`);
+
+          await reviewDocRef.set(
+            {
+              userId: uid,
+              month: date,
+              review: monthlyReview,
+              actionPlans: [],
+              hasPlan,
+              analyzedCount,
+              isFallback: true, // フォールバックメッセージであることを示すフラグ
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        } catch (saveError) {
+          console.error("フォールバックレビュー保存エラー:", saveError);
         }
+      } else {
+        // 10件以上の場合は通常のAI生成処理を実行
+        // 投稿タイプ別の統計を計算
+        const postTypeStats: Record<string, { count: number; totalReach: number; labels: string[] }> = {};
+        const postReachMap = new Map<string, { reach: number; title: string; type: string }>();
 
-        if (topHighPerformanceStrengths.length > 0) {
-          insightsParts.push(`- 高パフォーマンス投稿の共通点: ${topHighPerformanceStrengths.join("、")}`);
-        }
+        analyticsByPostId.forEach((analytics, postId) => {
+          const postType = analytics.category || analytics.postType || "unknown";
+          const postTitle = analytics.title || analytics.caption?.substring(0, 50) || "タイトルなし";
+          const reach = analytics.reach || 0;
 
-        if (topActions.length > 0) {
-          insightsParts.push(`- 頻出する推奨アクション: ${topActions.join("、")}`);
-        }
+          if (!postTypeStats[postType]) {
+            postTypeStats[postType] = { count: 0, totalReach: 0, labels: [] };
+          }
+          postTypeStats[postType].count++;
+          postTypeStats[postType].totalReach += reach;
+          if (postTitle && !postTypeStats[postType].labels.includes(postTitle)) {
+            postTypeStats[postType].labels.push(postTitle);
+          }
 
-        postSummaryInsights = insightsParts.join("\n");
-      }
+          postReachMap.set(postId, { reach, title: postTitle, type: postType });
+        });
 
-      // 前月比を計算
-      let prevTotalReach = 0;
-      prevAnalyticsByPostId.forEach((data) => {
-        prevTotalReach += data.reach || 0;
-      });
-
-      const reachChange = prevTotalReach > 0 ? ((totalReach - prevTotalReach) / prevTotalReach) * 100 : 0;
-      const reachChangeText = prevTotalReach > 0
-        ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）`
-        : "";
-
-      // 運用計画の情報を取得
-      let planInfo = null;
-      if (hasPlan) {
-        const planDoc = plansSnapshot.docs[0];
-        const planData = planDoc.data();
-        planInfo = {
-          title: planData.title || "運用計画",
-          targetFollowers: planData.targetFollowers || 0,
-          currentFollowers: planData.currentFollowers || 0,
-          strategies: Array.isArray(planData.strategies) ? planData.strategies : [],
-          postCategories: Array.isArray(planData.postCategories) ? planData.postCategories : [],
+        // 投稿タイプのラベルを日本語に変換
+        const typeLabelMap: Record<string, string> = {
+          feed: "画像投稿",
+          reel: "リール",
+          story: "ストーリー",
+          carousel: "カルーセル",
+          video: "動画",
+          unknown: "その他",
         };
-      }
 
-      // 投稿タイプ別の情報を文字列化
-      const postTypeInfo = postTypeArray.length > 0
-        ? postTypeArray
-            .map((stat, index) => {
-              const order = index === 0 ? "最も多く" : index === 1 ? "次いで" : "最後に";
-              return `${order}${stat.label}が${stat.count}件（全体の${stat.percentage.toFixed(0)}％）`;
-            })
-            .join("、")
-        : "投稿タイプのデータがありません";
+        // 投稿タイプ別の統計を配列に変換（リーチ数でソート）
+        const postTypeArray = Object.entries(postTypeStats)
+          .map(([type, stats]) => ({
+            type,
+            label: typeLabelMap[type] || type,
+            count: stats.count,
+            totalReach: stats.totalReach,
+            percentage: totalReach > 0 ? (stats.totalReach / totalReach) * 100 : 0,
+          }))
+          .sort((a, b) => b.totalReach - a.totalReach);
 
-      const topPostInfo = topPost
-        ? `「${topPost.title}」投稿で、${topPost.reach.toLocaleString()}回閲覧`
-        : "データがありません";
-
-      // ユーザーのビジネス情報とAI設定を取得
-      let businessInfoText = "";
-      let aiSettingsText = "";
-      if (userDoc.exists) {
-        const userData = userDoc.data();
-        const businessInfo = userData?.businessInfo || {};
-        const snsAISettings = userData?.snsAISettings?.instagram || {};
-
-        // ビジネス情報を構築
-        const businessInfoParts: string[] = [];
-        if (businessInfo.industry) {
-          businessInfoParts.push(`業種: ${businessInfo.industry}`);
-        }
-        if (businessInfo.companySize) {
-          businessInfoParts.push(`会社規模: ${businessInfo.companySize}`);
-        }
-        if (businessInfo.businessType) {
-          businessInfoParts.push(`事業形態: ${businessInfo.businessType}`);
-        }
-        if (businessInfo.description) {
-          businessInfoParts.push(`事業内容: ${businessInfo.description}`);
-        }
-        if (businessInfo.catchphrase) {
-          businessInfoParts.push(`キャッチコピー: ${businessInfo.catchphrase}`);
-        }
-        if (Array.isArray(businessInfo.targetMarket) && businessInfo.targetMarket.length > 0) {
-          businessInfoParts.push(`ターゲット市場: ${businessInfo.targetMarket.join("、")}`);
+        // 最も閲覧された投稿を取得
+        let topPost = null;
+        if (postReachMap.size > 0) {
+          const sortedPosts = Array.from(postReachMap.entries())
+            .map(([postId, data]) => ({ postId, ...data }))
+            .sort((a, b) => b.reach - a.reach);
+          topPost = sortedPosts[0];
         }
 
-        // 商品・サービス情報を強調して表示
-        let productsOrServicesText = "";
-        if (Array.isArray(businessInfo.productsOrServices) && businessInfo.productsOrServices.length > 0) {
-          const productsText = businessInfo.productsOrServices
-            .map((p: { name?: string; details?: string }) => {
-              if (p.details) {
-                return `${p.name}（${p.details}）`;
-              }
-              return p.name;
-            })
-            .filter(Boolean)
-            .join("、");
-          if (productsText) {
-            businessInfoParts.push(`商品・サービス: ${productsText}`);
-            productsOrServicesText = businessInfo.productsOrServices
-              .map((p: { name?: string; details?: string }) => p.name)
+        // 投稿ごとのAIサマリーを集計
+        const allStrengths: string[] = [];
+        const allRecommendedActions: string[] = [];
+        const highPerformanceStrengths: string[] = [];
+
+        if (validPostSummaries.length > 0) {
+          // リーチ数でソートして、上位・下位を判定
+          const sortedByReach = [...validPostSummaries].sort((a, b) => b.reach - a.reach);
+          const top30Percent = Math.ceil(sortedByReach.length * 0.3);
+
+          validPostSummaries.forEach((summary) => {
+            allStrengths.push(...(summary?.strengths || []));
+            allRecommendedActions.push(...(summary?.recommendedActions || []));
+
+            // 高パフォーマンス投稿の強みを抽出
+            const isHighPerformance = sortedByReach.slice(0, top30Percent).some((p) => p?.postId === summary?.postId);
+            if (isHighPerformance) {
+              highPerformanceStrengths.push(...(summary?.strengths || []));
+            }
+          });
+        }
+
+        // 頻出する強み・推奨アクションを抽出
+        const strengthFrequency = new Map<string, number>();
+        allStrengths.forEach((strength) => {
+          strengthFrequency.set(strength, (strengthFrequency.get(strength) || 0) + 1);
+        });
+        const topStrengths = Array.from(strengthFrequency.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([strength]) => strength);
+
+        const actionFrequency = new Map<string, number>();
+        allRecommendedActions.forEach((action) => {
+          actionFrequency.set(action, (actionFrequency.get(action) || 0) + 1);
+        });
+        const topActions = Array.from(actionFrequency.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([action]) => action);
+
+        const highPerformanceStrengthFrequency = new Map<string, number>();
+        highPerformanceStrengths.forEach((strength) => {
+          highPerformanceStrengthFrequency.set(strength, (highPerformanceStrengthFrequency.get(strength) || 0) + 1);
+        });
+        const topHighPerformanceStrengths = Array.from(highPerformanceStrengthFrequency.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([strength]) => strength);
+
+        // AIサマリー集計結果を文字列化
+        let postSummaryInsights = "";
+        if (validPostSummaries.length > 0) {
+          const insightsParts: string[] = [];
+          insightsParts.push(`投稿ごとのAI分析結果（${validPostSummaries.length}件の投稿から抽出）:`);
+
+          if (topStrengths.length > 0) {
+            insightsParts.push(`- 頻出する強み: ${topStrengths.join("、")}`);
+          }
+
+          if (topHighPerformanceStrengths.length > 0) {
+            insightsParts.push(`- 高パフォーマンス投稿の共通点: ${topHighPerformanceStrengths.join("、")}`);
+          }
+
+          if (topActions.length > 0) {
+            insightsParts.push(`- 頻出する推奨アクション: ${topActions.join("、")}`);
+          }
+
+          postSummaryInsights = insightsParts.join("\n");
+        }
+
+        // 前月比を計算
+        let prevTotalReach = 0;
+        prevAnalyticsByPostId.forEach((data) => {
+          prevTotalReach += data.reach || 0;
+        });
+
+        const reachChange = prevTotalReach > 0 ? ((totalReach - prevTotalReach) / prevTotalReach) * 100 : 0;
+        const reachChangeText = prevTotalReach > 0
+          ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）`
+          : "";
+
+        // 運用計画の情報を取得
+        let planInfo = null;
+        if (hasPlan) {
+          const planDoc = plansSnapshot.docs[0];
+          const planData = planDoc.data();
+          planInfo = {
+            title: planData.title || "運用計画",
+            targetFollowers: planData.targetFollowers || 0,
+            currentFollowers: planData.currentFollowers || 0,
+            strategies: Array.isArray(planData.strategies) ? planData.strategies : [],
+            postCategories: Array.isArray(planData.postCategories) ? planData.postCategories : [],
+          };
+        }
+
+        // 投稿タイプ別の情報を文字列化
+        const postTypeInfo = postTypeArray.length > 0
+          ? postTypeArray
+              .map((stat, index) => {
+                const order = index === 0 ? "最も多く" : index === 1 ? "次いで" : "最後に";
+                return `${order}${stat.label}が${stat.count}件（全体の${stat.percentage.toFixed(0)}％）`;
+              })
+              .join("、")
+          : "投稿タイプのデータがありません";
+
+        const topPostInfo = topPost
+          ? `「${topPost.title}」投稿で、${topPost.reach.toLocaleString()}回閲覧`
+          : "データがありません";
+
+        // ユーザーのビジネス情報とAI設定を取得
+        let businessInfoText = "";
+        let aiSettingsText = "";
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          const businessInfo = userData?.businessInfo || {};
+          const snsAISettings = userData?.snsAISettings?.instagram || {};
+
+          // ビジネス情報を構築
+          const businessInfoParts: string[] = [];
+          if (businessInfo.industry) {
+            businessInfoParts.push(`業種: ${businessInfo.industry}`);
+          }
+          if (businessInfo.companySize) {
+            businessInfoParts.push(`会社規模: ${businessInfo.companySize}`);
+          }
+          if (businessInfo.businessType) {
+            businessInfoParts.push(`事業形態: ${businessInfo.businessType}`);
+          }
+          if (businessInfo.description) {
+            businessInfoParts.push(`事業内容: ${businessInfo.description}`);
+          }
+          if (businessInfo.catchphrase) {
+            businessInfoParts.push(`キャッチコピー: ${businessInfo.catchphrase}`);
+          }
+          if (Array.isArray(businessInfo.targetMarket) && businessInfo.targetMarket.length > 0) {
+            businessInfoParts.push(`ターゲット市場: ${businessInfo.targetMarket.join("、")}`);
+          }
+
+          // 商品・サービス情報を強調して表示
+          let productsOrServicesText = "";
+          if (Array.isArray(businessInfo.productsOrServices) && businessInfo.productsOrServices.length > 0) {
+            const productsText = businessInfo.productsOrServices
+              .map((p: { name?: string; details?: string }) => {
+                if (p.details) {
+                  return `${p.name}（${p.details}）`;
+                }
+                return p.name;
+              })
               .filter(Boolean)
               .join("、");
+            if (productsText) {
+              businessInfoParts.push(`商品・サービス: ${productsText}`);
+              productsOrServicesText = businessInfo.productsOrServices
+                .map((p: { name?: string; details?: string }) => p.name)
+                .filter(Boolean)
+                .join("、");
+            }
           }
-        }
 
-        if (Array.isArray(businessInfo.goals) && businessInfo.goals.length > 0) {
-          businessInfoParts.push(`目標: ${businessInfo.goals.join("、")}`);
-        }
-        if (Array.isArray(businessInfo.challenges) && businessInfo.challenges.length > 0) {
-          businessInfoParts.push(`課題: ${businessInfo.challenges.join("、")}`);
-        }
-
-        if (businessInfoParts.length > 0) {
-          businessInfoText = `\n【ビジネス情報】\n${businessInfoParts.join("\n")}`;
-          if (productsOrServicesText) {
-            businessInfoText += `\n\n【重要：提案で必ず使用する具体的な商品・サービス名】\n${productsOrServicesText}`;
+          if (Array.isArray(businessInfo.goals) && businessInfo.goals.length > 0) {
+            businessInfoParts.push(`目標: ${businessInfo.goals.join("、")}`);
           }
-        }
+          if (Array.isArray(businessInfo.challenges) && businessInfo.challenges.length > 0) {
+            businessInfoParts.push(`課題: ${businessInfo.challenges.join("、")}`);
+          }
 
-        // AI設定を構築
-        const aiSettingsParts: string[] = [];
-        if (snsAISettings.tone) {
-          aiSettingsParts.push(`トーン: ${snsAISettings.tone}`);
-        }
-        if (snsAISettings.manner) {
-          aiSettingsParts.push(`マナー・ルール: ${snsAISettings.manner}`);
-        }
-        if (snsAISettings.goals) {
-          aiSettingsParts.push(`Instagram運用の目標: ${snsAISettings.goals}`);
-        }
-        if (snsAISettings.motivation) {
-          aiSettingsParts.push(`運用動機: ${snsAISettings.motivation}`);
-        }
-        if (snsAISettings.additionalInfo) {
-          aiSettingsParts.push(`その他参考情報: ${snsAISettings.additionalInfo}`);
-        }
+          if (businessInfoParts.length > 0) {
+            businessInfoText = `\n【ビジネス情報】\n${businessInfoParts.join("\n")}`;
+            if (productsOrServicesText) {
+              businessInfoText += `\n\n【重要：提案で必ず使用する具体的な商品・サービス名】\n${productsOrServicesText}`;
+            }
+          }
 
-        if (aiSettingsParts.length > 0) {
-          aiSettingsText = `\n【Instagram AI設定】\n${aiSettingsParts.join("\n")}`;
-        }
-      }
+          // AI設定を構築
+          const aiSettingsParts: string[] = [];
+          if (snsAISettings.tone) {
+            aiSettingsParts.push(`トーン: ${snsAISettings.tone}`);
+          }
+          if (snsAISettings.manner) {
+            aiSettingsParts.push(`マナー・ルール: ${snsAISettings.manner}`);
+          }
+          if (snsAISettings.goals) {
+            aiSettingsParts.push(`Instagram運用の目標: ${snsAISettings.goals}`);
+          }
+          if (snsAISettings.motivation) {
+            aiSettingsParts.push(`運用動機: ${snsAISettings.motivation}`);
+          }
+          if (snsAISettings.additionalInfo) {
+            aiSettingsParts.push(`その他参考情報: ${snsAISettings.additionalInfo}`);
+          }
 
-      // AI生成（完全版）
-      if (openai && analyzedCount > 0) {
-        try {
-          const currentMonth = getMonthName(date);
-          const nextMonth = getNextMonthName(date);
-          const totalShares = validAnalyticsData.reduce((sum, d) => sum + (d.shares || 0), 0);
+          if (aiSettingsParts.length > 0) {
+            aiSettingsText = `\n【Instagram AI設定】\n${aiSettingsParts.join("\n")}`;
+          }
 
-          const prompt = `以下のInstagram運用データを基に、${currentMonth}の振り返りを自然な日本語で出力してください。
+          // AI生成（完全版）
+          // 10件以上の分析済み投稿がある場合のみAI生成を実行（トークン費削減）
+          if (openai && analyzedCount >= 10) {
+            try {
+            const currentMonth = getMonthName(date);
+            const nextMonth = getNextMonthName(date);
+            const totalShares = validAnalyticsData.reduce((sum, d) => sum + (d.shares || 0), 0);
+
+            const prompt = `以下のInstagram運用データを基に、${currentMonth}の振り返りを自然な日本語で出力してください。
 
 【データ】
 - 分析済み投稿数: ${analyzedCount}件
@@ -1246,7 +1303,7 @@ ${currentMonth}の運用を振り返ると、{評価（好調/順調/改善の�
   - その他の業種も同様に、上記の具体的な商品・サービス名を使用して、その業種に適した具体的なコンテンツを提案してください
 - **凡庸な例（「役立つ情報や美しい風景」「プレゼント企画」「セミナー告知」など）は避け、必ず上記の具体的な商品・サービス名を使用して提案をしてください。**`;
 
-          const completion = await openai.chat.completions.create({
+            const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
               {
@@ -1261,14 +1318,14 @@ ${currentMonth}の運用を振り返ると、{評価（好調/順調/改善の�
             ],
             temperature: 0.7,
             max_tokens: 2000,
-          });
+            });
 
-          monthlyReview = completion.choices[0]?.message?.content || "";
+            monthlyReview = completion.choices[0]?.message?.content || "";
 
-          // 提案セクションが含まれていない場合、別途生成
-          if (!monthlyReview.includes("📈") && !monthlyReview.includes("提案")) {
-            try {
-              const proposalPrompt = `以下のInstagram運用データを基に、${nextMonth}に向けた具体的なアクションプランを3つ生成してください。
+            // 提案セクションが含まれていない場合、別途生成
+            if (!monthlyReview.includes("📈") && !monthlyReview.includes("提案")) {
+              try {
+                const proposalPrompt = `以下のInstagram運用データを基に、${nextMonth}に向けた具体的なアクションプランを3つ生成してください。
 
 【データ】
 - 分析済み投稿数: ${analyzedCount}件
@@ -1308,7 +1365,7 @@ ${postTypeArray.length > 0
   - その他の業種も同様に、上記の具体的な商品・サービス名を使用して、その業種に適した具体的なコンテンツを提案してください
 - **凡庸な例（「役立つ情報や美しい風景」「プレゼント企画」「セミナー告知」など）は避け、必ず上記の具体的な商品・サービス名を使用して提案をしてください**`;
 
-              const proposalCompletion = await openai.chat.completions.create({
+                const proposalCompletion = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [
                   {
@@ -1323,49 +1380,49 @@ ${postTypeArray.length > 0
                 ],
                 temperature: 0.7,
                 max_tokens: 800,
-              });
+                });
 
-              const proposalText = proposalCompletion.choices[0]?.message?.content || "";
-              if (proposalText) {
-                monthlyReview += "\n\n⸻\n\n" + proposalText;
+                const proposalText = proposalCompletion.choices[0]?.message?.content || "";
+                if (proposalText) {
+                  monthlyReview += "\n\n⸻\n\n" + proposalText;
+                }
+              } catch (proposalError) {
+                console.error("提案セクション生成エラー:", proposalError);
               }
-            } catch (proposalError) {
-              console.error("提案セクション生成エラー:", proposalError);
             }
-          }
 
-          // 提案セクションを抽出してパース
-          const nextMonthName = getNextMonthName(date);
-          actionPlans = extractActionPlansFromReview(monthlyReview, nextMonthName);
+            // 提案セクションを抽出してパース
+            const nextMonthName = getNextMonthName(date);
+            actionPlans = extractActionPlansFromReview(monthlyReview, nextMonthName);
 
-          // 生成されたレビューをFirestoreに保存
-          if (monthlyReview) {
-            try {
-              const reviewDocRef = adminDb
-                .collection("monthly_reviews")
-                .doc(`${uid}_${date}`);
+            // 生成されたレビューをFirestoreに保存
+            if (monthlyReview) {
+              try {
+                const reviewDocRef = adminDb
+                  .collection("monthly_reviews")
+                  .doc(`${uid}_${date}`);
 
-              await reviewDocRef.set(
-                {
-                  userId: uid,
-                  month: date,
-                  review: monthlyReview,
-                  actionPlans,
-                  hasPlan,
-                  analyzedCount,
-                  createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                },
-                { merge: true }
-              );
-            } catch (saveError) {
-              console.error("レビュー保存エラー:", saveError);
+                await reviewDocRef.set(
+                  {
+                    userId: uid,
+                    month: date,
+                    review: monthlyReview,
+                    actionPlans,
+                    hasPlan,
+                    analyzedCount,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                  },
+                  { merge: true }
+                );
+              } catch (saveError) {
+                console.error("レビュー保存エラー:", saveError);
+              }
             }
-          }
-        } catch (aiError) {
-          console.error("AI生成エラー:", aiError);
-          // AI生成に失敗した場合はフォールバック
-          monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括）
+          } catch (aiError) {
+            console.error("AI生成エラー:", aiError);
+            // AI生成に失敗した場合はフォールバック
+            monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括）
 
 ⸻
 
@@ -1380,11 +1437,16 @@ ${postTypeArray.length > 0
 💡 総評
 
 ${getMonthName(date)}の運用を振り返ると、${totalReach > 0 ? `リーチ数${totalReach.toLocaleString()}人、いいね数${totalLikes.toLocaleString()}件を達成しました。` : "データ蓄積の段階です。"}継続的な投稿と分析により、アカウントの成長を目指しましょう。`;
-          actionPlans = [];
+            actionPlans = [];
+          }
         }
-      } else {
-        // データがない場合のフォールバック
-        monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括）
+        }
+      }
+    }
+    
+    // monthlyReviewがまだ設定されていない場合（データがない場合）のフォールバック
+    if (!monthlyReview) {
+      monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括})
 
 ⸻
 
@@ -1399,8 +1461,7 @@ ${getMonthName(date)}の運用を振り返ると、${totalReach > 0 ? `リーチ
 💡 総評
 
 ${getMonthName(date)}のデータがまだありません。投稿を開始してデータを蓄積しましょう。`;
-        actionPlans = [];
-      }
+      actionPlans = [];
     }
 
     // レスポンスを構築
