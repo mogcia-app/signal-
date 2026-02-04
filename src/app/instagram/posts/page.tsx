@@ -821,6 +821,7 @@ export default function InstagramPostsPage() {
                         shares: (analyticsFromData as { shares?: number })?.shares || 0,
                         reach: (analyticsFromData as { reach?: number })?.reach || 0,
                         engagementRate: (analyticsFromData as { engagementRate?: number })?.engagementRate || 0,
+                        followerIncrease: (analyticsFromData as { followerIncrease?: number })?.followerIncrease,
                         publishedAt: (() => {
                           const publishedAt = (analyticsFromData as { publishedAt?: Date | string })?.publishedAt;
                           if (publishedAt) {
@@ -859,6 +860,7 @@ export default function InstagramPostsPage() {
                           reach: post.analytics.reach,
                           engagementRate: post.analytics.engagementRate,
                           publishedAt: post.analytics.publishedAt,
+                          followerIncrease: (post.analytics as { followerIncrease?: number })?.followerIncrease,
                           title: post.title,
                           content: post.content,
                            

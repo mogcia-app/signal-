@@ -14,6 +14,7 @@ import {
   Eye as EyeIcon,
   Edit,
   BarChart3,
+  TrendingUp,
 } from "lucide-react";
 import type { AIReference } from "@/types/ai";
 
@@ -50,6 +51,7 @@ interface PostData {
     reach: number;
     engagementRate: number;
     publishedAt: Date;
+    followerIncrease?: number;
     audience?: {
       gender: {
         male: number;
@@ -92,6 +94,7 @@ interface AnalyticsData {
   reach: number;
   engagementRate: number;
   publishedAt: Date;
+  followerIncrease?: number;
   title?: string;
   content?: string;
   hashtags?: string[];
@@ -453,6 +456,58 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
             </div>
           );
         })()}
+
+        {/* 分析データ（分析済みの場合のみ表示） */}
+        {hasAnalytics && postAnalytics && post.postType !== "story" && (
+          <div className="mb-2 pt-2 border-t border-gray-100">
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div>
+                <div className="flex items-center justify-center mb-0.5">
+                  <Heart size={12} className="text-red-500" />
+                </div>
+                <div className="text-xs font-bold text-gray-900">
+                  {(postAnalytics.likes || 0).toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-center mb-0.5">
+                  <MessageCircle size={12} className="text-gray-600" />
+                </div>
+                <div className="text-xs font-bold text-gray-900">
+                  {(postAnalytics.comments || 0).toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-center mb-0.5">
+                  <Share size={12} className="text-gray-600" />
+                </div>
+                <div className="text-xs font-bold text-gray-900">
+                  {(postAnalytics.shares || 0).toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-center mb-0.5">
+                  <EyeIcon size={12} className="text-gray-600" />
+                </div>
+                <div className="text-xs font-bold text-gray-900">
+                  {(postAnalytics.reach || 0).toLocaleString()}
+                </div>
+              </div>
+            </div>
+            {postAnalytics.followerIncrease !== undefined && postAnalytics.followerIncrease !== null && (
+              <div className="mt-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-center gap-1">
+                  <TrendingUp size={12} className="text-green-600" />
+                  <span className="text-xs font-medium text-gray-600">フォロワー増加</span>
+                </div>
+                <div className="text-xs font-bold text-green-600 text-center mt-0.5">
+                  {postAnalytics.followerIncrease > 0 ? "+" : ""}
+                  {postAnalytics.followerIncrease.toLocaleString()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* アクションボタン */}
         <div className="mt-auto pt-3 border-t border-gray-100">

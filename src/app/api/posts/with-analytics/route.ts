@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
         shares: data.shares || 0,
         reach: data.reach || 0,
         saves: data.saves || 0,
+        followerIncrease: data.followerIncrease || 0, // 明示的に含める
         ...data,
         createdAt: data.createdAt?.toDate?.() || data.createdAt,
         publishedAt: data.publishedAt?.toDate?.() || data.publishedAt,
