@@ -11,6 +11,7 @@ interface ReelAnalyticsAIAdviceProps {
     nextActions: string[];
   } | null;
   isGenerating: boolean;
+  isAutoGenerating?: boolean;
   error: string | null;
   onGenerate: () => void;
   sentiment: "satisfied" | "dissatisfied" | null;
@@ -20,6 +21,7 @@ interface ReelAnalyticsAIAdviceProps {
 export const ReelAnalyticsAIAdvice: React.FC<ReelAnalyticsAIAdviceProps> = ({
   aiAdvice,
   isGenerating,
+  isAutoGenerating = false,
   error,
   onGenerate,
   sentiment,
@@ -58,7 +60,12 @@ export const ReelAnalyticsAIAdvice: React.FC<ReelAnalyticsAIAdviceProps> = ({
         </div>
       )}
 
-      {aiAdvice ? (
+      {isAutoGenerating ? (
+        <div className="bg-blue-50 border border-blue-200 p-4 text-xs text-blue-700 flex items-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+          <span>AIアドバイスを自動生成中...</span>
+        </div>
+      ) : aiAdvice ? (
         <div className="space-y-4 bg-gray-50 p-4">
           <div className="border-l-4 border-gray-400 pl-4">
             <p className="text-sm text-gray-800 leading-relaxed">{aiAdvice.summary}</p>
@@ -104,5 +111,8 @@ export const ReelAnalyticsAIAdvice: React.FC<ReelAnalyticsAIAdviceProps> = ({
     </div>
   );
 };
+
+
+
 
 

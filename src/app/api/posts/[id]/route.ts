@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
+import * as admin from "firebase-admin";
 import { requireAuthContext } from "@/lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
@@ -104,6 +105,63 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const docRef = adminDb.collection("posts").doc(postId);
     await docRef.update(updateData);
+
+    // scheduledDateまたはscheduledTimeが変更された場合、対応するanalyticsコレクションのpublishedAtも更新
+    if (scheduledDate !== undefined || scheduledTime !== undefined) {
+      try {
+        // 該当するanalyticsデータを取得
+        const analyticsSnapshot = await adminDb
+          .collection("analytics")
+          .where("userId", "==", uid)
+          .where("postId", "==", postId)
+          .get();
+
+        if (!analyticsSnapshot.empty) {
+          // 投稿データを取得してscheduledDateとscheduledTimeを確認
+          const postDoc = await docRef.get();
+          const postData = postDoc.data();
+          
+          // 更新後のscheduledDateとscheduledTimeを取得
+          const finalScheduledDate = scheduledDate !== undefined ? scheduledDate : postData?.scheduledDate;
+          const finalScheduledTime = scheduledTime !== undefined ? scheduledTime : postData?.scheduledTime;
+
+          if (finalScheduledDate) {
+            // scheduledDateとscheduledTimeからpublishedAtを計算
+            let publishedAtDate: Date;
+            if (finalScheduledDate instanceof Date) {
+              publishedAtDate = new Date(finalScheduledDate);
+            } else if (typeof finalScheduledDate === "string") {
+              publishedAtDate = new Date(finalScheduledDate);
+            } else {
+              publishedAtDate = new Date();
+            }
+
+            // scheduledTimeがある場合、時刻を設定
+            if (finalScheduledTime && typeof finalScheduledTime === "string") {
+              const [hours, minutes] = finalScheduledTime.split(":").map(Number);
+              if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
+                publishedAtDate.setHours(hours, minutes, 0, 0);
+              }
+            }
+
+            // すべてのanalyticsドキュメントを更新
+            const batch = adminDb.batch();
+            analyticsSnapshot.docs.forEach((analyticsDoc) => {
+              batch.update(analyticsDoc.ref, {
+                publishedAt: admin.firestore.Timestamp.fromDate(publishedAtDate),
+                publishedTime: finalScheduledTime || publishedAtDate.toTimeString().slice(0, 5),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+            });
+            await batch.commit();
+            console.log(`Updated publishedAt for ${analyticsSnapshot.size} analytics records for post ${postId}`);
+          }
+        }
+      } catch (analyticsUpdateError) {
+        console.error("Analytics publishedAt update error:", analyticsUpdateError);
+        // analytics更新に失敗しても投稿更新は成功しているので続行
+      }
+    }
 
     console.log("Post updated successfully:", postId);
     return NextResponse.json({

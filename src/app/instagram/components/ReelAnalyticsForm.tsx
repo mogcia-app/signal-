@@ -61,6 +61,7 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
     nextActions: string[];
   } | null>(null);
   const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
+  const [isAutoGeneratingAdvice, setIsAutoGeneratingAdvice] = useState(false);
   const [adviceError, setAdviceError] = useState<string | null>(null);
   const [pasteSuccess, setPasteSuccess] = useState<string | null>(null);
 
@@ -319,7 +320,21 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
       }
     }
 
-    onSave({ sentiment, memo });
+    // 分析データを保存
+    await onSave({ sentiment, memo });
+
+    // 保存成功後、postIdとsentimentがある場合、自動的にAIアドバイスを生成
+    if (user?.uid && postData?.id && sentiment && !aiAdvice) {
+      setIsAutoGeneratingAdvice(true);
+      setAdviceError(null);
+      
+      // 少し待ってから生成を開始（保存処理が完了するのを待つ）
+      setTimeout(() => {
+        handleGenerateAdvice().finally(() => {
+          setIsAutoGeneratingAdvice(false);
+        });
+      }, 500);
+    }
   };
 
   return (
@@ -426,6 +441,7 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
         <ReelAnalyticsAIAdvice
           aiAdvice={aiAdvice}
           isGenerating={isGeneratingAdvice}
+          isAutoGenerating={isAutoGeneratingAdvice}
           error={adviceError}
           onGenerate={handleGenerateAdvice}
           sentiment={sentiment}

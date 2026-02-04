@@ -21,8 +21,20 @@ export default function LoginPage() {
   const [checkingMaintenance, setCheckingMaintenance] = useState(true);
   const isMaintenanceMode = loginMaintenanceEnabled && !isProductionBuild;
 
-  const { signIn } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // 既にログインしている場合は/homeにリダイレクト
+  // 未ログインの場合はポータルサイトにリダイレクト
+  useEffect(() => {
+    if (!authLoading) {
+      if (user) {
+        router.push("/home");
+      } else {
+        window.location.href = "https://signal-portal.vercel.app/";
+      }
+    }
+  }, [user, authLoading, router]);
 
   // メンテナンス状態をチェック
   useEffect(() => {
@@ -106,6 +118,21 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // 認証状態のチェック中、または既にログインしている場合はローディング画面を表示
+  if (authLoading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#ff8a15]/10">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 border-2 border-gray-200 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm font-medium text-gray-700">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
 
   // メンテナンスチェック中
   if (checkingMaintenance) {

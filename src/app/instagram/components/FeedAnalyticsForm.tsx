@@ -57,6 +57,7 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
     nextActions: string[];
   } | null>(null);
   const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
+  const [isAutoGeneratingAdvice, setIsAutoGeneratingAdvice] = useState(false);
   const [adviceError, setAdviceError] = useState<string | null>(null);
   const [pasteSuccess, setPasteSuccess] = useState<string | null>(null);
 
@@ -417,7 +418,21 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
       }
     }
 
-    onSave({ sentiment, memo });
+    // 分析データを保存
+    await onSave({ sentiment, memo });
+
+    // 保存成功後、postIdとsentimentがある場合、自動的にAIアドバイスを生成
+    if (user?.uid && postData?.id && sentiment && !aiAdvice) {
+      setIsAutoGeneratingAdvice(true);
+      setAdviceError(null);
+      
+      // 少し待ってから生成を開始（保存処理が完了するのを待つ）
+      setTimeout(() => {
+        handleGenerateAdvice().finally(() => {
+          setIsAutoGeneratingAdvice(false);
+        });
+      }, 500);
+    }
   };
 
   const handleAddCommentThread = () => {
@@ -1118,7 +1133,12 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             </div>
           )}
 
-          {aiAdvice ? (
+          {isAutoGeneratingAdvice ? (
+            <div className="bg-blue-50 border border-blue-200 p-4 text-xs text-blue-700 flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+              <span>AIアドバイスを自動生成中...</span>
+            </div>
+          ) : aiAdvice ? (
             <div className="space-y-4 bg-gray-50 p-4">
               <div className="border-l-4 border-gray-400 pl-4">
                 <p className="text-sm text-gray-800 leading-relaxed">{aiAdvice.summary}</p>

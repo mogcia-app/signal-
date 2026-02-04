@@ -1044,7 +1044,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
             rows={4}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
-            placeholder="例: 30代のママさん。子育てに忙しいけど、自分の時間も大切にしたい人。美味しいコーヒーを飲んでリラックスしたい。"
+            placeholder="例: 30代のママさん。子育てに忙しいけど、自分の時間も大切にしたい人。"
           />
           <div className="mt-3 p-3 bg-orange-50 rounded-lg">
             <div className="flex items-start">
