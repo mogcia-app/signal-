@@ -345,12 +345,35 @@ export async function GET(request: NextRequest) {
 
     const analyticsData = querySnapshot.docs.map((doc) => {
       const data = doc.data();
+      const followerIncrease = data.followerIncrease || 0;
+      
+      // デバッグログ: すべてのanalyticsデータのfollowerIncreaseを確認（0でも出力）
+      console.log("[Analytics Simple GET] フォロワー増加数取得デバッグ:", {
+        analyticsId: doc.id,
+        postId: data.postId || null,
+        followerIncrease,
+        rawData: data.followerIncrease,
+        rawDataType: typeof data.followerIncrease,
+        allDataKeys: Object.keys(data),
+        hasFollowerIncrease: 'followerIncrease' in data,
+      });
+      
       return {
         id: doc.id,
         ...data,
+        followerIncrease, // 明示的に設定
         publishedAt: data.publishedAt?.toDate?.()?.toISOString() ?? data.publishedAt,
         createdAt: data.createdAt?.toDate?.()?.toISOString() ?? data.createdAt,
       };
+    });
+    
+    // デバッグログ: 全体の集計（GET）
+    const totalFollowerIncrease = analyticsData.reduce((sum, a) => sum + (a.followerIncrease || 0), 0);
+    console.log("[Analytics Simple GET] フォロワー増加数集計デバッグ:", {
+      totalAnalyticsCount: analyticsData.length,
+      totalFollowerIncrease,
+      analyticsWithFollowerIncrease: analyticsData.filter(a => (a.followerIncrease || 0) > 0).length,
+      userId: uid,
     });
 
     return NextResponse.json({
@@ -436,6 +459,18 @@ export async function POST(request: NextRequest) {
     const publishedAtDate = publishedAt ? new Date(publishedAt) : new Date();
     const publishedAtTimestamp = admin.firestore.Timestamp.fromDate(publishedAtDate);
     
+    const parsedFollowerIncrease = Number.parseInt(followerIncrease) || 0;
+    
+    // デバッグログ: フォロワー増加数の保存前
+    console.log("[Analytics Simple] フォロワー増加数保存デバッグ:", {
+      userId: uid,
+      postId: postId || null,
+      rawFollowerIncrease: followerIncrease,
+      parsedFollowerIncrease,
+      category: category || "feed",
+      publishedAt: publishedAt || null,
+    });
+
     const analyticsData = {
       userId: uid,
       postId: postId || null,
@@ -447,7 +482,7 @@ export async function POST(request: NextRequest) {
       reposts: Number.parseInt(reposts) || 0,
       reach: Number.parseInt(reach) || 0,
       saves: Number.parseInt(saves) || 0,
-      followerIncrease: Number.parseInt(followerIncrease) || 0,
+      followerIncrease: parsedFollowerIncrease,
       engagementRate: 0,
       publishedAt: publishedAtTimestamp, // Timestamp型で統一
       publishedTime: publishedTime || "",
@@ -519,6 +554,18 @@ export async function POST(request: NextRequest) {
           ...analyticsData,
           createdAt: existingCreatedAt,
         });
+        
+        // デバッグログ: 更新後の確認
+        const updatedDoc = await existingDoc.ref.get();
+        const updatedData = updatedDoc.data();
+        console.log("[Analytics Simple] フォロワー増加数更新後デバッグ:", {
+          analyticsId: existingDoc.id,
+          postId: analyticsData.postId,
+          savedFollowerIncrease: updatedData?.followerIncrease,
+          expectedFollowerIncrease: parsedFollowerIncrease,
+          match: updatedData?.followerIncrease === parsedFollowerIncrease,
+        });
+        
         await syncPlanFollowerProgress(uid);
         // follower_countsは更新しない（homeページで入力された値はそのまま保持）
 
@@ -541,6 +588,18 @@ export async function POST(request: NextRequest) {
     }
 
     const docRef = await analyticsCollection.add(analyticsData);
+    
+    // デバッグログ: 新規作成後の確認
+    const createdDoc = await docRef.get();
+    const createdData = createdDoc.data();
+    console.log("[Analytics Simple] フォロワー増加数新規作成後デバッグ:", {
+      analyticsId: docRef.id,
+      postId: analyticsData.postId,
+      savedFollowerIncrease: createdData?.followerIncrease,
+      expectedFollowerIncrease: parsedFollowerIncrease,
+      match: createdData?.followerIncrease === parsedFollowerIncrease,
+    });
+    
     await syncPlanFollowerProgress(uid);
     // follower_countsは更新しない（homeページで入力された値はそのまま保持）
 

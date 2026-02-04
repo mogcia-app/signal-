@@ -71,11 +71,23 @@ export async function GET(request: NextRequest) {
       }, 0),
     };
 
-    // デバッグログ
-    console.log("[Home Monthly KPIs] 今月のanalyticsデータ:", {
+    // デバッグログ: 詳細なフォロワー増加数の確認
+    const followerIncreaseDetails = analyticsSnapshot.docs
+      .filter(doc => (doc.data().followerIncrease || 0) > 0)
+      .map(doc => ({
+        analyticsId: doc.id,
+        postId: doc.data().postId || null,
+        followerIncrease: doc.data().followerIncrease || 0,
+        publishedAt: doc.data().publishedAt,
+      }));
+    
+    console.log("[Home Monthly KPIs] フォロワー増加数デバッグ:", {
       analyticsSnapshotSize: analyticsSnapshot.docs.length,
       thisMonthTotals,
+      followerIncreaseFromPosts: thisMonthTotals.followerIncrease,
+      followerIncreaseDetails,
       dateStr,
+      userId: uid,
     });
 
     // 前月の合計を計算
@@ -119,6 +131,16 @@ export async function GET(request: NextRequest) {
     // フォロワー数の合計（分析ページ + その他）
     const totalFollowerIncrease = thisMonthTotals.followerIncrease + followerIncreaseFromOther;
     const previousTotalFollowerIncrease = previousMonthTotals.followerIncrease + previousFollowerIncreaseFromOther;
+    
+    // デバッグログ: 最終的なフォロワー増加数の計算
+    console.log("[Home Monthly KPIs] フォロワー増加数最終計算デバッグ:", {
+      followerIncreaseFromPosts: thisMonthTotals.followerIncrease,
+      followerIncreaseFromOther,
+      totalFollowerIncrease,
+      previousTotalFollowerIncrease,
+      dateStr,
+      userId: uid,
+    });
 
     // 初月かどうかを判定（前月のanalyticsデータが存在しない場合、初月と判断）
     const isFirstMonth = previousAnalyticsSnapshot.empty;

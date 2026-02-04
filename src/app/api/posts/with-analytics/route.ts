@@ -77,6 +77,25 @@ export async function GET(request: NextRequest) {
     // 分析データを処理
     const analyticsData: AnalyticsData[] = analyticsSnapshot.docs.map((doc) => {
       const data = doc.data();
+      
+      // デバッグログ: すべてのanalyticsデータのfollowerIncreaseを確認（0でも出力）
+      console.log("[Posts With Analytics] フォロワー増加数取得デバッグ:", {
+        analyticsId: doc.id,
+        postId: data.postId || null,
+        rawFollowerIncrease: data.followerIncrease,
+        rawDataType: typeof data.followerIncrease,
+        allDataKeys: Object.keys(data),
+        hasFollowerIncrease: 'followerIncrease' in data,
+        fullData: JSON.stringify(data, null, 2).substring(0, 500), // 最初の500文字のみ
+      });
+      
+      // followerIncreaseを明示的に取得（数値に変換）
+      const followerIncrease = typeof data.followerIncrease === 'number' 
+        ? data.followerIncrease 
+        : typeof data.followerIncrease === 'string' 
+          ? Number.parseInt(data.followerIncrease, 10) || 0
+          : 0;
+      
       return {
         id: doc.id,
         postId: data.postId || null,
@@ -85,11 +104,19 @@ export async function GET(request: NextRequest) {
         shares: data.shares || 0,
         reach: data.reach || 0,
         saves: data.saves || 0,
-        followerIncrease: data.followerIncrease || 0, // 明示的に含める
-        ...data,
+        ...data, // 先にスプレッド
+        followerIncrease, // 最後に明示的に設定（上書きを防ぐ）
         createdAt: data.createdAt?.toDate?.() || data.createdAt,
         publishedAt: data.publishedAt?.toDate?.() || data.publishedAt,
       } as AnalyticsData;
+    });
+    
+    // デバッグログ: 全体の集計
+    const totalFollowerIncrease = analyticsData.reduce((sum, a) => sum + (a.followerIncrease || 0), 0);
+    console.log("[Posts With Analytics] フォロワー増加数集計デバッグ:", {
+      totalAnalyticsCount: analyticsData.length,
+      totalFollowerIncrease,
+      analyticsWithFollowerIncrease: analyticsData.filter(a => (a.followerIncrease || 0) > 0).length,
     });
 
     // 投稿を分析済み/未分析に分類
@@ -99,9 +126,44 @@ export async function GET(request: NextRequest) {
         .filter((postId): postId is string => Boolean(postId))
     );
 
-    // 投稿をソート（作成日時降順：最新が上）
+    // 投稿をソート（投稿日時降順：最新が上）
+    // 優先順位: publishedAt > scheduledDate > createdAt
     const sortedPosts = [...posts].sort((a, b) => {
       const getDate = (post: PostData): number => {
+        // 1. publishedAt（実際に投稿した日時）を優先
+        const analyticsForPost = analyticsData.find((a) => a.postId === post.id);
+        if (analyticsForPost?.publishedAt) {
+          if (analyticsForPost.publishedAt instanceof Date) {
+            return analyticsForPost.publishedAt.getTime();
+          }
+          if (analyticsForPost.publishedAt && typeof analyticsForPost.publishedAt === "object" && "toDate" in analyticsForPost.publishedAt) {
+            return (analyticsForPost.publishedAt as { toDate(): Date }).toDate().getTime();
+          }
+          if (typeof analyticsForPost.publishedAt === "string") {
+            const date = new Date(analyticsForPost.publishedAt);
+            if (!isNaN(date.getTime())) {
+              return date.getTime();
+            }
+          }
+        }
+        
+        // 2. scheduledDate（投稿予定日）を次に優先
+        if (post.scheduledDate) {
+          if (post.scheduledDate instanceof Date) {
+            return post.scheduledDate.getTime();
+          }
+          if (post.scheduledDate && typeof post.scheduledDate === "object" && "toDate" in post.scheduledDate) {
+            return (post.scheduledDate as { toDate(): Date }).toDate().getTime();
+          }
+          if (typeof post.scheduledDate === "string") {
+            const date = new Date(post.scheduledDate);
+            if (!isNaN(date.getTime())) {
+              return date.getTime();
+            }
+          }
+        }
+        
+        // 3. createdAt（作成日時）をフォールバック
         if (post.createdAt instanceof Date) {
           return post.createdAt.getTime();
         }

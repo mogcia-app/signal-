@@ -738,14 +738,14 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             </div>
             <div>
               <label className="flex text-sm font-medium text-gray-700 mb-3 items-center">
-                <Plus className="w-4 h-4 mr-2 text-[#ff8a15]" />
-                フォロー数
+                <Plus className="w-4 h-4 mr-2 text-green-500" />
+                フォロワー増加数
               </label>
               <input
                 type="number"
                 min="0"
-                value={data.profileFollows || ""}
-                onChange={(e) => handleInputChange("profileFollows", e.target.value)}
+                value={data.followerIncrease || ""}
+                onChange={(e) => handleInputChange("followerIncrease", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder="0"
               />

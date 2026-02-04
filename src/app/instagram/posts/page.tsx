@@ -280,25 +280,53 @@ export default function InstagramPostsPage() {
           if (a.status === "created" && b.status !== "created") {return -1;}
           if (b.status === "created" && a.status !== "created") {return 1;}
 
-          // 同じステータスの場合は、作成日時で降順（新しい順）
-          const aCreatedAt =
-            a.createdAt instanceof Date
-              ? a.createdAt
-              : typeof a.createdAt === "string"
-                ? new Date(a.createdAt)
-                : a.createdAt?.toDate
-                  ? a.createdAt.toDate()
-                  : new Date(0);
-          const bCreatedAt =
-            b.createdAt instanceof Date
-              ? b.createdAt
-              : typeof b.createdAt === "string"
-                ? new Date(b.createdAt)
-                : b.createdAt?.toDate
-                  ? b.createdAt.toDate()
-                  : new Date(0);
+          // 同じステータスの場合は、投稿日時で降順（新しい順）
+          // 優先順位: publishedAt > scheduledDate > createdAt
+          const getDate = (post: PostData): Date => {
+            // 1. publishedAt（実際に投稿した日時）を優先
+            const analytics = analyticsData.find((ad) => ad.postId === post.id);
+            if (analytics?.publishedAt) {
+              if (analytics.publishedAt instanceof Date) {
+                return analytics.publishedAt;
+              }
+              if (typeof analytics.publishedAt === "string") {
+                const date = new Date(analytics.publishedAt);
+                if (!isNaN(date.getTime())) {
+                  return date;
+                }
+              }
+            }
+            
+            // 2. scheduledDate（投稿予定日）を次に優先
+            if (post.scheduledDate) {
+              if (post.scheduledDate instanceof Date) {
+                return post.scheduledDate;
+              }
+              if (typeof post.scheduledDate === "string") {
+                const date = new Date(post.scheduledDate);
+                if (!isNaN(date.getTime())) {
+                  return date;
+                }
+              }
+            }
+            
+            // 3. createdAt（作成日時）をフォールバック
+            if (post.createdAt instanceof Date) {
+              return post.createdAt;
+            }
+            if (typeof post.createdAt === "string") {
+              return new Date(post.createdAt);
+            }
+            if (post.createdAt?.toDate) {
+              return post.createdAt.toDate();
+            }
+            return new Date(0);
+          };
 
-          return bCreatedAt.getTime() - aCreatedAt.getTime();
+          const aDate = getDate(a);
+          const bDate = getDate(b);
+
+          return bDate.getTime() - aDate.getTime();
         });
       });
     }, 30000); // 30秒ごと
@@ -306,7 +334,7 @@ export default function InstagramPostsPage() {
     return () => {
       clearInterval(interval);
     };
-  }, []); // 依存配列を空にして、マウント時のみ実行
+  }, [analyticsData]); // analyticsDataを依存配列に追加
 
 
   // 投稿削除
