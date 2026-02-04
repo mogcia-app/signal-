@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
     const lastWeekFollowerIncreaseFromPosts = lastWeekAnalytics.reduce((sum, a) => sum + (a.followerIncrease || 0), 0);
     
     // follower_countsから取得（homeページで入力された値）
+    // follower_counts.followersは「投稿に紐づかない増加数」として保存されている
     // 注意: follower_countsは月単位のデータなので、週単位の正確な計算は難しい
     // 暫定的に、今月のfollower_countsの値を使用（より正確な実装には週単位のデータが必要）
     const followerCounts = followerCountsSnapshot.docs.map((doc) => doc.data());
@@ -108,30 +109,27 @@ export async function GET(request: NextRequest) {
     let lastWeekFollowerIncreaseFromOther = 0;
     
     if (followerCounts.length >= 1) {
-      const currentFollowers = followerCounts[0].followers || 0;
-      const startFollowers = followerCounts[0].startFollowers || currentFollowers;
-      // 今月の増加数（その他からの増加数）
-      const monthFollowerIncrease = currentFollowers - startFollowers;
+      // follower_counts.followersは既に「投稿に紐づかない増加数」として保存されている
+      const monthFollowerIncreaseFromOther = followerCounts[0].followers || 0;
       // 週単位の概算: 今月の増加数を週数で割る（簡易計算）
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const daysSinceMonthStart = Math.floor((today.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       const weeksSinceMonthStart = Math.ceil(daysSinceMonthStart / 7);
       // 今週の増加数を概算（今月の増加数 / 今月の週数）
       if (weeksSinceMonthStart > 0) {
-        thisWeekFollowerIncreaseFromOther = Math.round(monthFollowerIncrease / weeksSinceMonthStart);
+        thisWeekFollowerIncreaseFromOther = Math.round(monthFollowerIncreaseFromOther / weeksSinceMonthStart);
       }
       
       if (followerCounts.length >= 2) {
-        const previousFollowers = followerCounts[1].followers || 0;
-        const previousStartFollowers = followerCounts[1].startFollowers || previousFollowers;
-        const previousMonthFollowerIncrease = previousFollowers - previousStartFollowers;
+        // 前月の「投稿に紐づかない増加数」
+        const previousMonthFollowerIncreaseFromOther = followerCounts[1].followers || 0;
         // 先週の増加数も同様に概算（前月の増加数を週数で割る）
         const _previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
         const daysInPreviousMonth = previousMonthEnd.getDate();
         const weeksInPreviousMonth = Math.ceil(daysInPreviousMonth / 7);
         if (weeksInPreviousMonth > 0) {
-          lastWeekFollowerIncreaseFromOther = Math.round(previousMonthFollowerIncrease / weeksInPreviousMonth);
+          lastWeekFollowerIncreaseFromOther = Math.round(previousMonthFollowerIncreaseFromOther / weeksInPreviousMonth);
         }
       }
     }

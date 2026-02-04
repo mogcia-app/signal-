@@ -6,8 +6,8 @@ import * as admin from "firebase-admin";
 interface FollowerCount {
   userId: string;
   snsType: "instagram" | "x" | "tiktok";
-  followers: number; // 現在のフォロワー数（月末の値として使用）
-  startFollowers?: number; // 月初のフォロワー数（オプション）
+  followers: number; // 投稿に紐づかないフォロワー増加数（/homeで入力された値）
+  startFollowers?: number; // 月初のフォロワー数（オプション、使用しない）
   month: string; // YYYY-MM形式
   source: "manual" | "onboarding"; // 手動入力 or オンボーディング
   profileVisits?: number; // プロフィールへのアクセス数（投稿に紐づかない全体の数値）
