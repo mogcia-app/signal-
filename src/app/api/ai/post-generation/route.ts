@@ -33,6 +33,13 @@ const FEED_TEXT_RULES = {
   long: "250〜400文字程度",
 } as const;
 
+// フィード投稿の文字数に応じたmax_tokens設定（日本語は1文字≈2トークン、JSON構造分も考慮）
+const FEED_MAX_TOKENS = {
+  short: 300,   // 80-120文字 + JSON構造分
+  medium: 500,  // 150-200文字 + JSON構造分
+  long: 800,    // 250-400文字 + JSON構造分
+} as const;
+
 // フィード投稿タイプのガイド（マップ定義）
 const FEED_TYPE_GUIDE = {
   value: "ノウハウ・Tips・保存したくなる有益情報を中心に",
@@ -441,7 +448,7 @@ ${postType === "feed" && feedOptions ? `
 5. エンゲージメントを促進する要素を含める
 6. 必ず4個のハッシュタグを含める（トレンドハッシュタグ1個、補助的ハッシュタグ3個）。企業ハッシュタグは固定で使用されるため、生成不要です。
 ${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文字、1-2行）にする" : ""}
-${postType === "feed" && feedOptions ? `7. **重要**: フィード投稿文は${FEED_TEXT_RULES[feedOptions.textVolume]}で生成してください。${FEED_TYPE_GUIDE[feedOptions.feedPostType]}。この役割と文字量を厳守してください。` : ""}
+${postType === "feed" && feedOptions ? `7. **重要**: フィード投稿文は必ず${FEED_TEXT_RULES[feedOptions.textVolume]}で生成してください。文字数が指定範囲を超えないよう、厳密に守ってください。${FEED_TYPE_GUIDE[feedOptions.feedPostType]}。この役割と文字量を厳守してください。` : ""}
 ${postType === "feed" && !feedOptions ? "7. **重要**: フィード投稿文は必ず150文字以内で生成してください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
 ${(() => {
   const profile = userProfile as UserProfile | null;
@@ -512,6 +519,13 @@ ${snapshotSummary}`;
 
 ${userProfile ? "上記のクライアント情報と運用計画に基づいて、効果的な投稿文を作成してください。" : "上記の運用計画とAIペルソナに基づいて、効果的な投稿文を作成してください。"}`;
 
+    // textVolumeに応じてmax_tokensを動的に設定
+    const maxTokens = postType === "feed" && feedOptions?.textVolume
+      ? FEED_MAX_TOKENS[feedOptions.textVolume]
+      : postType === "story"
+        ? 200  // ストーリーは短いので200トークン
+        : 1000; // その他は1000トークン
+
     let chatCompletion;
     try {
       chatCompletion = await openai.chat.completions.create({
@@ -527,7 +541,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
           },
         ],
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: maxTokens,
         response_format: { type: "json_object" },
       });
     } catch (openaiError: unknown) {
@@ -598,19 +612,49 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
     let title = parsedData.title || "";
     let content = parsedData.body || "";
     
-    // フィードの場合は150文字以内に制限
-    if (postType === "feed" && content.length > 150) {
-      // 150文字を超えている場合は、文の区切り（句点、改行）で切り詰める
-      let truncated = content.substring(0, 150);
-      // 最後の句点や改行の位置を探して、そこまでで切り詰める
-      const lastPeriod = truncated.lastIndexOf("。");
-      const lastNewline = truncated.lastIndexOf("\n");
-      const lastBreak = Math.max(lastPeriod, lastNewline);
-      if (lastBreak > 100) {
-        // 100文字以上ある場合は、句点や改行の位置で切り詰める
-        truncated = truncated.substring(0, lastBreak + 1);
+    // フィードの場合はtextVolumeに応じた文字数制限を適用
+    if (postType === "feed") {
+      if (feedOptions?.textVolume) {
+        // textVolumeに応じた文字数範囲
+        const textVolumeLimits = {
+          short: { min: 80, max: 120 },
+          medium: { min: 150, max: 200 },
+          long: { min: 250, max: 400 },
+        };
+        const limits = textVolumeLimits[feedOptions.textVolume];
+        
+        // 文字数が範囲外の場合は調整
+        if (content.length < limits.min) {
+          // 短すぎる場合はそのまま（AIに再生成させるべきだが、ここでは警告のみ）
+          console.warn(`生成された投稿文が短すぎます（${content.length}文字）。目標: ${limits.min}-${limits.max}文字`);
+        } else if (content.length > limits.max) {
+          // 長すぎる場合は、文の区切り（句点、改行）で切り詰める
+          const originalLength = content.length;
+          let truncated = content.substring(0, limits.max);
+          const lastPeriod = truncated.lastIndexOf("。");
+          const lastNewline = truncated.lastIndexOf("\n");
+          const lastBreak = Math.max(lastPeriod, lastNewline);
+          // 最小文字数の80%以上は確保
+          const minLength = Math.floor(limits.min * 0.8);
+          if (lastBreak > minLength) {
+            truncated = truncated.substring(0, lastBreak + 1);
+          }
+          content = truncated;
+          console.log(`投稿文を${limits.max}文字に切り詰めました（元: ${originalLength}文字 → 現在: ${content.length}文字）`);
+        }
+      } else {
+        // feedOptionsがない場合は150文字以内に制限（後方互換性）
+        if (content.length > 150) {
+          let truncated = content.substring(0, 150);
+          const lastPeriod = truncated.lastIndexOf("。");
+          const lastNewline = truncated.lastIndexOf("\n");
+          const lastBreak = Math.max(lastPeriod, lastNewline);
+          if (lastBreak > 100) {
+            truncated = truncated.substring(0, lastBreak + 1);
+          }
+          content = truncated;
+        }
       }
-      content = truncated;
     }
     
     // 固定の企業ハッシュタグを生成

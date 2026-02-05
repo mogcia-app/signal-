@@ -234,15 +234,11 @@ export default function HomePage() {
             externalLinkTaps?: number;
           };
         };
-        if (data.success && data.data) {
-          setOtherFollowerCount(data.data.followers || "");
-          setOtherProfileVisits(data.data.profileVisits || "");
-          setOtherExternalLinkTaps(data.data.externalLinkTaps || "");
-        } else {
-          setOtherFollowerCount("");
-          setOtherProfileVisits("");
-          setOtherExternalLinkTaps("");
-        }
+        // 入力フィールドは常に空の状態で開始（デフォルトでは数字を表示しない）
+        // データは取得するが、入力フィールドには設定しない
+        setOtherFollowerCount("");
+        setOtherProfileVisits("");
+        setOtherExternalLinkTaps("");
       } else {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = handleError(
@@ -409,7 +405,7 @@ export default function HomePage() {
         <div className="space-y-6">
           {/* 計画作成直後のバナー */}
           {showPlanCreatedBanner && (
-            <div className="bg-gradient-to-r from-[#FF8A15] to-orange-500 rounded-lg border border-orange-300 p-6 text-white">
+            <div className="bg-gradient-to-r from-[#FF8A15] to-orange-500  border border-orange-300 p-6 text-white">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="text-xl font-light mb-2">✨ 運用プランができました！</h2>
@@ -437,7 +433,7 @@ export default function HomePage() {
 
           {/* 計画が存在しない場合のメッセージ */}
           {!dashboardData?.currentPlan && !isLoadingDashboard && (
-            <div className="bg-gradient-to-r from-[#FF8A15] to-orange-500 rounded-lg border border-orange-300 p-6 text-white">
+            <div className="bg-gradient-to-r from-[#FF8A15] to-orange-500  border border-orange-300 p-6 text-white">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="text-xl font-light mb-2">📋 運用計画を作成しましょう</h2>
@@ -448,7 +444,7 @@ export default function HomePage() {
                     onClick={() => {
                       router.push("/instagram/plan");
                     }}
-                    className="bg-white text-[#FF8A15] px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors"
+                    className="bg-white text-[#FF8A15] px-6 py-2.5  text-sm font-medium hover:bg-gray-50 transition-colors"
                     aria-label="運用計画を作成する"
                   >
                     計画を作成する →
@@ -460,7 +456,7 @@ export default function HomePage() {
 
           {/* 今月の成果 */}
           {(monthlyKPIs || isLoadingMonthlyKPIs) && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white  border border-gray-200 p-6">
               <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
                 <span>📊</span>
                 今月の成果
@@ -468,7 +464,7 @@ export default function HomePage() {
               {isLoadingMonthlyKPIs ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="border border-gray-200 rounded-lg p-4">
+                    <div key={i} className="border border-gray-200  p-4">
                       <SkeletonLoader height="1rem" width="40%" className="mb-2" />
                       <SkeletonLoader height="2rem" width="60%" className="mb-2" />
                       <SkeletonLoader height="0.75rem" width="50%" />
@@ -478,7 +474,7 @@ export default function HomePage() {
               ) : monthlyResults.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {monthlyResults.map((result, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div key={index} className="border border-gray-200  p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-sm font-light text-gray-600">{result.metric}</div>
                       <span className="text-2xl">{result.icon}</span>
@@ -520,7 +516,7 @@ export default function HomePage() {
           {(dashboardData?.currentPlan || isLoadingDashboard) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 今日やること */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white  border border-gray-200 p-6">
                 <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
                   <span>📅</span>
                   今日やること
@@ -586,7 +582,7 @@ export default function HomePage() {
                               「{task.description}」
                             </p>
                             {(task.generatedContent || (task.generatedHashtags && task.generatedHashtags.length > 0)) && (
-                              <div className="bg-gray-50 border border-gray-200 rounded-md p-3 mb-2 relative">
+                              <div className="bg-gray-50 border border-gray-200  p-3 mb-2 relative">
                                 <div className="absolute top-2 right-2 flex gap-1">
                         <button
                                     onClick={async () => {
@@ -647,7 +643,7 @@ export default function HomePage() {
                                         setSavingTaskIndex(null);
                                       }
                                     }}
-                                    className="p-1.5 rounded-md hover:bg-gray-200 transition-colors"
+                                    className="p-1.5  hover:bg-gray-200 transition-colors"
                                     title="保存して編集"
                                     disabled={savingTaskIndex === index}
                                   >
@@ -677,7 +673,7 @@ export default function HomePage() {
                                         toast.error(errorMessage);
                                       }
                                     }}
-                                    className="p-1.5 rounded-md hover:bg-gray-200 transition-colors"
+                                    className="p-1.5  hover:bg-gray-200 transition-colors"
                                     title="投稿文とハッシュタグをコピー"
                                     aria-label={`${task.description}の投稿文とハッシュタグをクリップボードにコピー`}
                                   >
@@ -725,7 +721,7 @@ export default function HomePage() {
               </div>
 
               {/* 明日の準備 */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white  border border-gray-200 p-6">
                 <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
                   <span>🔮</span>
                   明日の準備
@@ -808,7 +804,7 @@ export default function HomePage() {
           {(dashboardData?.currentPlan || isLoadingDashboard) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 今月の目標 */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white  border border-gray-200 p-6">
                 <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
                   <span>🎯</span>
                   今月の目標
@@ -832,24 +828,21 @@ export default function HomePage() {
               ) : (
                 <div className="space-y-3">
                   {aiSections.monthlyGoals.map((goal, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <span className="text-gray-400">・</span>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {goal.metric}
-                  </div>
-                        <div className="text-sm font-light text-gray-700">
-                          {goal.target}
-                  </div>
-                  </div>
-                  </div>
+                    <div key={index} className="border-l-2 border-[#FF8A15] pl-4 py-2 bg-gray-50">
+                      <div className="text-sm font-medium text-gray-900 mb-1">
+                        {goal.metric}
+                      </div>
+                      <div className="text-sm font-light text-gray-700">
+                        {goal.target}
+                      </div>
+                    </div>
                   ))}
-              </div>
+                </div>
               )}
               </div>
 
               {/* 今週の予定 */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white  border border-gray-200 p-6">
                 <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
                   <span>📅</span>
                   今週の予定
@@ -915,7 +908,7 @@ export default function HomePage() {
           {(dashboardData?.currentPlan || isLoadingDashboard) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* その他KPI入力 */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white  border border-gray-200 p-6">
                 <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
                   <span>📝</span>
                   投稿に紐づかない数値入力
@@ -932,7 +925,7 @@ export default function HomePage() {
                         onChange={(e) => setOtherFollowerCount(e.target.value === "" ? "" : Number(e.target.value))}
                         placeholder="増加数を入力"
                         min="0"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        className="w-full px-4 py-2 border border-gray-300  focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         投稿に紐づかないフォロワー増加数を入力（既存の値に加算されます）
@@ -948,7 +941,7 @@ export default function HomePage() {
                         onChange={(e) => setOtherProfileVisits(e.target.value === "" ? "" : Number(e.target.value))}
                         placeholder="0"
                         min="0"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        className="w-full px-4 py-2 border border-gray-300  focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
                       />
                       <p className="text-xs text-gray-500 mt-1">投稿に紐づかないプロフィール閲覧数を入力（既存の値に加算されます）</p>
                     </div>
@@ -962,14 +955,14 @@ export default function HomePage() {
                         onChange={(e) => setOtherExternalLinkTaps(e.target.value === "" ? "" : Number(e.target.value))}
                         placeholder="0"
                         min="0"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
+                        className="w-full px-4 py-2 border border-gray-300  focus:outline-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15]"
                       />
                       <p className="text-xs text-gray-500 mt-1">投稿に紐づかない外部リンクタップ数を入力（既存の値に加算されます）</p>
                     </div>
                     <button
                       onClick={saveOtherKPI}
                       disabled={isSavingOtherKPI}
-                      className="w-full py-2 px-4 bg-[#FF8A15] text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      className="w-full py-2 px-4 bg-[#FF8A15] text-white text-sm font-medium hover:bg-[#e67a0f] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
                       aria-label="KPIデータを保存"
                     >
                       {isSavingOtherKPI ? (
@@ -990,7 +983,7 @@ export default function HomePage() {
               </div>
 
               {/* コメント返信アシスト */}
-              <div className="bg-white rounded-lg border border-gray-200">
+              <div className="bg-white  border border-gray-200">
                 <CommentReplyAssistant postType="feed" />
               </div>
             </div>
@@ -998,7 +991,7 @@ export default function HomePage() {
 
           {/* コメント返信アシスト（計画がない場合のみ表示） */}
           {!dashboardData?.currentPlan && !isLoadingDashboard && (
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="bg-white  border border-gray-200">
               <CommentReplyAssistant postType="feed" />
             </div>
           )}

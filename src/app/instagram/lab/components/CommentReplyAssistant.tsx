@@ -225,8 +225,8 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
           <textarea
             value={commentText}
             onChange={(event) => setCommentText(event.target.value)}
-            rows={3}
-            className="w-full border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[#ff8a15] focus:outline-none"
+            rows={2}
+            className="w-full border border-gray-300 px-3 py-1.5 text-sm bg-white focus:border-[#ff8a15] focus:outline-none leading-tight"
             placeholder={placeholder}
           />
         </div>
@@ -269,7 +269,7 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
           type="button"
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="inline-flex items-center justify-center gap-2 w-full bg-[#ff8a15] px-4 py-2 text-sm font-medium text-white hover:bg-[#e67a0f] disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full py-2 px-4 bg-[#FF8A15] text-white text-sm font-medium hover:bg-[#e67a0f] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkle className="w-4 h-4" />}
           {isGenerating ? "AI返信を生成中..." : "AIに返信案をつくってもらう"}
