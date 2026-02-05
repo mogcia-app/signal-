@@ -120,7 +120,7 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl">
+      <div className="w-full max-w-3xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
             <p className="text-sm font-semibold text-slate-900">{test.name} の結果入力</p>
@@ -129,7 +129,7 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-500 hover:bg-slate-100"
+            className="p-1 text-slate-500 hover:bg-slate-100"
           >
             <X className="w-4 h-4" />
           </button>
@@ -142,7 +142,7 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
               <select
                 value={status}
                 onChange={(event) => setStatus(event.target.value as "running" | "completed")}
-                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+                className="mt-1 w-full border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
               >
                 <option value="running">実施中</option>
                 <option value="completed">完了（勝者決定）</option>
@@ -154,7 +154,7 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 rows={2}
-                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+                className="mt-1 w-full border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
                 placeholder="例) B案は保存率+12pt / リンククリック+30% だったため勝者とする"
               />
             </div>
@@ -162,7 +162,7 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
 
           <div className="space-y-4">
             {variantDrafts.map((variant, index) => (
-              <div key={variant.key} className="rounded-lg border border-slate-200 p-4 bg-slate-50/70">
+              <div key={variant.key} className="border border-slate-200 p-4 bg-slate-50/70">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{variant.label}</p>
@@ -218,7 +218,7 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
           </div>
 
           {error && (
-            <p className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+            <p className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2">
               {error}
             </p>
           )}
@@ -228,7 +228,7 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
           <button
             type="button"
             onClick={onClose}
-            className="text-sm px-4 py-2 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50"
+            className="text-sm px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50"
           >
             キャンセル
           </button>
@@ -236,7 +236,7 @@ export function ABTestResultModal({ test, isOpen, onClose, onSaved }: ABTestResu
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
-            className="text-sm px-4 py-2 rounded-md bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60"
+            className="text-sm px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">

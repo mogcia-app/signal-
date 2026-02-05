@@ -9,6 +9,7 @@
  * - リトライ＆バックオフ（429エラー対応）
  * - リクエスト間隔制御
  * - アカウント停止時の早期検出
+ * - ネットワークエラー検出とトースト通知
  */
 
 import { getAuth, onAuthStateChanged, type Unsubscribe, type User } from "firebase/auth";
@@ -35,6 +36,83 @@ const waitForRequestInterval = async (): Promise<void> => {
   }
 
   lastRequestTime = Date.now();
+};
+
+// ネットワークエラー検出用の変数
+let lastNetworkErrorTime = 0;
+let networkErrorToastId: string | null = null;
+const NETWORK_ERROR_THROTTLE_MS = 30000; // 30秒に1回まで
+
+// ネットワークエラーを検出する関数
+const isNetworkError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const errorMessage = error.message.toLowerCase();
+  const errorName = error.name.toLowerCase();
+
+  return (
+    errorName === "typeerror" ||
+    errorMessage.includes("failed to fetch") ||
+    errorMessage.includes("network") ||
+    errorMessage.includes("disconnected") ||
+    errorMessage.includes("err_internet_disconnected") ||
+    errorMessage.includes("err_network_changed") ||
+    errorMessage.includes("err_network_io_suspended") ||
+    errorMessage.includes("quic") ||
+    errorMessage.includes("connection closed") ||
+    errorMessage.includes("network request failed")
+  );
+};
+
+// ネットワークエラーのトースト通知を表示する関数
+const showNetworkErrorToast = (): void => {
+  // クライアントサイドでのみ実行
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  // 動的インポートでreact-hot-toastを読み込む（サーバーサイドでエラーにならないように）
+  import("react-hot-toast")
+    .then((toastModule) => {
+      const toast = toastModule.default;
+      const now = Date.now();
+
+      // スロットリング: 30秒に1回まで
+      if (now - lastNetworkErrorTime < NETWORK_ERROR_THROTTLE_MS) {
+        return;
+      }
+
+      lastNetworkErrorTime = now;
+
+      // 既存のトーストがあれば削除
+      if (networkErrorToastId) {
+        toast.dismiss(networkErrorToastId);
+      }
+
+      // 新しいトーストを表示
+      networkErrorToastId = toast(
+        "ネットワークが不安定です。接続を確認してください。",
+        {
+          icon: "⚠️",
+          duration: 5000,
+          style: {
+            background: "#fef3c7",
+            color: "#92400e",
+            border: "1px solid #fbbf24",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            fontSize: "14px",
+            fontWeight: "500",
+          },
+          position: "top-right",
+        }
+      );
+    })
+    .catch(() => {
+      // react-hot-toastが利用できない場合は何もしない
+    });
 };
 
 // 指数バックオフでリトライする関数
@@ -81,6 +159,11 @@ const retryWithBackoff = async (
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
+      // ネットワークエラーの場合、トースト通知を表示
+      if (isNetworkError(error)) {
+        showNetworkErrorToast();
+      }
+
       // 最後の試行でない場合、バックオフしてリトライ
       if (attempt < maxRetries) {
         const delay = initialDelay * Math.pow(2, attempt);
@@ -91,6 +174,11 @@ const retryWithBackoff = async (
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
+  }
+
+  // すべてのリトライが失敗した場合、ネットワークエラーの場合はトースト通知を表示
+  if (lastError && isNetworkError(lastError)) {
+    showNetworkErrorToast();
   }
 
   // すべてのリトライが失敗した場合

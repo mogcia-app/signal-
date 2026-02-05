@@ -213,12 +213,12 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white shadow-sm border border-gray-200">
       {/* セクションヘッダー */}
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 rounded-lg flex items-center justify-center mr-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#ff8a15] to-orange-600 flex items-center justify-center mr-3">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -241,7 +241,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => onPostTypeChange("feed")}
-              className={`p-3 rounded-lg border-2 transition-colors ${
+              className={`p-3 border-2 transition-colors ${
                 postType === "feed"
                   ? "border-[#ff8a15] bg-orange-50 text-orange-700"
                   : "border-gray-200 bg-white text-black hover:border-orange-300"
@@ -254,7 +254,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             </button>
             <button
               onClick={() => onPostTypeChange("reel")}
-              className={`p-3 rounded-lg border-2 transition-colors ${
+              className={`p-3 border-2 transition-colors ${
                 postType === "reel"
                   ? "border-[#ff8a15] bg-orange-50 text-orange-700"
                   : "border-gray-200 bg-white text-black hover:border-orange-300"
@@ -267,7 +267,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             </button>
             <button
               onClick={() => onPostTypeChange("story")}
-              className={`p-3 rounded-lg border-2 transition-colors ${
+              className={`p-3 border-2 transition-colors ${
                 postType === "story"
                   ? "border-[#ff8a15] bg-orange-50 text-orange-700"
                   : "border-gray-200 bg-white text-black hover:border-orange-300"
@@ -292,7 +292,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                 type="date"
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
               />
             </div>
 
@@ -324,12 +324,12 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                   type="time"
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
+                  className="flex-1 px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] text-sm"
                 />
                 {suggestedTime && (
                   <button
                     onClick={() => setScheduledTime(suggestedTime)}
-                    className="px-3 py-2 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors text-xs font-medium"
+                    className="px-3 py-2 bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors text-xs font-medium"
                   >
                     採用
                   </button>
@@ -337,7 +337,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               </div>
 
               {suggestedTime && (
-                <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md">
+                <div className="mt-2 p-2 bg-purple-50 border border-purple-200">
                   <div className="flex items-center text-xs text-purple-700">
                     <Sparkles size={12} className="mr-1" />
                     <span className="font-medium">AI提案:</span>
@@ -366,7 +366,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
             value={aiTitle}
             onChange={(e) => setAiTitle(e.target.value)}
             placeholder={`${postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード"}のタイトルを入力してください...`}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
+            className="w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80"
           />
         </div>
 
@@ -386,7 +386,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
                   : "運用計画を作成してから投稿テーマを入力してください..."
               }
               disabled={!planData}
-              className={`w-full h-32 p-4 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`w-full h-32 p-4 border-2 border-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 backdrop-blur-sm ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
               style={{ fontFamily: "inherit" }}
             />
           </div>
@@ -406,7 +406,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <button
             onClick={handleAutoGenerate}
             disabled={isAutoGenerating || !planData}
-            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+            className={`w-full py-4 px-6 font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
               isAutoGenerating || !planData
                 ? "bg-gray-300 text-black cursor-not-allowed"
                 : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -429,7 +429,7 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
           <button
             onClick={handleGeneratePost}
             disabled={isGenerating || !planData || !aiPrompt.trim()}
-            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+            className={`w-full py-4 px-6 font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
               isGenerating || !planData || !aiPrompt.trim()
                 ? "bg-gray-300 text-black cursor-not-allowed"
                 : "bg-gradient-to-r from-[#ff8a15] to-orange-600 text-white hover:from-orange-600 hover:to-[#ff8a15] shadow-lg hover:shadow-xl transform hover:scale-105"

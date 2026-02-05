@@ -114,7 +114,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
   return (
     <div className="space-y-6">
       {/* メインセクション */}
-      <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-8">
+      <div className="bg-white border border-gray-200 p-8 space-y-8">
         {/* ヘッダー */}
         <div className="text-center pb-6 border-b border-gray-100">
           <h2 className="text-2xl font-light text-gray-900 tracking-wide">
@@ -148,7 +148,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
           <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
             達成難易度
             </h3>
-          <div className="border border-gray-200 rounded-lg p-6 bg-gray-50/50">
+          <div className="border border-gray-200 p-6 bg-gray-50/50">
             <div className="mb-4">
               <p className="text-base font-medium text-gray-900">
                 {result.difficultyMessage}
@@ -196,7 +196,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
                 const isLastWeek = weekNumber === formData.periodMonths * 4;
 
                 return (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50">
                     <span className="text-gray-700">
                       第{weekNumber}週: <strong className="text-[#FF8A15]">+{gain}人</strong>（{Math.round(prediction).toLocaleString()}人）
                     </span>
@@ -233,7 +233,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
               type="button"
               onClick={() => onStartPlan(currentAiSuggestion)}
               disabled={isSaving}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#FF8A15] hover:bg-[#E67A0A] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#FF8A15] hover:bg-[#E67A0A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle className="w-4 h-4" />
               {isSaving ? "保存中..." : "この計画で始める"}
@@ -256,7 +256,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
 
       {/* ローディング状態 */}
       {isLoadingSuggestion && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+        <div className="bg-white border border-gray-200 p-6 text-center">
           <div className="text-gray-500">AI提案を生成中...</div>
         </div>
       )}
@@ -269,7 +269,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
           </h3>
           <div className="space-y-4">
             {result.alternativePlans.map((plan) => (
-              <div key={plan.id} className="border border-gray-200 rounded-lg p-4">
+              <div key={plan.id} className="border border-gray-200 p-4">
                 <div className="font-semibold text-gray-900 mb-2">{plan.name}</div>
                 <div className="text-sm text-gray-600 mb-3">{plan.description}</div>
                 <div className="text-sm text-gray-700 space-y-1 mb-3">
@@ -281,7 +281,7 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
                   <button
                     type="button"
                     onClick={() => onSelectAlternative(plan.id)}
-                    className="w-full bg-[#FF8A15] hover:bg-[#E67A0A] text-white font-medium px-4 py-2 rounded-md transition-colors"
+                    className="w-full bg-[#FF8A15] hover:bg-[#E67A0A] text-white font-medium px-4 py-2 transition-colors"
                   >
                     この案を選ぶ
                   </button>

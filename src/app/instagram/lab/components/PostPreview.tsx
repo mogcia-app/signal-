@@ -177,14 +177,14 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                   <img
                     src={image}
                     alt="投稿画像"
-                    className="w-full h-full object-cover rounded-lg"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <Image
                     src={image}
                     alt="投稿画像"
                     fill
-                    className="object-cover rounded-lg"
+                    className="object-cover"
                     unoptimized
                   />
                 )}
@@ -193,13 +193,13 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
                 <>
                   <button
                     onClick={handleImageRemove}
-                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors rounded z-10"
+                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors z-10"
                   >
                     <X size={16} />
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 text-gray-700 text-xs font-medium rounded hover:bg-white transition-colors border border-gray-300 z-10"
+                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 text-gray-700 text-xs font-medium hover:bg-white transition-colors border border-gray-300 z-10"
                   >
                     変更
                   </button>
@@ -210,7 +210,7 @@ export const PostPreview: React.FC<PostPreviewProps> = ({
             <div className="mb-3">
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-orange-400 hover:bg-orange-50/50 transition-colors cursor-pointer"
+                className="border-2 border-dashed border-gray-300 p-8 text-center hover:border-orange-400 hover:bg-orange-50/50 transition-colors cursor-pointer"
               >
                 {isUploading ? (
                   <div className="flex flex-col items-center">

@@ -58,7 +58,7 @@ export const PostEditorImageUpload: React.FC<PostEditorImageUploadProps> = ({
       <label className="block text-sm font-semibold text-gray-800 mb-3">画像</label>
       {image ? (
         <div className="relative">
-          <div className="relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden">
+          <div className="relative w-full h-64 bg-gray-100 overflow-hidden">
             {image.startsWith("data:") ? (
               <img
                 src={image}
@@ -85,7 +85,7 @@ export const PostEditorImageUpload: React.FC<PostEditorImageUploadProps> = ({
           </button>
         </div>
       ) : (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#ff8a15] transition-colors">
+        <div className="border-2 border-dashed border-gray-300 p-8 text-center hover:border-[#ff8a15] transition-colors">
           <input
             type="file"
             accept="image/*"

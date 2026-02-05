@@ -166,7 +166,7 @@ export const TargetFollowerAutoInput: React.FC<TargetFollowerAutoInputProps> = (
             min="1"
             value={value || ""}
             onChange={handleManualChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+            className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
             placeholder={isLoading ? "AI提案中..." : "例: 1500"}
             disabled={isLoading}
           />
@@ -180,7 +180,7 @@ export const TargetFollowerAutoInput: React.FC<TargetFollowerAutoInputProps> = (
           <button
             type="button"
             onClick={handleRecalculate}
-            className="px-4 py-2 text-sm text-[#FF8A15] border border-[#FF8A15] rounded-md hover:bg-orange-50 transition-colors"
+            className="px-4 py-2 text-sm text-[#FF8A15] border border-[#FF8A15] hover:bg-orange-50 transition-colors"
           >
             再提案
           </button>

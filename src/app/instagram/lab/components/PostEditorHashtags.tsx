@@ -20,7 +20,8 @@ export const PostEditorHashtags: React.FC<PostEditorHashtagsProps> = ({
   useEffect(() => {
     const fetchValidationRules = async () => {
       try {
-        const response = await fetch(`/api/post-editor/validation?postType=${postType}`);
+        const { authFetch } = await import("../../../../utils/authFetch");
+        const response = await authFetch(`/api/post-editor/validation?postType=${postType}`);
         if (response.ok) {
           const data = await response.json();
           if (data.limits?.maxHashtags !== undefined) {

@@ -89,7 +89,7 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
 
   if (isLoading || externalLoading) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="bg-white border border-gray-200 p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 text-[#FF8A15] animate-spin mr-2" />
           <span className="text-sm text-gray-600">AIが提案を生成中...</span>
@@ -100,7 +100,7 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
 
   if (error) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="bg-white border border-gray-200 p-6">
         <div className="text-sm text-red-600">{error}</div>
       </div>
     );
@@ -142,7 +142,7 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
         {currentSuggestion.strategyUrl && (
           <a
             href={currentSuggestion.strategyUrl}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-md transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 transition-colors"
           >
             <FileText className="w-4 h-4" />
             詳しい戦略を見る
@@ -155,7 +155,7 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
               onStartPlan(currentSuggestion);
             }
           }}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#FF8A15] hover:bg-[#E67A0A] rounded-md transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#FF8A15] hover:bg-[#E67A0A] transition-colors"
         >
           <CheckCircle className="w-4 h-4" />
           この計画で始める

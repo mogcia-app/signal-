@@ -92,8 +92,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         if (mainGoalOptions.includes(initialData.mainGoal)) {
           setMainGoalType(initialData.mainGoal);
         } else {
-          setMainGoalType("other");
-          setMainGoalOther(initialData.mainGoal);
+          // mainGoalOptionsに含まれていない値（例：「follower」）の場合
+          // 自動的に「その他」を選択しないようにする
+          // mainGoalTypeは空のままにし、formData.mainGoalもクリア
+          setMainGoalType("");
+          setFormData((prev) => ({ ...prev, mainGoal: "" }));
         }
       }
       
@@ -301,7 +304,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             value={formData.startDate}
             onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
             min={getDefaultStartDate()}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+            className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
           />
           <p className="text-xs text-gray-500 mt-1">
             目標達成期間: 1ヶ月（固定）
@@ -319,7 +322,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             min="1"
             value={formData.currentFollowers || ""}
             onChange={(e) => setFormData({ ...formData, currentFollowers: parseInt(e.target.value) || 0 })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+            className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
             placeholder="例: 1000"
           />
         </div>
@@ -345,7 +348,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               availableTime === "low"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -370,7 +373,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               availableTime === "medium"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -395,7 +398,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               availableTime === "high"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -421,7 +424,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
           </div>
 
-          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+          <div className="mt-4 p-3 bg-orange-50">
             <div className="flex items-start">
               <span className="text-orange-500 mr-2 text-sm">💡</span>
               <div className="text-xs text-orange-800 leading-relaxed">
@@ -438,7 +441,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               reelCapability === "none"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -463,7 +466,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               reelCapability === "low"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -488,7 +491,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               reelCapability === "high"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -514,7 +517,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
           </div>
 
-          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+          <div className="mt-4 p-3 bg-orange-50">
             <div className="flex items-start">
               <span className="text-orange-500 mr-2 text-sm">💡</span>
               <div className="text-xs text-orange-800 leading-relaxed">
@@ -531,7 +534,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               storyFrequency === "none"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -553,7 +556,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               storyFrequency === "low"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -576,7 +579,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               storyFrequency === "medium"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -599,7 +602,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               storyFrequency === "daily"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -623,7 +626,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
           </div>
 
-          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+          <div className="mt-4 p-3 bg-orange-50">
             <div className="flex items-start">
               <span className="text-orange-500 mr-2 text-sm">💡</span>
               <div className="text-xs text-orange-800 leading-relaxed">
@@ -646,7 +649,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           
           <div className="space-y-3">
             {/* 選択肢1: フォロワーを増やしたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "follower"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -672,7 +675,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
 
             {/* 選択肢2: 今のフォロワーともっと仲良くなりたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "engagement"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -698,7 +701,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
 
             {/* 選択肢3: 商品やサービスを広めたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "reach"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -724,7 +727,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
 
             {/* 選択肢4: ブランドのファンを作りたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "brand"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -750,7 +753,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
 
             {/* 選択肢5: 問い合わせを増やしたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "inquiry"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -776,7 +779,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
 
             {/* 選択肢6: 来店を増やしたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "visit"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -802,7 +805,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
 
             {/* 選択肢7: その他 */}
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "other"
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -835,14 +838,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value={mainGoalOther}
                 onChange={(e) => setMainGoalOther(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
+                className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
                 placeholder="その他の目標を入力してください"
               />
             </div>
           )}
 
           {/* ヒント */}
-          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+          <div className="mt-4 p-3 bg-orange-50">
             <div className="flex items-start">
               <span className="text-orange-500 mr-2 text-sm">💡</span>
               <div className="text-xs text-orange-800 leading-relaxed">
@@ -864,7 +867,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("ai")
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -893,7 +896,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("morning")
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -919,7 +922,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("noon")
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -945,7 +948,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("evening")
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -971,7 +974,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("night")
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -997,7 +1000,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("late")
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -1024,7 +1027,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
           </div>
 
-          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+          <div className="mt-4 p-3 bg-orange-50">
             <div className="flex items-start">
               <span className="text-orange-500 mr-2 text-sm">💡</span>
               <div className="text-xs text-orange-800 leading-relaxed">
@@ -1063,7 +1066,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               !regionRestrictionEnabled
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -1085,7 +1088,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               regionRestrictionEnabled
                 ? "border-[#FF8A15] bg-orange-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
@@ -1118,7 +1121,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                   type="text"
                   value={regionPrefecture}
                   onChange={(e) => setRegionPrefecture(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+                  className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
                   placeholder="例: 東京都"
                 />
               </div>
@@ -1130,14 +1133,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                   type="text"
                   value={regionCity}
                   onChange={(e) => setRegionCity(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
+                  className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF8A15]"
                   placeholder="例: 渋谷区"
                 />
               </div>
             </div>
           )}
 
-          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+          <div className="mt-4 p-3 bg-orange-50">
             <div className="flex items-start">
               <span className="text-orange-500 mr-2 text-sm">💡</span>
               <div className="text-xs text-orange-800 leading-relaxed">
@@ -1201,13 +1204,13 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value={contentTypeOther}
                 onChange={(e) => setContentTypeOther(e.target.value)}
                 rows={2}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
+                className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
                 placeholder="その他の内容を入力してください"
               />
             </div>
           )}
 
-          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+          <div className="mt-4 p-3 bg-orange-50">
             <div className="flex items-start">
               <span className="text-orange-500 mr-2 text-sm">💡</span>
               <div className="text-xs text-orange-800 leading-relaxed">

@@ -138,7 +138,7 @@ export function ABTestRegisterModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
+      <div className="w-full max-w-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
             <p className="text-sm font-semibold text-slate-900">A/Bテストを登録</p>
@@ -149,7 +149,7 @@ export function ABTestRegisterModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-500 hover:bg-slate-100"
+            className="p-1 text-slate-500 hover:bg-slate-100"
           >
             <X className="w-4 h-4" />
           </button>
@@ -162,7 +162,7 @@ export function ABTestRegisterModal({
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+              className="mt-1 w-full border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
               placeholder="例) 保存率を高める導入フック比較"
             />
           </div>
@@ -173,7 +173,7 @@ export function ABTestRegisterModal({
                 type="text"
                 value={goal}
                 onChange={(event) => setGoal(event.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+                className="mt-1 w-full border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
                 placeholder="例) 保存率を +10% 改善したい"
               />
             </div>
@@ -183,7 +183,7 @@ export function ABTestRegisterModal({
                 type="text"
                 value={hypothesis}
                 onChange={(event) => setHypothesis(event.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+                className="mt-1 w-full border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
                 placeholder="例) Before型の導入は悩み共感が高まり保存率が上がる"
               />
             </div>
@@ -193,7 +193,7 @@ export function ABTestRegisterModal({
             <select
               value={primaryMetric}
               onChange={(event) => setPrimaryMetric(event.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+              className="mt-1 w-full border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
             >
               <option value="saveRate">保存率</option>
               <option value="engagementRate">エンゲージメント率</option>
@@ -208,7 +208,7 @@ export function ABTestRegisterModal({
               <p className="text-xs font-semibold text-slate-700">比較パターン</p>
               <button
                 type="button"
-                className="text-[11px] text-slate-600 border border-slate-200 px-2 py-1 rounded-md hover:bg-slate-50"
+                className="text-[11px] text-slate-600 border border-slate-200 px-2 py-1 hover:bg-slate-50"
                 onClick={handleAddVariant}
               >
                 パターンを追加
@@ -216,13 +216,13 @@ export function ABTestRegisterModal({
             </div>
             <div className="space-y-3">
               {variants.map((variant, index) => (
-                <div key={`variant-${index}`} className="rounded-md border border-slate-200 p-3 bg-slate-50/70">
+                <div key={`variant-${index}`} className="border border-slate-200 p-3 bg-slate-50/70">
                   <label className="text-[11px] font-semibold text-slate-600">{`パターン${index + 1}`}</label>
                   <input
                     type="text"
                     value={variant.label}
                     onChange={(event) => handleVariantChange(index, "label", event.target.value)}
-                    className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+                    className="mt-1 w-full border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
                     placeholder="例) Beforeフック"
                   />
                   <textarea
@@ -242,19 +242,19 @@ export function ABTestRegisterModal({
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+              className="mt-1 w-full border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
               placeholder="例) A案は今回の投稿案をそのまま使用、B案は導入を結論先出しにする予定"
               rows={3}
             />
           </div>
 
           {error && (
-            <p className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+            <p className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2">
               {error}
             </p>
           )}
           {successMessage && (
-            <p className="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+            <p className="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-2">
               {successMessage}
             </p>
           )}
@@ -264,7 +264,7 @@ export function ABTestRegisterModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-sm px-4 py-2 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50"
+            className="text-sm px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50"
           >
             キャンセル
           </button>
@@ -272,7 +272,7 @@ export function ABTestRegisterModal({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="text-sm px-4 py-2 rounded-md bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60"
+            className="text-sm px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">

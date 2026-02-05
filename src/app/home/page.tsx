@@ -7,6 +7,7 @@ import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { authFetch } from "../../utils/authFetch";
+import { useProgress } from "../../contexts/progress-context";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
 import { TrendingUp, Loader2, X, Copy, Check, Save, Edit } from "lucide-react";
@@ -32,6 +33,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
   const router = useRouter();
+  const { showProgress, setProgress, hideProgress } = useProgress();
 
   // 今日の日付を取得
   const today = new Date();
@@ -109,11 +111,21 @@ export default function HomePage() {
       try {
         setIsLoadingDashboard(true);
         setIsLoadingAiSections(true);
+        showProgress();
+        setProgress(10);
         
         const [dashboardResponse, aiSectionsResponse] = await Promise.all([
-          authFetch("/api/home/dashboard"),
-          authFetch("/api/home/ai-generated-sections"),
+          authFetch("/api/home/dashboard").then((res) => {
+            setProgress(40);
+            return res;
+          }),
+          authFetch("/api/home/ai-generated-sections").then((res) => {
+            setProgress(70);
+            return res;
+          }),
         ]);
+
+        setProgress(80);
 
         // ダッシュボードデータの処理
         if (dashboardResponse.ok) {
@@ -136,6 +148,8 @@ export default function HomePage() {
           toast.error(errorMessage);
         }
 
+        setProgress(90);
+
         // AI生成セクションの処理
         if (aiSectionsResponse.ok) {
           const aiSectionsData = (await aiSectionsResponse.json()) as AISectionsResponse;
@@ -156,6 +170,8 @@ export default function HomePage() {
           );
           toast.error(errorMessage);
         }
+
+        setProgress(100);
       } catch (error) {
         console.error("データ取得エラー:", error);
         const errorMessage = handleError(
@@ -163,6 +179,7 @@ export default function HomePage() {
           ERROR_MESSAGES.DASHBOARD_FETCH_FAILED
         );
         toast.error(errorMessage);
+        hideProgress();
       } finally {
         setIsLoadingDashboard(false);
         setIsLoadingAiSections(false);
@@ -170,7 +187,8 @@ export default function HomePage() {
     };
 
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 初回マウント時のみ実行
 
   // AI生成セクションを取得
   useEffect(() => {

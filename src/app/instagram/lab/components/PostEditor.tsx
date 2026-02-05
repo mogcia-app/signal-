@@ -853,15 +853,22 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           ) : null}
 
           {/* AI投稿文生成 */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Sparkles className="mr-2 text-orange-600" size={20} />
-              AI投稿文生成
-            </h3>
+          <div className="mb-6 bg-white border border-gray-200 p-6">
+            <div className="mb-6">
+              <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 flex items-center justify-center mr-3" style={{ backgroundColor: "#ff8a15" }}>
+                    <Sparkles size={18} className="text-white" />
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 tracking-tight">AI投稿文生成</h3>
+              </div>
+              <p className="text-xs text-gray-500 ml-11">
+                運用計画に基づいてAIが投稿文を自動生成します
+              </p>
+            </div>
 
             {/* テーマ入力 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mb-6">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                 投稿テーマ（オプション）
               </label>
               <input
@@ -870,12 +877,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 onChange={(e) => setAiPrompt(e.target.value)}
                 placeholder={aiPromptPlaceholder}
                 disabled={!planData}
-                className={`w-full px-4 py-3 border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] transition-all duration-200 bg-white/80 ${
-                  !planData ? "opacity-50 cursor-not-allowed" : ""
+                className={`w-full px-4 py-2.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 bg-white text-sm ${
+                  !planData ? "opacity-40 cursor-not-allowed bg-gray-50" : ""
                 }`}
               />
               {!planData && (
-                <p className="text-sm text-orange-600 mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                   運用計画を作成してからAI投稿文を生成できます
                 </p>
               )}
@@ -896,7 +903,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   >
                     <span>投稿の目的は？</span>
                     {feedPostType && (
-                      <span className="text-xs text-orange-600 mr-2">
+                      <span className="text-xs text-gray-700 font-medium mr-2">
                         {[
                           { value: "value", label: "情報有益型" },
                           { value: "empathy", label: "共感型" },
@@ -936,11 +943,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                               setIsPostTypeOpen(false);
                             }}
                             disabled={!planData}
-                            className={`py-2 px-3 text-xs font-medium border-2 transition-all duration-200 ${
+                            className={`py-2 px-3 text-xs font-medium border transition-all duration-200 ${
                               feedPostType === type.value
-                                ? "bg-orange-100 border-orange-500 text-orange-700"
-                                : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
-                            } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                                ? "bg-gray-900 border-gray-900 text-white"
+                                : "bg-white border-gray-300 text-gray-700 hover:border-gray-900 hover:bg-gray-50"
+                            } ${!planData ? "opacity-40 cursor-not-allowed" : ""}`}
                             aria-label={`${type.label}を選択`}
                             aria-pressed={feedPostType === type.value}
                           >
@@ -965,7 +972,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   >
                     <span>文章量は？</span>
                     {textVolume && (
-                      <span className="text-xs text-orange-600 mr-2">
+                      <span className="text-xs text-gray-700 font-medium mr-2">
                         {[
                           { value: "short", label: "軽め" },
                           { value: "medium", label: "ふつう" },
@@ -999,11 +1006,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                               setIsTextVolumeOpen(false);
                             }}
                             disabled={!planData}
-                            className={`flex-1 py-2 px-4 text-sm font-medium border-2 transition-all duration-200 ${
+                            className={`flex-1 py-2 px-4 text-sm font-medium border transition-all duration-200 ${
                               textVolume === volume.value
-                                ? "bg-orange-100 border-orange-500 text-orange-700"
-                                : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
-                            } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                                ? "bg-gray-900 border-gray-900 text-white"
+                                : "bg-white border-gray-300 text-gray-700 hover:border-gray-900 hover:bg-gray-50"
+                            } ${!planData ? "opacity-40 cursor-not-allowed" : ""}`}
                             aria-label={`${volume.label}を選択`}
                             aria-pressed={textVolume === volume.value}
                           >
@@ -1028,7 +1035,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   >
                     <span>使用する画像の枚数</span>
                     {imageCount && (
-                      <span className="text-xs text-orange-600 mr-2">{imageCount}枚</span>
+                      <span className="text-xs text-gray-700 font-medium mr-2">{imageCount}枚</span>
                     )}
                     {isImageCountOpen ? (
                       <ChevronUp className="w-4 h-4 text-gray-500" />
@@ -1052,11 +1059,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                               setIsImageCountOpen(false);
                             }}
                             disabled={!planData}
-                            className={`flex-1 py-2 px-4 text-sm font-medium border-2 transition-all duration-200 ${
+                            className={`flex-1 py-2 px-4 text-sm font-medium border transition-all duration-200 ${
                               imageCount === count
-                                ? "bg-orange-100 border-orange-500 text-orange-700"
-                                : "bg-white border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50"
-                            } ${!planData ? "opacity-50 cursor-not-allowed" : ""}`}
+                                ? "bg-gray-900 border-gray-900 text-white"
+                                : "bg-white border-gray-300 text-gray-700 hover:border-gray-900 hover:bg-gray-50"
+                            } ${!planData ? "opacity-40 cursor-not-allowed" : ""}`}
                             aria-label={`${count}枚を選択`}
                             aria-pressed={imageCount === count}
                           >
@@ -1076,22 +1083,35 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               <button
                 onClick={handleAutoGenerate}
                 disabled={isAutoGenerating || !planData}
-                className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
+                className={`w-full py-2.5 px-4 font-medium text-sm transition-colors duration-200 flex items-center justify-center text-white ${
                   isAutoGenerating || !planData
-                    ? "bg-gray-100 text-black cursor-not-allowed border-gray-200"
-                    : "bg-gradient-to-r from-orange-400 to-orange-500 text-white border-orange-500 hover:from-orange-500 hover:to-orange-600 hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    ? "cursor-not-allowed"
+                    : ""
                 }`}
+                style={{
+                  backgroundColor: isAutoGenerating || !planData ? "#d1d5db" : "#ff8a15",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isAutoGenerating && planData) {
+                    e.currentTarget.style.backgroundColor = "#e67a0f";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isAutoGenerating && planData) {
+                    e.currentTarget.style.backgroundColor = "#ff8a15";
+                  }
+                }}
                 aria-label="投稿文を自動生成（テーマも自動選択）"
               >
                 {isAutoGenerating ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                     <span>生成中...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles size={16} className="mr-2" />
-                    <span>AIで自動生成</span>
+                    <Sparkles size={14} className="mr-2" />
+                    <span>自動生成</span>
                   </>
                 )}
               </button>
@@ -1099,23 +1119,36 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               {/* テーマ指定生成ボタン */}
               <button
                 onClick={handleAIGenerate}
-                disabled={isGenerating || !planData}
-                className={`w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center border-2 ${
-                  isGenerating || !planData
-                    ? "bg-gray-100 text-black cursor-not-allowed border-gray-200"
-                    : "bg-white border-orange-500 text-orange-600 hover:bg-orange-50 hover:border-orange-600"
+                disabled={isGenerating || !planData || !aiPrompt.trim()}
+                className={`w-full py-2.5 px-4 font-medium text-sm transition-colors duration-200 flex items-center justify-center text-white ${
+                  isGenerating || !planData || !aiPrompt.trim()
+                    ? "cursor-not-allowed"
+                    : ""
                 }`}
+                style={{
+                  backgroundColor: isGenerating || !planData || !aiPrompt.trim() ? "#d1d5db" : "#ff8a15",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isGenerating && planData && aiPrompt.trim()) {
+                    e.currentTarget.style.backgroundColor = "#e67a0f";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isGenerating && planData && aiPrompt.trim()) {
+                    e.currentTarget.style.backgroundColor = "#ff8a15";
+                  }
+                }}
                 aria-label="テーマを指定して投稿文を生成"
               >
                 {isGenerating ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                     <span>生成中...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles size={16} className="mr-2" />
-                    <span>テーマを指定して生成</span>
+                    <Sparkles size={14} className="mr-2" />
+                    <span>テーマ指定生成</span>
                   </>
                 )}
               </button>
@@ -1144,59 +1177,111 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
           {/* AIヒントセクション（ストーリー・フィード） */}
           {(postType === "story" || postType === "feed") && (
-            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4">
-              <div className="flex items-center mb-4">
-                <span className="text-2xl mr-3">💡</span>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">AIヒント</h3>
-                  <p className="text-sm text-gray-600">
-                    {postType === "story"
-                      ? "投稿文に合う画像・動画のアイデアとストーリーのヒント"
-                      : "投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒント"}
-                  </p>
+            <div className="mb-6 bg-white border border-gray-200 p-6">
+              <div className="mb-6">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 flex items-center justify-center mr-3" style={{ backgroundColor: "#ff8a15" }}>
+                    <Sparkles size={18} className="text-white" />
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 tracking-tight">AIヒント</h3>
                 </div>
+                <p className="text-xs text-gray-500 ml-11">
+                  {postType === "story"
+                    ? "投稿文に合う画像・動画のアイデアとストーリーのヒント"
+                    : "投稿文に合う画像の枚数やサムネイルのアイデアとフィードのヒント"}
+                </p>
+                <p className="text-xs text-gray-500 ml-11 mt-1">
+                  AI投稿文生成で自動生成されます
+                </p>
               </div>
-              <button
-                onClick={() => {
-                  if (onImageVideoSuggestionsGenerate && content.trim()) {
-                    // フィードの場合はfeedOptionsも渡す
-                    const options = postType === "feed" && feedPostType && textVolume
-                      ? {
-                          feedPostType,
-                          textVolume,
-                          imageCount,
-                        }
-                      : undefined;
-                    onImageVideoSuggestionsGenerate(content, options);
-                  } else {
-                    showToast("投稿文を入力してからAIヒントを生成してください");
-                  }
-                }}
-                disabled={!content.trim() || !onImageVideoSuggestionsGenerate || isGeneratingSuggestions}
-                className="w-full mb-4 px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white hover:from-orange-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2"
-                aria-label="AIでヒントを生成"
-              >
-                <Sparkles size={16} />
-                <span>AIでヒント生成</span>
-              </button>
               {isGeneratingSuggestions ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mr-3"></div>
-                  <span className="text-sm text-gray-600">AIヒントを生成中...</span>
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-gray-900 mx-auto mb-2"></div>
+                    <span className="text-xs text-gray-500">AIが分析中です...</span>
+                  </div>
                 </div>
               ) : (
                 <div>
-                  <div className="text-sm text-gray-700 whitespace-pre-line">
-                    {imageVideoSuggestions?.content || "AI投稿文生成で自動提案されます"}
-                  </div>
+                  {imageVideoSuggestions?.content ? (
+                    <div className="bg-gray-50 border border-gray-200 p-4">
+                      <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">
+                        {imageVideoSuggestions.content}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 p-4">
+                      <p className="text-sm text-gray-400 text-center">AI投稿文生成で自動提案されます</p>
+                    </div>
+                  )}
                   {imageVideoSuggestions?.rationale && (
-                    <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-300 text-sm text-orange-800 whitespace-pre-line">
-                      <p className="font-medium text-orange-900 mb-1">今回の提案理由</p>
-                      {imageVideoSuggestions.rationale}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">提案理由</p>
+                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                        {imageVideoSuggestions.rationale}
+                      </p>
                     </div>
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* 動画構成セクション（リールのみ） */}
+          {postType === "reel" && (
+            <div className="mb-6 bg-white border border-gray-200 p-6">
+              <div className="mb-6">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 flex items-center justify-center mr-3" style={{ backgroundColor: "#ff8a15" }}>
+                    <Sparkles size={18} className="text-white" />
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 tracking-tight">動画構成</h3>
+                </div>
+                <p className="text-xs text-gray-500 ml-11">
+                  AI投稿文生成で自動生成されます
+                </p>
+              </div>
+
+              {/* 起承転結 */}
+              <div className="mb-6">
+                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">起承転結</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 border border-gray-200 p-3">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">起（導入）</div>
+                    <div className="text-sm text-gray-800 leading-relaxed">
+                      {videoStructure?.introduction || "AI投稿文生成で自動生成されます"}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 p-3">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">承（展開）</div>
+                    <div className="text-sm text-gray-800 leading-relaxed">
+                      {videoStructure?.development || "AI投稿文生成で自動生成されます"}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 p-3">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">転（転換）</div>
+                    <div className="text-sm text-gray-800 leading-relaxed">
+                      {videoStructure?.twist || "AI投稿文生成で自動生成されます"}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 p-3">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">結（結論）</div>
+                    <div className="text-sm text-gray-800 leading-relaxed">
+                      {videoStructure?.conclusion || "AI投稿文生成で自動生成されます"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 動画構成の流れ */}
+              <div>
+                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">動画構成の流れ</h4>
+                <div className="bg-gray-50 border border-gray-200 p-4">
+                  <div className="text-sm text-gray-800 leading-relaxed">
+                    {videoFlow || "AI投稿文生成で自動生成されます"}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1216,77 +1301,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             onContentChange={onContentChange}
             postType={postType}
           />
-
-          {/* 動画構成セクション（リールのみ） */}
-          {postType === "reel" && (
-            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">🎬</span>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">動画構成</h3>
-                    <p className="text-sm text-gray-600">リール動画の起承転結と構成の流れ</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    if (onVideoStructureGenerate && content.trim()) {
-                      onVideoStructureGenerate(content);
-                    } else {
-                      showToast("投稿文を入力してから動画構成を生成してください");
-                    }
-                  }}
-                  disabled={!content.trim() || !onVideoStructureGenerate}
-                  className="px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white hover:from-orange-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
-                  aria-label="AIで動画構成を生成"
-                >
-                  <Sparkles size={16} />
-                  <span>AIで動画構成生成</span>
-                </button>
-              </div>
-
-              {/* 起承転結 */}
-              <div className="mb-6">
-                <h4 className="text-md font-medium text-gray-700 mb-3">起承転結</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-orange-50 p-3">
-                    <div className="text-sm font-medium text-orange-800 mb-1">起（導入）</div>
-                    <div className="text-sm text-orange-700">
-                      {videoStructure?.introduction || "AI投稿文生成で自動生成されます"}
-                    </div>
-                  </div>
-                  <div className="bg-blue-50 p-3">
-                    <div className="text-sm font-medium text-blue-800 mb-1">承（展開）</div>
-                    <div className="text-sm text-blue-700">
-                      {videoStructure?.development || "AI投稿文生成で自動生成されます"}
-                    </div>
-                  </div>
-                  <div className="bg-green-50 p-3">
-                    <div className="text-sm font-medium text-green-800 mb-1">転（転換）</div>
-                    <div className="text-sm text-green-700">
-                      {videoStructure?.twist || "AI投稿文生成で自動生成されます"}
-                    </div>
-                  </div>
-                  <div className="bg-purple-50 p-3">
-                    <div className="text-sm font-medium text-purple-800 mb-1">結（結論）</div>
-                    <div className="text-sm text-purple-700">
-                      {videoStructure?.conclusion || "AI投稿文生成で自動生成されます"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 動画構成の流れ */}
-              <div>
-                <h4 className="text-md font-medium text-gray-700 mb-3">動画構成の流れ</h4>
-                <div className="bg-gray-50 p-4">
-                  <div className="text-sm text-gray-700">
-                    {videoFlow || "AI投稿文生成で自動生成されます"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ハッシュタグ表示・編集 */}
           <PostEditorHashtags
@@ -1308,7 +1322,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     <span className="truncate flex-1">{savedContent.substring(0, 50)}...</span>
                     <button
                       onClick={() => handleLoad(savedContent)}
-                      className="ml-2 px-2 py-1 text-orange-600 hover:text-orange-800"
+                      className="ml-2 px-2 py-1 text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                       aria-label={`保存された投稿「${savedContent.substring(0, 30)}...」を読み込む`}
                     >
                       読み込み

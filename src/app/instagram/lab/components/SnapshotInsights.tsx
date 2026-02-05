@@ -81,7 +81,7 @@ function SnapshotCard({
 
   return (
     <div
-      className={`p-4 border rounded-lg space-y-3 transition ring-2 ring-offset-2 ${
+      className={`p-4 border space-y-3 transition ring-2 ring-offset-2 ${
         highlightId === snapshot.id ? "ring-indigo-300" : "ring-transparent"
       } ${
         snapshot.status === "gold"
@@ -138,7 +138,7 @@ function SnapshotCard({
         </div>
       </div>
       {personaInsights?.summary && personaInsights.summary.length > 0 && (
-        <div className="text-xs text-slate-600 bg-white/70 border border-slate-100 rounded-md p-2">
+        <div className="text-xs text-slate-600 bg-white/70 border border-slate-100 p-2">
           <p className="font-medium text-slate-700 mb-1 flex items-center gap-1">
             <TrendingUp className="h-3.5 w-3.5 text-slate-500" />
             反応が高いセグメント
@@ -184,7 +184,7 @@ function SnapshotCard({
         </div>
       )}
       {snapshot.abTestResults && snapshot.abTestResults.length > 0 && (
-        <div className="bg-white border border-slate-100 rounded-md p-3 space-y-2">
+        <div className="bg-white border border-slate-100 p-3 space-y-2">
           <p className="text-xs font-semibold text-slate-700 flex items-center gap-1">
             <FlaskConical className="w-3.5 h-3.5 text-slate-500" />
             A/Bテスト結果
@@ -248,7 +248,7 @@ export default function SnapshotInsights({
   }, [highlightId, onHighlightClear]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+    <div className="bg-white border border-slate-200 p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-slate-900">AIが捉えた成功パターン</p>
@@ -268,7 +268,7 @@ export default function SnapshotInsights({
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex items-center gap-1 text-xs text-slate-600 border border-slate-200 px-2.5 py-1 rounded-md hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-xs text-slate-600 border border-slate-200 px-2.5 py-1 hover:bg-slate-50 disabled:opacity-50"
             disabled={isLoading}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -282,7 +282,7 @@ export default function SnapshotInsights({
       )}
 
       {error && (
-        <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded-md border border-rose-100 mb-3">
+        <div className="p-3 bg-rose-50 text-rose-700 text-xs border border-rose-100 mb-3">
           {error}
         </div>
       )}

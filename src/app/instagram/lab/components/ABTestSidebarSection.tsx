@@ -91,7 +91,7 @@ export function ABTestSidebarSection({ currentPostTitle }: ABTestSidebarSectionP
   return (
     <div className="space-y-4">
       {statusMessage && (
-        <div className={`text-xs px-3 py-2 border rounded-md flex items-center gap-2 ${statusBadgeClass}`}>
+        <div className={`text-xs px-3 py-2 border flex items-center gap-2 ${statusBadgeClass}`}>
           {statusMessage.type === "success" ? (
             <CheckCircle className="w-3.5 h-3.5" />
           ) : (

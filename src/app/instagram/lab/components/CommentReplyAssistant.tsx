@@ -244,7 +244,7 @@ export const CommentReplyAssistant: React.FC<CommentReplyAssistantProps> = ({
             <ChevronDown className={`w-4 h-4 transition-transform ${isToneDropdownOpen ? "rotate-180" : ""}`} />
           </button>
           {isToneDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 shadow-lg">
               {toneOptions.map((option) => (
                 <button
                   key={option.value}

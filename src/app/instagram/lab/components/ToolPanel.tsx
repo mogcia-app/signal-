@@ -162,7 +162,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
   return (
     <div className="h-full flex flex-col space-y-6">
       {/* よく使う文言 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[380px] sm:h-[420px] flex flex-col">
+      <div className="bg-white shadow-sm border border-gray-200 h-[380px] sm:h-[420px] flex flex-col">
         <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-black flex items-center">
@@ -180,12 +180,12 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                 value={newTemplate}
                 onChange={(e) => setNewTemplate(e.target.value)}
                 placeholder="新しい文言を追加..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
+                className="flex-1 px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
                 onKeyPress={(e) => e.key === "Enter" && handleAddTemplate()}
               />
               <button
                 onClick={handleAddTemplate}
-                className="px-4 py-2 bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 flex items-center"
+                className="px-4 py-2 bg-[#ff8a15] text-white hover:bg-orange-600 flex items-center"
               >
                 <Plus size={16} />
               </button>
@@ -245,7 +245,7 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
       </div>
 
       {/* ハッシュタグ管理 */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[380px] sm:h-[420px] flex flex-col">
+      <div className="bg-white shadow-sm border border-gray-200 h-[380px] sm:h-[420px] flex flex-col">
         <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-black flex items-center">
@@ -263,12 +263,12 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
                 value={newHashtag}
                 onChange={(e) => setNewHashtag(e.target.value)}
                 placeholder="新しいハッシュタグを追加..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
+                className="flex-1 px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15]"
                 onKeyPress={(e) => e.key === "Enter" && handleAddHashtag()}
               />
               <button
                 onClick={handleAddHashtag}
-                className="px-4 py-2 bg-[#ff8a15] text-white rounded-md hover:bg-orange-600 flex items-center"
+                className="px-4 py-2 bg-[#ff8a15] text-white hover:bg-orange-600 flex items-center"
               >
                 <Plus size={16} />
               </button>
@@ -281,13 +281,13 @@ export const ToolPanel: React.FC<ToolPanelProps> = ({
               hashtags.map((hashtag, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-md group"
+                  className="flex items-center justify-between p-3 bg-gray-50 group"
                 >
                   {editingHashtag === index ? (
                     <input
                       type="text"
                       defaultValue={hashtag}
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="flex-1 px-2 py-1 border border-gray-300 text-sm"
                       onBlur={(e) => handleEditHashtag(index, e.target.value)}
                       onKeyPress={(e) => {
                         if (e.key === "Enter") {

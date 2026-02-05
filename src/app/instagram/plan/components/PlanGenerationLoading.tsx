@@ -164,7 +164,7 @@ export const PlanGenerationLoading: React.FC<PlanGenerationLoadingProps> = ({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-8">
+    <div className="bg-white border border-gray-200 p-8">
       <div className="max-w-md mx-auto space-y-6">
         {/* ヘッダー */}
         <div className="text-center">
@@ -178,9 +178,9 @@ export const PlanGenerationLoading: React.FC<PlanGenerationLoadingProps> = ({
 
         {/* プログレスバー */}
         <div className="space-y-2">
-          <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+          <div className="w-full bg-gray-200 h-2.5 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-[#FF8A15] to-orange-400 h-2.5 rounded-full transition-all duration-300 ease-out"
+              className="bg-gradient-to-r from-[#FF8A15] to-orange-400 h-2.5 transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>

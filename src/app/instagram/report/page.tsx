@@ -13,6 +13,7 @@ import { AILearningReferences } from "./components/AILearningReferences";
 import { FeedbackSentiment } from "./components/FeedbackSentiment";
 import { useAuth } from "../../../contexts/auth-context";
 import { authFetch } from "../../../utils/authFetch";
+import { useProgress } from "../../../contexts/progress-context";
 import { handleError } from "../../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import { clientCache, generateCacheKey } from "../../../utils/cache";
@@ -47,6 +48,7 @@ interface PerformanceScoreData {
 export default function InstagramReportPage() {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
+  const { showProgress, setProgress, hideProgress } = useProgress();
 
   // 現在の月を取得する関数（ローカルタイムゾーンを使用）
   const getCurrentMonth = () => {
@@ -136,6 +138,8 @@ export default function InstagramReportPage() {
       const isInitialLoad = !performanceScore && !reportData;
       if (isInitialLoad) {
         setIsLoading(true);
+        showProgress();
+        setProgress(10);
       } else {
         setIsPartiallyLoading(true);
       }
@@ -147,7 +151,9 @@ export default function InstagramReportPage() {
           params.append("regenerate", "true");
         }
 
+        setProgress(30);
         const response = await authFetch(`/api/analytics/report-complete?${params.toString()}`);
+        setProgress(60);
 
         if (response.ok) {
           const result = await response.json();
@@ -175,6 +181,7 @@ export default function InstagramReportPage() {
               setPerformanceScore(result.data.performanceScore);
             }
             setRetryCount(0);
+            setProgress(100);
           } else {
             console.error("[ReportPage] BFF APIデータが不正:", result);
             setError(ERROR_MESSAGES.REPORT_FETCH_FAILED);
@@ -226,12 +233,14 @@ export default function InstagramReportPage() {
         setPerformanceScore(null);
         setReportData(null);
         setRetryCount(retryAttempt + 1);
+        hideProgress();
       } finally {
         setIsLoading(false);
         setIsPartiallyLoading(false);
       }
     },
-    [isAuthReady, performanceScore, reportData]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAuthReady, performanceScore, reportData] // showProgress, setProgress, hideProgressはuseCallbackでメモ化されているため依存配列に含めない
   );
 
   // 月が変更された時、または認証が準備できた時にデータを取得

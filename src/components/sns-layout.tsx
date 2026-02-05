@@ -7,6 +7,7 @@ import { useUserProfile } from "../hooks/useUserProfile";
 import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { ProgressBar } from "./progress-bar";
 
 interface SNSLayoutProps {
   children: ReactNode;
@@ -379,6 +380,9 @@ export default function SNSLayout({
             </div>
           </div>
         </div>
+
+        {/* プログレスバー（ヘッダー下） */}
+        <ProgressBar />
 
         {/* メインコンテンツ */}
         <main className={`px-4 sm:px-6 py-4 sm:py-6 ${contentClassName ?? ""}`}>{children}</main>

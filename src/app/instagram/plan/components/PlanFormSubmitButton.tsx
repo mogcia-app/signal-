@@ -19,7 +19,7 @@ export const PlanFormSubmitButton: React.FC<PlanFormSubmitButtonProps> = ({
         type="submit"
         disabled={isLoading || !isValid}
         onClick={onSubmit}
-        className="w-full bg-[#FF8A15] hover:bg-[#E67A0A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-4 rounded-lg transition-all shadow-md hover:shadow-lg disabled:shadow-none text-base"
+        className="w-full bg-[#FF8A15] hover:bg-[#E67A0A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-4 transition-all shadow-md hover:shadow-lg disabled:shadow-none text-base"
       >
         {isLoading ? (
           <span className="flex items-center justify-center">

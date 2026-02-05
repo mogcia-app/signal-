@@ -217,6 +217,15 @@ export default function InstagramPlanPage() {
                   
                   // 計画データを復元（型ガードにより型安全）
                   const validPlan = planData as PlanData & { formData: PlanFormData; simulationResult: SimulationResultType };
+                  
+                  // formDataのtargetFollowersが保存された値と一致するように修正
+                  if (validPlan.formData && validPlan.targetFollowers) {
+                    validPlan.formData.targetFollowers = validPlan.targetFollowers;
+                  }
+                  if (validPlan.formData && validPlan.currentFollowers) {
+                    validPlan.formData.currentFollowers = validPlan.currentFollowers;
+                  }
+                  
                   setFormData(validPlan.formData);
                   setSimulationResult(validPlan.simulationResult);
                   if (validPlan.aiSuggestion) {
@@ -417,7 +426,7 @@ export default function InstagramPlanPage() {
     return (
       <SNSLayout customTitle="Instagram 運用計画" customDescription="強みを活かす、実行可能なSNS計画を立てましょう">
         <div className="max-w-2xl mx-auto p-6">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <div className="bg-yellow-50 border border-yellow-200 p-6 text-center">
             <h2 className="text-lg font-semibold text-yellow-900 mb-2">
               運用計画機能は、現在のプランではご利用いただけません
             </h2>
@@ -691,7 +700,7 @@ export default function InstagramPlanPage() {
     <SNSLayout customTitle="Instagram 運用計画" customDescription="強みを活かす、実行可能なSNS計画を立てましょう">
       <div className="w-full h-full min-h-screen p-6">
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="mb-6 bg-red-50 border border-red-200 p-4">
             <p className="text-sm text-red-800">{error}</p>
           </div>
         )}
@@ -726,7 +735,7 @@ export default function InstagramPlanPage() {
               >
                 シミュレーション
                 {simulationResult && (
-                  <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-orange-500 rounded-full">
+                  <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-orange-500">
                     ✓
                   </span>
                 )}
@@ -739,7 +748,7 @@ export default function InstagramPlanPage() {
                 <button
                   type="button"
                   onClick={handleEditPlan}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   計画を編集
@@ -747,7 +756,7 @@ export default function InstagramPlanPage() {
                 <button
                   type="button"
                   onClick={handleDeletePlan}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors"
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   計画を削除
@@ -758,7 +767,7 @@ export default function InstagramPlanPage() {
           </div>
 
         {/* タブコンテンツ */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 h-full overflow-y-auto">
+          <div className="bg-white border border-gray-200 p-6 h-full overflow-y-auto">
           {activeTab === "form" ? (
             <PlanForm onSubmit={handleSubmit} isLoading={isLoading} initialData={formData} />
           ) : (
@@ -784,7 +793,7 @@ export default function InstagramPlanPage() {
                   <p className="text-sm mb-4">フォームに入力して、シミュレーションを実行してください</p>
                   <button
                     onClick={() => setActiveTab("form")}
-                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-300 hover:bg-blue-50 transition-colors"
                   >
                     計画を立てるタブに戻る
                   </button>
