@@ -292,6 +292,10 @@ export default function HomePage() {
 
       if (response.ok) {
         toast.success("保存しました");
+        // 入力フィールドをクリア
+        setOtherFollowerCount("");
+        setOtherProfileVisits("");
+        setOtherExternalLinkTaps("");
         // 保存後に再取得して表示を更新
         await fetchOtherKPI();
         await fetchMonthlyKPIs();

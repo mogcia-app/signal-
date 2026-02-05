@@ -107,7 +107,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
                     lineHeight: "1.7",
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: reviewData.review.replace(/\n/g, "<br />"),
+                    __html: reviewData.review.replace(/\*\*/g, "").replace(/\n/g, "<br />"),
                   }}
                 />
               </div>
