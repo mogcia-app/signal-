@@ -1001,7 +1001,7 @@ export default function PostDetailPage() {
                               : "bg-gray-200 text-gray-700"
                           }`}
                         >
-                          {postAnalytics.sentiment === "satisfied" ? "満足" : "改善したい"}
+                          {postAnalytics.sentiment === "satisfied" ? "目標達成見込み: 高" : "目標達成見込み: 低"}
                         </span>
                         <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
                           {postAnalytics.sentimentMemo?.trim()

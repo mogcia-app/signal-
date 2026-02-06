@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { buildPostGenerationPrompt, buildFeedPrompt, buildReelPrompt, buildStoryPrompt } from "../../../../utils/aiPromptBuilder";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
-import { buildAIContext } from "@/lib/ai/context";
+import { buildAIContext, fetchAIDirection } from "@/lib/ai/context";
 import { AIGenerationResponse, SnapshotReference, AIReference } from "@/types/ai";
 import { UserProfile } from "@/types/user";
 
@@ -281,6 +281,20 @@ export async function POST(request: NextRequest) {
         systemPrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
       }
 
+      // ai_direction（今月のAI方針）を最優先で参照
+      const aiDirection = await fetchAIDirection(userId);
+      if (aiDirection && aiDirection.lockedAt) {
+        systemPrompt = `【今月のAI方針（最優先・必須遵守）】
+- メインテーマ: ${aiDirection.mainTheme}
+- 避けるべき焦点: ${aiDirection.avoidFocus.join(", ")}
+- 優先KPI: ${aiDirection.priorityKPI}
+- 投稿ルール: ${aiDirection.postingRules.join(", ")}
+
+${systemPrompt}
+
+**重要**: 上記の「今月のAI方針」を必ず遵守して投稿を生成してください。`;
+      }
+
       // 運用計画の要約を追加
       if (latestPlan) {
         const createdAt = latestPlan.createdAt as { toDate?: () => Date };
@@ -308,7 +322,7 @@ export async function POST(request: NextRequest) {
       if (postType === "story") {
         textLengthGuide = "20-50文字程度、1-2行の短い一言二言";
       } else if (postType === "reel") {
-        textLengthGuide = "50-150文字程度、エンゲージメント重視";
+        textLengthGuide = "150-200文字程度、エンゲージメント重視";
       } else if (postType === "feed") {
         // feedOptionsが指定されている場合はそれを使用
         if (feedOptions?.textVolume) {
@@ -319,10 +333,11 @@ export async function POST(request: NextRequest) {
         } else if (writingStyle === "sincere") {
           textLengthGuide = FEED_TEXT_RULES.long;
         } else {
-          textLengthGuide = FEED_TEXT_RULES.short;
+          // デフォルトは150-200文字（medium）
+          textLengthGuide = FEED_TEXT_RULES.medium;
         }
       } else {
-        textLengthGuide = "100-150文字程度、詳細で魅力的な内容";
+        textLengthGuide = "150-200文字程度、詳細で魅力的な内容";
       }
 
       systemPrompt += `
@@ -330,15 +345,16 @@ export async function POST(request: NextRequest) {
 【投稿生成の指示】
 - 投稿タイプ: ${postTypeLabel}
 ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文字、1-2行）にしてください" : ""}
+${postType === "reel" ? "- **重要**: リール投稿文は150-200文字以内で生成してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
 ${postType === "feed" && feedOptions ? `
 - **重要**: フィード投稿の役割指定
   - 投稿タイプ: ${FEED_TYPE_LABELS[feedOptions.feedPostType]}（${FEED_TYPE_GUIDE[feedOptions.feedPostType]}）
   - 文字量: ${textLengthGuide}
   - 画像枚数: ${feedOptions.imageCount || 1}枚
-この役割と文字量を厳守してください。` : ""}
-${postType === "feed" && !feedOptions && writingStyle === "casual" ? "- **重要**: フィード投稿文は150-200文字程度で生成してください。カジュアルで親しみやすい表現を使い、フォロワーとの距離感を縮めるような内容にしてください。" : ""}
+この役割と文字量を厳守してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。` : ""}
+${postType === "feed" && !feedOptions && writingStyle === "casual" ? "- **重要**: フィード投稿文は150-200文字以内で生成してください。カジュアルで親しみやすい表現を使い、フォロワーとの距離感を縮めるような内容にしてください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
 ${postType === "feed" && !feedOptions && writingStyle === "sincere" ? "- **重要**: フィード投稿文は250-400文字程度で生成してください。誠実で丁寧な表現を使い、商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが信頼感を持てるような内容にしてください。" : ""}
-${postType === "feed" && !feedOptions && !writingStyle ? "- **重要**: フィード投稿文は100-150文字程度で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
+${postType === "feed" && !feedOptions && !writingStyle ? "- **重要**: フィード投稿文は150-200文字以内で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
 - 投稿日時: ${scheduledDate ? `${scheduledDate} ${scheduledTime}` : "未設定"}
 - テーマ: ${prompt}
 ${!feedOptions && writingStyle === "casual" ? "- スタイル: カジュアル（親しみやすく、フレンドリーな表現）" : ""}
@@ -448,8 +464,9 @@ ${postType === "feed" && feedOptions ? `
 5. エンゲージメントを促進する要素を含める
 6. 必ず4個のハッシュタグを含める（トレンドハッシュタグ1個、補助的ハッシュタグ3個）。企業ハッシュタグは固定で使用されるため、生成不要です。
 ${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文字、1-2行）にする" : ""}
-${postType === "feed" && feedOptions ? `7. **重要**: フィード投稿文は必ず${FEED_TEXT_RULES[feedOptions.textVolume]}で生成してください。文字数が指定範囲を超えないよう、厳密に守ってください。${FEED_TYPE_GUIDE[feedOptions.feedPostType]}。この役割と文字量を厳守してください。` : ""}
-${postType === "feed" && !feedOptions ? "7. **重要**: フィード投稿文は必ず150文字以内で生成してください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
+${postType === "reel" ? "7. **重要**: リール投稿文は必ず150-200文字以内で生成してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
+${postType === "feed" && feedOptions ? `7. **重要**: フィード投稿文は必ず${FEED_TEXT_RULES[feedOptions.textVolume]}で生成してください。文字数が指定範囲を超えないよう、厳密に守ってください。${FEED_TYPE_GUIDE[feedOptions.feedPostType]}。この役割と文字量を厳守してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。` : ""}
+${postType === "feed" && !feedOptions ? "7. **重要**: フィード投稿文は必ず150-200文字以内で生成してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
 ${(() => {
   const profile = userProfile as UserProfile | null;
   return profile?.businessInfo?.productsOrServices && Array.isArray(profile.businessInfo.productsOrServices) && profile.businessInfo.productsOrServices.length > 0;
@@ -612,9 +629,9 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
     let title = parsedData.title || "";
     let content = parsedData.body || "";
     
-    // フィードの場合はtextVolumeに応じた文字数制限を適用
-    if (postType === "feed") {
-      if (feedOptions?.textVolume) {
+    // リールとフィードの場合は150-200文字以内に制限
+    if (postType === "reel" || postType === "feed") {
+      if (postType === "feed" && feedOptions?.textVolume) {
         // textVolumeに応じた文字数範囲
         const textVolumeLimits = {
           short: { min: 80, max: 120 },
@@ -643,16 +660,24 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
           console.log(`投稿文を${limits.max}文字に切り詰めました（元: ${originalLength}文字 → 現在: ${content.length}文字）`);
         }
       } else {
-        // feedOptionsがない場合は150文字以内に制限（後方互換性）
-        if (content.length > 150) {
-          let truncated = content.substring(0, 150);
+        // リールまたはfeedOptionsがないフィードは150-200文字以内に制限
+        const minLength = 150;
+        const maxLength = 200;
+        
+        if (content.length < minLength) {
+          console.warn(`生成された投稿文が短すぎます（${content.length}文字）。目標: ${minLength}-${maxLength}文字`);
+        } else if (content.length > maxLength) {
+          let truncated = content.substring(0, maxLength);
           const lastPeriod = truncated.lastIndexOf("。");
           const lastNewline = truncated.lastIndexOf("\n");
           const lastBreak = Math.max(lastPeriod, lastNewline);
-          if (lastBreak > 100) {
+          // 最小文字数の80%以上は確保
+          const minLengthThreshold = Math.floor(minLength * 0.8);
+          if (lastBreak > minLengthThreshold) {
             truncated = truncated.substring(0, lastBreak + 1);
           }
           content = truncated;
+          console.log(`投稿文を${maxLength}文字に切り詰めました（元: ${content.length}文字 → 現在: ${truncated.length}文字）`);
         }
       }
     }

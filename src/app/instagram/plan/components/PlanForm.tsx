@@ -78,6 +78,20 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         setContentTypeOther(initialData.contentTypeOther);
       }
       
+      // 今月の目標設定を復元
+      if (initialData.useBaseGoals !== undefined) {
+        setUseBaseGoals(initialData.useBaseGoals);
+      }
+      if (initialData.useBaseChallenges !== undefined) {
+        setUseBaseChallenges(initialData.useBaseChallenges);
+      }
+      if (initialData.monthlyGoals) {
+        setMonthlyGoals(initialData.monthlyGoals);
+      }
+      if (initialData.monthlyChallenges) {
+        setMonthlyChallenges(initialData.monthlyChallenges);
+      }
+      
       // ラジオボタンの選択状態も更新
       // mainGoalTypeの復元
       if (initialData.mainGoal) {
@@ -207,6 +221,12 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
   const [contentTypes, setContentTypes] = useState<string[]>([]);
   const [contentTypeOther, setContentTypeOther] = useState<string>("");
   const [aiSuggestedTarget, setAiSuggestedTarget] = useState<number | undefined>(undefined);
+  
+  // 今月の目標設定用のstate
+  const [useBaseGoals, setUseBaseGoals] = useState<boolean>(true);
+  const [useBaseChallenges, setUseBaseChallenges] = useState<boolean>(true);
+  const [monthlyGoals, setMonthlyGoals] = useState<string>("");
+  const [monthlyChallenges, setMonthlyChallenges] = useState<string>("");
 
   // mainGoalTypeが変更されたときにformDataを更新
   React.useEffect(() => {
@@ -268,7 +288,17 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData, aiSuggestedTarget);
+    
+    // 今月の目標設定をformDataに追加
+    const finalFormData = {
+      ...formData,
+      useBaseGoals,
+      useBaseChallenges,
+      monthlyGoals: useBaseGoals ? "" : monthlyGoals,
+      monthlyChallenges: useBaseChallenges ? "" : monthlyChallenges,
+    };
+    
+    onSubmit(finalFormData, aiSuggestedTarget);
   };
 
   const isFormValid = 
@@ -350,7 +380,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           <div className="space-y-3">
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               availableTime === "low"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -375,7 +405,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               availableTime === "medium"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -400,7 +430,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               availableTime === "high"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -443,7 +473,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           <div className="space-y-3">
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               reelCapability === "none"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -468,7 +498,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               reelCapability === "low"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -493,7 +523,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               reelCapability === "high"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -536,7 +566,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           <div className="space-y-3">
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               storyFrequency === "none"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -558,7 +588,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               storyFrequency === "low"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -581,7 +611,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               storyFrequency === "medium"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -604,7 +634,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               storyFrequency === "daily"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -651,7 +681,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             {/* 選択肢1: フォロワーを増やしたい */}
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "follower"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -677,7 +707,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             {/* 選択肢2: 今のフォロワーともっと仲良くなりたい */}
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "engagement"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -703,7 +733,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             {/* 選択肢3: 商品やサービスを広めたい */}
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "reach"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -729,7 +759,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             {/* 選択肢4: ブランドのファンを作りたい */}
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "brand"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -755,7 +785,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             {/* 選択肢5: 問い合わせを増やしたい */}
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "inquiry"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -781,7 +811,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             {/* 選択肢6: 来店を増やしたい */}
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "visit"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -807,7 +837,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             {/* 選択肢7: その他 */}
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               mainGoalType === "other"
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -869,7 +899,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           <div className="space-y-3">
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("ai")
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -898,7 +928,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("morning")
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -924,7 +954,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("noon")
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -950,7 +980,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("evening")
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -976,7 +1006,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("night")
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -1002,7 +1032,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               preferredPostingTimes.includes("late")
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -1068,7 +1098,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           <div className="space-y-3">
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               !regionRestrictionEnabled
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -1090,7 +1120,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
 
             <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
               regionRestrictionEnabled
-                ? "border-[#FF8A15] bg-orange-50"
+                ? "border-gray-400 bg-gray-50"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}>
               <input
@@ -1171,7 +1201,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 key={option.value}
                 className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
                   contentTypes.includes(option.value)
-                    ? "border-[#FF8A15] bg-orange-50"
+                    ? "border-gray-400 bg-gray-50"
                     : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
               >

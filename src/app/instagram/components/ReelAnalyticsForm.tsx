@@ -59,6 +59,8 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
     strengths: string[];
     improvements: string[];
     nextActions: string[];
+    directionAlignment?: "一致" | "乖離" | "要注意" | null;
+    directionComment?: string | null;
   } | null>(null);
   const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
   const [isAutoGeneratingAdvice, setIsAutoGeneratingAdvice] = useState(false);
@@ -277,6 +279,8 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
         strengths: insightData.strengths || [],
         improvements: insightData.improvements || [],
         nextActions: insightData.nextActions || [],
+        directionAlignment: insightData.directionAlignment || null,
+        directionComment: insightData.directionComment || null,
       });
     } catch (err) {
       console.error("AIアドバイス生成エラー:", err);

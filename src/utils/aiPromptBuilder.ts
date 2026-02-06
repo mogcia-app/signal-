@@ -7,8 +7,51 @@ import { UserProfile } from "../types/user";
 export const buildSystemPrompt = (userProfile: UserProfile, snsType?: string): string => {
   const { businessInfo, snsAISettings } = userProfile;
 
-  // 基本的なビジネス情報
-  let prompt = `あなたはSNS運用をサポートする専門AIアシスタントです。
+  // NGワードを最優先で表示
+  let prompt = `【必須遵守事項（絶対に守る）】\n`;
+  
+  if (snsType && snsAISettings[snsType]) {
+    const settings = snsAISettings[snsType] as {
+      enabled: boolean;
+      tone?: string;
+      features?: string[];
+      manner?: string;
+      cautions?: string;
+      goals?: string;
+      motivation?: string;
+      additionalInfo?: string;
+    };
+    
+    if (settings.cautions) {
+      prompt += `❌ NGワード・注意事項（絶対に使用禁止）: ${settings.cautions}\n`;
+    }
+    if (settings.manner) {
+      prompt += `✅ マナー・ルール（必ず遵守）: ${settings.manner}\n`;
+    }
+  } else {
+    // snsTypeが指定されていない場合、全SNSのNGワードを確認
+    const enabledSNS = Object.entries(snsAISettings).filter(([_, settings]) => settings.enabled);
+    for (const [sns, settings] of enabledSNS) {
+      const snsSettings = settings as {
+        enabled: boolean;
+        tone?: string;
+        features?: string[];
+        manner?: string;
+        cautions?: string;
+        goals?: string;
+        motivation?: string;
+        additionalInfo?: string;
+      };
+      if (snsSettings.cautions) {
+        prompt += `❌ ${sns.toUpperCase()} NGワード・注意事項（絶対に使用禁止）: ${snsSettings.cautions}\n`;
+      }
+      if (snsSettings.manner) {
+        prompt += `✅ ${sns.toUpperCase()} マナー・ルール（必ず遵守）: ${snsSettings.manner}\n`;
+      }
+    }
+  }
+  
+  prompt += `\nあなたはSNS運用をサポートする専門AIアシスタントです。
 
 【クライアント情報】
 - 企業名/名前: ${userProfile.name}
@@ -65,20 +108,14 @@ ${
       additionalInfo?: string;
     };
 
-    if (settings.enabled) {
+      if (settings.enabled) {
       prompt += `
 【${snsType.toUpperCase()} AI設定】
 - トーン: ${settings.tone || "フレンドリー"}
 - 有効機能: ${settings.features && settings.features.length > 0 ? settings.features.join(", ") : "なし"}
 `;
 
-      // 拡張項目
-      if (settings.manner) {
-        prompt += `- マナー・ルール: ${settings.manner}\n`;
-      }
-      if (settings.cautions) {
-        prompt += `- 注意事項・NGワード: ${settings.cautions}\n`;
-      }
+      // 拡張項目（NGワードとマナーは既に最優先セクションで表示済みなので、ここでは他の項目のみ）
       if (settings.goals) {
         prompt += `- ${snsType.toUpperCase()}運用の目標: ${settings.goals}\n`;
       }
@@ -409,6 +446,10 @@ export const buildPlanPrompt = (
     hashtagStrategy?: string;
     constraints?: string;
     freeMemo?: string;
+    useBaseGoals?: boolean;
+    useBaseChallenges?: boolean;
+    monthlyGoals?: string;
+    monthlyChallenges?: string;
   },
   simulationResult?: {
     monthlyTarget?: number | string;
@@ -453,8 +494,26 @@ export const buildPlanPrompt = (
 - 業種: ${userProfile.businessInfo.industry || "未設定"}
 - 会社規模: ${userProfile.businessInfo.companySize || "未設定"}
 - ターゲット市場: ${userProfile.businessInfo.targetMarket || "未設定"}
-- ビジネス目標: ${Array.isArray(userProfile.businessInfo.goals) ? userProfile.businessInfo.goals.join(", ") : (userProfile.businessInfo.goals || "未設定")}
-- 課題: ${Array.isArray(userProfile.businessInfo.challenges) ? userProfile.businessInfo.challenges.join(", ") : (userProfile.businessInfo.challenges || "未設定")}
+${(() => {
+  // 今月の目標があればそれを優先、なければ基本方針を使用
+  const hasMonthlyGoals = formData?.monthlyGoals && !formData?.useBaseGoals;
+  const hasMonthlyChallenges = formData?.monthlyChallenges && !formData?.useBaseChallenges;
+  
+  const goalsText = hasMonthlyGoals 
+    ? formData.monthlyGoals 
+    : (Array.isArray(userProfile.businessInfo.goals) ? userProfile.businessInfo.goals.join(", ") : (userProfile.businessInfo.goals || "未設定"));
+  
+  const challengesText = hasMonthlyChallenges 
+    ? formData.monthlyChallenges 
+    : (Array.isArray(userProfile.businessInfo.challenges) ? userProfile.businessInfo.challenges.join(", ") : (userProfile.businessInfo.challenges || "未設定"));
+  
+  const priorityNote = (hasMonthlyGoals || hasMonthlyChallenges) 
+    ? `\n**重要**: 上記の「今月の目標」と「今月の課題」を最優先で考慮してください。基本方針は参考情報として扱い、今月の目標・課題に沿った運用計画を生成してください。`
+    : "";
+  
+  return `- ${hasMonthlyGoals ? "今月の目標（最優先）" : "ビジネス目標（基本方針）"}: ${goalsText}
+- ${hasMonthlyChallenges ? "今月の課題（最優先）" : "課題（基本方針）"}: ${challengesText}${priorityNote}`;
+})()}
 ${userProfile.businessInfo.catchphrase ? `- キャッチコピー: ${userProfile.businessInfo.catchphrase}` : ""}
 ${userProfile.businessInfo.productsOrServices && userProfile.businessInfo.productsOrServices.length > 0 ? `- 商品・サービス: ${userProfile.businessInfo.productsOrServices.map((p) => {
   let productInfo = p.name;

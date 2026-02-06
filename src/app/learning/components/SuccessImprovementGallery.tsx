@@ -28,10 +28,10 @@ export function SuccessImprovementGallery({
             <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center flex-shrink-0">
               <Crown className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-lg font-bold text-gray-900">成功 & 改善投稿ギャラリー</h2>
+            <h2 className="text-lg font-bold text-gray-900">目標達成見込み別投稿ギャラリー</h2>
           </div>
           <p className="mt-2 text-sm text-gray-700">
-            ゴールド（成功）とレッド（改善が必要）投稿をピックアップしました。
+            目標達成見込みが高い投稿と低い投稿をピックアップしました。
           </p>
         </div>
       </div>
@@ -57,19 +57,19 @@ export function SuccessImprovementGallery({
         <div className="space-y-8">
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
-              🏆 成功パターン（GOLD）
+              🎯 目標達成見込み: 高
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              AIが見つけた、あなたの成功パターンです。次の投稿に活かしましょう。
+              AIが見つけた、計画や今月の方針に沿って目標達成が見込める投稿です。次の投稿に活かしましょう。
             </p>
             <SuccessGrid title="" icon={<Crown className="h-4 w-4 text-amber-500" />} signals={goldSignals} tone="gold" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
-              🔴 改善が必要な投稿（RED）
+              🎯 目標達成見込み: 低
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              AIが見つけた、改善すべき投稿です。
+              AIが見つけた、計画や今月の方針から乖離しており、目標達成が困難な投稿です。
             </p>
             <SuccessGrid title="" icon={<AlertTriangle className="h-4 w-4 text-red-500" />} signals={redSignals} tone="red" />
           </div>
@@ -110,15 +110,15 @@ function SuccessGrid({ title, icon, signals, tone }: SuccessGridProps) {
   const emptyContent =
     tone === "gold"
       ? {
-          title: "ゴールドパターンはまだありません",
+          title: "目標達成見込み: 高の投稿はまだありません",
           description:
-            "高評価と成果がそろった投稿が蓄積されると、ここに成功パターンが並びます。引き続き投稿とフィードバックを重ねていきましょう。",
+            "計画や今月の方針に沿って目標達成が見込める投稿が蓄積されると、ここに表示されます。引き続き投稿とフィードバックを重ねていきましょう。",
           actions: [{ label: "投稿を振り返る", href: "/instagram/posts" }],
         }
       : {
-          title: "改善優先パターンはまだありません",
+          title: "目標達成見込み: 低の投稿はまだありません",
           description:
-            "改善すべき投稿が蓄積されると、注意すべきポイントがここに表示されます。気になる投稿にはフィードバックを残しておきましょう。",
+            "計画や今月の方針から乖離しており、目標達成が困難な投稿が蓄積されると、注意すべきポイントがここに表示されます。気になる投稿にはフィードバックを残しておきましょう。",
           actions: [{ label: "分析ページを開く", href: "/analytics/feed" }],
         };
 
@@ -141,7 +141,7 @@ function SuccessGrid({ title, icon, signals, tone }: SuccessGridProps) {
                 {tone === "gold" && (
                   <span className="absolute -top-2 left-4 inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-white border border-amber-200 px-2 py-0.5 rounded-full shadow-sm">
                     <Sparkles className="w-3 h-3" />
-                    成功バッジ
+                    目標達成見込み: 高
                   </span>
                 )}
                 <div className="flex items-center justify-between gap-2 mb-1">

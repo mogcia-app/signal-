@@ -48,14 +48,6 @@ export default function ReelLabPage() {
   const [scheduleFeedback, setScheduleFeedback] = useState<string | null>(null);
   const [showScheduleAdminWarning, setShowScheduleAdminWarning] = useState(false);
 
-  // 動画構成関連の状態
-  const [videoStructure, setVideoStructure] = useState({
-    introduction: "", // 起
-    development: "", // 承
-    twist: "", // 転
-    conclusion: "", // 結
-  });
-  const [videoFlow, setVideoFlow] = useState(""); // 動画構成の流れ
 
   // 計画データを取得
   const { planData } = usePlanData("instagram");
@@ -271,37 +263,6 @@ export default function ReelLabPage() {
   }, [isAuthReady]);
 
   // 動画構成生成関数
-  const generateVideoStructure = useCallback(
-    async (prompt: string) => {
-      if (!isAuthReady || !prompt.trim()) {return;}
-
-      try {
-        const response = await authFetch("/api/instagram/reel-structure", {
-          method: "POST",
-          body: JSON.stringify({
-            prompt,
-            businessInfo: planData,
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          setVideoStructure(
-            result.structure || {
-              introduction: "",
-              development: "",
-              twist: "",
-              conclusion: "",
-            },
-          );
-          setVideoFlow(result.flow || "");
-        }
-      } catch (error) {
-        console.error("動画構成生成エラー:", error);
-      }
-    },
-    [isAuthReady, planData],
-  );
 
   useEffect(() => {
     setIsMounted(true);
@@ -345,9 +306,6 @@ export default function ReelLabPage() {
               isAIGenerated={isAIGenerated}
               planData={planData}
               aiPromptPlaceholder="例: 商品の使い方、おすすめポイント、バックステージ、チュートリアル、トレンド動画など..."
-              onVideoStructureGenerate={generateVideoStructure}
-              videoStructure={videoStructure}
-              videoFlow={videoFlow}
               editingPostId={editingPostId}
             />
           </div>

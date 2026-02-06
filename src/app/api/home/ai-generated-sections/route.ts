@@ -4,10 +4,12 @@ import * as admin from "firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
+import { fetchAIDirection } from "../../../../lib/ai/context";
 // buildAIContext removed (unused)
 import OpenAI from "openai";
 import { cache, generateCacheKey } from "../../../../lib/cache";
 import type { AIPlanSuggestion } from "../../../instagram/plan/types/plan";
+import type { AIDirection } from "../../../../types/ai";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -115,6 +117,9 @@ export async function GET(request: NextRequest) {
     const businessInfo = userProfile?.businessInfo || {};
     const businessDescription = (businessInfo as { description?: string })?.description || "";
     const businessCatchphrase = (businessInfo as { catchphrase?: string })?.catchphrase || "";
+
+    // ai_direction（今月のAI方針）を取得
+    const aiDirection = await fetchAIDirection(uid);
 
     if (!aiSuggestion) {
       const emptyData = {
@@ -487,6 +492,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       tip?: string;
       generatedContent?: string;
       generatedHashtags?: string[];
+      reason?: string; // 方針との関連性（なぜこれか）
     }> = [];
 
     if (sourceTasks.length > 0) {
@@ -524,6 +530,20 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
               // ラボのAIエンドポイントと同じシステムプロンプトを構築
               let systemPrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
               
+              // ai_direction（今月のAI方針）を最優先で参照
+              const aiDirection = await fetchAIDirection(uid);
+              if (aiDirection && aiDirection.lockedAt) {
+                systemPrompt = `【今月のAI方針（最優先・必須遵守）】
+- メインテーマ: ${aiDirection.mainTheme}
+- 避けるべき焦点: ${aiDirection.avoidFocus.join(", ")}
+- 優先KPI: ${aiDirection.priorityKPI}
+- 投稿ルール: ${aiDirection.postingRules.join(", ")}
+
+${systemPrompt}
+
+**重要**: 上記の「今月のAI方針」を必ず遵守して投稿を生成してください。`;
+              }
+              
               // 運用計画の要約を追加
               if (planData) {
                 const createdAt = planData.createdAt as { toDate?: () => Date } | Date | string | null;
@@ -558,15 +578,16 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
                 postType === "story"
                   ? "20-50文字程度、1-2行の短い一言二言"
                   : postType === "reel"
-                    ? "50-150文字程度、エンゲージメント重視"
-                    : "100-150文字程度、詳細で魅力的な内容";
+                    ? "150-200文字程度、エンゲージメント重視"
+                    : "150-200文字程度、詳細で魅力的な内容";
 
               systemPrompt += `
 
 【投稿生成の指示】
 - 投稿タイプ: ${postTypeLabel}
 ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文字、1-2行）にしてください" : ""}
-${postType === "feed" ? "- **重要**: フィード投稿文は100-150文字程度で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。150文字を超える場合は、重要な情報を残しつつ150文字以内に収めてください。" : ""}
+${postType === "reel" ? "- **重要**: リール投稿文は150-200文字以内で生成してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
+${postType === "feed" ? "- **重要**: フィード投稿文は150-200文字以内で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
 - テーマ: ${task.description}
 
 必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
@@ -635,17 +656,20 @@ ${postType === "feed" ? "- **重要**: フィード投稿文は100-150文字程�
                 
                 console.log(`[投稿文生成] ${task.description}: 生成成功, 文字数: ${content.length}`);
                 
-                // フィードの場合は150文字以内に制限
-                if (postType === "feed" && content.length > 150) {
-                  let truncated = content.substring(0, 150);
+                // リールとフィードの場合は150-200文字以内に制限
+                if ((postType === "feed" || postType === "reel") && content.length > 200) {
+                  let truncated = content.substring(0, 200);
                   const lastPeriod = truncated.lastIndexOf("。");
                   const lastNewline = truncated.lastIndexOf("\n");
                   const lastBreak = Math.max(lastPeriod, lastNewline);
-                  if (lastBreak > 100) {
+                  // 最小文字数の80%以上は確保（150文字の80% = 120文字）
+                  if (lastBreak > 120) {
                     truncated = truncated.substring(0, lastBreak + 1);
                   }
                   content = truncated;
-                  console.log(`[投稿文生成] ${task.description}: 150文字に切り詰め`);
+                  console.log(`[投稿文生成] ${task.description}: 200文字に切り詰め（現在: ${content.length}文字）`);
+                } else if ((postType === "feed" || postType === "reel") && content.length < 150) {
+                  console.warn(`[投稿文生成] ${task.description}: 文字数が少なすぎます（${content.length}文字）。目標: 150-200文字`);
                 }
 
                 // ハッシュタグを抽出
@@ -690,9 +714,18 @@ ${postType === "feed" ? "- **重要**: フィード投稿文は100-150文字程�
           });
           console.log(`[投稿文生成] Mapサイズ: ${postGenerationMap.size}`);
 
+          // ai_directionを取得（タスクヒント生成用）
+          const aiDirectionForTips = await fetchAIDirection(uid);
+          
           const todayTasksPrompt = `以下の情報を基に、今日のタスクを実行する際の具体的なヒントを提案してください。
 
-【計画の目標】
+${aiDirectionForTips && aiDirectionForTips.lockedAt ? `【今月のAI方針（最優先・必須遵守）】
+- メインテーマ: ${aiDirectionForTips.mainTheme}
+- 避けるべき焦点: ${aiDirectionForTips.avoidFocus.join(", ")}
+- 優先KPI: ${aiDirectionForTips.priorityKPI}
+- 投稿ルール: ${aiDirectionForTips.postingRules.join(", ")}
+
+` : ""}【計画の目標】
 ${mainGoal}
 
 【ターゲット層】
@@ -723,14 +756,20 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
   ]
 }
 
+${aiDirectionForTips && aiDirectionForTips.lockedAt ? `**重要**: 上記の「今月のAI方針」を必ず考慮して、各タスクのヒントを提案してください。` : ""}
+
 計画の目標「${mainGoal}」を達成するために、各タスクを実行する際の具体的で実用的なヒントを提案してください。`;
+
+          const systemMessageForTips = aiDirectionForTips && aiDirectionForTips.lockedAt
+            ? `あなたはInstagram運用の専門家です。今月のAI方針「${aiDirectionForTips.mainTheme}」を最優先に、保存された計画内容を達成させるために、具体的で実用的なヒントを提案してください。`
+            : "あなたはInstagram運用の専門家です。保存された計画内容を達成させるために、具体的で実用的なヒントを提案してください。";
 
           const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
               {
                 role: "system",
-                content: "あなたはInstagram運用の専門家です。保存された計画内容を達成させるために、具体的で実用的なヒントを提案してください。",
+                content: systemMessageForTips,
               },
               {
                 role: "user",
@@ -750,6 +789,13 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
                 const tip = parsedResponse.tips?.find((t) => t.taskIndex === index + 1) || parsedResponse.tips?.[0];
                 const postGeneration = postGenerationMap.get(index);
                 console.log(`[今日やること] タスク追加: index=${index}, type=${task.type}, description=${task.description}, hasContent=${!!postGeneration?.content}, hasHashtags=${!!postGeneration?.hashtags && postGeneration.hashtags.length > 0}`);
+                
+                // 方針との関連性を説明（「なぜこれか」）
+                let reason = "";
+                if (aiDirection && aiDirection.lockedAt) {
+                  reason = `今月の方針「${aiDirection.mainTheme}」に沿っています`;
+                }
+                
                 todayTasks.push({
                   time: task.time || "",
                   type: task.type || "feed",
@@ -761,12 +807,20 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
                     : "フォロワーが「へー！」と思う情報を"),
                   generatedContent: postGeneration?.content,
                   generatedHashtags: postGeneration?.hashtags,
+                  reason: reason, // 方針との関連性
                 });
               });
             } else {
               // フォールバック
               todayTasksFromPlan.forEach((task, index: number) => {
                 const postGeneration = postGenerationMap.get(index);
+                
+                // 方針との関連性を説明（「なぜこれか」）
+                let reason = "";
+                if (aiDirection && aiDirection.lockedAt) {
+                  reason = `今月の方針「${aiDirection.mainTheme}」に沿っています`;
+                }
+                
                 todayTasks.push({
                   time: task.time || "",
                   type: task.type || "feed",
@@ -778,6 +832,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
                     : "フォロワーが「へー！」と思う情報を",
                   generatedContent: postGeneration?.content,
                   generatedHashtags: postGeneration?.hashtags,
+                  reason: reason, // 方針との関連性
                 });
               });
             }
@@ -787,6 +842,13 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
           // フォールバック（投稿文生成は試行済みの場合のみ含める）
           todayTasksFromPlan.forEach((task, index: number) => {
             const postGeneration = postGenerationMap.get(index);
+            
+            // 方針との関連性を説明（「なぜこれか」）
+            let reason = "";
+            if (aiDirection && aiDirection.lockedAt) {
+              reason = `今月の方針「${aiDirection.mainTheme}」に沿っています`;
+            }
+            
             todayTasks.push({
               time: task.time || "",
               type: task.type || "feed",
@@ -798,12 +860,19 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
                 : "フォロワーが「へー！」と思う情報を",
               generatedContent: postGeneration?.content,
               generatedHashtags: postGeneration?.hashtags,
+              reason: reason, // 方針との関連性
             });
           });
         }
       } else {
         // AIが使えない場合のフォールバック
         todayTasksFromPlan.forEach((task) => {
+          // 方針との関連性を説明（「なぜこれか」）
+          let reason = "";
+          if (aiDirection && aiDirection.lockedAt) {
+            reason = `今月の方針「${aiDirection.mainTheme}」に沿っています`;
+          }
+          
           todayTasks.push({
             time: task.time || "",
             type: task.type || "feed",
@@ -813,6 +882,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
               : task.type === "reel"
               ? "動画で魅力的なコンテンツを発信しよう"
               : "フォロワーが「へー！」と思う情報を",
+            reason: reason, // 方針との関連性
           });
         });
       }
@@ -939,6 +1009,15 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       progress?: number;
     }> = [];
 
+    // ai_direction（今月のAI方針）を最優先で追加
+    if (aiDirection && aiDirection.lockedAt) {
+      monthlyGoals.unshift({
+        metric: "今月の重点方針",
+        target: aiDirection.mainTheme,
+        progress: undefined,
+      });
+    }
+
     if (aiSuggestion?.monthlyGoals) {
       aiSuggestion.monthlyGoals.forEach((goal) => {
         monthlyGoals.push({
@@ -959,6 +1038,14 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       tomorrowPreparation,
       monthlyGoals,
       weeklySchedule,
+      // aiDirectionはlockedAtがnullでも表示する（未確定として表示）
+      aiDirection: aiDirection ? {
+        mainTheme: aiDirection.mainTheme,
+        priorityKPI: aiDirection.priorityKPI,
+        avoidFocus: aiDirection.avoidFocus,
+        postingRules: aiDirection.postingRules,
+        lockedAt: aiDirection.lockedAt, // lockedAtも含める（UIで未確定表示に使用）
+      } : null,
     };
 
     // Firestoreに日付ベースでキャッシュを保存（同じ日は同じ内容を返す）

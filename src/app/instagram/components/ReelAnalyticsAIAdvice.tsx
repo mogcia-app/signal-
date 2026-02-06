@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 interface ReelAnalyticsAIAdviceProps {
   aiAdvice: {
@@ -9,6 +9,8 @@ interface ReelAnalyticsAIAdviceProps {
     strengths: string[];
     improvements: string[];
     nextActions: string[];
+    directionAlignment?: "一致" | "乖離" | "要注意" | null;
+    directionComment?: string | null;
   } | null;
   isGenerating: boolean;
   isAutoGenerating?: boolean;
@@ -67,6 +69,56 @@ export const ReelAnalyticsAIAdvice: React.FC<ReelAnalyticsAIAdviceProps> = ({
         </div>
       ) : aiAdvice ? (
         <div className="space-y-4 bg-gray-50 p-4">
+          {/* 方針乖離の警告 */}
+          {aiAdvice.directionAlignment && aiAdvice.directionAlignment !== "一致" && aiAdvice.directionComment && (
+            <div className={`p-3 border-l-4 rounded ${
+              aiAdvice.directionAlignment === "乖離" 
+                ? "bg-red-50 border-red-500" 
+                : "bg-yellow-50 border-yellow-500"
+            }`}>
+              <div className="flex items-start gap-2">
+                <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                  aiAdvice.directionAlignment === "乖離" 
+                    ? "text-red-600" 
+                    : "text-yellow-600"
+                }`} />
+                <div className="flex-1">
+                  <h4 className={`text-xs font-semibold mb-1 ${
+                    aiAdvice.directionAlignment === "乖離" 
+                      ? "text-red-900" 
+                      : "text-yellow-900"
+                  }`}>
+                    {aiAdvice.directionAlignment === "乖離" ? "⚠️ 方針乖離の警告" : "⚠️ 要注意"}
+                  </h4>
+                  <p className={`text-xs leading-relaxed ${
+                    aiAdvice.directionAlignment === "乖離" 
+                      ? "text-red-800" 
+                      : "text-yellow-800"
+                  }`}>
+                    {aiAdvice.directionComment}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 方針一致の確認 */}
+          {aiAdvice.directionAlignment === "一致" && aiAdvice.directionComment && (
+            <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-xs font-semibold text-green-900 mb-1">
+                    ✅ 今月のAI方針に沿っています
+                  </h4>
+                  <p className="text-xs text-green-800 leading-relaxed">
+                    {aiAdvice.directionComment}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="border-l-4 border-gray-400 pl-4">
             <p className="text-sm text-gray-800 leading-relaxed">{aiAdvice.summary}</p>
           </div>

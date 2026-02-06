@@ -58,6 +58,14 @@ export default function LearningDashboardPage() {
   const [sharedLearningContext, setSharedLearningContext] = useState<LearningContextCardData | null>(
     null
   );
+  const [aiDirection, setAiDirection] = useState<{
+    month: string;
+    mainTheme: string;
+    priorityKPI: string;
+    avoidFocus: string[];
+    postingRules: string[];
+    lockedAt: string | null;
+  } | null>(null);
 
   const isAuthReady = useMemo(() => Boolean(user?.uid), [user?.uid]);
 
@@ -658,19 +666,19 @@ export default function LearningDashboardPage() {
                       このAIは、あなただけのために育っています
                     </h3>
                     <p className="text-sm text-gray-500">
-                      あなたの投稿から学んだ、あなた専用の成功パターンと改善パターンです
+                      あなたの投稿から学んだ、目標達成見込みの高い投稿と低い投稿のパターンです
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="text-xs text-gray-500 mb-2 font-medium">成功パターン</div>
+                      <div className="text-xs text-gray-500 mb-2 font-medium">目標達成見込み: 高</div>
                       <div className="text-2xl font-semibold text-gray-900">
                         {goldSignals.length}
                         <span className="text-sm text-gray-500 ml-1">件</span>
                       </div>
                     </div>
                     <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="text-xs text-gray-500 mb-2 font-medium">改善パターン</div>
+                      <div className="text-xs text-gray-500 mb-2 font-medium">目標達成見込み: 低</div>
                       <div className="text-2xl font-semibold text-gray-900">
                         {improvementPatterns.length}
                         <span className="text-sm text-gray-500 ml-1">件</span>
@@ -701,6 +709,73 @@ export default function LearningDashboardPage() {
                 </div>
               )}
 
+              {/* 今月のAI方針セクション */}
+              {aiDirection && aiDirection.lockedAt && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Compass className="h-5 w-5 text-blue-600" />
+                    <div className="text-sm font-semibold text-gray-900">
+                      今月のAI方針
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">メインテーマ</div>
+                      <div className="text-sm font-medium text-gray-900">{aiDirection.mainTheme}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">優先KPI</div>
+                      <div className="text-sm text-gray-700">{aiDirection.priorityKPI}</div>
+                    </div>
+                    {aiDirection.avoidFocus.length > 0 && (
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">避けるべき焦点</div>
+                        <div className="text-sm text-gray-700">
+                          {aiDirection.avoidFocus.join(", ")}
+                        </div>
+                      </div>
+                    )}
+                    {aiDirection.postingRules.length > 0 && (
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">投稿ルール</div>
+                        <ul className="text-sm text-gray-700 space-y-1">
+                          {aiDirection.postingRules.map((rule, index) => (
+                            <li key={index} className="flex items-start">
+                              <span className="text-gray-400 mr-2">•</span>
+                              <span>{rule}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <div className="pt-3 border-t border-blue-200">
+                      <div className="text-xs text-gray-600">
+                        <span className="font-medium">学習データとの関連性:</span>
+                        <br />
+                        {contextData && contextData.totalInteractions > 0 ? (
+                          <>
+                            この方針は、あなたの{contextData.totalInteractions}件の投稿分析データと
+                            {contextData.learningContext?.masterContext?.feedbackStats?.positiveRate
+                              ? `、${Math.round(contextData.learningContext.masterContext.feedbackStats.positiveRate * 100)}%の満足度`
+                              : ""}
+                            を基に生成されました。
+                            {contextData.learningPhase !== "initial" && (
+                              <>
+                                <br />
+                                AIは現在「{getLearningPhaseLabel(contextData.learningPhase)}」フェーズで、
+                                この方針に沿った投稿を生成しています。
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          "投稿分析データが蓄積されると、より精度の高い方針が生成されます。"
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* AIの学習が進むと */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
                 <div className="text-sm font-semibold text-gray-900 mb-3">
@@ -713,7 +788,7 @@ export default function LearningDashboardPage() {
                   </li>
                   <li className="flex items-start">
                     <span className="text-gray-400 mr-2">•</span>
-                    <span>あなたの成功パターンを自動で見つけます</span>
+                    <span>目標達成見込みの高い投稿パターンを自動で見つけます</span>
                   </li>
                   <li className="flex items-start">
                     <span className="text-gray-400 mr-2">•</span>

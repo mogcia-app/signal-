@@ -18,6 +18,11 @@ export interface PlanFormData {
   };
   contentTypes: string[]; // どんな内容を投稿したいか（複数選択可）
   contentTypeOther?: string; // その他の内容
+  // 今月の目標設定（新規）
+  useBaseGoals?: boolean; // 基本方針と同じ目標を使うかどうか
+  useBaseChallenges?: boolean; // 基本方針と同じ課題を使うかどうか
+  monthlyGoals?: string; // 今月の目標（空の場合はonboardingのgoalsを継承）
+  monthlyChallenges?: string; // 今月の課題（空の場合はonboardingのchallengesを継承）
 }
 
 // シミュレーション結果の型定義

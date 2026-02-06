@@ -1,6 +1,6 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { UserProfile } from "@/types/user";
-import { AIActionLog, AIReference, SnapshotReference } from "@/types/ai";
+import { AIActionLog, AIReference, SnapshotReference, AIDirection } from "@/types/ai";
 import { getLearningPhaseLabel } from "@/utils/learningPhase";
 interface MasterContextSummary {
   learningPhase?: string;
@@ -33,6 +33,7 @@ const DEFAULT_OPTIONS = {
   includeMasterContext: false,
   includeActionLogs: true,
   includeAbTests: true,
+  includeAIDirection: true,
   snapshotLimit: 5,
   actionLogLimit: 6,
   abTestLimit: 3,
@@ -55,6 +56,7 @@ export interface AIContextBundle {
     winnerVariantLabel?: string | null;
     summary?: string;
   }>;
+  aiDirection?: AIDirection | null;
 }
 async function fetchCachedMasterContext(userId: string): Promise<MasterContextSummary | null> {
   try {
@@ -360,13 +362,62 @@ async function fetchRecentAbTests(
   }
 }
 
+/**
+ * AIの意思決定コア（Decision Core）を取得
+ * 最新の月次レポートから生成されたai_directionを取得
+ * 過去3ヶ月以内のもののみを返す
+ */
+export async function fetchAIDirection(userId: string): Promise<AIDirection | null> {
+  try {
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    
+    // 最新のai_directionを取得（過去3ヶ月以内）
+    const directionSnapshot = await adminDb
+      .collection("ai_direction")
+      .where("userId", "==", userId)
+      .orderBy("month", "desc")
+      .limit(1)
+      .get();
+    
+    if (directionSnapshot.empty) {
+      return null;
+    }
+    
+    const directionDoc = directionSnapshot.docs[0];
+    const data = directionDoc.data();
+    const directionMonth = new Date(data.month + "-01");
+    
+    // 3ヶ月以内のもののみを返す
+    if (directionMonth < threeMonthsAgo) {
+      return null;
+    }
+    
+    return {
+      userId: data.userId,
+      month: data.month,
+      mainTheme: data.mainTheme || "",
+      avoidFocus: Array.isArray(data.avoidFocus) ? data.avoidFocus : [],
+      priorityKPI: data.priorityKPI || "",
+      postingRules: Array.isArray(data.postingRules) ? data.postingRules : [],
+      generatedFrom: data.generatedFrom || "monthly_review",
+      lockedAt: data.lockedAt?.toDate?.()?.toISOString() ?? null,
+      createdAt: data.createdAt?.toDate?.()?.toISOString() ?? null,
+      updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
+    };
+  } catch (error) {
+    console.warn("⚠️ AI Direction取得エラー:", error);
+    return null;
+  }
+}
+
 export async function buildAIContext(
   userId: string,
   options: BuildAIContextOptions = {}
 ): Promise<AIContextBundle> {
   const merged = { ...DEFAULT_OPTIONS, ...options };
 
-  const [userProfile, latestPlan, snapshotReferences, masterContext, actionLogs, abTests] =
+  const [userProfile, latestPlan, snapshotReferences, masterContext, actionLogs, abTests, aiDirection] =
     await Promise.all([
       merged.includeUserProfile ? fetchUserProfile(userId) : Promise.resolve(null),
       merged.includePlan ? fetchLatestPlan(userId) : Promise.resolve(null),
@@ -380,9 +431,29 @@ export async function buildAIContext(
       merged.includeAbTests
         ? fetchRecentAbTests(userId, merged.abTestLimit)
         : Promise.resolve([] as ReturnType<typeof fetchRecentAbTests> extends Promise<infer R> ? R : []),
+      merged.includeAIDirection ? fetchAIDirection(userId) : Promise.resolve(null),
     ]);
 
   const references: AIReference[] = [];
+
+  // ai_directionを最優先で参照（今月の方針）
+  // 確定済み（lockedAtがある）もののみを参照
+  if (aiDirection && aiDirection.lockedAt) {
+    references.push({
+      id: `ai-direction-${aiDirection.month}`,
+      sourceType: "analytics",
+      label: `今月のAI方針: ${aiDirection.mainTheme}`,
+      summary: `優先KPI: ${aiDirection.priorityKPI} / 避けるべき焦点: ${aiDirection.avoidFocus.join(", ")}`,
+      metadata: {
+        type: "aiDirection",
+        mainTheme: aiDirection.mainTheme,
+        avoidFocus: aiDirection.avoidFocus,
+        priorityKPI: aiDirection.priorityKPI,
+        postingRules: aiDirection.postingRules,
+        lockedAt: aiDirection.lockedAt,
+      },
+    });
+  }
 
   if (userProfile) {
       references.push({
@@ -528,6 +599,7 @@ export async function buildAIContext(
     references,
     actionLogs: merged.includeActionLogs ? actionLogs : undefined,
     abTests: merged.includeAbTests ? abTests : undefined,
+    aiDirection: merged.includeAIDirection ? aiDirection : undefined,
   };
 }
 

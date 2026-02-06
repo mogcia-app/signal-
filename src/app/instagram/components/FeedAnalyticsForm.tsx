@@ -15,6 +15,8 @@ import {
   Trash2,
   Sparkles,
   Clipboard,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 import { InputData } from "./types";
 import { useAuth } from "../../../contexts/auth-context";
@@ -55,6 +57,10 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
     strengths: string[];
     improvements: string[];
     nextActions: string[];
+    directionAlignment?: "一致" | "乖離" | "要注意" | null;
+    directionComment?: string | null;
+    goalAchievementProspect?: "high" | "medium" | "low" | null;
+    goalAchievementReason?: string | null;
   } | null>(null);
   const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
   const [isAutoGeneratingAdvice, setIsAutoGeneratingAdvice] = useState(false);
@@ -375,6 +381,10 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
         strengths: insightData.strengths || [],
         improvements: insightData.improvements || [],
         nextActions: insightData.nextActions || [],
+        directionAlignment: insightData.directionAlignment || null,
+        directionComment: insightData.directionComment || null,
+        goalAchievementProspect: insightData.goalAchievementProspect || null,
+        goalAchievementReason: insightData.goalAchievementReason || null,
       });
     } catch (err) {
       console.error("AIアドバイス生成エラー:", err);
@@ -418,11 +428,43 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
       }
     }
 
-    // 分析データを保存
-    await onSave({ sentiment, memo });
+    // 分析データを保存（goalAchievementProspectをsentimentとして保存するため、後方互換性を保つ）
+    const sentimentForSave = aiAdvice?.goalAchievementProspect === "high" ? "satisfied" 
+      : aiAdvice?.goalAchievementProspect === "low" ? "dissatisfied" 
+      : sentiment; // 既存のsentimentがあればそれを使用、なければnull
+    await onSave({ sentiment: sentimentForSave as "satisfied" | "dissatisfied" | null, memo });
 
-    // 保存成功後、postIdとsentimentがある場合、自動的にAIアドバイスを生成
-    if (user?.uid && postData?.id && sentiment && !aiAdvice) {
+    // goalAchievementProspectを直接保存（aiAdviceがある場合）
+    if (aiAdvice?.goalAchievementProspect && user?.uid && postData?.id) {
+      try {
+        const sentimentMap: Record<"high" | "medium" | "low", "positive" | "negative" | "neutral"> = {
+          high: "positive",
+          medium: "neutral",
+          low: "negative",
+        };
+
+        await authFetch("/api/ai/feedback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            postId: postData.id,
+            sentiment: sentimentMap[aiAdvice.goalAchievementProspect], // 後方互換性のため
+            goalAchievementProspect: aiAdvice.goalAchievementProspect,
+            goalAchievementReason: aiAdvice.goalAchievementReason || undefined,
+            comment: memo?.trim() ? memo.trim() : undefined,
+          }),
+        });
+      } catch (error) {
+        console.error("目標達成見込み保存エラー:", error);
+        // 保存に失敗しても続行
+      }
+    }
+
+    // 保存成功後、postIdがある場合、自動的にAIアドバイスを生成
+    if (user?.uid && postData?.id && !aiAdvice) {
       setIsAutoGeneratingAdvice(true);
       setAdviceError(null);
       
@@ -1053,50 +1095,21 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
           </div>
         </div>
 
-        {/* この投稿についてのフィードバックを書きましょう */}
+        {/* この投稿についてのメモ */}
         <div className="p-4 border-t border-gray-200">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
             <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
-            この投稿についてのフィードバックを書きましょう
+            この投稿についてのメモ
           </h3>
-          <div className="space-y-4">
-            <div className="flex space-x-4">
-              <button
-                type="button"
-                onClick={() => setSentiment("satisfied")}
-                className={`flex items-center px-4 py-2 border ${
-                  sentiment === "satisfied"
-                    ? "bg-green-100 border-green-500 text-green-700"
-                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <ThumbsUp className="w-4 h-4 mr-2" />
-                満足
-              </button>
-              <button
-                type="button"
-                onClick={() => setSentiment("dissatisfied")}
-                className={`flex items-center px-4 py-2 border ${
-                  sentiment === "dissatisfied"
-                    ? "bg-red-100 border-red-500 text-red-700"
-                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <ThumbsDown className="w-4 h-4 mr-2" />
-                不満足
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">メモ</label>
-              <textarea
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
-                rows={2}
-                placeholder="投稿についてのフィードバックを入力..."
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">メモ（オプション）</label>
+            <textarea
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+              rows={2}
+              placeholder="この投稿についてのメモや気づきを記録してください"
+            />
           </div>
         </div>
 
@@ -1110,7 +1123,7 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             <button
               type="button"
               onClick={handleGenerateAdvice}
-              disabled={isGeneratingAdvice || !sentiment || !postData?.id}
+              disabled={isGeneratingAdvice || !postData?.id}
               className="px-4 py-2 text-sm font-semibold text-white bg-[#ff8a15] hover:bg-[#e6760f] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#ff8a15] transition-colors flex items-center gap-2 shadow-sm hover:shadow-md"
             >
               {isGeneratingAdvice ? (
@@ -1140,6 +1153,101 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             </div>
           ) : aiAdvice ? (
             <div className="space-y-4 bg-gray-50 p-4">
+              {/* 目標達成見込みの表示 */}
+              {aiAdvice.goalAchievementProspect && aiAdvice.goalAchievementReason && (
+                <div className={`p-3 border-l-4 rounded ${
+                  aiAdvice.goalAchievementProspect === "high"
+                    ? "bg-green-50 border-green-500"
+                    : aiAdvice.goalAchievementProspect === "medium"
+                    ? "bg-yellow-50 border-yellow-500"
+                    : "bg-red-50 border-red-500"
+                }`}>
+                  <div className="flex items-start gap-2">
+                    {aiAdvice.goalAchievementProspect === "high" ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    ) : aiAdvice.goalAchievementProspect === "medium" ? (
+                      <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <h4 className={`text-xs font-semibold mb-1 ${
+                        aiAdvice.goalAchievementProspect === "high"
+                          ? "text-green-900"
+                          : aiAdvice.goalAchievementProspect === "medium"
+                          ? "text-yellow-900"
+                          : "text-red-900"
+                      }`}>
+                        {aiAdvice.goalAchievementProspect === "high"
+                          ? "🎯 目標達成見込み: 高"
+                          : aiAdvice.goalAchievementProspect === "medium"
+                          ? "🎯 目標達成見込み: 中"
+                          : "🎯 目標達成見込み: 低"}
+                      </h4>
+                      <p className={`text-xs leading-relaxed ${
+                        aiAdvice.goalAchievementProspect === "high"
+                          ? "text-green-800"
+                          : aiAdvice.goalAchievementProspect === "medium"
+                          ? "text-yellow-800"
+                          : "text-red-800"
+                      }`}>
+                        {aiAdvice.goalAchievementReason}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 方針乖離の警告 */}
+              {aiAdvice.directionAlignment && aiAdvice.directionAlignment !== "一致" && aiAdvice.directionComment && (
+                <div className={`p-3 border-l-4 rounded ${
+                  aiAdvice.directionAlignment === "乖離" 
+                    ? "bg-red-50 border-red-500" 
+                    : "bg-yellow-50 border-yellow-500"
+                }`}>
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                      aiAdvice.directionAlignment === "乖離" 
+                        ? "text-red-600" 
+                        : "text-yellow-600"
+                    }`} />
+                    <div className="flex-1">
+                      <h4 className={`text-xs font-semibold mb-1 ${
+                        aiAdvice.directionAlignment === "乖離" 
+                          ? "text-red-900" 
+                          : "text-yellow-900"
+                      }`}>
+                        {aiAdvice.directionAlignment === "乖離" ? "⚠️ 方針乖離の警告" : "⚠️ 要注意"}
+                      </h4>
+                      <p className={`text-xs leading-relaxed ${
+                        aiAdvice.directionAlignment === "乖離" 
+                          ? "text-red-800" 
+                          : "text-yellow-800"
+                      }`}>
+                        {aiAdvice.directionComment}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 方針一致の確認 */}
+              {aiAdvice.directionAlignment === "一致" && aiAdvice.directionComment && (
+                <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-xs font-semibold text-green-900 mb-1">
+                        ✅ 今月のAI方針に沿っています
+                      </h4>
+                      <p className="text-xs text-green-800 leading-relaxed">
+                        {aiAdvice.directionComment}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="border-l-4 border-gray-400 pl-4">
                 <p className="text-sm text-gray-800 leading-relaxed">{aiAdvice.summary}</p>
               </div>
@@ -1176,9 +1284,7 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             </div>
           ) : (
             <div className="bg-gray-50 p-4 text-xs text-gray-500">
-              {sentiment
-                ? "「AIアドバイスを生成」ボタンをクリックして、この投稿の分析とアドバイスを取得できます。"
-                : "まず、上記のフィードバック（満足/不満足）を選択してください。"}
+              「AIアドバイスを生成」ボタンをクリックして、この投稿の分析とアドバイスを取得できます。
             </div>
           )}
         </div>

@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
       comment,
       weight,
       aiLabel,
+      goalAchievementProspect,
+      goalAchievementReason,
     }: {
       userId?: string;
       postId?: string;
@@ -19,11 +21,21 @@ export async function POST(request: NextRequest) {
       comment?: string;
       weight?: number;
       aiLabel?: string;
+      goalAchievementProspect?: "high" | "medium" | "low";
+      goalAchievementReason?: string;
     } = body || {};
 
-    if (!userId || !postId || !sentiment) {
+    if (!userId || !postId) {
       return NextResponse.json(
-        { success: false, error: "userId, postId, sentiment は必須です" },
+        { success: false, error: "userId, postId は必須です" },
+        { status: 400 }
+      );
+    }
+
+    // sentimentまたはgoalAchievementProspectのいずれかが必要
+    if (!sentiment && !goalAchievementProspect) {
+      return NextResponse.json(
+        { success: false, error: "sentiment または goalAchievementProspect のいずれかが必要です" },
         { status: 400 }
       );
     }
@@ -32,10 +44,12 @@ export async function POST(request: NextRequest) {
     await db.collection("ai_post_feedback").add({
       userId,
       postId,
-      sentiment,
+      sentiment: sentiment || (goalAchievementProspect === "high" ? "positive" : goalAchievementProspect === "low" ? "negative" : "neutral"), // 後方互換性のため
       comment: comment || "",
       aiLabel: aiLabel || "",
       weight: typeof weight === "number" ? weight : 1,
+      goalAchievementProspect: goalAchievementProspect || null, // 新規フィールド
+      goalAchievementReason: goalAchievementReason || null, // 新規フィールド
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 

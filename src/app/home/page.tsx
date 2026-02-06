@@ -599,6 +599,22 @@ export default function HomePage() {
                             <p className="text-sm font-light text-gray-700 mb-2">
                               「{task.description}」
                             </p>
+                            {task.reason && (
+                              <div className={`mb-2 p-2 border-l-2 rounded ${
+                                aiSections.aiDirection?.lockedAt 
+                                  ? "bg-blue-50 border-blue-400" 
+                                  : "bg-gray-50 border-gray-300"
+                              }`}>
+                                <p className={`text-xs ${
+                                  aiSections.aiDirection?.lockedAt 
+                                    ? "text-blue-800" 
+                                    : "text-gray-700"
+                                }`}>
+                                  → {task.reason}
+                                  {!aiSections.aiDirection?.lockedAt && "（未確定）"}
+                                </p>
+                              </div>
+                            )}
                             {(task.generatedContent || (task.generatedHashtags && task.generatedHashtags.length > 0)) && (
                               <div className="bg-gray-50 border border-gray-200  p-3 mb-2 relative">
                                 <div className="absolute top-2 right-2 flex gap-1">
@@ -705,6 +721,22 @@ export default function HomePage() {
                                 {task.generatedContent && (
                                   <div className="mb-2 pr-20">
                                     <div className="text-xs font-medium text-gray-700 mb-1">📝 生成された投稿文:</div>
+                                    {task.reason && (
+                                      <div className={`mb-2 p-2 border-l-2 rounded ${
+                                        aiSections.aiDirection?.lockedAt 
+                                          ? "bg-blue-50 border-blue-400" 
+                                          : "bg-gray-50 border-gray-300"
+                                      }`}>
+                                        <p className={`text-xs ${
+                                          aiSections.aiDirection?.lockedAt 
+                                            ? "text-blue-800" 
+                                            : "text-gray-700"
+                                        }`}>
+                                          {task.reason}
+                                          {!aiSections.aiDirection?.lockedAt && "（未確定）"}
+                                        </p>
+                                      </div>
+                                    )}
                                     <pre className="text-xs font-light text-gray-800 whitespace-pre-wrap font-sans">
                                       {task.generatedContent}
                                     </pre>
@@ -845,16 +877,25 @@ export default function HomePage() {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {aiSections.monthlyGoals.map((goal, index) => (
-                    <div key={index} className="border-l-2 border-[#FF8A15] pl-4 py-2 bg-gray-50">
-                      <div className="text-sm font-medium text-gray-900 mb-1">
-                        {goal.metric}
+                  {aiSections.monthlyGoals.map((goal, index) => {
+                    // 今月の重点方針の場合は特別なスタイル
+                    const isMainTheme = goal.metric === "今月の重点方針";
+                    return (
+                      <div key={index} className={`border-l-2 ${isMainTheme ? "border-blue-500" : "border-[#FF8A15]"} pl-4 py-2 ${isMainTheme ? "bg-blue-50" : "bg-gray-50"}`}>
+                        <div className={`text-sm font-medium ${isMainTheme ? "text-blue-900" : "text-gray-900"} mb-1`}>
+                          {goal.metric}
+                        </div>
+                        <div className={`text-sm font-light ${isMainTheme ? "text-blue-800" : "text-gray-700"}`}>
+                          {goal.target}
+                        </div>
+                        {isMainTheme && aiSections.aiDirection && (
+                          <div className="mt-2 text-xs text-blue-700">
+                            優先KPI: {aiSections.aiDirection.priorityKPI}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm font-light text-gray-700">
-                        {goal.target}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               </div>
@@ -878,6 +919,29 @@ export default function HomePage() {
                 </p>
               ) : (
                 <div className="space-y-4">
+                  {/* 今月の方針の表示（ai_directionがある場合） */}
+                  {aiSections.aiDirection ? (
+                    <div className={`mb-4 p-3 border-l-4 rounded ${
+                      aiSections.aiDirection.priorityKPI ? "bg-blue-50 border-blue-500" : "bg-gray-50 border-gray-300"
+                    }`}>
+                      <div className={`text-xs font-semibold mb-1 ${
+                        aiSections.aiDirection.priorityKPI ? "text-blue-900" : "text-gray-700"
+                      }`}>
+                        【今月の方針】
+                      </div>
+                      <div className={`text-sm font-medium mb-2 ${
+                        aiSections.aiDirection.priorityKPI ? "text-blue-800" : "text-gray-800"
+                      }`}>
+                        {aiSections.aiDirection.mainTheme || "未設定"}
+                      </div>
+                      {aiSections.aiDirection.priorityKPI && (
+                        <div className="text-xs text-blue-700">
+                          優先KPI: {aiSections.aiDirection.priorityKPI}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                  
                   <div className="border-l-2 border-purple-400 pl-4">
                     <div className="mb-2">
                       <div className="text-sm font-medium text-gray-900 mb-1">

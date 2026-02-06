@@ -100,3 +100,20 @@ export interface AIActionLog {
   updatedAt?: string | null;
 }
 
+/**
+ * AIの意思決定コア（Decision Core）
+ * 月次のAI方針を1箇所に集約する
+ */
+export interface AIDirection {
+  userId: string;
+  month: string; // "2026-01"
+  mainTheme: string; // "教育価値の可視化"
+  avoidFocus: string[]; // ["日常雑談のみの投稿"]
+  priorityKPI: string; // "保存率"
+  postingRules: string[]; // ["1投稿1メッセージ", "必ず専門性の一文を入れる"]
+  generatedFrom: "monthly_review" | "plan" | "manual";
+  lockedAt?: string | null; // ユーザーが確定した時刻（ISO string）
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+

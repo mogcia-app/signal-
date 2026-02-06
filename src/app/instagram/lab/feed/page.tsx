@@ -40,9 +40,6 @@ export default function FeedLabPage() {
     }>
   >([]);
 
-  // AIヒント関連の状態
-  const [imageVideoSuggestions, setImageVideoSuggestions] = useState<AIHintSuggestion | null>(null);
-  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [snapshotReferences, setSnapshotReferences] = useState<SnapshotReference[]>([]);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
 
@@ -327,82 +324,6 @@ export default function FeedLabPage() {
     return { feedback: null, category: "" };
   };
 
-  // AIヒント生成関数
-  const generateImageVideoSuggestions = useCallback(
-    async (content: string, feedOptions?: { feedPostType: "value" | "empathy" | "story" | "credibility" | "promo" | "brand"; textVolume: "short" | "medium" | "long"; imageCount: number }) => {
-      if (!isAuthReady) {return;}
-
-      // コンテンツを分析
-      const analysis = analyzeContent(content);
-      setSuggestionsFeedback(analysis.feedback);
-
-      // 連続フィードバックの追跡
-      if (analysis.feedback) {
-        const now = Date.now();
-        suggestionsFeedbackHistoryRef.current.push({ category: analysis.category, timestamp: now });
-        
-        // 3分以内の同じカテゴリのフィードバックをカウント
-        const recentSameCategory = suggestionsFeedbackHistoryRef.current.filter(
-          (f) => f.category === analysis.category && (now - f.timestamp) < 180000
-        );
-
-        if (recentSameCategory.length >= 3) {
-          setShowSuggestionsAdminWarning(true);
-        } else {
-          setShowSuggestionsAdminWarning(false);
-        }
-      } else {
-        // フィードバックがない場合は履歴をリセット
-        suggestionsFeedbackHistoryRef.current = [];
-        setShowSuggestionsAdminWarning(false);
-      }
-
-      setIsGeneratingSuggestions(true);
-      try {
-        // ビジネス情報を取得（キャッシュ付き）
-        const businessInfo = await fetchBusinessInfo();
-        if (!businessInfo) {
-          throw new Error("ビジネス情報の取得に失敗しました");
-        }
-
-        // AIヒントを生成
-        const suggestionsResponse = await authFetch("/api/instagram/feed-suggestions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content,
-            businessInfo: businessInfo.businessInfo,
-            ...(feedOptions ? { feedOptions } : {}),
-          }),
-        });
-
-        if (!suggestionsResponse.ok) {
-          throw new Error("AIヒントの生成に失敗しました");
-        }
-
-        const suggestionsData = await suggestionsResponse.json();
-        setImageVideoSuggestions({
-          content: suggestionsData.suggestions,
-          rationale: typeof suggestionsData.rationale === "string" && suggestionsData.rationale.trim().length > 0
-            ? suggestionsData.rationale
-            : undefined,
-        });
-        
-        // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
-        if (!suggestionsFeedback) {
-          suggestionsFeedbackHistoryRef.current = [];
-          setShowSuggestionsAdminWarning(false);
-        }
-      } catch (error) {
-        console.error("AIヒント生成エラー:", error);
-      } finally {
-        setIsGeneratingSuggestions(false);
-      }
-    },
-    [isAuthReady, suggestionsFeedback, fetchBusinessInfo]
-  );
 
   useEffect(() => {
     setIsMounted(true);
@@ -447,9 +368,6 @@ export default function FeedLabPage() {
               isAIGenerated={isAIGenerated}
               planData={planData}
               aiPromptPlaceholder="例: 新商品の紹介、ブランドストーリー、お客様の声、会社の取り組みなど..."
-              imageVideoSuggestions={imageVideoSuggestions}
-              onImageVideoSuggestionsGenerate={generateImageVideoSuggestions}
-              isGeneratingSuggestions={isGeneratingSuggestions}
               initialSnapshotReferences={snapshotReferences}
               onSnapshotReferencesChange={setSnapshotReferences}
               editingPostId={editingPostId}

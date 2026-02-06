@@ -12,6 +12,7 @@ export interface TodayTask {
   tip?: string;
   generatedContent?: string;
   generatedHashtags?: string[];
+  reason?: string; // 方針との関連性（なぜこれか）
 }
 
 export interface TomorrowPreparation {
@@ -49,6 +50,13 @@ export interface AISections {
   tomorrowPreparation: TomorrowPreparation[];
   monthlyGoals: MonthlyGoal[];
   weeklySchedule: WeeklySchedule | null;
+  aiDirection?: {
+    mainTheme: string;
+    priorityKPI: string;
+    avoidFocus: string[];
+    postingRules: string[];
+    lockedAt?: string | null; // 確定状態を表示するために追加
+  } | null;
 }
 
 export interface WeeklyKPIs {

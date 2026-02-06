@@ -172,6 +172,10 @@ async function generateAIStrategy(
         brandConcept?: string;
         colorVisual?: string;
         tone?: string;
+        useBaseGoals?: boolean;
+        useBaseChallenges?: boolean;
+        monthlyGoals?: string;
+        monthlyChallenges?: string;
       },
       simulationResult as {
         monthlyTarget?: number | string;

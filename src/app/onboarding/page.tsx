@@ -337,7 +337,10 @@ export default function OnboardingPage() {
 
               {/* 目標・課題 */}
               <div className="mb-6 pb-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">目標と課題</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">基本方針・長期目標</h3>
+                <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+                  この目標は、あなたのビジネスの根幹となる基本方針です。月ごとに変わる目標は、運用計画ページで設定できます。
+                </p>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-2">目標</label>
@@ -376,69 +379,15 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Instagram AI設定 */}
+              {/* 注意事項・NGワード */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Instagram AI設定</h3>
-                <div className="space-y-4">
-                  {snsAISettings.instagram ? (
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">注意事項・NGワード</h3>
+                <div>
+                  {snsAISettings.instagram && "cautions" in snsAISettings.instagram && snsAISettings.instagram.cautions ? (
                     <div className="p-4 border border-gray-200 bg-gray-50">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl">📷</span>
-                          <span className="font-semibold text-gray-900 text-lg">Instagram</span>
-                        </div>
-                        <span className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                          ✓ 有効
-                        </span>
-                      </div>
-                      <div className="space-y-3 text-sm">
-                        {snsAISettings.instagram.tone && (
-                          <div className="pb-3 border-b border-gray-200">
-                            <span className="text-gray-700 font-medium">トーン:</span>
-                            <p className="text-gray-900 mt-1">{snsAISettings.instagram.tone}</p>
-                          </div>
-                        )}
-                    {"manner" in snsAISettings.instagram && snsAISettings.instagram.manner && (
-                          <div className="pb-3 border-b border-gray-200">
-                            <span className="text-gray-700 font-medium">マナー・ルール:</span>
-                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                              {snsAISettings.instagram.manner}
-                            </p>
-                          </div>
-                        )}
-                    {"cautions" in snsAISettings.instagram && snsAISettings.instagram.cautions && (
-                          <div className="pb-3 border-b border-gray-200">
-                            <span className="text-gray-700 font-medium">注意事項・NGワード:</span>
-                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                              {snsAISettings.instagram.cautions}
-                            </p>
-                          </div>
-                        )}
-                    {"goals" in snsAISettings.instagram && snsAISettings.instagram.goals && (
-                          <div className="pb-3 border-b border-gray-200">
-                            <span className="text-gray-700 font-medium">Instagram運用の目標:</span>
-                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                              {snsAISettings.instagram.goals}
-                            </p>
-                          </div>
-                        )}
-                    {"motivation" in snsAISettings.instagram && snsAISettings.instagram.motivation && (
-                          <div className="pb-3 border-b border-gray-200">
-                            <span className="text-gray-700 font-medium">活動の動機:</span>
-                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                              {snsAISettings.instagram.motivation}
-                            </p>
-                          </div>
-                        )}
-                    {"additionalInfo" in snsAISettings.instagram && snsAISettings.instagram.additionalInfo && (
-                          <div className="pb-3">
-                            <span className="text-gray-700 font-medium">その他AI参考情報:</span>
-                            <p className="text-gray-900 mt-1 whitespace-pre-wrap">
-                              {snsAISettings.instagram.additionalInfo}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                      <p className="text-gray-900 whitespace-pre-wrap">
+                        {snsAISettings.instagram.cautions}
+                      </p>
                     </div>
                   ) : (
                     <p className="text-gray-900">未設定</p>

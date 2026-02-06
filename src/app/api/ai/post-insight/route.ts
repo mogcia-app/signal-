@@ -3,6 +3,8 @@ import { getMasterContext } from "../monthly-analysis/infra/firestore/master-con
 import type { PostLearningSignal } from "../monthly-analysis/types";
 import { adminDb } from "@/lib/firebase-admin";
 import { getUserProfile } from "@/lib/server/user-profile";
+import { fetchAIDirection } from "@/lib/ai/context";
+import * as admin from "firebase-admin";
 
 interface PostInsightRequest {
   userId?: string;
@@ -283,22 +285,49 @@ export async function POST(request: NextRequest) {
       businessInfo,
     };
 
+    // ai_direction（今月のAI方針）を取得
+    const aiDirection = await fetchAIDirection(userId);
+    
     const prompt = `以下のInstagram投稿データを分析し、JSON形式で出力してください。
 
-【分析のポイント】
+${aiDirection && aiDirection.lockedAt ? `【今月のAI方針（最優先・必須参照）】
+- メインテーマ: ${aiDirection.mainTheme}
+- 避けるべき焦点: ${aiDirection.avoidFocus.join(", ")}
+- 優先KPI: ${aiDirection.priorityKPI}
+- 投稿ルール: ${aiDirection.postingRules.join(", ")}
+
+**重要**: この投稿が上記の「今月のAI方針」と一致しているか、乖離しているかを必ず評価してください。
+
+` : ""}【分析のポイント】
 - 投稿内容・ハッシュタグ・投稿日時を確認
 - 分析ページで入力された分析データ（いいね数、コメント数、リーチ数など）を評価
-- フィードバック（満足度・メモ）を考慮
 - 計画の目標フォロワー数・KPI・ターゲット層と比較
 - 現在のフォロワー数と目標の差を考慮
 - 事業内容・ターゲット市場を踏まえた提案
+${aiDirection && aiDirection.lockedAt ? `- **今月のAI方針との一致/乖離を評価**` : ""}
+
+【目標達成見込みの評価基準】
+以下の3つの観点から総合的に評価してください：
+1. **計画との整合性**: 運用計画の目標（フォロワー増加、エンゲージメント向上など）に対して、この投稿がどの程度貢献しているか
+2. **今月のAI方針との整合性**: メインテーマ、優先KPI、避けるべき焦点、投稿ルールに沿っているか
+3. **投稿パフォーマンス**: リーチ、いいね、コメント、保存、シェアなどの数値が目標達成に寄与しているか
+
+評価結果：
+- **high（高）**: 計画や今月の方針に沿っており、目標達成が見込める投稿
+- **medium（中）**: 部分的に計画に沿っているが、改善の余地がある投稿
+- **low（低）**: 計画や今月の方針から乖離しており、目標達成が困難な投稿
 
 出力形式:
 {
   "summary": "投稿全体の一言まとめ（30-60文字程度）",
   "strengths": ["この投稿の良かった部分1", "この投稿の良かった部分2"],
   "improvements": ["改善すべきポイント1", "改善すべきポイント2"],
-  "nextActions": ["次は何をすべきか？（次の一手）1", "次は何をすべきか？（次の一手）2"]
+  "nextActions": ["次は何をすべきか？（次の一手）1", "次は何をすべきか？（次の一手）2"]${aiDirection && aiDirection.lockedAt ? `,
+  "directionAlignment": "一致" | "乖離" | "要注意",
+  "directionComment": "今月のAI方針との関係性を1文で説明（例: 「今月の重点「${aiDirection.mainTheme}」に沿った投稿です」または「今月の重点からズレています」）"
+}` : ""},
+  "goalAchievementProspect": "high" | "medium" | "low",
+  "goalAchievementReason": "目標達成見込みの評価理由（計画内容、今月のAI方針、投稿パフォーマンスを総合的に評価した結果を1-2文で説明）"
 }
 条件:
 - 箇条書きは2-3個に収める
@@ -306,6 +335,7 @@ export async function POST(request: NextRequest) {
 - 日本語で記述する
 - 事業内容・ターゲット層・計画の目標を踏まえた提案にする
 - 分析データの数値を具体的に参照する
+${aiDirection && aiDirection.lockedAt ? `- **今月のAI方針「${aiDirection.mainTheme}」を必ず考慮して、「nextActions」を提案してください。月次レポートの提案と一貫性を持たせてください。**` : ""}
 
 投稿データ:
 ${JSON.stringify(payload, null, 2)}`;
@@ -356,6 +386,10 @@ ${JSON.stringify(payload, null, 2)}`;
       strengths?: string[];
       improvements?: string[];
       nextActions?: string[];
+      directionAlignment?: "一致" | "乖離" | "要注意";
+      directionComment?: string;
+      goalAchievementProspect?: "high" | "medium" | "low";
+      goalAchievementReason?: string;
     };
     
     try {
@@ -380,6 +414,12 @@ ${JSON.stringify(payload, null, 2)}`;
         nextActions: Array.isArray(parsed.nextActions)
           ? parsed.nextActions.filter((item: unknown): item is string => typeof item === "string")
           : [],
+        directionAlignment: parsed.directionAlignment || null,
+        directionComment: typeof parsed.directionComment === "string" ? parsed.directionComment : null,
+        goalAchievementProspect: (parsed.goalAchievementProspect === "high" || parsed.goalAchievementProspect === "medium" || parsed.goalAchievementProspect === "low") 
+          ? parsed.goalAchievementProspect 
+          : null,
+        goalAchievementReason: typeof parsed.goalAchievementReason === "string" ? parsed.goalAchievementReason : null,
       },
     });
   } catch (error) {

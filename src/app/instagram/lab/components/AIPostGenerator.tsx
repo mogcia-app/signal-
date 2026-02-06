@@ -402,29 +402,6 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
 
         {/* 生成ボタン */}
         <div className="space-y-3">
-          {/* 自動生成ボタン */}
-          <button
-            onClick={handleAutoGenerate}
-            disabled={isAutoGenerating || !planData}
-            className={`w-full py-4 px-6 font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
-              isAutoGenerating || !planData
-                ? "bg-gray-300 text-black cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transform hover:scale-105"
-            }`}
-          >
-            {isAutoGenerating ? (
-              <>
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                自動生成中...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-3" size={24} />
-                🤖 自動生成（テーマも自動選択）
-              </>
-            )}
-          </button>
-
           {/* テーマ指定生成ボタン */}
           <button
             onClick={handleGeneratePost}
@@ -444,6 +421,29 @@ export const AIPostGenerator: React.FC<AIPostGeneratorProps> = ({
               <>
                 <Sparkles className="mr-3" size={24} />
                 ✍️ テーマ指定生成
+              </>
+            )}
+          </button>
+
+          {/* 自動生成ボタン */}
+          <button
+            onClick={handleAutoGenerate}
+            disabled={isAutoGenerating || !planData}
+            className={`w-full py-4 px-6 font-semibold text-lg transition-all duration-200 flex items-center justify-center ${
+              isAutoGenerating || !planData
+                ? "bg-gray-300 text-black cursor-not-allowed"
+                : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transform hover:scale-105"
+            }`}
+          >
+            {isAutoGenerating ? (
+              <>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                自動生成中...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-3" size={24} />
+                🤖 自動生成（テーマも自動選択）
               </>
             )}
           </button>

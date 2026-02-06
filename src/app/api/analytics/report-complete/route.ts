@@ -775,6 +775,36 @@ export async function GET(request: NextRequest) {
           : [],
       }));
 
+    // 6. 方向性警告ログを取得（今月の投稿分析で警告が出た投稿）
+    let directionAlignmentWarnings: Array<{
+      postId: string;
+      directionAlignment: "乖離" | "要注意";
+      directionComment: string;
+      aiDirectionMainTheme: string | null;
+    }> = [];
+    
+    try {
+      const alignmentLogsSnapshot = await adminDb
+        .collection("direction_alignment_logs")
+        .where("userId", "==", uid)
+        .where("month", "==", date)
+        .get();
+      
+      directionAlignmentWarnings = alignmentLogsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          postId: data.postId || "",
+          directionAlignment: (data.directionAlignment === "乖離" || data.directionAlignment === "要注意")
+            ? data.directionAlignment
+            : "要注意",
+          directionComment: data.directionComment || "",
+          aiDirectionMainTheme: data.aiDirectionMainTheme || null,
+        };
+      });
+    } catch (alignmentError) {
+      console.error("方向性警告ログ取得エラー:", alignmentError);
+    }
+
     // 6. AI学習リファレンス
     const aiContextBundle = await buildAIContext(uid, {
       includeUserProfile: true,
@@ -866,7 +896,26 @@ export async function GET(request: NextRequest) {
           ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）`
           : "";
 
-        monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括）
+        // フォロワー数の前月比を計算（フォールバックメッセージ用）
+        const fallbackFollowerChangeText = prevTotalFollowerIncrease > 0 && totalFollowerIncrease !== prevTotalFollowerIncrease
+          ? `（前月比${totalFollowerIncrease > prevTotalFollowerIncrease ? "+" : ""}${((totalFollowerIncrease - prevTotalFollowerIncrease) / prevTotalFollowerIncrease * 100).toFixed(1)}％）`
+          : "";
+
+        // フォロワー数の表示用テキスト（0の場合も必ず表示）
+        const followerDisplayValue = totalFollowerIncrease || 0;
+        const followerDisplayText = followerDisplayValue !== 0
+          ? `${followerDisplayValue > 0 ? "+" : ""}${followerDisplayValue.toLocaleString()}人${fallbackFollowerChangeText}`
+          : `0人`;
+
+        console.log("[Report Complete] フォールバックメッセージ生成:", {
+          totalFollowerIncrease,
+          followerIncreaseFromPosts,
+          followerIncreaseFromOther,
+          prevTotalFollowerIncrease,
+          followerDisplayText,
+        });
+
+        monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括})
 
 ⸻
 
@@ -875,6 +924,7 @@ export async function GET(request: NextRequest) {
 	•	いいね数：${totalLikes.toLocaleString()}
 	•	保存数：${totalSaves.toLocaleString()}
 	•	コメント数：${totalComments.toLocaleString()}
+	•	フォロワー増加数：${followerDisplayText}
 
 ⸻
 
@@ -1165,6 +1215,11 @@ ${getMonthName(date)}は分析済み投稿が${analyzedCount}件と、まだデ�
             const nextMonth = getNextMonthName(date);
             const totalShares = validAnalyticsData.reduce((sum, d) => sum + (d.shares || 0), 0);
 
+            // フォロワー数の前月比を計算
+            const followerChangeText = prevTotalFollowerIncrease > 0 && totalFollowerIncrease !== prevTotalFollowerIncrease
+              ? `（前月比${totalFollowerIncrease > prevTotalFollowerIncrease ? "+" : ""}${((totalFollowerIncrease - prevTotalFollowerIncrease) / prevTotalFollowerIncrease * 100).toFixed(1)}％）`
+              : "";
+
             const prompt = `以下のInstagram運用データを基に、${currentMonth}の振り返りを自然な日本語で出力してください。
 
 【データ】
@@ -1174,6 +1229,7 @@ ${getMonthName(date)}は分析済み投稿が${analyzedCount}件と、まだデ�
 - コメント数: ${totalComments.toLocaleString()}
 - 保存数: ${totalSaves.toLocaleString()}
 - シェア数: ${totalShares.toLocaleString()}
+- フォロワー増加数: ${totalFollowerIncrease > 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}人${followerChangeText}
 ${hasPlan ? `- 運用計画: ${planInfo?.title || "あり"}` : "- 運用計画: 未設定"}
 ${businessInfoText}
 ${aiSettingsText}
@@ -1186,6 +1242,24 @@ ${topPostInfo}
 
 ${postSummaryInsights ? `\n【投稿ごとのAI分析結果の集計】\n${postSummaryInsights}` : ""}
 
+${directionAlignmentWarnings.length > 0 ? `\n【今月の方向性警告（重要）】
+今月の投稿分析で、${directionAlignmentWarnings.length}件の投稿が今月のAI方針から「乖離」または「要注意」と判定されました。
+
+警告の内訳:
+${directionAlignmentWarnings.map((warning, index) => {
+  const alignmentLabel = warning.directionAlignment === "乖離" ? "⚠️ 乖離" : "⚠️ 要注意";
+  return `${index + 1}. ${alignmentLabel}: ${warning.directionComment || "方針からズレています"}`;
+}).join("\n")}
+
+${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").length > 0
+  ? `\n**重要**: 「乖離」と判定された投稿が${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").length}件あります。これは、今月のAI方針「${directionAlignmentWarnings[0]?.aiDirectionMainTheme || "未設定"}」から大きくズレていることを示しています。\n`
+  : ""}
+これらの警告を踏まえて、来月のアクションプランでは以下の点を必ず考慮してください:
+- 警告が出た投稿のパターンを分析し、同様のズレを防ぐ施策を提案してください
+- 今月のAI方針との整合性を保つための具体的な改善策を提案してください
+- 警告の頻度が高い場合は、方針自体の見直しも検討してください
+` : ""}
+
 【出力形式】
 必ず以下のセクションを全て含めてください。最後の「📈 ${nextMonth}に向けた提案」セクションは必須です。
 ${postSummaryInsights ? "「📋 今月の投稿別強み・改善・施策まとめ」セクションも含めてください。" : ""}
@@ -1195,10 +1269,12 @@ ${postSummaryInsights ? "「📋 今月の投稿別強み・改善・施策ま�
 ⸻
 
 📈 月次トータル数字
+**重要：以下の5項目を必ず全て含めてください。フォロワー増加数も必須です。**
 	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
 	•	いいね数：${totalLikes.toLocaleString()}
 	•	保存数：${totalSaves.toLocaleString()}
 	•	コメント数：${totalComments.toLocaleString()}
+	•	フォロワー増加数：${totalFollowerIncrease > 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}人${followerChangeText}
 
 ⸻
 
@@ -1344,6 +1420,11 @@ ${currentMonth}の運用を振り返ると、{評価（好調/順調/改善の�
             // 提案セクションが含まれていない場合、別途生成
             if (!monthlyReview.includes("📈") && !monthlyReview.includes("提案")) {
               try {
+                // フォロワー数の前月比を計算（提案プロンプト用）
+                const proposalFollowerChangeText = prevTotalFollowerIncrease > 0 && totalFollowerIncrease !== prevTotalFollowerIncrease
+                  ? `（前月比${totalFollowerIncrease > prevTotalFollowerIncrease ? "+" : ""}${((totalFollowerIncrease - prevTotalFollowerIncrease) / prevTotalFollowerIncrease * 100).toFixed(1)}％）`
+                  : "";
+
                 const proposalPrompt = `以下のInstagram運用データを基に、${nextMonth}に向けた具体的なアクションプランを3つ生成してください。
 
 【データ】
@@ -1352,6 +1433,7 @@ ${currentMonth}の運用を振り返ると、{評価（好調/順調/改善の�
 - リーチ数: ${totalReach.toLocaleString()}${prevTotalReach > 0 ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）` : ""}
 - コメント数: ${totalComments.toLocaleString()}
 - 保存数: ${totalSaves.toLocaleString()}
+- フォロワー増加数: ${totalFollowerIncrease > 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}人${proposalFollowerChangeText}
 ${businessInfoText}
 ${aiSettingsText}
 
@@ -1361,6 +1443,26 @@ ${postTypeArray.length > 0
       .map((stat) => `${stat.label}: ${stat.count}件（${stat.percentage.toFixed(0)}％）`)
       .join("、")
   : "データがありません"}
+
+${directionAlignmentWarnings.length > 0 ? `\n【今月の方向性警告（重要・必須考慮）】
+今月の投稿分析で、${directionAlignmentWarnings.length}件の投稿が今月のAI方針から「乖離」または「要注意」と判定されました。
+
+警告の内訳:
+${directionAlignmentWarnings.map((warning, index) => {
+  const alignmentLabel = warning.directionAlignment === "乖離" ? "⚠️ 乖離" : "⚠️ 要注意";
+  return `${index + 1}. ${alignmentLabel}: ${warning.directionComment || "方針からズレています"}`;
+}).join("\n")}
+
+${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").length > 0
+  ? `\n**重要**: 「乖離」と判定された投稿が${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").length}件あります。これは、今月のAI方針「${directionAlignmentWarnings[0]?.aiDirectionMainTheme || "未設定"}」から大きくズレていることを示しています。\n`
+  : ""}
+
+**必須**: 来月のアクションプランでは、以下の点を必ず考慮してください:
+- 警告が出た投稿のパターンを分析し、同様のズレを防ぐ施策を提案してください
+- 今月のAI方針との整合性を保つための具体的な改善策を提案してください
+- 警告の頻度が高い場合は、方針自体の見直しも検討してください
+- 特に「乖離」と判定された投稿が多い場合は、方針の明確化や再設定を提案してください
+` : ""}
 
 【出力形式】
 📈 ${nextMonth}に向けた提案
@@ -1434,6 +1536,72 @@ ${postTypeArray.length > 0
                   },
                   { merge: true }
                 );
+
+                // ai_directionを作成（未確定状態）
+                if (actionPlans.length > 0) {
+                  try {
+                    // 次月の月文字列を取得
+                    const [yearStr, monthStr] = date.split("-").map(Number);
+                    // monthStrは1-12の値なので、0ベースに変換（monthStr - 1）
+                    const nextMonth = new Date(yearStr, monthStr - 1, 1);
+                    nextMonth.setMonth(nextMonth.getMonth() + 1); // 次月に進める
+                    const nextMonthStr = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}`;
+
+                    // actionPlansからai_directionを生成
+                    const mainTheme = actionPlans[0]?.title || "継続的な改善";
+                    const avoidFocus: string[] = [];
+                    const postingRules: string[] = [];
+                    let priorityKPI = "エンゲージメント率";
+
+                    // actionPlansから情報を抽出
+                    actionPlans.forEach((plan) => {
+                      // 説明文から避けるべき焦点を抽出
+                      if (plan.description.includes("避ける") || plan.description.includes("控える")) {
+                        const match = plan.description.match(/(避ける|控える)[^。]+/);
+                        if (match) {
+                          avoidFocus.push(match[0]);
+                        }
+                      }
+                      // アクションから投稿ルールを抽出
+                      if (plan.action) {
+                        postingRules.push(plan.action);
+                      }
+                      // KPI関連のキーワードを検出
+                      if (plan.title.includes("保存") || plan.description.includes("保存")) {
+                        priorityKPI = "保存率";
+                      } else if (plan.title.includes("リーチ") || plan.description.includes("リーチ")) {
+                        priorityKPI = "リーチ";
+                      } else if (plan.title.includes("フォロワー") || plan.description.includes("フォロワー")) {
+                        priorityKPI = "フォロワー増加";
+                      }
+                    });
+
+                    const directionDocRef = adminDb
+                      .collection("ai_direction")
+                      .doc(`${uid}_${nextMonthStr}`);
+
+                    await directionDocRef.set(
+                      {
+                        userId: uid,
+                        month: nextMonthStr,
+                        mainTheme,
+                        avoidFocus: avoidFocus.length > 0 ? avoidFocus : ["日常雑談のみの投稿"],
+                        priorityKPI,
+                        postingRules: postingRules.length > 0 ? postingRules : ["1投稿1メッセージ"],
+                        generatedFrom: "monthly_review",
+                        lockedAt: null, // 未確定
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                      },
+                      { merge: true }
+                    );
+
+                    console.log(`✅ ai_directionを作成: ${nextMonthStr} - ${mainTheme}`);
+                  } catch (directionError) {
+                    console.error("ai_direction作成エラー:", directionError);
+                    // エラーは無視して続行
+                  }
+                }
               } catch (saveError) {
                 console.error("レビュー保存エラー:", saveError);
               }
