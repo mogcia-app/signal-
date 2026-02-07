@@ -1033,8 +1033,32 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       console.log(`[レスポンス] タスク${index}: type=${task.type}, description=${task.description}, hasContent=${!!task.generatedContent}, hasHashtags=${!!task.generatedHashtags && task.generatedHashtags.length > 0}`);
     });
 
+    // undefinedをnullに変換（Firestoreはundefinedを保存できない）
+    const sanitizeForFirestore = (obj: any): any => {
+      if (obj === null || obj === undefined) {
+        return null;
+      }
+      if (Array.isArray(obj)) {
+        return obj.map(sanitizeForFirestore);
+      }
+      if (typeof obj === "object") {
+        const sanitized: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+          if (value !== undefined) {
+            sanitized[key] = sanitizeForFirestore(value);
+          }
+        }
+        return sanitized;
+      }
+      return obj;
+    };
+
     const responseData = {
-      todayTasks,
+      todayTasks: todayTasks.map((task) => ({
+        ...task,
+        generatedContent: task.generatedContent ?? null,
+        generatedHashtags: task.generatedHashtags ?? null,
+      })),
       tomorrowPreparation,
       monthlyGoals,
       weeklySchedule,
@@ -1050,10 +1074,11 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
 
     // Firestoreに日付ベースでキャッシュを保存（同じ日は同じ内容を返す）
     try {
+      const sanitizedData = sanitizeForFirestore(responseData);
       await cacheRef.set({
         userId: uid,
         date: todayStr,
-        data: responseData,
+        data: sanitizedData,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });

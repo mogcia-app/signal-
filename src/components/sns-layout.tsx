@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Calendar, FlaskConical, Image, Video, Circle, BookOpen, BarChart, Target, Sparkles } from "lucide-react";
 import { ProgressBar } from "./progress-bar";
 
 interface SNSLayoutProps {
@@ -163,7 +163,7 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <span>📋</span>
+                <Calendar size={18} className="flex-shrink-0" />
                 <span>運用計画</span>
               </Link>
             )}
@@ -179,7 +179,7 @@ export default function SNSLayout({
                 }`}
               >
                 <div className="flex items-center space-x-2">
-                  <span>🧪</span>
+                  <FlaskConical size={18} className="flex-shrink-0" />
                   <span>投稿ラボ</span>
                 </div>
                 <span
@@ -199,7 +199,7 @@ export default function SNSLayout({
                         : "text-gray-600 hover:bg-gray-50"
                     }`}
                   >
-                    <span>📸</span>
+                    <Image size={16} className="flex-shrink-0" />
                     <span>フィード</span>
                   </Link>
                   <Link
@@ -210,7 +210,7 @@ export default function SNSLayout({
                         : "text-gray-600 hover:bg-gray-50"
                     }`}
                   >
-                    <span>🎬</span>
+                    <Video size={16} className="flex-shrink-0" />
                     <span>リール</span>
                   </Link>
                   <Link
@@ -221,7 +221,7 @@ export default function SNSLayout({
                         : "text-gray-600 hover:bg-gray-50"
                     }`}
                   >
-                    <span>📱</span>
+                    <Circle size={16} className="flex-shrink-0" />
                     <span>ストーリー</span>
                   </Link>
                 </div>
@@ -237,7 +237,7 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <span>📚</span>
+                <BookOpen size={18} className="flex-shrink-0" />
                 <span>投稿一覧</span>
               </Link>
             )}
@@ -263,7 +263,7 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <span>📈</span>
+                <BarChart size={18} className="flex-shrink-0" />
                 <span>月次レポート</span>
               </Link>
             )}
@@ -276,7 +276,7 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <span>🎯</span>
+                <Target size={18} className="flex-shrink-0" />
                 <span>KPIコンソール</span>
               </Link>
             )}
@@ -289,7 +289,7 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <span>🗂️</span>
+                <Sparkles size={18} className="flex-shrink-0" />
                 <span>学習ダッシュボード</span>
               </Link>
             )}

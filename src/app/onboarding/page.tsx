@@ -98,7 +98,6 @@ export default function OnboardingPage() {
     productsOrServices?: Array<{ id: string; name: string; details: string; price?: string }>;
   });
   const goals = businessInfo.goals || [];
-  const challenges = businessInfo.challenges || [];
   const productsOrServices = businessInfo.productsOrServices || [];
   const snsAISettings = userProfile?.snsAISettings || ({} as {
     instagram?: {
@@ -335,47 +334,23 @@ export default function OnboardingPage() {
                 )}
               </div>
 
-              {/* 目標・課題 */}
+              {/* SNS活用の目的 */}
               <div className="mb-6 pb-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">基本方針・長期目標</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">SNS活用の目的</h3>
                 <p className="text-xs text-gray-600 mb-4 leading-relaxed">
-                  この目標は、あなたのビジネスの根幹となる基本方針です。月ごとに変わる目標は、運用計画ページで設定できます。
+                  この目的は、あなたのビジネスがSNSで何を実現したいかを表す基本方針です。
+                  月ごとに変わる具体的な目標は、運用計画ページで設定できます。
                 </p>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-2">目標</label>
-                    <div className="flex flex-wrap gap-2">
-                      {goals.length > 0 ? (
-                    goals.map((goal: string, index: number) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium"
-                          >
-                            {goal}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-gray-900">未設定</span>
-                      )}
+                <div>
+                  {goals.length > 0 ? (
+                    <div className="p-4 border border-gray-200 bg-gray-50">
+                      <p className="text-gray-900 whitespace-pre-wrap">
+                        {goals.join("\n")}
+                      </p>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-2">課題</label>
-                    <div className="flex flex-wrap gap-2">
-                      {challenges.length > 0 ? (
-                    challenges.map((challenge: string, index: number) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium"
-                          >
-                            {challenge}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-gray-900">未設定</span>
-                      )}
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-gray-900">未設定</p>
+                  )}
                 </div>
               </div>
 

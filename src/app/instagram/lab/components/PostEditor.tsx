@@ -109,6 +109,25 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     initialSnapshotReferences || [],
   );
   const [latestGeneration, setLatestGeneration] = useState<AIGenerationResponse | null>(null);
+  const [visualSuggestions, setVisualSuggestions] = useState<{
+    atmosphere: string;
+    composition: string;
+    colorScheme: string;
+    textOverlay?: string;
+    avoidElements?: string[];
+    videoStructure?: {
+      opening: string;
+      development: string;
+      twist: string;
+      conclusion: string;
+    };
+    storyStructure?: {
+      slides: Array<{ order: number; content: string }>;
+    };
+    rationale?: string;
+    basedOnLearning?: boolean;
+  } | null>(null);
+  const [isGeneratingVisualSuggestions, setIsGeneratingVisualSuggestions] = useState(false);
   const priorityBadgeStyles: Record<"high" | "medium" | "low", string> = {
     high: "bg-red-50 text-red-700 border border-red-200",
     medium: "bg-amber-50 text-amber-700 border border-amber-200",
@@ -420,6 +439,53 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     onContentChange(savedContent);
   };
 
+  // ビジュアル推奨事項を取得する関数
+  const fetchVisualSuggestions = async (postContent: string, postHashtags: string[]) => {
+    if (!postContent || postContent.trim().length === 0) {
+      return;
+    }
+
+    if (!user?.uid) {
+      return;
+    }
+
+    setIsGeneratingVisualSuggestions(true);
+    try {
+      const { auth } = await import("../../../../lib/firebase");
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await currentUser.getIdToken() : null;
+
+      const response = await fetch("/api/ai/visual-suggestions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          content: postContent,
+          hashtags: postHashtags,
+          postType: postType || "feed",
+          scheduledDate,
+          scheduledTime,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("ビジュアル推奨事項の取得に失敗しました");
+      }
+
+      const result = await response.json();
+      if (result.success && result.data?.suggestions) {
+        setVisualSuggestions(result.data.suggestions);
+      }
+    } catch (error) {
+      console.error("ビジュアル推奨事項取得エラー:", error);
+      // エラーは静かに処理（必須機能ではないため）
+    } finally {
+      setIsGeneratingVisualSuggestions(false);
+    }
+  };
+
   const handleClear = () => {
     onContentChange("");
     onTitleChange?.("");
@@ -429,6 +495,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     onImageChange?.(null);
     updateSnapshotReferences([]);
     setLatestGeneration(null);
+    setVisualSuggestions(null);
   };
 
   // キーボードショートカット（Ctrl+S / Cmd+Sで保存）
@@ -574,6 +641,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         });
         const generatedContent = applied.content;
 
+        // ビジュアル推奨事項を自動取得
+        if (generatedContent && generatedContent.trim().length > 0) {
+          fetchVisualSuggestions(generatedContent, result.data.hashtags || []);
+        }
         
         // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
         if (!autoGenerateFeedback) {
@@ -707,6 +778,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         });
         const generatedContent = applied.content;
         setAiPrompt(""); // テーマをクリア
+
+        // ビジュアル推奨事項を自動取得
+        if (generatedContent && generatedContent.trim().length > 0) {
+          fetchVisualSuggestions(generatedContent, result.data.hashtags || []);
+        }
         
         // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
         if (!aiGenerateFeedback) {
@@ -796,6 +872,123 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               </div>
             </div>
           ) : null}
+
+          {/* ビジュアル推奨事項 */}
+          {(visualSuggestions || isGeneratingVisualSuggestions) && (
+            <div className="mb-6 border border-orange-200 bg-orange-50/30 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-slate-700 flex items-center">
+                  📸 ビジュアル推奨事項
+                  {visualSuggestions?.basedOnLearning && (
+                    <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] rounded">
+                      学習データ基づく
+                    </span>
+                  )}
+                </p>
+                {isGeneratingVisualSuggestions && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs text-[#FF8A15]">生成中...</span>
+                  </div>
+                )}
+              </div>
+              
+              {isGeneratingVisualSuggestions && !visualSuggestions ? (
+                <div className="py-8 text-center">
+                  <div className="w-8 h-8 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-xs text-[#FF8A15]">ビジュアル推奨事項を生成しています...</p>
+                </div>
+              ) : visualSuggestions ? (
+              
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-slate-900 mb-1">【推奨される雰囲気】</p>
+                  <p className="text-xs text-slate-700">{visualSuggestions.atmosphere}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs font-semibold text-slate-900 mb-1">【推奨される構図】</p>
+                  <p className="text-xs text-slate-700">{visualSuggestions.composition}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs font-semibold text-slate-900 mb-1">【推奨される色合い】</p>
+                  <p className="text-xs text-slate-700">{visualSuggestions.colorScheme}</p>
+                </div>
+
+                {visualSuggestions.textOverlay && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-900 mb-1">【テキストオーバーレイ】</p>
+                    <p className="text-xs text-slate-700">{visualSuggestions.textOverlay}</p>
+                  </div>
+                )}
+
+                {postType === "reel" && visualSuggestions.videoStructure && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-900 mb-2">【推奨される動画構成】</p>
+                    <div className="space-y-2">
+                      <div className="bg-white border border-slate-200 p-2 rounded">
+                        <p className="text-[10px] font-semibold text-slate-900 mb-1">オープニング（0-3秒）</p>
+                        <p className="text-xs text-slate-700">{visualSuggestions.videoStructure.opening}</p>
+                      </div>
+                      <div className="bg-white border border-slate-200 p-2 rounded">
+                        <p className="text-[10px] font-semibold text-slate-900 mb-1">展開（3-10秒）</p>
+                        <p className="text-xs text-slate-700">{visualSuggestions.videoStructure.development}</p>
+                      </div>
+                      <div className="bg-white border border-slate-200 p-2 rounded">
+                        <p className="text-[10px] font-semibold text-slate-900 mb-1">転換（10-15秒）</p>
+                        <p className="text-xs text-slate-700">{visualSuggestions.videoStructure.twist}</p>
+                      </div>
+                      <div className="bg-white border border-slate-200 p-2 rounded">
+                        <p className="text-[10px] font-semibold text-slate-900 mb-1">クロージング（15-30秒）</p>
+                        <p className="text-xs text-slate-700">{visualSuggestions.videoStructure.conclusion}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {postType === "story" && visualSuggestions.storyStructure && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-900 mb-2">【推奨されるストーリー構成】</p>
+                    <div className="space-y-2">
+                      {visualSuggestions.storyStructure.slides.map((slide) => (
+                        <div key={slide.order} className="bg-white border border-slate-200 p-2 rounded">
+                          <p className="text-[10px] font-semibold text-slate-900 mb-1">
+                            {slide.order}枚目
+                          </p>
+                          <p className="text-xs text-slate-700">{slide.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {visualSuggestions.avoidElements && visualSuggestions.avoidElements.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-900 mb-1">【避けるべき要素】</p>
+                    <ul className="list-disc list-inside text-xs text-slate-700 space-y-1">
+                      {visualSuggestions.avoidElements.map((element, index) => (
+                        <li key={index}>{element}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {visualSuggestions.rationale && (
+                  <div className="pt-2 border-t border-slate-200">
+                    <p className="text-[10px] text-slate-600">{visualSuggestions.rationale}</p>
+                  </div>
+                )}
+
+                <div className="mt-3 pt-3 border-t border-slate-200">
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    ⚠️ この推奨事項は参考情報であり、投稿の成果（エンゲージメント率向上、フォロワー増加など）を保証するものではありません。実際の成果は、投稿内容、タイミング、ターゲット層など様々な要因に依存します。
+                  </p>
+                </div>
+              </div>
+              ) : null}
+            </div>
+          )}
 
           {/* AI投稿文生成 */}
           <div className="mb-6 bg-white border border-gray-200 p-6">

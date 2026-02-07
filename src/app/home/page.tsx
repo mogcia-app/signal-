@@ -449,6 +449,7 @@ export default function HomePage() {
             </div>
           )}
 
+
           {/* 計画が存在しない場合のメッセージ */}
           {!dashboardData?.currentPlan && !isLoadingDashboard && (
             <div className="bg-gradient-to-r from-[#FF8A15] to-orange-500  border border-orange-300 p-6 text-white">
@@ -467,7 +468,7 @@ export default function HomePage() {
                   >
                     計画を作成する →
                   </button>
-                  </div>
+                </div>
               </div>
             </div>
           )}
