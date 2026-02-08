@@ -66,7 +66,7 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="bg-white border border-gray-200 p-4">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
         <div className="flex items-center justify-center py-6">
           <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
           <span className="text-sm text-gray-700">読み込み中...</span>
@@ -77,7 +77,7 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
 
   if (!feedStats && !reelStats) {
     return (
-      <div className="bg-white border border-gray-200 p-4 mb-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
         <div className="text-center py-8 text-gray-500">
           <p className="text-sm">フィードまたはリールの分析データがありません</p>
         </div>
@@ -88,7 +88,7 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
       {/* フィード統計サマリー */}
-      <div className="bg-white border border-gray-200 p-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
         <div className="flex items-center mb-4">
           <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
             <Eye className="w-5 h-5 text-white" />
@@ -200,7 +200,7 @@ export const ContentPerformance: React.FC<ContentPerformanceProps> = ({
       </div>
 
       {/* リール統計サマリー */}
-      <div className="bg-white border border-gray-200 p-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
         <div className="flex items-center mb-4">
           <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
             <Clock className="w-5 h-5 text-white" />

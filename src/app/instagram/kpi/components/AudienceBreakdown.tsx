@@ -33,9 +33,8 @@ const GenderChart: React.FC<{
 }> = ({ title, breakdown }) => {
   if (!breakdown?.gender) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-xs text-gray-400 mt-2">データがありません</p>
+      <div className="flex flex-col items-center justify-center p-6 border border-dashed border-gray-300 rounded-full bg-gray-50 w-32 h-32 sm:w-40 sm:h-40" style={{ aspectRatio: "1 / 1" }}>
+        <p className="text-xs text-gray-400">データなし</p>
       </div>
     );
   }
@@ -46,18 +45,19 @@ const GenderChart: React.FC<{
   
   return (
     <div className="flex flex-col items-center">
-      <p className="text-sm font-semibold text-gray-900 mb-4">{title}</p>
+      {title && <p className="text-sm font-semibold text-gray-900 mb-4">{title}</p>}
       <div
-        className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 border-gray-200 flex-shrink-0 mb-4"
+        className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 border-gray-200 flex-shrink-0"
         style={{
           background: buildConicGradient([
             { value: malePercent, color: "#6366F1" },
             { value: femalePercent, color: "#EC4899" },
             { value: otherPercent, color: "#475569" },
           ]),
+          aspectRatio: "1 / 1",
         }}
         role="img"
-        aria-label={`${title}の性別内訳: 男性${malePercent.toFixed(1)}%、女性${femalePercent.toFixed(1)}%、その他${otherPercent.toFixed(1)}%`}
+        aria-label={`${title || ""}の性別内訳: 男性${malePercent.toFixed(1)}%、女性${femalePercent.toFixed(1)}%、その他${otherPercent.toFixed(1)}%`}
       />
     </div>
   );
@@ -133,7 +133,7 @@ export const AudienceBreakdownComponent: React.FC<AudienceBreakdownProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="bg-white border border-gray-200 p-4 mb-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
         <div className="flex items-center justify-center py-6">
           <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
           <span className="text-sm text-gray-700">読み込み中...</span>
@@ -147,46 +147,77 @@ export const AudienceBreakdownComponent: React.FC<AudienceBreakdownProps> = ({
   }
 
   return (
-    <div className="bg-white border border-gray-200 p-6 mb-6">
-      <div className="flex items-center mb-4">
-        <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+      <div className="flex items-center mb-6">
+        <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0 rounded-lg">
           <Users className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">オーディエンス構成サマリー</h2>
-          <p className="text-sm text-gray-700 mt-0.5">
+          <h2 className="text-lg font-semibold text-gray-900">オーディエンス構成サマリー</h2>
+          <p className="text-sm text-gray-600 mt-0.5">
             今月のフィード／リールで反応が高かった性別・年齢を比較します
           </p>
         </div>
       </div>
 
-      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 space-y-6">
-        {/* 円グラフ（2カラム） */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <GenderChart title="フィード" breakdown={feed} />
-          <GenderChart title="リール" breakdown={reel} />
-        </div>
-
-        {/* 内訳（2カラム） */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        {/* 2カラムレイアウト：フィードとリールを横並び */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* フィードセクション */}
           <div className="space-y-4">
-            <p className="text-sm font-semibold text-gray-900">フィード</p>
-            <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <h3 className="text-base font-semibold text-gray-900">フィード</h3>
+            </div>
+            
+            {/* 円グラフ */}
+            <div className="flex justify-center">
+              <GenderChart title="" breakdown={feed} />
+            </div>
+            
+            {/* 性別内訳 */}
+            <div className="pt-2">
               <GenderLegend breakdown={feed} />
+            </div>
+            
+            {/* 年齢内訳 */}
+            <div className="pt-2">
               <AgeBreakdown breakdown={feed} />
             </div>
+            
             {(!feed || (!feed.gender && !feed.age)) && (
-              <p className="text-xs text-gray-500">データがありません</p>
+              <div className="text-center py-6 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                <p className="text-xs text-gray-500">データがありません</p>
+              </div>
             )}
           </div>
+
+          {/* リールセクション */}
           <div className="space-y-4">
-            <p className="text-sm font-semibold text-gray-900">リール</p>
-            <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+              <h3 className="text-base font-semibold text-gray-900">リール</h3>
+            </div>
+            
+            {/* 円グラフ */}
+            <div className="flex justify-center">
+              <GenderChart title="" breakdown={reel} />
+            </div>
+            
+            {/* 性別内訳 */}
+            <div className="pt-2">
               <GenderLegend breakdown={reel} />
+            </div>
+            
+            {/* 年齢内訳 */}
+            <div className="pt-2">
               <AgeBreakdown breakdown={reel} />
             </div>
+            
             {(!reel || (!reel.gender && !reel.age)) && (
-              <p className="text-xs text-gray-500">データがありません</p>
+              <div className="text-center py-6 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                <p className="text-xs text-gray-500">データがありません</p>
+              </div>
             )}
           </div>
         </div>

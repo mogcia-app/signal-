@@ -9,6 +9,7 @@ import { HashtagAnalysis } from "./components/HashtagAnalysis";
 import { ContentPerformance } from "./components/ContentPerformance";
 import { AudienceBreakdownComponent } from "./components/AudienceBreakdown";
 import { DailyKPITrend } from "./components/DailyKPITrend";
+import { PostingTimeKPIAnalysis } from "./components/PostingTimeKPIAnalysis";
 import { useAuth } from "../../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { canAccessFeature } from "@/lib/plan-access";
@@ -17,7 +18,7 @@ import { handleError } from "../../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import { clientCache, generateCacheKey } from "../../../utils/cache";
 import { SkeletonKPICard } from "../../../components/ui/SkeletonLoader";
-import type { KPIBreakdown, TimeSlotEntry, FeedStats, ReelStats, AudienceBreakdown, DailyKPI } from "@/app/api/analytics/kpi-breakdown/route";
+import type { KPIBreakdown, TimeSlotEntry, TimeSlotKPIAnalysis, FeedStats, ReelStats, AudienceBreakdown, DailyKPI } from "@/app/api/analytics/kpi-breakdown/route";
 
 export default function InstagramKPIPage() {
   const { user } = useAuth();
@@ -38,6 +39,7 @@ export default function InstagramKPIPage() {
   const [kpiData, setKpiData] = useState<{
     breakdowns: KPIBreakdown[];
     timeSlotAnalysis: TimeSlotEntry[];
+    timeSlotKPIAnalysis?: TimeSlotKPIAnalysis[];
     hashtagStats: Array<{ hashtag: string; count: number }>;
     feedStats: FeedStats | null;
     reelStats: ReelStats | null;
@@ -68,6 +70,7 @@ export default function InstagramKPIPage() {
       const cachedData = clientCache.get<{
         breakdowns: KPIBreakdown[];
         timeSlotAnalysis: TimeSlotEntry[];
+        timeSlotKPIAnalysis?: TimeSlotKPIAnalysis[];
         hashtagStats: Array<{ hashtag: string; count: number }>;
         feedStats: FeedStats | null;
         reelStats: ReelStats | null;
@@ -101,6 +104,7 @@ export default function InstagramKPIPage() {
             const kpiData = {
               breakdowns: result.data.breakdowns || [],
               timeSlotAnalysis: result.data.timeSlotAnalysis || [],
+              timeSlotKPIAnalysis: result.data.timeSlotKPIAnalysis || [],
               hashtagStats: result.data.hashtagStats || [],
               feedStats: result.data.feedStats || null,
               reelStats: result.data.reelStats || null,
@@ -214,17 +218,19 @@ export default function InstagramKPIPage() {
 
   return (
     <SNSLayout customTitle="KPIコンソール" customDescription="主要KPIを要素ごとに分解し、何が伸びたか／落ちたかを素早く把握できます">
-      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
+      <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-gray-50 min-h-screen py-6">
         {/* ヘッダー */}
-        <KPIHeader
-          selectedMonth={selectedMonth}
-          onMonthChange={setSelectedMonth}
-          getMonthDisplayName={getMonthDisplayName}
-        />
+        <div className="mb-6">
+          <KPIHeader
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+            getMonthDisplayName={getMonthDisplayName}
+          />
+        </div>
 
         {/* エラー表示 */}
         {error && (
-          <div className="bg-red-50 border border-red-200 p-4 mb-6" role="alert" aria-live="polite">
+          <div className="bg-red-50 border border-red-200 p-4 mb-6 rounded-lg" role="alert" aria-live="polite">
             <div className="flex items-start justify-between">
               <p className="text-sm text-red-700 flex-1">{error}</p>
               {retryCount > 0 && (
@@ -242,42 +248,58 @@ export default function InstagramKPIPage() {
         
         {/* 部分ローディング表示 */}
         {isPartiallyLoading && kpiData && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded" role="status" aria-live="polite">
+          <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg" role="status" aria-live="polite">
             <p className="text-sm text-blue-700">データを更新中...</p>
           </div>
         )}
 
-        {/* KPI分解 */}
-        <KPIBreakdownComponent
-          breakdowns={kpiData?.breakdowns || []}
-          isLoading={isLoading}
-          error={error}
-        />
+        {/* ダッシュボードグリッドレイアウト */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* KPI分解 - 全幅 */}
+          <div className="lg:col-span-2 xl:col-span-3">
+            <KPIBreakdownComponent
+              breakdowns={kpiData?.breakdowns || []}
+              isLoading={isLoading}
+              error={error}
+            />
+          </div>
 
-        {/* フィード/リール統計サマリー */}
-        <ContentPerformance
-          feedStats={kpiData?.feedStats || null}
-          reelStats={kpiData?.reelStats || null}
-          isLoading={isLoading}
-        />
+          {/* フィード/リール統計サマリー - 全幅 */}
+          <div className="lg:col-span-2 xl:col-span-3">
+            <ContentPerformance
+              feedStats={kpiData?.feedStats || null}
+              reelStats={kpiData?.reelStats || null}
+              isLoading={isLoading}
+            />
+          </div>
 
-        {/* 日別KPI推移 */}
-        <DailyKPITrend dailyKPIs={kpiData?.dailyKPIs || []} isLoading={isLoading} />
+          {/* 投稿時間 × KPI分析 - 全幅 */}
+          <div className="lg:col-span-2 xl:col-span-3">
+            <PostingTimeKPIAnalysis
+              timeSlotKPIAnalysis={kpiData?.timeSlotKPIAnalysis || []}
+              isLoading={isLoading}
+            />
+          </div>
 
-        {/* 時間帯 × コンテンツタイプ */}
-        {/* TimeSlotHeatmap コンポーネントは削除されました */}
+          {/* 日別KPI推移 - 全幅 */}
+          <div className="lg:col-span-2 xl:col-span-3">
+            <DailyKPITrend dailyKPIs={kpiData?.dailyKPIs || []} isLoading={isLoading} />
+          </div>
 
-        {/* ハッシュタグ分析 */}
-        <div className="mt-4">
-          <HashtagAnalysis hashtagStats={kpiData?.hashtagStats || []} isLoading={isLoading} />
+          {/* オーディエンス構成サマリー - 全幅（日別KPI推移の下） */}
+          <div className="lg:col-span-2 xl:col-span-3">
+            <AudienceBreakdownComponent
+              feed={kpiData?.feedAudience || null}
+              reel={kpiData?.reelAudience || null}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* ハッシュタグ分析 - 全幅 */}
+          <div className="lg:col-span-2 xl:col-span-3">
+            <HashtagAnalysis hashtagStats={kpiData?.hashtagStats || []} isLoading={isLoading} />
+          </div>
         </div>
-
-        {/* オーディエンス構成サマリー */}
-        <AudienceBreakdownComponent
-          feed={kpiData?.feedAudience || null}
-          reel={kpiData?.reelAudience || null}
-          isLoading={isLoading}
-        />
       </div>
     </SNSLayout>
   );

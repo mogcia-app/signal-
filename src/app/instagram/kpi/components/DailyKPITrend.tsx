@@ -55,7 +55,7 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="bg-white border border-gray-200 p-4 mb-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
         <div className="flex items-center justify-center py-6">
           <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15] mr-2" />
           <span className="text-sm text-gray-700">読み込み中...</span>
@@ -66,7 +66,7 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
 
   if (!dailyKPIs || dailyKPIs.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 p-4 mb-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
         <div className="text-center py-8 text-gray-500">
           <p className="text-sm">日別KPIデータがありません</p>
         </div>
@@ -81,7 +81,7 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
 
   if (filteredData.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 p-4 mb-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
         <div className="text-center py-8 text-gray-500">
           <p className="text-sm">今月のKPIデータがありません</p>
         </div>
@@ -94,7 +94,7 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
   const interval = Math.max(0, Math.floor((filteredData.length - 1) / (maxLabels - 1)));
 
   return (
-    <div className="bg-white border border-gray-200 p-6 mb-6">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
       <div className="flex items-center mb-4">
         <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">
           <TrendingUp className="w-5 h-5 text-white" />
@@ -107,7 +107,7 @@ export const DailyKPITrend: React.FC<DailyKPITrendProps> = ({
         </div>
       </div>
 
-      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="h-56 sm:h-64 md:h-80 w-full overflow-x-auto">
           <ResponsiveContainer width="100%" height="100%" minWidth={300}>
             <AreaChart

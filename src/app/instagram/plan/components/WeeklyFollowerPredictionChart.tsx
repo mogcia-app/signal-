@@ -78,13 +78,13 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
       {
         label: "目標フォロワー数",
         data: targetPredictions.map((p) => p.followers),
-        borderColor: "#F97316",
-        backgroundColor: "rgba(249, 115, 22, 0.08)",
+        borderColor: "#FF8A15",
+        backgroundColor: "rgba(255, 138, 21, 0.15)",
         tension: 0.4,
         fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointBackgroundColor: "#F97316",
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: "#FF8A15",
         pointBorderColor: "#ffffff",
         pointBorderWidth: 2,
         borderWidth: 2,
@@ -111,18 +111,19 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
       legend: {
         display: true,
         position: "top" as const,
-        align: "end" as const,
+        align: "center" as const,
         labels: {
-          usePointStyle: false,
-          padding: 16,
+          usePointStyle: true,
+          pointStyle: "rect",
+          padding: 20,
           font: {
             size: 12,
             weight: "normal" as const,
             family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
           },
           color: "#64748B",
-          boxWidth: 8,
-          boxHeight: 8,
+          boxWidth: 12,
+          boxHeight: 12,
           generateLabels: function (chart: any) {
             const original = ChartJS.defaults.plugins.legend.labels.generateLabels;
             const labels = original.call(this, chart);
@@ -179,18 +180,18 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
       y: {
         beginAtZero: false,
         grid: {
-          color: "rgba(0, 0, 0, 0.04)",
+          color: "rgba(0, 0, 0, 0.05)",
           drawBorder: false,
           lineWidth: 1,
         },
         ticks: {
           font: {
-            size: 11,
+            size: 12,
             weight: "normal" as const,
             family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
           },
-          color: "#94A3B8",
-          padding: 12,
+          color: "#64748B",
+          padding: 10,
           callback: function (value: any) {
             return value.toLocaleString() + "人";
           },
@@ -203,12 +204,12 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
         },
         ticks: {
           font: {
-            size: 11,
+            size: 12,
             weight: "normal" as const,
             family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
           },
-          color: "#94A3B8",
-          padding: 12,
+          color: "#64748B",
+          padding: 10,
           maxRotation: 0,
           minRotation: 0,
         },
@@ -222,7 +223,7 @@ export const WeeklyFollowerPredictionChart: React.FC<WeeklyFollowerPredictionCha
 
   return (
     <div className="w-full">
-      <div className="h-80 w-full -mx-1">
+      <div className="h-80 w-full">
         <Line data={chartData} options={chartOptions} />
       </div>
     </div>

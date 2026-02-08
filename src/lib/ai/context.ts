@@ -400,6 +400,7 @@ export async function fetchAIDirection(userId: string): Promise<AIDirection | nu
       avoidFocus: Array.isArray(data.avoidFocus) ? data.avoidFocus : [],
       priorityKPI: data.priorityKPI || "",
       postingRules: Array.isArray(data.postingRules) ? data.postingRules : [],
+      optimalPostingTime: data.optimalPostingTime || null,
       generatedFrom: data.generatedFrom || "monthly_review",
       lockedAt: data.lockedAt?.toDate?.()?.toISOString() ?? null,
       createdAt: data.createdAt?.toDate?.()?.toISOString() ?? null,

@@ -214,8 +214,8 @@ export const SimulationResult: React.FC<SimulationResultProps> = ({
           </div>
 
           {/* 週次フォロワー増加予測グラフ */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">
               週次フォロワー増加予測グラフ
             </h3>
             <WeeklyFollowerPredictionChart

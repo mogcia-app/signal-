@@ -108,7 +108,7 @@ ${
       additionalInfo?: string;
     };
 
-      if (settings.enabled) {
+    if (settings.enabled) {
       prompt += `
 【${snsType.toUpperCase()} AI設定】
 - トーン: ${settings.tone || "フレンドリー"}

@@ -79,7 +79,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-white border border-gray-200 p-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-[#FF8A15] mr-3" />
           <span className="text-sm text-gray-700">KPIデータを読み込み中...</span>
@@ -90,7 +90,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
 
   if (error) {
     return (
-      <div className="bg-white border border-gray-200 p-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
         <div className="bg-red-50 border border-red-200 p-4">
           <p className="text-sm text-red-800">{error}</p>
         </div>
@@ -100,7 +100,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
 
   if (!breakdowns || breakdowns.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 p-6">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
         <div className="text-center py-12 text-gray-500">
           <p className="text-sm">KPIデータがありません</p>
         </div>
@@ -109,7 +109,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
   }
 
   return (
-    <div className="bg-white border border-gray-200 p-6 mb-6">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
       <div className="mb-4 pb-3 border-b border-gray-200">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-[#ff8a15] flex items-center justify-center mr-3 flex-shrink-0">

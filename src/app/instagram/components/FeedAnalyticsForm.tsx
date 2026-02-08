@@ -1101,15 +1101,15 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
             この投稿についてのメモ
           </h3>
-          <div>
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">メモ（オプション）</label>
-            <textarea
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
-              rows={2}
+              <textarea
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
+                rows={2}
               placeholder="この投稿についてのメモや気づきを記録してください"
-            />
+              />
           </div>
         </div>
 

@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
         avoidFocus: string[];
         priorityKPI: string;
         postingRules: string[];
+        optimalPostingTime?: string | null;
         generatedFrom: string;
         lockedAt: admin.firestore.FieldValue | null;
         createdAt: admin.firestore.FieldValue;
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
         avoidFocus: Array.isArray(avoidFocus) ? avoidFocus : [],
         priorityKPI: priorityKPI || "エンゲージメント率",
         postingRules: Array.isArray(postingRules) ? postingRules : [],
+        optimalPostingTime: null, // 手動作成時はnull（月次レポート生成時に自動計算される）
         generatedFrom: "manual",
         lockedAt: locked ? admin.firestore.FieldValue.serverTimestamp() : null,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),

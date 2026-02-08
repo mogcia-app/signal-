@@ -111,6 +111,7 @@ export interface AIDirection {
   avoidFocus: string[]; // ["日常雑談のみの投稿"]
   priorityKPI: string; // "保存率"
   postingRules: string[]; // ["1投稿1メッセージ", "必ず専門性の一文を入れる"]
+  optimalPostingTime?: string | null; // "夜 (18-21時)" - KPI分析から算出された最適な投稿時間帯
   generatedFrom: "monthly_review" | "plan" | "manual";
   lockedAt?: string | null; // ユーザーが確定した時刻（ISO string）
   createdAt?: string | null;

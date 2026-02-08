@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
 
     // ai_direction（今月のAI方針）を取得
     const aiDirection = await fetchAIDirection(userId);
-    
+
     const prompt = `以下のInstagram投稿データを分析し、JSON形式で出力してください。
 
 ${aiDirection && aiDirection.lockedAt ? `【今月のAI方針（最優先・必須参照）】

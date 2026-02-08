@@ -13,7 +13,7 @@ export const KPIHeader: React.FC<KPIHeaderProps> = ({
   getMonthDisplayName,
 }) => {
   return (
-    <div className="bg-white border border-gray-200 p-4 mb-4">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-3">
         {/* 左側: タイトルと説明 */}
         <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">

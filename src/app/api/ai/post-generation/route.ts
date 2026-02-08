@@ -284,15 +284,24 @@ export async function POST(request: NextRequest) {
       // ai_direction（今月のAI方針）を最優先で参照
       const aiDirection = await fetchAIDirection(userId);
       if (aiDirection && aiDirection.lockedAt) {
-        systemPrompt = `【今月のAI方針（最優先・必須遵守）】
+        let aiDirectionPrompt = `【今月のAI方針（最優先・必須遵守）】
 - メインテーマ: ${aiDirection.mainTheme}
 - 避けるべき焦点: ${aiDirection.avoidFocus.join(", ")}
 - 優先KPI: ${aiDirection.priorityKPI}
-- 投稿ルール: ${aiDirection.postingRules.join(", ")}
+- 投稿ルール: ${aiDirection.postingRules.join(", ")}`;
 
-${systemPrompt}
+        // 最適な投稿時間帯がある場合は追加
+        if (aiDirection.optimalPostingTime) {
+          aiDirectionPrompt += `\n- 推奨投稿時間帯: ${aiDirection.optimalPostingTime}（過去のKPI分析から、この時間帯が最も高いエンゲージメント率を獲得しています）`;
+        }
 
-**重要**: 上記の「今月のAI方針」を必ず遵守して投稿を生成してください。`;
+        aiDirectionPrompt += `\n\n${systemPrompt}\n\n**重要**: 上記の「今月のAI方針」を必ず遵守して投稿を生成してください。`;
+        
+        if (aiDirection.optimalPostingTime) {
+          aiDirectionPrompt += `\n\n**投稿時間の推奨**: 可能であれば「${aiDirection.optimalPostingTime}」に投稿することを推奨します。この時間帯は過去の分析データから、最も高いエンゲージメント率を獲得している時間帯です。`;
+        }
+
+        systemPrompt = aiDirectionPrompt;
       }
 
       // 運用計画の要約を追加

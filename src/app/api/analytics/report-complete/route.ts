@@ -1576,6 +1576,145 @@ ${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").leng
                       }
                     });
 
+                    // 最適な投稿時間帯を計算（KPI分析から）
+                    let optimalPostingTime: string | null = null;
+                    try {
+                      // 投稿データとanalyticsデータを結合
+                      const postsWithAnalytics: Array<{
+                        id: string;
+                        title: string;
+                        postType: "feed" | "reel" | "story";
+                        analyticsSummary?: {
+                          likes?: number;
+                          comments?: number;
+                          shares?: number;
+                          saves?: number;
+                          reach?: number;
+                          publishedTime?: string;
+                        };
+                      }> = [];
+
+                      postsSnapshot.docs.forEach((postDoc) => {
+                        const postData = postDoc.data();
+                        const analyticsData = analyticsByPostId.get(postDoc.id);
+                        
+                        if (analyticsData) {
+                          // publishedAtからpublishedTimeを計算
+                          let publishedTime = "";
+                          if (analyticsData.publishedTime) {
+                            publishedTime = analyticsData.publishedTime;
+                          } else if (analyticsData.publishedAt) {
+                            let publishedAt: Date;
+                            if (analyticsData.publishedAt instanceof admin.firestore.Timestamp) {
+                              publishedAt = analyticsData.publishedAt.toDate();
+                            } else if (analyticsData.publishedAt instanceof Date) {
+                              publishedAt = analyticsData.publishedAt;
+                            } else if (analyticsData.publishedAt.toDate && typeof analyticsData.publishedAt.toDate === "function") {
+                              publishedAt = analyticsData.publishedAt.toDate();
+                            } else {
+                              publishedAt = new Date(analyticsData.publishedAt);
+                            }
+                            // HH:mm形式に変換
+                            const hours = String(publishedAt.getHours()).padStart(2, "0");
+                            const minutes = String(publishedAt.getMinutes()).padStart(2, "0");
+                            publishedTime = `${hours}:${minutes}`;
+                          }
+
+                          postsWithAnalytics.push({
+                            id: postDoc.id,
+                            title: postData.title || "",
+                            postType: (postData.postType || "feed") as "feed" | "reel" | "story",
+                            analyticsSummary: {
+                              likes: analyticsData.likes || 0,
+                              comments: analyticsData.comments || 0,
+                              shares: analyticsData.shares || 0,
+                              saves: analyticsData.saves || 0,
+                              reach: analyticsData.reach || 0,
+                              publishedTime,
+                            },
+                          });
+                        }
+                      });
+
+                      // 時間帯ごとのKPI分析を計算
+                      const timeSlots = [
+                        { label: "早朝 (6-9時)", range: [6, 9] },
+                        { label: "午前 (9-12時)", range: [9, 12] },
+                        { label: "午後 (12-15時)", range: [12, 15] },
+                        { label: "夕方 (15-18時)", range: [15, 18] },
+                        { label: "夜 (18-21時)", range: [18, 21] },
+                        { label: "深夜 (21-6時)", range: [21, 24] },
+                      ];
+
+                      const timeSlotKPIAnalysis = timeSlots.map(({ label, range }) => {
+                        const postsInRange = postsWithAnalytics.filter((post) => {
+                          const publishedTime = post.analyticsSummary?.publishedTime;
+                          if (!publishedTime || publishedTime === "") {
+                            return false;
+                          }
+                          const hour = parseInt(publishedTime.split(":")[0]);
+                          if (isNaN(hour)) {
+                            return false;
+                          }
+
+                          if (range[0] === 21 && range[1] === 24) {
+                            return hour >= 21 || hour < 6;
+                          }
+
+                          return hour >= range[0] && hour < range[1];
+                        });
+
+                        if (postsInRange.length === 0) {
+                          return {
+                            label,
+                            range,
+                            postsInRange: 0,
+                            avgEngagementRate: 0,
+                          };
+                        }
+
+                        let totalEngagementRate = 0;
+                        postsInRange.forEach((post) => {
+                          const summary = post.analyticsSummary;
+                          if (!summary) return;
+
+                          const likes = summary.likes || 0;
+                          const comments = summary.comments || 0;
+                          const shares = summary.shares || 0;
+                          const saves = summary.saves || 0;
+                          const reach = summary.reach || 0;
+
+                          const engagement = likes + comments + shares + saves;
+                          const engagementRate = reach > 0 ? (engagement / reach) * 100 : 0;
+                          totalEngagementRate += engagementRate;
+                        });
+
+                        const count = postsInRange.length;
+                        return {
+                          label,
+                          range,
+                          postsInRange: count,
+                          avgEngagementRate: count > 0 ? totalEngagementRate / count : 0,
+                        };
+                      });
+
+                      // 最適な投稿時間帯を取得（エンゲージメント率が最も高い時間帯、投稿数が1件以上）
+                      const validTimeSlots = timeSlotKPIAnalysis.filter((slot) => slot.postsInRange > 0);
+                      if (validTimeSlots.length > 0) {
+                        const bestTimeSlot = validTimeSlots.reduce((best, slot) => {
+                          if (slot.avgEngagementRate > best.avgEngagementRate) {
+                            return slot;
+                          }
+                          return best;
+                        }, validTimeSlots[0]);
+                        optimalPostingTime = bestTimeSlot.label;
+                        console.log(`✅ 最適な投稿時間帯を計算: ${optimalPostingTime} (エンゲージメント率: ${bestTimeSlot.avgEngagementRate.toFixed(2)}%)`);
+                      }
+                    } catch (timeAnalysisError) {
+                      console.error("最適な投稿時間帯計算エラー:", timeAnalysisError);
+                      // エラーは無視して続行
+                    }
+
                     const directionDocRef = adminDb
                       .collection("ai_direction")
                       .doc(`${uid}_${nextMonthStr}`);
@@ -1588,6 +1727,7 @@ ${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").leng
                         avoidFocus: avoidFocus.length > 0 ? avoidFocus : ["日常雑談のみの投稿"],
                         priorityKPI,
                         postingRules: postingRules.length > 0 ? postingRules : ["1投稿1メッセージ"],
+                        optimalPostingTime: optimalPostingTime || null,
                         generatedFrom: "monthly_review",
                         lockedAt: null, // 未確定
                         createdAt: admin.firestore.FieldValue.serverTimestamp(),

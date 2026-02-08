@@ -398,27 +398,27 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
 
               {/* 通常のアクションプラン表示（選択UIが表示されていない場合のみ） */}
               {(!aiDirection || aiDirection.lockedAt) && (
-                <div className="space-y-2">
-                  {actionPlans.map((plan, index) => (
-                      <div
-                        key={index}
-                        className="bg-white p-3 sm:p-4 border border-gray-200"
-                      >
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1.5">
-                          {index + 1}. {removeMarkdown(plan.title)}
-                        </h3>
-                        {plan.description && (
-                          <p className="text-xs text-gray-700 mb-2 leading-relaxed">{removeMarkdown(plan.description)}</p>
-                        )}
-                        {plan.action && (
-                          <div className="flex items-start gap-2 mt-2 pt-2 border-t border-orange-200">
-                            <ArrowRight className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs font-medium text-gray-900">{removeMarkdown(plan.action)}</p>
-                          </div>
-                        )}
-                      </div>
-                  ))}
-                </div>
+              <div className="space-y-2">
+                {actionPlans.map((plan, index) => (
+                    <div
+                      key={index}
+                      className="bg-white p-3 sm:p-4 border border-gray-200"
+                    >
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1.5">
+                        {index + 1}. {removeMarkdown(plan.title)}
+                      </h3>
+                      {plan.description && (
+                        <p className="text-xs text-gray-700 mb-2 leading-relaxed">{removeMarkdown(plan.description)}</p>
+                      )}
+                      {plan.action && (
+                        <div className="flex items-start gap-2 mt-2 pt-2 border-t border-orange-200">
+                          <ArrowRight className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-xs font-medium text-gray-900">{removeMarkdown(plan.action)}</p>
+                        </div>
+                      )}
+                    </div>
+                ))}
+              </div>
               )}
 
               {/* 再提案するボタン */}
