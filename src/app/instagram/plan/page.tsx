@@ -14,7 +14,7 @@ import { SimulationResult } from "./components/SimulationResult";
 import { PlanFormData, SimulationResult as SimulationResultType, AIPlanSuggestion } from "./types/plan";
 import { isValidPlanData } from "./utils/type-guards";
 import type { PlanData } from "../../../hooks/usePlanData";
-import { Loader2, Edit2, Trash2 } from "lucide-react";
+import { Loader2, Edit2, Trash2, Sparkles } from "lucide-react";
 
 export default function InstagramPlanPage() {
   const { user } = useAuth();
@@ -28,6 +28,8 @@ export default function InstagramPlanPage() {
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [planEndDate, setPlanEndDate] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState<"form" | "simulation">("form");
+  const [isLoadingPlan, setIsLoadingPlan] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState<string>("");
 
   const isAuthReady = Boolean(user);
 
@@ -38,10 +40,14 @@ export default function InstagramPlanPage() {
 
     const loadLatestPlan = async () => {
       try {
+        setIsLoadingPlan(true);
+        setLoadingMessage("計画データを読み込み中...");
         console.log("[Plan Page] 計画読み込み開始");
         const response = await authFetch("/api/plans?snsType=instagram&status=active&limit=1");
         if (!response.ok) {
           console.log("[Plan Page] 計画取得失敗:", response.status, response.statusText);
+          setIsLoadingPlan(false);
+          setLoadingMessage("");
           // 計画がない場合は状態をクリア
           setSimulationResult(null);
           setFormData(null);
@@ -50,6 +56,7 @@ export default function InstagramPlanPage() {
           return;
         }
         
+        setLoadingMessage("計画データを処理中...");
         const data = await response.json();
         console.log("[Plan Page] 計画取得結果:", {
           hasPlans: !!data.plans,
@@ -58,6 +65,8 @@ export default function InstagramPlanPage() {
         
         if (!data.plans || data.plans.length === 0) {
           console.log("[Plan Page] 計画がありません");
+          setIsLoadingPlan(false);
+          setLoadingMessage("");
           // 計画がない場合は状態をクリア
           setSimulationResult(null);
           setFormData(null);
@@ -224,6 +233,8 @@ export default function InstagramPlanPage() {
                   setSavedPlanId(validPlan.id);
                   setPlanEndDate(planEnd);
                   setError(null); // エラーをクリア
+                  setIsLoadingPlan(false);
+                  setLoadingMessage("");
                 } else {
                   // 有効な日付の場合のみログ出力
                   try {
@@ -322,6 +333,8 @@ export default function InstagramPlanPage() {
                   setSavedPlanId(validPlan.id);
                   setPlanEndDate(calculatedEndDate);
                   setError(null); // エラーをクリア
+                  setIsLoadingPlan(false);
+                  setLoadingMessage("");
                   return;
                 } else {
                   console.warn("[Plan Page] 終了日の計算に失敗しました", {
@@ -334,6 +347,8 @@ export default function InstagramPlanPage() {
               
               // どうしても計算できない場合は状態をクリア
               console.error("[Plan Page] 計画を表示できません。必要なデータが不足しています。");
+              setIsLoadingPlan(false);
+              setLoadingMessage("");
               setError(ERROR_MESSAGES.PLAN_DATA_INCOMPLETE);
               setSimulationResult(null);
               setFormData(null);
@@ -343,6 +358,8 @@ export default function InstagramPlanPage() {
             }
       } catch (error) {
         console.error("計画読み込みエラー:", error);
+        setIsLoadingPlan(false);
+        setLoadingMessage("");
         const errorMessage = handleError(
           error,
           ERROR_MESSAGES.PLAN_LOAD_FAILED
@@ -678,6 +695,11 @@ export default function InstagramPlanPage() {
         }
       );
 
+      // 計画保存後のホームページ遷移判定用フラグを保存
+      if (typeof window !== "undefined") {
+        localStorage.setItem("planSavedAt", Date.now().toString());
+      }
+
       // 状態はリセットせず、そのまま表示を維持
       // フォームタブに切り替えて保存内容を確認できるようにする
       setActiveTab("form");
@@ -695,6 +717,28 @@ export default function InstagramPlanPage() {
 
   return (
     <SNSLayout customTitle="Instagram 運用計画" customDescription="強みを活かす、実行可能なSNS計画を立てましょう">
+      {/* 画面全体のローディングオーバーレイ */}
+      {isLoadingPlan && (
+        <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center space-y-8 px-6">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-24 w-24 border-6 border-[#FF8A15] border-t-transparent"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles size={32} className="text-[#FF8A15] animate-pulse" />
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 mb-3">
+                {loadingMessage || "計画データを読み込み中..."}
+              </p>
+              <p className="text-base text-gray-600">
+                しばらくお待ちください
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full px-4 sm:px-6 md:px-8 py-6 bg-gray-50 min-h-screen">
         {error && (
           <div className="mb-6 bg-red-50 border-2 border-red-200 p-4">

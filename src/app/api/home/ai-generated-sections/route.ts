@@ -63,8 +63,14 @@ export async function GET(request: NextRequest) {
 
     const planDoc = plansSnapshot.docs[0];
     const planData = planDoc.data();
+    const planId = planDoc.id;
     const aiSuggestion = planData.aiSuggestion as AIPlanSuggestion | undefined;
     const formData = (planData.formData || {}) as Record<string, unknown>;
+    
+    console.log(`[Home AI Sections] 計画データ取得: planId=${planId}, hasAiSuggestion=${!!aiSuggestion}, hasFormData=${!!formData}`);
+    if (aiSuggestion) {
+      console.log(`[Home AI Sections] aiSuggestion: weeklyPlans=${aiSuggestion.weeklyPlans?.length || 0}件`);
+    }
 
     // 現在の週を計算（キャッシュキーに含めるため先に計算）
     const planStart = planData.startDate 
@@ -92,20 +98,22 @@ export async function GET(request: NextRequest) {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
     // Firestoreキャッシュから取得を試みる（日付ベース）
-    // 同じ日は同じ内容を返す（リロードしても変わらない）
     const cacheDocId = `${uid}_${todayStr}`;
+    console.log(`[Home AI Sections] キャッシュキー: ${cacheDocId}`);
     const cacheRef = adminDb.collection("homeAiSectionsCache").doc(cacheDocId);
     const cacheDoc = await cacheRef.get();
     
     if (cacheDoc.exists) {
       const cacheData = cacheDoc.data();
-      if (cacheData?.data && cacheData?.date === todayStr) {
+      if (cacheData?.data) {
         console.log(`[Home AI Sections] Firestoreキャッシュヒット: ${cacheDocId}`);
         return NextResponse.json({
           success: true,
           data: cacheData.data,
         });
       }
+    } else {
+      console.log(`[Home AI Sections] キャッシュなし、新規生成します: ${cacheDocId}`);
     }
 
     // ユーザープロフィールを取得（ビジネス情報を含む）
@@ -128,11 +136,12 @@ export async function GET(request: NextRequest) {
         monthlyGoals: [],
         weeklySchedule: null,
       };
-      // 空データもFirestoreにキャッシュ（同じ日は同じ内容を返す）
+      // 空データもFirestoreにキャッシュ（計画IDと更新日時を含める）
       try {
         await cacheRef.set({
           userId: uid,
           date: todayStr,
+          planId: planId || "",
           data: emptyData,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1092,12 +1101,14 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
       } : null,
     };
 
-    // Firestoreに日付ベースでキャッシュを保存（同じ日は同じ内容を返す）
+    // Firestoreにキャッシュを保存（日付 + 計画ID + 更新日時ベース）
+    // 計画が更新されるとupdatedAtが変わるため、新しいキャッシュが生成される
     try {
       const sanitizedData = sanitizeForFirestore(responseData);
       await cacheRef.set({
         userId: uid,
         date: todayStr,
+        planId: planId,
         data: sanitizedData,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1109,7 +1120,7 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
     }
 
     // メモリキャッシュにも保存（フォールバック用）
-    const planId = planDoc.id;
+    // planIdは既に上で宣言されているため、ここでは使用するだけ
     const cacheKey = generateCacheKey("home-ai-sections", {
       userId: uid,
       date: todayStr,

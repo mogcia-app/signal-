@@ -10,7 +10,7 @@ import { authFetch } from "../../utils/authFetch";
 import { useProgress } from "../../contexts/progress-context";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
-import { TrendingUp, Loader2, X, Copy, Check, Save, Edit, Target } from "lucide-react";
+import { TrendingUp, Loader2, X, Copy, Check, Save, Edit, Target, Sparkles } from "lucide-react";
 // Client-side logging - use console.error directly
 import CommentReplyAssistant from "../instagram/lab/components/CommentReplyAssistant";
 
@@ -64,6 +64,7 @@ export default function HomePage() {
   const [showPlanCreatedBanner, setShowPlanCreatedBanner] = useState(false);
   const [aiSections, setAiSections] = useState<AISections | null>(null);
   const [isLoadingAiSections, setIsLoadingAiSections] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState<string>("");
   const [copiedTaskIndex, setCopiedTaskIndex] = useState<number | null>(null);
   const [savingTaskIndex, setSavingTaskIndex] = useState<number | null>(null);
   
@@ -130,25 +131,39 @@ export default function HomePage() {
 
   // ダッシュボードデータとAI生成セクションを並列取得
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
     const fetchData = async () => {
+      // ローディングメッセージの更新を開始
+      const startTime = performance.now();
+      const updateLoadingMessage = () => {
+        const elapsed = (performance.now() - startTime) / 1000; // 経過時間（秒）
+        
+        if (elapsed < 2.0) {
+          setLoadingMessage("データを読み込み中...");
+        } else if (elapsed < 5.0) {
+          setLoadingMessage("AIが分析中...");
+        } else if (elapsed < 8.0) {
+          setLoadingMessage("投稿提案を生成中...");
+        } else {
+          setLoadingMessage("最終調整中...");
+        }
+      };
+
+      // 初期メッセージ
+      setLoadingMessage("データを読み込み中...");
+      
+      // 定期的にメッセージを更新（0.5秒ごと）
+      interval = setInterval(updateLoadingMessage, 500);
+      
       try {
         setIsLoadingDashboard(true);
         setIsLoadingAiSections(true);
-        showProgress();
-        setProgress(10);
         
         const [dashboardResponse, aiSectionsResponse] = await Promise.all([
-          authFetch("/api/home/dashboard").then((res) => {
-            setProgress(40);
-            return res;
-          }),
-          authFetch("/api/home/ai-generated-sections").then((res) => {
-            setProgress(70);
-            return res;
-          }),
+          authFetch("/api/home/dashboard"),
+          authFetch("/api/home/ai-generated-sections"),
         ]);
-
-        setProgress(80);
 
         // ダッシュボードデータの処理
         if (dashboardResponse.ok) {
@@ -171,8 +186,6 @@ export default function HomePage() {
           toast.error(errorMessage);
         }
 
-        setProgress(90);
-
         // AI生成セクションの処理
         if (aiSectionsResponse.ok) {
           const aiSectionsData = (await aiSectionsResponse.json()) as AISectionsResponse;
@@ -193,16 +206,26 @@ export default function HomePage() {
           );
           toast.error(errorMessage);
         }
-
-        setProgress(100);
+        
+        // ローディングメッセージをクリア
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+        setLoadingMessage("");
       } catch (error) {
         console.error("データ取得エラー:", error);
+        // ローディングメッセージをクリア
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+        setLoadingMessage("");
         const errorMessage = handleError(
           error,
           ERROR_MESSAGES.DASHBOARD_FETCH_FAILED
         );
         toast.error(errorMessage);
-        hideProgress();
       } finally {
         setIsLoadingDashboard(false);
         setIsLoadingAiSections(false);
@@ -210,53 +233,15 @@ export default function HomePage() {
     };
 
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 初回マウント時のみ実行
-
-  // AI生成セクションを取得
-  useEffect(() => {
-    const fetchAiSections = async () => {
-      try {
-        setIsLoadingAiSections(true);
-        const response = await authFetch("/api/home/ai-generated-sections");
-        if (response.ok) {
-          const data = (await response.json()) as AISectionsResponse;
-          console.log("[Home] AI生成セクション取得成功:", data);
-          if (data.success && data.data) {
-            console.log("[Home] todayTasks:", data.data.todayTasks);
-            data.data.todayTasks?.forEach((task, index: number) => {
-              console.log(`[Home] タスク${index}: type=${task.type}, description=${task.description}, hasContent=${!!task.generatedContent}, hasHashtags=${!!task.generatedHashtags && task.generatedHashtags.length > 0}`);
-            });
-            setAiSections(data.data);
-          } else {
-            const errorMessage = handleError(
-              data.error || "AI生成セクションの取得に失敗しました",
-              "AI生成セクションの取得に失敗しました"
-            );
-            toast.error(errorMessage);
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMessage = handleError(
-            errorData.error || "AI生成セクションの取得に失敗しました",
-            "AI生成セクションの取得に失敗しました"
-          );
-          toast.error(errorMessage);
-        }
-      } catch (error) {
-        console.error("AI生成セクション取得エラー:", error);
-        const errorMessage = handleError(
-          error,
-          "AI生成セクションの取得に失敗しました"
-        );
-        toast.error(errorMessage);
-      } finally {
-        setIsLoadingAiSections(false);
+    
+    // クリーンアップ関数
+    return () => {
+      if (interval) {
+        clearInterval(interval);
       }
     };
-
-    fetchAiSections();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 初回マウント時のみ実行
 
   // AI方向性（重点方針）を取得（今月または来月の確定済みを取得）
   useEffect(() => {
@@ -506,8 +491,33 @@ export default function HomePage() {
 
 
 
+  // ローディング状態
+  const isLoadingHome = isLoadingDashboard || isLoadingAiSections;
+
   return (
     <SNSLayout customTitle="ホーム" customDescription="今日のタスクと成果を確認">
+      {/* 画面全体のローディングオーバーレイ */}
+      {isLoadingHome && (
+        <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center space-y-8 px-6">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-24 w-24 border-6 border-[#FF8A15] border-t-transparent"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles size={32} className="text-[#FF8A15] animate-pulse" />
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 mb-3">
+                {loadingMessage || "データを読み込み中..."}
+              </p>
+              <p className="text-base text-gray-600">
+                しばらくお待ちください
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full px-4 sm:px-6 md:px-8 py-6 bg-gray-50 min-h-screen">
         {/* 挨拶セクション */}
         <div className="mb-6">
