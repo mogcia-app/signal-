@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../../../../lib/firebase";
+import { getAdminDb } from "../../../../lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { UserProfile, UserProfileUpdate } from "../../../../types/user";
 
 /**
@@ -16,18 +16,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "User ID is required" }, { status: 400 });
     }
 
+    // 認証コンテキストを取得（自分のデータのみ、または管理者）
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+    });
+
+    // 自分のデータのみ、または管理者のみアクセス可能
+    if (uid !== userId) {
+      // 管理者チェックは requireAuthContext 内で行われる
+      // ここでは自分のデータのみ許可
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    }
+
     console.log("📊 ユーザープロファイル取得:", { userId });
 
-    // Firestoreからユーザー情報を取得
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
+    // Admin SDKを使用してFirestoreからユーザー情報を取得
+    const db = getAdminDb();
+    const userDoc = await db.collection("users").doc(userId).get();
 
-    if (!userSnap.exists()) {
+    if (!userDoc.exists) {
       console.log("❌ ユーザーが見つかりません:", userId);
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    const userData = userSnap.data() as UserProfile;
+    const userData = { id: userDoc.id, ...userDoc.data() } as UserProfile;
     console.log("✅ ユーザープロファイル取得成功:", userData.email);
 
     return NextResponse.json({
@@ -36,14 +48,8 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("❌ ユーザープロファイル取得エラー:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch user profile",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -60,29 +66,64 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: "User ID is required" }, { status: 400 });
     }
 
+    // 認証コンテキストを取得（自分のデータのみ更新可能）
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+    });
+
+    // 自分のデータのみ更新可能
+    if (uid !== userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    }
+
     console.log("📝 ユーザープロファイル更新:", { userId, updates });
 
-    // Firestoreのユーザー情報を取得
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
+    // Admin SDKを使用してFirestoreのユーザー情報を取得
+    const db = getAdminDb();
+    const userDoc = await db.collection("users").doc(userId).get();
 
-    if (!userSnap.exists()) {
+    if (!userDoc.exists) {
       console.log("❌ ユーザーが見つかりません:", userId);
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
+    // 既存のデータを取得
+    const existingData = userDoc.data() || {};
+
     // 更新データを準備
-    const updateData = {
-      ...updates,
+    // businessInfoが含まれている場合は、既存のbusinessInfoとマージ
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
 
-    // Firestoreを更新
-    await setDoc(userRef, updateData, { merge: true });
+    if (updates.name !== undefined) {
+      updateData.name = updates.name;
+    }
+
+    if (updates.businessInfo !== undefined) {
+      // 既存のbusinessInfoとマージ
+      const existingBusinessInfo = existingData.businessInfo || {};
+      updateData.businessInfo = {
+        ...existingBusinessInfo,
+        ...updates.businessInfo,
+      };
+    }
+
+    if (updates.snsAISettings !== undefined) {
+      // 既存のsnsAISettingsとマージ
+      const existingSnsAISettings = existingData.snsAISettings || {};
+      updateData.snsAISettings = {
+        ...existingSnsAISettings,
+        ...updates.snsAISettings,
+      };
+    }
+
+    // Admin SDKを使用してFirestoreを更新
+    await db.collection("users").doc(userId).update(updateData);
 
     // 更新後のデータを取得
-    const updatedUserSnap = await getDoc(userRef);
-    const updatedUserData = updatedUserSnap.data() as UserProfile;
+    const updatedUserDoc = await db.collection("users").doc(userId).get();
+    const updatedUserData = { id: updatedUserDoc.id, ...updatedUserDoc.data() } as UserProfile;
 
     console.log("✅ ユーザープロファイル更新成功:", updatedUserData.email);
 
@@ -93,13 +134,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error("❌ ユーザープロファイル更新エラー:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to update user profile",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
