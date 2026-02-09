@@ -30,6 +30,7 @@ export default function OnboardingPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [formData, setFormData] = useState<{
     name: string;
     details: string;
@@ -47,12 +48,16 @@ export default function OnboardingPage() {
     }
   }, [user, authLoading, router]);
 
-  // 商品・サービス情報を初期化
+  // 商品・サービス情報を初期化（初回のみ）
   useEffect(() => {
-    if (userProfile?.businessInfo?.productsOrServices) {
+    if (!isInitialized && userProfile?.businessInfo?.productsOrServices) {
       setProductsOrServices(userProfile.businessInfo.productsOrServices);
+      setIsInitialized(true);
+    } else if (!isInitialized && userProfile && !userProfile.businessInfo?.productsOrServices) {
+      // データが存在しない場合も初期化済みとしてマーク
+      setIsInitialized(true);
     }
-  }, [userProfile]);
+  }, [userProfile, isInitialized]);
 
   // 商品・サービス情報を保存
   const handleSaveProductsOrServices = async () => {
@@ -82,6 +87,12 @@ export default function OnboardingPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "保存に失敗しました");
+      }
+
+      // レスポンスから保存されたデータを取得
+      const responseData = await response.json();
+      if (responseData.success && responseData.data?.businessInfo?.productsOrServices) {
+        setProductsOrServices(responseData.data.businessInfo.productsOrServices);
       }
 
       toast.success("商品・サービス情報を保存しました");
