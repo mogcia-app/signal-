@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "../../contexts/auth-context";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import { useRouter } from "next/navigation";
@@ -9,37 +9,13 @@ import {
   User,
   Mail,
   Calendar,
-  Plus,
-  Edit,
-  Trash2,
-  Save,
-  X,
 } from "lucide-react";
 import SNSLayout from "../../components/sns-layout";
-import { authFetch } from "../../utils/authFetch";
-import toast from "react-hot-toast";
-import { ProductOrService } from "../../types/user";
 
 export default function OnboardingPage() {
   const { user, loading: authLoading } = useAuth();
   const { userProfile } = useUserProfile();
   const router = useRouter();
-
-  // 商品・サービス情報の編集用state
-  const [productsOrServices, setProductsOrServices] = useState<ProductOrService[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [formData, setFormData] = useState<{
-    name: string;
-    details: string;
-    price: string;
-  }>({
-    name: "",
-    details: "",
-    price: "",
-  });
 
   useEffect(() => {
     // loading中はリダイレクトしない（Firebase初期化待ち）
@@ -47,137 +23,6 @@ export default function OnboardingPage() {
       router.push("/login");
     }
   }, [user, authLoading, router]);
-
-  // 商品・サービス情報を初期化（初回のみ）
-  useEffect(() => {
-    if (!isInitialized && userProfile?.businessInfo?.productsOrServices) {
-      setProductsOrServices(userProfile.businessInfo.productsOrServices);
-      setIsInitialized(true);
-    } else if (!isInitialized && userProfile && !userProfile.businessInfo?.productsOrServices) {
-      // データが存在しない場合も初期化済みとしてマーク
-      setIsInitialized(true);
-    }
-  }, [userProfile, isInitialized]);
-
-  // 商品・サービス情報を保存
-  const handleSaveProductsOrServices = async () => {
-    if (!user?.uid) {
-      toast.error("ログインが必要です");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const response = await authFetch("/api/user/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          updates: {
-            businessInfo: {
-              ...businessInfo,
-              productsOrServices: productsOrServices,
-            },
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "保存に失敗しました");
-      }
-
-      // レスポンスから保存されたデータを取得
-      const responseData = await response.json();
-      if (responseData.success && responseData.data?.businessInfo?.productsOrServices) {
-        setProductsOrServices(responseData.data.businessInfo.productsOrServices);
-      }
-
-      toast.success("商品・サービス情報を保存しました");
-      setEditingId(null);
-      setIsAdding(false);
-      setFormData({ name: "", details: "", price: "" });
-    } catch (error) {
-      console.error("商品・サービス情報保存エラー:", error);
-      toast.error(error instanceof Error ? error.message : "保存に失敗しました");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // 商品・サービスを追加
-  const handleAddProduct = () => {
-    if (!formData.name.trim()) {
-      toast.error("商品・サービス名を入力してください");
-      return;
-    }
-
-    const newProduct: ProductOrService = {
-      id: Date.now().toString(),
-      name: formData.name.trim(),
-      details: formData.details.trim(),
-      price: formData.price.trim() || undefined,
-    };
-
-    setProductsOrServices([...productsOrServices, newProduct]);
-    setFormData({ name: "", details: "", price: "" });
-    setIsAdding(false);
-    handleSaveProductsOrServices();
-  };
-
-  // 商品・サービスを編集開始
-  const handleStartEdit = (item: ProductOrService) => {
-    setEditingId(item.id);
-    setFormData({
-      name: item.name,
-      details: item.details,
-      price: item.price || "",
-    });
-    setIsAdding(false);
-  };
-
-  // 商品・サービスを更新
-  const handleUpdateProduct = () => {
-    if (!editingId || !formData.name.trim()) {
-      toast.error("商品・サービス名を入力してください");
-      return;
-    }
-
-    setProductsOrServices(
-      productsOrServices.map((item) =>
-        item.id === editingId
-          ? {
-              ...item,
-              name: formData.name.trim(),
-              details: formData.details.trim(),
-              price: formData.price.trim() || undefined,
-            }
-          : item
-      )
-    );
-    setEditingId(null);
-    setFormData({ name: "", details: "", price: "" });
-    handleSaveProductsOrServices();
-  };
-
-  // 商品・サービスを削除
-  const handleDeleteProduct = (id: string) => {
-    if (!confirm("この商品・サービスを削除してもよろしいですか？")) {
-      return;
-    }
-
-    setProductsOrServices(productsOrServices.filter((item) => item.id !== id));
-    handleSaveProductsOrServices();
-  };
-
-  // 編集をキャンセル
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setIsAdding(false);
-    setFormData({ name: "", details: "", price: "" });
-  };
 
   // 表示用の変換関数（英語キーを日本語に変換、既に日本語の場合はそのまま返す）
   const getIndustryLabel = (value: string) => {
@@ -253,6 +98,7 @@ export default function OnboardingPage() {
     productsOrServices?: Array<{ id: string; name: string; details: string; price?: string }>;
   });
   const goals = businessInfo.goals || [];
+  const productsOrServices = businessInfo.productsOrServices || [];
   const snsAISettings = userProfile?.snsAISettings || ({} as {
     instagram?: {
       enabled: boolean;
@@ -461,205 +307,31 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* 商品・サービス情報 */}
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-xs font-medium text-gray-500">
+                {productsOrServices.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <label className="block text-xs font-medium text-gray-500 mb-3">
                       📦 商品・サービス情報
                     </label>
-                    {!isAdding && editingId === null && (
-                      <button
-                        onClick={() => setIsAdding(true)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#FF8A15] hover:bg-[#e67a0f] rounded-md transition-colors"
-                      >
-                        <Plus className="h-3 w-3" />
-                        追加
-                      </button>
-                    )}
-                  </div>
-
-                  {/* 追加フォーム */}
-                  {isAdding && (
-                    <div className="bg-gray-50 border border-gray-200 p-4 mb-3 rounded-md">
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            商品・サービス名 <span className="text-red-600">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="例: ランチセット"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            詳細
-                          </label>
-                          <textarea
-                            value={formData.details}
-                            onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                            placeholder="商品・サービスの詳細を入力してください"
-                            rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            価格（税込）
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.price}
-                            onChange={(e) => {
-                              // 全角数字を半角に変換
-                              const value = e.target.value.replace(/[０-９]/g, (s) =>
-                                String.fromCharCode(s.charCodeAt(0) - 0xfee0)
-                              );
-                              // 数字以外を除去
-                              const numericValue = value.replace(/[^\d]/g, "");
-                              setFormData({ ...formData, price: numericValue });
-                            }}
-                            placeholder="例: 1500"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] text-sm"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={handleAddProduct}
-                            disabled={isSaving || !formData.name.trim()}
-                            className="flex items-center gap-1 px-4 py-2 text-xs font-medium text-white bg-[#FF8A15] hover:bg-[#e67a0f] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Save className="h-3 w-3" />
-                            追加
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            disabled={isSaving}
-                            className="flex items-center gap-1 px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <X className="h-3 w-3" />
-                            キャンセル
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 商品・サービス一覧 */}
-                  <div className="space-y-3">
-                    {productsOrServices.length === 0 && !isAdding ? (
-                      <p className="text-sm text-gray-500 py-4 text-center">商品・サービス情報がありません</p>
-                    ) : (
-                      productsOrServices.map((item) => (
-                        <div
-                          key={item.id}
-                          className="bg-gray-50 border-l-4 border-[#FF8A15] border border-gray-200 p-4 rounded-md group hover:shadow-sm transition-shadow"
-                        >
-                          {editingId === item.id ? (
-                            // 編集モード
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  商品・サービス名 <span className="text-red-600">*</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  value={formData.name}
-                                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] text-sm"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  詳細
-                                </label>
-                                <textarea
-                                  value={formData.details}
-                                  onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                                  rows={3}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] text-sm"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  価格（税込）
-                                </label>
-                                <input
-                                  type="text"
-                                  value={formData.price}
-                                  onChange={(e) => {
-                                    // 全角数字を半角に変換
-                                    const value = e.target.value.replace(/[０-９]/g, (s) =>
-                                      String.fromCharCode(s.charCodeAt(0) - 0xfee0)
-                                    );
-                                    // 数字以外を除去
-                                    const numericValue = value.replace(/[^\d]/g, "");
-                                    setFormData({ ...formData, price: numericValue });
-                                  }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] text-sm"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={handleUpdateProduct}
-                                  disabled={isSaving || !formData.name.trim()}
-                                  className="flex items-center gap-1 px-4 py-2 text-xs font-medium text-white bg-[#FF8A15] hover:bg-[#e67a0f] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <Save className="h-3 w-3" />
-                                  保存
-                                </button>
-                                <button
-                                  onClick={handleCancelEdit}
-                                  disabled={isSaving}
-                                  className="flex items-center gap-1 px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <X className="h-3 w-3" />
-                                  キャンセル
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            // 表示モード
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg">🏷️</span>
-                                  <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
-                                  {item.price && (
-                                    <span className="text-black font-semibold text-sm ml-2">
-                                      {item.price}円（税込）
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button
-                                    onClick={() => handleStartEdit(item)}
-                                    className="p-1.5 text-gray-600 hover:text-[#FF8A15] transition-colors"
-                                    title="編集"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteProduct(item.id)}
-                                    className="p-1.5 text-gray-600 hover:text-red-600 transition-colors"
-                                    title="削除"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </div>
-                              {item.details && (
-                                <p className="text-sm text-gray-700 mt-1 ml-7">{item.details}</p>
-                              )}
-                            </div>
+                    <div className="space-y-3">
+                      {productsOrServices.map((item: { id: string; name: string; details: string; price?: string }) => (
+                        <div key={item.id} className="bg-gray-50 border border-gray-200 p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">🏷️</span>
+                            <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>
+                            {item.price && (
+                              <span className="text-black font-semibold text-sm ml-2">
+                                {item.price}円（税込）
+                              </span>
+                            )}
+                          </div>
+                          {item.details && (
+                            <p className="text-sm text-gray-700 mt-1 ml-7 mb-2">{item.details}</p>
                           )}
                         </div>
-                      ))
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* SNS活用の目的 */}
