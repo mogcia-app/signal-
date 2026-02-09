@@ -3,7 +3,7 @@ import { adminDb } from "../../../../lib/firebase-admin";
 import * as admin from "firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
-import { buildPostGenerationPrompt } from "../../../../utils/aiPromptBuilder";
+import { buildPostGenerationPrompt, buildFeedPrompt, buildReelPrompt, buildStoryPrompt } from "../../../../utils/aiPromptBuilder";
 import { fetchAIDirection } from "../../../../lib/ai/context";
 // buildAIContext removed (unused)
 import OpenAI from "openai";
@@ -527,8 +527,22 @@ ${businessCatchphrase ? `キャッチフレーズ: ${businessCatchphrase}` : ""}
             try {
               const postType = task.type as "feed" | "reel" | "story";
               
-              // ラボのAIエンドポイントと同じシステムプロンプトを構築
-              let systemPrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
+              // ラボのAIエンドポイントと同じシステムプロンプトを構築（投稿タイプ別）
+              let systemPrompt = "";
+              if (postType === "feed") {
+                // contentTypesを取得（planDataから）
+                const planFormData = (planData as any)?.formData || null;
+                const contentTypes = planFormData?.contentTypes || [];
+                const contentTypeOther = planFormData?.contentTypeOther || "";
+                systemPrompt = buildFeedPrompt(userProfile, "instagram", contentTypes, contentTypeOther);
+              } else if (postType === "reel") {
+                systemPrompt = buildReelPrompt(userProfile, "instagram");
+              } else if (postType === "story") {
+                systemPrompt = buildStoryPrompt(userProfile, "instagram");
+              } else {
+                // フォールバック
+                systemPrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
+              }
               
               // ai_direction（今月のAI方針）を最優先で参照
               const aiDirection = await fetchAIDirection(uid);
@@ -586,8 +600,8 @@ ${systemPrompt}
 【投稿生成の指示】
 - 投稿タイプ: ${postTypeLabel}
 ${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文字、1-2行）にしてください" : ""}
-${postType === "reel" ? "- **重要**: リール投稿文は150-200文字以内で生成してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
-${postType === "feed" ? "- **重要**: フィード投稿文は150-200文字以内で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
+${postType === "reel" ? "- **最重要**: リール投稿文は**必ず150文字以上200文字以内**で生成してください。文字数が150文字未満の場合は生成し直してください。また、**125文字付近（120-130文字の範囲）**に必ずキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。文字数制限は厳守してください。" : ""}
+${postType === "feed" ? "- **最重要**: フィード投稿文は**必ず150文字以上200文字以内**で生成してください。文字数が150文字未満の場合は生成し直してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。また、**125文字付近（120-130文字の範囲）**に必ずキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。文字数制限は厳守してください。" : ""}
 - テーマ: ${task.description}
 - **重要**: 投稿文（body）の中にハッシュタグ（#で始まる文字列）を含めないでください。ハッシュタグは別のフィールド（hashtags）で指定してください。
 
@@ -595,7 +609,7 @@ ${postType === "feed" ? "- **重要**: フィード投稿文は150-200文字以�
 
 {
   "title": "簡潔で魅力的なタイトル",
-  "body": "計画に沿った投稿文（${textLengthGuide}、ハッシュタグは含めない）",
+  "body": "計画に沿った投稿文（${postType === "feed" || postType === "reel" ? "**必ず150文字以上200文字以内、125文字付近にキャッチーなフレーズを含める**" : textLengthGuide}、ハッシュタグは含めない）",
   "hashtags": [
     {
       "tag": "企業・ブランドハッシュタグ（${userProfile?.name || "企業名"}に関連する固有のハッシュタグ、#は不要）",

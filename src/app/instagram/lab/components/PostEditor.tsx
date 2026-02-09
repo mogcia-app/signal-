@@ -7,6 +7,7 @@ import { postsApi } from "../../../../lib/api";
 import { useAuth } from "../../../../contexts/auth-context";
 import { notify } from "../../../../lib/ui/notifications";
 import { authFetch } from "../../../../utils/authFetch";
+import { useUserProfile } from "../../../../hooks/useUserProfile";
 import Image from "next/image";
 // PlanData型をusePlanDataからインポート
 import type { PlanData } from "../../../../hooks/usePlanData";
@@ -96,6 +97,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   editingPostId = null,
 }) => {
   const { user } = useAuth();
+  const { userProfile } = useUserProfile();
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [internalScheduledDate, setInternalScheduledDate] = useState("");
   const [internalScheduledTime, setInternalScheduledTime] = useState("");
@@ -248,6 +250,16 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [autoGenerateFeedback, setAutoGenerateFeedback] = useState<string | null>(null);
   const [showAutoAdminWarning, setShowAutoAdminWarning] = useState(false);
   const autoFeedbackHistoryRef = useRef<Array<{ category: string; timestamp: number }>>([]);
+  
+  // 生成成功時に表示する投稿内容タイプのメッセージ
+  const [generatedContentTypeMessage, setGeneratedContentTypeMessage] = useState<string | null>(null);
+  
+  // 商品・サービス選択用のstate
+  const [isProductServiceSelectorOpen, setIsProductServiceSelectorOpen] = useState(false);
+  const [selectedProductService, setSelectedProductService] = useState<string | null>(null);
+  
+  // 商品・サービス情報を取得
+  const productsOrServices = userProfile?.businessInfo?.productsOrServices || [];
 
   const showToast = (message: string, type: "success" | "error" = "error") => {
     setToastMessage({ message, type });
@@ -641,9 +653,38 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         });
         const generatedContent = applied.content;
 
-        // ビジュアル推奨事項を自動取得
-        if (generatedContent && generatedContent.trim().length > 0) {
+        // 投稿時間が空欄で、AIが時間提案を返した場合は自動設定
+        const currentScheduledTime = externalScheduledTime || internalScheduledTime;
+        const currentScheduledDate = externalScheduledDate || internalScheduledDate;
+        if (!currentScheduledTime && currentScheduledDate && result.data.suggestedTime) {
+          if (onScheduledTimeChange) {
+            onScheduledTimeChange(result.data.suggestedTime);
+          } else {
+            setInternalScheduledTime(result.data.suggestedTime);
+          }
+        }
+
+        // ビジュアル推奨事項を自動取得（リールのみ）
+        if (postType === "reel" && generatedContent && generatedContent.trim().length > 0) {
           fetchVisualSuggestions(generatedContent, result.data.hashtags || []);
+        }
+        
+        // 投稿内容タイプのメッセージを生成（実際に使用されたタイプのみ）
+        const contentTypeLabels: Record<string, string> = {
+          product: "商品・サービスの紹介",
+          testimonial: "お客様の声",
+          staff: "スタッフの日常",
+          knowledge: "豆知識・ノウハウ",
+          event: "イベント・キャンペーン情報",
+          beforeafter: "ビフォーアフター",
+          behind: "舞台裏・制作過程",
+          other: "その他",
+        };
+        if (result.data.contentType) {
+          const contentTypeLabel = contentTypeLabels[result.data.contentType] || result.data.contentType;
+          setGeneratedContentTypeMessage(`「${contentTypeLabel}」の投稿文を作成しました。`);
+        } else {
+          setGeneratedContentTypeMessage(null);
         }
         
         // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
@@ -779,9 +820,38 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         const generatedContent = applied.content;
         setAiPrompt(""); // テーマをクリア
 
-        // ビジュアル推奨事項を自動取得
-        if (generatedContent && generatedContent.trim().length > 0) {
+        // 投稿時間が空欄で、AIが時間提案を返した場合は自動設定
+        const currentScheduledTime = externalScheduledTime || internalScheduledTime;
+        const currentScheduledDate = externalScheduledDate || internalScheduledDate;
+        if (!currentScheduledTime && currentScheduledDate && result.data.suggestedTime) {
+          if (onScheduledTimeChange) {
+            onScheduledTimeChange(result.data.suggestedTime);
+          } else {
+            setInternalScheduledTime(result.data.suggestedTime);
+          }
+        }
+
+        // ビジュアル推奨事項を自動取得（リールのみ）
+        if (postType === "reel" && generatedContent && generatedContent.trim().length > 0) {
           fetchVisualSuggestions(generatedContent, result.data.hashtags || []);
+        }
+        
+        // 投稿内容タイプのメッセージを生成（実際に使用されたタイプのみ）
+        const contentTypeLabels: Record<string, string> = {
+          product: "商品・サービスの紹介",
+          testimonial: "お客様の声",
+          staff: "スタッフの日常",
+          knowledge: "豆知識・ノウハウ",
+          event: "イベント・キャンペーン情報",
+          beforeafter: "ビフォーアフター",
+          behind: "舞台裏・制作過程",
+          other: "その他",
+        };
+        if (result.data.contentType) {
+          const contentTypeLabel = contentTypeLabels[result.data.contentType] || result.data.contentType;
+          setGeneratedContentTypeMessage(`「${contentTypeLabel}」の投稿文を作成しました。`);
+        } else {
+          setGeneratedContentTypeMessage(null);
         }
         
         // 成功した場合は、同じカテゴリのフィードバックが続かなかった場合は履歴をクリア
@@ -873,8 +943,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
           ) : null}
 
-          {/* ビジュアル推奨事項 */}
-          {(visualSuggestions || isGeneratingVisualSuggestions) && (
+          {/* ビジュアル推奨事項（リールのみ表示） */}
+          {postType === "reel" && (visualSuggestions || isGeneratingVisualSuggestions) && (
             <div className="mb-6 border border-orange-200 bg-orange-50/30 p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-bold text-slate-700 flex items-center">
@@ -923,7 +993,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   </div>
                 )}
 
-                {postType === "reel" && visualSuggestions.videoStructure && (
+                {visualSuggestions.videoStructure && (
                   <div>
                     <p className="text-xs font-semibold text-slate-900 mb-2">【推奨される動画構成】</p>
                     <div className="space-y-2">
@@ -943,22 +1013,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                         <p className="text-[10px] font-semibold text-slate-900 mb-1">クロージング（15-30秒）</p>
                         <p className="text-xs text-slate-700">{visualSuggestions.videoStructure.conclusion}</p>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {postType === "story" && visualSuggestions.storyStructure && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-900 mb-2">【推奨されるストーリー構成】</p>
-                    <div className="space-y-2">
-                      {visualSuggestions.storyStructure.slides.map((slide) => (
-                        <div key={slide.order} className="bg-white border border-slate-200 p-2 rounded">
-                          <p className="text-[10px] font-semibold text-slate-900 mb-1">
-                            {slide.order}枚目
-                          </p>
-                          <p className="text-xs text-slate-700">{slide.content}</p>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 )}
@@ -1025,6 +1079,75 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </p>
               )}
             </div>
+
+            {/* 商品・サービス選択（開閉式） */}
+            {productsOrServices.length > 0 && (
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => setIsProductServiceSelectorOpen(!isProductServiceSelectorOpen)}
+                  disabled={!planData}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 border border-gray-300 bg-white text-sm transition-all duration-200 ${
+                    !planData ? "opacity-40 cursor-not-allowed bg-gray-50" : "hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="text-gray-700">
+                    {selectedProductService 
+                      ? productsOrServices.find(p => p.id === selectedProductService)?.name || "商品・サービスを選択"
+                      : "商品・サービスを選択（オプション）"}
+                  </span>
+                  {isProductServiceSelectorOpen ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+                
+                {isProductServiceSelectorOpen && (
+                  <div className="mt-2 border border-gray-200 bg-white max-h-60 overflow-y-auto">
+                    <div className="p-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedProductService(null);
+                          setAiPrompt("");
+                          setIsProductServiceSelectorOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                          !selectedProductService
+                            ? "bg-gray-100 text-gray-900 font-medium"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        選択しない
+                      </button>
+                    </div>
+                    {productsOrServices.map((product) => (
+                      <div key={product.id} className="p-2 border-t border-gray-100">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedProductService(product.id);
+                            setAiPrompt(product.name);
+                            setIsProductServiceSelectorOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                            selectedProductService === product.id
+                              ? "bg-gray-100 text-gray-900 font-medium"
+                              : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          <div className="font-medium">{product.name}</div>
+                          {product.price && (
+                            <div className="text-xs text-gray-500 mt-1">価格: {product.price}</div>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
 
             {/* 生成ボタン */}
@@ -1133,6 +1256,15 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             scheduledTime={scheduledTime}
             onScheduledTimeChange={handleScheduledTimeChange}
           />
+
+          {/* 投稿内容タイプのメッセージ（投稿文入力の上に表示） */}
+          {generatedContentTypeMessage && (
+            <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200">
+              <p className="text-sm font-medium text-blue-900">
+                💡 {generatedContentTypeMessage}
+              </p>
+            </div>
+          )}
 
           {/* タイトル・投稿文入力 */}
           <PostEditorContentInput

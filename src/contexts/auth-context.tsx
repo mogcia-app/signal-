@@ -8,8 +8,8 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, DocumentReference } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { auth } from "../lib/firebase";
+import { authFetch } from "../utils/authFetch";
 import { UserProfile } from "../types/user";
 import { checkUserContract } from "../lib/auth";
 import { installAuthFetch } from "../utils/installAuthFetch";
@@ -34,77 +34,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     installAuthFetch();
   }, []);
 
-  // ユーザードキュメントを作成または更新する関数
+  // ユーザードキュメントを作成または更新する関数（APIルート経由）
   const ensureUserDocument = useCallback(async (user: User) => {
-    const userDocRef = doc(db, "users", user.uid);
-    
     try {
-      // まず存在確認を試みる
-      const userDoc = await getDoc(userDocRef);
-      
-      if (!userDoc.exists()) {
-        // ユーザードキュメントが存在しない場合、デフォルト値で作成
-        await createUserDocument(userDocRef, user);
-      }
-    } catch (error: unknown) {
-      // 権限エラーが発生した場合（新規ユーザーでドキュメントが存在しない場合など）
-      // 直接作成を試みる（create権限はルールで許可されている）
-      interface FirebaseError extends Error {
-        code?: string;
-      }
-      const firebaseError = error as FirebaseError;
-      if (firebaseError.code === 'permission-denied') {
-        try {
-          await createUserDocument(userDocRef, user);
-        } catch (createError) {
-          console.error("🔐 Error creating user document:", createError);
-          throw createError;
+      // トークンが取得できるまで少し待つ（認証状態が完全に確立されるまで）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // APIルート経由でユーザードキュメントを確認・作成
+      const response = await authFetch("/api/user/ensure", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || errorData.details || `Failed to ensure user document: ${response.status}`;
+        
+        // Unauthorizedエラーの場合は、トークンの問題である可能性が高い
+        if (response.status === 401) {
+          console.warn("🔐 Unauthorized error - token may not be ready yet, will retry on next auth state change");
+          return; // エラーを投げずに終了（次回の認証状態変更時に再試行される）
         }
-      } else {
-        console.error("🔐 Error ensuring user document:", error);
-        throw error;
+        
+        throw new Error(errorMessage);
       }
+
+      const result = await response.json();
+      if (result.success) {
+        if (result.created) {
+          console.log("✅ User document created via API:", user.uid);
+        } else {
+          console.log("✅ User document already exists:", user.uid);
+        }
+      }
+    } catch (error) {
+      console.error("🔐 Error ensuring user document:", error);
+      // エラーが発生してもアプリケーションの動作を継続
+      // （ユーザードキュメントが存在しない場合でも、後で作成される可能性がある）
     }
   }, []);
-
-  // ユーザードキュメント作成のヘルパー関数
-  const createUserDocument = async (userDocRef: DocumentReference, user: User) => {
-    const defaultUserProfile: Omit<UserProfile, "id"> & { setupRequired?: boolean } = {
-      email: user.email || "",
-      name: user.displayName || "ユーザー",
-      role: "user",
-      isActive: true,
-      snsCount: 1,
-      usageType: "solo",
-      contractType: "trial",
-      contractSNS: ["instagram"],
-      snsAISettings: {},
-      businessInfo: {
-        industry: "",
-        companySize: "",
-        businessType: "",
-        description: "",
-        targetMarket: "",
-        goals: [],
-        challenges: [],
-      },
-      status: "pending_setup",
-      setupRequired: true,
-      contractStartDate: new Date().toISOString(),
-      contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      billingInfo: {
-        paymentMethod: "none",
-        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 0,
-      },
-      notes: "新規ユーザー - 初期設定待ち",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await setDoc(userDocRef, defaultUserProfile);
-    console.log("✅ User document created in Firestore:", user.uid);
-  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

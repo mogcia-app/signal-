@@ -10,9 +10,24 @@ import { authFetch } from "../../utils/authFetch";
 import { useProgress } from "../../contexts/progress-context";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
-import { TrendingUp, Loader2, X, Copy, Check, Save, Edit } from "lucide-react";
+import { TrendingUp, Loader2, X, Copy, Check, Save, Edit, Target } from "lucide-react";
 // Client-side logging - use console.error directly
 import CommentReplyAssistant from "../instagram/lab/components/CommentReplyAssistant";
+
+// マークダウン記法を削除する関数
+const removeMarkdown = (text: string): string => {
+  if (!text) return text;
+  return text
+    .replace(/\*\*/g, "") // **太字**
+    .replace(/\*/g, "") // *斜体*
+    .replace(/__/g, "") // __太字__
+    .replace(/_/g, "") // _斜体_
+    .replace(/#{1,6}\s/g, "") // # 見出し
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1") // [リンクテキスト](URL)
+    .replace(/`([^`]+)`/g, "$1") // `コード`
+    .replace(/~~/g, "") // ~~取り消し線~~
+    .trim();
+};
 import { SkeletonLoader } from "../../components/ui/SkeletonLoader";
 import type {
   DashboardData,
@@ -58,6 +73,14 @@ export default function HomePage() {
   const [otherExternalLinkTaps, setOtherExternalLinkTaps] = useState<number | "">("");
   const [isSavingOtherKPI, setIsSavingOtherKPI] = useState(false);
   const [isLoadingOtherKPI, setIsLoadingOtherKPI] = useState(false);
+  
+  // AI方向性（重点方針）のstate
+  const [aiDirection, setAiDirection] = useState<{
+    month: string;
+    mainTheme: string;
+    lockedAt: string | null;
+  } | null>(null);
+  const [isLoadingAiDirection, setIsLoadingAiDirection] = useState(false);
   
   // 今月のKPIデータ
   const [monthlyKPIs, setMonthlyKPIs] = useState<{
@@ -234,6 +257,83 @@ export default function HomePage() {
 
     fetchAiSections();
   }, []);
+
+  // AI方向性（重点方針）を取得（今月または来月の確定済みを取得）
+  useEffect(() => {
+    const fetchAiDirection = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        setIsLoadingAiDirection(true);
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const nextMonthStr = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}`;
+        
+        console.log("[Home] AI方向性取得開始:", { currentMonth, nextMonthStr, uid: user.uid });
+        
+        // まず来月のデータを取得（月次レポートでは来月の重点方針を設定するため）
+        let response = await authFetch(`/api/ai-direction?month=${nextMonthStr}`);
+        let result = null;
+        
+        if (response.ok) {
+          result = await response.json();
+          if (result.success && result.data && result.data.lockedAt) {
+            console.log("[Home] 来月のAI方向性を取得:", result.data);
+            setAiDirection({
+              month: result.data.month,
+              mainTheme: result.data.mainTheme,
+              lockedAt: result.data.lockedAt,
+            });
+            return;
+          }
+        }
+        
+        // 来月のデータがない場合は、今月のデータを取得
+        response = await authFetch(`/api/ai-direction?month=${currentMonth}`);
+        if (response.ok) {
+          result = await response.json();
+          if (result.success && result.data && result.data.lockedAt) {
+            console.log("[Home] 今月のAI方向性を取得:", result.data);
+            setAiDirection({
+              month: result.data.month,
+              mainTheme: result.data.mainTheme,
+              lockedAt: result.data.lockedAt,
+            });
+            return;
+          }
+        }
+        
+        // どちらもない場合は、最新のai_directionを取得（過去3ヶ月以内）
+        response = await authFetch(`/api/ai-direction`);
+        if (response.ok) {
+          result = await response.json();
+          console.log("[Home] 最新のAI方向性取得結果:", result);
+          if (result.success && result.data && result.data.lockedAt) {
+            console.log("[Home] 最新のAI方向性を設定:", result.data);
+            setAiDirection({
+              month: result.data.month,
+              mainTheme: result.data.mainTheme,
+              lockedAt: result.data.lockedAt,
+            });
+          } else {
+            console.log("[Home] AI方向性が確定されていません:", result);
+            setAiDirection(null);
+          }
+        } else {
+          console.error("[Home] AI方向性取得失敗:", response.status);
+          setAiDirection(null);
+        }
+      } catch (error) {
+        console.error("AI方向性取得エラー:", error);
+        setAiDirection(null);
+      } finally {
+        setIsLoadingAiDirection(false);
+      }
+    };
+
+    fetchAiDirection();
+  }, [user?.uid]);
 
   // その他KPIデータを取得
   const fetchOtherKPI = async () => {
@@ -412,8 +512,7 @@ export default function HomePage() {
         {/* 挨拶セクション */}
         <div className="mb-6">
           <h1 className="text-2xl font-light text-gray-900 mb-1">
-            <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0s' }}>こんにちは</span>
-            <span className="inline-block animate-fade-in-up ml-2" style={{ animationDelay: '0.2s' }}>、</span>
+            <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0s' }}>こんにちは </span>
             <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{userName}</span>
             <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0.4s' }}>さん</span>
           </h1>
@@ -421,6 +520,43 @@ export default function HomePage() {
         </div>
 
         <div className="space-y-6">
+          {/* 重点方針バナー（今月または来月） */}
+          {aiDirection && aiDirection.lockedAt && aiDirection.mainTheme && (() => {
+            const now = new Date();
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+            const isCurrentMonth = aiDirection.month === currentMonth;
+            const monthLabel = isCurrentMonth ? "今月" : "来月";
+            
+            return (
+              <div className="bg-white border-2 border-gray-200 p-5 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <Target className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h2 className="text-base font-bold text-gray-900">
+                        {monthLabel}の重点方針
+                      </h2>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 font-medium">
+                        {aiDirection.month.split("-")[0]}年{parseInt(aiDirection.month.split("-")[1])}月
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                      {removeMarkdown(aiDirection.mainTheme)}
+                    </p>
+                    <button
+                      onClick={() => router.push("/instagram/report")}
+                      className="text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors underline"
+                    >
+                      月次レポートを見る →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* 計画作成直後のバナー */}
           {showPlanCreatedBanner && (
             <div className="bg-gradient-to-r from-[#FF8A15] to-orange-500  border border-orange-300 p-6 text-white">

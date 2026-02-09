@@ -61,11 +61,26 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
     directionComment?: string | null;
     goalAchievementProspect?: "high" | "medium" | "low" | null;
     goalAchievementReason?: string | null;
+    // learning mode用のフィールド
+    patternMatch?: "match" | "partial" | "mismatch" | null;
+    patternScore?: number | null;
+    patternRank?: "core" | "edge" | "outlier" | null;
+    patternReason?: string | null;
+    patternBasedPrediction?: "今後フォロワーが増える見込み" | "伸びにくい" | "判断保留" | null;
+    // 洞察情報
+    insights?: {
+      audienceInsight?: string | null;
+      engagementInsight?: string | null;
+      reachSourceInsight?: string | null;
+    } | null;
   } | null>(null);
   const [isGeneratingAdvice, setIsGeneratingAdvice] = useState(false);
   const [isAutoGeneratingAdvice, setIsAutoGeneratingAdvice] = useState(false);
   const [adviceError, setAdviceError] = useState<string | null>(null);
   const [pasteSuccess, setPasteSuccess] = useState<string | null>(null);
+  const [isAutoSaved, setIsAutoSaved] = useState(false);
+  const [analysisStep, setAnalysisStep] = useState<0 | 1 | 2 | 3>(0); // 0: 確認中, 1: 分析中, 2: 整理中, 3: 完了
+  const [showAdviceProgressively, setShowAdviceProgressively] = useState(false);
 
   // Instagram分析データの貼り付け処理
   const handlePasteInstagramData = async () => {
@@ -333,7 +348,7 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
     });
   };
 
-  const handleGenerateAdvice = async () => {
+  const handleGenerateAdvice = async (autoSave: boolean = false) => {
     if (!user?.uid || !postData?.id) {
       setAdviceError("ユーザー情報または投稿情報が不足しています");
       return;
@@ -341,6 +356,12 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
 
     setIsGeneratingAdvice(true);
     setAdviceError(null);
+    setAnalysisStep(0); // 投稿内容確認中
+    setShowAdviceProgressively(false);
+
+    // 段階的な思考プロセスを表示
+    setTimeout(() => setAnalysisStep(1), 2000); // 2秒後: 傾向分析中
+    setTimeout(() => setAnalysisStep(2), 5000); // 5秒後: 改善ポイント整理中
 
     try {
       const response = await authFetch("/api/ai/post-insight", {
@@ -356,16 +377,25 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
 
       if (!response.ok) {
         let errorText = "";
+        let errorJson = null;
         try {
-          errorText = await response.text();
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            errorJson = await response.json();
+            errorText = errorJson?.error || errorJson?.message || JSON.stringify(errorJson);
+          } else {
+            errorText = await response.text();
+          }
         } catch (e) {
           // レスポンスの読み取りに失敗した場合は無視
+          errorText = `HTTP ${response.status} ${response.statusText}`;
         }
         console.error("AIアドバイス生成エラー詳細:", {
           status: response.status,
           statusText: response.statusText,
           url: response.url,
           errorText,
+          errorJson,
         });
         throw new Error(`AIアドバイス生成エラー: ${response.status}${errorText ? ` - ${errorText}` : ""}`);
       }
@@ -376,7 +406,17 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
       }
 
       const insightData = result.data;
-      setAiAdvice({
+      
+      // デバッグログ（本番環境では削除可能）
+      console.log("[FeedAnalyticsForm] AIアドバイス受信:", {
+        hasPatternMatch: !!insightData.patternMatch,
+        hasPatternScore: !!insightData.patternScore,
+        hasPatternRank: !!insightData.patternRank,
+        goalAchievementProspect: insightData.goalAchievementProspect,
+        goalAchievementReason: insightData.goalAchievementReason,
+      });
+      
+      const newAiAdvice = {
         summary: insightData.summary,
         strengths: insightData.strengths || [],
         improvements: insightData.improvements || [],
@@ -385,7 +425,73 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
         directionComment: insightData.directionComment || null,
         goalAchievementProspect: insightData.goalAchievementProspect || null,
         goalAchievementReason: insightData.goalAchievementReason || null,
-      });
+        // learning mode用のフィールド（存在する場合のみ）
+        patternMatch: insightData.patternMatch || null,
+        patternScore: insightData.patternScore || null,
+        patternRank: insightData.patternRank || null,
+        patternReason: insightData.patternReason || null,
+        patternBasedPrediction: insightData.patternBasedPrediction || null,
+      };
+      
+      setAnalysisStep(3); // 完了
+      setAiAdvice(newAiAdvice);
+      
+      // 段階的にアドバイスを表示（まずサマリー、その後詳細）
+      setTimeout(() => {
+        setShowAdviceProgressively(true);
+      }, 300);
+
+      // 自動保存が有効な場合、生成後に自動保存
+      if (autoSave && user?.uid && postData?.id) {
+        try {
+          // AIアドバイスを保存
+          await authFetch("/api/ai/post-summaries", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: user.uid,
+              postId: postData.id,
+              summary: newAiAdvice.summary,
+              insights: newAiAdvice.strengths || [],
+              recommendedActions: [...(newAiAdvice.improvements || []), ...(newAiAdvice.nextActions || [])],
+              category: postData.postType || "feed",
+              postTitle: postData.title || "",
+              postHashtags: postData.hashtags || [],
+            }),
+          });
+
+          // goalAchievementProspectを直接保存
+          if (newAiAdvice.goalAchievementProspect) {
+            const sentimentMap: Record<"high" | "medium" | "low", "positive" | "negative" | "neutral"> = {
+              high: "positive",
+              medium: "neutral",
+              low: "negative",
+            };
+
+            const prospect = newAiAdvice.goalAchievementProspect as "high" | "medium" | "low";
+            await authFetch("/api/ai/feedback", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                userId: user.uid,
+                postId: postData.id,
+                sentiment: sentimentMap[prospect],
+                goalAchievementProspect: prospect,
+                goalAchievementReason: newAiAdvice.goalAchievementReason || undefined,
+                comment: memo?.trim() ? memo.trim() : undefined,
+              }),
+            });
+          }
+          setIsAutoSaved(true);
+        } catch (error) {
+          console.error("AIアドバイス自動保存エラー:", error);
+          // 保存に失敗しても続行
+        }
+      }
     } catch (err) {
       console.error("AIアドバイス生成エラー:", err);
       let errorMessage = "AIアドバイスの生成に失敗しました";
@@ -403,77 +509,86 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
   };
 
   const handleSave = async () => {
-    // AIアドバイスを保存
-    if (aiAdvice && user?.uid && postData?.id) {
-      try {
-        await authFetch("/api/ai/post-summaries", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.uid,
-            postId: postData.id,
-            summary: aiAdvice.summary,
-            insights: aiAdvice.strengths || [],
-            recommendedActions: [...(aiAdvice.improvements || []), ...(aiAdvice.nextActions || [])],
-            category: postData.postType || "feed",
-            postTitle: postData.title || "",
-            postHashtags: postData.hashtags || [],
-          }),
-        });
-      } catch (error) {
-        console.error("AIアドバイス保存エラー:", error);
-        // 保存に失敗しても続行
+    try {
+      // AIアドバイスを保存
+      if (aiAdvice && user?.uid && postData?.id) {
+        try {
+          await authFetch("/api/ai/post-summaries", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: user.uid,
+              postId: postData.id,
+              summary: aiAdvice.summary,
+              insights: aiAdvice.strengths || [],
+              recommendedActions: [...(aiAdvice.improvements || []), ...(aiAdvice.nextActions || [])],
+              category: postData.postType || "feed",
+              postTitle: postData.title || "",
+              postHashtags: postData.hashtags || [],
+            }),
+          });
+        } catch (error) {
+          console.error("AIアドバイス保存エラー:", error);
+          // 保存に失敗しても続行
+        }
       }
-    }
 
-    // 分析データを保存（goalAchievementProspectをsentimentとして保存するため、後方互換性を保つ）
-    const sentimentForSave = aiAdvice?.goalAchievementProspect === "high" ? "satisfied" 
-      : aiAdvice?.goalAchievementProspect === "low" ? "dissatisfied" 
-      : sentiment; // 既存のsentimentがあればそれを使用、なければnull
-    await onSave({ sentiment: sentimentForSave as "satisfied" | "dissatisfied" | null, memo });
+      // 分析データを保存（goalAchievementProspectをsentimentとして保存するため、後方互換性を保つ）
+      const sentimentForSave = aiAdvice?.goalAchievementProspect === "high" ? "satisfied" 
+        : aiAdvice?.goalAchievementProspect === "low" ? "dissatisfied" 
+        : sentiment; // 既存のsentimentがあればそれを使用、なければnull
+      await onSave({ sentiment: sentimentForSave as "satisfied" | "dissatisfied" | null, memo });
 
-    // goalAchievementProspectを直接保存（aiAdviceがある場合）
-    if (aiAdvice?.goalAchievementProspect && user?.uid && postData?.id) {
-      try {
-        const sentimentMap: Record<"high" | "medium" | "low", "positive" | "negative" | "neutral"> = {
-          high: "positive",
-          medium: "neutral",
-          low: "negative",
-        };
+      // goalAchievementProspectを直接保存（aiAdviceがある場合）
+      if (aiAdvice?.goalAchievementProspect && user?.uid && postData?.id) {
+        try {
+          const sentimentMap: Record<"high" | "medium" | "low", "positive" | "negative" | "neutral"> = {
+            high: "positive",
+            medium: "neutral",
+            low: "negative",
+          };
 
-        await authFetch("/api/ai/feedback", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.uid,
-            postId: postData.id,
-            sentiment: sentimentMap[aiAdvice.goalAchievementProspect], // 後方互換性のため
-            goalAchievementProspect: aiAdvice.goalAchievementProspect,
-            goalAchievementReason: aiAdvice.goalAchievementReason || undefined,
-            comment: memo?.trim() ? memo.trim() : undefined,
-          }),
-        });
-      } catch (error) {
-        console.error("目標達成見込み保存エラー:", error);
-        // 保存に失敗しても続行
+          await authFetch("/api/ai/feedback", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: user.uid,
+              postId: postData.id,
+              sentiment: sentimentMap[aiAdvice.goalAchievementProspect as "high" | "medium" | "low"], // 後方互換性のため
+              goalAchievementProspect: aiAdvice.goalAchievementProspect,
+              goalAchievementReason: aiAdvice.goalAchievementReason || undefined,
+              comment: memo?.trim() ? memo.trim() : undefined,
+            }),
+          });
+        } catch (error) {
+          console.error("目標達成見込み保存エラー:", error);
+          // 保存に失敗しても続行
+        }
       }
-    }
 
-    // 保存成功後、postIdがある場合、自動的にAIアドバイスを生成
-    if (user?.uid && postData?.id && !aiAdvice) {
-      setIsAutoGeneratingAdvice(true);
-      setAdviceError(null);
-      
-      // 少し待ってから生成を開始（保存処理が完了するのを待つ）
-      setTimeout(() => {
-        handleGenerateAdvice().finally(() => {
+      // 保存は裏で行い、UIには表示しない
+      // 保存成功後、postIdがある場合、自動的にAIアドバイスを生成
+      if (user?.uid && postData?.id && !aiAdvice) {
+        // 即座にAIアドバイス生成を開始（保存成功メッセージは表示しない）
+        setIsAutoGeneratingAdvice(true);
+        setAdviceError(null);
+        
+        // AIアドバイス生成を開始
+        handleGenerateAdvice(true).finally(() => {
           setIsAutoGeneratingAdvice(false);
         });
-      }, 500);
+      }
+    } catch (error) {
+      console.error("保存エラー:", error);
+      setToastMessage({ 
+        message: "保存に失敗しました", 
+        type: "error" 
+      });
+      setTimeout(() => setToastMessage(null), 3000);
     }
   };
 
@@ -596,66 +711,6 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
                 placeholder="#hashtag1 #hashtag2"
                 disabled={isLoading}
               />
-            </div>
-            <div className="mt-2">
-              <label className="block text-sm font-medium text-gray-700 mb-3">サムネイル画像</label>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.size > 2 * 1024 * 1024) {
-                        setToastMessage({ message: "画像ファイルは2MB以下にしてください。", type: 'error' });
-                        setTimeout(() => setToastMessage(null), 3000);
-                        return;
-                      }
-
-                      const canvas = document.createElement("canvas");
-                      const ctx = canvas.getContext("2d");
-                      const img = new window.Image();
-
-                      img.onload = () => {
-                        const maxSize = 200;
-                        let { width, height } = img;
-
-                        if (width > height) {
-                          if (width > maxSize) {
-                            height = (height * maxSize) / width;
-                            width = maxSize;
-                          }
-                        } else if (height > maxSize) {
-                          width = (width * maxSize) / height;
-                          height = maxSize;
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        ctx?.drawImage(img, 0, 0, width, height);
-
-                        const base64 = canvas.toDataURL("image/jpeg", 0.8);
-                        handleInputChange("thumbnail", base64);
-                      };
-
-                      img.src = URL.createObjectURL(file);
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:border-[#ff8a15] bg-white"
-                  disabled={isLoading}
-                />
-              </div>
-              {data.thumbnail && (
-                <div className="mt-2">
-                  <Image
-                    src={data.thumbnail}
-                    alt="サムネイル"
-                    width={100}
-                    height={100}
-                    className="rounded-lg object-cover"
-                  />
-                </div>
-              )}
             </div>
             <div className="mt-2">
               <label className="block text-sm font-medium text-gray-700 mb-3">投稿日</label>
@@ -1115,30 +1170,10 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
 
         {/* AIアドバイスセクション */}
         <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-800 flex items-center">
-              <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
-              AIアドバイス
-            </h3>
-            <button
-              type="button"
-              onClick={handleGenerateAdvice}
-              disabled={isGeneratingAdvice || !postData?.id}
-              className="px-4 py-2 text-sm font-semibold text-white bg-[#ff8a15] hover:bg-[#e6760f] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#ff8a15] transition-colors flex items-center gap-2 shadow-sm hover:shadow-md"
-            >
-              {isGeneratingAdvice ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  生成中...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={16} />
-                  AIアドバイスを生成
-                </>
-              )}
-            </button>
-          </div>
+          <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+            <span className="w-2 h-2 bg-[#ff8a15] mr-2"></span>
+            AIアドバイス
+          </h3>
 
           {adviceError && (
             <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-700 text-xs">
@@ -1146,32 +1181,61 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
             </div>
           )}
 
-          {isAutoGeneratingAdvice ? (
-            <div className="bg-blue-50 border border-blue-200 p-4 text-xs text-blue-700 flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-              <span>AIアドバイスを自動生成中...</span>
+          {(isAutoGeneratingAdvice || isGeneratingAdvice) ? (
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-orange-600 border-t-transparent"></div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-orange-900 mb-1">
+                    Signal AI があなたの投稿を分析しています
+                  </p>
+                  <p className="text-xs text-orange-700 leading-relaxed">
+                    {analysisStep === 0 && "投稿内容を確認しています…"}
+                    {analysisStep === 1 && "投稿内容と伸び方の傾向を分析しています…"}
+                    {analysisStep === 2 && "改善ポイントを整理しています…"}
+                    {analysisStep === 3 && "分析が完了しました"}
+                  </p>
+                </div>
+              </div>
             </div>
-          ) : aiAdvice ? (
-            <div className="space-y-4 bg-gray-50 p-4">
+          ) : aiAdvice && showAdviceProgressively ? (
+            <div className="space-y-4 bg-gradient-to-br from-gray-50 to-orange-50/30 p-6 border border-orange-100">
+              {/* 完了メッセージ */}
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-5 shadow-sm mb-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-base font-semibold text-gray-900 mb-2">
+                      分析が完了しました
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      あなたのアカウントは <span className="font-semibold text-orange-700">{aiAdvice.summary}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               {/* 目標達成見込みの表示 */}
               {aiAdvice.goalAchievementProspect && aiAdvice.goalAchievementReason && (
-                <div className={`p-3 border-l-4 rounded ${
+                <div className={`p-4 shadow-sm ${
                   aiAdvice.goalAchievementProspect === "high"
-                    ? "bg-green-50 border-green-500"
+                    ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200"
                     : aiAdvice.goalAchievementProspect === "medium"
-                    ? "bg-yellow-50 border-yellow-500"
-                    : "bg-red-50 border-red-500"
+                    ? "bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200"
+                    : "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200"
                 }`}>
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-3">
                     {aiAdvice.goalAchievementProspect === "high" ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                     ) : aiAdvice.goalAchievementProspect === "medium" ? (
-                      <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                     ) : (
-                      <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     )}
                     <div className="flex-1">
-                      <h4 className={`text-xs font-semibold mb-1 ${
+                      <h4 className={`text-sm font-semibold mb-2 ${
                         aiAdvice.goalAchievementProspect === "high"
                           ? "text-green-900"
                           : aiAdvice.goalAchievementProspect === "medium"
@@ -1179,12 +1243,12 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
                           : "text-red-900"
                       }`}>
                         {aiAdvice.goalAchievementProspect === "high"
-                          ? "🎯 目標達成見込み: 高"
+                          ? "目標達成見込み: 高"
                           : aiAdvice.goalAchievementProspect === "medium"
-                          ? "🎯 目標達成見込み: 中"
-                          : "🎯 目標達成見込み: 低"}
+                          ? "目標達成見込み: 中"
+                          : "目標達成見込み: 低"}
                       </h4>
-                      <p className={`text-xs leading-relaxed ${
+                      <p className={`text-sm leading-relaxed ${
                         aiAdvice.goalAchievementProspect === "high"
                           ? "text-green-800"
                           : aiAdvice.goalAchievementProspect === "medium"
@@ -1200,26 +1264,26 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
 
               {/* 方針乖離の警告 */}
               {aiAdvice.directionAlignment && aiAdvice.directionAlignment !== "一致" && aiAdvice.directionComment && (
-                <div className={`p-3 border-l-4 rounded ${
+                <div className={`p-4 shadow-sm ${
                   aiAdvice.directionAlignment === "乖離" 
-                    ? "bg-red-50 border-red-500" 
-                    : "bg-yellow-50 border-yellow-500"
+                    ? "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200" 
+                    : "bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200"
                 }`}>
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
                       aiAdvice.directionAlignment === "乖離" 
                         ? "text-red-600" 
                         : "text-yellow-600"
                     }`} />
                     <div className="flex-1">
-                      <h4 className={`text-xs font-semibold mb-1 ${
+                      <h4 className={`text-sm font-semibold mb-2 ${
                         aiAdvice.directionAlignment === "乖離" 
                           ? "text-red-900" 
                           : "text-yellow-900"
                       }`}>
-                        {aiAdvice.directionAlignment === "乖離" ? "⚠️ 方針乖離の警告" : "⚠️ 要注意"}
+                        {aiAdvice.directionAlignment === "乖離" ? "方針乖離の警告" : "要注意"}
                       </h4>
-                      <p className={`text-xs leading-relaxed ${
+                      <p className={`text-sm leading-relaxed ${
                         aiAdvice.directionAlignment === "乖離" 
                           ? "text-red-800" 
                           : "text-yellow-800"
@@ -1233,14 +1297,14 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
 
               {/* 方針一致の確認 */}
               {aiAdvice.directionAlignment === "一致" && aiAdvice.directionComment && (
-                <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <h4 className="text-xs font-semibold text-green-900 mb-1">
-                        ✅ 今月のAI方針に沿っています
+                      <h4 className="text-sm font-semibold text-green-900 mb-1.5">
+                        今月のAI方針に沿っています
                       </h4>
-                      <p className="text-xs text-green-800 leading-relaxed">
+                      <p className="text-sm text-green-800 leading-relaxed">
                         {aiAdvice.directionComment}
                       </p>
                     </div>
@@ -1248,43 +1312,90 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
                 </div>
               )}
 
-              <div className="border-l-4 border-gray-400 pl-4">
-                <p className="text-sm text-gray-800 leading-relaxed">{aiAdvice.summary}</p>
-              </div>
+              {/* 強みセクション */}
               {aiAdvice.strengths.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">強み</h4>
-                  <ul className="list-disc list-inside text-xs text-gray-700 space-y-1 pl-2">
+                <div className="bg-white border border-gray-200 p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-green-500"></div>
+                    <h4 className="text-sm font-semibold text-gray-900">強み</h4>
+                  </div>
+                  <ul className="space-y-2.5">
                     {aiAdvice.strengths.map((item, idx) => (
-                      <li key={`strength-${idx}`}>{item}</li>
+                      <li key={`strength-${idx}`} className="flex items-start gap-2.5 text-sm text-gray-700 leading-relaxed">
+                        <span className="text-green-500 mt-1.5 flex-shrink-0">✓</span>
+                        <span>{item}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
+
+              {/* 改善ポイントセクション */}
               {aiAdvice.improvements.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">改善ポイント</h4>
-                  <ul className="list-disc list-inside text-xs text-gray-700 space-y-1 pl-2">
+                <div className="bg-white border border-gray-200 p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-amber-500"></div>
+                    <h4 className="text-sm font-semibold text-gray-900">改善ポイント</h4>
+                  </div>
+                  <ul className="space-y-2.5">
                     {aiAdvice.improvements.map((item, idx) => (
-                      <li key={`improve-${idx}`}>{item}</li>
+                      <li key={`improve-${idx}`} className="flex items-start gap-2.5 text-sm text-gray-700 leading-relaxed">
+                        <span className="text-amber-500 mt-1.5 flex-shrink-0">→</span>
+                        <span>{item}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
+
+              {/* 次のアクションセクション */}
               {aiAdvice.nextActions.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wider">次のアクション</h4>
-                  <ul className="list-disc list-inside text-xs text-gray-700 space-y-1 pl-2">
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-orange-500"></div>
+                    <h4 className="text-sm font-semibold text-gray-900">次のアクション</h4>
+                  </div>
+                  <ul className="space-y-2.5">
                     {aiAdvice.nextActions.map((item, idx) => (
-                      <li key={`action-${idx}`}>{item}</li>
+                      <li key={`action-${idx}`} className="flex items-start gap-2.5 text-sm text-gray-800 leading-relaxed">
+                        <span className="text-orange-600 mt-1.5 flex-shrink-0 font-bold">▶</span>
+                        <span>{item}</span>
+                      </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Coaching Mode: 継続分析の価値を伝えるメッセージ */}
+              {!aiAdvice.patternMatch && (
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-purple-900 mb-1">
+                        より具体的な提案のために
+                      </h4>
+                      <p className="text-sm text-purple-800 leading-relaxed">
+                        投稿を分析すればするほど、Signal AIはあなたのアカウントの傾向を学習し、より具体的で効果的な提案が可能になります。継続的な分析をおすすめします。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isAutoSaved && (
+                <div className="mt-3 pt-3 border-t border-gray-300">
+                  <p className="text-xs text-gray-600 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-green-600" />
+                    この分析結果は自動的に保存されています
+                  </p>
                 </div>
               )}
             </div>
           ) : (
-            <div className="bg-gray-50 p-4 text-xs text-gray-500">
-              「AIアドバイスを生成」ボタンをクリックして、この投稿の分析とアドバイスを取得できます。
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4 text-xs text-orange-700">
+              <p className="font-medium mb-1">💡 AIに分析してもらう</p>
+              <p>ボタンを押すと、Signal AIがあなたの投稿を分析し、改善ポイントを提案します。</p>
             </div>
           )}
         </div>
@@ -1300,23 +1411,28 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
           </div>
         ) : null}
 
-        {/* 保存ボタン */}
-        <div className="flex justify-end pt-4">
-          <button
-            onClick={handleSave}
-            disabled={isLoading}
-            className="px-6 py-2 bg-[#ff8a15] text-white hover:bg-[#e6760f] disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                保存中...
-              </>
-            ) : (
-              "フィード分析データを保存"
-            )}
-          </button>
-        </div>
+        {/* AI分析ボタン（AIアドバイスが生成されていない場合のみ表示） */}
+        {!aiAdvice && (
+          <div className="flex justify-end pt-4">
+            <button
+              onClick={handleSave}
+              disabled={isLoading || isAutoGeneratingAdvice || isGeneratingAdvice}
+              className="px-6 py-2 bg-[#ff8a15] text-white hover:bg-[#e6760f] disabled:opacity-50 disabled:cursor-not-allowed flex items-center font-medium shadow-sm hover:shadow-md transition-all"
+            >
+              {isLoading || isAutoGeneratingAdvice || isGeneratingAdvice ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {analysisStep === 0 && "投稿内容を確認中..."}
+                  {analysisStep === 1 && "傾向を分析中..."}
+                  {analysisStep === 2 && "改善ポイントを整理中..."}
+                  {analysisStep === 3 && "完了"}
+                </>
+              ) : (
+                "AIに分析してもらう"
+              )}
+            </button>
+          </div>
+        )}
 
       </div>
       </div>

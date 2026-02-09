@@ -98,6 +98,11 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
   // reportDataからフィードバック感情分析データを取得
   const summary: FeedbackSentimentSummary | null = reportData?.feedbackSentiment || null;
 
+  // 実際の分析済み投稿数を取得（postSummariesの数ではなく、performanceScore.metrics.analyzedCountを使用）
+  const actualAnalyzedCount = React.useMemo(() => {
+    return reportData?.performanceScore?.metrics?.analyzedCount || summary?.posts?.length || 0;
+  }, [reportData?.performanceScore?.metrics?.analyzedCount, summary?.posts?.length]);
+
   // データがない場合は非表示
   if (!summary || summary.total === 0) {
     return null;
@@ -171,6 +176,9 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
           <h2 className="text-base font-bold text-gray-900">フィードバック感情トラッキング</h2>
           <p className="text-xs text-gray-600 mt-0.5">
             ユーザーの声から好評・不満の傾向を把握し、次の改善テーマにつなげます
+            {actualAnalyzedCount > 0 && (
+              <span className="ml-1">（{actualAnalyzedCount}件の投稿から分析）</span>
+            )}
           </p>
         </div>
       </div>

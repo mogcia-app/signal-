@@ -6,6 +6,8 @@ import { adminDb } from "../../../../lib/firebase-admin";
 import { UserProfile } from "../../../../types/user";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
 
+export const dynamic = 'force-dynamic';
+
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({

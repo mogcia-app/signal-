@@ -10,7 +10,6 @@ import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
 import { useScheduleGeneration } from "../../../../hooks/useScheduleGeneration";
 import { useBusinessInfo } from "../../../../hooks/useBusinessInfo";
-import ABTestSidebarSection from "../components/ABTestSidebarSection";
 import { notify } from "../../../../lib/ui/notifications";
 import { AlertTriangle } from "lucide-react";
 
@@ -388,9 +387,6 @@ export default function FeedLabPage() {
                 scheduledTime={scheduledTime}
                 onImageChange={setPostImage}
               />
-            </div>
-            <div className="flex-shrink-0">
-              <ABTestSidebarSection currentPostTitle={postTitle} />
             </div>
             <div className="mt-6 flex-shrink-0">
               <ToolPanel

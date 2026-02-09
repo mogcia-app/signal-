@@ -338,22 +338,22 @@ export default function InstagramReportPage() {
         />
 
         {/* フィードバック感情トラッキング */}
-        <FeedbackSentiment 
+        {/* <FeedbackSentiment 
           selectedMonth={selectedMonth} 
           reportData={reportData}
-        />
+        /> */}
 
         {/* 投稿ディープダイブ */}
-        <PostDeepDive 
+        {/* <PostDeepDive 
           selectedMonth={selectedMonth} 
           reportData={reportData}
-        />
+        /> */}
 
         {/* AI学習リファレンス */}
-        <AILearningReferences 
+        {/* <AILearningReferences 
           selectedMonth={selectedMonth} 
           reportData={reportData}
-        />
+        /> */}
       </div>
     </SNSLayout>
   );

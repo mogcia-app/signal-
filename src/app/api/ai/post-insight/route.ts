@@ -4,7 +4,6 @@ import type { PostLearningSignal } from "../monthly-analysis/types";
 import { adminDb } from "@/lib/firebase-admin";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { fetchAIDirection } from "@/lib/ai/context";
-import * as admin from "firebase-admin";
 
 interface PostInsightRequest {
   userId?: string;
@@ -12,11 +11,65 @@ interface PostInsightRequest {
   forceRefresh?: boolean;
 }
 
-async function callOpenAIForPostInsight(prompt: string): Promise<string> {
+interface CoachingModePromptParams {
+  aiDirection: Awaited<ReturnType<typeof fetchAIDirection>>;
+  currentFollowers: number;
+  planInfo: {
+    targetFollowers: number;
+    targetAudience: string;
+    kpi: {
+      targetFollowers: number;
+      strategies: string[];
+      postCategories: string[];
+    };
+  } | null;
+  analyticsMetrics: {
+    likes: number;
+    comments: number;
+    shares: number;
+    reach: number;
+    saves: number;
+    followerIncrease: number;
+    engagementRate: number;
+    reachFollowerPercent: number;
+    interactionCount: number;
+    interactionFollowerPercent: number;
+    audience: any;
+    reachSource: any;
+  } | null;
+  payload: any;
+}
+
+interface LearningModePromptParams extends CoachingModePromptParams {
+  signal: Partial<PostLearningSignal>;
+  cluster: PostLearningSignal["cluster"];
+  comparisons: PostLearningSignal["comparisons"];
+  significance: PostLearningSignal["significance"];
+  winningPatterns: {
+    topPerformers: Array<{
+      title: string;
+      followerIncrease: number;
+      reach: number;
+      category: string;
+    }>;
+    clusterPatterns: Array<{
+      label: string;
+      count: number;
+      avgFollowerIncrease: number;
+      avgReach: number;
+      avgEngagement: number;
+      examples: string[];
+    }>;
+  } | null;
+}
+
+async function callOpenAIForPostInsight(prompt: string, systemPrompt?: string): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error("OpenAI API key not configured");
   }
+
+  const defaultSystemPrompt = `あなたはInstagram運用のエキスパートアナリストです。投稿データ、分析データ、フィードバック、計画情報、事業内容を総合的に分析し、この投稿の良かった部分、改善すべきポイント、次は何をすべきか（次の一手）を具体的に提案してください。出力はJSONのみ。`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -31,7 +84,7 @@ async function callOpenAIForPostInsight(prompt: string): Promise<string> {
       messages: [
         {
           role: "system",
-          content: `あなたはInstagram運用のエキスパートアナリストです。投稿データ、分析データ、フィードバック、計画情報、事業内容を総合的に分析し、この投稿の良かった部分、改善すべきポイント、次は何をすべきか（次の一手）を具体的に提案してください。出力はJSONのみ。`,
+          content: systemPrompt || defaultSystemPrompt,
         },
         {
           role: "user",
@@ -48,6 +101,304 @@ async function callOpenAIForPostInsight(prompt: string): Promise<string> {
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content ?? "";
+}
+
+// Coaching Mode（初月）：投稿の質の指導
+function buildCoachingModePrompt(params: CoachingModePromptParams): string {
+  const { aiDirection, currentFollowers, planInfo, analyticsMetrics, payload } = params;
+
+  return `以下のInstagram投稿データを分析し、JSON形式で出力してください。
+
+${aiDirection && aiDirection.lockedAt ? `【今月のAI方針（最優先・必須参照）】
+- メインテーマ: ${aiDirection.mainTheme}
+- 避けるべき焦点: ${aiDirection.avoidFocus.join(", ")}
+- 優先KPI: ${aiDirection.priorityKPI}
+- 投稿ルール: ${aiDirection.postingRules.join(", ")}
+
+**重要**: この投稿が上記の「今月のAI方針」と一致しているか、乖離しているかを必ず評価してください。
+
+` : ""}【あなたの役割】
+あなたはInstagram運用のトレーナーです。投稿の質を向上させるための具体的な指導を行ってください。
+
+【分析のポイント】
+- 投稿内容・ハッシュタグ・投稿日時を確認
+- 分析ページで入力された分析データ（いいね数、コメント数、リーチ数、フォロワー増加数など）を評価
+- 計画の目標フォロワー数・KPI・ターゲット層と比較
+- **重要**: 現在のフォロワー数（${currentFollowers}人）と目標フォロワー数（${planInfo?.targetFollowers || 0}人）の差を正確に考慮してください
+- **重要**: この投稿によるフォロワー増加数（${analyticsMetrics?.followerIncrease || 0}人）を正確に参照してください。フォロワー増加数が記入されている場合は、それを考慮して評価してください
+- **重要**: リーチ数、いいね数、コメント数など、目標値が設定されていない項目については、「目標に対して低い」「目標に達していない」という評価は行わないでください。これらの項目には目標値が存在しないため、目標との比較はできません
+- 事業内容・ターゲット市場を踏まえた提案
+${aiDirection && aiDirection.lockedAt ? `- **今月のAI方針との一致/乖離を評価**` : ""}
+
+【データの扱いに関する重要事項】
+- **データがない項目について**: 分析ページに項目がない、または値が0の場合は、その項目について「データがない」または「未入力」として扱い、改善を求める指摘は行わないでください
+- **フォロワー増加数について**: フォロワー増加数が記入されている場合は、その数値を正確に参照し、目標達成の評価に反映してください
+- **エンゲージメント率について**: エンゲージメント率は分析ページに項目がないため、エンゲージメント率に関する言及は一切行わないでください
+- **リーチ数、いいね数、コメント数などについて**: これらの項目には目標値が設定されていません。したがって、「目標に対して低い」「目標に達していない」「目標に対して高い」などの目標との比較評価は行わないでください。数値そのものの評価や、より良い結果を得るための改善提案は可能ですが、目標値との比較は絶対に行わないでください
+
+【目標達成見込みの評価基準】
+以下の3つの観点から総合的に評価してください：
+1. **計画との整合性**: 運用計画の目標（フォロワー増加のみ。リーチ数、いいね数、コメント数などに目標値は設定されていない）に対して、この投稿がどの程度貢献しているか
+2. **今月のAI方針との整合性**: メインテーマ、優先KPI、避けるべき焦点、投稿ルールに沿っているか
+3. **投稿パフォーマンス**: リーチ、いいね、コメント、保存、シェアなどの数値を評価しますが、これらの項目には目標値が設定されていないため、目標との比較は行わず、数値そのものや改善の余地を評価してください
+
+評価結果：
+- **high（高）**: 計画や今月の方針に沿っており、目標達成が見込める投稿
+- **medium（中）**: 部分的に計画に沿っているが、改善の余地がある投稿
+- **low（低）**: 計画や今月の方針から乖離しており、目標達成が困難な投稿
+
+出力形式:
+{
+  "summary": "投稿全体の一言まとめ（30-60文字程度）",
+  "strengths": ["この投稿の良かった部分1", "この投稿の良かった部分2"],
+  "improvements": ["改善すべきポイント1", "改善すべきポイント2"],
+  "nextActions": ["次は何をすべきか？（次の一手）1", "次は何をすべきか？（次の一手）2"]${aiDirection && aiDirection.lockedAt ? `,
+  "directionAlignment": "一致" | "乖離" | "要注意",
+  "directionComment": "今月のAI方針との関係性を1文で説明（例: 「今月の重点「${aiDirection.mainTheme}」に沿った投稿です」または「今月の重点からズレています」）"
+}` : ""},
+  "goalAchievementProspect": "high" | "medium" | "low",
+  "goalAchievementReason": "目標達成見込みの評価理由（計画内容、今月のAI方針、投稿パフォーマンスを総合的に評価した結果を1-2文で説明）"
+}
+条件:
+- 箇条書きは2-3個に収める
+- 具体的かつ実行しやすい表現にする
+- 日本語で記述する
+- 事業内容・ターゲット層・計画の目標を踏まえた提案にする
+- 分析データの数値を具体的に参照する
+- **重要**: フォロワー増加数が記入されている場合は、その数値を正確に参照し、「目標未達成」という評価は行わないでください。フォロワー増加数が大きい場合は、それを評価に含めてください
+- **重要**: データがない項目（値が0またはnull、または分析ページに項目がない）については、改善を求める指摘は行わないでください
+- **重要**: エンゲージメント率は分析ページに項目がないため、エンゲージメント率に関する言及は一切行わないでください。エンゲージメント率についての評価、改善提案、言及は一切含めないでください
+- **最重要**: リーチ数、いいね数、コメント数、保存数、シェア数など、目標値が設定されていない項目については、「目標に対して低い」「目標に達していない」「目標に対して高い」などの目標との比較評価は絶対に行わないでください。これらの項目には目標値が存在しないため、目標との比較は不可能です。改善提案をする場合は、「より多くのリーチを獲得するために」「リーチを増やすために」という形で、目標値との比較ではなく、数値の向上を目指す提案としてください
+${aiDirection && aiDirection.lockedAt ? `- **今月のAI方針「${aiDirection.mainTheme}」を必ず考慮して、「nextActions」を提案してください。月次レポートの提案と一貫性を持たせてください。**` : ""}
+
+投稿データ:
+${JSON.stringify(payload, null, 2)}`;
+}
+
+// サーバー側でパターン一致スコアを計算
+function calculatePatternScore(
+  cluster: PostLearningSignal["cluster"],
+  comparisons: PostLearningSignal["comparisons"],
+  significance: PostLearningSignal["significance"],
+  winningPatterns: LearningModePromptParams["winningPatterns"],
+  analyticsMetrics: { followerIncrease: number; reach: number } | null
+): { score: number; match: "match" | "partial" | "mismatch"; rank: "core" | "edge" | "outlier" } {
+  let score = 0;
+  const maxScore = 100;
+
+  // 1. クラスターパフォーマンス差（最大30点）
+  // clusterPerformanceDiffが正の値なら、成功パターンに近い
+  if (comparisons.clusterPerformanceDiff > 0) {
+    score += Math.min(30, comparisons.clusterPerformanceDiff * 10);
+  } else if (comparisons.clusterPerformanceDiff < -0.1) {
+    score -= Math.min(20, Math.abs(comparisons.clusterPerformanceDiff) * 10);
+  }
+
+  // 2. クラスター中心からの距離（最大20点）
+  // centroidDistanceが小さいほど、クラスターの中心に近い = パターンに一致
+  if (cluster && cluster.id && cluster.centroidDistance >= 0) {
+    // 距離が0に近いほど高スコア（逆比例）
+    const distanceScore = Math.max(0, 20 - (cluster.centroidDistance * 5));
+    score += distanceScore;
+  }
+
+  // 3. 統計的有意性（最大20点）
+  // "higher"が多いほど成功パターンに近い
+  let higherCount = 0;
+  if (significance.reach === "higher") higherCount++;
+  if (significance.engagement === "higher") higherCount++;
+  if (significance.savesRate === "higher") higherCount++;
+  if (significance.commentsRate === "higher") higherCount++;
+  score += higherCount * 5;
+
+  // "lower"が多いほど減点
+  let lowerCount = 0;
+  if (significance.reach === "lower") lowerCount++;
+  if (significance.engagement === "lower") lowerCount++;
+  if (significance.savesRate === "lower") lowerCount++;
+  if (significance.commentsRate === "lower") lowerCount++;
+  score -= lowerCount * 3;
+
+  // 4. 勝ちパターンとの一致度（最大30点）
+  if (winningPatterns && analyticsMetrics) {
+    // トップクラスターパターンとの一致
+    const currentFollowerIncrease = analyticsMetrics.followerIncrease || 0;
+    const currentReach = analyticsMetrics.reach || 0;
+
+    // トップパフォーマーとの比較
+    if (winningPatterns.topPerformers.length > 0) {
+      const avgTopFollowerIncrease = winningPatterns.topPerformers.reduce((sum, p) => sum + p.followerIncrease, 0) / winningPatterns.topPerformers.length;
+      const avgTopReach = winningPatterns.topPerformers.reduce((sum, p) => sum + p.reach, 0) / winningPatterns.topPerformers.length;
+
+      // フォロワー増加数が平均の80%以上なら一致とみなす
+      if (currentFollowerIncrease >= avgTopFollowerIncrease * 0.8) {
+        score += 15;
+      } else if (currentFollowerIncrease >= avgTopFollowerIncrease * 0.5) {
+        score += 8;
+      }
+
+      // リーチが平均の80%以上なら一致とみなす
+      if (currentReach >= avgTopReach * 0.8) {
+        score += 10;
+      } else if (currentReach >= avgTopReach * 0.5) {
+        score += 5;
+      }
+    }
+
+    // クラスターパターンとの一致
+    if (winningPatterns.clusterPatterns.length > 0 && cluster && cluster.id) {
+      const matchingPattern = winningPatterns.clusterPatterns.find(p => p.label === cluster.label);
+      if (matchingPattern) {
+        // 同じクラスターに属していれば追加スコア
+        score += 5;
+      }
+    }
+  }
+
+  // 5. 類似投稿数（最大5点）
+  // 類似投稿が多いほど、パターンに一致している
+  if (cluster && cluster.similarPosts.length > 0) {
+    score += Math.min(5, cluster.similarPosts.length);
+  }
+
+  // スコアを0-100の範囲に正規化
+  score = Math.max(0, Math.min(maxScore, score));
+
+  // 判定結果を決定
+  let match: "match" | "partial" | "mismatch";
+  let rank: "core" | "edge" | "outlier";
+
+  if (score >= 70) {
+    match = "match";
+    rank = "core";
+  } else if (score >= 40) {
+    match = "partial";
+    rank = "edge";
+  } else {
+    match = "mismatch";
+    rank = "outlier";
+  }
+
+  return { score: Math.round(score), match, rank };
+}
+
+// Learning Mode（2ヶ月目以降）：アカウントの傾向と照合
+function buildLearningModePrompt(params: LearningModePromptParams): { prompt: string; systemPrompt: string; patternScore: number; patternMatch: "match" | "partial" | "mismatch"; patternRank: "core" | "edge" | "outlier" } {
+  const { aiDirection, analyticsMetrics, payload, cluster, comparisons, significance, winningPatterns } = params;
+
+  // サーバー側でパターンスコアと判定結果を計算
+  const patternResult = calculatePatternScore(cluster, comparisons, significance, winningPatterns, analyticsMetrics);
+
+  // サーバー側で計算した判定結果を構造化データとして渡す
+  // AIには判定結果とスコアを渡し、説明を求める
+  const patternAnalysis = {
+    // 判定結果（サーバー側で決定済み）
+    patternScore: patternResult.score,
+    patternMatch: patternResult.match,
+    patternRank: patternResult.rank,
+    // 判定の根拠となるデータ（参考情報として）
+    cluster: cluster && cluster.id ? {
+      label: cluster.label,
+      baselinePerformance: cluster.baselinePerformance,
+      centroidDistance: cluster.centroidDistance,
+      similarPostCount: cluster.similarPosts.length,
+    } : null,
+    comparisons: {
+      clusterPerformanceDiff: comparisons.clusterPerformanceDiff,
+      reachDiff: comparisons.reachDiff,
+      savesRateDiff: comparisons.savesRateDiff,
+      commentsRateDiff: comparisons.commentsRateDiff,
+    },
+    significance: {
+      reach: significance.reach,
+      engagement: significance.engagement,
+      savesRate: significance.savesRate,
+      commentsRate: significance.commentsRate,
+    },
+    winningPatterns: winningPatterns ? {
+      topClusterPatterns: winningPatterns.clusterPatterns.map(p => ({
+        label: p.label,
+        avgFollowerIncrease: p.avgFollowerIncrease,
+        avgReach: p.avgReach,
+      })),
+      topPerformers: winningPatterns.topPerformers.map(p => ({
+        followerIncrease: p.followerIncrease,
+        reach: p.reach,
+        category: p.category,
+      })),
+    } : null,
+  };
+
+  const systemPrompt = `あなたはSNSアドバイザーではありません。
+あなたはデータ解釈システムです。
+
+あなたの第一目的は、サーバー側で計算された判定結果（patternScore, patternMatch, patternRank）を
+人間が理解できる言葉に翻訳することです。
+
+**重要**: あなたはパターンを判定してはいけません。
+patternScoreを解釈し、なぜその判定になったのかを説明してください。
+
+必ず以下の順序で思考してください：
+1. patternScoreの意味を解釈（なぜこのスコアなのか）
+2. patternMatchの判定理由を説明（過去投稿データの数値に基づく）
+3. patternRankの意味を説明（core/edge/outlierの意味）
+4. 例外の場合のみ改善提案（mismatchまたはoutlierの場合）
+
+出力はJSONのみ。`;
+
+  const prompt = `以下の判定結果を解釈し、人間が理解できる言葉に翻訳してください。
+
+【判定結果（サーバー側で計算済み）】
+- patternScore: ${patternResult.score}/100
+- patternMatch: ${patternResult.match}
+- patternRank: ${patternResult.rank}
+
+【判定の根拠データ】
+${JSON.stringify(patternAnalysis, null, 2)}
+
+【投稿データ】
+- タイトル: ${payload.post?.title || "タイトル未設定"}
+- カテゴリ: ${payload.post?.category || "feed"}
+- フォロワー増加数: ${analyticsMetrics?.followerIncrease || 0}人
+- リーチ: ${analyticsMetrics?.reach || 0}
+- いいね: ${analyticsMetrics?.likes || 0}
+- コメント: ${analyticsMetrics?.comments || 0}
+- 保存: ${analyticsMetrics?.saves || 0}
+
+${aiDirection && aiDirection.lockedAt ? `【今月のAI方針】
+- メインテーマ: ${aiDirection.mainTheme}
+- 優先KPI: ${aiDirection.priorityKPI}
+` : ""}
+
+【出力形式】
+{
+  "patternReason": "判定理由（patternScore ${patternResult.score}、patternMatch ${patternResult.match}、patternRank ${patternResult.rank}の意味を、過去投稿データの数値に基づいて具体的に説明。1-2文）",
+  "patternBasedPrediction": "今後フォロワーが増える見込み" | "伸びにくい" | "判断保留",
+  "summary": "投稿全体の一言まとめ（30-60文字程度）",
+  "strengths": ["この投稿の良かった部分（パターン一致の観点から）"],
+  "improvements": ["改善すべきポイント（パターン不一致の場合のみ）"],
+  "nextActions": ["次の投稿戦略（パターンに基づく具体的な提案）"]${aiDirection && aiDirection.lockedAt ? `,
+  "directionAlignment": "一致" | "乖離" | "要注意",
+  "directionComment": "今月のAI方針との関係性（1文）"
+}` : ""},
+  "goalAchievementProspect": "high" | "medium" | "low",
+  "goalAchievementReason": "目標達成見込みの評価理由（パターン一致度に基づく。1-2文）"
+}
+
+【重要】
+- patternReasonは必ず出力してください（patternScore ${patternResult.score}、patternMatch ${patternResult.match}、patternRank ${patternResult.rank}の意味を説明）
+- 判定は既にサーバー側で決定されています。あなたはその判定結果を解釈し、説明してください
+- 判定を変更したり、独自の判定をしてはいけません
+- エンゲージメント率に関する言及は一切行わないでください
+- リーチ数、いいね数、コメント数など、目標値が設定されていない項目については、「目標に対して低い」などの目標との比較評価は行わないでください`;
+
+  return { 
+    prompt, 
+    systemPrompt, 
+    patternScore: patternResult.score, 
+    patternMatch: patternResult.match, 
+    patternRank: patternResult.rank 
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -288,59 +639,115 @@ export async function POST(request: NextRequest) {
     // ai_direction（今月のAI方針）を取得
     const aiDirection = await fetchAIDirection(userId);
 
-    const prompt = `以下のInstagram投稿データを分析し、JSON形式で出力してください。
+    // モード判定：投稿数に基づいてcoaching mode / learning modeを切り替え
+    const signalCount = masterContext?.postPatterns?.signals?.length || 0;
+    const isLearningMode = signalCount >= 5; // 5件以上でlearning mode
 
-${aiDirection && aiDirection.lockedAt ? `【今月のAI方針（最優先・必須参照）】
-- メインテーマ: ${aiDirection.mainTheme}
-- 避けるべき焦点: ${aiDirection.avoidFocus.join(", ")}
-- 優先KPI: ${aiDirection.priorityKPI}
-- 投稿ルール: ${aiDirection.postingRules.join(", ")}
+    // アカウントの勝ちパターンを抽出（learning mode用）
+    const winningPatterns = isLearningMode && masterContext?.postPatterns?.signals
+      ? (() => {
+          // フォロワー増加数が高い投稿を抽出
+          const topPerformers = masterContext.postPatterns.signals
+            .filter((s: PostLearningSignal) => (s.followerIncrease || 0) > 0)
+            .sort((a: PostLearningSignal, b: PostLearningSignal) => (b.followerIncrease || 0) - (a.followerIncrease || 0))
+            .slice(0, 5);
+          
+          // クラスター分析から勝ちパターンを抽出
+          const clusterPatterns = masterContext.postPatterns.signals
+            .filter((s: PostLearningSignal) => s.cluster?.baselinePerformance && s.cluster.baselinePerformance > 0)
+            .reduce((acc: Record<string, {
+              label: string;
+              count: number;
+              avgFollowerIncrease: number;
+              avgReach: number;
+              avgEngagement: number;
+              examples: string[];
+            }>, s: PostLearningSignal) => {
+              const label = s.cluster?.label || "未分類";
+              if (!acc[label]) {
+                acc[label] = {
+                  label,
+                  count: 0,
+                  avgFollowerIncrease: 0,
+                  avgReach: 0,
+                  avgEngagement: 0,
+                  examples: [] as string[],
+                };
+              }
+              acc[label].count++;
+              acc[label].avgFollowerIncrease += s.followerIncrease || 0;
+              acc[label].avgReach += s.reach || 0;
+              acc[label].avgEngagement += s.engagementRate || 0;
+              if (s.title && acc[label].examples.length < 3) {
+                acc[label].examples.push(s.title);
+              }
+              return acc;
+            }, {} as Record<string, {
+              label: string;
+              count: number;
+              avgFollowerIncrease: number;
+              avgReach: number;
+              avgEngagement: number;
+              examples: string[];
+            }>);
 
-**重要**: この投稿が上記の「今月のAI方針」と一致しているか、乖離しているかを必ず評価してください。
+          // 平均値を計算
+          Object.values(clusterPatterns).forEach(pattern => {
+            pattern.avgFollowerIncrease = pattern.avgFollowerIncrease / pattern.count;
+            pattern.avgReach = pattern.avgReach / pattern.count;
+            pattern.avgEngagement = pattern.avgEngagement / pattern.count;
+          });
 
-` : ""}【分析のポイント】
-- 投稿内容・ハッシュタグ・投稿日時を確認
-- 分析ページで入力された分析データ（いいね数、コメント数、リーチ数など）を評価
-- 計画の目標フォロワー数・KPI・ターゲット層と比較
-- 現在のフォロワー数と目標の差を考慮
-- 事業内容・ターゲット市場を踏まえた提案
-${aiDirection && aiDirection.lockedAt ? `- **今月のAI方針との一致/乖離を評価**` : ""}
+          return {
+            topPerformers: topPerformers.map((s: PostLearningSignal) => ({
+              title: s.title || "タイトル不明",
+              followerIncrease: s.followerIncrease || 0,
+              reach: s.reach || 0,
+              category: s.category || "feed",
+            })),
+            clusterPatterns: Object.values(clusterPatterns)
+              .sort((a: { avgFollowerIncrease: number }, b: { avgFollowerIncrease: number }) => b.avgFollowerIncrease - a.avgFollowerIncrease)
+              .slice(0, 3),
+          };
+        })()
+      : null;
 
-【目標達成見込みの評価基準】
-以下の3つの観点から総合的に評価してください：
-1. **計画との整合性**: 運用計画の目標（フォロワー増加、エンゲージメント向上など）に対して、この投稿がどの程度貢献しているか
-2. **今月のAI方針との整合性**: メインテーマ、優先KPI、避けるべき焦点、投稿ルールに沿っているか
-3. **投稿パフォーマンス**: リーチ、いいね、コメント、保存、シェアなどの数値が目標達成に寄与しているか
+    // プロンプトをモードに応じて生成
+    let prompt: string;
+    let systemPrompt: string | undefined;
+    let serverPatternScore: number | null = null;
+    let serverPatternMatch: "match" | "partial" | "mismatch" | null = null;
+    let serverPatternRank: "core" | "edge" | "outlier" | null = null;
+    
+    if (isLearningMode) {
+      const learningPrompt = buildLearningModePrompt({
+        aiDirection,
+        currentFollowers,
+        planInfo,
+        analyticsMetrics,
+        payload,
+        signal,
+        cluster,
+        comparisons,
+        significance,
+        winningPatterns,
+      });
+      prompt = learningPrompt.prompt;
+      systemPrompt = learningPrompt.systemPrompt;
+      serverPatternScore = learningPrompt.patternScore;
+      serverPatternMatch = learningPrompt.patternMatch;
+      serverPatternRank = learningPrompt.patternRank;
+    } else {
+      prompt = buildCoachingModePrompt({
+        aiDirection,
+        currentFollowers,
+        planInfo,
+        analyticsMetrics,
+        payload,
+      });
+    }
 
-評価結果：
-- **high（高）**: 計画や今月の方針に沿っており、目標達成が見込める投稿
-- **medium（中）**: 部分的に計画に沿っているが、改善の余地がある投稿
-- **low（低）**: 計画や今月の方針から乖離しており、目標達成が困難な投稿
-
-出力形式:
-{
-  "summary": "投稿全体の一言まとめ（30-60文字程度）",
-  "strengths": ["この投稿の良かった部分1", "この投稿の良かった部分2"],
-  "improvements": ["改善すべきポイント1", "改善すべきポイント2"],
-  "nextActions": ["次は何をすべきか？（次の一手）1", "次は何をすべきか？（次の一手）2"]${aiDirection && aiDirection.lockedAt ? `,
-  "directionAlignment": "一致" | "乖離" | "要注意",
-  "directionComment": "今月のAI方針との関係性を1文で説明（例: 「今月の重点「${aiDirection.mainTheme}」に沿った投稿です」または「今月の重点からズレています」）"
-}` : ""},
-  "goalAchievementProspect": "high" | "medium" | "low",
-  "goalAchievementReason": "目標達成見込みの評価理由（計画内容、今月のAI方針、投稿パフォーマンスを総合的に評価した結果を1-2文で説明）"
-}
-条件:
-- 箇条書きは2-3個に収める
-- 具体的かつ実行しやすい表現にする
-- 日本語で記述する
-- 事業内容・ターゲット層・計画の目標を踏まえた提案にする
-- 分析データの数値を具体的に参照する
-${aiDirection && aiDirection.lockedAt ? `- **今月のAI方針「${aiDirection.mainTheme}」を必ず考慮して、「nextActions」を提案してください。月次レポートの提案と一貫性を持たせてください。**` : ""}
-
-投稿データ:
-${JSON.stringify(payload, null, 2)}`;
-
-    const rawResponse = await callOpenAIForPostInsight(prompt);
+    const rawResponse = await callOpenAIForPostInsight(prompt, systemPrompt);
     const trimmed = rawResponse.trim();
     
     // JSONを抽出（マークダウンコードブロックや余分なテキストを処理）
@@ -390,6 +797,11 @@ ${JSON.stringify(payload, null, 2)}`;
       directionComment?: string;
       goalAchievementProspect?: "high" | "medium" | "low";
       goalAchievementReason?: string;
+      patternMatch?: "match" | "partial" | "mismatch" | "一致" | "部分一致" | "不一致";
+      patternConfidence?: number;
+      patternBasedPrediction?: "今後フォロワーが増える見込み" | "伸びにくい" | "判断保留";
+      patternReason?: string;
+      winningPattern?: string;
     };
     
     try {
@@ -420,10 +832,33 @@ ${JSON.stringify(payload, null, 2)}`;
           ? parsed.goalAchievementProspect 
           : null,
         goalAchievementReason: typeof parsed.goalAchievementReason === "string" ? parsed.goalAchievementReason : null,
+        // learning mode用の追加フィールド（サーバー側で決定した値を優先）
+        patternMatch: isLearningMode ? serverPatternMatch : null,
+        patternScore: isLearningMode ? serverPatternScore : null,
+        patternRank: isLearningMode ? serverPatternRank : null,
+        patternConfidence: isLearningMode ? serverPatternScore : null, // patternScoreと同じ値
+        patternBasedPrediction: isLearningMode && (
+          parsed.patternBasedPrediction === "今後フォロワーが増える見込み" ||
+          parsed.patternBasedPrediction === "伸びにくい" ||
+          parsed.patternBasedPrediction === "判断保留"
+        )
+          ? parsed.patternBasedPrediction
+          : null,
+        patternReason: isLearningMode && typeof parsed.patternReason === "string" ? parsed.patternReason : null,
+        winningPattern: isLearningMode && typeof parsed.winningPattern === "string" ? parsed.winningPattern : null,
       },
     });
   } catch (error) {
     console.error("投稿AIサマリー生成エラー:", error);
+    
+    // エラーの詳細をログに記録
+    if (error instanceof Error) {
+      console.error("エラーメッセージ:", error.message);
+      console.error("エラースタック:", error.stack);
+    } else {
+      console.error("エラーオブジェクト:", JSON.stringify(error, null, 2));
+    }
+    
     const message = error instanceof Error ? error.message : "投稿AIサマリーの生成に失敗しました";
 
     if (
@@ -456,10 +891,13 @@ ${JSON.stringify(payload, null, 2)}`;
       });
     }
 
+    // エラーメッセージを安全に返す（機密情報を除外）
+    const safeMessage = message.length > 200 ? "投稿AIサマリーの生成に失敗しました" : message;
+    
     return NextResponse.json(
       {
         success: false,
-        error: message,
+        error: safeMessage,
       },
       { status: 500 }
     );

@@ -626,10 +626,25 @@ export async function GET(request: NextRequest) {
       .map((doc) => {
         const data = doc.data();
         const createdAt = data.createdAt?.toDate?.();
+        // goalAchievementProspectからsentimentを推測（満足/不満足ボタンが削除されたため）
+        let sentiment: "positive" | "negative" | "neutral" = "neutral";
+        if (data.goalAchievementProspect) {
+          // goalAchievementProspectが存在する場合は、それからsentimentを推測
+          if (data.goalAchievementProspect === "high") {
+            sentiment = "positive";
+          } else if (data.goalAchievementProspect === "low") {
+            sentiment = "negative";
+          } else {
+            sentiment = "neutral";
+          }
+        } else if (data.sentiment) {
+          // 後方互換性のため、既存のsentimentフィールドも使用
+          sentiment = data.sentiment as "positive" | "negative" | "neutral";
+        }
         return {
           id: doc.id,
           postId: data.postId,
-          sentiment: (data.sentiment as "positive" | "negative" | "neutral") || "neutral",
+          sentiment,
           comment: data.comment,
           createdAt,
         };
@@ -839,7 +854,7 @@ export async function GET(request: NextRequest) {
     // 7. 投稿サマリー（PostSummaryInsights用）
     const postIds = Array.from(analyticsByPostId.keys());
     const postSummaries = await Promise.all(
-      postIds.slice(0, 20).map(async (postId) => {
+      postIds.map(async (postId) => {
         try {
           const docId = `${uid}_${postId}`;
           const summaryDoc = await adminDb.collection("ai_post_summaries").doc(docId).get();
@@ -875,6 +890,7 @@ export async function GET(request: NextRequest) {
       .doc(`${uid}_${date}`)
       .get();
 
+    // 再生成フラグがない場合のみ既存データを読み込む
     if (savedReviewDoc.exists && !forceRegenerate) {
       const savedData = savedReviewDoc.data();
       monthlyReview = savedData?.review || "";
@@ -884,6 +900,12 @@ export async function GET(request: NextRequest) {
     // 月次レビューが生成されていない場合、または再生成フラグがある場合
     // ただし、analyzedCountが10件未満の場合はAI生成をスキップ（トークン費削減）
     if (!monthlyReview || forceRegenerate) {
+      // 再生成の場合は既存データをクリア
+      if (forceRegenerate) {
+        monthlyReview = null;
+        actionPlans = [];
+        console.log("[Report Complete] 再生成フラグが有効: 既存データを無視して再生成します");
+      }
       // 10件未満の場合はAI生成をスキップしてフォールバックメッセージを表示
       if (analyzedCount < 10) {
         // 前月比を計算（フォールバックメッセージ用）
@@ -1011,24 +1033,34 @@ ${getMonthName(date)}は分析済み投稿が${analyzedCount}件と、まだデ�
           topPost = sortedPosts[0];
         }
 
-        // 投稿ごとのAIサマリーを集計
+        // 投稿ごとのAIサマリーを集計（今月の分析データに存在する全ての投稿を対象）
         const allStrengths: string[] = [];
         const allRecommendedActions: string[] = [];
         const highPerformanceStrengths: string[] = [];
 
-        if (validPostSummaries.length > 0) {
-          // リーチ数でソートして、上位・下位を判定
-          const sortedByReach = [...validPostSummaries].sort((a, b) => b.reach - a.reach);
-          const top30Percent = Math.ceil(sortedByReach.length * 0.3);
+        // 今月の分析データに存在する全ての投稿をリーチ数でソート
+        const allAnalyzedPosts = Array.from(analyticsByPostId.entries())
+          .map(([postId, analytics]) => ({
+            postId,
+            reach: analytics.reach || 0,
+            summary: validPostSummaries.find((s) => s?.postId === postId) || null,
+          }))
+          .sort((a, b) => b.reach - a.reach);
 
-          validPostSummaries.forEach((summary) => {
-            allStrengths.push(...(summary?.strengths || []));
-            allRecommendedActions.push(...(summary?.recommendedActions || []));
+        if (allAnalyzedPosts.length > 0) {
+          const top30Percent = Math.ceil(allAnalyzedPosts.length * 0.3);
 
-            // 高パフォーマンス投稿の強みを抽出
-            const isHighPerformance = sortedByReach.slice(0, top30Percent).some((p) => p?.postId === summary?.postId);
-            if (isHighPerformance) {
-              highPerformanceStrengths.push(...(summary?.strengths || []));
+          // サマリーが存在する投稿のみを集計対象とする
+          allAnalyzedPosts.forEach((post) => {
+            if (post.summary) {
+              allStrengths.push(...(post.summary?.strengths || []));
+              allRecommendedActions.push(...(post.summary?.recommendedActions || []));
+
+              // 高パフォーマンス投稿の強みを抽出
+              const isHighPerformance = allAnalyzedPosts.slice(0, top30Percent).some((p) => p?.postId === post.postId);
+              if (isHighPerformance) {
+                highPerformanceStrengths.push(...(post.summary?.strengths || []));
+              }
             }
           });
         }
@@ -1061,11 +1093,11 @@ ${getMonthName(date)}は分析済み投稿が${analyzedCount}件と、まだデ�
           .slice(0, 3)
           .map(([strength]) => strength);
 
-        // AIサマリー集計結果を文字列化
+        // AIサマリー集計結果を文字列化（今月の分析データに存在する全ての投稿数を表示）
         let postSummaryInsights = "";
-        if (validPostSummaries.length > 0) {
+        if (allAnalyzedPosts.length > 0) {
           const insightsParts: string[] = [];
-          insightsParts.push(`投稿ごとのAI分析結果（${validPostSummaries.length}件の投稿から抽出）:`);
+          insightsParts.push(`投稿ごとのAI分析結果（${allAnalyzedPosts.length}件の投稿から抽出）:`);
 
           if (topStrengths.length > 0) {
             insightsParts.push(`- 頻出する強み: ${topStrengths.join("、")}`);
@@ -1523,6 +1555,7 @@ ${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").leng
                   .collection("monthly_reviews")
                   .doc(`${uid}_${date}`);
 
+                // 再生成の場合は既存データを完全に上書き（merge: false）
                 await reviewDocRef.set(
                   {
                     userId: uid,
@@ -1531,11 +1564,13 @@ ${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").leng
                     actionPlans,
                     hasPlan,
                     analyzedCount,
+                    isFallback: false, // AI生成であることを示すフラグ
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
                     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                   },
-                  { merge: true }
+                  { merge: false } // 再生成の場合は完全に上書き
                 );
+                console.log("[Report Complete] 月次レビューを再生成してFirestoreに保存しました");
 
                 // ai_directionを作成（未確定状態）
                 if (actionPlans.length > 0) {

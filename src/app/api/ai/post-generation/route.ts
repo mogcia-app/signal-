@@ -9,14 +9,14 @@ import { UserProfile } from "@/types/user";
 
 /**
  * ユーザー名から固定の企業ハッシュタグを生成
+ * ブランド名をそのまま使用（「公式」は追加しない）
  */
 function generateFixedBrandHashtag(userName: string | null | undefined): string {
   if (!userName) {
-    return "企業公式";
+    return "企業";
   }
-  // 空白を除去し、「公式」が含まれていない場合は追加
-  const normalizedName = userName.replace(/\s+/g, "").replace(/公式$/, "");
-  return normalizedName.endsWith("公式") ? normalizedName : `${normalizedName}公式`;
+  // 空白を除去してブランド名をそのまま返す
+  return userName.replace(/\s+/g, "");
 }
 
 // OpenAI APIの初期化
@@ -116,7 +116,13 @@ export async function POST(request: NextRequest) {
     let aiReferences: AIReference[];
     
     try {
-      const contextResult = await buildAIContext(userId, { snapshotLimit: 3, includeMasterContext: true });
+      // パフォーマンス最適化: 投稿生成に不要なデータは取得しない
+      const contextResult = await buildAIContext(userId, { 
+        snapshotLimit: 1, // 3→1に削減（参考投稿は1件で十分）
+        includeMasterContext: false, // 投稿生成には不要
+        includeActionLogs: false, // 投稿生成には不要
+        includeAbTests: false, // 投稿生成には不要
+      });
       userProfile = contextResult.userProfile;
       latestPlan = contextResult.latestPlan;
       snapshotReferences = contextResult.snapshotReferences;
@@ -268,10 +274,15 @@ export async function POST(request: NextRequest) {
     // ✅ プロンプトビルダーを使用（PDCA - Do）
     let systemPrompt: string;
 
+    // contentTypesを取得（latestPlanから、またはplanDataから）
+    const planFormData = (latestPlan as any)?.formData || (planData as any)?.formData || null;
+    const contentTypes = planFormData?.contentTypes || [];
+    const contentTypeOther = planFormData?.contentTypeOther || "";
+
     if (userProfile) {
       // ✅ 投稿タイプ別のプロンプト生成関数を使用
       if (postType === "feed") {
-        systemPrompt = buildFeedPrompt(userProfile, "instagram");
+        systemPrompt = buildFeedPrompt(userProfile, "instagram", contentTypes, contentTypeOther);
       } else if (postType === "reel") {
         systemPrompt = buildReelPrompt(userProfile, "instagram");
       } else if (postType === "story") {
@@ -351,19 +362,24 @@ export async function POST(request: NextRequest) {
 
       systemPrompt += `
 
+【⚠️ 最重要: 文字数制限（絶対遵守）】
+${postType === "feed" || postType === "reel" ? `投稿文（body）は**必ず150文字以上200文字以内**で生成してください。
+- 150文字未満の場合は生成し直してください
+- この文字数制限は絶対に守ってください
+- 125文字付近（120-130文字の範囲）にキャッチーでインパクトのある表現を含めてください` : postType === "story" ? "投稿文（body）は20-50文字、1-2行で生成してください" : ""}
+
 【投稿生成の指示】
 - 投稿タイプ: ${postTypeLabel}
-${postType === "story" ? "- **重要**: ストーリーは短い文（20-50文字、1-2行）にしてください" : ""}
-${postType === "reel" ? "- **重要**: リール投稿文は150-200文字以内で生成してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
+${postType === "reel" ? "- 125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください" : ""}
 ${postType === "feed" && feedOptions ? `
-- **重要**: フィード投稿の役割指定
+- **最重要**: フィード投稿の役割指定
   - 投稿タイプ: ${FEED_TYPE_LABELS[feedOptions.feedPostType]}（${FEED_TYPE_GUIDE[feedOptions.feedPostType]}）
   - 文字量: ${textLengthGuide}
   - 画像枚数: ${feedOptions.imageCount || 1}枚
-この役割と文字量を厳守してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。` : ""}
-${postType === "feed" && !feedOptions && writingStyle === "casual" ? "- **重要**: フィード投稿文は150-200文字以内で生成してください。カジュアルで親しみやすい表現を使い、フォロワーとの距離感を縮めるような内容にしてください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
+この役割と文字量を厳守してください。${feedOptions.textVolume === "medium" ? "**必ず150文字以上200文字以内**で生成してください。文字数が150文字未満の場合は生成し直してください。また、" : ""}**125文字付近（120-130文字の範囲）**に必ずキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。文字数制限は厳守してください。` : ""}
+${postType === "feed" && !feedOptions && writingStyle === "casual" ? "- **最重要**: フィード投稿文は**必ず150文字以上200文字以内**で生成してください。文字数が150文字未満の場合は生成し直してください。カジュアルで親しみやすい表現を使い、フォロワーとの距離感を縮めるような内容にしてください。また、**125文字付近（120-130文字の範囲）**に必ずキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。文字数制限は厳守してください。" : ""}
 ${postType === "feed" && !feedOptions && writingStyle === "sincere" ? "- **重要**: フィード投稿文は250-400文字程度で生成してください。誠実で丁寧な表現を使い、商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが信頼感を持てるような内容にしてください。" : ""}
-${postType === "feed" && !feedOptions && !writingStyle ? "- **重要**: フィード投稿文は150-200文字以内で生成してください。商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
+${postType === "feed" && !feedOptions && !writingStyle ? "- 商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください" : ""}
 - 投稿日時: ${scheduledDate ? `${scheduledDate} ${scheduledTime}` : "未設定"}
 - テーマ: ${prompt}
 ${!feedOptions && writingStyle === "casual" ? "- スタイル: カジュアル（親しみやすく、フレンドリーな表現）" : ""}
@@ -371,9 +387,11 @@ ${!feedOptions && writingStyle === "sincere" ? "- スタイル: 誠実（丁寧�
 
 必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
 
+${postType === "feed" || postType === "reel" ? "**⚠️ 最重要**: bodyフィールドは必ず150文字以上200文字以内で生成してください。150文字未満の場合は生成し直してください。**この文字数制限は絶対に守ってください。**" : ""}
+
 {
   "title": "簡潔で魅力的なタイトル",
-  "body": "計画に沿った投稿文（${textLengthGuide}）",
+  "body": "計画に沿った投稿文（${postType === "feed" || postType === "reel" ? "**必ず150文字以上200文字以内、125文字付近にキャッチーなフレーズを含める**" : textLengthGuide}）",
   "hashtags": [
     {
       "tag": "トレンド・検索されやすいハッシュタグ（投稿内容のテーマに沿った、検索されやすい大きなハッシュタグ、#は不要）",
@@ -420,12 +438,17 @@ ${!feedOptions && writingStyle === "sincere" ? "- スタイル: 誠実（丁寧�
       const weeklyTarget = resolvedPlanData.simulation.postTypes[postType].weeklyCount;
       const followerEffect = resolvedPlanData.simulation.postTypes[postType].followerEffect;
 
+      // contentTypesを取得（latestPlanから、またはplanDataから）
+      const planFormData = (latestPlan as any)?.formData || (planData as any)?.formData || null;
+      const contentTypes = planFormData?.contentTypes || [];
+      const contentTypeOther = planFormData?.contentTypeOther || "";
+
       // ユーザープロファイルの商品・サービス情報を含むベースプロンプトを構築
       let basePrompt = "";
       if (userProfile) {
         // 投稿タイプ別のプロンプト生成関数を使用
         if (postType === "feed") {
-          basePrompt = buildFeedPrompt(userProfile, "instagram");
+          basePrompt = buildFeedPrompt(userProfile, "instagram", contentTypes, contentTypeOther);
         } else if (postType === "reel") {
           basePrompt = buildReelPrompt(userProfile, "instagram");
         } else if (postType === "story") {
@@ -435,6 +458,22 @@ ${!feedOptions && writingStyle === "sincere" ? "- スタイル: 誠実（丁寧�
           basePrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
         }
       }
+      
+      // コンテンツタイプの説明
+      const contentTypeLabels: Record<string, string> = {
+        product: "商品・サービスの紹介",
+        testimonial: "お客様の声",
+        staff: "スタッフの日常",
+        knowledge: "豆知識・ノウハウ",
+        event: "イベント・キャンペーン情報",
+        beforeafter: "ビフォーアフター",
+        behind: "舞台裏・制作過程",
+        other: "その他",
+      };
+      
+      const contentTypesText = contentTypes.length > 0
+        ? contentTypes.map((type: string) => contentTypeLabels[type] || type).join("、") + (contentTypeOther ? `（${contentTypeOther}）` : "")
+        : "指定なし";
 
       systemPrompt = `${basePrompt ? `${basePrompt}\n\n` : ""}あなたはInstagramの運用をサポートするAIアシスタントです。ユーザーの運用計画に基づいて、効果的な投稿文を生成してください。
 
@@ -447,6 +486,7 @@ ${!feedOptions && writingStyle === "sincere" ? "- スタイル: 誠実（丁寧�
 - ターゲットオーディエンス: ${resolvedPlanData.targetAudience}
 - カテゴリ: ${resolvedPlanData.category}
 - 戦略: ${resolvedPlanData.strategies.join(", ")}
+- 投稿内容の種類: ${contentTypesText}
 
 AIペルソナ:
 - トーン: ${resolvedPlanData.aiPersona.tone}
@@ -465,6 +505,12 @@ ${postType === "feed" && feedOptions ? `
   - 文字量: ${FEED_TEXT_RULES[feedOptions.textVolume]}
   - 画像枚数: ${feedOptions.imageCount || 1}枚` : ""}
 
+【⚠️ 最重要: 文字数制限（絶対遵守）】
+${postType === "feed" || postType === "reel" ? `投稿文（body）は**必ず150文字以上200文字以内**で生成してください。
+- 150文字未満の場合は生成し直してください
+- この文字数制限は絶対に守ってください
+- 125文字付近（120-130文字の範囲）にキャッチーでインパクトのある表現を含めてください` : postType === "story" ? "投稿文（body）は20-50文字、1-2行で生成してください" : ""}
+
 生成する投稿文の要件:
 1. 運用計画の戦略（${strategy}）を意識した内容
 2. AIペルソナに沿った${resolvedPlanData.aiPersona.tone}で${resolvedPlanData.aiPersona.style}なスタイル
@@ -472,25 +518,30 @@ ${postType === "feed" && feedOptions ? `
 4. 目標達成への意識を適度に含める
 5. エンゲージメントを促進する要素を含める
 6. 必ず4個のハッシュタグを含める（トレンドハッシュタグ1個、補助的ハッシュタグ3個）。企業ハッシュタグは固定で使用されるため、生成不要です。
-${postType === "story" ? "7. **重要**: ストーリーは短い文（20-50文字、1-2行）にする" : ""}
-${postType === "reel" ? "7. **重要**: リール投稿文は必ず150-200文字以内で生成してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
-${postType === "feed" && feedOptions ? `7. **重要**: フィード投稿文は必ず${FEED_TEXT_RULES[feedOptions.textVolume]}で生成してください。文字数が指定範囲を超えないよう、厳密に守ってください。${FEED_TYPE_GUIDE[feedOptions.feedPostType]}。この役割と文字量を厳守してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。` : ""}
-${postType === "feed" && !feedOptions ? "7. **重要**: フィード投稿文は必ず150-200文字以内で生成してください。125文字付近にキャッチーでインパクトのある表現（驚き、共感、行動喚起など）を含めてください。125文字以上はInstagramの仕様で「もっと見る...」に表示されるため、125文字付近で読者の興味を引く内容にしてください。" : ""}
+${contentTypes.length > 0 ? `7. **重要**: 投稿内容は、計画で指定された「${contentTypesText}」のいずれかの種類に沿った内容にしてください。複数の種類が指定されている場合は、投稿ごとに異なる種類を選んでバリエーションを持たせてください。` : ""}
+${postType === "feed" && feedOptions ? `${contentTypes.length > 0 ? "8" : "7"}. ${FEED_TYPE_GUIDE[feedOptions.feedPostType]}` : ""}
+${postType === "feed" && !feedOptions ? `${contentTypes.length > 0 ? "8" : "7"}. 商品やサービスの魅力、特徴、使い方などを詳しく説明し、フォロワーが興味を持てるような内容にしてください` : ""}
 ${(() => {
   const profile = userProfile as UserProfile | null;
   return profile?.businessInfo?.productsOrServices && Array.isArray(profile.businessInfo.productsOrServices) && profile.businessInfo.productsOrServices.length > 0;
 })() ? `
-【商品・サービス情報の活かし方（補足）】
-ユーザーが商品・サービス名を指定した場合（例：「ランチセットの投稿文を作って」）、上記の「商品・サービス情報」セクションを参考にしてください。
-- 商品・サービス名が一致する場合は、その詳細や価格を「自然に織り込む」形で活用してください。
-- 機械的に情報を詰め込むのではなく、ストーリーや体験談の中に自然に組み込んでください。
-- 価格情報は「必ず含める」のではなく、「テーマに合う場合のみ自然に言及」してください。` : ""}
+【商品・サービス情報の活かし方（重要・補足）】
+上記の「商品・サービス情報」セクションに記載されている**全商品・サービス**を幅広く活用してください。
+
+**重要な指示**:
+- 投稿ごとに**異なる商品・サービス**を取り上げる（同じ商品ばかり紹介しない）
+- 各商品の**詳細情報（details）を必ず考慮**して、その特徴や魅力を自然に織り込む
+- ユーザーが商品・サービス名を指定した場合（例：「ランチセットの投稿文を作って」）、その商品の詳細情報を必ず参照し、価格や特徴を自然に織り込む
+- 機械的に情報を詰め込むのではなく、ストーリーや体験談の中に自然に組み込む
+- 価格情報は「必ず含める」のではなく、「テーマに合う場合のみ自然に言及」する
+- 登録されている全商品・サービスを**バランスよく紹介**する（特定の商品に偏らない）` : ""}
 
 必ず以下のJSON形式のみを返してください。JSON以外のテキストは一切含めないでください。
 
 {
   "title": "簡潔で魅力的なタイトル",
-  "body": "計画に沿った投稿文${postType === "story" ? "（20-50文字程度、2行以内の短い一言二言）" : postType === "feed" && feedOptions ? `（${FEED_TEXT_RULES[feedOptions.textVolume]}）` : postType === "feed" ? "（150文字以内）" : "（100文字以内）"}",
+  "body": "計画に沿った投稿文${postType === "story" ? "（20-50文字程度、2行以内の短い一言二言）" : postType === "feed" && feedOptions ? `（${FEED_TEXT_RULES[feedOptions.textVolume]}${feedOptions.textVolume === "medium" ? "、125文字付近にキャッチーなフレーズを含める" : ""}）` : postType === "feed" ? "（**必ず150文字以上200文字以内、125文字付近にキャッチーなフレーズを含める**）" : postType === "reel" ? "（**必ず150文字以上200文字以内、125文字付近にキャッチーなフレーズを含める**）" : "（100文字以内）"}",
+  "contentType": "${contentTypes.length > 0 ? `この投稿文に最も該当する投稿内容の種類を1つ選んで指定してください。選択肢: ${contentTypes.map((type: string) => `"${type}"`).join(", ")}（${contentTypes.map((type: string) => contentTypeLabels[type] || type).join("、")}）` : "指定なし"}",
         "hashtags": [
           {
             "tag": "トレンド・検索されやすいハッシュタグ（投稿内容のテーマに沿った、検索されやすい大きなハッシュタグ、#は不要）",
@@ -515,6 +566,7 @@ ${(() => {
         ]
 
 重要: 企業ハッシュタグは固定で使用されるため、上記4つのハッシュタグのみを生成してください。
+${contentTypes.length > 0 ? `重要: contentTypeフィールドには、計画で指定された投稿内容の種類（${contentTypes.map((type: string) => `"${type}"`).join(", ")}）の中から、この投稿文に最も該当する種類を1つ選んで指定してください。` : ""}
 }
 
 重要: JSON以外のテキストは一切出力しないでください。`;
@@ -543,6 +595,7 @@ ${snapshotSummary}`;
 
 テーマ: ${prompt}
 
+${postType === "feed" || postType === "reel" ? "**最重要**: 投稿文（body）は必ず150文字以上200文字以内で生成してください。150文字未満の場合は生成し直してください。**この文字数制限は絶対に守ってください。**" : ""}
 ${userProfile ? "上記のクライアント情報と運用計画に基づいて、効果的な投稿文を作成してください。" : "上記の運用計画とAIペルソナに基づいて、効果的な投稿文を作成してください。"}`;
 
     // textVolumeに応じてmax_tokensを動的に設定
@@ -554,22 +607,27 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
 
     let chatCompletion;
     try {
-      chatCompletion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: userPrompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: maxTokens,
-        response_format: { type: "json_object" },
-      });
+      chatCompletion = await openai.chat.completions.create(
+        {
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt,
+            },
+            {
+              role: "user",
+              content: userPrompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: maxTokens,
+          response_format: { type: "json_object" },
+        },
+        {
+          timeout: 30000, // 30秒でタイムアウト
+        }
+      );
     } catch (openaiError: unknown) {
       console.error("OpenAI API呼び出しエラー:", openaiError);
       
@@ -606,6 +664,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
     let parsedData: {
       title?: string;
       body?: string;
+      contentType?: string;
       hashtags?: Array<{
         tag: string;
         category: "brand" | "trending" | "supporting";
@@ -826,12 +885,88 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
       rawText: aiResponse,
     };
 
+    // 投稿時間が空欄の場合、時間提案を取得
+    let suggestedTime: string | null = null;
+    let timeSuggestionReason: string | null = null;
+    if (!scheduledTime && scheduledDate) {
+      try {
+        // 過去の分析データを取得してエンゲージメントが高かった時間帯を分析
+        const analyticsSnapshot = await adminDb
+          .collection("analytics")
+          .where("userId", "==", userId)
+          .limit(50)
+          .get();
+
+        if (!analyticsSnapshot.empty) {
+          // 時間帯別のエンゲージメント率を計算
+          const timeSlotEngagement: Record<string, { totalEngagement: number; count: number }> = {};
+
+          analyticsSnapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            const publishedTime = data.publishedTime;
+
+            if (publishedTime && data.reach > 0) {
+              const hour = publishedTime.split(":")[0];
+              const engagement =
+                (((data.likes || 0) + (data.comments || 0) + (data.shares || 0)) / data.reach) *
+                100;
+
+              if (!timeSlotEngagement[hour]) {
+                timeSlotEngagement[hour] = { totalEngagement: 0, count: 0 };
+              }
+
+              timeSlotEngagement[hour].totalEngagement += engagement;
+              timeSlotEngagement[hour].count += 1;
+            }
+          });
+
+          // 平均エンゲージメント率が最も高い時間帯を取得
+          let bestHour = "";
+          let bestEngagement = 0;
+
+          Object.entries(timeSlotEngagement).forEach(([hour, data]) => {
+            const avgEngagement = data.totalEngagement / data.count;
+            if (avgEngagement > bestEngagement) {
+              bestEngagement = avgEngagement;
+              bestHour = hour;
+            }
+          });
+
+          if (bestHour) {
+            suggestedTime = `${bestHour}:00`;
+            timeSuggestionReason = `過去のデータ分析により、${bestHour}時台のエンゲージメント率が最も高いです（平均${bestEngagement.toFixed(2)}%）`;
+          }
+        }
+      } catch (error) {
+        console.error("時間提案エラー:", error);
+        // エラー時はデフォルトロジックにフォールバック
+      }
+
+      // デフォルトの最適時間（初回または分析データがない場合）
+      if (!suggestedTime) {
+        const optimalTimes = {
+          feed: ["09:00", "12:00", "18:00", "20:00"],
+          reel: ["07:00", "12:00", "19:00", "21:00"],
+          story: ["08:00", "13:00", "18:00", "22:00"],
+        };
+
+        const times = optimalTimes[postType];
+        suggestedTime = times[Math.floor(Math.random() * times.length)];
+        timeSuggestionReason = `${postType === "feed" ? "フィード" : postType === "reel" ? "リール" : "ストーリーズ"}の一般的な最適時間です`;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         title,
         content,
         hashtags,
+        contentType: parsedData.contentType || null,
+        ...(suggestedTime && {
+          suggestedTime,
+          timeSuggestionReason,
+        }),
         metadata: {
           postType,
           generatedAt: generationPayload.metadata?.generatedAt,

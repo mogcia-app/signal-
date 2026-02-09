@@ -12,7 +12,6 @@ import SNSLayout from "../../../components/sns-layout";
 import { PlanForm } from "./components/PlanForm";
 import { SimulationResult } from "./components/SimulationResult";
 import { PlanFormData, SimulationResult as SimulationResultType, AIPlanSuggestion } from "./types/plan";
-import { calculateSimulation } from "./utils/calculations";
 import { isValidPlanData } from "./utils/type-guards";
 import type { PlanData } from "../../../hooks/usePlanData";
 import { Loader2, Edit2, Trash2 } from "lucide-react";
@@ -24,7 +23,6 @@ export default function InstagramPlanPage() {
   const [simulationResult, setSimulationResult] = useState<SimulationResultType | null>(null);
   const [formData, setFormData] = useState<PlanFormData | null>(null);
   const [aiSuggestedTarget, setAiSuggestedTarget] = useState<number | undefined>(undefined);
-  const [aiSuggestion, setAiSuggestion] = useState<AIPlanSuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
@@ -47,7 +45,6 @@ export default function InstagramPlanPage() {
           // 計画がない場合は状態をクリア
           setSimulationResult(null);
           setFormData(null);
-          setAiSuggestion(null);
           setSavedPlanId(null);
           setPlanEndDate(null);
           return;
@@ -64,7 +61,6 @@ export default function InstagramPlanPage() {
           // 計画がない場合は状態をクリア
           setSimulationResult(null);
           setFormData(null);
-          setAiSuggestion(null);
           setSavedPlanId(null);
           setPlanEndDate(null);
           return;
@@ -75,7 +71,6 @@ export default function InstagramPlanPage() {
           planId: plan.id,
           hasFormData: !!plan.formData,
           hasSimulationResult: !!plan.simulationResult,
-          hasAiSuggestion: !!plan.aiSuggestion,
           hasStartDate: !!plan.startDate,
           hasEndDate: !!plan.endDate,
           formDataKeys: plan.formData ? Object.keys(plan.formData) : [],
@@ -92,7 +87,6 @@ export default function InstagramPlanPage() {
           // 不完全な計画は状態をクリア
           setSimulationResult(null);
           setFormData(null);
-          setAiSuggestion(null);
           setSavedPlanId(null);
           setPlanEndDate(null);
           setError(ERROR_MESSAGES.PLAN_DATA_INCOMPLETE);
@@ -211,7 +205,6 @@ export default function InstagramPlanPage() {
                   
                   console.log("[Plan Page] 計画データを復元します", {
                     planId: planData.id,
-                    hasAiSuggestion: !!planData.aiSuggestion,
                     planEnd: planEnd.toISOString(),
                   });
                   
@@ -228,9 +221,6 @@ export default function InstagramPlanPage() {
                   
                   setFormData(validPlan.formData);
                   setSimulationResult(validPlan.simulationResult);
-                  if (validPlan.aiSuggestion) {
-                    setAiSuggestion(validPlan.aiSuggestion as AIPlanSuggestion);
-                  }
                   setSavedPlanId(validPlan.id);
                   setPlanEndDate(planEnd);
                   setError(null); // エラーをクリア
@@ -258,7 +248,6 @@ export default function InstagramPlanPage() {
                 // エラーが発生した場合は計画を表示しない（状態をクリア）
                 setSimulationResult(null);
                 setFormData(null);
-                setAiSuggestion(null);
                 setSavedPlanId(null);
                 setPlanEndDate(null);
                 return;
@@ -330,9 +319,6 @@ export default function InstagramPlanPage() {
                   const validPlan = planData as PlanData & { formData: PlanFormData; simulationResult: SimulationResultType };
                   setFormData(validPlan.formData);
                   setSimulationResult(validPlan.simulationResult);
-                  if (validPlan.aiSuggestion) {
-                    setAiSuggestion(validPlan.aiSuggestion as AIPlanSuggestion);
-                  }
                   setSavedPlanId(validPlan.id);
                   setPlanEndDate(calculatedEndDate);
                   setError(null); // エラーをクリア
@@ -351,7 +337,6 @@ export default function InstagramPlanPage() {
               setError(ERROR_MESSAGES.PLAN_DATA_INCOMPLETE);
               setSimulationResult(null);
               setFormData(null);
-              setAiSuggestion(null);
               setSavedPlanId(null);
               setPlanEndDate(null);
               return;
@@ -388,7 +373,6 @@ export default function InstagramPlanPage() {
         // 期間終了日の翌日になったらリセット
         setSimulationResult(null);
         setFormData(null);
-        setAiSuggestion(null);
         setAiSuggestedTarget(undefined);
         setSavedPlanId(null);
         setPlanEndDate(null);
@@ -443,6 +427,10 @@ export default function InstagramPlanPage() {
     setIsLoading(true);
     setError(null);
     
+    // 最低5秒はローディングを表示
+    const minLoadingTime = 5000;
+    const startTime = Date.now();
+    
     try {
       // バリデーション
       if (data.currentFollowers <= 0 || data.targetFollowers <= 0) {
@@ -457,45 +445,41 @@ export default function InstagramPlanPage() {
         return;
       }
 
-      // シミュレーション計算
-      const result = calculateSimulation(data);
+      // シミュレーション計算（API経由）
+      const response = await authFetch("/api/instagram/plan-simulation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          formData: data,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || "シミュレーションの計算に失敗しました";
+        throw new Error(errorMessage);
+      }
+
+      const responseData = await response.json();
+      const result = responseData.result;
+      
+      // 最低表示時間を確保
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+      
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
       
       // フォームデータとシミュレーション結果を設定
       setFormData(data);
       setSimulationResult(result);
       setAiSuggestedTarget(aiSuggested);
       
-      // AI提案を取得
-      try {
-        const response = await authFetch("/api/instagram/plan-suggestion", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            formData: data,
-            simulationResult: result,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setAiSuggestion(data.suggestion);
-        }
-      } catch (error) {
-        console.error("AI提案取得エラー:", error);
-        const errorMessage = handleError(
-          error,
-          "AI提案の取得に失敗しました"
-        );
-        // AI提案は必須ではないため、エラーはログのみ（ユーザーには表示しない）
-        console.error(errorMessage);
-      }
-      
-      // 3秒後にシミュレーションタブに切り替え
-      setTimeout(() => {
-        setActiveTab("simulation");
-      }, 3000);
+      // シミュレーションタブに切り替え
+      setActiveTab("simulation");
     } catch (err) {
       const errorMessage = handleError(
         err,
@@ -503,7 +487,6 @@ export default function InstagramPlanPage() {
       );
       setError(errorMessage);
       toast.error(errorMessage);
-      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -543,7 +526,6 @@ export default function InstagramPlanPage() {
       // 状態を完全にリセット（削除成功時）
       setSimulationResult(null);
       setFormData(null);
-      setAiSuggestion(null);
       setAiSuggestedTarget(undefined);
       setSavedPlanId(null);
       setPlanEndDate(null);
@@ -584,13 +566,29 @@ export default function InstagramPlanPage() {
       weeklyStoryPosts: selectedPlan.weeklyStoryPosts,
     };
 
-    // 再計算
-    const result = calculateSimulation(updatedFormData);
-    setSimulationResult(result);
-    setFormData(updatedFormData);
+    // 再計算（API経由）
+    try {
+      const response = await authFetch("/api/instagram/plan-simulation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          formData: updatedFormData,
+        }),
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        setSimulationResult(responseData.result);
+        setFormData(updatedFormData);
+      }
+    } catch (error) {
+      console.error("シミュレーション再計算エラー:", error);
+    }
   };
 
-  const handleStartPlan = async (suggestion: AIPlanSuggestion) => {
+  const handleStartPlan = async () => {
     if (!formData || !simulationResult) {
       setError("フォームデータまたはシミュレーション結果がありません");
       return;
@@ -623,7 +621,6 @@ export default function InstagramPlanPage() {
         postCategories: formData.contentTypes || [],
         formData: formData,
         simulationResult: simulationResult,
-        aiSuggestion: suggestion, // AI提案データを保存
         startDate: startDate,
         endDate: endDate, // 終了日も明示的に送信
       };
@@ -698,25 +695,25 @@ export default function InstagramPlanPage() {
 
   return (
     <SNSLayout customTitle="Instagram 運用計画" customDescription="強みを活かす、実行可能なSNS計画を立てましょう">
-      <div className="w-full h-full min-h-screen p-6">
+      <div className="w-full px-4 sm:px-6 md:px-8 py-6 bg-gray-50 min-h-screen">
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 p-4">
+          <div className="mb-6 bg-red-50 border-2 border-red-200 p-4">
             <p className="text-sm text-red-800">{error}</p>
           </div>
         )}
 
         {/* タブUI */}
-        <div className="mb-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <nav className="flex space-x-8" aria-label="Tabs">
+        <div className="mb-6 bg-white border-2 border-gray-200 p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <nav className="flex space-x-1" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab("form")}
                 className={`
-                  py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                  px-6 py-3 font-medium text-sm transition-colors border-2
                   ${
                     activeTab === "form"
-                      ? "border-orange-500 text-orange-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "border-gray-900 bg-gray-900 text-white"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                   }
                 `}
               >
@@ -725,17 +722,17 @@ export default function InstagramPlanPage() {
               <button
                 onClick={() => setActiveTab("simulation")}
                 className={`
-                  py-4 px-1 border-b-2 font-medium text-sm transition-colors relative
+                  px-6 py-3 font-medium text-sm transition-colors relative border-2
                   ${
                     activeTab === "simulation"
-                      ? "border-orange-500 text-orange-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "border-gray-900 bg-gray-900 text-white"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                   }
                 `}
               >
                 シミュレーション
                 {simulationResult && (
-                  <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-orange-500">
+                  <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold leading-none text-gray-900 bg-white border border-gray-900">
                     ✓
                   </span>
                 )}
@@ -748,7 +745,7 @@ export default function InstagramPlanPage() {
                 <button
                   type="button"
                   onClick={handleEditPlan}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition-colors"
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-300 transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   計画を編集
@@ -756,7 +753,7 @@ export default function InstagramPlanPage() {
                 <button
                   type="button"
                   onClick={handleDeletePlan}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors"
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 border-2 border-red-700 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   計画を削除
@@ -764,42 +761,41 @@ export default function InstagramPlanPage() {
               </div>
             )}
           </div>
-          </div>
+        </div>
 
         {/* タブコンテンツ */}
-          <div className="bg-white border border-gray-200 p-6 h-full overflow-y-auto">
+        <div className="bg-white border-2 border-gray-200 p-6 min-h-[600px]">
           {activeTab === "form" ? (
             <PlanForm onSubmit={handleSubmit} isLoading={isLoading} initialData={formData} />
           ) : (
             <div>
-            {simulationResult && formData ? (
-              <SimulationResult
-                result={simulationResult}
-                formData={{
-                  currentFollowers: formData.currentFollowers,
-                  targetFollowers: formData.targetFollowers,
-                  periodMonths: formData.periodMonths,
-                  startDate: formData.startDate,
-                }}
-                fullFormData={formData}
-                aiSuggestedTarget={aiSuggestedTarget}
-                  aiSuggestion={aiSuggestion}
-                onSelectAlternative={handleSelectAlternative}
-                onStartPlan={handleStartPlan}
-                isSaving={isSaving}
-              />
-            ) : (
-              <div className="text-center py-12 text-gray-500">
+              {simulationResult && formData ? (
+                <SimulationResult
+                  result={simulationResult}
+                  formData={{
+                    currentFollowers: formData.currentFollowers,
+                    targetFollowers: formData.targetFollowers,
+                    periodMonths: formData.periodMonths,
+                    startDate: formData.startDate,
+                  }}
+                  fullFormData={formData}
+                  aiSuggestedTarget={aiSuggestedTarget}
+                  onSelectAlternative={handleSelectAlternative}
+                  onStartPlan={handleStartPlan}
+                  isSaving={isSaving}
+                />
+              ) : (
+                <div className="text-center py-12 text-gray-500">
                   <p className="text-sm mb-4">フォームに入力して、シミュレーションを実行してください</p>
                   <button
                     onClick={() => setActiveTab("form")}
-                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-300 hover:bg-blue-50 transition-colors"
+                    className="px-6 py-3 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-300 transition-colors"
                   >
                     計画を立てるタブに戻る
                   </button>
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

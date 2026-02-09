@@ -5,7 +5,6 @@ import SNSLayout from "../../../../components/sns-layout";
 import PostEditor from "../components/PostEditor";
 import ToolPanel from "../components/ToolPanel";
 import PostPreview from "../components/PostPreview";
-import ABTestSidebarSection from "../components/ABTestSidebarSection";
 import { usePlanData, type PlanData } from "../../../../hooks/usePlanData";
 import { useAuth } from "../../../../contexts/auth-context";
 import { authFetch } from "../../../../utils/authFetch";
@@ -324,9 +323,6 @@ export default function ReelLabPage() {
                 scheduledTime={scheduledTime}
                 onImageChange={setPostImage}
               />
-            </div>
-            <div className="flex-shrink-0">
-              <ABTestSidebarSection currentPostTitle={postTitle} />
             </div>
             <div className="mt-6 flex-shrink-0">
               <ToolPanel

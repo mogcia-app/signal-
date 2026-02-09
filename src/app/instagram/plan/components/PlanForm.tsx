@@ -95,22 +95,20 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
       // ラジオボタンの選択状態も更新
       // mainGoalTypeの復元
       if (initialData.mainGoal) {
-        const mainGoalOptions = [
-          "フォロワーを増やしたい",
-          "認知度を上げたい",
-          "商品・サービスを売りたい",
-          "ブランドイメージを向上させたい",
-          "エンゲージメントを高めたい",
-          "other"
-        ];
-        if (mainGoalOptions.includes(initialData.mainGoal)) {
+        const validMainGoalTypes = ["follower", "engagement", "reach", "brand", "inquiry", "visit", "other"];
+        // mainGoalが有効な値（"follower"など）の場合はそのまま設定
+        if (validMainGoalTypes.includes(initialData.mainGoal)) {
           setMainGoalType(initialData.mainGoal);
+          // "other"の場合は、mainGoalの値自体をmainGoalOtherとして扱う
+          if (initialData.mainGoal === "other") {
+            // formData.mainGoalにカスタムテキストが入っている可能性がある
+            // ただし、ここでは"other"が設定されているので、mainGoalOtherは空のまま
+            // 実際のカスタムテキストはformData.mainGoalに保存されている
+          }
         } else {
-          // mainGoalOptionsに含まれていない値（例：「follower」）の場合
-          // 自動的に「その他」を選択しないようにする
-          // mainGoalTypeは空のままにし、formData.mainGoalもクリア
-          setMainGoalType("");
-          setFormData((prev) => ({ ...prev, mainGoal: "" }));
+          // mainGoalが有効な値でない場合（カスタムテキストの場合）、"other"として扱う
+          setMainGoalType("other");
+          setMainGoalOther(initialData.mainGoal);
         }
       }
       
@@ -326,7 +324,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* 計画開始日 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            計画開始日 <span className="text-red-500">*</span>
+            計画開始日 <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           <input
             type="date"
@@ -344,7 +342,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* 現在のフォロワー数 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            現在のフォロワー数 <span className="text-red-500">*</span>
+            現在のフォロワー数 <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           <input
             type="number"
@@ -374,14 +372,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* 投稿に使える時間 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            1週間で、どのくらい投稿に時間を使えますか？ <span className="text-red-500">*</span>
+            1週間で、どのくらい投稿に時間を使えますか？ <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               availableTime === "low"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -389,24 +387,24 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="low"
                 checked={availableTime === "low"}
                 onChange={(e) => setAvailableTime(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  availableTime === "low" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  availableTime === "low" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   週1〜2回
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  「忙しいけど、無理なく続けたい」
+                <div className="text-sm text-gray-500 mt-1.5">
+                  忙しいけど、無理なく続けたい
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               availableTime === "medium"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -414,24 +412,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="medium"
                 checked={availableTime === "medium"}
                 onChange={(e) => setAvailableTime(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  availableTime === "medium" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  availableTime === "medium" ? "text-gray-900" : "text-gray-700"
                 }`}>
-                  週3〜4回<span className="text-[#FF8A15] ml-2">⭐おすすめ</span>
+                  週3〜4回
+                  <span className="ml-2 text-xs font-normal text-orange-700 bg-orange-50 px-2 py-1 border border-orange-200">推奨</span>
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  「しっかり取り組みたい」 
+                <div className="text-sm text-gray-500 mt-1.5">
+                  しっかり取り組みたい
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               availableTime === "high"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -439,25 +438,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="high"
                 checked={availableTime === "high"}
                 onChange={(e) => setAvailableTime(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  availableTime === "high" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  availableTime === "high" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   ほぼ毎日
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  「本気で伸ばしたい」 
+                <div className="text-sm text-gray-500 mt-1.5">
+                  本気で伸ばしたい
                 </div>
               </div>
             </label>
           </div>
 
-          <div className="mt-4 p-3 bg-orange-50">
+          <div className="mt-4 p-4 bg-gray-50 border border-gray-200">
             <div className="flex items-start">
-              <span className="text-orange-500 mr-2 text-sm">💡</span>
-              <div className="text-xs text-orange-800 leading-relaxed">
+              <span className="text-gray-600 mr-2 text-sm">💡</span>
+              <div className="text-sm text-gray-600 leading-relaxed">
                 初めての方は、週3〜4回がおすすめです。無理なく続けられるペースが一番大事です。
               </div>
             </div>
@@ -467,14 +466,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* リール（動画）は作れますか？ */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            動画（リール）の投稿は可能ですか？ <span className="text-red-500">*</span>
+            動画（リール）の投稿は可能ですか？ <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               reelCapability === "none"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -482,24 +481,24 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="none"
                 checked={reelCapability === "none"}
                 onChange={(e) => setReelCapability(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  reelCapability === "none" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  reelCapability === "none" ? "text-gray-900" : "text-gray-700"
                 }`}>
-                  動画はちょっと苦手...
+                  動画はちょっと苦手
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  「写真メインの投稿計画にします」 
+                <div className="text-sm text-gray-500 mt-1.5">
+                  写真メインの投稿計画にします
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               reelCapability === "low"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -507,24 +506,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="low"
                 checked={reelCapability === "low"}
                 onChange={(e) => setReelCapability(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  reelCapability === "low" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  reelCapability === "low" ? "text-gray-900" : "text-gray-700"
                 }`}>
-                  週1回くらいなら頑張れる <span className="text-[#FF8A15] ml-2">⭐おすすめ</span>
+                  週1回くらいなら頑張れる
+                  <span className="ml-2 text-xs font-normal text-orange-700 bg-orange-50 px-2 py-1 border border-orange-200">推奨</span>
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  「週1回リール + 写真投稿の組み合わせ」
+                <div className="text-sm text-gray-500 mt-1.5">
+                  週1回リール + 写真投稿の組み合わせ
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               reelCapability === "high"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -532,25 +532,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="high"
                 checked={reelCapability === "high"}
                 onChange={(e) => setReelCapability(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  reelCapability === "high" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  reelCapability === "high" ? "text-gray-900" : "text-gray-700"
                 }`}>
-                  動画もどんどん作りたい！
+                  動画もどんどん作りたい
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  「リール中心の成長プランにします」 
+                <div className="text-sm text-gray-500 mt-1.5">
+                  リール中心の成長プランにします
                 </div>
               </div>
             </label>
           </div>
 
-          <div className="mt-4 p-3 bg-orange-50">
+          <div className="mt-4 p-4 bg-gray-50 border border-gray-200">
             <div className="flex items-start">
-              <span className="text-orange-500 mr-2 text-sm">💡</span>
-              <div className="text-xs text-orange-800 leading-relaxed">
+              <span className="text-gray-600 mr-2 text-sm">💡</span>
+              <div className="text-sm text-gray-600 leading-relaxed">
                 動画は伸びやすいですが、無理せず続けられる方が大事です。まずは週1回から始めてみましょう。
               </div>
             </div>
@@ -560,14 +560,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* ストーリーズの頻度 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            ストーリーズはどのくらい投稿できますか？ <span className="text-red-500">*</span>
+            ストーリーズはどのくらい投稿できますか？ <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               storyFrequency === "none"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -575,21 +575,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="none"
                 checked={storyFrequency === "none"}
                 onChange={(e) => setStoryFrequency(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  storyFrequency === "none" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  storyFrequency === "none" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   ストーリーズは使わない
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               storyFrequency === "low"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -597,22 +597,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="low"
                 checked={storyFrequency === "low"}
                 onChange={(e) => setStoryFrequency(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  storyFrequency === "low" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  storyFrequency === "low" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   週1〜2回
                 </div>
-                
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               storyFrequency === "medium"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -620,22 +619,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="medium"
                 checked={storyFrequency === "medium"}
                 onChange={(e) => setStoryFrequency(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  storyFrequency === "medium" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  storyFrequency === "medium" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   週3〜4回
                 </div>
-                
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               storyFrequency === "daily"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -643,23 +641,23 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="daily"
                 checked={storyFrequency === "daily"}
                 onChange={(e) => setStoryFrequency(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  storyFrequency === "daily" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  storyFrequency === "daily" ? "text-gray-900" : "text-gray-700"
                 }`}>
-                  毎日 <span className="text-[#FF8A15] ml-2">⭐おすすめ</span>
+                  毎日
+                  <span className="ml-2 text-xs font-normal text-orange-700 bg-orange-50 px-2 py-1 border border-orange-200">推奨</span>
                 </div>
-               
               </div>
             </label>
           </div>
 
-          <div className="mt-4 p-3 bg-orange-50">
+          <div className="mt-4 p-4 bg-gray-50 border border-gray-200">
             <div className="flex items-start">
-              <span className="text-orange-500 mr-2 text-sm">💡</span>
-              <div className="text-xs text-orange-800 leading-relaxed">
+              <span className="text-gray-600 mr-2 text-sm">💡</span>
+              <div className="text-sm text-gray-600 leading-relaxed">
                 ストーリーズは、フォロワーとの距離を縮めるのに最適です。毎日投稿すると、反応が良くなります。
               </div>
             </div>
@@ -674,15 +672,15 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* 一番叶えたいこと */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            この期間で、一番叶えたいことは何ですか？ <span className="text-red-500">*</span>
+            この期間で、一番叶えたいことは何ですか？ <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           
           <div className="space-y-3">
             {/* 選択肢1: フォロワーを増やしたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               mainGoalType === "follower"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -690,25 +688,28 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="follower"
                 checked={mainGoalType === "follower"}
                 onChange={(e) => setMainGoalType(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  mainGoalType === "follower" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  mainGoalType === "follower" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   フォロワーを増やしたい
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-500 mt-1.5">
                   → 新規を増やして認知度アップ
+                </div>
+                <div className="text-xs text-gray-400 mt-1.5 font-medium">
+                  KPI: フォロワー増加
                 </div>
               </div>
             </label>
 
             {/* 選択肢2: 今のフォロワーともっと仲良くなりたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               mainGoalType === "engagement"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -716,25 +717,28 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="engagement"
                 checked={mainGoalType === "engagement"}
                 onChange={(e) => setMainGoalType(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  mainGoalType === "engagement" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  mainGoalType === "engagement" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   今のフォロワーともっと仲良くなりたい
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-500 mt-1.5">
                   → いいねやコメントを増やして関係強化
+                </div>
+                <div className="text-xs text-gray-400 mt-1.5 font-medium">
+                  KPI: エンゲージメント率、いいね数、コメント数
                 </div>
               </div>
             </label>
 
             {/* 選択肢3: 商品やサービスを広めたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               mainGoalType === "reach"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -742,25 +746,28 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="reach"
                 checked={mainGoalType === "reach"}
                 onChange={(e) => setMainGoalType(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  mainGoalType === "reach" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  mainGoalType === "reach" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   商品やサービスを広めたい
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-500 mt-1.5">
                   → 投稿を多くの人に見てもらう
+                </div>
+                <div className="text-xs text-gray-400 mt-1.5 font-medium">
+                  KPI: リーチ数
                 </div>
               </div>
             </label>
 
             {/* 選択肢4: ブランドのファンを作りたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               mainGoalType === "brand"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -768,25 +775,28 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="brand"
                 checked={mainGoalType === "brand"}
                 onChange={(e) => setMainGoalType(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  mainGoalType === "brand" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  mainGoalType === "brand" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   ブランドのファンを作りたい
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-500 mt-1.5">
                   → 保存・シェアされる投稿で信頼構築
+                </div>
+                <div className="text-xs text-gray-400 mt-1.5 font-medium">
+                  KPI: 保存数、シェア数
                 </div>
               </div>
             </label>
 
             {/* 選択肢5: 問い合わせを増やしたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               mainGoalType === "inquiry"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -794,25 +804,28 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="inquiry"
                 checked={mainGoalType === "inquiry"}
                 onChange={(e) => setMainGoalType(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  mainGoalType === "inquiry" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  mainGoalType === "inquiry" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   問い合わせを増やしたい
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-500 mt-1.5">
                   → プロフィールへのアクセスを増やす
+                </div>
+                <div className="text-xs text-gray-400 mt-1.5 font-medium">
+                  KPI: プロフィールクリック数
                 </div>
               </div>
             </label>
 
             {/* 選択肢6: 来店を増やしたい */}
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               mainGoalType === "visit"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -820,25 +833,28 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="visit"
                 checked={mainGoalType === "visit"}
                 onChange={(e) => setMainGoalType(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  mainGoalType === "visit" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  mainGoalType === "visit" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   来店を増やしたい
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-500 mt-1.5">
                   → 外部リンクのタップを増やす
+                </div>
+                <div className="text-xs text-gray-400 mt-1.5 font-medium">
+                  KPI: 外部リンクタップ数
                 </div>
               </div>
             </label>
 
             {/* 選択肢7: その他 */}
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               mainGoalType === "other"
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -846,15 +862,15 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="other"
                 checked={mainGoalType === "other"}
                 onChange={(e) => setMainGoalType(e.target.value)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  mainGoalType === "other" ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  mainGoalType === "other" ? "text-gray-900" : "text-gray-700"
                 }`}>
                   その他
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-500 mt-1.5">
                   → 自由入力
                 </div>
               </div>
@@ -875,11 +891,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
           )}
 
           {/* ヒント */}
-          <div className="mt-4 p-3 bg-orange-50">
+          <div className="mt-4 p-4 bg-gray-50 border border-gray-200">
             <div className="flex items-start">
-              <span className="text-orange-500 mr-2 text-sm">💡</span>
-              <div className="text-xs text-orange-800 leading-relaxed">
-                迷ったら、「フォロワーを増やしたい」を選びましょう。フォロワーが増えれば、他の目標も達成しやすくなります。
+              <span className="text-gray-600 mr-2 text-sm">💡</span>
+              <div className="text-sm text-gray-600 leading-relaxed">
+                迷ったら、フォロワーを増やしたいを選びましょう。フォロワーが増えれば、他の目標も達成しやすくなります。
               </div>
             </div>
           </div>
@@ -893,14 +909,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* 投稿時間の希望 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            投稿時間の希望はありますか？ <span className="text-red-500">*</span>
+            投稿時間の希望はありますか？ <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               preferredPostingTimes.includes("ai")
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="checkbox"
@@ -912,24 +928,24 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                     setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "ai"));
                   }
                 }}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  preferredPostingTimes.includes("ai") ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  preferredPostingTimes.includes("ai") ? "text-gray-900" : "text-gray-700"
                 }`}>
-                  AIに任せる <span className="text-[#FF8A15] ml-2">⭐おすすめ</span>
+                  AIに任せる <span className="ml-2 text-xs font-normal text-orange-700 bg-orange-50 px-2 py-1 border border-orange-200">推奨</span>
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-500 mt-1.5">
                   → AIが最適な時間を提案
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               preferredPostingTimes.includes("morning")
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="checkbox"
@@ -941,21 +957,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                     setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "morning"));
                   }
                 }}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  preferredPostingTimes.includes("morning") ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  preferredPostingTimes.includes("morning") ? "text-gray-900" : "text-gray-700"
                 }`}>
                   午前中（9:00〜12:00）
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               preferredPostingTimes.includes("noon")
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="checkbox"
@@ -967,21 +983,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                     setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "noon"));
                   }
                 }}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  preferredPostingTimes.includes("noon") ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  preferredPostingTimes.includes("noon") ? "text-gray-900" : "text-gray-700"
                 }`}>
                   昼（12:00〜15:00）
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               preferredPostingTimes.includes("evening")
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="checkbox"
@@ -993,21 +1009,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                     setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "evening"));
                   }
                 }}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  preferredPostingTimes.includes("evening") ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  preferredPostingTimes.includes("evening") ? "text-gray-900" : "text-gray-700"
                 }`}>
                   夕方（15:00〜18:00）
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               preferredPostingTimes.includes("night")
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="checkbox"
@@ -1019,21 +1035,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                     setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "night"));
                   }
                 }}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  preferredPostingTimes.includes("night") ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  preferredPostingTimes.includes("night") ? "text-gray-900" : "text-gray-700"
                 }`}>
                   夜（18:00〜21:00）
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               preferredPostingTimes.includes("late")
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="checkbox"
@@ -1045,11 +1061,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                     setPreferredPostingTimes(preferredPostingTimes.filter((t) => t !== "late"));
                   }
                 }}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  preferredPostingTimes.includes("late") ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  preferredPostingTimes.includes("late") ? "text-gray-900" : "text-gray-700"
                 }`}>
                   深夜（21:00〜24:00）
                 </div>
@@ -1057,11 +1073,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </label>
           </div>
 
-          <div className="mt-4 p-3 bg-orange-50">
+          <div className="mt-4 p-4 bg-gray-50 border border-gray-200">
             <div className="flex items-start">
-              <span className="text-orange-500 mr-2 text-sm">💡</span>
-              <div className="text-xs text-orange-800 leading-relaxed">
-                「AIに任せる」を選ぶと、過去のデータから最も反応が良い時間を自動で提案します。
+              <span className="text-gray-600 mr-2 text-sm">💡</span>
+              <div className="text-sm text-gray-600 leading-relaxed">
+                AIに任せるを選ぶと、過去のデータから最も反応が良い時間を自動で提案します。
               </div>
             </div>
           </div>
@@ -1070,19 +1086,19 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* どんな人に投稿を見てもらいたいか */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            どんな人に投稿を見てもらいたいですか？ <span className="text-red-500">*</span>
+            どんな人に投稿を見てもらいたいですか？ <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           <textarea
             value={formData.targetAudience}
             onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-            rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A15] resize-none"
+            rows={6}
+            className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 resize-none"
             placeholder="例: 30代のママさん。子育てに忙しいけど、自分の時間も大切にしたい人。"
           />
-          <div className="mt-3 p-3 bg-orange-50 rounded-lg">
+          <div className="mt-3 p-4 bg-gray-50 border border-gray-200">
             <div className="flex items-start">
-              <span className="text-orange-500 mr-2 text-sm">💡</span>
-              <div className="text-xs text-orange-800 leading-relaxed">
+              <span className="text-gray-600 mr-2 text-sm">💡</span>
+              <div className="text-sm text-gray-600 leading-relaxed">
                 具体的に書くほど、AIが最適な投稿文を作れます。年齢、性別、興味、悩みなどを書いてください。
               </div>
             </div>
@@ -1092,14 +1108,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* 地域を限定しますか？ */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            地域を限定しますか？ <span className="text-red-500">*</span>
+            地域を限定しますか？ <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           
           <div className="space-y-3">
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               !regionRestrictionEnabled
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -1107,21 +1123,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="none"
                 checked={!regionRestrictionEnabled}
                 onChange={() => setRegionRestrictionEnabled(false)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  !regionRestrictionEnabled ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  !regionRestrictionEnabled ? "text-gray-900" : "text-gray-700"
                 }`}>
                   地域は限定しない
                 </div>
               </div>
             </label>
 
-            <label className={`flex items-start cursor-pointer group relative border-2 p-4 transition-all ${
+            <label className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
               regionRestrictionEnabled
-                ? "border-gray-400 bg-gray-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -1129,11 +1145,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                 value="enabled"
                 checked={regionRestrictionEnabled}
                 onChange={() => setRegionRestrictionEnabled(true)}
-                className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
               />
               <div className="flex-1">
-                <div className={`font-medium transition-colors ${
-                  regionRestrictionEnabled ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                <div className={`text-base font-semibold transition-colors ${
+                  regionRestrictionEnabled ? "text-gray-900" : "text-gray-700"
                 }`}>
                   地域を限定する
                 </div>
@@ -1170,10 +1186,10 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </div>
           )}
 
-          <div className="mt-4 p-3 bg-orange-50">
+          <div className="mt-4 p-4 bg-gray-50 border border-gray-200">
             <div className="flex items-start">
-              <span className="text-orange-500 mr-2 text-sm">💡</span>
-              <div className="text-xs text-orange-800 leading-relaxed">
+              <span className="text-gray-600 mr-2 text-sm">💡</span>
+              <div className="text-sm text-gray-600 leading-relaxed">
                 実店舗がある場合は、地域を限定すると来店につながりやすくなります。
               </div>
             </div>
@@ -1183,7 +1199,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
         {/* どんな内容を投稿したいか */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            どんな内容を投稿したいですか？ <span className="text-red-500">*</span>
+            どんな内容を投稿したいですか？ <span className="text-red-600 font-bold text-base ml-1">*</span>
           </label>
           
           <div className="space-y-3">
@@ -1199,10 +1215,10 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             ].map((option) => (
               <label
                 key={option.value}
-                className={`flex items-start cursor-pointer group relative border-2 rounded-lg p-4 transition-all ${
+                className={`flex items-start cursor-pointer group relative border p-5 transition-all ${
                   contentTypes.includes(option.value)
-                    ? "border-gray-400 bg-gray-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
+                    ? "border-gray-900 bg-gray-50"
+                    : "border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50"
                 }`}
               >
                 <input
@@ -1215,11 +1231,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
                       setContentTypes(contentTypes.filter((t) => t !== option.value));
                     }
                   }}
-                  className="mt-1 mr-3 w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                  className="mt-0.5 mr-4 w-5 h-5 text-gray-900 focus:ring-gray-900"
                 />
                 <div className="flex-1">
-                  <div className={`font-medium transition-colors ${
-                    contentTypes.includes(option.value) ? "text-[#FF8A15]" : "text-gray-900 group-hover:text-[#FF8A15]"
+                  <div className={`text-base font-semibold transition-colors ${
+                    contentTypes.includes(option.value) ? "text-gray-900" : "text-gray-700"
                   }`}>
                     {option.label}
                   </div>
@@ -1240,10 +1256,10 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading = false,
             </div>
           )}
 
-          <div className="mt-4 p-3 bg-orange-50">
+          <div className="mt-4 p-4 bg-gray-50 border border-gray-200">
             <div className="flex items-start">
-              <span className="text-orange-500 mr-2 text-sm">💡</span>
-              <div className="text-xs text-orange-800 leading-relaxed">
+              <span className="text-gray-600 mr-2 text-sm">💡</span>
+              <div className="text-sm text-gray-600 leading-relaxed">
                 複数選択すると、投稿のバリエーションが増えて、フォロワーが飽きにくくなります。
               </div>
             </div>

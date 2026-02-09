@@ -3,6 +3,8 @@ import OpenAI from "openai";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import { buildAIContext, fetchAIDirection } from "@/lib/ai/context";
 
+export const dynamic = 'force-dynamic';
+
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,

@@ -111,7 +111,7 @@ export const AIPlanSuggestion: React.FC<AIPlanSuggestionProps> = ({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
+    <div className="bg-white border-2 border-gray-200 p-6 space-y-6">
       {/* 最適な投稿時間（AIに任せる場合） */}
       {currentSuggestion.recommendedPostingTimes && currentSuggestion.recommendedPostingTimes.length > 0 && (
         <div>

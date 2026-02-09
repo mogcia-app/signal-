@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { month, create, mainTheme, priorityKPI, avoidFocus, postingRules, locked } = body;
+    const { month, create, update, mainTheme, priorityKPI, avoidFocus, postingRules, locked } = body;
 
     if (!month) {
       return NextResponse.json(
@@ -130,6 +130,19 @@ export async function POST(request: NextRequest) {
         { success: false, error: "ai_directionが見つかりません" },
         { status: 404 }
       );
+    }
+
+    // 更新フラグが立っている場合、mainThemeを更新
+    if (update && mainTheme) {
+      await directionDocRef.update({
+        mainTheme: mainTheme.trim(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      console.log(`✅ ai_directionを更新: ${uid}_${month} - ${mainTheme}`);
+      return NextResponse.json({
+        success: true,
+        message: "ai_directionを更新しました",
+      });
     }
 
     // lockedAtを設定（確定）

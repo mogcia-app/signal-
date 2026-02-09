@@ -221,7 +221,7 @@ export async function GET(request: NextRequest) {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
-
+    
     const scheduledPosts = sortedPosts
       .filter((post) => {
         if (post.status !== "created") return false;
@@ -231,7 +231,37 @@ export async function GET(request: NextRequest) {
           const scheduledDate = post.scheduledDate instanceof Date
             ? post.scheduledDate
             : new Date(post.scheduledDate as string);
-          return scheduledDate >= today && scheduledDate < nextWeek;
+          
+          // 日付が今週の範囲内かチェック
+          if (scheduledDate < today || scheduledDate >= nextWeek) {
+            return false;
+          }
+
+          // 時間も考慮して、過去の時間の投稿を除外
+          if (post.scheduledTime) {
+            const [hours, minutes] = post.scheduledTime.split(':').map(Number);
+            if (!isNaN(hours) && !isNaN(minutes)) {
+              const scheduledDateTime = new Date(scheduledDate);
+              scheduledDateTime.setHours(hours, minutes, 0, 0);
+              
+              // 現在時刻より過去の場合は除外
+              if (scheduledDateTime < now) {
+                return false;
+              }
+            }
+          } else {
+            // 時間が設定されていない場合、日付が今日より過去の場合は除外
+            const scheduledDateOnly = new Date(scheduledDate);
+            scheduledDateOnly.setHours(0, 0, 0, 0);
+            const todayOnly = new Date(now);
+            todayOnly.setHours(0, 0, 0, 0);
+            
+            if (scheduledDateOnly < todayOnly) {
+              return false;
+            }
+          }
+
+          return true;
         } catch (error) {
           console.error("投稿予定の日付変換エラー:", error, post);
           return false;
