@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { adminAuth, adminDb } from "../firebase-admin";
+import { getAdminAuth, getAdminDb, adminDb } from "../firebase-admin";
 import { logAccessEvent, logSecurityEvent } from "./logging";
 
 export class UnauthorizedError extends Error {
@@ -46,7 +46,7 @@ type RequireAuthOptions = {
 
 type AuthContext = {
   uid: string;
-  token: Awaited<ReturnType<typeof adminAuth.verifyIdToken>>;
+  token: Awaited<ReturnType<ReturnType<typeof getAdminAuth>["verifyIdToken"]>>;
 };
 
 function normalizeDate(input: unknown): Date | null {
@@ -160,7 +160,8 @@ async function enforceRateLimit(userId: string, options: RateLimitOptions, ip?: 
 }
 
 async function isContractActive(userId: string): Promise<boolean> {
-  const userSnapshot = await adminDb.collection("users").doc(userId).get();
+  const db = getAdminDb();
+  const userSnapshot = await db.collection("users").doc(userId).get();
 
   if (!userSnapshot.exists) {
     return false;
@@ -224,6 +225,7 @@ export async function requireAuthContext(request: NextRequest, options: RequireA
   }
 
   try {
+    const adminAuth = getAdminAuth();
     const decodedToken = await adminAuth.verifyIdToken(token);
     const uid = decodedToken.uid;
 

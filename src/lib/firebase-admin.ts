@@ -48,22 +48,62 @@ if (!isBuildTime) {
 }
 
 export function getAdminDb() {
-  if (!isInitialized && !isBuildTime) {
+  // ビルド時には初期化をスキップ
+  if (isBuildTime) {
+    throw new Error("Firebase Admin SDK cannot be initialized during build time.");
+  }
+  
+  if (!isInitialized) {
     initializeAdmin();
   }
+  
   if (!admin.apps.length) {
-    throw new Error("Firebase Admin SDK is not initialized. Check environment variables.");
+    const serviceAccount = {
+      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+    };
+    
+    if (!serviceAccount.clientEmail || !serviceAccount.privateKey) {
+      throw new Error(
+        "Firebase Admin SDK is not initialized. Missing environment variables: " +
+        `FIREBASE_ADMIN_CLIENT_EMAIL=${Boolean(serviceAccount.clientEmail)}, ` +
+        `FIREBASE_ADMIN_PRIVATE_KEY=${Boolean(serviceAccount.privateKey)}`
+      );
+    }
+    
+    throw new Error("Firebase Admin SDK initialization failed. Check logs for details.");
   }
+  
   return admin.firestore();
 }
 
 export function getAdminAuth() {
-  if (!isInitialized && !isBuildTime) {
+  // ビルド時には初期化をスキップ
+  if (isBuildTime) {
+    throw new Error("Firebase Admin SDK cannot be initialized during build time.");
+  }
+  
+  if (!isInitialized) {
     initializeAdmin();
   }
+  
   if (!admin.apps.length) {
-    throw new Error("Firebase Admin SDK is not initialized. Check environment variables.");
+    const serviceAccount = {
+      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+    };
+    
+    if (!serviceAccount.clientEmail || !serviceAccount.privateKey) {
+      throw new Error(
+        "Firebase Admin SDK is not initialized. Missing environment variables: " +
+        `FIREBASE_ADMIN_CLIENT_EMAIL=${Boolean(serviceAccount.clientEmail)}, ` +
+        `FIREBASE_ADMIN_PRIVATE_KEY=${Boolean(serviceAccount.privateKey)}`
+      );
+    }
+    
+    throw new Error("Firebase Admin SDK initialization failed. Check logs for details.");
   }
+  
   return admin.auth();
 }
 
