@@ -9,13 +9,14 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   // Exclude functions directory from Next.js compilation
+  // Vercelでは externalDir を無効化（Vercel環境でない場合のみ有効化）
   experimental: {
-    externalDir: true,
+    ...(process.env.VERCEL ? {} : { externalDir: true }),
   },
   // React Server Components の設定
   reactStrictMode: true,
-  // APIルートの静的生成を無効化
-  output: "standalone",
+  // Vercelでは standalone 出力を無効化（Vercel環境でない場合のみ有効化）
+  ...(process.env.VERCEL ? {} : { output: "standalone" }),
   // 静的生成を無効化してAPIルートの問題を回避
   trailingSlash: false,
   // 本番環境でconsole文を削除する設定
