@@ -115,9 +115,10 @@ async function enforceRateLimit(userId: string, options: RateLimitOptions, ip?: 
   const now = Date.now();
   const windowMs = options.windowSeconds * 1000;
   const docId = `${userId}:${options.key}`;
-  const docRef = adminDb.collection("serviceRateLimits").doc(docId);
+  const db = getAdminDb();
+  const docRef = db.collection("serviceRateLimits").doc(docId);
 
-  await adminDb.runTransaction(async (transaction) => {
+  await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(docRef);
 
     if (!snapshot.exists) {
