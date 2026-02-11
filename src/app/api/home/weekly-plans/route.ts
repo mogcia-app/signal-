@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 計画の開始日と終了日を確認（過去の計画は表示しない）
+    // 計画の開始日と終了日を確認（表示は継続し、ログのみ）
     const planStartDate = new Date(planInput.startDate);
     const planEndDate = new Date(planStartDate);
     planEndDate.setMonth(planEndDate.getMonth() + 1); // デフォルト1ヶ月
@@ -108,16 +108,12 @@ export async function GET(request: NextRequest) {
     planStartDate.setHours(0, 0, 0, 0);
     planEndDate.setHours(23, 59, 59, 999);
     
-    // 計画の期間外（開始前または終了後）の場合は表示しない
+    // 計画の期間外（開始前または終了後）の場合でも、表示用にフォールバックする
     if (today < planStartDate || today > planEndDate) {
       console.log("[Home Weekly Plans] 計画の期間外:", {
         today: today.toISOString().split("T")[0],
         planStartDate: planStartDate.toISOString().split("T")[0],
         planEndDate: planEndDate.toISOString().split("T")[0],
-      });
-      return NextResponse.json({
-        success: true,
-        data: null,
       });
     }
 
@@ -236,20 +232,20 @@ export async function GET(request: NextRequest) {
       const fallbackStartDate = parsePlanDate(strategyPlan.startDate, planStartDate);
       weekIndex = getCurrentWeekIndex(fallbackStartDate, localDate, timezone);
     }
-    const currentWeek = weekIndex + 1;
+    const requestedWeek = weekIndex + 1;
+    const availableWeeks = strategyPlan.weeklyPlans
+      .map((wp) => wp.week)
+      .filter((w) => Number.isFinite(w))
+      .sort((a, b) => a - b);
+    const minWeek = availableWeeks[0] || 1;
+    const maxWeek = availableWeeks[availableWeeks.length - 1] || 1;
+    const currentWeek = Math.min(Math.max(requestedWeek, minWeek), maxWeek);
 
-    // 現在の週の計画を取得
-    // 注意: 週番号が範囲外（0以下または4週を超える）の場合は表示しない
-    if (currentWeek < 1 || currentWeek > 4) {
-      console.log("[Home Weekly Plans] 週番号が範囲外:", {
+    if (requestedWeek !== currentWeek) {
+      console.log("[Home Weekly Plans] 週番号をフォールバック:", {
+        requestedWeek,
         currentWeek,
-        weekIndex,
-        planStartDate: strategyPlan.startDate.toISOString().split("T")[0],
-        localDate,
-      });
-      return NextResponse.json({
-        success: true,
-        data: null,
+        availableWeeks,
       });
     }
 
@@ -281,6 +277,29 @@ export async function GET(request: NextRequest) {
       );
 
       if (!generatedCurrentWeekPlan) {
+        const fallbackCurrentWeekPlan = generatedStrategyPlan.weeklyPlans
+          .slice()
+          .sort((a, b) => b.week - a.week)[0];
+
+        if (fallbackCurrentWeekPlan) {
+          currentWeekPlan = fallbackCurrentWeekPlan;
+          strategyPlan = {
+            ...strategyPlan,
+            weeklyPlans: [
+              ...strategyPlan.weeklyPlans.filter((wp) => wp.week !== fallbackCurrentWeekPlan.week),
+              fallbackCurrentWeekPlan,
+            ].sort((a, b) => a.week - b.week),
+            updatedAt: new Date(),
+          };
+          if (activePlanId) {
+            await adminDb.collection("plans").doc(activePlanId).set(
+              {
+                planData: toPersistablePlanData(strategyPlan),
+              },
+              { merge: true }
+            );
+          }
+        } else {
         console.log("[Home Weekly Plans] 現在の週の計画が見つかりません:", {
           currentWeek,
           availableWeeks: strategyPlan.weeklyPlans.map(wp => wp.week),
@@ -289,27 +308,28 @@ export async function GET(request: NextRequest) {
           success: true,
           data: null,
         });
-      }
+        }
+      } else {
+        const mergedWeeklyPlans = [
+          ...strategyPlan.weeklyPlans.filter((wp) => wp.week !== currentWeek),
+          generatedCurrentWeekPlan,
+        ].sort((a, b) => a.week - b.week);
 
-      const mergedWeeklyPlans = [
-        ...strategyPlan.weeklyPlans.filter((wp) => wp.week !== currentWeek),
-        generatedCurrentWeekPlan,
-      ].sort((a, b) => a.week - b.week);
+        strategyPlan = {
+          ...strategyPlan,
+          weeklyPlans: mergedWeeklyPlans,
+          updatedAt: new Date(),
+        };
+        currentWeekPlan = generatedCurrentWeekPlan;
 
-      strategyPlan = {
-        ...strategyPlan,
-        weeklyPlans: mergedWeeklyPlans,
-        updatedAt: new Date(),
-      };
-      currentWeekPlan = generatedCurrentWeekPlan;
-
-      if (activePlanId) {
-        await adminDb.collection("plans").doc(activePlanId).set(
-          {
-            planData: toPersistablePlanData(strategyPlan),
-          },
-          { merge: true }
-        );
+        if (activePlanId) {
+          await adminDb.collection("plans").doc(activePlanId).set(
+            {
+              planData: toPersistablePlanData(strategyPlan),
+            },
+            { merge: true }
+          );
+        }
       }
     }
 
