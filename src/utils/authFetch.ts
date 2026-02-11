@@ -51,6 +51,22 @@ const isNetworkError = (error: unknown): boolean => {
 
   const errorMessage = error.message.toLowerCase();
   const errorName = error.name.toLowerCase();
+  
+  // Firebase認証のネットワークエラーコードも検出
+  // FirebaseErrorのcodeプロパティも確認
+  const firebaseNetworkErrorCodes = [
+    "auth/network-request-failed",
+    "auth/network-error",
+    "network-request-failed",
+  ];
+  
+  // FirebaseErrorオブジェクトの場合、codeプロパティも確認
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const errorCode = String((error as { code?: string }).code || "").toLowerCase();
+    if (firebaseNetworkErrorCodes.some(code => errorCode.includes(code.toLowerCase()))) {
+      return true;
+    }
+  }
 
   return (
     errorName === "typeerror" ||
@@ -62,7 +78,8 @@ const isNetworkError = (error: unknown): boolean => {
     errorMessage.includes("err_network_io_suspended") ||
     errorMessage.includes("quic") ||
     errorMessage.includes("connection closed") ||
-    errorMessage.includes("network request failed")
+    errorMessage.includes("network request failed") ||
+    firebaseNetworkErrorCodes.some(code => errorMessage.includes(code.toLowerCase()))
   );
 };
 
@@ -255,14 +272,66 @@ export const authFetch = async (
   }
 
   const auth = getAuth();
-  const user = await resolveCurrentUser(auth);
-  const token = user ? await user.getIdToken() : null;
+  let user: User | null = null;
+  let token: string | null = null;
+  
+  try {
+    user = await resolveCurrentUser(auth);
+    
+    // getIdToken()の呼び出しをtry-catchで囲み、ネットワークエラーをハンドリング
+    if (user) {
+      try {
+        token = await user.getIdToken();
+      } catch (tokenError) {
+        // ネットワークエラーの場合、リトライを試みる
+        if (isNetworkError(tokenError)) {
+          console.warn("[authFetch] getIdToken() failed with network error, retrying...", tokenError);
+          
+          // 最大3回リトライ（指数バックオフ）
+          for (let retryAttempt = 0; retryAttempt < 3; retryAttempt++) {
+            const delay = 1000 * Math.pow(2, retryAttempt); // 1秒、2秒、4秒
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            
+            try {
+              token = await user.getIdToken();
+              console.log(`[authFetch] getIdToken() succeeded after retry ${retryAttempt + 1}`);
+              break; // 成功したらループを抜ける
+            } catch (retryError) {
+              if (retryAttempt === 2) {
+                // 最後のリトライも失敗した場合
+                console.error("[authFetch] getIdToken() failed after all retries", retryError);
+                // ネットワークエラーのトースト通知を表示
+                showNetworkErrorToast();
+                // トークンなしでリクエストを続行（サーバー側で認証エラーになる可能性があるが、ユーザーには通知済み）
+              }
+            }
+          }
+        } else {
+          // ネットワークエラー以外のエラー（認証エラーなど）
+          console.error("[authFetch] getIdToken() failed with non-network error", tokenError);
+          throw tokenError;
+        }
+      }
+    }
+  } catch (authError) {
+    // resolveCurrentUser()やその他の認証エラー
+    if (isNetworkError(authError)) {
+      console.warn("[authFetch] Authentication failed with network error", authError);
+      showNetworkErrorToast();
+      // ネットワークエラーの場合、トークンなしでリクエストを続行
+    } else {
+      // 認証エラー（ネットワーク以外）
+      console.error("[authFetch] Authentication failed", authError);
+      throw authError;
+    }
+  }
 
   const debugInfo = {
     url: input.toString(),
     currentUserExists: Boolean(auth.currentUser),
     resolvedUserExists: Boolean(user),
     tokenLength: token?.length ?? 0,
+    hasToken: Boolean(token),
   };
 
   if (process.env.NODE_ENV === "development" && isApiRequest(input)) {

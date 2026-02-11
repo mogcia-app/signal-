@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
-import type { AIPlanSuggestion } from "../../../instagram/plan/types/plan";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { getLocalDate } from "../../../../lib/utils/timezone";
 import * as admin from "firebase-admin";
 
 export async function GET(request: NextRequest) {
@@ -34,23 +35,38 @@ export async function GET(request: NextRequest) {
 
     // startOfMonth and endOfMonth removed (unused)
 
+    // ユーザーのactivePlanIdを取得（必須）
+    const user = await getUserProfile(uid);
+    
+    console.log("[Home Dashboard] ユーザーデータ:", {
+      userId: uid,
+      activePlanId: user?.activePlanId || null,
+    });
+    
     // 並列でデータを取得
-    const [analyticsSnapshot, postsSnapshot, plansSnapshot, followerCountsSnapshot] = await Promise.all([
+    const [analyticsSnapshot, postsSnapshot, planDoc, followerCountsSnapshot] = await Promise.all([
       adminDb.collection("analytics").where("userId", "==", uid).get(),
       adminDb.collection("posts").where("userId", "==", uid).get(),
-      adminDb.collection("plans")
-        .where("userId", "==", uid)
-        .where("snsType", "==", "instagram")
-        .where("status", "==", "active")
-        .orderBy("createdAt", "desc")
-        .limit(1)
-        .get(),
+      user?.activePlanId 
+        ? adminDb.collection("plans").doc(user.activePlanId).get()
+        : Promise.resolve({ exists: false } as admin.firestore.DocumentSnapshot),
       adminDb.collection("follower_counts")
         .where("userId", "==", uid)
         .orderBy("date", "desc")
         .limit(2)
         .get(),
     ]);
+    
+    // 計画データを取得
+    const planData = planDoc.exists ? planDoc.data() : null;
+    
+    console.log("[Home Dashboard] 計画データ:", {
+      planExists: planDoc.exists,
+      hasPlanData: !!planData,
+      hasFormData: !!planData?.formData,
+      hasSimulationResult: !!planData?.simulationResult,
+      planId: planDoc.exists ? (planDoc as any).id : null,
+    });
 
     const analytics = analyticsSnapshot.docs.map((doc) => {
       const data = doc.data();
@@ -203,18 +219,15 @@ export async function GET(request: NextRequest) {
         return dateA.getTime() - dateB.getTime();
       });
 
-    // 運用計画の取得
+    // 運用計画の取得（planDataから直接取得）
     let currentPlan = null;
-    let planStartDate: Date | null = null;
     
-    if (!plansSnapshot.empty) {
-      const planDoc = plansSnapshot.docs[0];
-      const planData = planDoc.data();
-      
+    if (planData && planDoc.exists) {
       // 計画開始日を取得（formData.startDateまたはstartDateから）
-      const formData = planData.formData || {};
+      const formData = (planData.formData || {}) as Record<string, unknown>;
+      let planStartDate: Date | null = null;
       if (formData.startDate) {
-        planStartDate = new Date(formData.startDate);
+        planStartDate = new Date(formData.startDate as string);
       } else if (planData.startDate) {
         planStartDate = planData.startDate instanceof Date 
           ? planData.startDate 
@@ -222,180 +235,36 @@ export async function GET(request: NextRequest) {
             ? planData.startDate.toDate() 
             : new Date(planData.startDate);
       } else if (planData.createdAt) {
-        // 後方互換性のため（createdAtは作成日時なので、startDateの代わりには使わない）
         planStartDate = planData.createdAt?.toDate?.() || new Date(planData.createdAt);
       } else {
         planStartDate = new Date();
       }
       
-      // デバッグログ：計画開始日を確認
-      console.log("[Home Dashboard] 計画開始日デバッグ:", {
-        formDataStartDate: formData.startDate,
-        planDataStartDate: planData.startDate,
-        planStartDate: planStartDate?.toISOString(),
-        planId: planDoc.id,
-        hasFormData: !!planData.formData,
-        hasAiSuggestion: !!planData.aiSuggestion,
-        plansSnapshotEmpty: plansSnapshot.empty,
-      });
-      
-      // generatedStrategyDataは廃止。aiSuggestionのみを使用
-      // 後方互換性のため、generatedStrategyDataがある場合は警告を出す
-      if (planData.generatedStrategyData) {
-        console.warn("[Home Dashboard] generatedStrategyDataが使用されています。aiSuggestionに移行してください。", {
-          planId: planDoc.id,
-          hasAiSuggestion: !!planData.aiSuggestion,
-        });
-      }
-      
       currentPlan = {
-        id: planDoc.id,
+        id: user?.activePlanId || "",
         title: planData.title || "運用計画",
         strategy: planData.generatedStrategy || "",
         startDate: planStartDate,
         endDate: planData.endDate?.toDate?.() || planData.endDate,
-        weeklyTasks: [], // generatedStrategyDataは使用しない
-        monthlyGoals: [], // generatedStrategyDataは使用しない
-        aiSuggestion: planData.aiSuggestion || null,
+        weeklyTasks: [],
+        monthlyGoals: [],
+        aiSuggestion: null,
       };
     }
 
     // 今月の戦略進捗（簡易版）
     const monthlyProgress = currentPlan
       ? {
-          strategy: "ストーリーズを毎日投稿",
+          strategy: "運用計画実行中",
           progress: 0,
           totalDays: 0,
           completedDays: 0,
         }
       : null;
 
-    // AI提案データを取得
-    let currentWeekTasks: Array<{ day: string; task: string }> = [];
-    let currentMonthGoals: Array<{ metric?: string; target?: string; goal?: string; description?: string }> = [];
-    let aiSuggestion: AIPlanSuggestion | null = null;
-    
-    // planDataから直接aiSuggestionを取得
-    const planData = plansSnapshot.empty ? null : plansSnapshot.docs[0].data();
-    if (planData?.aiSuggestion) {
-      aiSuggestion = planData.aiSuggestion as AIPlanSuggestion;
-      
-      // デバッグログ：aiSuggestionの構造を確認
-      if (aiSuggestion) {
-        console.log("[Home Dashboard] aiSuggestion確認:", {
-          hasWeeklyPlans: !!aiSuggestion.weeklyPlans,
-          weeklyPlansCount: aiSuggestion.weeklyPlans?.length || 0,
-          hasMonthlyGoals: !!aiSuggestion.monthlyGoals,
-          monthlyGoalsCount: aiSuggestion.monthlyGoals?.length || 0,
-          weeklyPlansWeeks: aiSuggestion.weeklyPlans?.map((p) => p.week) || [],
-        });
-      }
-      
-      // 今月の目標を取得
-      if (aiSuggestion && aiSuggestion.monthlyGoals && Array.isArray(aiSuggestion.monthlyGoals)) {
-        currentMonthGoals = aiSuggestion.monthlyGoals;
-      }
-      
-      // 今週のタスクを取得（週次計画から）
-      // 重要: 週番号で日付を逆算するのではなく、開始日 + offsetで日付を確定する
-      if (aiSuggestion && aiSuggestion.weeklyPlans && Array.isArray(aiSuggestion.weeklyPlans)) {
-        const now = new Date();
-        const planStart = planStartDate || now;
-        
-        // 計画開始日を基準に週を計算
-        const diffTime = now.getTime() - planStart.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
-        
-        // デバッグログ：週計算を確認
-        console.log("[Home Dashboard] 週計算デバッグ:", {
-          planStart: planStart.toISOString(),
-          now: now.toISOString(),
-          diffDays,
-          currentWeek,
-          weeklyPlansWeeks: aiSuggestion.weeklyPlans.map((p) => p.week),
-        });
-        
-        // 現在の週の計画を取得
-        type WeeklyPlan = NonNullable<AIPlanSuggestion["weeklyPlans"]>[number];
-        const weekPlan = aiSuggestion.weeklyPlans.find((p: WeeklyPlan) => p.week === currentWeek);
-        
-        if (weekPlan && weekPlan.tasks) {
-          const typeLabels: Record<string, string> = {
-            feed: "フィード投稿",
-            reel: "リール",
-            story: "ストーリーズ",
-            "feed+reel": "フィード投稿 + リール",
-          };
-          
-          // 計画開始日を基準に、現在の週の開始日（月曜日）を計算
-          const planStartDateObj = new Date(planStart);
-          planStartDateObj.setHours(0, 0, 0, 0);
-          
-          // 計画開始日が何曜日か取得（0=日曜, 1=月曜, ..., 6=土曜）
-          const planStartDayOfWeek = planStartDateObj.getDay();
-          // 計画開始日が月曜日になるように調整
-          const planStartMondayOffset = planStartDayOfWeek === 0 ? -6 : 1 - planStartDayOfWeek;
-          const planStartMonday = new Date(planStartDateObj);
-          planStartMonday.setDate(planStartDateObj.getDate() + planStartMondayOffset);
-          
-          // 現在の週の月曜日を計算（計画開始週の月曜日 + (currentWeek - 1) * 7日）
-          const currentWeekMonday = new Date(planStartMonday);
-          currentWeekMonday.setDate(planStartMonday.getDate() + (currentWeek - 1) * 7);
-          
-          // デバッグログ：日付計算を確認
-          console.log("[Home Dashboard] 日付計算デバッグ:", {
-            planStartDateObj: planStartDateObj.toISOString(),
-            planStartDayOfWeek,
-            planStartMondayOffset,
-            planStartMonday: planStartMonday.toISOString(),
-            currentWeek,
-            currentWeekMonday: currentWeekMonday.toISOString(),
-            weekPlanTasksCount: weekPlan.tasks.length,
-          });
-          
-          // 曜日のマッピング（月曜日=0から始まる）
-          const dayNameToIndex: Record<string, number> = {
-            "月": 0, "火": 1, "水": 2, "木": 3, "金": 4, "土": 5, "日": 6,
-          };
-          
-          currentWeekTasks = weekPlan.tasks.map((task) => {
-            // 曜日から日付を計算（currentWeekMondayは現在の週の月曜日）
-            const dayIndex = dayNameToIndex[task.day] ?? 0;
-            const taskDate = new Date(currentWeekMonday);
-            taskDate.setDate(currentWeekMonday.getDate() + dayIndex);
-            taskDate.setHours(0, 0, 0, 0); // 時刻を0時に設定
-            
-            const month = taskDate.getMonth() + 1;
-            const day = taskDate.getDate();
-            
-            // デバッグログ：各タスクの日付を確認
-            console.log("[Home Dashboard] タスク日付:", {
-              taskDay: task.day,
-              dayIndex,
-              taskDate: taskDate.toISOString(),
-              formatted: `${month}/${day}（${task.day}）`,
-            });
-            
-            return {
-              day: `${month}/${day}（${task.day}）`,
-            task: `${typeLabels[task.type] || task.type}（${task.time}）「${task.description}」`,
-            };
-          });
-        } else {
-          console.warn("[Home Dashboard] 週計画が見つかりません:", {
-            currentWeek,
-            availableWeeks: aiSuggestion.weeklyPlans.map((p) => p.week),
-            hasWeekPlan: !!weekPlan,
-          });
-      }
-      }
-    }
-    // generatedStrategyDataは使用しない（aiSuggestion一本化）
-
     // 計画の有無をログに記録
     console.log("[Home Dashboard] 計画の有無デバッグ:", {
-      plansSnapshotEmpty: plansSnapshot.empty,
+      planDataExists: !!planData,
       currentPlanExists: !!currentPlan,
       currentPlanId: currentPlan?.id || null,
     });
@@ -414,11 +283,9 @@ export async function GET(request: NextRequest) {
           },
         },
         weeklySchedule,
-        currentPlan: plansSnapshot.empty ? null : currentPlan,
+        currentPlan: currentPlan,
         monthlyProgress,
-        currentWeekTasks,
-        currentMonthGoals,
-        aiSuggestion,
+        simulationResult: planData?.simulationResult || null,
       },
     });
   } catch (error) {

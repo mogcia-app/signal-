@@ -274,10 +274,48 @@ export async function POST(request: NextRequest) {
     // ✅ プロンプトビルダーを使用（PDCA - Do）
     let systemPrompt: string;
 
-    // contentTypesを取得（latestPlanから、またはplanDataから）
+    // 計画データを取得（新しく保存した計画データまたは既存の計画データ）
+    const savedPlanData = (latestPlan as any)?.planData || (planData as any)?.planData || null;
     const planFormData = (latestPlan as any)?.formData || (planData as any)?.formData || null;
     const contentTypes = planFormData?.contentTypes || [];
     const contentTypeOther = planFormData?.contentTypeOther || "";
+
+    // 計画の目標情報を取得
+    let planGoalInfo = "";
+    if (savedPlanData) {
+      // 新しく保存した計画データから目標情報を取得
+      planGoalInfo = `
+【🎯 今月の目標（最重要・必須達成）】
+この投稿は以下の目標達成のために生成してください：
+
+【目標フォロワー設定】
+- 現在: ${savedPlanData.currentFollowers?.toLocaleString() || 0}人
+- 目標: ${savedPlanData.targetFollowers?.toLocaleString() || 0}人
+- 増加目標: +${savedPlanData.followerIncrease || 0}人
+- 期間: ${savedPlanData.startDate ? new Date(savedPlanData.startDate).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" }) : ""} 〜 ${savedPlanData.endDate ? new Date(savedPlanData.endDate).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" }) : ""} (1ヶ月)
+- 運用目的: ${savedPlanData.operationPurpose || ""}
+- 成長目標: 月${savedPlanData.monthlyGrowthRate || 0}%増
+
+【📊 予想される成果（目標達成のための指標）】
+- 月間リーチ数: 約${savedPlanData.expectedResults?.monthlyReach?.toLocaleString() || 0}人
+- エンゲージメント率: ${savedPlanData.expectedResults?.engagementRate || "3.5〜5.0%"}
+- プロフィールアクセス: 約${savedPlanData.expectedResults?.profileViews || 0}回
+- 保存数: ${savedPlanData.expectedResults?.saves || 0}回前後
+- 新規フォロワー: 約${savedPlanData.expectedResults?.newFollowers || 0}人
+
+【💡 推奨投稿内容の種類】
+${savedPlanData.suggestedContentTypes && savedPlanData.suggestedContentTypes.length > 0
+  ? savedPlanData.suggestedContentTypes.map((type: string, index: number) => `${index + 1}. ${type}`).join("\n")
+  : "指定なし"}
+
+**最重要指示**:
+- この目標を達成するために、エンゲージメント率${savedPlanData.expectedResults?.engagementRate || "3.5〜5.0%"}を意識した投稿文を作成してください
+- リーチ数${savedPlanData.expectedResults?.monthlyReach?.toLocaleString() || 0}人、新規フォロワー${savedPlanData.expectedResults?.newFollowers || 0}人を獲得できるような、魅力的で行動喚起のある投稿文とハッシュタグを考えてください
+- 運用目的「${savedPlanData.operationPurpose || ""}」に沿った内容にしてください
+- 推奨投稿内容の種類を参考に、適切な方向性で投稿を生成してください
+
+`;
+    }
 
     if (userProfile) {
       // ✅ 投稿タイプ別のプロンプト生成関数を使用
@@ -290,6 +328,11 @@ export async function POST(request: NextRequest) {
       } else {
         // フォールバック（後方互換性）
         systemPrompt = buildPostGenerationPrompt(userProfile, "instagram", postType);
+      }
+
+      // 計画の目標情報をプロンプトに追加
+      if (planGoalInfo) {
+        systemPrompt = planGoalInfo + "\n" + systemPrompt;
       }
 
       // ai_direction（今月のAI方針）を最優先で参照
@@ -602,7 +645,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
     const maxTokens = postType === "feed" && feedOptions?.textVolume
       ? FEED_MAX_TOKENS[feedOptions.textVolume]
       : postType === "story"
-        ? 200  // ストーリーは短いので200トークン
+        ? 400  // ストーリーは短いが、JSON構造を含めて400トークンに増加
         : 1000; // その他は1000トークン
 
     let chatCompletion;
@@ -678,6 +721,7 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
     } catch (directParseError) {
       // 直接パースに失敗した場合、JSONを抽出して試す
       try {
+        // より柔軟なJSON抽出パターン（複数行、ネストされたJSONに対応）
         const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error("JSON形式が見つかりません");
@@ -686,7 +730,24 @@ ${userProfile ? "上記のクライアント情報と運用計画に基づいて
       } catch (fallbackParseError) {
         console.error("JSONパースエラー（直接パース失敗）:", directParseError);
         console.error("JSONパースエラー（フォールバックも失敗）:", fallbackParseError);
-        console.error("AIレスポンス:", aiResponse);
+        console.error("AIレスポンス（全文）:", aiResponse);
+        console.error("AIレスポンス（長さ）:", aiResponse.length, "文字");
+        console.error("投稿タイプ:", postType);
+        console.error("max_tokens:", maxTokens);
+        
+        // ストーリーズの場合、より詳細なエラーメッセージを返す
+        if (postType === "story") {
+          return NextResponse.json(
+            { 
+              error: "AIの応答を解析できませんでした。再度お試しください。",
+              details: process.env.NODE_ENV === "development" 
+                ? `ストーリーズ投稿生成エラー: ${fallbackParseError instanceof Error ? fallbackParseError.message : String(fallbackParseError)}` 
+                : undefined,
+            },
+            { status: 500 }
+          );
+        }
+        
         return NextResponse.json(
           { error: "AIの応答を解析できませんでした。再度お試しください。" },
           { status: 500 }

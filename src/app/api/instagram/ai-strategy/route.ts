@@ -444,11 +444,14 @@ ${months > 1 ? `【重要】計画期間が${months}ヶ月のため、${months}�
     const generatedStrategy = data.choices[0]?.message?.content || "戦略の生成に失敗しました。";
 
     // 週次・月次データを抽出して構造化
-    const { extractAllWeeklyTasks, extractAllMonthlyGoals } = await import(
-      "../../../instagram/plan/utils/weeklyMonthlyParser"
-    );
-    const weeklyTasks = extractAllWeeklyTasks(generatedStrategy, formData);
-    const monthlyGoals = extractAllMonthlyGoals(generatedStrategy, formData);
+    // TODO: weeklyMonthlyParserモジュールが存在しないため、一時的にコメントアウト
+    // const { extractAllWeeklyTasks, extractAllMonthlyGoals } = await import(
+    //   "../../../instagram/plan/utils/weeklyMonthlyParser"
+    // );
+    // const weeklyTasks = extractAllWeeklyTasks(generatedStrategy, formData);
+    // const monthlyGoals = extractAllMonthlyGoals(generatedStrategy, formData);
+    const weeklyTasks: unknown[] = [];
+    const monthlyGoals: unknown[] = [];
 
     // ✅ 運用計画をFirestoreに保存（PDCAのP - Plan）
     try {

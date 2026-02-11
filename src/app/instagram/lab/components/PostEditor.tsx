@@ -240,6 +240,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string>("");
+  const [loadingMessageInterval, setLoadingMessageInterval] = useState<NodeJS.Timeout | null>(null);
   const [aiGenerateFeedback, setAiGenerateFeedback] = useState<string | null>(null);
   // 後方互換性のため残す（非推奨）
   const [writingStyle, setWritingStyle] = useState<"casual" | "sincere" | null>(null);
@@ -539,7 +541,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     }
 
     // 目標が不明確
-    if (!plan.targetAudience || plan.targetAudience.trim().length < 5) {
+    if (!plan.targetAudience || (typeof plan.targetAudience === 'string' && plan.targetAudience.trim().length < 5)) {
       return {
         feedback: `運用計画の「ターゲット層」が不明確です（現在: ${plan.targetAudience || "未設定"}）。具体的なターゲット層（例：「20代の女性、朝の時間にSNSをチェックする習慣がある」）を設定すると、より適切な投稿文が生成されます。運用計画ページでターゲット層を詳しく設定してください。`,
         category: "unclear_target",
@@ -547,7 +549,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     }
 
     // 戦略が不足
-    if (!plan.strategies || plan.strategies.length === 0) {
+    if (!plan.strategies || (Array.isArray(plan.strategies) && plan.strategies.length === 0)) {
       return {
         feedback: `運用計画の「取り組みたいこと」が設定されていません。具体的な戦略（例：「写真をたくさん投稿する」「動画（リール）を中心に投稿する」）を設定すると、より効果的な投稿文が生成されます。運用計画ページで戦略を設定してください。`,
         category: "no_strategy",
@@ -555,7 +557,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     }
 
     // カテゴリが不足
-    if (!plan.category || plan.category.trim().length < 3) {
+    if (!plan.category || (typeof plan.category === 'string' && plan.category.trim().length < 3)) {
       return {
         feedback: `運用計画の「投稿したい内容」が設定されていません。具体的なカテゴリ（例：「興味を引く内容」「ブランドの世界観」）を設定すると、より魅力的な投稿文が生成されます。運用計画ページでカテゴリを設定してください。`,
         category: "no_category",
@@ -568,6 +570,37 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
   // AI自動生成（テーマも自動選択）
   const handleAutoGenerate = async () => {
+    // 時間計測開始
+    const startTime = performance.now();
+    console.log("[AI自動提案] 開始時刻:", new Date().toISOString());
+
+    // ローディングメッセージの更新を開始
+    const updateLoadingMessage = () => {
+      const elapsed = (performance.now() - startTime) / 1000; // 経過時間（秒）
+      
+      // 投稿タイプに応じた時間閾値を設定
+      const thresholds = postType === "story" 
+        ? { step1: 1.0, step2: 2.5 } // ストーリーズ: 3.35秒
+        : postType === "reel"
+        ? { step1: 1.5, step2: 3.5 } // リール: 5.26秒
+        : { step1: 2.0, step2: 5.0 }; // フィード: 7.01秒
+
+      if (elapsed < thresholds.step1) {
+        setLoadingMessage("分析中...");
+      } else if (elapsed < thresholds.step2) {
+        setLoadingMessage("生成中...");
+      } else {
+        setLoadingMessage("最終調整中...");
+      }
+    };
+
+    // 初期メッセージ
+    setLoadingMessage("分析中...");
+    
+    // 定期的にメッセージを更新（0.5秒ごと）
+    const interval = setInterval(updateLoadingMessage, 500);
+    setLoadingMessageInterval(interval);
+
     // 運用計画データを分析
     const analysis = analyzePlanData(planData ?? null);
     setAutoGenerateFeedback(analysis.feedback);
@@ -692,11 +725,36 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           autoFeedbackHistoryRef.current = [];
           setShowAutoAdminWarning(false);
         }
+
+        // 時間計測終了
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        console.log("[AI自動提案] 完了時刻:", new Date().toISOString());
+        console.log(`[AI自動提案] 所要時間: ${(duration / 1000).toFixed(2)}秒 (${duration.toFixed(0)}ms)`);
+        
+        // ローディングメッセージをクリア
+        if (loadingMessageInterval) {
+          clearInterval(loadingMessageInterval);
+          setLoadingMessageInterval(null);
+        }
+        setLoadingMessage("");
       } else {
         throw new Error("自動生成に失敗しました");
       }
     } catch (error) {
+      // エラー時も時間計測
+      const endTime = performance.now();
+      const duration = endTime - startTime;
       console.error("自動生成エラー:", error);
+      console.log(`[AI自動提案] エラー発生までの時間: ${(duration / 1000).toFixed(2)}秒 (${duration.toFixed(0)}ms)`);
+      
+      // ローディングメッセージをクリア
+      if (loadingMessageInterval) {
+        clearInterval(loadingMessageInterval);
+        setLoadingMessageInterval(null);
+      }
+      setLoadingMessage("");
+      
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -721,6 +779,12 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       showToast(userFriendlyMessage);
     } finally {
       setIsAutoGenerating(false);
+      // 念のため、ローディングメッセージをクリア
+      if (loadingMessageInterval) {
+        clearInterval(loadingMessageInterval);
+        setLoadingMessageInterval(null);
+      }
+      setLoadingMessage("");
     }
   };
 
@@ -728,10 +792,47 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
   // AI投稿文生成（テーマ指定）
   const handleAIGenerate = async () => {
+    // 時間計測開始
+    const startTime = performance.now();
+    console.log("[AI自動提案] 開始時刻:", new Date().toISOString());
+
+    // ローディングメッセージの更新を開始
+    const updateLoadingMessage = () => {
+      const elapsed = (performance.now() - startTime) / 1000; // 経過時間（秒）
+      
+      // 投稿タイプに応じた時間閾値を設定
+      const thresholds = postType === "story" 
+        ? { step1: 1.0, step2: 2.5 } // ストーリーズ: 3.35秒
+        : postType === "reel"
+        ? { step1: 1.5, step2: 3.5 } // リール: 5.26秒
+        : { step1: 2.0, step2: 5.0 }; // フィード: 7.01秒
+
+      if (elapsed < thresholds.step1) {
+        setLoadingMessage("分析中...");
+      } else if (elapsed < thresholds.step2) {
+        setLoadingMessage("生成中...");
+      } else {
+        setLoadingMessage("最終調整中...");
+      }
+    };
+
+    // 初期メッセージ
+    setLoadingMessage("分析中...");
+    
+    // 定期的にメッセージを更新（0.5秒ごと）
+    const interval = setInterval(updateLoadingMessage, 500);
+    setLoadingMessageInterval(interval);
+
     const trimmedPrompt = aiPrompt.trim();
     
     if (!trimmedPrompt) {
       showToast("投稿のテーマを入力してください");
+      // ローディングメッセージをクリア
+      if (interval) {
+        clearInterval(interval);
+        setLoadingMessageInterval(null);
+      }
+      setLoadingMessage("");
       return;
     }
 
@@ -860,16 +961,46 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           setShowAiAdminWarning(false);
         }
 
+        // 時間計測終了
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        console.log("[AI自動提案] 完了時刻:", new Date().toISOString());
+        console.log(`[AI自動提案] 所要時間: ${(duration / 1000).toFixed(2)}秒 (${duration.toFixed(0)}ms)`);
+        
+        // ローディングメッセージをクリア
+        if (loadingMessageInterval) {
+          clearInterval(loadingMessageInterval);
+          setLoadingMessageInterval(null);
+        }
+        setLoadingMessage("");
       } else {
         throw new Error("投稿文生成に失敗しました");
       }
     } catch (error) {
+      // エラー時も時間計測
+      const endTime = performance.now();
+      const duration = endTime - startTime;
       console.error("投稿文生成エラー:", error);
+      console.log(`[AI自動提案] エラー発生までの時間: ${(duration / 1000).toFixed(2)}秒 (${duration.toFixed(0)}ms)`);
+      
+      // ローディングメッセージをクリア
+      if (loadingMessageInterval) {
+        clearInterval(loadingMessageInterval);
+        setLoadingMessageInterval(null);
+      }
+      setLoadingMessage("");
+      
       showToast(
         `投稿文生成に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     } finally {
       setIsGenerating(false);
+      // 念のため、ローディングメッセージをクリア
+      if (loadingMessageInterval) {
+        clearInterval(loadingMessageInterval);
+        setLoadingMessageInterval(null);
+      }
+      setLoadingMessage("");
     }
   };
 
@@ -1045,7 +1176,29 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           )}
 
           {/* AI投稿文生成 */}
-          <div className="mb-6 bg-white border border-gray-200 p-6">
+          <div className="mb-6 bg-white border border-gray-200 p-6 relative">
+            {/* ローディングオーバーレイ */}
+            {(isAutoGenerating || isGenerating) && (
+              <div className="absolute inset-0 bg-white bg-opacity-98 z-50 flex flex-col items-center justify-center rounded-md shadow-lg">
+                <div className="flex flex-col items-center justify-center space-y-6 px-6">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-20 w-20 border-4 border-[#FF8A15] border-t-transparent"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Sparkles size={28} className="text-[#FF8A15] animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-gray-900 mb-2">
+                      {loadingMessage || "AIが投稿文を生成中..."}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      しばらくお待ちください
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mb-6">
               <div className="flex items-center mb-2">
                   <div className="w-8 h-8 flex items-center justify-center mr-3" style={{ backgroundColor: "#ff8a15" }}>
@@ -1068,9 +1221,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 value={aiPrompt}
                 onChange={(e) => setAiPrompt(e.target.value)}
                 placeholder={aiPromptPlaceholder}
-                disabled={!planData}
+                disabled={!planData || isAutoGenerating || isGenerating}
                 className={`w-full px-4 py-2.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 bg-white text-sm ${
-                  !planData ? "opacity-40 cursor-not-allowed bg-gray-50" : ""
+                  !planData || isAutoGenerating || isGenerating ? "opacity-40 cursor-not-allowed bg-gray-50" : ""
                 }`}
               />
               {!planData && (
@@ -1086,9 +1239,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsProductServiceSelectorOpen(!isProductServiceSelectorOpen)}
-                  disabled={!planData}
+                  disabled={!planData || isAutoGenerating || isGenerating}
                   className={`w-full flex items-center justify-between px-4 py-2.5 border border-gray-300 bg-white text-sm transition-all duration-200 ${
-                    !planData ? "opacity-40 cursor-not-allowed bg-gray-50" : "hover:bg-gray-50"
+                    !planData || isAutoGenerating || isGenerating ? "opacity-40 cursor-not-allowed bg-gray-50" : "hover:bg-gray-50"
                   }`}
                 >
                   <span className="text-gray-700">
@@ -1176,17 +1329,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 }}
                 aria-label="投稿文を自動生成（テーマも自動選択）"
               >
-                {isAutoGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    <span>生成中...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={14} className="mr-2" />
-                    <span>自動生成</span>
-                  </>
-                )}
+                <Sparkles size={14} className="mr-2" />
+                <span>自動生成</span>
               </button>
 
               {/* テーマ指定生成ボタン */}
@@ -1213,17 +1357,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 }}
                 aria-label="テーマを指定して投稿文を生成"
               >
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    <span>生成中...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={14} className="mr-2" />
-                    <span>テーマ指定生成</span>
-                  </>
-                )}
+                <Sparkles size={14} className="mr-2" />
+                <span>テーマ指定生成</span>
               </button>
             </div>
 

@@ -146,6 +146,10 @@ export default function ReelLabPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get("edit");
       const postId = urlParams.get("postId");
+      const draftTitle = urlParams.get("draftTitle");
+      const draftContent = urlParams.get("draftContent");
+      const draftHashtags = urlParams.get("draftHashtags");
+      const draftTime = urlParams.get("draftTime");
 
       console.log("URL parameters:", { editId, postId });
 
@@ -157,6 +161,19 @@ export default function ReelLabPage() {
         fetchPostData(targetId);
       } else {
         setEditingPostId(null);
+        if (draftTitle || draftContent || draftHashtags || draftTime) {
+          if (draftTitle) {setPostTitle(draftTitle);}
+          if (draftContent) {setPostContent(draftContent);}
+          if (draftHashtags) {
+            setSelectedHashtags(
+              draftHashtags
+                .split(",")
+                .map((tag) => tag.trim().replace(/^#+/, ""))
+                .filter(Boolean)
+            );
+          }
+          if (draftTime) {setScheduledTime(draftTime);}
+        }
       }
     }
   }, [isAuthReady, fetchPostData]);

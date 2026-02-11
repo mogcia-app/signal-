@@ -1,849 +1,1048 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import { useAuth } from "../../../contexts/auth-context";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { canAccessFeature } from "@/lib/plan-access";
-import { authFetch } from "../../../utils/authFetch";
-import { handleError } from "../../../utils/error-handling";
-import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import SNSLayout from "../../../components/sns-layout";
-import { PlanForm } from "./components/PlanForm";
-import { SimulationResult } from "./components/SimulationResult";
-import { PlanFormData, SimulationResult as SimulationResultType, AIPlanSuggestion } from "./types/plan";
-import { isValidPlanData } from "./utils/type-guards";
-import type { PlanData } from "../../../hooks/usePlanData";
-import { Loader2, Edit2, Trash2, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Settings, Save, FileText, BarChart3 } from "lucide-react";
+import { authFetch } from "../../../utils/authFetch";
+import toast from "react-hot-toast";
+import { getLocalDate } from "../../../lib/utils/timezone";
+// 右側のAIセクションを削除したため、これらのコンポーネントは不要
+// import ExpectedResults from "./components/ExpectedResults";
+// import PostingSchedule from "./components/PostingSchedule";
+// import WeeklyContentPlan from "./components/WeeklyContentPlan";
+
+interface PlanResult {
+  startDate: string;
+  endDate: string;
+  currentFollowers: number;
+  targetFollowers: number;
+  followerIncrease: number;
+  operationPurpose: string;
+  monthlyGrowthRate: string;
+  difficulty: {
+    stars: string;
+    label: string;
+    industryRange: string;
+    achievementRate: number;
+  };
+  schedule: {
+    weeklyFrequency: string;
+    feedPosts: number;
+    feedPostsWithReel: number;
+    reelPosts: number;
+    storyPosts: number;
+    postingDays: Array<{ day: string; time: string; type?: string }>;
+    storyDays: Array<{ day: string; time: string }>;
+  };
+  weeklyPlans: Array<{
+    week: number;
+    targetFollowers: number;
+    increase: number;
+    theme: string;
+    feedPosts: Array<{ day: string; content: string; type?: string }>;
+    storyContent: string;
+  }>;
+  expectedResults: {
+    monthlyReach: number;
+    engagementRate: string;
+    profileViews: number;
+    saves: number;
+    newFollowers: number;
+  };
+  features: string[];
+  suggestedContentTypes: string[];
+}
 
 export default function InstagramPlanPage() {
-  const { user } = useAuth();
-  const { userProfile, loading: profileLoading } = useUserProfile();
-  const [isLoading, setIsLoading] = useState(false);
-  const [simulationResult, setSimulationResult] = useState<SimulationResultType | null>(null);
-  const [formData, setFormData] = useState<PlanFormData | null>(null);
-  const [aiSuggestedTarget, setAiSuggestedTarget] = useState<number | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
+  // 今日の日付をタイムゾーンを考慮してYYYY-MM-DD形式で取得
+  const today = getLocalDate("Asia/Tokyo");
+  const [startDate, setStartDate] = useState(today);
+  const [currentFollowers, setCurrentFollowers] = useState("");
+  const [targetFollowerOption, setTargetFollowerOption] = useState<"" | "conservative" | "standard" | "ambitious" | "custom" | "ai">("");
+  const [customTargetFollowers, setCustomTargetFollowers] = useState("");
+  const [aiSuggestedTarget, setAiSuggestedTarget] = useState<number | null>(null);
+  const [canUseAISuggestion, setCanUseAISuggestion] = useState(false);
+  const [operationPurpose, setOperationPurpose] = useState("");
+  const [weeklyPosts, setWeeklyPosts] = useState("");
+  const [reelCapability, setReelCapability] = useState("");
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [storyFrequency, setStoryFrequency] = useState("");
+  const [targetAudience, setTargetAudience] = useState("");
+  const [postingTime, setPostingTime] = useState("");
+  const [regionRestriction, setRegionRestriction] = useState("");
+  const [regionName, setRegionName] = useState("");
+  
   const [isSaving, setIsSaving] = useState(false);
-  const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
-  const [planEndDate, setPlanEndDate] = useState<Date | null>(null);
-  const [activeTab, setActiveTab] = useState<"form" | "simulation">("form");
-  const [isLoadingPlan, setIsLoadingPlan] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState<string>("");
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
+  const [hasActivePlan, setHasActivePlan] = useState(false);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // シミュレーション結果
+  const [simulationResult, setSimulationResult] = useState<{
+    achievementRate: number;
+    difficulty: {
+      stars: string;
+      label: string;
+      industryRange: string;
+      achievementRate: number;
+    };
+    requiredKPIs: {
+      monthlyReach: number;
+      profileViews: number;
+      engagementRate: string;
+      saves: number;
+      newFollowers: number;
+    };
+    impactBreakdown?: {
+      story: { label: string; impact: string };
+      time: { label: string; impact: string };
+      region: { label: string; impact: string };
+    };
+    risks?: Array<{
+      category: string;
+      type: string;
+      probability: number;
+      impact: number;
+      severity: "高リスク" | "中リスク" | "低リスク";
+      countermeasures: string[];
+      score: number;
+      keyAdvice?: string;
+    }>;
+    recommendations: string[];
+  } | null>(null);
+  const [isLoadingSimulation, setIsLoadingSimulation] = useState(false);
 
-  const isAuthReady = Boolean(user);
-
-  // 直近で保存された計画を読み込む
-  // 重要: stateは信用しない。毎回DBから復元する
+  // 初期データを取得
   useEffect(() => {
-    if (!isAuthReady || profileLoading) return;
-
-    const loadLatestPlan = async () => {
+    const fetchInitialData = async () => {
       try {
-        setIsLoadingPlan(true);
-        setLoadingMessage("計画データを読み込み中...");
-        console.log("[Plan Page] 計画読み込み開始");
-        const response = await authFetch("/api/plans?snsType=instagram&status=active&limit=1");
+        const response = await authFetch("/api/instagram/plan-initial-data");
         if (!response.ok) {
-          console.log("[Plan Page] 計画取得失敗:", response.status, response.statusText);
-          setIsLoadingPlan(false);
-          setLoadingMessage("");
-          // 計画がない場合は状態をクリア
-          setSimulationResult(null);
-          setFormData(null);
-          setSavedPlanId(null);
-          setPlanEndDate(null);
-          return;
+          throw new Error("初期データの取得に失敗しました");
         }
-        
-        setLoadingMessage("計画データを処理中...");
         const data = await response.json();
-        console.log("[Plan Page] 計画取得結果:", {
-          hasPlans: !!data.plans,
-          plansCount: data.plans?.length || 0,
-        });
         
-        if (!data.plans || data.plans.length === 0) {
-          console.log("[Plan Page] 計画がありません");
-          setIsLoadingPlan(false);
-          setLoadingMessage("");
-          // 計画がない場合は状態をクリア
-          setSimulationResult(null);
-          setFormData(null);
-          setSavedPlanId(null);
-          setPlanEndDate(null);
-          return;
-        }
+        // 現在のフォロワー数を自動設定
+        setCurrentFollowers(data.currentFollowers.toString());
+        setCanUseAISuggestion(data.canUseAISuggestion);
         
-        const plan = data.plans[0];
-        console.log("[Plan Page] 計画データ:", {
-          planId: plan.id,
-          hasFormData: !!plan.formData,
-          hasSimulationResult: !!plan.simulationResult,
-          hasStartDate: !!plan.startDate,
-          hasEndDate: !!plan.endDate,
-          formDataKeys: plan.formData ? Object.keys(plan.formData) : [],
-          simulationResultKeys: plan.simulationResult ? Object.keys(plan.simulationResult) : [],
-        });
-        
-        // 計画データの完全性をチェック（型ガード関数を使用）
-        if (!isValidPlanData(plan)) {
-          console.warn("[Plan Page] 計画データが不完全です", {
-            hasFormData: !!plan.formData,
-            hasSimulationResult: !!plan.simulationResult,
-            planId: plan.id,
-          });
-          // 不完全な計画は状態をクリア
-          setSimulationResult(null);
-          setFormData(null);
-          setSavedPlanId(null);
-          setPlanEndDate(null);
-          setError(ERROR_MESSAGES.PLAN_DATA_INCOMPLETE);
-          return;
-        }
-        
-        // 計画期間が終了していないかチェック
-            const now = new Date();
-            let planEnd: Date | null = null;
-            let planStart: Date | null = null;
-            
-            // planをPlanDataとして扱う（型アサーション）
-            const planData = plan as unknown as PlanData;
-            
-            // startDateを取得（複数の場所から確認）
-            try {
-              if (planData.startDate) {
-                const startDateValue = planData.startDate instanceof Date 
-                  ? planData.startDate 
-                  : planData.startDate && typeof planData.startDate === "object" && "toDate" in planData.startDate
-                    ? (planData.startDate as { toDate: () => Date }).toDate() 
-                    : new Date(planData.startDate as string);
-                // 有効な日付かチェック
-                if (!isNaN(startDateValue.getTime())) {
-                  planStart = startDateValue;
-                }
-              } else if (planData.formData && typeof planData.formData === "object" && "startDate" in planData.formData) {
-                const startDateValue = new Date(planData.formData.startDate as string);
-                if (!isNaN(startDateValue.getTime())) {
-                  planStart = startDateValue;
-                }
-              } else if (planData.createdAt) {
-                const startDateValue = planData.createdAt instanceof Date 
-                  ? planData.createdAt 
-                  : planData.createdAt && typeof planData.createdAt === "object" && "toDate" in planData.createdAt
-                    ? (planData.createdAt as { toDate: () => Date }).toDate() 
-                    : new Date(planData.createdAt as string);
-                if (!isNaN(startDateValue.getTime())) {
-                  planStart = startDateValue;
-                }
-              }
-            } catch (e) {
-              console.warn("開始日の取得に失敗しました", e);
-            }
-            
-            // endDateを取得または計算
-            try {
-              if (planData.endDate) {
-                const endDateValue = planData.endDate instanceof Date 
-                  ? planData.endDate 
-                  : planData.endDate && typeof planData.endDate === "object" && "toDate" in planData.endDate
-                    ? (planData.endDate as { toDate: () => Date }).toDate() 
-                    : new Date(planData.endDate as string);
-                // 有効な日付かチェック
-                if (!isNaN(endDateValue.getTime())) {
-                  planEnd = endDateValue;
-                }
-              } else if (planStart && !isNaN(planStart.getTime())) {
-                // periodMonthsまたはplanPeriodから期間を取得
-                let periodMonths = 1; // デフォルトは1ヶ月
-                
-                if (planData.formData && typeof planData.formData === "object" && "periodMonths" in planData.formData) {
-                  // formDataから直接取得
-                  periodMonths = Number(planData.formData.periodMonths) || 1;
-                } else if (planData.planPeriod) {
-                  // planPeriodから抽出（"1ヶ月"形式）
-                  const period = String(planData.planPeriod);
-                  if (period.includes("1年")) {
-                    periodMonths = 12;
-                  } else if (period.includes("6ヶ月")) {
-                    periodMonths = 6;
-                  } else if (period.includes("3ヶ月")) {
-                    periodMonths = 3;
-                  } else if (period.includes("1ヶ月")) {
-                    periodMonths = 1;
-                  } else {
-                    // 数値を抽出を試みる（例："2ヶ月" → 2）
-                    const match = period.match(/(\d+)/);
-                    if (match) {
-                      periodMonths = Number(match[1]) || 1;
-                    }
-                  }
-                }
-                
-                planEnd = new Date(planStart);
-                planEnd.setMonth(planEnd.getMonth() + periodMonths);
-                // 有効な日付かチェック
-                if (isNaN(planEnd.getTime())) {
-                  planEnd = null;
-                }
-              }
-            } catch (e) {
-              console.warn("終了日の計算に失敗しました", e);
-              planEnd = null;
-            }
-            
-            // 期間終了日の翌日をチェック
-            if (planEnd && !isNaN(planEnd.getTime())) {
-              try {
-                const resetDate = new Date(planEnd);
-                resetDate.setDate(resetDate.getDate() + 1);
-                resetDate.setHours(0, 0, 0, 0);
-                
-                // 期間が終了していない場合のみ表示
-                if (now < resetDate) {
-                  // 計画データの完全性をチェック（型ガード関数を使用）
-                  if (!isValidPlanData(planData)) {
-                    console.warn("[Plan Page] 計画データが不完全です（期間内）", {
-                      hasFormData: !!planData.formData,
-                      hasSimulationResult: !!planData.simulationResult,
-                      planId: planData.id,
-                    });
-                    setError(ERROR_MESSAGES.PLAN_DATA_INCOMPLETE);
-                    return;
-                  }
-                  
-                  console.log("[Plan Page] 計画データを復元します", {
-                    planId: planData.id,
-                    planEnd: planEnd.toISOString(),
-                  });
-                  
-                  // 計画データを復元（型ガードにより型安全）
-                  const validPlan = planData as PlanData & { formData: PlanFormData; simulationResult: SimulationResultType };
-                  
-                  // formDataのtargetFollowersが保存された値と一致するように修正
-                  if (validPlan.formData && validPlan.targetFollowers) {
-                    validPlan.formData.targetFollowers = validPlan.targetFollowers;
-                  }
-                  if (validPlan.formData && validPlan.currentFollowers) {
-                    validPlan.formData.currentFollowers = validPlan.currentFollowers;
-                  }
-                  
-                  setFormData(validPlan.formData);
-                  setSimulationResult(validPlan.simulationResult);
-                  setSavedPlanId(validPlan.id);
-                  setPlanEndDate(planEnd);
-                  setError(null); // エラーをクリア
-                  setIsLoadingPlan(false);
-                  setLoadingMessage("");
-                } else {
-                  // 有効な日付の場合のみログ出力
-                  try {
-                    const planEndStr = planEnd.toISOString();
-                    const resetDateStr = resetDate.toISOString();
-                    console.log("計画期間が終了しています", {
-                      planEnd: planEndStr,
-                      resetDate: resetDateStr,
-                      now: now.toISOString(),
-                    });
-                  } catch (e) {
-                    console.log("計画期間が終了しています（日付の変換に失敗）");
-                  }
-                }
-              } catch (e) {
-                console.warn("期間チェックに失敗しました", e);
-                const errorMessage = handleError(
-                  e,
-                  ERROR_MESSAGES.PLAN_DATE_CALCULATION_FAILED
-                );
-                setError(errorMessage);
-                // エラーが発生した場合は計画を表示しない（状態をクリア）
-                setSimulationResult(null);
-                setFormData(null);
-                setSavedPlanId(null);
-                setPlanEndDate(null);
-                return;
+        // 既存の計画がある場合、フォームの値を復元
+        if (data.hasExistingPlan && data.existingPlanData) {
+          const plan = data.existingPlanData;
+          setHasActivePlan(true);
+          setActivePlanId(plan.planId);
+          
+          // フォームの値を復元
+          if (plan.startDate) setStartDate(plan.startDate);
+          if (plan.currentFollowers) setCurrentFollowers(plan.currentFollowers.toString());
+          if (plan.operationPurpose) setOperationPurpose(plan.operationPurpose);
+          if (plan.weeklyPosts) setWeeklyPosts(plan.weeklyPosts);
+          if (plan.reelCapability) setReelCapability(plan.reelCapability);
+          if (plan.storyFrequency) setStoryFrequency(plan.storyFrequency);
+          if (plan.targetAudience) setTargetAudience(plan.targetAudience);
+          if (plan.postingTime) setPostingTime(plan.postingTime);
+          if (plan.regionRestriction) setRegionRestriction(plan.regionRestriction);
+          if (plan.regionName) setRegionName(plan.regionName);
+          
+          // 目標フォロワー数のオプションを設定（保存値優先）
+          if (plan.targetFollowerOption) {
+            setTargetFollowerOption(plan.targetFollowerOption as typeof targetFollowerOption);
+            if (plan.targetFollowerOption === "custom") {
+              if (plan.customTargetFollowers) {
+                const sanitizedCustomIncrease = Math.max(0, parseInt(plan.customTargetFollowers.toString() || "0", 10) || 0);
+                setCustomTargetFollowers(sanitizedCustomIncrease.toString());
+              } else {
+                const savedCurrent = Number(plan.currentFollowers || 0);
+                const savedTarget = Number(plan.targetFollowers || savedCurrent);
+                const savedIncrease = Math.max(0, savedTarget - savedCurrent);
+                setCustomTargetFollowers(savedIncrease.toString());
               }
             } else {
-              // 終了日が計算できない場合は計画を表示しない
-              console.warn("[Plan Page] 計画の終了日が計算できません", {
-                hasEndDate: !!planData.endDate,
-                endDateValue: planData.endDate,
-                hasPlanStart: !!planStart,
-                planStartValid: planStart ? !isNaN(planStart.getTime()) : false,
-                planStartValue: planStart ? planStart.toISOString() : null,
-                hasFormData: !!planData.formData,
-                hasPeriodMonths: planData.formData && typeof planData.formData === "object" && "periodMonths" in planData.formData,
-                periodMonths: planData.formData && typeof planData.formData === "object" && "periodMonths" in planData.formData ? planData.formData.periodMonths : undefined,
-                periodMonthsType: planData.formData && typeof planData.formData === "object" && "periodMonths" in planData.formData ? typeof planData.formData.periodMonths : undefined,
-                hasPlanPeriod: !!planData.planPeriod,
-                planPeriod: planData.planPeriod,
-                startDate: planData.startDate,
-                formDataStartDate: planData.formData && typeof planData.formData === "object" && "startDate" in planData.formData ? planData.formData.startDate : undefined,
-                createdAt: planData.createdAt,
-              });
-              
-              // 終了日が計算できない場合でも、計画データがあれば表示を試みる
-              // （endDateがなくても、startDateとperiodMonthsがあれば計算できる）
-              if (planStart && !isNaN(planStart.getTime())) {
-                let periodMonths = 1; // デフォルトは1ヶ月
-                
-                // periodMonthsを取得（複数の場所から確認）
-                if (planData.formData && typeof planData.formData === "object" && "periodMonths" in planData.formData) {
-                  periodMonths = Number(planData.formData.periodMonths) || 1;
-                } else if (planData.planPeriod) {
-                  // planPeriodから抽出（"1ヶ月"形式）
-                  const period = String(planData.planPeriod);
-                  if (period.includes("1年")) {
-                    periodMonths = 12;
-                  } else if (period.includes("6ヶ月")) {
-                    periodMonths = 6;
-                  } else if (period.includes("3ヶ月")) {
-                    periodMonths = 3;
-                  } else if (period.includes("1ヶ月")) {
-                    periodMonths = 1;
-                  } else {
-                    // 数値を抽出を試みる（例："2ヶ月" → 2）
-                    const match = period.match(/(\d+)/);
-                    if (match) {
-                      periodMonths = Number(match[1]) || 1;
-                    }
-                  }
-                }
-                
-                const calculatedEndDate = new Date(planStart);
-                calculatedEndDate.setMonth(calculatedEndDate.getMonth() + periodMonths);
-                
-                if (!isNaN(calculatedEndDate.getTime())) {
-                  console.log("[Plan Page] 終了日を計算しました", {
-                    planStart: planStart.toISOString(),
-                    periodMonths,
-                    calculatedEndDate: calculatedEndDate.toISOString(),
-                  });
-                  
-                  // 計画データの完全性をチェック（型ガード関数を使用）
-                  if (!isValidPlanData(planData)) {
-                    setError(ERROR_MESSAGES.PLAN_DATA_INCOMPLETE);
-                    return;
-                  }
-                  
-                  // 計画データを復元（型ガードにより型安全）
-                  const validPlan = planData as PlanData & { formData: PlanFormData; simulationResult: SimulationResultType };
-                  setFormData(validPlan.formData);
-                  setSimulationResult(validPlan.simulationResult);
-                  setSavedPlanId(validPlan.id);
-                  setPlanEndDate(calculatedEndDate);
-                  setError(null); // エラーをクリア
-                  setIsLoadingPlan(false);
-                  setLoadingMessage("");
-                  return;
-                } else {
-                  console.warn("[Plan Page] 終了日の計算に失敗しました", {
-                    planStart: planStart.toISOString(),
-                    periodMonths,
-                  });
-                  setError(ERROR_MESSAGES.PLAN_DATE_CALCULATION_FAILED);
-                }
-              }
-              
-              // どうしても計算できない場合は状態をクリア
-              console.error("[Plan Page] 計画を表示できません。必要なデータが不足しています。");
-              setIsLoadingPlan(false);
-              setLoadingMessage("");
-              setError(ERROR_MESSAGES.PLAN_DATA_INCOMPLETE);
-              setSimulationResult(null);
-              setFormData(null);
-              setSavedPlanId(null);
-              setPlanEndDate(null);
-              return;
+              setCustomTargetFollowers("");
             }
-      } catch (error) {
-        console.error("計画読み込みエラー:", error);
-        setIsLoadingPlan(false);
-        setLoadingMessage("");
-        const errorMessage = handleError(
-          error,
-          ERROR_MESSAGES.PLAN_LOAD_FAILED
-        );
-        // 計画がない場合もあるため、エラーはログのみ（ユーザーには表示しない）
-        // ただし、明らかなエラーの場合はユーザーに表示
-        if (error instanceof Error && !error.message.includes("not found")) {
-          setError(errorMessage);
+          } else {
+            const current = plan.currentFollowers || parseInt(data.currentFollowers.toString());
+            const target = plan.targetFollowers || current + 15;
+            const increase = Math.max(0, target - current);
+
+            if (increase === 5) {
+              setTargetFollowerOption("conservative");
+            } else if (increase === 15) {
+              setTargetFollowerOption("standard");
+            } else if (increase === 50) {
+              setTargetFollowerOption("ambitious");
+            } else {
+              setTargetFollowerOption("custom");
+              setCustomTargetFollowers(increase.toString());
+            }
+          }
         }
-        console.error(errorMessage);
-      }
-    };
-
-    loadLatestPlan();
-  }, [isAuthReady, profileLoading]);
-
-  // 計画期間終了日の翌日に自動リセット
-  useEffect(() => {
-    if (!planEndDate || !savedPlanId) return;
-
-    const checkAndReset = () => {
-      const now = new Date();
-      const resetDate = new Date(planEndDate);
-      resetDate.setDate(resetDate.getDate() + 1);
-      resetDate.setHours(0, 0, 0, 0); // 終了日の翌日の0時
-
-      if (now >= resetDate) {
-        // 期間終了日の翌日になったらリセット
-        setSimulationResult(null);
-        setFormData(null);
-        setAiSuggestedTarget(undefined);
-        setSavedPlanId(null);
-        setPlanEndDate(null);
-        setIsLoading(false);
         
-        toast("計画期間が終了しました。新しい計画を作成できます。", {
-          duration: 5000,
-          position: "top-right",
-          icon: "ℹ️",
-        });
+        // シミュレーション結果を復元
+        if (data.simulationResult) {
+          setSimulationResult(data.simulationResult);
+        }
+        
+        // AI提案を取得（利用可能な場合）
+        // TODO: AI提案エンドポイントを実装する
+        if (data.canUseAISuggestion) {
+          // 簡易的なAI提案（現在のフォロワー数から+10%を提案）
+          const suggested = Math.round(data.currentFollowers * 1.1);
+          setAiSuggestedTarget(suggested);
+        }
+      } catch (error) {
+        console.error("初期データ取得エラー:", error);
+        toast.error("初期データの取得に失敗しました");
+      } finally {
+        setIsLoadingInitialData(false);
       }
     };
 
-    // 初回チェック
-    checkAndReset();
+    fetchInitialData();
+  }, []);
 
-    // 1時間ごとにチェック
-    const interval = setInterval(checkAndReset, 60 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [planEndDate, savedPlanId]);
-
-  // プランアクセス権限チェック
-  if (!isAuthReady || profileLoading) {
-    return (
-      <SNSLayout customTitle="Instagram 運用計画" customDescription="強みを活かす、実行可能なSNS計画を立てましょう">
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="w-8 h-8 text-[#FF8A15] animate-spin" />
-        </div>
-      </SNSLayout>
-    );
-  }
-
-  if (!canAccessFeature(userProfile, "canAccessPlan")) {
-    return (
-      <SNSLayout customTitle="Instagram 運用計画" customDescription="強みを活かす、実行可能なSNS計画を立てましょう">
-        <div className="max-w-2xl mx-auto p-6">
-          <div className="bg-yellow-50 border border-yellow-200 p-6 text-center">
-            <h2 className="text-lg font-semibold text-yellow-900 mb-2">
-              運用計画機能は、現在のプランではご利用いただけません
-            </h2>
-            <p className="text-sm text-yellow-700">
-              松プランにアップグレードすると、この機能をご利用いただけます。
-            </p>
-          </div>
-        </div>
-      </SNSLayout>
-    );
-  }
-
-  const handleSubmit = async (data: PlanFormData, aiSuggested?: number) => {
-    setIsLoading(true);
-    setError(null);
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // 最低5秒はローディングを表示
-    const minLoadingTime = 5000;
-    const startTime = Date.now();
-    
-    try {
-      // バリデーション
-      if (data.currentFollowers <= 0 || data.targetFollowers <= 0) {
-        setError("現在のフォロワー数と目標フォロワー数は1以上である必要があります");
-        setIsLoading(false);
-        return;
-      }
-      
-      if (data.targetFollowers <= data.currentFollowers) {
-        setError("目標フォロワー数は現在のフォロワー数より大きい必要があります");
-        setIsLoading(false);
-        return;
-      }
-
-      // シミュレーション計算（API経由）
-      const response = await authFetch("/api/instagram/plan-simulation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          formData: data,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || "シミュレーションの計算に失敗しました";
-        throw new Error(errorMessage);
-      }
-
-      const responseData = await response.json();
-      const result = responseData.result;
-      
-      // 最低表示時間を確保
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
-      
-      if (remainingTime > 0) {
-        await new Promise(resolve => setTimeout(resolve, remainingTime));
-      }
-      
-      // フォームデータとシミュレーション結果を設定
-      setFormData(data);
-      setSimulationResult(result);
-      setAiSuggestedTarget(aiSuggested);
-      
-      // シミュレーションタブに切り替え
-      setActiveTab("simulation");
-    } catch (err) {
-      const errorMessage = handleError(
-        err,
-        "シミュレーションの計算に失敗しました"
-      );
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 計画を編集（フォームで変更後、再度保存する）
-  const handleEditPlan = () => {
-    toast("計画を編集できます。左側のフォームで変更後、「この計画で始める」ボタンで更新できます。", {
-      duration: 4000,
-      position: "top-right",
-      icon: "ℹ️",
-    });
-  };
-
-  // 計画を削除
-  const handleDeletePlan = async () => {
-    if (!savedPlanId) return;
-
-    if (!confirm("この計画を削除してもよろしいですか？")) {
+    // シミュレーション結果が存在しない場合は保存できない
+    if (!simulationResult) {
+      toast.error("シミュレーションを実行してから保存してください");
       return;
     }
-
-    try {
-      const response = await authFetch(`/api/plans/${savedPlanId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = handleError(
-          errorData.error || ERROR_MESSAGES.PLAN_DELETE_FAILED,
-          ERROR_MESSAGES.PLAN_DELETE_FAILED
-        );
-        throw new Error(errorMessage);
-      }
-
-      // 状態を完全にリセット（削除成功時）
-      setSimulationResult(null);
-      setFormData(null);
-      setAiSuggestedTarget(undefined);
-      setSavedPlanId(null);
-      setPlanEndDate(null);
-      setIsLoading(false);
-
-      toast.success("計画を削除しました", {
-        duration: 2000,
-        position: "top-right",
-      });
-      
-      // 即座にページをリロードして確実に状態をクリア
-      window.location.href = "/instagram/plan";
-    } catch (err) {
-      console.error("計画削除エラー:", err);
-      const errorMessage = handleError(
-        err,
-        "計画の削除に失敗しました"
-      );
-      toast.error(errorMessage, {
-        duration: 3000,
-        position: "top-right",
-      });
-    }
-  };
-
-  const handleSelectAlternative = async (planId: string) => {
-    if (!formData || !simulationResult?.alternativePlans) return;
     
-    const selectedPlan = simulationResult.alternativePlans.find(p => p.id === planId);
-    if (!selectedPlan) return;
-
-    // 選択した代替案でフォームデータを更新
-    const updatedFormData: PlanFormData = {
-      ...formData,
-      targetFollowers: selectedPlan.targetFollowers,
-      weeklyFeedPosts: selectedPlan.weeklyFeedPosts,
-      weeklyReelPosts: selectedPlan.weeklyReelPosts,
-      weeklyStoryPosts: selectedPlan.weeklyStoryPosts,
-    };
-
-    // 再計算（API経由）
-    try {
-      const response = await authFetch("/api/instagram/plan-simulation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          formData: updatedFormData,
-        }),
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        setSimulationResult(responseData.result);
-        setFormData(updatedFormData);
-      }
-    } catch (error) {
-      console.error("シミュレーション再計算エラー:", error);
-    }
-  };
-
-  const handleStartPlan = async () => {
-    if (!formData || !simulationResult) {
-      setError("フォームデータまたはシミュレーション結果がありません");
-      return;
-    }
-
     setIsSaving(true);
-    setError(null);
-
     try {
-      // 開始日をformDataから取得
-      const startDate = formData.startDate || new Date().toISOString().split("T")[0];
-      
-      // 終了日を計算
-      const startDateObj = new Date(startDate);
-      const endDateObj = new Date(startDateObj);
-      endDateObj.setMonth(endDateObj.getMonth() + formData.periodMonths);
-      const endDate = endDateObj.toISOString().split("T")[0];
-
-      // 計画データを準備
-      const planData = {
-        snsType: "instagram",
-        status: "active",
-        title: "Instagram成長計画",
-        targetFollowers: formData.targetFollowers,
-        currentFollowers: formData.currentFollowers,
-        planPeriod: `${formData.periodMonths}ヶ月`,
-        targetAudience: formData.targetAudience || "未設定",
-        category: formData.mainGoal || "未設定",
-        strategies: [],
-        postCategories: formData.contentTypes || [],
-        formData: formData,
-        simulationResult: simulationResult,
-        startDate: startDate,
-        endDate: endDate, // 終了日も明示的に送信
-      };
-
-      // 既存の計画がある場合は更新、ない場合は新規作成
-      const response = savedPlanId
-        ? await authFetch(`/api/plans/${savedPlanId}`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(planData),
-          })
-        : await authFetch("/api/plans", {
+      const response = await authFetch("/api/instagram/plan-save", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(planData),
+        body: JSON.stringify({
+          startDate,
+          currentFollowers: parseInt(currentFollowers || "0"),
+          targetFollowers,
+          targetFollowerOption,
+          customTargetFollowers,
+          operationPurpose,
+          weeklyPosts,
+          reelCapability,
+          storyFrequency,
+          targetAudience,
+          postingTime,
+          regionRestriction,
+          regionName: regionRestriction === "restricted" ? regionName : undefined,
+          simulationResult: simulationResult || null,
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = handleError(
-          errorData.error || ERROR_MESSAGES.PLAN_SAVE_FAILED,
-          ERROR_MESSAGES.PLAN_SAVE_FAILED
-        );
-        throw new Error(errorMessage);
+        throw new Error("計画の保存に失敗しました");
       }
 
       const result = await response.json();
       
-      // 保存された計画IDと終了日を保持
-      const planId = savedPlanId || result.id;
-      setSavedPlanId(planId);
-      
-      // 終了日を計算して保存
-      if (formData.startDate) {
-        const startDate = new Date(formData.startDate);
-        const endDate = new Date(startDate);
-        endDate.setMonth(endDate.getMonth() + formData.periodMonths);
-        setPlanEndDate(endDate);
+      // planIdが正しく返されているか確認
+      if (!result.planId) {
+        console.error("計画保存レスポンスにplanIdが含まれていません:", result);
+        throw new Error("計画の保存に失敗しました（planIdが取得できませんでした）");
       }
       
-      // フォームデータを確実に更新（保存内容を反映）
-      // formDataは既にstateに保持されているが、念のため明示的に更新
-      setFormData(formData);
-
-      // 成功メッセージをトースト通知で表示
-      toast.success(
-        savedPlanId ? "計画を更新しました！" : "計画を保存しました！ホーム画面で確認できます。",
-        {
-          duration: 4000,
-          position: "top-right",
-        }
-      );
-
-      // 計画保存後のホームページ遷移判定用フラグを保存
-      if (typeof window !== "undefined") {
-        localStorage.setItem("planSavedAt", Date.now().toString());
-      }
-
-      // 状態はリセットせず、そのまま表示を維持
-      // フォームタブに切り替えて保存内容を確認できるようにする
-      setActiveTab("form");
-    } catch (err) {
-      console.error("計画保存エラー:", err);
-      const errorMessage = handleError(
-        err,
-        "計画の保存に失敗しました"
-      );
-      setError(errorMessage);
+      setHasActivePlan(true);
+      setActivePlanId(result.planId);
+      
+      console.log("[Plan Page] 計画保存成功:", {
+        planId: result.planId,
+        hasActivePlan: true,
+      });
+      
+      toast.success("計画を保存しました");
+      
+      // Homeページにリダイレクト（AI生成完了通知用のフラグを設定）
+      localStorage.setItem("planSavedAt", Date.now().toString());
+      setTimeout(() => {
+        window.location.href = "/home";
+      }, 2000);
+    } catch (error) {
+      console.error("計画保存エラー:", error);
+      toast.error("計画の保存に失敗しました");
     } finally {
       setIsSaving(false);
     }
   };
 
+  // 目標フォロワー数を計算
+  const calculateTargetFollowers = () => {
+    const current = parseInt(currentFollowers || "0");
+    if (!current) return 0;
+
+    switch (targetFollowerOption) {
+      case "conservative":
+        return current + 5;
+      case "standard":
+        return current + 15;
+      case "ambitious":
+        return current + 50;
+      case "custom":
+        return current + Math.max(0, parseInt(customTargetFollowers || "0", 10) || 0);
+      case "ai":
+        return aiSuggestedTarget || current + 15;
+      default:
+        return 0;
+    }
+  };
+
+  const targetFollowers = calculateTargetFollowers();
+
+  const isFormValid = 
+    startDate && 
+    currentFollowers && 
+    targetFollowers > parseInt(currentFollowers || "0") &&
+    operationPurpose && 
+    weeklyPosts && 
+    reelCapability &&
+    !!simulationResult; // シミュレーション結果が必須
+
+  // シミュレーションに必要な必須項目をチェック
+  const getSimulationRequiredFields = () => {
+    const isTargetFollowersValid = targetFollowerOption === "custom"
+      ? !!customTargetFollowers && targetFollowers > parseInt(currentFollowers || "0")
+      : !!targetFollowerOption && targetFollowers > parseInt(currentFollowers || "0");
+    
+    const requiredFields = [
+      { name: "現在のフォロワー数", filled: !!currentFollowers },
+      { name: "目標フォロワー数", filled: isTargetFollowersValid && targetFollowers > parseInt(currentFollowers || "0") },
+      { name: "運用の目的", filled: !!operationPurpose },
+      { name: "フィード投稿頻度", filled: !!weeklyPosts },
+      { name: "リール投稿頻度", filled: !!reelCapability },
+    ];
+    return requiredFields;
+  };
+
+  const simulationRequiredFields = getSimulationRequiredFields();
+  const filledCount = simulationRequiredFields.filter(f => f.filled).length;
+  const remainingCount = simulationRequiredFields.length - filledCount;
+  const isSimulationReady = remainingCount === 0;
+
+  // シミュレーションを実行
+  const runSimulation = async () => {
+    if (!isSimulationReady) {
+      toast.error("必須項目をすべて入力してください");
+      return;
+    }
+
+    setIsLoadingSimulation(true);
+    try {
+      const response = await authFetch("/api/instagram/plan-simulation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentFollowers: parseInt(currentFollowers || "0"),
+          targetFollowers,
+          operationPurpose,
+          weeklyPosts,
+          reelCapability,
+          storyFrequency,
+          targetAudience,
+          postingTime,
+          regionRestriction,
+          regionName: regionRestriction === "restricted" ? regionName : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("シミュレーションの実行に失敗しました");
+      }
+
+      const result = await response.json();
+      if (result.simulation) {
+        setSimulationResult(result.simulation);
+      }
+    } catch (error) {
+      console.error("シミュレーション実行エラー:", error);
+      toast.error("シミュレーションの実行に失敗しました");
+    } finally {
+      setIsLoadingSimulation(false);
+    }
+  };
+
+
+  const handleDelete = async () => {
+    if (!activePlanId) return;
+    
+    if (!confirm("計画を削除しますか？Homeページの内容も消えます。")) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      const response = await authFetch(`/api/instagram/plan-delete?planId=${activePlanId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("計画の削除に失敗しました");
+      }
+
+      setHasActivePlan(false);
+      setActivePlanId(null);
+      // 削除後はフォームの選択状態を空に戻す
+      setTargetFollowerOption("");
+      setCustomTargetFollowers("");
+      setOperationPurpose("");
+      setWeeklyPosts("");
+      setReelCapability("");
+      setStoryFrequency("");
+      setTargetAudience("");
+      setPostingTime("");
+      setRegionRestriction("");
+      setRegionName("");
+      setSimulationResult(null);
+      toast.success("計画を削除しました");
+      
+      // Homeページにリダイレクト（計画が削除されたことを反映）
+      setTimeout(() => {
+        window.location.href = "/home";
+      }, 1000);
+    } catch (error) {
+      console.error("計画削除エラー:", error);
+      toast.error("計画の削除に失敗しました");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <SNSLayout customTitle="Instagram 運用計画" customDescription="強みを活かす、実行可能なSNS計画を立てましょう">
-      {/* 画面全体のローディングオーバーレイ */}
-      {isLoadingPlan && (
-        <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
-          <div className="flex flex-col items-center justify-center space-y-8 px-6">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-24 w-24 border-6 border-[#FF8A15] border-t-transparent"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles size={32} className="text-[#FF8A15] animate-pulse" />
+    <SNSLayout>
+      <div className="container mx-auto px-4 py-8">
+        <div className="w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* 左カラム: フォーム */}
+            <div className="bg-white border border-gray-300 p-10 rounded-none flex flex-col shadow-sm">
+            <div className="mb-10">
+              <div className="flex items-center gap-3 mb-2">
+                <FileText className="w-6 h-6 text-[#FF8A15]" />
+                <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
+                  Instagram運用計画を作成
+                </h1>
               </div>
+              <p className="text-sm text-gray-500 mt-2">目標を設定して、効果的な運用計画を立てましょう</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 mb-3">
-                {loadingMessage || "計画データを読み込み中..."}
-              </p>
-              <p className="text-base text-gray-600">
-                しばらくお待ちください
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
-      <div className="w-full px-4 sm:px-6 md:px-8 py-6 bg-gray-50 min-h-screen">
-        {error && (
-          <div className="mb-6 bg-red-50 border-2 border-red-200 p-4">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
-
-        {/* タブUI */}
-        <div className="mb-6 bg-white border-2 border-gray-200 p-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <nav className="flex space-x-1" aria-label="Tabs">
-              <button
-                onClick={() => setActiveTab("form")}
-                className={`
-                  px-6 py-3 font-medium text-sm transition-colors border-2
-                  ${
-                    activeTab === "form"
-                      ? "border-gray-900 bg-gray-900 text-white"
-                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                  }
-                `}
-              >
-                新しく計画を立てる
-              </button>
-              <button
-                onClick={() => setActiveTab("simulation")}
-                className={`
-                  px-6 py-3 font-medium text-sm transition-colors relative border-2
-                  ${
-                    activeTab === "simulation"
-                      ? "border-gray-900 bg-gray-900 text-white"
-                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                  }
-                `}
-              >
-                シミュレーション
-                {simulationResult && (
-                  <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold leading-none text-gray-900 bg-white border border-gray-900">
-                    ✓
-                  </span>
-                )}
-              </button>
-            </nav>
-            
-            {/* 計画保存後の編集・削除ボタン（タブの横に配置） */}
-            {savedPlanId && (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleEditPlan}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-300 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  計画を編集
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeletePlan}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 border-2 border-red-700 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  計画を削除
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* タブコンテンツ */}
-        <div className="bg-white border-2 border-gray-200 p-6 min-h-[600px]">
-          {activeTab === "form" ? (
-            <PlanForm onSubmit={handleSubmit} isLoading={isLoading} initialData={formData} />
-          ) : (
-            <div>
-              {simulationResult && formData ? (
-                <SimulationResult
-                  result={simulationResult}
-                  formData={{
-                    currentFollowers: formData.currentFollowers,
-                    targetFollowers: formData.targetFollowers,
-                    periodMonths: formData.periodMonths,
-                    startDate: formData.startDate,
-                  }}
-                  fullFormData={formData}
-                  aiSuggestedTarget={aiSuggestedTarget}
-                  onSelectAlternative={handleSelectAlternative}
-                  onStartPlan={handleStartPlan}
-                  isSaving={isSaving}
+            <form onSubmit={handleSave} className="space-y-8">
+              {/* 計画開始日 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  計画開始日
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                  required
                 />
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-sm mb-4">フォームに入力して、シミュレーションを実行してください</p>
-                  <button
-                    onClick={() => setActiveTab("form")}
-                    className="px-6 py-3 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-300 transition-colors"
-                  >
-                    計画を立てるタブに戻る
-                  </button>
+              </div>
+
+              {/* 現在のフォロワー数 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  現在のフォロワー数 <span className="text-[#FF8A15]">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={currentFollowers}
+                    onChange={(e) => setCurrentFollowers(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                    placeholder="例: 1000"
+                    min="0"
+                    required
+                    disabled={isLoadingInitialData}
+                  />
+                  <span className="text-gray-600 whitespace-nowrap">人</span>
                 </div>
-              )}
+                {isLoadingInitialData && (
+                  <p className="text-xs text-gray-500 mt-1">自動計算中...</p>
+                )}
+              </div>
+
+              {/* 目標フォロワー数 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  目標フォロワー数 <span className="text-[#FF8A15]">*</span>
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="targetFollowerOption"
+                      value="conservative"
+                      checked={targetFollowerOption === "conservative"}
+                      onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
+                      className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                    />
+                    <div className="flex-1">
+                      <span className="text-gray-700 font-medium">控えめ: +5人</span>
+                      <span className="text-[#FF8A15] ml-1">★おすすめ</span>
+                      <p className="text-xs text-gray-500 mt-1">無理なく確実に達成したい</p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="targetFollowerOption"
+                      value="standard"
+                      checked={targetFollowerOption === "standard"}
+                      onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
+                      className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                    />
+                    <div className="flex-1">
+                      <span className="text-gray-700 font-medium">標準: +15人</span>
+                      <p className="text-xs text-gray-500 mt-1">頑張れば達成可能</p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="targetFollowerOption"
+                      value="ambitious"
+                      checked={targetFollowerOption === "ambitious"}
+                      onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
+                      className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                    />
+                    <div className="flex-1">
+                      <span className="text-gray-700 font-medium">意欲的: +50人</span>
+                      <p className="text-xs text-gray-500 mt-1">本気で取り組めば狙える目標</p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="targetFollowerOption"
+                      value="custom"
+                      checked={targetFollowerOption === "custom"}
+                      onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
+                      className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                    />
+                    <div className="flex-1">
+                      <span className="text-gray-700 font-medium">その他:</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="number"
+                          value={customTargetFollowers}
+                          onChange={(e) => setCustomTargetFollowers(e.target.value.replace(/[^0-9]/g, ""))}
+                          className="w-24 px-2 py-1 border border-gray-400 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] text-sm transition-all duration-200"
+                          placeholder="目標数"
+                          min="0"
+                          disabled={targetFollowerOption !== "custom"}
+                        />
+                        <span className="text-gray-600 text-sm">人</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">目標フォロワー数を自分で設定できます</p>
+                    </div>
+                  </label>
+                  {canUseAISuggestion && (
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="targetFollowerOption"
+                        value="ai"
+                        checked={targetFollowerOption === "ai"}
+                        onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
+                        className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                      />
+                      <div className="flex-1">
+                        <span className="text-gray-700 font-medium">AI提案:</span>
+                        {aiSuggestedTarget !== null ? (
+                          <span className="text-gray-700 ml-2">+{aiSuggestedTarget - parseInt(currentFollowers || "0")}人</span>
+                        ) : (
+                          <span className="text-gray-500 ml-2">計算中...</span>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">1年以上のデータがある場合利用可能です</p>
+                      </div>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* 運用の目的 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-3">
+                  運用の目的 <span className="text-[#FF8A15]">*</span>
+                </label>
+                <div className="space-y-2">
+                  {[
+                    "認知拡大",
+                    "採用・リクルーティング強化",
+                    "商品・サービスの販売促進",
+                    "ファンを作りたい",
+                    "来店・問い合わせを増やしたい",
+                    "企業イメージ・ブランディング",
+                  ].map((purpose) => (
+                    <label key={purpose} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="operationPurpose"
+                        value={purpose}
+                        checked={operationPurpose === purpose}
+                        onChange={(e) => setOperationPurpose(e.target.value)}
+                        className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                        required
+                      />
+                      <span className="text-gray-700">{purpose}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* フィード投稿頻度 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-3">
+                  フィード投稿頻度 <span className="text-[#FF8A15]">*</span>
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { value: "none", label: "投稿しない" },
+                    { value: "weekly-1-2", label: "週に1〜2回", recommended: true },
+                    { value: "weekly-3-4", label: "週に3〜4回" },
+                    { value: "daily", label: "毎日" },
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="weeklyPosts"
+                        value={option.value}
+                        checked={weeklyPosts === option.value}
+                        onChange={(e) => setWeeklyPosts(e.target.value)}
+                        className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                        required
+                      />
+                      <span className="text-gray-700">
+                        {option.label}
+                        {option.recommended && <span className="text-[#FF8A15] ml-1">★おすすめ</span>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* リール投稿頻度 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-3">
+                  リール投稿頻度 <span className="text-[#FF8A15]">*</span>
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { value: "none", label: "投稿しない" },
+                    { value: "weekly-1-2", label: "週に1〜2回", recommended: true },
+                    { value: "weekly-3-4", label: "週に3〜4回" },
+                    { value: "daily", label: "毎日" },
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="reelCapability"
+                        value={option.value}
+                        checked={reelCapability === option.value}
+                        onChange={(e) => setReelCapability(e.target.value)}
+                        className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                        required
+                      />
+                      <span className="text-gray-700">
+                        {option.label}
+                        {option.recommended && <span className="text-[#FF8A15] ml-1">★おすすめ</span>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 区切り線 */}
+              <div className="border-t border-gray-500 my-6"></div>
+
+              {/* 詳細設定（折りたたみ） */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsDetailOpen(!isDetailOpen)}
+                  className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 rounded-none transition-all duration-300"
+                >
+                  <span className="text-sm font-medium text-gray-700">
+                    詳細設定(オプション)
+                  </span>
+                  {isDetailOpen ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
+                </button>
+
+                {isDetailOpen && (
+                  <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-400">
+                    {/* ストーリーズ投稿頻度 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        ストーリーズ投稿頻度
+                      </label>
+                      <select
+                        value={storyFrequency}
+                        onChange={(e) => setStoryFrequency(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="none">投稿しない</option>
+                        <option value="weekly-1-2">週1-2回</option>
+                        <option value="weekly-3-4">週3-4回</option>
+                        <option value="daily">毎日</option>
+                      </select>
+                    </div>
+
+                    {/* ターゲット属性 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        ターゲット属性
+                      </label>
+                      <input
+                        type="text"
+                        value={targetAudience}
+                        onChange={(e) => setTargetAudience(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                        placeholder="例: 30代のママさん"
+                      />
+                    </div>
+
+                    {/* 投稿時間帯 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        投稿時間帯
+                      </label>
+                      <select
+                        value={postingTime}
+                        onChange={(e) => setPostingTime(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                      >
+                        <option value="">AIに任せる</option>
+                        <option value="morning">午前中（9:00〜12:00）</option>
+                        <option value="noon">昼（12:00〜15:00）</option>
+                        <option value="evening">夕方（15:00〜18:00）</option>
+                        <option value="night">夜（18:00〜21:00）</option>
+                        <option value="late-night">深夜（21:00〜24:00）</option>
+                      </select>
+                    </div>
+
+                    {/* 地域限定の有無 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        地域限定の有無
+                      </label>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="regionRestriction"
+                            value="none"
+                            checked={regionRestriction === "none"}
+                            onChange={(e) => {
+                              setRegionRestriction(e.target.value);
+                              setRegionName("");
+                            }}
+                            className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                          />
+                          <span className="text-gray-700">地域は限定しない</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="regionRestriction"
+                            value="restricted"
+                            checked={regionRestriction === "restricted"}
+                            onChange={(e) => setRegionRestriction(e.target.value)}
+                            className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                          />
+                          <span className="text-gray-700">地域を限定する</span>
+                        </label>
+                      </div>
+                      {regionRestriction === "restricted" && (
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            地域名
+                          </label>
+                          <input
+                            type="text"
+                            value={regionName}
+                            onChange={(e) => setRegionName(e.target.value)}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                            placeholder="例: 東京都 渋谷区"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                )}
+              </div>
+
+              {/* 区切り線 */}
+              <div className="border-t border-gray-500 my-6"></div>
+
+              {/* 送信ボタン */}
+              <div className="flex flex-col gap-3">
+                {!simulationResult && isFormValid && (
+                  <div className="bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+                    ⚠️ 計画を保存するには、先に「📊 シミュレーションを実行」ボタンを押してください
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={!isFormValid || isSaving}
+                  className="w-full py-3 px-6 bg-[#FF8A15] text-white font-medium rounded-none hover:bg-[#FF6B00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      計画を保存する
+                    </>
+                  )}
+                </button>
+                
+                {hasActivePlan && (
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="w-full py-4 px-6 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-none hover:from-red-600 hover:to-red-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        削除中...
+                      </>
+                    ) : (
+                      <>
+                        🗑️ 計画を削除
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </form>
             </div>
-          )}
+
+            {/* 右カラム: 説明セクション */}
+            <div className="space-y-6">
+              {/* 📊 計画シミュレーションセクション */}
+              <div className="bg-white border border-gray-300 p-10 rounded-none flex flex-col shadow-sm">
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 mb-2">
+                    <BarChart3 className="w-5 h-5 text-[#FF8A15]" />
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      計画シミュレーション
+                    </h2>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">目標達成の可能性を分析します</p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* 必須項目の入力状況（未入力時のみ表示） */}
+                  {!isSimulationReady && (
+                    <div className="bg-gray-50 p-5 rounded-none border border-gray-300">
+                      <h3 className="font-medium text-gray-900 mb-3 text-sm">
+                        必須項目の入力状況
+                      </h3>
+                      <div className="space-y-2">
+                        {simulationRequiredFields.map((field, index) => (
+                          <div key={index} className="flex items-center gap-2 text-sm">
+                            {field.filled ? (
+                              <span className="text-[#FF8A15] font-bold">✓</span>
+                            ) : (
+                              <span className="text-gray-400">○</span>
+                            )}
+                            <span className={field.filled ? "text-gray-700" : "text-gray-400"}>
+                              {field.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* シミュレーション利用可能メッセージ */}
+                  {!isSimulationReady && (
+                    <div className="bg-gray-50 p-5 rounded-none border border-gray-300">
+                      <p className="text-sm font-semibold text-gray-800 text-center">
+                        {remainingCount === 1 
+                          ? "あと1個選択でシミュレーションが利用可能です"
+                          : `あと${remainingCount}個選択でシミュレーションが利用可能です`}
+                      </p>
+                    </div>
+                  )}
+                  {isSimulationReady && !simulationResult && !isLoadingSimulation && (
+                    <div className="bg-white p-6 rounded-none mb-4">
+                      <p className="text-sm font-medium text-gray-800 text-center mb-3">
+                        シミュレーションが利用可能です
+                      </p>
+                      <button
+                        type="button"
+                        onClick={runSimulation}
+                        className="w-full py-3 px-6 bg-[#FF8A15] text-white font-medium rounded-none hover:bg-[#FF6B00] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                      >
+                        📊 シミュレーションを実行
+                      </button>
+                    </div>
+                  )}
+
+                  {/* シミュレーション結果 */}
+                  {isLoadingSimulation && (
+                    <div className="bg-gray-50 p-4 rounded-none border border-gray-300">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin text-[#FF8A15]" />
+                        <p className="text-sm font-semibold text-gray-800">
+                          シミュレーション実行中...
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {simulationResult && !isLoadingSimulation && (
+                    <div className="space-y-4">
+                      {/* 達成可能性 */}
+                      <div className="bg-white p-6 rounded-none border border-gray-300">
+                        <h3 className="font-semibold text-gray-900 mb-4 text-lg">達成可能性</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-2xl font-bold text-[#FF8A15]">
+                              {simulationResult.achievementRate}%
+                            </span>
+                            <span className="text-sm font-semibold text-gray-900">
+                              {simulationResult.difficulty.label}
+                            </span>
+                          </div>
+                          {/* プログレスバー */}
+                          <div className="w-full bg-gray-200 rounded-none h-6 overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-[#FF8A15] to-[#FF6B00] rounded-none transition-all duration-700 ease-out flex items-center justify-end pr-3"
+                              style={{ width: `${Math.min(simulationResult.achievementRate, 100)}%` }}
+                            >
+                              {simulationResult.achievementRate >= 10 && (
+                                <span className="text-xs font-bold text-white">
+                                  {Math.round(simulationResult.achievementRate)}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* 推奨事項 */}
+                          {simulationResult.recommendations.length > 0 && (
+                            <div className="mt-3">
+                              <ul className="space-y-1 list-disc list-inside text-sm text-gray-700">
+                                {simulationResult.recommendations.map((rec, index) => (
+                                  <li key={index}>{rec}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 必要KPI */}
+                      <div className="bg-gray-50 p-6 rounded-none border border-gray-300">
+                        <h3 className="font-semibold text-gray-900 mb-4 text-lg">必要KPI</h3>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <div className="text-gray-600">月間リーチ</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {simulationResult.requiredKPIs.monthlyReach.toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-gray-600">プロフィール閲覧数</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {simulationResult.requiredKPIs.profileViews.toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-gray-600">エンゲージメント率</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {simulationResult.requiredKPIs.engagementRate}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-gray-600">保存数</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {simulationResult.requiredKPIs.saves.toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="col-span-2">
+                            <div className="text-gray-600">新規フォロワー数</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {simulationResult.requiredKPIs.newFollowers.toLocaleString()}人
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 影響度の内訳 */}
+                      {simulationResult.impactBreakdown && (
+                        <div className="bg-gray-50 p-6 rounded-none border border-gray-300">
+                          <h3 className="font-semibold text-gray-900 mb-4 text-lg">影響度の内訳</h3>
+                          <div className="space-y-2 text-sm">
+                            {simulationResult.impactBreakdown.story.impact !== "影響なし" && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-700">
+                                  {simulationResult.impactBreakdown.story.label}
+                                </span>
+                                <span className="font-semibold text-[#FF8A15]">
+                                  {simulationResult.impactBreakdown.story.impact}
+                                </span>
+                              </div>
+                            )}
+                            {simulationResult.impactBreakdown.time.impact !== "影響なし" && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-700">
+                                  {simulationResult.impactBreakdown.time.label}
+                                </span>
+                                <span className={`font-semibold ${
+                                  simulationResult.impactBreakdown.time.impact.startsWith("+")
+                                    ? "text-[#FF8A15]"
+                                    : "text-gray-600"
+                                }`}>
+                                  {simulationResult.impactBreakdown.time.impact}
+                                </span>
+                              </div>
+                            )}
+                            {simulationResult.impactBreakdown.region.impact !== "影響なし" && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-700">
+                                  {simulationResult.impactBreakdown.region.label}
+                                </span>
+                                <span className={`font-semibold ${
+                                  simulationResult.impactBreakdown.region.impact.startsWith("+")
+                                    ? "text-[#FF8A15]"
+                                    : "text-gray-600"
+                                }`}>
+                                  {simulationResult.impactBreakdown.region.impact}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </SNSLayout>
   );
 }
-

@@ -21,6 +21,7 @@ export interface BusinessInfo {
   challenges: string[]; // 課題
   productsOrServices?: ProductOrService[]; // 商品・サービス・政策情報
   initialFollowers?: number; // 利用開始日時点のフォロワー数
+  accountCreationDate?: string; // アカウント開設日（YYYY-MM-DD形式、Instagram運用計画のAI提案に使用）
 }
 
 export interface BillingInfo {
@@ -67,6 +68,8 @@ export interface UserProfile {
   planTier?: "ume" | "take" | "matsu"; // プラン階層（梅・竹・松）
   supportId?: string; // サポートID（UUID v4、adminで付与）
   ipHistory?: IPHistoryEntry[]; // IPアドレス履歴（最新50件まで）
+  activePlanId?: string | null; // 唯一のアクティブ計画ID（最重要）
+  timezone?: string; // ユーザーのタイムゾーン（例: "Asia/Tokyo"）
   createdAt: string; // 作成日時
   updatedAt: string; // 更新日時
 }

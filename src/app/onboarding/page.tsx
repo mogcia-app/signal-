@@ -313,8 +313,8 @@ export default function OnboardingPage() {
                       📦 商品・サービス情報
                     </label>
                     <div className="space-y-3">
-                      {productsOrServices.map((item: { id: string; name: string; details: string; price?: string }) => (
-                        <div key={item.id} className="bg-gray-50 border border-gray-200 p-4">
+                  {productsOrServices.map((item: { id: string; name: string; details: string; price?: string }) => (
+                    <div key={item.id} className="bg-gray-50 border border-gray-200 p-4">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-lg">🏷️</span>
                             <h4 className="font-medium text-gray-900 text-base">{item.name}</h4>

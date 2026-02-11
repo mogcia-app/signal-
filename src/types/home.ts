@@ -2,8 +2,40 @@
  * ホームページ関連の型定義
  */
 
-// AIPlanSuggestion型をインポート（循環参照を避けるため型のみ）
-import type { AIPlanSuggestion } from "../app/instagram/plan/types/plan";
+// AIPlanSuggestion型定義（プランページ削除のため直接定義）
+export interface AIPlanSuggestion {
+  weeklyTasks?: Array<{
+    day: string;
+    type: "feed" | "reel" | "story";
+    description: string;
+    time?: string;
+  }>;
+  monthlyStrategy?: Array<{
+    week: number;
+    theme: string;
+    actions: string[];
+  }>;
+  weeklyPlans?: Array<{
+    week: number;
+    startDate: string;
+    endDate: string;
+    tasks: Array<{
+      day: string;
+      type: "feed" | "reel" | "story" | "feed+reel";
+      description: string;
+      time: string;
+    }>;
+  }>;
+  monthlyGoals: Array<{
+    metric: string;
+    target: string;
+  }>;
+  recommendedPostingTimes?: Array<{
+    type: "feed" | "reel" | "story";
+    times: string[];
+  }>;
+  strategyUrl?: string;
+}
 
 export interface TodayTask {
   time: string;
@@ -38,11 +70,14 @@ export interface WeeklyScheduleTask {
 
 export interface WeeklySchedule {
   week: number;
-  theme: string;
-  actions: string[];
+  theme: string | null;
+  actions?: string[];
   tasks: WeeklyScheduleTask[];
   startDate?: string;
   endDate?: string;
+  targetFollowers?: number;
+  increase?: number;
+  storyContent?: string | string[];
 }
 
 export interface AISections {
@@ -116,6 +151,16 @@ export interface DashboardData {
   currentMonthGoals?: MonthlyGoal[];
   aiSuggestion?: AIPlanSuggestion | null;
   todayTasks?: TodayTask[];
+  simulationResult?: {
+    requiredKPIs?: {
+      monthlyReach: number;
+      profileViews: number;
+      engagementRate: string;
+      saves: number;
+      newFollowers: number;
+    };
+    [key: string]: unknown;
+  } | null;
 }
 
 export interface DashboardResponse {
