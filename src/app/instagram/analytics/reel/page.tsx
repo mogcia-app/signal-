@@ -854,7 +854,6 @@ function AnalyticsReelContent() {
             <p className="text-sm text-red-600">{resetError}</p>
           ) : null}
 
-          {/* 統合された分析データ入力フォーム */}
           <ReelAnalyticsForm
             data={inputData}
             onChange={setInputData}

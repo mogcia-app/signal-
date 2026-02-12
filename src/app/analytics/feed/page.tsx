@@ -788,7 +788,6 @@ function AnalyticsFeedContent() {
             <p className="text-sm text-red-600">{resetError}</p>
           ) : null}
 
-          {/* 統合された分析データ入力フォーム */}
           <FeedAnalyticsForm
             data={inputData}
             onChange={setInputData}

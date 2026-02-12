@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import SNSLayout from "../../../components/sns-layout";
 import PostEditor, { AIHintSuggestion, SnapshotReference } from "./components/PostEditor";
-import ToolPanel from "./components/ToolPanel";
-import PostPreview from "./components/PostPreview";
+import AnalyticsImageInsightPanel from "../components/AnalyticsImageInsightPanel";
 import { useAuth } from "../../../contexts/auth-context";
 import { authFetch } from "../../../utils/authFetch";
 import { useBusinessInfo } from "../../../hooks/useBusinessInfo";
@@ -313,6 +312,13 @@ export default function InstagramLabPage() {
   }
 
   const typeConfig = TYPE_CONFIG[postType];
+  const labPostData = {
+    id: editingPostId || "lab-draft",
+    title: postTitle,
+    content: postContent,
+    hashtags: selectedHashtags,
+    postType,
+  };
 
   return (
     <SNSLayout customTitle="投稿ラボ" customDescription={typeConfig.description} contentClassName="py-0 sm:py-0">
@@ -347,9 +353,36 @@ export default function InstagramLabPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*:last-child]:mb-0" style={{ alignItems: "stretch" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*:last-child]:mb-0" style={{ alignItems: "start" }}>
           <div className="flex flex-col">
             <PostEditor
+              mode="editor"
+              showHeader={false}
+              content={postContent}
+              onContentChange={setPostContent}
+              title={postTitle}
+              onTitleChange={setPostTitle}
+              hashtags={selectedHashtags}
+              onHashtagsChange={setSelectedHashtags}
+              postType={postType}
+              image={postImage}
+              onImageChange={setPostImage}
+              scheduledDate={scheduledDate}
+              onScheduledDateChange={setScheduledDate}
+              scheduledTime={scheduledTime}
+              onScheduledTimeChange={setScheduledTime}
+              isAIGenerated={isAIGenerated}
+              aiPromptPlaceholder={typeConfig.placeholder}
+              initialSnapshotReferences={snapshotReferences}
+              onSnapshotReferencesChange={setSnapshotReferences}
+              editingPostId={editingPostId}
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <PostEditor
+              mode="ai"
+              showHeader={false}
               content={postContent}
               onContentChange={setPostContent}
               title={postTitle}
@@ -372,29 +405,10 @@ export default function InstagramLabPage() {
               isGeneratingSuggestions={postType === "story" ? isGeneratingSuggestions : false}
               editingPostId={editingPostId}
             />
-          </div>
-
-          <div className="flex flex-col">
-            <div className="mb-6 flex-shrink-0">
-              <PostPreview
-                title={postTitle}
-                content={postContent}
-                image={postImage}
-                hashtags={selectedHashtags}
+            <div className="mt-6">
+              <AnalyticsImageInsightPanel
                 postType={postType}
-                scheduledDate={scheduledDate}
-                scheduledTime={scheduledTime}
-                onImageChange={setPostImage}
-              />
-            </div>
-            <div className="mt-6 flex-shrink-0">
-              <ToolPanel
-                onTemplateSelect={(template) => setPostContent(template)}
-                onHashtagSelect={(hashtag) => {
-                  if (!selectedHashtags.includes(hashtag)) {
-                    setSelectedHashtags([...selectedHashtags, hashtag]);
-                  }
-                }}
+                postData={labPostData}
               />
             </div>
           </div>

@@ -294,6 +294,71 @@ export default function InstagramPlanPage() {
 
   const targetFollowers = calculateTargetFollowers();
 
+  const frequencyToWeeklyCount = (value: string) => {
+    if (value === "none") {return 0;}
+    if (value === "weekly-1-2") {return 2;}
+    if (value === "weekly-3-4") {return 4;}
+    if (value === "daily") {return 7;}
+    return 0;
+  };
+
+  const feedWeeklyCount = frequencyToWeeklyCount(weeklyPosts);
+  const reelWeeklyCount = frequencyToWeeklyCount(reelCapability);
+  const storyWeeklyCount = frequencyToWeeklyCount(storyFrequency || "none");
+
+  const feedMonthlyCount = feedWeeklyCount * 4;
+  const reelMonthlyCount = reelWeeklyCount * 4;
+  const storyMonthlyCount = storyWeeklyCount * 4;
+  const monthlyTotalPosts = feedMonthlyCount + reelMonthlyCount + storyMonthlyCount;
+
+  const feedPercent = monthlyTotalPosts > 0 ? Math.round((feedMonthlyCount / monthlyTotalPosts) * 100) : 0;
+  const reelPercent = monthlyTotalPosts > 0 ? Math.round((reelMonthlyCount / monthlyTotalPosts) * 100) : 0;
+  const storyPercent = Math.max(0, 100 - feedPercent - reelPercent);
+
+  const donutBackground =
+    monthlyTotalPosts > 0
+      ? `conic-gradient(#FF8A15 0% ${feedPercent}%, #F97316 ${feedPercent}% ${feedPercent + reelPercent}%, #FDBA74 ${feedPercent + reelPercent}% 100%)`
+      : "conic-gradient(#e5e7eb 0% 100%)";
+
+  const distributeToWeeks = (monthlyCount: number) => {
+    const base = Math.floor(monthlyCount / 4);
+    const remainder = monthlyCount % 4;
+    return Array.from({ length: 4 }, (_, i) => base + (i < remainder ? 1 : 0));
+  };
+
+  const feedWeeklyDistribution = distributeToWeeks(feedMonthlyCount);
+  const reelWeeklyDistribution = distributeToWeeks(reelMonthlyCount);
+  const storyWeeklyDistribution = distributeToWeeks(storyMonthlyCount);
+  const weeklyTotals = [0, 1, 2, 3].map(
+    (i) => feedWeeklyDistribution[i] + reelWeeklyDistribution[i] + storyWeeklyDistribution[i]
+  );
+  const maxWeeklyTotal = Math.max(...weeklyTotals, 1);
+
+  const currentFollowersNumber = parseInt(currentFollowers || "0");
+  const scenarioCards = [
+    {
+      key: "conservative",
+      label: "控えめ",
+      increase: 5,
+      total: currentFollowersNumber + 5,
+      note: "無理なく達成",
+    },
+    {
+      key: "standard",
+      label: "標準",
+      increase: 15,
+      total: currentFollowersNumber + 15,
+      note: "バランス重視",
+    },
+    {
+      key: "ambitious",
+      label: "意欲的",
+      increase: 50,
+      total: currentFollowersNumber + 50,
+      note: "挑戦的",
+    },
+  ] as const;
+
   const isFormValid = 
     startDate && 
     currentFollowers && 
@@ -838,6 +903,90 @@ export default function InstagramPlanPage() {
 
             {/* 右カラム: 説明セクション */}
             <div className="space-y-6">
+              {/* 📈 計画の可視化 */}
+              <div className="bg-white border border-gray-300 p-8 rounded-none shadow-sm">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">計画の可視化</h2>
+                  <p className="text-sm text-gray-500 mt-1">投稿配分と達成見込みを視覚的に確認できます</p>
+                </div>
+
+                <div className="space-y-8">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800 mb-4">今月の投稿配分</h3>
+                    <div className="flex items-center gap-6">
+                      <div className="relative w-32 h-32">
+                        <div className="w-32 h-32 rounded-full" style={{ background: donutBackground }} />
+                        <div className="absolute inset-4 bg-white rounded-full flex items-center justify-center border border-gray-100">
+                          <span className="text-xs font-semibold text-gray-700">
+                            {monthlyTotalPosts > 0 ? `${monthlyTotalPosts}件` : "未設定"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 bg-[#FF8A15]" />
+                          <span className="text-gray-700">フィード: {feedMonthlyCount}件 ({feedPercent}%)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 bg-[#F97316]" />
+                          <span className="text-gray-700">リール: {reelMonthlyCount}件 ({reelPercent}%)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 bg-[#FDBA74]" />
+                          <span className="text-gray-700">ストーリーズ: {storyMonthlyCount}件 ({storyPercent}%)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800 mb-1">週ごとの投稿目安（内訳）</h3>
+                    <p className="text-xs text-gray-500 mb-4">各週の合計件数と、投稿タイプごとの内訳です。</p>
+                    <div className="grid grid-cols-4 gap-3">
+                      {weeklyTotals.map((count, index) => (
+                        <div key={`week-${index + 1}`} className="bg-gray-50 border border-gray-200 p-3">
+                          <p className="text-xs text-gray-500 mb-2">Week {index + 1}</p>
+                          <div className="h-20 flex items-end">
+                            <div
+                              className="w-full bg-gradient-to-t from-[#FF8A15] to-[#FDBA74] transition-all duration-500"
+                              style={{ height: `${Math.max(8, (count / maxWeeklyTotal) * 100)}%` }}
+                            />
+                          </div>
+                          <p className="text-sm font-semibold text-gray-800 mt-2 text-center">合計 {count}件</p>
+                          <div className="mt-2 space-y-1 text-[11px] text-gray-600">
+                            <p>フィード: {feedWeeklyDistribution[index]}件</p>
+                            <p>リール: {reelWeeklyDistribution[index]}件</p>
+                            <p>ストーリーズ: {storyWeeklyDistribution[index]}件</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800 mb-4">到達見込み比較</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {scenarioCards.map((scenario) => {
+                        const isSelected = targetFollowerOption === scenario.key;
+                        return (
+                          <div
+                            key={scenario.key}
+                            className={`p-4 border ${isSelected ? "border-[#FF8A15] bg-orange-50" : "border-gray-200 bg-white"}`}
+                          >
+                            <p className={`text-xs font-semibold ${isSelected ? "text-[#FF8A15]" : "text-gray-500"}`}>
+                              {scenario.label}
+                            </p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">+{scenario.increase}人</p>
+                            <p className="text-xs text-gray-600 mt-1">目標: {scenario.total.toLocaleString()}人</p>
+                            <p className="text-xs text-gray-500 mt-2">{scenario.note}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* 📊 計画シミュレーションセクション */}
               <div className="bg-white border border-gray-300 p-10 rounded-none flex flex-col shadow-sm">
                 <div className="mb-8">

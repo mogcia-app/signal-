@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
-import { Menu, X, Calendar, FlaskConical, Image, Video, Circle, BookOpen, BarChart, Target, Sparkles } from "lucide-react";
+import { Menu, X, Calendar, FlaskConical, BookOpen, BarChart, Target, Sparkles } from "lucide-react";
 import { ProgressBar } from "./progress-bar";
 
 interface SNSLayoutProps {
@@ -27,7 +27,6 @@ export default function SNSLayout({
 }: SNSLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isLabExpanded, setIsLabExpanded] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { user, signOut } = useAuth();
@@ -99,7 +98,7 @@ export default function SNSLayout({
               </div>
             </Link>
           ) : (
-            <Link href="/instagram/lab/feed" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+            <Link href="/instagram/lab" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
               <div className="text-2xl font-bold text-black">
                 Signal<span style={{ color: "#FF8A15" }}>.</span>
               </div>
@@ -168,65 +167,17 @@ export default function SNSLayout({
               </Link>
             )}
 
-            {/* 投稿ラボ - 展開可能なサブメニュー */}
-            <div>
-              <button
-                onClick={() => setIsLabExpanded(!isLabExpanded)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg ${
-                  pathname.startsWith("/instagram/lab")
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <FlaskConical size={18} className="flex-shrink-0" />
-                  <span>投稿ラボ</span>
-                </div>
-                <span
-                  className={`transform transition-transform ${isLabExpanded ? "rotate-180" : ""}`}
-                >
-                  ▼
-                </span>
-              </button>
-
-              {isLabExpanded && (
-                <div className="ml-4 mt-1 space-y-1">
-                  <Link
-                    href="/instagram/lab/feed"
-                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                      pathname === "/instagram/lab/feed"
-                        ? "bg-orange-100 text-orange-800 font-medium"
-                        : "text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    <Image size={16} className="flex-shrink-0" />
-                    <span>フィード</span>
-                  </Link>
-                  <Link
-                    href="/instagram/lab/reel"
-                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                      pathname === "/instagram/lab/reel"
-                        ? "bg-orange-100 text-orange-800 font-medium"
-                        : "text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    <Video size={16} className="flex-shrink-0" />
-                    <span>リール</span>
-                  </Link>
-                  <Link
-                    href="/instagram/lab/story"
-                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
-                      pathname === "/instagram/lab/story"
-                        ? "bg-orange-100 text-orange-800 font-medium"
-                        : "text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    <Circle size={16} className="flex-shrink-0" />
-                    <span>ストーリー</span>
-                  </Link>
-                </div>
-              )}
-            </div>
+            <Link
+              href="/instagram/lab"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname.startsWith("/instagram/lab")
+                  ? "bg-orange-100 text-orange-800 font-medium"
+                  : "text-black hover:bg-gray-100"
+              }`}
+            >
+              <FlaskConical size={18} className="flex-shrink-0" />
+              <span>投稿ラボ</span>
+            </Link>
 
             {canAccessFeature(userProfile, "canAccessPosts") && (
               <Link

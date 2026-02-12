@@ -63,6 +63,8 @@ interface PostEditorProps {
   onSnapshotReferencesChange?: (refs: SnapshotReference[]) => void;
   onSnapshotReferenceClick?: (id: string) => void;
   editingPostId?: string | null; // 編集モード用の投稿ID
+  mode?: "full" | "editor" | "ai";
+  showHeader?: boolean;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
@@ -91,6 +93,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   onSnapshotReferencesChange,
   onSnapshotReferenceClick,
   editingPostId = null,
+  mode = "full",
+  showHeader = true,
 }) => {
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
@@ -137,6 +141,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       setSnapshotReferences(initialSnapshotReferences);
     }
   }, [initialSnapshotReferences]);
+
+  useEffect(() => {
+    // 投稿タイプ切り替え時は前タイプのヒント表示をクリア
+    setVisualSuggestions(null);
+  }, [postType]);
 
   const updateSnapshotReferences = (refs: SnapshotReference[]) => {
     setSnapshotReferences(refs);
@@ -303,6 +312,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const characterCount = content.length;
   const [maxCharacters, setMaxCharacters] = useState(2200);
   const [isOverLimit, setIsOverLimit] = useState(false);
+  const showAiSection = mode !== "editor";
+  const showEditorSection = mode !== "ai";
 
   // バリデーションルールをバックエンドから取得
   useEffect(() => {
@@ -510,6 +521,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
   // キーボードショートカット（Ctrl+S / Cmd+Sで保存）
   useEffect(() => {
+    if (!showEditorSection) {
+      return;
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
@@ -522,7 +536,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, isSaving, content]);
+  }, [user?.uid, isSaving, content, showEditorSection]);
 
   // 画像アップロード処理は PostEditorImageUpload コンポーネントに移動
   // ハッシュタグ処理は PostEditorHashtags コンポーネントに移動
@@ -654,8 +668,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           }
         }
 
-        // ビジュアル推奨事項を自動取得（リールのみ）
-        if (postType === "reel" && generatedContent && generatedContent.trim().length > 0) {
+        // ビジュアル推奨事項を自動取得（全投稿タイプ対応）
+        if (generatedContent && generatedContent.trim().length > 0) {
           fetchVisualSuggestions(generatedContent, result.data.hashtags || []);
         }
         
@@ -888,8 +902,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           }
         }
 
-        // ビジュアル推奨事項を自動取得（リールのみ）
-        if (postType === "reel" && generatedContent && generatedContent.trim().length > 0) {
+        // ビジュアル推奨事項を自動取得（全投稿タイプ対応）
+        if (generatedContent && generatedContent.trim().length > 0) {
           fetchVisualSuggestions(generatedContent, result.data.hashtags || []);
         }
         
@@ -973,10 +987,10 @@ export const PostEditor: React.FC<PostEditorProps> = ({
 
       <div className="bg-white border border-gray-200 flex flex-col">
         {/* ヘッダー */}
-        <PostEditorHeader />
+        {showHeader && <PostEditorHeader />}
 
         {/* 成功メッセージ */}
-        <PostEditorSuccessMessage show={showSuccessMessage} />
+        {showEditorSection && <PostEditorSuccessMessage show={showSuccessMessage} />}
 
         <div className="p-6 flex-1 flex flex-col min-h-0 overflow-auto">
           {snapshotReferences.length > 0 && (
@@ -1030,8 +1044,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             </div>
           ) : null}
 
-          {/* ビジュアル推奨事項（リールのみ表示） */}
-          {postType === "reel" && (visualSuggestions || isGeneratingVisualSuggestions) && (
+          {/* ビジュアル推奨事項（全投稿タイプで表示） */}
+          {showAiSection && (visualSuggestions || isGeneratingVisualSuggestions) && (
             <div className="mb-6 border border-orange-200 bg-orange-50/30 p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-bold text-slate-700 flex items-center">
@@ -1104,6 +1118,23 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   </div>
                 )}
 
+                {visualSuggestions.storyStructure?.slides && visualSuggestions.storyStructure.slides.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-900 mb-2">【推奨されるストーリー構成】</p>
+                    <div className="space-y-2">
+                      {visualSuggestions.storyStructure.slides
+                        .slice()
+                        .sort((a, b) => a.order - b.order)
+                        .map((slide) => (
+                          <div key={`story-slide-${slide.order}`} className="bg-white border border-slate-200 p-2 rounded">
+                            <p className="text-[10px] font-semibold text-slate-900 mb-1">{slide.order}枚目</p>
+                            <p className="text-xs text-slate-700">{slide.content}</p>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
                 {visualSuggestions.avoidElements && visualSuggestions.avoidElements.length > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-slate-900 mb-1">【避けるべき要素】</p>
@@ -1132,7 +1163,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
           )}
 
           {/* AI投稿文生成 */}
-          <div className="mb-6 bg-white border border-gray-200 p-6 relative">
+          {showAiSection && (
+          <div className="mb-6 bg-white p-6 relative">
             {/* ローディングオーバーレイ */}
             {(isAutoGenerating || isGenerating) && (
               <div className="absolute inset-0 bg-white bg-opacity-98 z-50 flex flex-col items-center justify-center rounded-md shadow-lg">
@@ -1332,9 +1364,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 </div>
               </div>
             )}
+
           </div>
+          )}
 
 
+          {showEditorSection && (
+          <>
           {/* 投稿設定 */}
           <PostEditorScheduleSettings
             scheduledDate={scheduledDate}
@@ -1399,6 +1435,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
             isSaving={isSaving}
             canSave={!!content.trim()}
           />
+          </>
+          )}
         </div>
       </div>
     </>
