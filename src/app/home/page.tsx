@@ -1008,7 +1008,7 @@ export default function HomePage() {
           )}
 
 
-          {/* その他KPI入力とコメント返信アシスト（2カラム） */}
+          {/* その他KPI入力とコメント返信アシスト（常に2カラム） */}
           {!isLoadingDashboard && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* その他KPI入力（計画の有無に関係なく表示） */}
@@ -1080,19 +1080,9 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* コメント返信アシスト（計画がある場合のみ2カラムレイアウト内に表示） */}
-              {dashboardData?.currentPlan && (
-                <div className="bg-white  border border-gray-200">
-                  <CommentReplyAssistant postType="feed" />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* コメント返信アシスト（計画がない場合のみ表示） */}
-          {!dashboardData?.currentPlan && !isLoadingDashboard && (
-            <div className="bg-white  border border-gray-200">
-              <CommentReplyAssistant postType="feed" />
+              <div className="bg-white  border border-gray-200">
+                <CommentReplyAssistant postType="feed" />
+              </div>
             </div>
           )}
 
