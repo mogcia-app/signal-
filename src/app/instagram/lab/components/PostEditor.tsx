@@ -9,8 +9,6 @@ import { notify } from "../../../../lib/ui/notifications";
 import { authFetch } from "../../../../utils/authFetch";
 import { useUserProfile } from "../../../../hooks/useUserProfile";
 import Image from "next/image";
-// PlanData型をusePlanDataからインポート
-import type { PlanData } from "../../../../hooks/usePlanData";
 import type {
   AIGenerationResponse,
   AIReference,
@@ -49,7 +47,6 @@ interface PostEditorProps {
   scheduledTime?: string;
   onScheduledTimeChange?: (time: string) => void;
   isAIGenerated?: boolean;
-  planData?: PlanData | null; // AI投稿文生成用
   aiPromptPlaceholder?: string; // AIプロンプトのプレースホルダー
   onVideoStructureGenerate?: (prompt: string) => void; // 動画構成生成のコールバック
   videoStructure?: {
@@ -83,7 +80,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   scheduledTime: externalScheduledTime = "",
   onScheduledTimeChange,
   isAIGenerated = false,
-  planData,
   aiPromptPlaceholder = "例: 新商品の紹介、日常の出来事、お客様の声など...",
   onVideoStructureGenerate,
   videoStructure,
@@ -531,40 +527,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   // 画像アップロード処理は PostEditorImageUpload コンポーネントに移動
   // ハッシュタグ処理は PostEditorHashtags コンポーネントに移動
 
-  // 運用計画データを分析してフィードバックを生成
-  const analyzePlanData = (plan: PlanData | null): { feedback: string | null; category: string } => {
-    if (!plan) {
-      return {
-        feedback: "運用計画が設定されていません。運用計画ページで計画を作成してください。計画がないと、AIが適切な投稿文を生成できません。",
-        category: "no_plan",
-      };
-    }
-
-    // 目標が不明確
-    if (!plan.targetAudience || (typeof plan.targetAudience === 'string' && plan.targetAudience.trim().length < 5)) {
-      return {
-        feedback: `運用計画の「ターゲット層」が不明確です（現在: ${plan.targetAudience || "未設定"}）。具体的なターゲット層（例：「20代の女性、朝の時間にSNSをチェックする習慣がある」）を設定すると、より適切な投稿文が生成されます。運用計画ページでターゲット層を詳しく設定してください。`,
-        category: "unclear_target",
-      };
-    }
-
-    // 戦略が不足
-    if (!plan.strategies || (Array.isArray(plan.strategies) && plan.strategies.length === 0)) {
-      return {
-        feedback: `運用計画の「取り組みたいこと」が設定されていません。具体的な戦略（例：「写真をたくさん投稿する」「動画（リール）を中心に投稿する」）を設定すると、より効果的な投稿文が生成されます。運用計画ページで戦略を設定してください。`,
-        category: "no_strategy",
-      };
-    }
-
-    // カテゴリが不足
-    if (!plan.category || (typeof plan.category === 'string' && plan.category.trim().length < 3)) {
-      return {
-        feedback: `運用計画の「投稿したい内容」が設定されていません。具体的なカテゴリ（例：「興味を引く内容」「ブランドの世界観」）を設定すると、より魅力的な投稿文が生成されます。運用計画ページでカテゴリを設定してください。`,
-        category: "no_category",
-      };
-    }
-
-    // 問題なし
+  const analyzePlanData = (): { feedback: string | null; category: string } => {
     return { feedback: null, category: "" };
   };
 
@@ -602,7 +565,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     setLoadingMessageInterval(interval);
 
     // 運用計画データを分析
-    const analysis = analyzePlanData(planData ?? null);
+    const analysis = analyzePlanData();
     setAutoGenerateFeedback(analysis.feedback);
 
     // 連続フィードバックの追跡
@@ -626,11 +589,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       setShowAutoAdminWarning(false);
     }
 
-    if (!planData) {
-      showToast("運用計画が設定されていません");
-      return;
-    }
-
     setIsAutoGenerating(true);
     try {
       // 🔐 Firebase認証トークンを取得
@@ -648,7 +606,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         body: JSON.stringify({
           prompt: "auto", // 自動生成を示す
           postType: postType || "feed",
-          planData,
           scheduledDate,
           scheduledTime,
           autoGenerate: true, // 自動生成フラグ
@@ -897,7 +854,6 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         body: JSON.stringify({
           prompt: aiPrompt,
           postType: postType || "feed",
-          planData,
           scheduledDate,
           scheduledTime,
           action: "generatePost",
@@ -1221,16 +1177,11 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 value={aiPrompt}
                 onChange={(e) => setAiPrompt(e.target.value)}
                 placeholder={aiPromptPlaceholder}
-                disabled={!planData || isAutoGenerating || isGenerating}
+                disabled={isAutoGenerating || isGenerating}
                 className={`w-full px-4 py-2.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 bg-white text-sm ${
-                  !planData || isAutoGenerating || isGenerating ? "opacity-40 cursor-not-allowed bg-gray-50" : ""
+                  isAutoGenerating || isGenerating ? "opacity-40 cursor-not-allowed bg-gray-50" : ""
                 }`}
               />
-              {!planData && (
-                <p className="text-xs text-gray-500 mt-2">
-                  運用計画を作成してからAI投稿文を生成できます
-                </p>
-              )}
             </div>
 
             {/* 商品・サービス選択（開閉式） */}
@@ -1239,9 +1190,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsProductServiceSelectorOpen(!isProductServiceSelectorOpen)}
-                  disabled={!planData || isAutoGenerating || isGenerating}
+                  disabled={isAutoGenerating || isGenerating}
                   className={`w-full flex items-center justify-between px-4 py-2.5 border border-gray-300 bg-white text-sm transition-all duration-200 ${
-                    !planData || isAutoGenerating || isGenerating ? "opacity-40 cursor-not-allowed bg-gray-50" : "hover:bg-gray-50"
+                    isAutoGenerating || isGenerating ? "opacity-40 cursor-not-allowed bg-gray-50" : "hover:bg-gray-50"
                   }`}
                 >
                   <span className="text-gray-700">
@@ -1308,22 +1259,22 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               {/* 自動生成ボタン */}
               <button
                 onClick={handleAutoGenerate}
-                disabled={isAutoGenerating || !planData}
+                disabled={isAutoGenerating}
                 className={`w-full py-2.5 px-4 font-medium text-sm transition-colors duration-200 flex items-center justify-center text-white ${
-                  isAutoGenerating || !planData
+                  isAutoGenerating
                     ? "cursor-not-allowed"
                     : ""
                 }`}
                 style={{
-                  backgroundColor: isAutoGenerating || !planData ? "#d1d5db" : "#ff8a15",
+                  backgroundColor: isAutoGenerating ? "#d1d5db" : "#ff8a15",
                 }}
                 onMouseEnter={(e) => {
-                  if (!isAutoGenerating && planData) {
+                  if (!isAutoGenerating) {
                     e.currentTarget.style.backgroundColor = "#e67a0f";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!isAutoGenerating && planData) {
+                  if (!isAutoGenerating) {
                     e.currentTarget.style.backgroundColor = "#ff8a15";
                   }
                 }}
@@ -1336,22 +1287,22 @@ export const PostEditor: React.FC<PostEditorProps> = ({
               {/* テーマ指定生成ボタン */}
               <button
                 onClick={handleAIGenerate}
-                disabled={isGenerating || !planData || !aiPrompt.trim()}
+                disabled={isGenerating || !aiPrompt.trim()}
                 className={`w-full py-2.5 px-4 font-medium text-sm transition-colors duration-200 flex items-center justify-center text-white ${
-                  isGenerating || !planData || !aiPrompt.trim()
+                  isGenerating || !aiPrompt.trim()
                     ? "cursor-not-allowed"
                     : ""
                 }`}
                 style={{
-                  backgroundColor: isGenerating || !planData || !aiPrompt.trim() ? "#d1d5db" : "#ff8a15",
+                  backgroundColor: isGenerating || !aiPrompt.trim() ? "#d1d5db" : "#ff8a15",
                 }}
                 onMouseEnter={(e) => {
-                  if (!isGenerating && planData && aiPrompt.trim()) {
+                  if (!isGenerating && aiPrompt.trim()) {
                     e.currentTarget.style.backgroundColor = "#e67a0f";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!isGenerating && planData && aiPrompt.trim()) {
+                  if (!isGenerating && aiPrompt.trim()) {
                     e.currentTarget.style.backgroundColor = "#ff8a15";
                   }
                 }}
