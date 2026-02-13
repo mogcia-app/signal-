@@ -12,7 +12,7 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import type { FeedStats, ReelStats } from "@/app/api/analytics/kpi-breakdown/route";
+import type { FeedStats, ReelStats } from "@/domain/analysis/kpi/types";
 
 interface ContentPerformanceProps {
   feedStats: FeedStats | null;

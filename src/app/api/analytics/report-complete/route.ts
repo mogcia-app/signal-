@@ -6,6 +6,29 @@ import { canAccessFeature } from "@/lib/plan-access";
 import { buildAIContext } from "@/lib/ai/context";
 import OpenAI from "openai";
 import * as admin from "firebase-admin";
+import type { AiClient, AnalyticsData, ParsedActionPlan } from "@/domain/analysis/report/types";
+import { getMonthName, getMonthRange, getNextMonthName } from "@/domain/analysis/report/utils/month";
+import { calculatePerformanceScore } from "@/domain/analysis/report/calculators/performance-score";
+import { extractActionPlansFromReview } from "@/domain/analysis/report/parsers/action-plans-from-review";
+import {
+  aggregatePreviousMonthAnalytics,
+  detectRiskAlerts,
+  type RuntimeRiskAlert,
+} from "@/domain/analysis/report/calculators/risk-detection";
+import {
+  buildAiErrorFallbackMonthlyReview,
+  buildInsufficientDataMonthlyReview,
+  buildNoDataMonthlyReview,
+  formatFollowerChangeText,
+  formatReachChangeText,
+} from "@/domain/analysis/report/usecases/monthly-review-generation";
+import { generateMonthlyReviewWithAi } from "@/domain/analysis/report/usecases/generate-monthly-review-with-ai";
+import {
+  loadReusableMonthlyReview,
+  persistFallbackMonthlyReview,
+  persistGeneratedMonthlyReview,
+  type MonthlyReviewStore,
+} from "@/domain/analysis/report/usecases/monthly-review-persistence";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -13,273 +36,89 @@ const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
-// 月の範囲を計算
-function getMonthRange(date: string): { start: Date; end: Date } {
-  const [yearStr, monthStr] = date.split("-").map(Number);
-  const start = new Date(Date.UTC(yearStr, monthStr - 1, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(yearStr, monthStr, 0, 23, 59, 59, 999));
-  return { start, end };
-}
+const aiClient: AiClient | null = openai
+  ? {
+      async generateText({ model, systemPrompt, userPrompt, temperature, maxTokens }) {
+        const completion = await openai.chat.completions.create({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature,
+          max_tokens: maxTokens,
+        });
+        return completion.choices[0]?.message?.content || "";
+      },
+    }
+  : null;
 
-// 月名を取得
-function getMonthName(date: string): string {
-  const [yearStr, monthStr] = date.split("-").map(Number);
-  const dateObj = new Date(yearStr, monthStr - 1, 1);
-  return dateObj.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
-}
-
-// 次月名を取得
-function getNextMonthName(date: string): string {
-  const [yearStr, monthStr] = date.split("-").map(Number);
-  const nextMonth = new Date(yearStr, monthStr, 1);
-  return nextMonth.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
-}
-
-interface AnalyticsData {
-  likes: number;
-  comments: number;
-  shares: number;
-  reach: number;
-  saves?: number;
-  followerIncrease?: number;
-  publishedAt: Date | admin.firestore.Timestamp;
-}
-
-interface PerformanceScoreResult {
-  score: number;
-  rating: "S" | "A" | "B" | "C" | "D" | "F";
-  label: string;
-  color: string;
-  breakdown: {
-    engagement: number;
-    growth: number;
-    quality: number;
-    consistency: number;
-  };
-  kpis: {
-    totalLikes: number;
-    totalReach: number;
-    totalSaves: number;
-    totalComments: number;
-    totalFollowerIncrease: number;
-  };
-  metrics: {
-    postCount: number;
-    analyzedCount: number;
-    hasPlan: boolean;
-  };
-}
-
-// パフォーマンス評価スコア計算
-function calculatePerformanceScore(params: {
-  postCount: number;
-  analyzedCount: number;
-  hasPlan: boolean;
-  totalLikes: number;
-  totalReach: number;
-  totalSaves: number;
-  totalComments: number;
-  totalFollowerIncrease: number;
-  analyticsData: AnalyticsData[];
-}): PerformanceScoreResult {
-  const { postCount, analyzedCount, hasPlan, totalLikes, totalReach, totalSaves, totalComments, totalFollowerIncrease, analyticsData } = params;
-
-  if (analyticsData.length === 0) {
+const monthlyReviewStore: MonthlyReviewStore = {
+  async getMonthlyReview(userId, month) {
+    const doc = await adminDb.collection("monthly_reviews").doc(`${userId}_${month}`).get();
+    if (!doc.exists) {
+      return null;
+    }
+    const data = doc.data();
     return {
-      score: 0,
-      rating: "F",
-      label: "データ不足",
-      color: "red",
-      breakdown: {
-        engagement: 0,
-        growth: 0,
-        quality: 0,
-        consistency: 0,
-      },
-      kpis: {
-        totalLikes: 0,
-        totalReach: 0,
-        totalSaves: 0,
-        totalComments: 0,
-        totalFollowerIncrease: 0,
-      },
-      metrics: {
-        postCount: 0,
-        analyzedCount: 0,
-        hasPlan: params.hasPlan,
-      },
+      review: data?.review || "",
+      actionPlans: data?.actionPlans || [],
     };
-  }
+  },
+  async saveMonthlyReview({
+    userId,
+    month,
+    review,
+    actionPlans,
+    hasPlan,
+    analyzedCount,
+    isFallback,
+    merge,
+  }) {
+    await adminDb.collection("monthly_reviews").doc(`${userId}_${month}`).set(
+      {
+        userId,
+        month,
+        review,
+        actionPlans,
+        hasPlan,
+        analyzedCount,
+        isFallback,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge }
+    );
+  },
+  async upsertAiDirection({
+    userId,
+    month,
+    mainTheme,
+    avoidFocus,
+    priorityKPI,
+    postingRules,
+    optimalPostingTime,
+  }) {
+    await adminDb.collection("ai_direction").doc(`${userId}_${month}`).set(
+      {
+        userId,
+        month,
+        mainTheme,
+        avoidFocus,
+        priorityKPI,
+        postingRules,
+        optimalPostingTime,
+        generatedFrom: "monthly_review",
+        lockedAt: null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+  },
+};
 
-  // エンゲージメントスコア (50%)
-  const avgEngagementRate =
-    analyticsData.reduce((sum, data) => {
-      const likes = data.likes || 0;
-      const comments = data.comments || 0;
-      const shares = data.shares || 0;
-      const reach = data.reach || 1;
-      const engagementRate = ((likes + comments + shares) / reach) * 100;
-      return sum + engagementRate;
-    }, 0) / analyticsData.length;
-  const engagementScore = Math.min(50, avgEngagementRate * 10);
 
-  // 成長スコア (25%)
-  const growthScore = Math.min(25, totalFollowerIncrease * 0.05);
-
-  // 投稿品質スコア (15%)
-  const avgReach = analyticsData.reduce((sum, data) => sum + data.reach, 0) / analyticsData.length;
-  const qualityScore = Math.min(15, avgReach / 2000);
-
-  // 一貫性スコア (10%)
-  const postsPerWeek = postCount / 4; // 月4週として計算
-  const consistencyScore = Math.min(10, postsPerWeek * 3.33);
-
-  // スコア内訳を先に計算（丸めた値）
-  const breakdown = {
-    engagement: Math.round(engagementScore),
-    growth: Math.round(growthScore),
-    quality: Math.round(qualityScore),
-    consistency: Math.round(consistencyScore),
-  };
-
-  // スコア内訳の合計を総スコアとする（一致を保証）
-  const totalScore = breakdown.engagement + breakdown.growth + breakdown.quality + breakdown.consistency;
-
-  // ランク評価
-  let rating: "S" | "A" | "B" | "C" | "D" | "F";
-  let label: string;
-  let color: string;
-
-  if (totalScore >= 85) {
-    rating = "S";
-    label = "業界トップ0.1%";
-    color = "purple";
-  } else if (totalScore >= 70) {
-    rating = "A";
-    label = "優秀なクリエイター";
-    color = "blue";
-  } else if (totalScore >= 55) {
-    rating = "B";
-    label = "良好";
-    color = "green";
-  } else if (totalScore >= 40) {
-    rating = "C";
-    label = "平均";
-    color = "yellow";
-  } else if (totalScore >= 25) {
-    rating = "D";
-    label = "改善必要";
-    color = "orange";
-  } else {
-    rating = "F";
-    label = "大幅改善必要";
-    color = "red";
-  }
-
-  return {
-    score: totalScore,
-    rating,
-    label,
-    color,
-    breakdown,
-    kpis: {
-      totalLikes,
-      totalReach,
-      totalSaves,
-      totalComments,
-      totalFollowerIncrease,
-    },
-    metrics: {
-      postCount,
-      analyzedCount,
-      hasPlan,
-    },
-  };
-}
-
-interface ActionPlan {
-  title: string;
-  description: string;
-  action: string;
-}
-
-// レビューテキストから提案セクションを抽出してパース
-function extractActionPlansFromReview(reviewText: string, nextMonth: string): ActionPlan[] {
-  const actionPlans: ActionPlan[] = [];
-  
-  if (!reviewText || !nextMonth) {
-    return actionPlans;
-  }
-  
-  // 「📈 ${nextMonth}に向けた提案」セクションを探す
-  const escapedMonth = nextMonth.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const patterns = [
-    new RegExp(`📈\\s*${escapedMonth}に向けた提案[\\s\\S]*?(?=⸻|$)`, "i"),
-    /📈\s*[^\n]*向けた提案[\s\S]*?(?=⸻|$)/i,
-    /📈[\s\S]*?提案[\s\S]*?(?=⸻|$)/i,
-  ];
-  
-  let proposalText = "";
-  for (const pattern of patterns) {
-    const match = reviewText.match(pattern);
-    if (match) {
-      proposalText = match[0];
-      break;
-    }
-  }
-  
-  if (!proposalText) {
-    return actionPlans;
-  }
-  
-  // 各提案を抽出（「1.」「2.」「3.」で始まる行）
-  const proposalRegex = /(\d+)\.\s*([^\n]+)(?:\n\s*([^\n]+(?:\n\s*[^\n]+)*?))?(?=\n\s*\d+\.|$)/g;
-  let proposalMatch;
-  
-  while ((proposalMatch = proposalRegex.exec(proposalText)) !== null) {
-    const title = proposalMatch[2]?.trim() || "";
-    const descriptionAndAction = (proposalMatch[3] || "").trim();
-    
-    if (!title) {
-      continue;
-    }
-    
-    // 「→」で区切って説明とアクションを分離
-    const lines = descriptionAndAction.split(/\n/).map(line => line.trim()).filter(line => line);
-    let description = "";
-    let action = "";
-    
-    for (const line of lines) {
-      if (line.match(/^[→→]\s*/)) {
-        action = line.replace(/^[→→]\s*/, "").trim();
-      } else {
-        description += (description ? " " : "") + line;
-      }
-    }
-    
-    actionPlans.push({
-      title,
-      description: description.trim(),
-      action: action.trim(),
-    });
-  }
-  
-  return actionPlans;
-}
-
-interface RiskAlert {
-  id: string;
-  severity: "critical" | "warning" | "info";
-  metric: string;
-  message: string;
-  change?: number;
-  value?: number;
-}
-
-/**
- * 月次レポートページ用の統合BFF API
- * すべてのコンポーネントが使用するデータを1回のリクエストで取得
- */
 export async function GET(request: NextRequest) {
   try {
     const { uid } = await requireAuthContext(request, {
@@ -329,7 +168,6 @@ export async function GET(request: NextRequest) {
       userDoc,
       prevAnalyticsSnapshot,
       currentMonthSnapshot,
-      prevMonthSnapshot,
       feedbackSnapshot,
       snapshotsSnapshot,
     ] = await Promise.all([
@@ -368,14 +206,6 @@ export async function GET(request: NextRequest) {
         .where("userId", "==", uid)
         .where("snsType", "==", "instagram")
         .where("month", "==", date)
-        .limit(1)
-        .get(),
-      // 前月のfollower_counts
-      adminDb
-        .collection("follower_counts")
-        .where("userId", "==", uid)
-        .where("snsType", "==", "instagram")
-        .where("month", "==", prevMonthStr)
         .limit(1)
         .get(),
       // フィードバックデータ
@@ -502,103 +332,22 @@ export async function GET(request: NextRequest) {
     });
 
     // 3. リスク検知
-    const prevAnalyticsByPostId = new Map<string, admin.firestore.DocumentData>();
-    prevAnalyticsSnapshot.docs.forEach((doc) => {
-      const data = doc.data();
-      const postId = data.postId;
-      if (postId) {
-        const existing = prevAnalyticsByPostId.get(postId);
-        if (!existing || (data.publishedAt && existing.publishedAt && data.publishedAt > existing.publishedAt)) {
-          prevAnalyticsByPostId.set(postId, data);
-        }
-      }
+    const previous = aggregatePreviousMonthAnalytics(
+      prevAnalyticsSnapshot.docs.map((doc) => doc.data() as Record<string, unknown>)
+    );
+    const prevTotalReach = previous.totalReach;
+    const prevTotalFollowerIncrease = previous.totalFollowerIncrease;
+
+    const riskAlerts: RuntimeRiskAlert[] = detectRiskAlerts({
+      current: {
+        analyzedCount,
+        totalLikes,
+        totalReach,
+        totalComments,
+        totalFollowerIncrease,
+      },
+      previous,
     });
-
-    const prevAnalyzedCount = prevAnalyticsByPostId.size;
-    let prevTotalLikes = 0;
-    let prevTotalReach = 0;
-    let prevTotalComments = 0;
-    let prevTotalFollowerIncrease = 0;
-    // prevTotalSaves removed (unused)
-
-    prevAnalyticsByPostId.forEach((data) => {
-      prevTotalLikes += data.likes || 0;
-      prevTotalReach += data.reach || 0;
-      prevTotalComments += data.comments || 0;
-      prevTotalFollowerIncrease += data.followerIncrease || 0;
-    });
-
-    const riskAlerts: RiskAlert[] = [];
-
-    // フォロワー数の急激な減少
-    if (prevTotalFollowerIncrease > 0 && totalFollowerIncrease < 0) {
-      const decreaseRate = (Math.abs(totalFollowerIncrease) / prevTotalFollowerIncrease) * 100;
-      if (decreaseRate >= 10) {
-        riskAlerts.push({
-          id: "follower-decrease",
-          severity: decreaseRate >= 30 ? "critical" : "warning",
-          metric: "フォロワー数",
-          message: `フォロワー数が前月比で${decreaseRate.toFixed(1)}％減少しています。コンテンツの質や投稿頻度を見直す必要があります。`,
-          change: -decreaseRate,
-        });
-      }
-    }
-
-    // リーチ数の急激な減少
-    if (prevTotalReach > 0 && totalReach > 0) {
-      const reachChange = ((totalReach - prevTotalReach) / prevTotalReach) * 100;
-      if (reachChange <= -30) {
-        riskAlerts.push({
-          id: "reach-decrease",
-          severity: reachChange <= -50 ? "critical" : "warning",
-          metric: "リーチ数",
-          message: `リーチ数が前月比で${Math.abs(reachChange).toFixed(1)}％減少しています。投稿タイミングやハッシュタグの見直しを検討してください。`,
-          change: reachChange,
-        });
-      }
-    }
-
-    // エンゲージメント率の急激な低下
-    if (prevTotalReach > 0 && totalReach > 0) {
-      const prevEngagementRate = ((prevTotalLikes + prevTotalComments) / prevTotalReach) * 100;
-      const currentEngagementRate = ((totalLikes + totalComments) / totalReach) * 100;
-      const engagementChange = currentEngagementRate - prevEngagementRate;
-      
-      if (engagementChange <= -2 && prevEngagementRate > 0) {
-        riskAlerts.push({
-          id: "engagement-decrease",
-          severity: engagementChange <= -5 ? "critical" : "warning",
-          metric: "エンゲージメント率",
-          message: `エンゲージメント率が前月比で${Math.abs(engagementChange).toFixed(1)}ポイント低下しています。コンテンツの質やフォロワーとの関係性を見直す必要があります。`,
-          change: engagementChange,
-        });
-      }
-    }
-
-    // 投稿頻度の急激な減少
-    if (prevAnalyzedCount > 0 && analyzedCount > 0) {
-      const postCountChange = ((analyzedCount - prevAnalyzedCount) / prevAnalyzedCount) * 100;
-      if (postCountChange <= -50) {
-        riskAlerts.push({
-          id: "post-frequency-decrease",
-          severity: "warning",
-          metric: "投稿頻度",
-          message: `投稿数が前月比で${Math.abs(postCountChange).toFixed(1)}％減少しています。安定した投稿頻度を維持することが重要です。`,
-          change: postCountChange,
-        });
-      }
-    }
-
-    // 投稿がない場合
-    if (analyzedCount === 0 && prevAnalyzedCount > 0) {
-      riskAlerts.push({
-        id: "no-posts",
-        severity: "critical",
-        metric: "投稿数",
-        message: "今月は投稿がありません。継続的な投稿がアカウント成長の鍵です。",
-        value: 0,
-      });
-    }
 
     // 4. フィードバック感情分析
     const postsMap = new Map<string, { id: string; title: string; postType: "feed" | "reel" | "story" }>();
@@ -883,19 +632,16 @@ export async function GET(request: NextRequest) {
 
     // 8. 月次レビューとアクションプラン（完全版AI生成）
     let monthlyReview = null;
-    let actionPlans: ActionPlan[] = [];
+    let actionPlans: ParsedActionPlan[] = [];
 
-    const savedReviewDoc = await adminDb
-      .collection("monthly_reviews")
-      .doc(`${uid}_${date}`)
-      .get();
-
-    // 再生成フラグがない場合のみ既存データを読み込む
-    if (savedReviewDoc.exists && !forceRegenerate) {
-      const savedData = savedReviewDoc.data();
-      monthlyReview = savedData?.review || "";
-      actionPlans = savedData?.actionPlans || [];
-    }
+    const reusableReview = await loadReusableMonthlyReview({
+      store: monthlyReviewStore,
+      userId: uid,
+      month: date,
+      forceRegenerate,
+    });
+    monthlyReview = reusableReview.monthlyReview;
+    actionPlans = reusableReview.actionPlans;
 
     // 月次レビューが生成されていない場合、または再生成フラグがある場合
     // ただし、analyzedCountが10件未満の場合はAI生成をスキップ（トークン費削減）
@@ -908,20 +654,11 @@ export async function GET(request: NextRequest) {
       }
       // 10件未満の場合はAI生成をスキップしてフォールバックメッセージを表示
       if (analyzedCount < 10) {
-        // 前月比を計算（フォールバックメッセージ用）
-        let prevTotalReach = 0;
-        prevAnalyticsByPostId.forEach((data) => {
-          prevTotalReach += data.reach || 0;
-        });
-        const reachChange = prevTotalReach > 0 ? ((totalReach - prevTotalReach) / prevTotalReach) * 100 : 0;
-        const reachChangeText = prevTotalReach > 0
-          ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）`
-          : "";
-
-        // フォロワー数の前月比を計算（フォールバックメッセージ用）
-        const fallbackFollowerChangeText = prevTotalFollowerIncrease > 0 && totalFollowerIncrease !== prevTotalFollowerIncrease
-          ? `（前月比${totalFollowerIncrease > prevTotalFollowerIncrease ? "+" : ""}${((totalFollowerIncrease - prevTotalFollowerIncrease) / prevTotalFollowerIncrease * 100).toFixed(1)}％）`
-          : "";
+        const reachChangeText = formatReachChangeText(prevTotalReach, totalReach);
+        const fallbackFollowerChangeText = formatFollowerChangeText(
+          prevTotalFollowerIncrease,
+          totalFollowerIncrease
+        );
 
         // フォロワー数の表示用テキスト（0の場合も必ず表示）
         const followerDisplayValue = totalFollowerIncrease || 0;
@@ -937,46 +674,28 @@ export async function GET(request: NextRequest) {
           followerDisplayText,
         });
 
-        monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括})
-
-⸻
-
-📈 月次トータル数字
-	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
-	•	いいね数：${totalLikes.toLocaleString()}
-	•	保存数：${totalSaves.toLocaleString()}
-	•	コメント数：${totalComments.toLocaleString()}
-	•	フォロワー増加数：${followerDisplayText}
-
-⸻
-
-💡 総評
-
-${getMonthName(date)}は分析済み投稿が${analyzedCount}件と、まだデータが少ない状態です。より精度の高い分析とAIによる振り返り・アクションプラン生成のためには、最低10件以上の分析済み投稿が必要です。
-
-引き続き投稿を分析してデータを蓄積していきましょう。`;
+        monthlyReview = buildInsufficientDataMonthlyReview({
+          monthName: getMonthName(date),
+          analyzedCount,
+          totalReach,
+          totalLikes,
+          totalSaves,
+          totalComments,
+          followerDisplayText,
+          reachChangeText,
+        });
         actionPlans = [];
         
         // フォールバックメッセージもFirestoreに保存（次回以降の表示用）
         try {
-          const reviewDocRef = adminDb
-            .collection("monthly_reviews")
-            .doc(`${uid}_${date}`);
-
-          await reviewDocRef.set(
-            {
-              userId: uid,
-              month: date,
-              review: monthlyReview,
-              actionPlans: [],
-              hasPlan,
-              analyzedCount,
-              isFallback: true, // フォールバックメッセージであることを示すフラグ
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          );
+          await persistFallbackMonthlyReview({
+            store: monthlyReviewStore,
+            userId: uid,
+            month: date,
+            review: monthlyReview,
+            hasPlan,
+            analyzedCount,
+          });
         } catch (saveError) {
           console.error("フォールバックレビュー保存エラー:", saveError);
         }
@@ -1115,15 +834,8 @@ ${getMonthName(date)}は分析済み投稿が${analyzedCount}件と、まだデ�
         }
 
         // 前月比を計算
-        let prevTotalReach = 0;
-        prevAnalyticsByPostId.forEach((data) => {
-          prevTotalReach += data.reach || 0;
-        });
-
-        const reachChange = prevTotalReach > 0 ? ((totalReach - prevTotalReach) / prevTotalReach) * 100 : 0;
-        const reachChangeText = prevTotalReach > 0
-          ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）`
-          : "";
+        const prevTotalReach = previous.totalReach;
+        const reachChangeText = formatReachChangeText(prevTotalReach, totalReach);
 
         // 運用計画の情報を取得
         let planInfo = null;
@@ -1241,542 +953,117 @@ ${getMonthName(date)}は分析済み投稿が${analyzedCount}件と、まだデ�
 
           // AI生成（完全版）
           // 10件以上の分析済み投稿がある場合のみAI生成を実行（トークン費削減）
-          if (openai && analyzedCount >= 10) {
+          if (aiClient && analyzedCount >= 10) {
             try {
             const currentMonth = getMonthName(date);
             const nextMonth = getNextMonthName(date);
             const totalShares = validAnalyticsData.reduce((sum, d) => sum + (d.shares || 0), 0);
+            const followerChangeText = formatFollowerChangeText(
+              prevTotalFollowerIncrease,
+              totalFollowerIncrease
+            );
 
-            // フォロワー数の前月比を計算
-            const followerChangeText = prevTotalFollowerIncrease > 0 && totalFollowerIncrease !== prevTotalFollowerIncrease
-              ? `（前月比${totalFollowerIncrease > prevTotalFollowerIncrease ? "+" : ""}${((totalFollowerIncrease - prevTotalFollowerIncrease) / prevTotalFollowerIncrease * 100).toFixed(1)}％）`
-              : "";
-
-            const prompt = `以下のInstagram運用データを基に、${currentMonth}の振り返りを自然な日本語で出力してください。
-
-【データ】
-- 分析済み投稿数: ${analyzedCount}件
-- いいね数: ${totalLikes.toLocaleString()}
-- リーチ数: ${totalReach.toLocaleString()}${reachChangeText}
-- コメント数: ${totalComments.toLocaleString()}
-- 保存数: ${totalSaves.toLocaleString()}
-- シェア数: ${totalShares.toLocaleString()}
-- フォロワー増加数: ${totalFollowerIncrease > 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}人${followerChangeText}
-${hasPlan ? `- 運用計画: ${planInfo?.title || "あり"}` : "- 運用計画: 未設定"}
-${businessInfoText}
-${aiSettingsText}
-
-【投稿タイプ別の統計】
-${postTypeInfo}
-
-【最も閲覧された投稿】
-${topPostInfo}
-
-${postSummaryInsights ? `\n【投稿ごとのAI分析結果の集計】\n${postSummaryInsights}` : ""}
-
-${directionAlignmentWarnings.length > 0 ? `\n【今月の方向性警告（重要）】
-今月の投稿分析で、${directionAlignmentWarnings.length}件の投稿が今月のAI方針から「乖離」または「要注意」と判定されました。
-
-警告の内訳:
-${directionAlignmentWarnings.map((warning, index) => {
-  const alignmentLabel = warning.directionAlignment === "乖離" ? "⚠️ 乖離" : "⚠️ 要注意";
-  return `${index + 1}. ${alignmentLabel}: ${warning.directionComment || "方針からズレています"}`;
-}).join("\n")}
-
-${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").length > 0
-  ? `\n**重要**: 「乖離」と判定された投稿が${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").length}件あります。これは、今月のAI方針「${directionAlignmentWarnings[0]?.aiDirectionMainTheme || "未設定"}」から大きくズレていることを示しています。\n`
-  : ""}
-これらの警告を踏まえて、来月のアクションプランでは以下の点を必ず考慮してください:
-- 警告が出た投稿のパターンを分析し、同様のズレを防ぐ施策を提案してください
-- 今月のAI方針との整合性を保つための具体的な改善策を提案してください
-- 警告の頻度が高い場合は、方針自体の見直しも検討してください
-` : ""}
-
-【出力形式】
-必ず以下のセクションを全て含めてください。最後の「📈 ${nextMonth}に向けた提案」セクションは必須です。
-${postSummaryInsights ? "「📋 今月の投稿別強み・改善・施策まとめ」セクションも含めてください。" : ""}
-
-📊 Instagram運用レポート（${currentMonth}総括）
-
-⸻
-
-📈 月次トータル数字
-**重要：以下の5項目を必ず全て含めてください。フォロワー増加数も必須です。**
-	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
-	•	いいね数：${totalLikes.toLocaleString()}
-	•	保存数：${totalSaves.toLocaleString()}
-	•	コメント数：${totalComments.toLocaleString()}
-	•	フォロワー増加数：${totalFollowerIncrease > 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}人${followerChangeText}
-
-⸻
-
-🔹 アカウント全体の動き
-
-{全体的な評価コメント（2-3文）。以下の点を含めてください：
-- 上記の「📈 月次トータル数字」セクションで既に数値を表示しているので、ここでは数値を繰り返し羅列せず、その数値の意味や評価を自然な文章で説明してください
-- 前月比がある場合は、その変化率と評価（増加している場合は「前月比で○％増加しています」など）
-- 数値だけを羅列するのではなく、読み手が理解しやすい自然な文章で説明してください
-- 「これは、ブランドの認知度を高めるために重要な要素であり」のような硬い表現は避け、もっと自然な表現にしてください
-- 「リーチ数やいいね数が順調に伸びており、エンゲージメントも良好です」のような自然な表現を心がけてください
-}
-
-⸻
-
-🔹 コンテンツ別の傾向
-	•	${postTypeInfo}。
-	•	もっとも閲覧されたコンテンツは${topPostInfo}。
-
-{傾向の説明（1-2文）。以下の点を含めてください：
-- どの投稿タイプが最も効果的だったか、その理由を自然な文章で説明
-- 投稿タイプ別のバランスや改善の余地
-- 自然な文章で、数値だけを羅列しないでください
-- 最も閲覧された投稿の詳細は上記の箇条書きで既に記載しているので、ここでは重複せず、投稿タイプ全体の傾向に焦点を当ててください
-- 「視覚的なコンテンツが受け入れられていることがわかりますが」のような硬い表現は避け、もっと自然な表現にしてください
-- 「画像投稿が全体の79％を占めていることから、視覚的なアプローチが効果的であることが証明されました」のような自然な表現を心がけてください
-}
-
-⸻
-
-${postSummaryInsights ? `📋 今月の投稿別強み・改善・施策まとめ
-
-{投稿ごとのAI分析結果を基に、以下の3つの観点でまとめてください：
-
-1. **今月の強み**
-   - 頻出する強みや高パフォーマンス投稿の共通点を2-3個挙げてください
-   - 「【投稿ごとのAI分析結果の集計】」セクションの「頻出する強み」と「高パフォーマンス投稿の共通点」を参考にしてください
-   - 具体的で実践的な内容にしてください
-
-2. **改善が必要な点**
-   - 低パフォーマンス投稿の傾向や改善が必要な点を2-3個挙げてください
-   - 数値だけを羅列せず、自然な文章で説明してください
-
-3. **今月の施策まとめ**
-   - 頻出する推奨アクションを2-3個挙げてください
-   - 「【投稿ごとのAI分析結果の集計】」セクションの「頻出する推奨アクション」を参考にしてください
-   - 実際に取り組んだ施策や効果的だった施策をまとめてください
-
-注意：
-- 箇条書きで簡潔にまとめてください
-- 各項目は1-2文で説明してください
-- 「【投稿ごとのAI分析結果の集計】」セクションの情報を必ず活用してください
-- 自然な日本語で、読みやすい文章にしてください
-}` : ""}
-
-⸻
-
-💡 総評
-
-${currentMonth}の運用を振り返ると、{評価（好調/順調/改善の余地ありなど）}でした。
-特に{強調ポイント（具体的な数値や投稿タイプなど）}が目立つ結果となりました。
-また、{具体的な傾向（投稿タイプ別の特徴や、エンゲージメントの特徴など）}が高い反応を得ており、
-アカウントの方向性がしっかり定まりつつあります。
-
-{注意：
-- 上記のテンプレートをそのまま出力せず、データに基づいて自然な文章で総評を書いてください
-- 数値や具体的な事実を含めながら、読みやすい文章にしてください
-- 「コンテンツ別の傾向」セクションで既に言及した投稿名や詳細は重複させないでください
-- 総評では、全体の評価や今後の展望に焦点を当ててください
-- 「2025年11月は全体的に好調で、リーチ数やいいね数の増加が見られたことが特に嬉しい結果でした」のような自然な表現を心がけてください
-- 「これは、ブランドの認知度を高めるために重要な要素であり」のような硬い表現は避けてください
-}
-
-⸻
-
-📈 ${nextMonth}に向けた提案
-	1.	{提案1のタイトル}
-　{提案1の説明。データに基づいた具体的な理由を記載してください。}
-
-	2.	{提案2のタイトル}
-　{提案2の説明。データに基づいた具体的な理由を記載してください。}
-
-	3.	{提案3のタイトル}
-　{提案3の説明。データに基づいた具体的な理由を記載してください。}
-
-{注意：
-- 各セクションで既に言及した内容（投稿名、投稿タイプの詳細など）は重複させないでください
-- 提案は、これまでの分析を踏まえた具体的なアクションプランにしてください
-- 同じ投稿名や数値を繰り返し言及しないでください
-- 「来月はこうしようね」という親しみやすいトーンで書いてください
-- **この「📈 ${nextMonth}に向けた提案」セクションは必須です。必ず含めてください。**
-- **最重要：提案は必ず「ビジネス情報」と「Instagram AI設定」を参照してください。業種、商品・サービス、ターゲット市場、目標、課題、キャッチコピーなどの具体的な情報を活用して、そのビジネスに特化した提案をしてください。**
-- **「重要：提案で必ず使用する具体的な商品・サービス名」セクションに記載されている商品・サービス名を必ず使用してください。これらの具体的なサービス名を提案に含めることで、より実践的で効果的な提案になります。**
-- **業種に応じた適切な提案をしてください：**
-  - 介護・福祉・老人ホーム業種の場合：プレゼント企画やセミナー告知ではなく、利用者の日常の様子、家族向けの情報、サービスの紹介（「デイサービス」「お試し入居」「ショートステイ」など、上記の具体的なサービス名を使用）、スタッフの様子、施設の雰囲気、食事の様子、レクリエーション活動など、利用者や家族に寄り添ったコンテンツを提案してください
-  - 美容・理容業種の場合：上記の具体的なサービス名（「カット」「カラー」「パーマ」など）を使用してください
-  - 飲食業種の場合：上記の具体的なメニュー名（「ランチセット」「ディナーコース」など）を使用してください
-  - その他の業種も同様に、上記の具体的な商品・サービス名を使用して、その業種に適した具体的なコンテンツを提案してください
-- **凡庸な例（「役立つ情報や美しい風景」「プレゼント企画」「セミナー告知」など）は避け、必ず上記の具体的な商品・サービス名を使用して提案をしてください。**
-
-
-【重要】
-- データが0の場合は0と記載し、「データ未取得」とは書かないでください
-- 実績データに基づいて正確な数値を記載してください
-- 投稿タイプ別の統計や最も閲覧された投稿の情報を必ず反映してください
-- 前月比がある場合は、その変化を評価コメントに含めてください
-- 提案はデータに基づいた具体的な内容にしてください
-- 数値だけを羅列するのではなく、自然で読みやすい日本語の文章で説明してください
-- テンプレートの{評価}や{強調ポイント}などのプレースホルダーをそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください
-- 文章は簡潔で分かりやすく、専門用語を使いすぎないでください
-- **重複を避ける：同じ投稿名、同じ数値、同じ情報を複数のセクションで繰り返し言及しないでください。各セクションで異なる視点や情報を提供してください**
-- 「コンテンツ別の傾向」で最も閲覧された投稿を紹介したら、「総評」では別の視点（全体の評価、今後の展望など）に焦点を当ててください
-- **重要：必ず「${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。**
-- **最重要：提案セクションでは、必ず「ビジネス情報」と「Instagram AI設定」を参照してください。業種、商品・サービス、ターゲット市場、目標、課題、キャッチコピーなどの具体的な情報を活用し、そのビジネスに特化した提案をしてください。凡庸な例（「役立つ情報や美しい風景」など）ではなく、そのビジネスの具体的な商品・サービス名や業種に基づいた提案をしてください。例えば、美容・健康業種なら「カット」「カラー」などの具体的なサービス名を、飲食業種なら「ランチセット」「ディナーコース」などの具体的なメニュー名を使用してください。**
-- **最重要：提案セクションでは、必ず「ビジネス情報」と「Instagram AI設定」を参照してください。業種、商品・サービス、ターゲット市場、目標、課題、キャッチコピーなどの具体的な情報を活用し、そのビジネスに特化した提案をしてください。**
-- **「重要：提案で必ず使用する具体的な商品・サービス名」セクションに記載されている商品・サービス名を必ず使用してください。これらの具体的なサービス名を提案に含めることで、より実践的で効果的な提案になります。**
-- **業種に応じた適切な提案をしてください：**
-  - 介護・福祉・老人ホーム業種の場合：プレゼント企画やセミナー告知ではなく、利用者の日常の様子、家族向けの情報、サービスの紹介（上記の具体的なサービス名を使用）、スタッフの様子、施設の雰囲気、食事の様子、レクリエーション活動など、利用者や家族に寄り添ったコンテンツを提案してください
-  - 美容・理容業種の場合：上記の具体的なサービス名を使用してください
-  - 飲食業種の場合：上記の具体的なメニュー名を使用してください
-  - その他の業種も同様に、上記の具体的な商品・サービス名を使用して、その業種に適した具体的なコンテンツを提案してください
-- **凡庸な例（「役立つ情報や美しい風景」「プレゼント企画」「セミナー告知」など）は避け、必ず上記の具体的な商品・サービス名を使用して提案をしてください。**`;
-
-            const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "あなたはInstagram運用の専門家です。データに基づいて自然で読みやすい日本語で振り返りを提供します。数値だけを羅列するのではなく、具体的な数値とその意味を自然な文章で説明してください。テンプレートのプレースホルダー（{評価}など）をそのまま出力せず、実際のデータに基づいて具体的な内容を書いてください。必ず「📈 ${nextMonth}に向けた提案」セクションを含めてください。このセクションは必須です。提案は必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください。**最重要：「重要：提案で必ず使用する具体的な商品・サービス名」セクションに記載されている商品・サービス名を必ず使用してください。これらの具体的なサービス名を提案に含めることで、より実践的で効果的な提案になります。業種に応じた適切な提案をしてください。介護・福祉・老人ホーム業種の場合は、プレゼント企画やセミナー告知ではなく、利用者の日常の様子、家族向けの情報、サービスの紹介（上記の具体的なサービス名を使用）、スタッフの様子、施設の雰囲気、食事の様子、レクリエーション活動など、利用者や家族に寄り添ったコンテンツを提案してください。凡庸な例（「役立つ情報や美しい風景」「プレゼント企画」「セミナー告知」など）は避け、必ず上記の具体的な商品・サービス名を使用して提案をしてください。**「これは、ブランドの認知度を高めるために重要な要素であり」のような硬い表現は避け、もっと自然で読みやすい文章を心がけてください。",
+            monthlyReview = await generateMonthlyReviewWithAi({
+              aiClient,
+              nextMonth,
+              monthlyReviewPromptInput: {
+                currentMonth,
+                nextMonth,
+                analyzedCount,
+                totalLikes,
+                totalReach,
+                totalComments,
+                totalSaves,
+                totalShares,
+                totalFollowerIncrease,
+                reachChangeText,
+                followerChangeText,
+                hasPlan,
+                planTitle: planInfo?.title,
+                businessInfoText,
+                aiSettingsText,
+                postTypeInfo,
+                topPostInfo,
+                postSummaryInsights,
+                directionAlignmentWarnings,
               },
-              {
-                role: "user",
-                content: prompt,
+              proposalPromptInput: {
+                nextMonth,
+                analyzedCount,
+                totalLikes,
+                totalReach,
+                totalComments,
+                totalSaves,
+                totalFollowerIncrease,
+                reachChangeText,
+                followerChangeText,
+                businessInfoText,
+                aiSettingsText,
+                postTypeSummary: postTypeInfo,
+                directionAlignmentWarnings,
               },
-            ],
-            temperature: 0.7,
-            max_tokens: 2000,
             });
-
-            monthlyReview = completion.choices[0]?.message?.content || "";
-
-            // 提案セクションが含まれていない場合、別途生成
-            if (!monthlyReview.includes("📈") && !monthlyReview.includes("提案")) {
-              try {
-                // フォロワー数の前月比を計算（提案プロンプト用）
-                const proposalFollowerChangeText = prevTotalFollowerIncrease > 0 && totalFollowerIncrease !== prevTotalFollowerIncrease
-                  ? `（前月比${totalFollowerIncrease > prevTotalFollowerIncrease ? "+" : ""}${((totalFollowerIncrease - prevTotalFollowerIncrease) / prevTotalFollowerIncrease * 100).toFixed(1)}％）`
-                  : "";
-
-                const proposalPrompt = `以下のInstagram運用データを基に、${nextMonth}に向けた具体的なアクションプランを3つ生成してください。
-
-【データ】
-- 分析済み投稿数: ${analyzedCount}件
-- いいね数: ${totalLikes.toLocaleString()}
-- リーチ数: ${totalReach.toLocaleString()}${prevTotalReach > 0 ? `（前月比${reachChange >= 0 ? "+" : ""}${reachChange.toFixed(1)}％）` : ""}
-- コメント数: ${totalComments.toLocaleString()}
-- 保存数: ${totalSaves.toLocaleString()}
-- フォロワー増加数: ${totalFollowerIncrease > 0 ? "+" : ""}${totalFollowerIncrease.toLocaleString()}人${proposalFollowerChangeText}
-${businessInfoText}
-${aiSettingsText}
-
-【投稿タイプ別の統計】
-${postTypeArray.length > 0
-  ? postTypeArray
-      .map((stat) => `${stat.label}: ${stat.count}件（${stat.percentage.toFixed(0)}％）`)
-      .join("、")
-  : "データがありません"}
-
-${directionAlignmentWarnings.length > 0 ? `\n【今月の方向性警告（重要・必須考慮）】
-今月の投稿分析で、${directionAlignmentWarnings.length}件の投稿が今月のAI方針から「乖離」または「要注意」と判定されました。
-
-警告の内訳:
-${directionAlignmentWarnings.map((warning, index) => {
-  const alignmentLabel = warning.directionAlignment === "乖離" ? "⚠️ 乖離" : "⚠️ 要注意";
-  return `${index + 1}. ${alignmentLabel}: ${warning.directionComment || "方針からズレています"}`;
-}).join("\n")}
-
-${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").length > 0
-  ? `\n**重要**: 「乖離」と判定された投稿が${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").length}件あります。これは、今月のAI方針「${directionAlignmentWarnings[0]?.aiDirectionMainTheme || "未設定"}」から大きくズレていることを示しています。\n`
-  : ""}
-
-**必須**: 来月のアクションプランでは、以下の点を必ず考慮してください:
-- 警告が出た投稿のパターンを分析し、同様のズレを防ぐ施策を提案してください
-- 今月のAI方針との整合性を保つための具体的な改善策を提案してください
-- 警告の頻度が高い場合は、方針自体の見直しも検討してください
-- 特に「乖離」と判定された投稿が多い場合は、方針の明確化や再設定を提案してください
-` : ""}
-
-【出力形式】
-📈 ${nextMonth}に向けた提案
-	1.	{提案1のタイトル}
-　{提案1の説明。データに基づいた具体的な理由を記載してください。}
-
-	2.	{提案2のタイトル}
-　{提案2の説明。データに基づいた具体的な理由を記載してください。}
-
-	3.	{提案3のタイトル}
-　{提案3の説明。データに基づいた具体的な理由を記載してください。}
-
-【重要】
-- 「来月はこうしようね」という親しみやすいトーンで書いてください
-- 必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください
-- **「重要：提案で必ず使用する具体的な商品・サービス名」セクションに記載されている商品・サービス名を必ず使用してください。これらの具体的なサービス名を提案に含めることで、より実践的で効果的な提案になります。**
-- **業種に応じた適切な提案をしてください：**
-  - 介護・福祉・老人ホーム業種の場合：プレゼント企画やセミナー告知ではなく、利用者の日常の様子、家族向けの情報、サービスの紹介（上記の具体的なサービス名を使用）、スタッフの様子、施設の雰囲気、食事の様子、レクリエーション活動など、利用者や家族に寄り添ったコンテンツを提案してください
-  - 美容・理容業種の場合：上記の具体的なサービス名を使用してください
-  - 飲食業種の場合：上記の具体的なメニュー名を使用してください
-  - その他の業種も同様に、上記の具体的な商品・サービス名を使用して、その業種に適した具体的なコンテンツを提案してください
-- **凡庸な例（「役立つ情報や美しい風景」「プレゼント企画」「セミナー告知」など）は避け、必ず上記の具体的な商品・サービス名を使用して提案をしてください**`;
-
-                const proposalCompletion = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
-                messages: [
-                  {
-                    role: "system",
-                    content:
-                      "あなたはInstagram運用の専門家です。データに基づいて具体的なアクションプランを提供します。必ず「ビジネス情報」と「Instagram AI設定」を参照し、そのビジネスに特化した提案をしてください。**最重要：「重要：提案で必ず使用する具体的な商品・サービス名」セクションに記載されている商品・サービス名を必ず使用してください。これらの具体的なサービス名を提案に含めることで、より実践的で効果的な提案になります。業種に応じた適切な提案をしてください。介護・福祉・老人ホーム業種の場合は、プレゼント企画やセミナー告知ではなく、利用者の日常の様子、家族向けの情報、サービスの紹介（上記の具体的なサービス名を使用）、スタッフの様子、施設の雰囲気、食事の様子、レクリエーション活動など、利用者や家族に寄り添ったコンテンツを提案してください。凡庸な例（「役立つ情報や美しい風景」「プレゼント企画」「セミナー告知」など）は避け、必ず上記の具体的な商品・サービス名を使用して提案をしてください。**",
-                  },
-                  {
-                    role: "user",
-                    content: proposalPrompt,
-                  },
-                ],
-                temperature: 0.7,
-                max_tokens: 800,
-                });
-
-                const proposalText = proposalCompletion.choices[0]?.message?.content || "";
-                if (proposalText) {
-                  monthlyReview += "\n\n⸻\n\n" + proposalText;
-                }
-              } catch (proposalError) {
-                console.error("提案セクション生成エラー:", proposalError);
-              }
-            }
 
             // 提案セクションを抽出してパース
             const nextMonthName = getNextMonthName(date);
             actionPlans = extractActionPlansFromReview(monthlyReview, nextMonthName);
 
-            // 生成されたレビューをFirestoreに保存
+            // 生成されたレビューをFirestoreに保存し、ai_directionも更新
             if (monthlyReview) {
               try {
-                const reviewDocRef = adminDb
-                  .collection("monthly_reviews")
-                  .doc(`${uid}_${date}`);
-
-                // 再生成の場合は既存データを完全に上書き（merge: false）
-                await reviewDocRef.set(
-                  {
-                    userId: uid,
-                    month: date,
-                    review: monthlyReview,
-                    actionPlans,
-                    hasPlan,
-                    analyzedCount,
-                    isFallback: false, // AI生成であることを示すフラグ
-                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                  },
-                  { merge: false } // 再生成の場合は完全に上書き
-                );
-                console.log("[Report Complete] 月次レビューを再生成してFirestoreに保存しました");
-
-                // ai_directionを作成（未確定状態）
-                if (actionPlans.length > 0) {
-                  try {
-                    // 次月の月文字列を取得
-                    const [yearStr, monthStr] = date.split("-").map(Number);
-                    // monthStrは1-12の値なので、0ベースに変換（monthStr - 1）
-                    const nextMonth = new Date(yearStr, monthStr - 1, 1);
-                    nextMonth.setMonth(nextMonth.getMonth() + 1); // 次月に進める
-                    const nextMonthStr = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}`;
-
-                    // actionPlansからai_directionを生成
-                    const mainTheme = actionPlans[0]?.title || "継続的な改善";
-                    const avoidFocus: string[] = [];
-                    const postingRules: string[] = [];
-                    let priorityKPI = "エンゲージメント率";
-
-                    // actionPlansから情報を抽出
-                    actionPlans.forEach((plan) => {
-                      // 説明文から避けるべき焦点を抽出
-                      if (plan.description.includes("避ける") || plan.description.includes("控える")) {
-                        const match = plan.description.match(/(避ける|控える)[^。]+/);
-                        if (match) {
-                          avoidFocus.push(match[0]);
-                        }
-                      }
-                      // アクションから投稿ルールを抽出
-                      if (plan.action) {
-                        postingRules.push(plan.action);
-                      }
-                      // KPI関連のキーワードを検出
-                      if (plan.title.includes("保存") || plan.description.includes("保存")) {
-                        priorityKPI = "保存率";
-                      } else if (plan.title.includes("リーチ") || plan.description.includes("リーチ")) {
-                        priorityKPI = "リーチ";
-                      } else if (plan.title.includes("フォロワー") || plan.description.includes("フォロワー")) {
-                        priorityKPI = "フォロワー増加";
-                      }
-                    });
-
-                    // 最適な投稿時間帯を計算（KPI分析から）
-                    let optimalPostingTime: string | null = null;
-                    try {
-                      // 投稿データとanalyticsデータを結合
-                      const postsWithAnalytics: Array<{
-                        id: string;
-                        title: string;
-                        postType: "feed" | "reel" | "story";
-                        analyticsSummary?: {
-                          likes?: number;
-                          comments?: number;
-                          shares?: number;
-                          saves?: number;
-                          reach?: number;
-                          publishedTime?: string;
-                        };
-                      }> = [];
-
-                      postsSnapshot.docs.forEach((postDoc) => {
-                        const postData = postDoc.data();
-                        const analyticsData = analyticsByPostId.get(postDoc.id);
-                        
-                        if (analyticsData) {
-                          // publishedAtからpublishedTimeを計算
-                          let publishedTime = "";
-                          if (analyticsData.publishedTime) {
-                            publishedTime = analyticsData.publishedTime;
-                          } else if (analyticsData.publishedAt) {
-                            let publishedAt: Date;
-                            if (analyticsData.publishedAt instanceof admin.firestore.Timestamp) {
-                              publishedAt = analyticsData.publishedAt.toDate();
-                            } else if (analyticsData.publishedAt instanceof Date) {
-                              publishedAt = analyticsData.publishedAt;
-                            } else if (analyticsData.publishedAt.toDate && typeof analyticsData.publishedAt.toDate === "function") {
-                              publishedAt = analyticsData.publishedAt.toDate();
-                            } else {
-                              publishedAt = new Date(analyticsData.publishedAt);
-                            }
-                            // HH:mm形式に変換
-                            const hours = String(publishedAt.getHours()).padStart(2, "0");
-                            const minutes = String(publishedAt.getMinutes()).padStart(2, "0");
-                            publishedTime = `${hours}:${minutes}`;
-                          }
-
-                          postsWithAnalytics.push({
-                            id: postDoc.id,
-                            title: postData.title || "",
-                            postType: (postData.postType || "feed") as "feed" | "reel" | "story",
-                            analyticsSummary: {
-                              likes: analyticsData.likes || 0,
-                              comments: analyticsData.comments || 0,
-                              shares: analyticsData.shares || 0,
-                              saves: analyticsData.saves || 0,
-                              reach: analyticsData.reach || 0,
-                              publishedTime,
-                            },
-                          });
-                        }
-                      });
-
-                      // 時間帯ごとのKPI分析を計算
-                      const timeSlots = [
-                        { label: "早朝 (6-9時)", range: [6, 9] },
-                        { label: "午前 (9-12時)", range: [9, 12] },
-                        { label: "午後 (12-15時)", range: [12, 15] },
-                        { label: "夕方 (15-18時)", range: [15, 18] },
-                        { label: "夜 (18-21時)", range: [18, 21] },
-                        { label: "深夜 (21-6時)", range: [21, 24] },
-                      ];
-
-                      const timeSlotKPIAnalysis = timeSlots.map(({ label, range }) => {
-                        const postsInRange = postsWithAnalytics.filter((post) => {
-                          const publishedTime = post.analyticsSummary?.publishedTime;
-                          if (!publishedTime || publishedTime === "") {
-                            return false;
-                          }
-                          const hour = parseInt(publishedTime.split(":")[0]);
-                          if (isNaN(hour)) {
-                            return false;
-                          }
-
-                          if (range[0] === 21 && range[1] === 24) {
-                            return hour >= 21 || hour < 6;
-                          }
-
-                          return hour >= range[0] && hour < range[1];
-                        });
-
-                        if (postsInRange.length === 0) {
-                          return {
-                            label,
-                            range,
-                            postsInRange: 0,
-                            avgEngagementRate: 0,
-                          };
-                        }
-
-                        let totalEngagementRate = 0;
-                        postsInRange.forEach((post) => {
-                          const summary = post.analyticsSummary;
-                          if (!summary) return;
-
-                          const likes = summary.likes || 0;
-                          const comments = summary.comments || 0;
-                          const shares = summary.shares || 0;
-                          const saves = summary.saves || 0;
-                          const reach = summary.reach || 0;
-
-                          const engagement = likes + comments + shares + saves;
-                          const engagementRate = reach > 0 ? (engagement / reach) * 100 : 0;
-                          totalEngagementRate += engagementRate;
-                        });
-
-                        const count = postsInRange.length;
-                        return {
-                          label,
-                          range,
-                          postsInRange: count,
-                          avgEngagementRate: count > 0 ? totalEngagementRate / count : 0,
-                        };
-                      });
-
-                      // 最適な投稿時間帯を取得（エンゲージメント率が最も高い時間帯、投稿数が1件以上）
-                      const validTimeSlots = timeSlotKPIAnalysis.filter((slot) => slot.postsInRange > 0);
-                      if (validTimeSlots.length > 0) {
-                        const bestTimeSlot = validTimeSlots.reduce((best, slot) => {
-                          if (slot.avgEngagementRate > best.avgEngagementRate) {
-                            return slot;
-                          }
-                          return best;
-                        }, validTimeSlots[0]);
-                        optimalPostingTime = bestTimeSlot.label;
-                        console.log(`✅ 最適な投稿時間帯を計算: ${optimalPostingTime} (エンゲージメント率: ${bestTimeSlot.avgEngagementRate.toFixed(2)}%)`);
-                      }
-                    } catch (timeAnalysisError) {
-                      console.error("最適な投稿時間帯計算エラー:", timeAnalysisError);
-                      // エラーは無視して続行
-                    }
-
-                    const directionDocRef = adminDb
-                      .collection("ai_direction")
-                      .doc(`${uid}_${nextMonthStr}`);
-
-                    await directionDocRef.set(
-                      {
-                        userId: uid,
-                        month: nextMonthStr,
-                        mainTheme,
-                        avoidFocus: avoidFocus.length > 0 ? avoidFocus : ["日常雑談のみの投稿"],
-                        priorityKPI,
-                        postingRules: postingRules.length > 0 ? postingRules : ["1投稿1メッセージ"],
-                        optimalPostingTime: optimalPostingTime || null,
-                        generatedFrom: "monthly_review",
-                        lockedAt: null, // 未確定
-                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                      },
-                      { merge: true }
-                    );
-
-                    console.log(`✅ ai_directionを作成: ${nextMonthStr} - ${mainTheme}`);
-                  } catch (directionError) {
-                    console.error("ai_direction作成エラー:", directionError);
-                    // エラーは無視して続行
+                const postsForDirection = postsSnapshot.docs.flatMap((postDoc) => {
+                  const analyticsData = analyticsByPostId.get(postDoc.id);
+                  if (!analyticsData) {
+                    return [];
                   }
-                }
+
+                  let publishedTime = "";
+                  if (analyticsData.publishedTime) {
+                    publishedTime = analyticsData.publishedTime;
+                  } else if (analyticsData.publishedAt) {
+                    let publishedAt: Date;
+                    if (analyticsData.publishedAt instanceof admin.firestore.Timestamp) {
+                      publishedAt = analyticsData.publishedAt.toDate();
+                    } else if (analyticsData.publishedAt instanceof Date) {
+                      publishedAt = analyticsData.publishedAt;
+                    } else if (
+                      analyticsData.publishedAt.toDate &&
+                      typeof analyticsData.publishedAt.toDate === "function"
+                    ) {
+                      publishedAt = analyticsData.publishedAt.toDate();
+                    } else {
+                      publishedAt = new Date(analyticsData.publishedAt);
+                    }
+                    const hours = String(publishedAt.getHours()).padStart(2, "0");
+                    const minutes = String(publishedAt.getMinutes()).padStart(2, "0");
+                    publishedTime = `${hours}:${minutes}`;
+                  }
+
+                  return [
+                    {
+                      analyticsSummary: {
+                        likes: analyticsData.likes || 0,
+                        comments: analyticsData.comments || 0,
+                        shares: analyticsData.shares || 0,
+                        saves: analyticsData.saves || 0,
+                        reach: analyticsData.reach || 0,
+                        publishedTime,
+                      },
+                    },
+                  ];
+                });
+
+                await persistGeneratedMonthlyReview({
+                  store: monthlyReviewStore,
+                  userId: uid,
+                  month: date,
+                  review: monthlyReview,
+                  actionPlans,
+                  hasPlan,
+                  analyzedCount,
+                  postsForDirection,
+                });
+                console.log("[Report Complete] 月次レビューを再生成してFirestoreに保存しました");
               } catch (saveError) {
                 console.error("レビュー保存エラー:", saveError);
               }
@@ -1784,21 +1071,14 @@ ${directionAlignmentWarnings.filter(w => w.directionAlignment === "乖離").leng
           } catch (aiError) {
             console.error("AI生成エラー:", aiError);
             // AI生成に失敗した場合はフォールバック
-            monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括）
-
-⸻
-
-📈 月次トータル数字
-	•	閲覧数：${totalReach.toLocaleString()}人${reachChangeText}
-	•	いいね数：${totalLikes.toLocaleString()}
-	•	保存数：${totalSaves.toLocaleString()}
-	•	コメント数：${totalComments.toLocaleString()}
-
-⸻
-
-💡 総評
-
-${getMonthName(date)}の運用を振り返ると、${totalReach > 0 ? `リーチ数${totalReach.toLocaleString()}人、いいね数${totalLikes.toLocaleString()}件を達成しました。` : "データ蓄積の段階です。"}継続的な投稿と分析により、アカウントの成長を目指しましょう。`;
+            monthlyReview = buildAiErrorFallbackMonthlyReview({
+              monthName: getMonthName(date),
+              totalReach,
+              totalLikes,
+              totalSaves,
+              totalComments,
+              reachChangeText,
+            });
             actionPlans = [];
           }
         }
@@ -1808,21 +1088,7 @@ ${getMonthName(date)}の運用を振り返ると、${totalReach > 0 ? `リーチ
     
     // monthlyReviewがまだ設定されていない場合（データがない場合）のフォールバック
     if (!monthlyReview) {
-      monthlyReview = `📊 Instagram運用レポート（${getMonthName(date)}総括})
-
-⸻
-
-📈 月次トータル数字
-	•	閲覧数：0人
-	•	いいね数：0
-	•	保存数：0
-	•	コメント数：0
-
-⸻
-
-💡 総評
-
-${getMonthName(date)}のデータがまだありません。投稿を開始してデータを蓄積しましょう。`;
+      monthlyReview = buildNoDataMonthlyReview(getMonthName(date));
       actionPlans = [];
     }
 

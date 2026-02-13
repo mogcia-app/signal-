@@ -12,7 +12,7 @@ import {
   Legend,
 } from "recharts";
 import { TrendingUp, Loader2 } from "lucide-react";
-import type { DailyKPI } from "@/app/api/analytics/kpi-breakdown/route";
+import type { DailyKPI } from "@/domain/analysis/kpi/types";
 
 interface DailyKPITrendProps {
   dailyKPIs: DailyKPI[];

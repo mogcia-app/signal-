@@ -12,6 +12,15 @@ export interface ToolMaintenance {
   updatedAt: string | null;
 }
 
+const DEFAULT_MAINTENANCE_STATUS: ToolMaintenance = {
+  enabled: false,
+  message: "",
+  scheduledStart: null,
+  scheduledEnd: null,
+  updatedBy: "",
+  updatedAt: null,
+};
+
 /**
  * メンテナンス状態を取得
  * Next.js API Route経由で取得（BFFパターン）
@@ -30,6 +39,12 @@ export async function getToolMaintenanceStatus(): Promise<ToolMaintenance> {
       cache: "no-store",
     });
 
+    // 404は「メンテナンスAPIが未配置/未反映」のケースとして扱い、
+    // エラーにはせずデフォルト値を返す
+    if (response.status === 404) {
+      return DEFAULT_MAINTENANCE_STATUS;
+    }
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -47,26 +62,13 @@ export async function getToolMaintenanceStatus(): Promise<ToolMaintenance> {
       };
     }
 
-    // デフォルト値（メンテナンス無効）
-    return {
-      enabled: false,
-      message: "",
-      scheduledStart: null,
-      scheduledEnd: null,
-      updatedBy: "",
-      updatedAt: null,
-    };
+    return DEFAULT_MAINTENANCE_STATUS;
   } catch (error) {
-    console.error("Error fetching tool maintenance status:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Tool maintenance status fallback:", error);
+    }
     // エラー時はメンテナンス無効として扱う
-    return {
-      enabled: false,
-      message: "",
-      scheduledStart: null,
-      scheduledEnd: null,
-      updatedBy: "",
-      updatedAt: null,
-    };
+    return DEFAULT_MAINTENANCE_STATUS;
   }
 }
 
@@ -83,7 +85,14 @@ export async function setToolMaintenanceMode(
   try {
     const docRef = doc(db, MAINTENANCE_DOC_PATH);
 
-    const updateData: any = {
+    const updateData: {
+      enabled: boolean;
+      message: string;
+      updatedBy: string;
+      updatedAt: ReturnType<typeof serverTimestamp>;
+      scheduledStart?: string;
+      scheduledEnd?: string;
+    } = {
       enabled,
       message: message || (enabled ? "システムメンテナンス中です。しばらくお待ちください。" : ""),
       updatedBy,
@@ -107,4 +116,3 @@ export async function setToolMaintenanceMode(
     throw error;
   }
 }
-

@@ -10,6 +10,8 @@ export interface PlanInput {
   snsType: string
   currentFollowers: number
   targetFollowers: number
+  targetFollowerOption?: "conservative" | "standard" | "ambitious" | "custom" | "ai"
+  customTargetFollowers?: string
   operationPurpose: string
   weeklyPosts: "none" | "weekly-1-2" | "weekly-3-4" | "daily"
   reelCapability: "none" | "weekly-1-2" | "weekly-3-4" | "daily"
@@ -19,8 +21,7 @@ export interface PlanInput {
   regionRestriction?: string
   regionName?: string
   startDate: string
-  // 任意項目
-  [key: string]: unknown
+  simulationResult?: Record<string, unknown> | null
 }
 
 /**
@@ -39,6 +40,7 @@ export function validatePlanInput(input: Partial<PlanInput>): input is PlanInput
     input.startDate
   )
 }
+
 
 
 

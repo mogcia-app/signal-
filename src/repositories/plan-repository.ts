@@ -180,7 +180,7 @@ export class PlanRepository {
         const planRef = adminDb.collection("plans").doc()
         
         // PlanInputをformDataとして保存（undefinedを除外）
-        const cleanedPlanInput = this.removeUndefined(planInput as Record<string, unknown>)
+        const cleanedPlanInput = this.removeUndefined(planInput as unknown as Record<string, unknown>)
         
         // StrategyPlanをplanDataとして保存（weeklyPlansを含む）
         const planDataToSave = strategyPlan ? {

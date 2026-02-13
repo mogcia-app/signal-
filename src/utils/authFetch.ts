@@ -218,6 +218,16 @@ const isApiRequest = (input: RequestInfo | URL): boolean => {
   return false;
 };
 
+const isOffline = (): boolean => {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+  return navigator.onLine === false;
+};
+
+const wait = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
 const waitForUser = async (auth: ReturnType<typeof getAuth>, timeoutMs = 7000) =>
   new Promise<User | null>((resolve) => {
     let resolved = false;
@@ -274,6 +284,44 @@ export const authFetch = async (
   const auth = getAuth();
   let user: User | null = null;
   let token: string | null = null;
+
+  const getTokenWithRetry = async (targetUser: User): Promise<string | null> => {
+    const maxRetries = 3;
+
+    // そもそもオフラインの場合はトークン取得をスキップして早期復帰
+    if (isOffline()) {
+      showNetworkErrorToast();
+      return null;
+    }
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await targetUser.getIdToken();
+      } catch (tokenError) {
+        if (!isNetworkError(tokenError)) {
+          throw tokenError;
+        }
+
+        if (attempt === maxRetries) {
+          console.error("[authFetch] getIdToken() failed after retries", tokenError);
+          showNetworkErrorToast();
+          return null;
+        }
+
+        const baseDelay = 400 * Math.pow(2, attempt);
+        const jitter = Math.floor(Math.random() * 200);
+        await wait(baseDelay + jitter);
+
+        // リトライ前にオフラインを再チェック（接続断の長期化を早期検出）
+        if (isOffline()) {
+          showNetworkErrorToast();
+          return null;
+        }
+      }
+    }
+
+    return null;
+  };
   
   try {
     user = await resolveCurrentUser(auth);
@@ -281,36 +329,11 @@ export const authFetch = async (
     // getIdToken()の呼び出しをtry-catchで囲み、ネットワークエラーをハンドリング
     if (user) {
       try {
-        token = await user.getIdToken();
+        token = await getTokenWithRetry(user);
       } catch (tokenError) {
-        // ネットワークエラーの場合、リトライを試みる
-        if (isNetworkError(tokenError)) {
-          console.warn("[authFetch] getIdToken() failed with network error, retrying...", tokenError);
-          
-          // 最大3回リトライ（指数バックオフ）
-          for (let retryAttempt = 0; retryAttempt < 3; retryAttempt++) {
-            const delay = 1000 * Math.pow(2, retryAttempt); // 1秒、2秒、4秒
-            await new Promise((resolve) => setTimeout(resolve, delay));
-            
-            try {
-              token = await user.getIdToken();
-              console.log(`[authFetch] getIdToken() succeeded after retry ${retryAttempt + 1}`);
-              break; // 成功したらループを抜ける
-            } catch (retryError) {
-              if (retryAttempt === 2) {
-                // 最後のリトライも失敗した場合
-                console.error("[authFetch] getIdToken() failed after all retries", retryError);
-                // ネットワークエラーのトースト通知を表示
-                showNetworkErrorToast();
-                // トークンなしでリクエストを続行（サーバー側で認証エラーになる可能性があるが、ユーザーには通知済み）
-              }
-            }
-          }
-        } else {
-          // ネットワークエラー以外のエラー（認証エラーなど）
-          console.error("[authFetch] getIdToken() failed with non-network error", tokenError);
-          throw tokenError;
-        }
+        // ネットワーク以外の認証エラーは上位へ通知
+        console.error("[authFetch] getIdToken() failed with non-network error", tokenError);
+        throw tokenError;
       }
     }
   } catch (authError) {

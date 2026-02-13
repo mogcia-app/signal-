@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { ChevronRight, ExternalLink, Loader2, PieChart, AlertCircle } from "lucide-react";
 import { getLabEditorHref, getAnalyticsHref } from "@/utils/links";
-import type { KPIBreakdown } from "@/app/api/analytics/kpi-breakdown/route";
+import type { KPIBreakdown } from "@/domain/analysis/kpi/types";
 
 interface KPIBreakdownProps {
   breakdowns: KPIBreakdown[];

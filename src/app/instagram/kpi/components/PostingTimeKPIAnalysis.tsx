@@ -11,7 +11,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
-import type { TimeSlotKPIAnalysis } from "@/app/api/analytics/kpi-breakdown/route";
+import type { TimeSlotKPIAnalysis } from "@/domain/analysis/kpi/types";
 
 ChartJS.register(
   CategoryScale,

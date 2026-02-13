@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import SNSLayout from "../../../components/sns-layout";
-import { ChevronDown, ChevronUp, Loader2, Settings, Save, FileText, BarChart3 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Save, FileText, BarChart3 } from "lucide-react";
 import { authFetch } from "../../../utils/authFetch";
 import toast from "react-hot-toast";
 import { getLocalDate } from "../../../lib/utils/timezone";
@@ -53,6 +53,20 @@ interface PlanResult {
   suggestedContentTypes: string[];
 }
 
+interface SuggestedAdjustment {
+  field:
+    | "weeklyPosts"
+    | "reelCapability"
+    | "storyFrequency"
+    | "postingTime"
+    | "regionRestriction"
+    | "customTargetFollowers";
+  value: string | number;
+  label: string;
+  reason: string;
+  expectedImpact?: string;
+}
+
 export default function InstagramPlanPage() {
   // 今日の日付をタイムゾーンを考慮してYYYY-MM-DD形式で取得
   const today = getLocalDate("Asia/Tokyo");
@@ -77,6 +91,7 @@ export default function InstagramPlanPage() {
   const [hasActivePlan, setHasActivePlan] = useState(false);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [needsResimulation, setNeedsResimulation] = useState(false);
   
   // シミュレーション結果
   const [simulationResult, setSimulationResult] = useState<{
@@ -110,6 +125,7 @@ export default function InstagramPlanPage() {
       keyAdvice?: string;
     }>;
     recommendations: string[];
+    suggestedAdjustments?: SuggestedAdjustment[];
   } | null>(null);
   const [isLoadingSimulation, setIsLoadingSimulation] = useState(false);
 
@@ -182,6 +198,7 @@ export default function InstagramPlanPage() {
         // シミュレーション結果を復元
         if (data.simulationResult) {
           setSimulationResult(data.simulationResult);
+          setNeedsResimulation(false);
         }
         
         // AI提案を取得（利用可能な場合）
@@ -332,32 +349,6 @@ export default function InstagramPlanPage() {
   const weeklyTotals = [0, 1, 2, 3].map(
     (i) => feedWeeklyDistribution[i] + reelWeeklyDistribution[i] + storyWeeklyDistribution[i]
   );
-  const maxWeeklyTotal = Math.max(...weeklyTotals, 1);
-
-  const currentFollowersNumber = parseInt(currentFollowers || "0");
-  const scenarioCards = [
-    {
-      key: "conservative",
-      label: "控えめ",
-      increase: 5,
-      total: currentFollowersNumber + 5,
-      note: "無理なく達成",
-    },
-    {
-      key: "standard",
-      label: "標準",
-      increase: 15,
-      total: currentFollowersNumber + 15,
-      note: "バランス重視",
-    },
-    {
-      key: "ambitious",
-      label: "意欲的",
-      increase: 50,
-      total: currentFollowersNumber + 50,
-      note: "挑戦的",
-    },
-  ] as const;
 
   const isFormValid = 
     startDate && 
@@ -388,6 +379,68 @@ export default function InstagramPlanPage() {
   const filledCount = simulationRequiredFields.filter(f => f.filled).length;
   const remainingCount = simulationRequiredFields.length - filledCount;
   const isSimulationReady = remainingCount === 0;
+  const simulationProgressPercent = Math.round((filledCount / simulationRequiredFields.length) * 100);
+  const selectedTargetLabel = targetFollowerOption === "conservative"
+    ? "控えめ"
+    : targetFollowerOption === "standard"
+    ? "標準"
+    : targetFollowerOption === "ambitious"
+    ? "意欲的"
+    : targetFollowerOption === "custom"
+    ? "カスタム"
+    : targetFollowerOption === "ai"
+    ? "AI提案"
+    : "未選択";
+  const premiumInputClass =
+    "w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all duration-200 bg-white text-gray-900";
+  const premiumOptionCardClass = (isSelected: boolean) =>
+    `flex items-start gap-3 cursor-pointer border rounded-lg px-4 py-3 transition-colors ${
+      isSelected
+        ? "border-gray-900 bg-gray-50"
+        : "border-gray-200 hover:border-gray-300"
+    }`;
+  const premiumRadioClass =
+    "w-4 h-4 text-gray-900 focus:ring-gray-900/20 mt-1 cursor-pointer";
+
+  const invalidateSimulationIfNeeded = () => {
+    if (simulationResult) {
+      setSimulationResult(null);
+      setNeedsResimulation(true);
+    }
+  };
+
+  const applySuggestedAdjustment = (adjustment: SuggestedAdjustment) => {
+    switch (adjustment.field) {
+      case "weeklyPosts":
+        setWeeklyPosts(String(adjustment.value));
+        break;
+      case "reelCapability":
+        setReelCapability(String(adjustment.value));
+        break;
+      case "storyFrequency":
+        setStoryFrequency(String(adjustment.value));
+        break;
+      case "postingTime":
+        setPostingTime(String(adjustment.value));
+        break;
+      case "regionRestriction":
+        setRegionRestriction(String(adjustment.value));
+        if (String(adjustment.value) === "none") {
+          setRegionName("");
+        }
+        break;
+      case "customTargetFollowers":
+        setTargetFollowerOption("custom");
+        setCustomTargetFollowers(String(adjustment.value));
+        break;
+      default:
+        break;
+    }
+
+    setSimulationResult(null);
+    setNeedsResimulation(true);
+    toast.success("提案を反映しました。再シミュレーションしてください");
+  };
 
   // シミュレーションを実行
   const runSimulation = async () => {
@@ -424,6 +477,7 @@ export default function InstagramPlanPage() {
       const result = await response.json();
       if (result.simulation) {
         setSimulationResult(result.simulation);
+        setNeedsResimulation(false);
       }
     } catch (error) {
       console.error("シミュレーション実行エラー:", error);
@@ -465,6 +519,7 @@ export default function InstagramPlanPage() {
       setRegionRestriction("");
       setRegionName("");
       setSimulationResult(null);
+      setNeedsResimulation(false);
       toast.success("計画を削除しました");
       
       // Homeページにリダイレクト（計画が削除されたことを反映）
@@ -480,12 +535,15 @@ export default function InstagramPlanPage() {
   };
 
   return (
-    <SNSLayout>
+    <SNSLayout
+      customTitle="Instagram 運用計画"
+      customDescription="1ヶ月の運用計画をたてましょう"
+    >
       <div className="container mx-auto px-4 py-8">
         <div className="w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
             {/* 左カラム: フォーム */}
-            <div className="bg-white border border-gray-300 p-10 rounded-none flex flex-col shadow-sm">
+            <div className="xl:col-span-7 bg-white border border-gray-200 p-8 xl:p-10 rounded-none flex flex-col shadow-sm">
             <div className="mb-10">
               <div className="flex items-center gap-3 mb-2">
                 <FileText className="w-6 h-6 text-[#FF8A15]" />
@@ -505,8 +563,11 @@ export default function InstagramPlanPage() {
                 <input
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    invalidateSimulationIfNeeded();
+                  }}
+                  className={premiumInputClass}
                   required
                 />
               </div>
@@ -520,8 +581,11 @@ export default function InstagramPlanPage() {
                   <input
                     type="number"
                     value={currentFollowers}
-                    onChange={(e) => setCurrentFollowers(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                    onChange={(e) => {
+                      setCurrentFollowers(e.target.value);
+                      invalidateSimulationIfNeeded();
+                    }}
+                    className={premiumInputClass}
                     placeholder="例: 1000"
                     min="0"
                     required
@@ -540,66 +604,81 @@ export default function InstagramPlanPage() {
                   目標フォロワー数 <span className="text-[#FF8A15]">*</span>
                 </label>
                 <div className="space-y-2">
-                  <label className="flex items-start gap-2 cursor-pointer">
+                  <label className={premiumOptionCardClass(targetFollowerOption === "conservative")}>
                     <input
                       type="radio"
                       name="targetFollowerOption"
                       value="conservative"
                       checked={targetFollowerOption === "conservative"}
-                      onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
-                      className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                      onChange={(e) => {
+                        setTargetFollowerOption(e.target.value as typeof targetFollowerOption);
+                        invalidateSimulationIfNeeded();
+                      }}
+                      className={premiumRadioClass}
                     />
                     <div className="flex-1">
-                      <span className="text-gray-700 font-medium">控えめ: +5人</span>
-                      <span className="text-[#FF8A15] ml-1">★おすすめ</span>
+                      <span className="text-gray-900 font-medium">控えめ: +5人</span>
+                      <span className="text-[11px] ml-2 px-2 py-0.5 border border-gray-300 rounded-full text-gray-600">推奨</span>
                       <p className="text-xs text-gray-500 mt-1">無理なく確実に達成したい</p>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2 cursor-pointer">
+                  <label className={premiumOptionCardClass(targetFollowerOption === "standard")}>
                     <input
                       type="radio"
                       name="targetFollowerOption"
                       value="standard"
                       checked={targetFollowerOption === "standard"}
-                      onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
-                      className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                      onChange={(e) => {
+                        setTargetFollowerOption(e.target.value as typeof targetFollowerOption);
+                        invalidateSimulationIfNeeded();
+                      }}
+                      className={premiumRadioClass}
                     />
                     <div className="flex-1">
-                      <span className="text-gray-700 font-medium">標準: +15人</span>
+                      <span className="text-gray-900 font-medium">標準: +15人</span>
                       <p className="text-xs text-gray-500 mt-1">頑張れば達成可能</p>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2 cursor-pointer">
+                  <label className={premiumOptionCardClass(targetFollowerOption === "ambitious")}>
                     <input
                       type="radio"
                       name="targetFollowerOption"
                       value="ambitious"
                       checked={targetFollowerOption === "ambitious"}
-                      onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
-                      className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                      onChange={(e) => {
+                        setTargetFollowerOption(e.target.value as typeof targetFollowerOption);
+                        invalidateSimulationIfNeeded();
+                      }}
+                      className={premiumRadioClass}
                     />
                     <div className="flex-1">
-                      <span className="text-gray-700 font-medium">意欲的: +50人</span>
+                      <span className="text-gray-900 font-medium">意欲的: +50人</span>
                       <p className="text-xs text-gray-500 mt-1">本気で取り組めば狙える目標</p>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2 cursor-pointer">
+                  <label className={premiumOptionCardClass(targetFollowerOption === "custom")}>
                     <input
                       type="radio"
                       name="targetFollowerOption"
                       value="custom"
                       checked={targetFollowerOption === "custom"}
-                      onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
-                      className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                      onChange={(e) => {
+                        setTargetFollowerOption(e.target.value as typeof targetFollowerOption);
+                        invalidateSimulationIfNeeded();
+                      }}
+                      className={premiumRadioClass}
                     />
                     <div className="flex-1">
-                      <span className="text-gray-700 font-medium">その他:</span>
+                      <span className="text-gray-900 font-medium">その他:</span>
                       <div className="flex items-center gap-2 mt-1">
                         <input
                           type="number"
                           value={customTargetFollowers}
-                          onChange={(e) => setCustomTargetFollowers(e.target.value.replace(/[^0-9]/g, ""))}
-                          className="w-24 px-2 py-1 border border-gray-400 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] text-sm transition-all duration-200"
+                          onChange={(e) => {
+                            setCustomTargetFollowers(e.target.value.replace(/[^0-9]/g, ""));
+                            invalidateSimulationIfNeeded();
+                          }}
+                          className="w-24 px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 text-sm transition-all duration-200"
                           placeholder="目標数"
                           min="0"
                           disabled={targetFollowerOption !== "custom"}
@@ -610,17 +689,20 @@ export default function InstagramPlanPage() {
                     </div>
                   </label>
                   {canUseAISuggestion && (
-                    <label className="flex items-start gap-2 cursor-pointer">
+                    <label className={premiumOptionCardClass(targetFollowerOption === "ai")}>
                       <input
                         type="radio"
                         name="targetFollowerOption"
                         value="ai"
                         checked={targetFollowerOption === "ai"}
-                        onChange={(e) => setTargetFollowerOption(e.target.value as typeof targetFollowerOption)}
-                        className="w-5 h-5 text-[#FF8A15] focus:ring-[#FF8A15] mt-1 cursor-pointer transition-transform duration-200 hover:scale-110"
+                        onChange={(e) => {
+                          setTargetFollowerOption(e.target.value as typeof targetFollowerOption);
+                          invalidateSimulationIfNeeded();
+                        }}
+                        className={premiumRadioClass}
                       />
                       <div className="flex-1">
-                        <span className="text-gray-700 font-medium">AI提案:</span>
+                        <span className="text-gray-900 font-medium">AI提案:</span>
                         {aiSuggestedTarget !== null ? (
                           <span className="text-gray-700 ml-2">+{aiSuggestedTarget - parseInt(currentFollowers || "0")}人</span>
                         ) : (
@@ -647,17 +729,20 @@ export default function InstagramPlanPage() {
                     "来店・問い合わせを増やしたい",
                     "企業イメージ・ブランディング",
                   ].map((purpose) => (
-                    <label key={purpose} className="flex items-center gap-2 cursor-pointer">
+                    <label key={purpose} className={premiumOptionCardClass(operationPurpose === purpose)}>
                       <input
                         type="radio"
                         name="operationPurpose"
                         value={purpose}
                         checked={operationPurpose === purpose}
-                        onChange={(e) => setOperationPurpose(e.target.value)}
-                        className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                        onChange={(e) => {
+                          setOperationPurpose(e.target.value);
+                          invalidateSimulationIfNeeded();
+                        }}
+                        className={premiumRadioClass}
                         required
                       />
-                      <span className="text-gray-700">{purpose}</span>
+                      <span className="text-gray-800">{purpose}</span>
                     </label>
                   ))}
                 </div>
@@ -675,19 +760,22 @@ export default function InstagramPlanPage() {
                     { value: "weekly-3-4", label: "週に3〜4回" },
                     { value: "daily", label: "毎日" },
                   ].map((option) => (
-                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                    <label key={option.value} className={premiumOptionCardClass(weeklyPosts === option.value)}>
                       <input
                         type="radio"
                         name="weeklyPosts"
                         value={option.value}
                         checked={weeklyPosts === option.value}
-                        onChange={(e) => setWeeklyPosts(e.target.value)}
-                        className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                        onChange={(e) => {
+                          setWeeklyPosts(e.target.value);
+                          invalidateSimulationIfNeeded();
+                        }}
+                        className={premiumRadioClass}
                         required
                       />
-                      <span className="text-gray-700">
+                      <span className="text-gray-800">
                         {option.label}
-                        {option.recommended && <span className="text-[#FF8A15] ml-1">★おすすめ</span>}
+                        {option.recommended && <span className="text-[11px] ml-2 px-2 py-0.5 border border-gray-300 rounded-full text-gray-600">推奨</span>}
                       </span>
                     </label>
                   ))}
@@ -706,19 +794,22 @@ export default function InstagramPlanPage() {
                     { value: "weekly-3-4", label: "週に3〜4回" },
                     { value: "daily", label: "毎日" },
                   ].map((option) => (
-                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                    <label key={option.value} className={premiumOptionCardClass(reelCapability === option.value)}>
                       <input
                         type="radio"
                         name="reelCapability"
                         value={option.value}
                         checked={reelCapability === option.value}
-                        onChange={(e) => setReelCapability(e.target.value)}
-                        className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                        onChange={(e) => {
+                          setReelCapability(e.target.value);
+                          invalidateSimulationIfNeeded();
+                        }}
+                        className={premiumRadioClass}
                         required
                       />
-                      <span className="text-gray-700">
+                      <span className="text-gray-800">
                         {option.label}
-                        {option.recommended && <span className="text-[#FF8A15] ml-1">★おすすめ</span>}
+                        {option.recommended && <span className="text-[11px] ml-2 px-2 py-0.5 border border-gray-300 rounded-full text-gray-600">推奨</span>}
                       </span>
                     </label>
                   ))}
@@ -733,7 +824,7 @@ export default function InstagramPlanPage() {
                 <button
                   type="button"
                   onClick={() => setIsDetailOpen(!isDetailOpen)}
-                  className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 rounded-none transition-all duration-300"
+                  className="w-full flex items-center justify-between p-4 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg transition-colors duration-200"
                 >
                   <span className="text-sm font-medium text-gray-700">
                     詳細設定(オプション)
@@ -746,7 +837,7 @@ export default function InstagramPlanPage() {
                 </button>
 
                 {isDetailOpen && (
-                  <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-400">
+                  <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-200">
                     {/* ストーリーズ投稿頻度 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -754,8 +845,11 @@ export default function InstagramPlanPage() {
                       </label>
                       <select
                         value={storyFrequency}
-                        onChange={(e) => setStoryFrequency(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                        onChange={(e) => {
+                          setStoryFrequency(e.target.value);
+                          invalidateSimulationIfNeeded();
+                        }}
+                        className={premiumInputClass}
                       >
                         <option value="">選択してください</option>
                         <option value="none">投稿しない</option>
@@ -773,8 +867,11 @@ export default function InstagramPlanPage() {
                       <input
                         type="text"
                         value={targetAudience}
-                        onChange={(e) => setTargetAudience(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                        onChange={(e) => {
+                          setTargetAudience(e.target.value);
+                          invalidateSimulationIfNeeded();
+                        }}
+                        className={premiumInputClass}
                         placeholder="例: 30代のママさん"
                       />
                     </div>
@@ -786,8 +883,11 @@ export default function InstagramPlanPage() {
                       </label>
                       <select
                         value={postingTime}
-                        onChange={(e) => setPostingTime(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                        onChange={(e) => {
+                          setPostingTime(e.target.value);
+                          invalidateSimulationIfNeeded();
+                        }}
+                        className={premiumInputClass}
                       >
                         <option value="">AIに任せる</option>
                         <option value="morning">午前中（9:00〜12:00）</option>
@@ -804,7 +904,7 @@ export default function InstagramPlanPage() {
                         地域限定の有無
                       </label>
                       <div className="space-y-2">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className={premiumOptionCardClass(regionRestriction === "none")}>
                           <input
                             type="radio"
                             name="regionRestriction"
@@ -813,19 +913,23 @@ export default function InstagramPlanPage() {
                             onChange={(e) => {
                               setRegionRestriction(e.target.value);
                               setRegionName("");
+                              invalidateSimulationIfNeeded();
                             }}
-                            className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                            className={premiumRadioClass}
                           />
                           <span className="text-gray-700">地域は限定しない</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className={premiumOptionCardClass(regionRestriction === "restricted")}>
                           <input
                             type="radio"
                             name="regionRestriction"
                             value="restricted"
                             checked={regionRestriction === "restricted"}
-                            onChange={(e) => setRegionRestriction(e.target.value)}
-                            className="w-4 h-4 text-[#FF8A15] focus:ring-[#FF8A15]"
+                            onChange={(e) => {
+                              setRegionRestriction(e.target.value);
+                              invalidateSimulationIfNeeded();
+                            }}
+                            className={premiumRadioClass}
                           />
                           <span className="text-gray-700">地域を限定する</span>
                         </label>
@@ -838,8 +942,11 @@ export default function InstagramPlanPage() {
                           <input
                             type="text"
                             value={regionName}
-                            onChange={(e) => setRegionName(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-none focus:ring-2 focus:ring-[#FF8A15] focus:border-[#FF8A15] transition-all duration-200 bg-white text-gray-900"
+                            onChange={(e) => {
+                              setRegionName(e.target.value);
+                              invalidateSimulationIfNeeded();
+                            }}
+                            className={premiumInputClass}
                             placeholder="例: 東京都 渋谷区"
                           />
                         </div>
@@ -855,7 +962,7 @@ export default function InstagramPlanPage() {
 
               {/* 送信ボタン */}
               <div className="flex flex-col gap-3">
-                {!simulationResult && isFormValid && (
+                {!simulationResult && isSimulationReady && (
                   <div className="bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
                     ⚠️ 計画を保存するには、先に「📊 シミュレーションを実行」ボタンを押してください
                   </div>
@@ -863,7 +970,7 @@ export default function InstagramPlanPage() {
                 <button
                   type="submit"
                   disabled={!isFormValid || isSaving}
-                  className="w-full py-3 px-6 bg-[#FF8A15] text-white font-medium rounded-none hover:bg-[#FF6B00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                  className="w-full py-3 px-6 bg-gray-900 text-white font-medium rounded-lg hover:bg-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
                 >
                   {isSaving ? (
                     <>
@@ -883,7 +990,7 @@ export default function InstagramPlanPage() {
                     type="button"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="w-full py-4 px-6 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-none hover:from-red-600 hover:to-red-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full py-3 px-6 bg-white border border-red-300 text-red-700 font-semibold rounded-lg hover:bg-red-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isDeleting ? (
                       <>
@@ -902,12 +1009,46 @@ export default function InstagramPlanPage() {
             </div>
 
             {/* 右カラム: 説明セクション */}
-            <div className="space-y-6">
+            <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-6 xl:self-start">
+              <div className="bg-white border border-gray-300 p-8 rounded-none shadow-sm">
+                <h2 className="text-xl font-semibold text-gray-900">入力サマリー</h2>
+                <p className="text-sm text-gray-500 mt-1">いまの設定と次にやることを確認できます</p>
+
+                <div className="mt-6 space-y-3 text-sm">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <span className="text-gray-500">進捗</span>
+                    <span className="font-semibold text-gray-900">{filledCount}/{simulationRequiredFields.length}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-[#FF8A15] transition-all duration-500"
+                      style={{ width: `${Math.min(simulationProgressPercent, 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <span className="text-gray-500">目標フォロワー</span>
+                    <span className="font-semibold text-gray-900">
+                      {targetFollowers > 0 ? `${targetFollowers.toLocaleString()}人` : "未設定"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <span className="text-gray-500">目標タイプ</span>
+                    <span className="font-semibold text-gray-900">{selectedTargetLabel}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">次のアクション</span>
+                    <span className="font-semibold text-[#FF8A15]">
+                      {isSimulationReady ? "シミュレーション実行" : `入力をあと${remainingCount}項目`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* 📈 計画の可視化 */}
               <div className="bg-white border border-gray-300 p-8 rounded-none shadow-sm">
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold text-gray-900">計画の可視化</h2>
-                  <p className="text-sm text-gray-500 mt-1">投稿配分と達成見込みを視覚的に確認できます</p>
+                  <p className="text-sm text-gray-500 mt-1">投稿配分を視覚的に確認できます</p>
                 </div>
 
                 <div className="space-y-8">
@@ -942,48 +1083,32 @@ export default function InstagramPlanPage() {
                   <div>
                     <h3 className="text-sm font-semibold text-gray-800 mb-1">週ごとの投稿目安（内訳）</h3>
                     <p className="text-xs text-gray-500 mb-4">各週の合計件数と、投稿タイプごとの内訳です。</p>
-                    <div className="grid grid-cols-4 gap-3">
-                      {weeklyTotals.map((count, index) => (
-                        <div key={`week-${index + 1}`} className="bg-gray-50 border border-gray-200 p-3">
-                          <p className="text-xs text-gray-500 mb-2">Week {index + 1}</p>
-                          <div className="h-20 flex items-end">
-                            <div
-                              className="w-full bg-gradient-to-t from-[#FF8A15] to-[#FDBA74] transition-all duration-500"
-                              style={{ height: `${Math.max(8, (count / maxWeeklyTotal) * 100)}%` }}
-                            />
-                          </div>
-                          <p className="text-sm font-semibold text-gray-800 mt-2 text-center">合計 {count}件</p>
-                          <div className="mt-2 space-y-1 text-[11px] text-gray-600">
-                            <p>フィード: {feedWeeklyDistribution[index]}件</p>
-                            <p>リール: {reelWeeklyDistribution[index]}件</p>
-                            <p>ストーリーズ: {storyWeeklyDistribution[index]}件</p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="overflow-hidden rounded-lg border border-gray-200">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
+                          <tr>
+                            <th className="px-4 py-3 text-left font-medium">週</th>
+                            <th className="px-4 py-3 text-right font-medium">フィード</th>
+                            <th className="px-4 py-3 text-right font-medium">リール</th>
+                            <th className="px-4 py-3 text-right font-medium">ストーリーズ</th>
+                            <th className="px-4 py-3 text-right font-semibold text-gray-900">合計</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {weeklyTotals.map((count, index) => (
+                            <tr key={`week-${index + 1}`} className="border-t border-gray-100">
+                              <td className="px-4 py-3 text-gray-700">Week {index + 1}</td>
+                              <td className="px-4 py-3 text-right text-gray-700">{feedWeeklyDistribution[index]}</td>
+                              <td className="px-4 py-3 text-right text-gray-700">{reelWeeklyDistribution[index]}</td>
+                              <td className="px-4 py-3 text-right text-gray-700">{storyWeeklyDistribution[index]}</td>
+                              <td className="px-4 py-3 text-right font-semibold text-gray-900">{count}件</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-800 mb-4">到達見込み比較</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {scenarioCards.map((scenario) => {
-                        const isSelected = targetFollowerOption === scenario.key;
-                        return (
-                          <div
-                            key={scenario.key}
-                            className={`p-4 border ${isSelected ? "border-[#FF8A15] bg-orange-50" : "border-gray-200 bg-white"}`}
-                          >
-                            <p className={`text-xs font-semibold ${isSelected ? "text-[#FF8A15]" : "text-gray-500"}`}>
-                              {scenario.label}
-                            </p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">+{scenario.increase}人</p>
-                            <p className="text-xs text-gray-600 mt-1">目標: {scenario.total.toLocaleString()}人</p>
-                            <p className="text-xs text-gray-500 mt-2">{scenario.note}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -1000,12 +1125,18 @@ export default function InstagramPlanPage() {
                 </div>
 
                 <div className="space-y-4">
-                  {/* 必須項目の入力状況（未入力時のみ表示） */}
                   {!isSimulationReady && (
                     <div className="bg-gray-50 p-5 rounded-none border border-gray-300">
-                      <h3 className="font-medium text-gray-900 mb-3 text-sm">
-                        必須項目の入力状況
-                      </h3>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-medium text-gray-900 text-sm">シミュレーション準備</h3>
+                        <span className="text-xs font-semibold text-gray-600">{simulationProgressPercent}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 h-2 mb-4 overflow-hidden">
+                        <div
+                          className="h-full bg-[#FF8A15] transition-all duration-500"
+                          style={{ width: `${Math.min(simulationProgressPercent, 100)}%` }}
+                        />
+                      </div>
                       <div className="space-y-2">
                         {simulationRequiredFields.map((field, index) => (
                           <div key={index} className="flex items-center gap-2 text-sm">
@@ -1020,23 +1151,17 @@ export default function InstagramPlanPage() {
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
-
-                  {/* シミュレーション利用可能メッセージ */}
-                  {!isSimulationReady && (
-                    <div className="bg-gray-50 p-5 rounded-none border border-gray-300">
-                      <p className="text-sm font-semibold text-gray-800 text-center">
-                        {remainingCount === 1 
-                          ? "あと1個選択でシミュレーションが利用可能です"
-                          : `あと${remainingCount}個選択でシミュレーションが利用可能です`}
+                      <p className="text-sm font-semibold text-gray-800 text-center mt-4">
+                        {remainingCount === 1 ? "あと1項目で実行できます" : `あと${remainingCount}項目で実行できます`}
                       </p>
                     </div>
                   )}
                   {isSimulationReady && !simulationResult && !isLoadingSimulation && (
                     <div className="bg-white p-6 rounded-none mb-4">
                       <p className="text-sm font-medium text-gray-800 text-center mb-3">
-                        シミュレーションが利用可能です
+                        {needsResimulation
+                          ? "入力内容が変更されました。再シミュレーションしてください"
+                          : "シミュレーションが利用可能です"}
                       </p>
                       <button
                         type="button"
@@ -1095,6 +1220,31 @@ export default function InstagramPlanPage() {
                                   <li key={index}>{rec}</li>
                                 ))}
                               </ul>
+                            </div>
+                          )}
+                          {simulationResult.suggestedAdjustments && simulationResult.suggestedAdjustments.length > 0 && (
+                            <div className="mt-5 border-t border-gray-200 pt-4">
+                              <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                                この結果を計画に反映
+                              </h4>
+                              <div className="space-y-3">
+                                {simulationResult.suggestedAdjustments.map((adjustment, index) => (
+                                  <div key={`${adjustment.field}-${index}`} className="border border-gray-200 p-3 bg-gray-50">
+                                    <p className="text-sm font-semibold text-gray-900">{adjustment.label}</p>
+                                    <p className="text-xs text-gray-600 mt-1">{adjustment.reason}</p>
+                                    {adjustment.expectedImpact && (
+                                      <p className="text-xs text-[#FF8A15] mt-1">{adjustment.expectedImpact}</p>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => applySuggestedAdjustment(adjustment)}
+                                      className="mt-3 px-3 py-1.5 text-xs font-medium bg-[#FF8A15] text-white hover:bg-[#FF6B00] transition-colors"
+                                    >
+                                      この提案を反映
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>

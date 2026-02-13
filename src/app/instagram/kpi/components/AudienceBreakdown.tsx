@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Users, Loader2 } from "lucide-react";
-import type { AudienceBreakdown } from "@/app/api/analytics/kpi-breakdown/route";
+import type { AudienceBreakdown } from "@/domain/analysis/kpi/types";
 
 interface AudienceBreakdownProps {
   feed?: AudienceBreakdown | null;

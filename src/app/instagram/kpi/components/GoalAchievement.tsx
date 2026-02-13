@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Target, CheckCircle2, AlertCircle, XCircle, Loader2 } from "lucide-react";
-import type { GoalAchievement } from "@/app/api/analytics/kpi-breakdown/route";
+import type { GoalAchievement } from "@/domain/analysis/kpi/types";
 
 interface GoalAchievementProps {
   goalAchievements: GoalAchievement[];

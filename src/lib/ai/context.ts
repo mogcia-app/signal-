@@ -1,30 +1,8 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { UserProfile } from "@/types/user";
 import { AIActionLog, AIReference, SnapshotReference, AIDirection } from "@/types/ai";
+import type { MasterContextSummary } from "@/types/report";
 import { getLearningPhaseLabel } from "@/utils/learningPhase";
-interface MasterContextSummary {
-  learningPhase?: string;
-  ragHitRate?: number;
-  totalInteractions?: number;
-  feedbackStats?: {
-    total?: number;
-    positiveRate?: number;
-    averageWeight?: number;
-  };
-  actionStats?: {
-    total?: number;
-    adoptionRate?: number;
-    averageResultDelta?: number;
-  };
-  achievements?: Array<{
-    id: string;
-    title: string;
-    description: string;
-    icon?: string;
-    status?: string;
-    progress?: number;
-  }>;
-}
 
 const DEFAULT_OPTIONS = {
   includeUserProfile: true,

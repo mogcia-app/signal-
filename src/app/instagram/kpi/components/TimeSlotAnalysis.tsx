@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Clock, TrendingUp, Loader2 } from "lucide-react";
-import type { TimeSlotEntry } from "@/app/api/analytics/kpi-breakdown/route";
+import type { TimeSlotEntry } from "@/domain/analysis/kpi/types";
 
 interface TimeSlotAnalysisProps {
   timeSlotData: TimeSlotEntry[];

@@ -3,6 +3,11 @@
  * 複数のファイルで使用される共通型定義を集約
  */
 
+import type { AIReference, SnapshotReference } from "./ai";
+
+// re-export for consumers that imported from this file
+export type { AIReference, SnapshotReference };
+
 /**
  * アクションプランの優先度
  */
@@ -109,25 +114,6 @@ export interface PostDeepDiveData {
     status: "gold" | "negative" | "normal";
     summary?: string;
   }>;
-}
-
-/**
- * AI学習リファレンス
- */
-export interface AIReference {
-  id: string;
-  sourceType: "profile" | "plan" | "masterContext" | "snapshot" | "feedback" | "analytics" | "manual";
-  label?: string;
-  summary?: string;
-}
-
-/**
- * スナップショットリファレンス
- */
-export interface SnapshotReference {
-  id: string;
-  status: "gold" | "negative" | "normal";
-  summary?: string;
 }
 
 /**

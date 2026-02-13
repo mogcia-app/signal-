@@ -3,7 +3,7 @@ import { adminDb } from "../../../../lib/firebase-admin";
 import { requireAuthContext } from "../../../../lib/server/auth-context";
 import OpenAI from "openai";
 import * as admin from "firebase-admin";
-import type { KPIBreakdown } from "../../analytics/kpi-breakdown/route";
+import type { KPIBreakdown } from "@/domain/analysis/kpi/types";
 
 // OpenAI APIキーのチェック
 const getOpenAIClient = () => {

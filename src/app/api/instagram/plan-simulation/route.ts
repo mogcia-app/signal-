@@ -55,6 +55,21 @@ interface SimulationResult {
   };
   risks: Risk[];
   recommendations: string[];
+  suggestedAdjustments: SuggestedAdjustment[];
+}
+
+interface SuggestedAdjustment {
+  field:
+    | "weeklyPosts"
+    | "reelCapability"
+    | "storyFrequency"
+    | "postingTime"
+    | "regionRestriction"
+    | "customTargetFollowers";
+  value: string | number;
+  label: string;
+  reason: string;
+  expectedImpact?: string;
 }
 
 /**
@@ -844,6 +859,119 @@ function generateRecommendations(
   return recommendations;
 }
 
+function generateSuggestedAdjustments(
+  body: PlanSimulationRequest,
+  achievementRate: number,
+  growthRate: number
+): SuggestedAdjustment[] {
+  const adjustments: SuggestedAdjustment[] = [];
+  const increase = body.targetFollowers - body.currentFollowers;
+
+  if (achievementRate < 60 && (body.weeklyPosts === "none" || body.weeklyPosts === "weekly-1-2")) {
+    adjustments.push({
+      field: "weeklyPosts",
+      value: "weekly-3-4",
+      label: "フィード投稿を週3-4回に増やす",
+      reason: "投稿頻度を上げると到達母数を増やしやすくなります。",
+      expectedImpact: "達成率の改善が見込めます",
+    });
+  }
+
+  if (achievementRate < 60 && (body.reelCapability === "none" || body.reelCapability === "weekly-1-2")) {
+    adjustments.push({
+      field: "reelCapability",
+      value: "weekly-3-4",
+      label: "リール投稿を週3-4回に増やす",
+      reason: "リール強化は発見経由の流入に直結しやすいです。",
+      expectedImpact: "新規リーチの改善が見込めます",
+    });
+  }
+
+  if (growthRate >= 30 && (!body.storyFrequency || body.storyFrequency === "none")) {
+    adjustments.push({
+      field: "storyFrequency",
+      value: "weekly-3-4",
+      label: "ストーリーズを週3-4回に設定する",
+      reason: "高い成長目標では接触頻度の追加が有効です。",
+      expectedImpact: "エンゲージメント改善が見込めます",
+    });
+  }
+
+  if (body.targetAudience && body.postingTime && body.postingTime !== "") {
+    adjustments.push({
+      field: "postingTime",
+      value: "",
+      label: "投稿時間帯をAI最適化に戻す",
+      reason: "固定時間よりも最適時間探索のほうが成果が安定する場合があります。",
+      expectedImpact: "時間帯ミスマッチのリスク低減",
+    });
+  }
+
+  if (
+    body.regionRestriction === "restricted" &&
+    body.operationPurpose !== "来店・問い合わせを増やしたい" &&
+    body.operationPurpose !== "採用・リクルーティング強化"
+  ) {
+    adjustments.push({
+      field: "regionRestriction",
+      value: "none",
+      label: "地域限定を解除する",
+      reason: "認知拡大系の目標では配信範囲を広げるほうが有利です。",
+      expectedImpact: "リーチ拡大が見込めます",
+    });
+  }
+
+  if (achievementRate < 30 && increase > 5) {
+    const reducedIncrease = Math.max(5, Math.round(increase * 0.7));
+    adjustments.push({
+      field: "customTargetFollowers",
+      value: reducedIncrease,
+      label: `目標増加数を+${reducedIncrease}人に調整する`,
+      reason: "段階的な目標に分解すると達成可能性が上がります。",
+      expectedImpact: "実行負荷の低減が見込めます",
+    });
+  }
+
+  if (adjustments.length === 0) {
+    if (!body.storyFrequency || body.storyFrequency === "none") {
+      adjustments.push({
+        field: "storyFrequency",
+        value: "weekly-1-2",
+        label: "ストーリーズを週1-2回追加する",
+        reason: "まずは軽い接触頻度の追加から始めると、運用負荷を抑えて改善できます。",
+        expectedImpact: "継続運用の安定化が見込めます",
+      });
+    } else if (body.weeklyPosts !== "daily") {
+      adjustments.push({
+        field: "weeklyPosts",
+        value: body.weeklyPosts === "weekly-1-2" ? "weekly-3-4" : "daily",
+        label: "フィード投稿を1段階増やす",
+        reason: "現在の運用が安定しているため、次の成長余地を作るフェーズです。",
+        expectedImpact: "追加成長の余地を作れます",
+      });
+    } else if (body.reelCapability !== "daily") {
+      adjustments.push({
+        field: "reelCapability",
+        value: body.reelCapability === "weekly-1-2" ? "weekly-3-4" : "daily",
+        label: "リール投稿を1段階増やす",
+        reason: "発見面の露出をさらに増やす余地があります。",
+        expectedImpact: "新規接触増加が見込めます",
+      });
+    } else {
+      const reducedIncrease = Math.max(5, Math.round(increase * 0.9));
+      adjustments.push({
+        field: "customTargetFollowers",
+        value: reducedIncrease,
+        label: `目標増加数を+${reducedIncrease}人に微調整する`,
+        reason: "運用負荷と達成確度のバランスを取りやすくします。",
+        expectedImpact: "目標の安定達成が見込めます",
+      });
+    }
+  }
+
+  return adjustments.slice(0, 4);
+}
+
 /**
  * 計画シミュレーションAPI
  * 
@@ -966,6 +1094,11 @@ export async function POST(request: NextRequest) {
       targetTimeCoefficient,
       regionCoefficient
     );
+    const suggestedAdjustments = generateSuggestedAdjustments(
+      body,
+      achievementRate,
+      growthRate
+    );
 
     // 影響度の内訳を計算
     const impactBreakdown = {
@@ -1024,6 +1157,7 @@ export async function POST(request: NextRequest) {
       impactBreakdown,
       risks,
       recommendations,
+      suggestedAdjustments,
     };
 
     return NextResponse.json({ simulation: result });

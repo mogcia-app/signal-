@@ -166,6 +166,17 @@ export default function SNSLayout({
                 <span>運用計画</span>
               </Link>
             )}
+            {/* <Link
+              href="/instagram/diagnosis"
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg ${
+                pathname === "/instagram/diagnosis"
+                  ? "bg-orange-100 text-orange-800 font-medium"
+                  : "text-black hover:bg-gray-100"
+              }`}
+            >
+              <Activity size={18} className="flex-shrink-0" />
+              <span>アカウント診断</span>
+            </Link> */}
 
             <Link
               href="/instagram/lab"
