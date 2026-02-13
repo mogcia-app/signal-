@@ -4,17 +4,13 @@ import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth
 import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
 import type { AIReference } from "@/types/ai";
+import type { SnapshotReference as BaseSnapshotReference } from "@/types/ai";
 
 // 投稿データの型定義
-interface SnapshotReference {
-  id: string;
-  status: "gold" | "negative" | "normal";
+type SnapshotReference = Omit<BaseSnapshotReference, "score" | "summary"> & {
   score?: number;
-  title?: string;
-  postType?: string;
   summary?: string;
-  metrics?: Record<string, unknown>;
-}
+};
 
 interface PostData {
   id?: string;

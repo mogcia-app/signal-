@@ -88,6 +88,27 @@ export interface SnapshotReference {
   abTestResults?: ABTestResultTag[];
 }
 
+export interface MasterContextSummary {
+  learningPhase?: string;
+  ragHitRate?: number;
+  totalInteractions?: number;
+  feedbackStats?: {
+    total?: number;
+    positiveRate?: number;
+  } | null;
+  actionStats?: {
+    total?: number;
+    adoptionRate?: number;
+  } | null;
+  achievements?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    status?: string;
+    progress?: number;
+  }> | null;
+}
+
 export interface AIActionLog {
   id: string;
   actionId: string;
@@ -117,4 +138,3 @@ export interface AIDirection {
   createdAt?: string | null;
   updatedAt?: string | null;
 }
-

@@ -1,0 +1,198 @@
+import type { AiClient, ParsedActionPlan } from "@/domain/analysis/report/types";
+import { extractActionPlansFromReview } from "@/domain/analysis/report/parsers/action-plans-from-review";
+import {
+  buildAiErrorFallbackMonthlyReview,
+  buildInsufficientDataMonthlyReview,
+  buildNoDataMonthlyReview,
+  formatFollowerChangeText,
+  formatReachChangeText,
+  type DirectionAlignmentWarning,
+} from "@/domain/analysis/report/usecases/monthly-review-generation";
+import { generateMonthlyReviewWithAi } from "@/domain/analysis/report/usecases/generate-monthly-review-with-ai";
+import {
+  loadReusableMonthlyReview,
+  persistFallbackMonthlyReview,
+  persistGeneratedMonthlyReview,
+  type DirectionPostInput,
+  type MonthlyReviewStore,
+} from "@/domain/analysis/report/usecases/monthly-review-persistence";
+import { getMonthName, getNextMonthName } from "@/domain/analysis/report/utils/month";
+
+interface ReviewContextInput {
+  planTitle?: string;
+  businessInfoText: string;
+  aiSettingsText: string;
+  postTypeInfo: string;
+  topPostInfo: string;
+  postSummaryInsights: string;
+}
+
+interface MonthlyTotals {
+  analyzedCount: number;
+  hasPlan: boolean;
+  totalLikes: number;
+  totalReach: number;
+  totalComments: number;
+  totalSaves: number;
+  totalShares: number;
+  totalFollowerIncrease: number;
+  prevTotalReach: number;
+  prevTotalFollowerIncrease: number;
+}
+
+interface OrchestrateMonthlyReviewInput {
+  store: MonthlyReviewStore;
+  aiClient: AiClient | null;
+  userId: string;
+  month: string;
+  forceRegenerate: boolean;
+  totals: MonthlyTotals;
+  reviewContext: ReviewContextInput;
+  directionAlignmentWarnings: DirectionAlignmentWarning[];
+  postsForDirection: DirectionPostInput[];
+}
+
+export async function orchestrateMonthlyReview(
+  input: OrchestrateMonthlyReviewInput
+): Promise<{ review: string; actionPlans: ParsedActionPlan[] }> {
+  const monthName = getMonthName(input.month);
+  const nextMonth = getNextMonthName(input.month);
+  const reachChangeText = formatReachChangeText(input.totals.prevTotalReach, input.totals.totalReach);
+  const followerChangeText = formatFollowerChangeText(
+    input.totals.prevTotalFollowerIncrease,
+    input.totals.totalFollowerIncrease
+  );
+
+  let monthlyReview = null;
+  let actionPlans: ParsedActionPlan[] = [];
+
+  const reusableReview = await loadReusableMonthlyReview({
+    store: input.store,
+    userId: input.userId,
+    month: input.month,
+    forceRegenerate: input.forceRegenerate,
+  });
+  monthlyReview = reusableReview.monthlyReview;
+  actionPlans = reusableReview.actionPlans;
+
+  if (!monthlyReview || input.forceRegenerate) {
+    if (input.forceRegenerate) {
+      monthlyReview = null;
+      actionPlans = [];
+    }
+
+    if (input.totals.analyzedCount < 10) {
+      const followerDisplayValue = input.totals.totalFollowerIncrease || 0;
+      const followerDisplayText =
+        followerDisplayValue !== 0
+          ? `${followerDisplayValue > 0 ? "+" : ""}${followerDisplayValue.toLocaleString()}人${followerChangeText}`
+          : "0人";
+
+      monthlyReview = buildInsufficientDataMonthlyReview({
+        monthName,
+        analyzedCount: input.totals.analyzedCount,
+        totalReach: input.totals.totalReach,
+        totalLikes: input.totals.totalLikes,
+        totalSaves: input.totals.totalSaves,
+        totalComments: input.totals.totalComments,
+        followerDisplayText,
+        reachChangeText,
+      });
+      actionPlans = [];
+
+      try {
+        await persistFallbackMonthlyReview({
+          store: input.store,
+          userId: input.userId,
+          month: input.month,
+          review: monthlyReview,
+          hasPlan: input.totals.hasPlan,
+          analyzedCount: input.totals.analyzedCount,
+        });
+      } catch (error) {
+        console.error("フォールバックレビュー保存エラー:", error);
+      }
+    } else if (input.aiClient) {
+      try {
+        monthlyReview = await generateMonthlyReviewWithAi({
+          aiClient: input.aiClient,
+          nextMonth,
+          monthlyReviewPromptInput: {
+            currentMonth: monthName,
+            nextMonth,
+            analyzedCount: input.totals.analyzedCount,
+            totalLikes: input.totals.totalLikes,
+            totalReach: input.totals.totalReach,
+            totalComments: input.totals.totalComments,
+            totalSaves: input.totals.totalSaves,
+            totalShares: input.totals.totalShares,
+            totalFollowerIncrease: input.totals.totalFollowerIncrease,
+            reachChangeText,
+            followerChangeText,
+            hasPlan: input.totals.hasPlan,
+            planTitle: input.reviewContext.planTitle,
+            businessInfoText: input.reviewContext.businessInfoText,
+            aiSettingsText: input.reviewContext.aiSettingsText,
+            postTypeInfo: input.reviewContext.postTypeInfo,
+            topPostInfo: input.reviewContext.topPostInfo,
+            postSummaryInsights: input.reviewContext.postSummaryInsights,
+            directionAlignmentWarnings: input.directionAlignmentWarnings,
+          },
+          proposalPromptInput: {
+            nextMonth,
+            analyzedCount: input.totals.analyzedCount,
+            totalLikes: input.totals.totalLikes,
+            totalReach: input.totals.totalReach,
+            totalComments: input.totals.totalComments,
+            totalSaves: input.totals.totalSaves,
+            totalFollowerIncrease: input.totals.totalFollowerIncrease,
+            reachChangeText,
+            followerChangeText,
+            businessInfoText: input.reviewContext.businessInfoText,
+            aiSettingsText: input.reviewContext.aiSettingsText,
+            postTypeSummary: input.reviewContext.postTypeInfo,
+            directionAlignmentWarnings: input.directionAlignmentWarnings,
+          },
+        });
+
+        actionPlans = extractActionPlansFromReview(monthlyReview, nextMonth);
+
+        try {
+          await persistGeneratedMonthlyReview({
+            store: input.store,
+            userId: input.userId,
+            month: input.month,
+            review: monthlyReview,
+            actionPlans,
+            hasPlan: input.totals.hasPlan,
+            analyzedCount: input.totals.analyzedCount,
+            postsForDirection: input.postsForDirection,
+          });
+        } catch (error) {
+          console.error("レビュー保存エラー:", error);
+        }
+      } catch (error) {
+        console.error("AI生成エラー:", error);
+        monthlyReview = buildAiErrorFallbackMonthlyReview({
+          monthName,
+          totalReach: input.totals.totalReach,
+          totalLikes: input.totals.totalLikes,
+          totalSaves: input.totals.totalSaves,
+          totalComments: input.totals.totalComments,
+          reachChangeText,
+        });
+        actionPlans = [];
+      }
+    }
+  }
+
+  if (!monthlyReview) {
+    monthlyReview = buildNoDataMonthlyReview(monthName);
+    actionPlans = [];
+  }
+
+  return {
+    review: monthlyReview,
+    actionPlans,
+  };
+}

@@ -1,7 +1,7 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { UserProfile } from "@/types/user";
 import { AIActionLog, AIReference, SnapshotReference, AIDirection } from "@/types/ai";
-import type { MasterContextSummary } from "@/types/report";
+import type { MasterContextSummary } from "@/types/ai";
 import { getLearningPhaseLabel } from "@/utils/learningPhase";
 
 const DEFAULT_OPTIONS = {
@@ -581,4 +581,3 @@ export async function buildAIContext(
     aiDirection: merged.includeAIDirection ? aiDirection : undefined,
   };
 }
-

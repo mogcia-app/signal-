@@ -5,6 +5,7 @@ import { buildAIContext } from "@/lib/ai/context";
 import { fetchAbTestSummaries, mapAbTestResultsByPost } from "@/lib/analytics/ab-test-utils";
 import type { ABTestResultTag } from "@/types/ab-test";
 import type { AIReference } from "@/types/ai";
+import type { SnapshotReference as BaseSnapshotReference } from "@/types/ai";
 
 interface AnalyticsData {
   id: string;
@@ -86,17 +87,10 @@ interface AnalyticsData {
   };
 }
 
-interface SnapshotReference {
-  id: string;
-  status: "gold" | "negative" | "normal";
+type SnapshotReference = Omit<BaseSnapshotReference, "score" | "summary"> & {
   score?: number;
-  postId?: string | null;
-  title?: string;
-  postType?: string;
   summary?: string;
-  metrics?: Record<string, unknown>;
-  textFeatures?: Record<string, unknown>;
-}
+};
 
 interface PostData {
   id: string;

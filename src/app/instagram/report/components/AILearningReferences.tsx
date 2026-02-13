@@ -4,44 +4,11 @@ import React from "react";
 import { Brain, Layers, ListChecks, Target, Award, Sparkles, Loader2 } from "lucide-react";
 import { getLearningPhaseLabel } from "../../../../utils/learningPhase";
 import type { ReportData } from "../../../../types/report";
+import type { AIReference, MasterContextSummary, SnapshotReference } from "../../../../types/ai";
 
 interface AILearningReferencesProps {
   selectedMonth: string;
   reportData?: ReportData | null;
-}
-
-interface AIReference {
-  id: string;
-  sourceType: "profile" | "plan" | "masterContext" | "snapshot" | "feedback" | "analytics" | "manual";
-  label?: string;
-  summary?: string;
-}
-
-interface SnapshotReference {
-  id: string;
-  status: "gold" | "negative" | "normal";
-  summary?: string;
-}
-
-interface MasterContextSummary {
-  learningPhase?: string;
-  ragHitRate?: number;
-  totalInteractions?: number;
-  feedbackStats?: {
-    total?: number;
-    positiveRate?: number;
-  } | null;
-  actionStats?: {
-    total?: number;
-    adoptionRate?: number;
-  } | null;
-  achievements?: Array<{
-    id: string;
-    title: string;
-    description: string;
-    status?: string;
-    progress?: number;
-  }> | null;
 }
 
 const sourceTypeLabel: Record<AIReference["sourceType"], string> = {
@@ -236,4 +203,3 @@ export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ sele
     </div>
   );
 };
-

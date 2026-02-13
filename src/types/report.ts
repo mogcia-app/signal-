@@ -3,10 +3,10 @@
  * 複数のファイルで使用される共通型定義を集約
  */
 
-import type { AIReference, SnapshotReference } from "./ai";
+import type { AIReference, MasterContextSummary, SnapshotReference } from "./ai";
 
 // re-export for consumers that imported from this file
-export type { AIReference, SnapshotReference };
+export type { AIReference, MasterContextSummary, SnapshotReference };
 
 /**
  * アクションプランの優先度
@@ -117,30 +117,6 @@ export interface PostDeepDiveData {
 }
 
 /**
- * マスターコンテキストサマリー
- */
-export interface MasterContextSummary {
-  learningPhase?: string;
-  ragHitRate?: number;
-  totalInteractions?: number;
-  feedbackStats?: {
-    total?: number;
-    positiveRate?: number;
-  } | null;
-  actionStats?: {
-    total?: number;
-    adoptionRate?: number;
-  } | null;
-  achievements?: Array<{
-    id: string;
-    title: string;
-    description: string;
-    status?: string;
-    progress?: number;
-  }> | null;
-}
-
-/**
  * 投稿サマリーデータ
  */
 export interface PostSummaryData {
@@ -229,4 +205,3 @@ export interface PerformanceScoreData {
     consistency: number;
   };
 }
-

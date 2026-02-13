@@ -6,6 +6,7 @@ import { Loader2, RefreshCcw, Sparkles } from "lucide-react";
 import { useAuth } from "../../../contexts/auth-context";
 import type { AnalyticsData, CommentThread } from "../../instagram/components/types";
 import { authFetch } from "../../../utils/authFetch";
+import type { MasterContextSummary as BaseMasterContextSummary } from "../../../types/ai";
 
 interface FeedAnalyticsAIInsightsProps {
   analyticsData: AnalyticsData[];
@@ -22,7 +23,10 @@ interface AiInsightResult {
   recommendedActions: string[];
 }
 
-interface MasterContextSummary {
+type MasterContextSummary = Omit<
+  BaseMasterContextSummary,
+  "learningPhase" | "ragHitRate" | "totalInteractions" | "feedbackStats" | "actionStats" | "achievements"
+> & {
   learningPhase?: string | null;
   ragHitRate?: number | null;
   totalInteractions?: number | null;
@@ -50,7 +54,7 @@ interface MasterContextSummary {
   timeline?: Array<Record<string, unknown>> | null;
   weeklyTimeline?: Array<Record<string, unknown>> | null;
   achievements?: Array<Record<string, unknown>> | null;
-}
+};
 
 interface AggregatedMetrics {
   totals: Record<string, number>;
@@ -478,4 +482,3 @@ const FeedAnalyticsAIInsights: React.FC<FeedAnalyticsAIInsightsProps> = ({
 };
 
 export default FeedAnalyticsAIInsights;
-

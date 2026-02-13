@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 
 import { getAdminDb } from "../../../../lib/firebase-admin";
 import { requireAuthContext } from "../../../../lib/server/auth-context";
+import type { MasterContextSummary as BaseMasterContextSummary } from "../../../../types/ai";
 
 interface InsightRequestBody {
   userId: string;
@@ -46,7 +47,10 @@ interface InsightRequestBody {
   targetCategory?: "feed" | "reel" | "story" | string;
 }
 
-type MasterContextSummary = {
+type MasterContextSummary = Omit<
+  BaseMasterContextSummary,
+  "learningPhase" | "ragHitRate" | "totalInteractions" | "feedbackStats" | "actionStats" | "achievements"
+> & {
   learningPhase?: string | null;
   ragHitRate?: number | null;
   totalInteractions?: number | null;
@@ -288,4 +292,3 @@ interface AiInsightResult {
   insights: string[];
   recommendedActions: string[];
 }
-
