@@ -18,6 +18,8 @@ export const COLLECTIONS = {
   AB_TESTS: "ab_tests",
   MONTHLY_REVIEWS: "monthly_reviews",
   DIRECTION_ALIGNMENT_LOGS: "direction_alignment_logs",
+  HOME_TODAY_TASKS_CACHE: "home_today_tasks_cache",
+  MONTHLY_KPI_SUMMARIES: "monthly_kpi_summaries",
   TOOL_MAINTENANCE: "toolMaintenance",
   SERVICE_RATE_LIMITS: "serviceRateLimits",
 } as const;

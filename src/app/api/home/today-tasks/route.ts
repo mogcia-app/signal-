@@ -5,7 +5,17 @@ import { getUserProfile } from "@/lib/server/user-profile";
 import { deriveWeeklyPlans, getCurrentWeekIndex, extractTodayTasks } from "../../../../lib/plans/weekly-plans";
 import { getLocalDate } from "../../../../lib/utils/timezone";
 import { logger } from "../../../../lib/logger";
+import { HomeDashboardRepository } from "@/repositories/home-dashboard-repository";
+import type { TodayTasksCacheEntry } from "@/repositories/types";
 import OpenAI from "openai";
+import {
+  dayLabelToIndex,
+  extractFeedContentFromStrategy,
+  extractStoryContentFromStrategy,
+  normalizeDayLabel,
+  shouldPostToday,
+  sortTasksByPriority,
+} from "@/domain/plan/usecases/derive-today-tasks";
 
 // OpenAI APIの初期化
 const openai = process.env.OPENAI_API_KEY
@@ -45,24 +55,6 @@ function getDateKeyInTimezone(date: Date, timezone: string): string {
   const month = parts.find((part) => part.type === "month")?.value ?? "01";
   const day = parts.find((part) => part.type === "day")?.value ?? "01";
   return `${year}-${month}-${day}`;
-}
-
-function normalizeDayLabel(day: string): string {
-  return day.replace(/曜日|曜/g, "").trim();
-}
-
-function dayLabelToIndex(day: string): number {
-  const normalized = normalizeDayLabel(day);
-  const map: Record<string, number> = {
-    日: 0,
-    月: 1,
-    火: 2,
-    水: 3,
-    木: 4,
-    金: 5,
-    土: 6,
-  };
-  return map[normalized] ?? -1;
 }
 
 function stripHashtagsFromContent(raw: string): string {
@@ -342,36 +334,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 1日固定キャッシュ: 同じ日付・同じactivePlanIdなら再生成せず返す
-    const todayTasksCacheId = `${uid}_${localDateForPlan}`;
-    const todayTasksCacheRef = adminDb.collection("home_today_tasks_cache").doc(todayTasksCacheId);
-    const todayTasksCacheSnap = await todayTasksCacheRef.get();
-    if (todayTasksCacheSnap.exists) {
-      const cached = todayTasksCacheSnap.data() as {
-        activePlanId?: string | null;
-        data?: {
-          tasks?: Array<{
-            id: string;
-            type: "story" | "comment" | "feed" | "reel";
-            title: string;
-            description: string;
-            recommendedTime?: string;
-            content?: string;
-            hashtags?: string[];
-            count?: number;
-            reason?: string;
-            priority: "high" | "medium" | "low";
-          }>;
-          tomorrowPreparations?: Array<{
-            type: "feed" | "reel" | "story";
-            description: string;
-            content?: string;
-            hashtags?: string[];
-            preparation: string;
-          }>;
-          planExists?: boolean;
-          totalTasks?: number;
-        };
-      };
+    const cached = await HomeDashboardRepository.getTodayTasksCache(uid, localDateForPlan);
+    if (cached) {
       const samePlan = (cached.activePlanId || null) === (user?.activePlanId || null);
       if (samePlan && cached.data) {
         return NextResponse.json({
@@ -795,11 +759,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 優先度順にソート（high > medium > low）
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    tasks.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    const sortedTasks = sortTasksByPriority(tasks);
 
     // 投稿タスクが1件もない場合でも、許可UIDには次回投稿の準備タスクを1件表示する
-    const hasPostingTask = tasks.some((task) =>
+    const hasPostingTask = sortedTasks.some((task) =>
       task.type === "feed" || task.type === "reel" || task.type === "story"
     );
     if (canGenerateTodayTaskAi && !hasPostingTask) {
@@ -840,7 +803,7 @@ export async function GET(request: NextRequest) {
         planData: labPlanDataForGeneration,
       });
 
-      tasks.push({
+      sortedTasks.push({
         id: `fallback-next-post-${today.getTime()}`,
         type: nextPostType,
         title: "次回投稿の下書きを準備する",
@@ -855,12 +818,12 @@ export async function GET(request: NextRequest) {
     }
 
     // 投稿文付きタスクがある日は「コメントに返信する」を表示しない
-    const hasGeneratedPostTask = tasks.some(
+    const hasGeneratedPostTask = sortedTasks.some(
       (task) => (task.type === "feed" || task.type === "reel" || task.type === "story") && !!task.content
     );
     const filteredTasks = hasGeneratedPostTask
-      ? tasks.filter((task) => task.type !== "comment")
-      : tasks;
+      ? sortedTasks.filter((task) => task.type !== "comment")
+      : sortedTasks;
 
     // 明日の準備を生成（計画タイムゾーン基準）
     const [todayYear, todayMonth, todayDay] = localDateForPlan.split("-").map(Number);
@@ -920,17 +883,13 @@ export async function GET(request: NextRequest) {
     };
 
     try {
-      await todayTasksCacheRef.set(
-        {
-          uid,
-          localDate: localDateForPlan,
-          timezone: timezoneForPlan,
-          activePlanId: user?.activePlanId || null,
-          data: responseData,
-          updatedAt: new Date(),
-        },
-        { merge: true }
-      );
+      await HomeDashboardRepository.setTodayTasksCache({
+        uid,
+        localDate: localDateForPlan,
+        timezone: timezoneForPlan,
+        activePlanId: user?.activePlanId || null,
+        data: responseData as NonNullable<TodayTasksCacheEntry["data"]>,
+      });
     } catch (cacheError) {
       console.error("Today tasks cache save error:", cacheError);
     }
@@ -944,92 +903,4 @@ export async function GET(request: NextRequest) {
     const { status, body } = buildErrorResponse(error);
     return NextResponse.json(body, { status });
   }
-}
-
-/**
- * 週間頻度から今日投稿すべきか判定
- */
-function shouldPostToday(frequency: string, dayOfWeek: number): boolean {
-  if (!frequency) return false;
-  
-  // 週3回の場合: 月、水、金
-  if (frequency.includes("3") || frequency === "週3回") {
-    return dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5; // 月、水、金
-  }
-  
-  // 週4回の場合: 月、火、木、金
-  if (frequency.includes("4") || frequency === "週4回") {
-    return dayOfWeek === 1 || dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 5;
-  }
-  
-  // 週5回の場合: 月〜金
-  if (frequency.includes("5") || frequency === "週5回") {
-    return dayOfWeek >= 1 && dayOfWeek <= 5;
-  }
-  
-  // 毎日
-  if (frequency.includes("毎日") || frequency === "毎日") {
-    return true;
-  }
-  
-  return false;
-}
-
-/**
- * AI戦略からストーリーズの内容を抽出
- */
-function extractStoryContentFromStrategy(
-  strategy: string,
-  _dayName: string
-): { title: string; content: string } {
-  // 簡易的な抽出ロジック（後で改善可能）
-  if (!strategy) {
-    return {
-      title: "今日のストーリーズ投稿",
-      content: "今日の日常をシェアしましょう。",
-    };
-  }
-
-  // 戦略から「今週やること」を抽出
-  const thisWeekMatch = strategy.match(/今週やること[：:]\s*([^\n]+)/);
-  if (thisWeekMatch) {
-    return {
-      title: thisWeekMatch[1].trim(),
-      content: thisWeekMatch[1].trim(),
-    };
-  }
-
-  return {
-    title: "今日のストーリーズ投稿",
-    content: "今日の日常をシェアしましょう。",
-  };
-}
-
-/**
- * AI戦略からフィード投稿の内容を抽出
- */
-function extractFeedContentFromStrategy(
-  strategy: string,
-  _dayName: string
-): { title: string; content: string } {
-  if (!strategy) {
-    return {
-      title: "フィード投稿",
-      content: "",
-    };
-  }
-
-  // 戦略から「今週やること」を抽出
-  const thisWeekMatch = strategy.match(/今週やること[：:]\s*([^\n]+)/);
-  if (thisWeekMatch) {
-    return {
-      title: thisWeekMatch[1].trim(),
-      content: "",
-    };
-  }
-
-  return {
-    title: "フィード投稿",
-    content: "",
-  };
 }

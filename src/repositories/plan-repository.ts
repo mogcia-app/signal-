@@ -15,6 +15,7 @@ import { adminDb } from "@/lib/firebase-admin"
 import * as admin from "firebase-admin"
 import { PlanInput, validatePlanInput } from "@/domain/plan/plan-input"
 import { StrategyPlan } from "@/domain/plan/strategy-plan"
+import { calculateLastMonthPerformance } from "@/domain/plan/usecases/calculate-last-month-performance"
 
 /**
  * Firestoreから取得したplanDataの型定義
@@ -314,41 +315,21 @@ export class PlanRepository {
       if (lastMonthAnalytics.empty) {
         return null // 先月のデータがない
       }
-      
-      // 先月の実績を集計
-      let totalReach = 0
-      let totalLikes = 0
-      let totalComments = 0
-      let totalShares = 0
-      let totalSaves = 0
-      let totalProfileVisits = 0
-      let totalFollowerIncrease = 0
-      let postCount = 0
-      
-      lastMonthAnalytics.docs.forEach((doc) => {
+
+      const entries = lastMonthAnalytics.docs.map((doc) => {
         const data = doc.data()
-        totalReach += data.reach || 0
-        totalLikes += data.likes || 0
-        totalComments += data.comments || 0
-        totalShares += data.shares || 0
-        totalSaves += data.saves || 0
-        totalProfileVisits += data.profileVisits || 0
-        totalFollowerIncrease += data.followerIncrease || 0
-        postCount++
+        return {
+          reach: Number(data.reach || 0),
+          likes: Number(data.likes || 0),
+          comments: Number(data.comments || 0),
+          shares: Number(data.shares || 0),
+          saves: Number(data.saves || 0),
+          profileVisits: Number(data.profileVisits || 0),
+          followerIncrease: Number(data.followerIncrease || 0),
+        }
       })
-      
-      // エンゲージメント率を計算
-      const totalEngagement = totalLikes + totalComments + totalShares
-      const avgEngagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
-      
-      return {
-        monthlyReach: totalReach,
-        engagementRate: avgEngagementRate,
-        profileViews: totalProfileVisits,
-        saves: totalSaves,
-        newFollowers: totalFollowerIncrease,
-        postCount,
-      }
+
+      return calculateLastMonthPerformance(entries)
     } catch (error) {
       console.error("[PlanRepository.getLastMonthPerformance] エラー:", error)
       return null
