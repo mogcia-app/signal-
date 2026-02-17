@@ -4,3 +4,4 @@
 export default function WeeklyContentPlan() {
   return null;
 }
+
