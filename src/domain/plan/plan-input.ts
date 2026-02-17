@@ -16,6 +16,9 @@ export interface PlanInput {
   weeklyPosts: "none" | "weekly-1-2" | "weekly-3-4" | "daily"
   reelCapability: "none" | "weekly-1-2" | "weekly-3-4" | "daily"
   storyFrequency: "none" | "weekly-1-2" | "weekly-3-4" | "daily"
+  feedDays?: string[]
+  reelDays?: string[]
+  storyDays?: string[]
   targetAudience?: string
   postingTime?: string
   regionRestriction?: string
@@ -40,7 +43,6 @@ export function validatePlanInput(input: Partial<PlanInput>): input is PlanInput
     input.startDate
   )
 }
-
 
 
 

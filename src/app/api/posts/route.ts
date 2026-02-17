@@ -3,6 +3,7 @@ import { adminDb } from "../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
+import { uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
 import type { AIReference } from "@/types/ai";
 import type { SnapshotReference as BaseSnapshotReference } from "@/types/ai";
 
@@ -23,7 +24,6 @@ interface PostData {
   scheduledTime?: string;
   status: "draft" | "scheduled" | "published";
   imageUrl?: string | null;
-  imageData?: string | null;
   analytics?: {
     likes: number;
     comments: number;
@@ -37,6 +37,8 @@ interface PostData {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const MAX_IMAGE_DATA_BYTES = 8_000_000;
 
 // 投稿作成
 export async function POST(request: NextRequest) {
@@ -76,6 +78,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
     }
 
+    const normalizedImageData = typeof imageData === "string" ? imageData.trim() : "";
+    let uploadedImageUrl = typeof imageUrl === "string" ? imageUrl.trim() : "";
+    if (normalizedImageData) {
+      const imageDataBytes = Buffer.byteLength(normalizedImageData, "utf8");
+      if (imageDataBytes > MAX_IMAGE_DATA_BYTES) {
+        return NextResponse.json(
+          {
+            error: "画像サイズが大きすぎます。画像を小さくして再度保存してください。",
+            code: "IMAGE_DATA_TOO_LARGE",
+            maxBytes: MAX_IMAGE_DATA_BYTES,
+          },
+          { status: 413 }
+        );
+      }
+      if (!normalizedImageData.startsWith("data:image/")) {
+        return NextResponse.json(
+          { error: "画像データ形式が不正です", code: "INVALID_IMAGE_DATA_URL" },
+          { status: 400 }
+        );
+      }
+
+      try {
+        const uploaded = await uploadPostImageDataUrl({
+          userId,
+          imageDataUrl: normalizedImageData,
+        });
+        uploadedImageUrl = uploaded.imageUrl;
+      } catch (uploadError) {
+        console.error("投稿画像アップロードエラー:", uploadError);
+        return NextResponse.json(
+          { error: "画像アップロードに失敗しました", code: "IMAGE_UPLOAD_FAILED" },
+          { status: 500 }
+        );
+      }
+    }
+
     const postData: Omit<PostData, "id"> = {
       userId,
       title,
@@ -85,8 +123,7 @@ export async function POST(request: NextRequest) {
       scheduledDate: scheduledDate || null,
       scheduledTime: scheduledTime || null,
       status,
-      imageUrl: imageUrl || null,
-      imageData: imageData || null,
+      imageUrl: uploadedImageUrl || null,
       analytics: analytics || null,
       snapshotReferences: Array.isArray(snapshotReferences) ? snapshotReferences : [],
       generationReferences: Array.isArray(generationReferences)
@@ -190,6 +227,7 @@ export async function GET(request: NextRequest) {
     const posts = snapshot.docs
       .map((doc) => {
         const data = doc.data();
+        const { imageData: _imageData, ...rest } = data;
         // 取得した投稿タイプのデバッグログ
         console.log("取得した投稿タイプデバッグ:", {
           postId: doc.id,
@@ -198,7 +236,7 @@ export async function GET(request: NextRequest) {
         });
         return {
           id: doc.id,
-          ...data,
+          ...rest,
           createdAt: data.createdAt?.toDate?.() || data.createdAt,
         };
       })

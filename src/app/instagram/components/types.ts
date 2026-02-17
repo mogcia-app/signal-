@@ -87,8 +87,6 @@ export interface AnalyticsData {
   reelPlayTime?: number;
   reelAvgPlayTime?: number;
   commentThreads?: CommentThread[];
-  sentiment?: "satisfied" | "dissatisfied" | null;
-  sentimentMemo?: string;
 }
 
 // 投稿データの型定義

@@ -545,16 +545,15 @@ function buildKpiBreakdowns(params: {
     insight: summarizeSegments(followerSegments, followerValue),
   };
 
-  const engagementValue =
-    (totals.totalLikes || 0) +
-    (totals.totalComments || 0) +
-    (totals.totalShares || 0) +
-    (totals.totalSaves || 0);
-  const previousEngagementValue =
-    (previousTotals.totalLikes || 0) +
-    (previousTotals.totalComments || 0) +
-    (previousTotals.totalShares || 0) +
-    (previousTotals.totalSaves || 0);
+  const sharesByType = posts.reduce<Record<string, number>>((acc, post) => {
+    const type = post.postType || "feed";
+    const shares = post.analyticsSummary?.shares || 0;
+    acc[type] = (acc[type] || 0) + shares;
+    return acc;
+  }, {});
+
+  const engagementValue = totals.totalShares || 0;
+  const previousEngagementValue = previousTotals.totalShares || 0;
   const engagementChange =
     previousEngagementValue === 0
       ? engagementValue > 0
@@ -562,24 +561,24 @@ function buildKpiBreakdowns(params: {
         : 0
       : ((engagementValue - previousEngagementValue) / previousEngagementValue) * 100;
 
-  const engagementSegments: KPIBreakdownSegment[] = [
-    { label: "いいね", value: totals.totalLikes || 0 },
-    { label: "コメント", value: totals.totalComments || 0 },
-    { label: "シェア", value: totals.totalShares || 0 },
-    { label: "保存", value: totals.totalSaves || 0 },
-  ].filter((segment) => segment.value > 0);
+  const engagementSegments: KPIBreakdownSegment[] = Object.entries(sharesByType)
+    .map(([type, value]) => ({
+      label: typeLabelMap[type] || type,
+      value,
+    }))
+    .filter((segment) => segment.value > 0)
+    .sort((a, b) => b.value - a.value);
 
   const engagementBreakdown: KPIBreakdown = {
     key: "engagement",
-    label: "エンゲージメント（総和）",
+    label: "シェア数",
     value: engagementValue,
     unit: "count",
     changePct: engagementChange,
     segments: engagementSegments,
     topPosts: buildTopPosts(
       posts,
-      (summary) =>
-        (summary?.likes || 0) + (summary?.comments || 0) + (summary?.shares || 0) + (summary?.saves || 0),
+      (summary) => summary?.shares || 0,
       snapshotStatusMap
     ),
     insight: summarizeSegments(engagementSegments, engagementValue),

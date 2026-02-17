@@ -5,6 +5,12 @@ import { syncPlanFollowerProgress } from "../../../../lib/plans/sync-follower-pr
 import { getMasterContext } from "../../ai/monthly-analysis/infra/firestore/master-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import type { PostLearningSignal } from "../../ai/monthly-analysis/types";
+import { COLLECTIONS } from "@/repositories/collections";
+import {
+  computeSuggestionOutcomeScore,
+  recordSuggestionOutcome,
+} from "@/lib/ai/suggestion-learning";
+import { uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
 import * as admin from "firebase-admin";
 
 // 注意: follower_countsは更新しない（homeページで入力された値はそのまま保持）
@@ -14,7 +20,7 @@ import * as admin from "firebase-admin";
  * AIアドバイスを自動生成して保存する（非同期処理）
  * マスターコンテキストがまだ生成されていない場合は、エラーを無視
  */
-async function generateAndSaveAIAdvice(
+async function _generateAndSaveAIAdvice(
   userId: string,
   postId: string,
   category: string,
@@ -41,7 +47,7 @@ async function generateAndSaveAIAdvice(
 
     // 分析データを取得
     const analyticsDoc = await adminDb
-      .collection("analytics")
+      .collection(COLLECTIONS.ANALYTICS)
       .where("userId", "==", userId)
       .where("postId", "==", postId)
       .limit(1)
@@ -51,7 +57,7 @@ async function generateAndSaveAIAdvice(
 
     // 計画データを取得
     const planDoc = await adminDb
-      .collection("plans")
+      .collection(COLLECTIONS.PLANS)
       .where("userId", "==", userId)
       .where("snsType", "==", "instagram")
       .where("status", "==", "active")
@@ -110,8 +116,8 @@ async function generateAndSaveAIAdvice(
           }
         : null,
       feedback: {
-        sentiment: analyticsData?.sentiment || null,
-        memo: analyticsData?.sentimentMemo || "",
+        sentiment: null,
+        memo: "",
       },
       metrics,
       comparisons: signal.comparisons || {
@@ -285,7 +291,7 @@ ${JSON.stringify(payload, null, 2)}`;
     // ai_post_summariesコレクションに保存
     const docId = `${userId}_${postId}`;
     const now = new Date().toISOString();
-    await adminDb.collection("ai_post_summaries").doc(docId).set(
+    await adminDb.collection(COLLECTIONS.AI_POST_SUMMARIES).doc(docId).set(
       {
         userId,
         postId,
@@ -319,6 +325,190 @@ ${JSON.stringify(payload, null, 2)}`;
   }
 }
 
+async function syncPostImageFromThumbnail(
+  userId: string,
+  postId: string | null | undefined,
+  thumbnail: unknown,
+): Promise<void> {
+  if (!postId || typeof thumbnail !== "string" || thumbnail.trim().length === 0) {
+    return;
+  }
+
+  const normalized = thumbnail.trim();
+  const postRef = adminDb.collection(COLLECTIONS.POSTS).doc(postId);
+  const postDoc = await postRef.get();
+  if (!postDoc.exists) {
+    return;
+  }
+
+  const postData = postDoc.data() as { userId?: string } | undefined;
+  if (postData?.userId !== userId) {
+    return;
+  }
+
+  if (normalized.startsWith("data:image/")) {
+    const uploaded = await uploadPostImageDataUrl({
+      userId,
+      imageDataUrl: normalized,
+    });
+    await postRef.update({
+      imageUrl: uploaded.imageUrl,
+      imageData: null,
+      updatedAt: admin.firestore.Timestamp.now(),
+    });
+    return;
+  }
+
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+    await postRef.update({
+      imageUrl: normalized,
+      updatedAt: admin.firestore.Timestamp.now(),
+    });
+  }
+}
+
+function toNumber(value: unknown): number {
+  const num = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function normalizeNumericString(value: unknown): string {
+  return String(value ?? "")
+    .replace(/[０-９．，－]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0))
+    .replace(/,/g, "")
+    .trim();
+}
+
+function toIntSafe(value: unknown): number {
+  const normalized = normalizeNumericString(value);
+  const matched = normalized.match(/-?\d+/);
+  return matched ? Number.parseInt(matched[0], 10) : 0;
+}
+
+function toFloatSafe(value: unknown): number {
+  const normalized = normalizeNumericString(value);
+  const matched = normalized.match(/-?\d+(?:\.\d+)?/);
+  return matched ? Number.parseFloat(matched[0]) : 0;
+}
+
+function calcInteractionRate(input: {
+  likes: unknown;
+  comments: unknown;
+  shares: unknown;
+  saves: unknown;
+  reach: unknown;
+}): number {
+  const likes = toNumber(input.likes);
+  const comments = toNumber(input.comments);
+  const shares = toNumber(input.shares);
+  const saves = toNumber(input.saves);
+  const reach = toNumber(input.reach);
+  if (reach <= 0) {
+    return 0;
+  }
+  return Number((((likes + comments + shares + saves) / reach) * 100).toFixed(4));
+}
+
+async function evaluateAndRecordSuggestionOutcome(input: {
+  userId: string;
+  postId: string;
+  postType: "feed" | "reel" | "story";
+  likes: unknown;
+  comments: unknown;
+  shares: unknown;
+  saves: unknown;
+  reach: unknown;
+  followerIncrease: unknown;
+}): Promise<void> {
+  try {
+    const postDoc = await adminDb.collection(COLLECTIONS.POSTS).doc(input.postId).get();
+    if (!postDoc.exists) {
+      return;
+    }
+
+    const postData = postDoc.data() || {};
+    const generationReferences = Array.isArray(postData.generationReferences)
+      ? (postData.generationReferences as Array<Record<string, unknown>>)
+      : [];
+    const suggestionRef = generationReferences.find((ref) => {
+      const metadata =
+        ref && typeof ref === "object" && ref.metadata && typeof ref.metadata === "object"
+          ? (ref.metadata as Record<string, unknown>)
+          : null;
+      return Boolean(metadata?.suggestionId && metadata?.patternKey);
+    });
+
+    if (!suggestionRef) {
+      return;
+    }
+
+    const metadata = suggestionRef.metadata as Record<string, unknown>;
+    const suggestionId = String(metadata.suggestionId || "").trim();
+    const patternKey = String(metadata.patternKey || "").trim();
+    const patternLabel = String(metadata.patternLabel || patternKey).trim();
+    if (!suggestionId || !patternKey) {
+      return;
+    }
+
+    const currentRate = calcInteractionRate({
+      likes: input.likes,
+      comments: input.comments,
+      shares: input.shares,
+      saves: input.saves,
+      reach: input.reach,
+    });
+
+    const recentSnapshot = await adminDb
+      .collection(COLLECTIONS.ANALYTICS)
+      .where("userId", "==", input.userId)
+      .orderBy("publishedAt", "desc")
+      .limit(20)
+      .get();
+    const baselineRates = recentSnapshot.docs
+      .map((doc) => doc.data() || {})
+      .filter((data) => data.postId !== input.postId)
+      .map((data) =>
+        calcInteractionRate({
+          likes: data.likes,
+          comments: data.comments,
+          shares: data.shares,
+          saves: data.saves,
+          reach: data.reach,
+        })
+      )
+      .filter((rate) => rate > 0);
+
+    const baselineRate =
+      baselineRates.length > 0
+        ? Number(
+            (baselineRates.reduce((sum, rate) => sum + rate, 0) / baselineRates.length).toFixed(4)
+          )
+        : 0;
+    const followerIncrease = toNumber(input.followerIncrease);
+    const improved = currentRate >= baselineRate * 1.05 || followerIncrease > 0;
+    const adopted = true;
+    const score = computeSuggestionOutcomeScore({ adopted, improved });
+    const resultDelta = Number((currentRate - baselineRate).toFixed(4));
+
+    await recordSuggestionOutcome({
+      userId: input.userId,
+      suggestionId,
+      patternKey,
+      patternLabel,
+      postType: input.postType,
+      adopted,
+      improved,
+      score,
+      resultDelta,
+      feedback: `interactionRate=${currentRate.toFixed(3)} baseline=${baselineRate.toFixed(
+        3
+      )} followerIncrease=${followerIncrease}`,
+    });
+  } catch (error) {
+    console.error("[Suggestion Learning] outcome recording error:", error);
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { uid } = await requireAuthContext(request, {
@@ -338,7 +528,7 @@ export async function GET(request: NextRequest) {
     }
 
     const querySnapshot = await adminDb
-      .collection("analytics")
+      .collection(COLLECTIONS.ANALYTICS)
       .where("userId", "==", uid)
       .orderBy("publishedAt", "desc")
       .get();
@@ -442,8 +632,6 @@ export async function POST(request: NextRequest) {
       audience,
       reachSource,
       commentThreads,
-      sentiment,
-      sentimentMemo,
     } = body;
 
     const resolvedUserId = bodyUserId ?? uid;
@@ -459,7 +647,7 @@ export async function POST(request: NextRequest) {
     const publishedAtDate = publishedAt ? new Date(publishedAt) : new Date();
     const publishedAtTimestamp = admin.firestore.Timestamp.fromDate(publishedAtDate);
     
-    const parsedFollowerIncrease = Number.parseInt(followerIncrease) || 0;
+    const parsedFollowerIncrease = toIntSafe(followerIncrease);
     
     // デバッグログ: フォロワー増加数の保存前
     console.log("[Analytics Simple] フォロワー増加数保存デバッグ:", {
@@ -476,12 +664,12 @@ export async function POST(request: NextRequest) {
       postId: postId || null,
       snsType: "instagram",
       postType: category || "feed",
-      likes: Number.parseInt(likes) || 0,
-      comments: Number.parseInt(comments) || 0,
-      shares: Number.parseInt(shares) || 0,
-      reposts: Number.parseInt(reposts) || 0,
-      reach: Number.parseInt(reach) || 0,
-      saves: Number.parseInt(saves) || 0,
+      likes: toIntSafe(likes),
+      comments: toIntSafe(comments),
+      shares: toIntSafe(shares),
+      reposts: toIntSafe(reposts),
+      reach: toIntSafe(reach),
+      saves: toIntSafe(saves),
       followerIncrease: parsedFollowerIncrease,
       engagementRate: 0,
       publishedAt: publishedAtTimestamp, // Timestamp型で統一
@@ -491,31 +679,31 @@ export async function POST(request: NextRequest) {
       hashtags: hashtags || [],
       thumbnail: thumbnail || "",
       category: category || "feed",
-      reachFollowerPercent: Number.parseFloat(reachFollowerPercent) || 0,
-      interactionCount: Number.parseInt(interactionCount) || 0,
-      interactionFollowerPercent: Number.parseFloat(interactionFollowerPercent) || 0,
-      reachSourceProfile: Number.parseInt(reachSourceProfile) || 0,
-      reachSourceFeed: Number.parseInt(reachSourceFeed) || 0,
-      reachSourceExplore: Number.parseInt(reachSourceExplore) || 0,
-      reachSourceSearch: Number.parseInt(reachSourceSearch) || 0,
-      reachSourceOther: Number.parseInt(reachSourceOther) || 0,
-      reachedAccounts: Number.parseInt(reachedAccounts) || 0,
-      profileVisits: Number.parseInt(profileVisits) || 0,
-      profileFollows: Number.parseInt(profileFollows) || 0,
-      externalLinkTaps: Number.parseInt(externalLinkTaps) || 0,
-      reelReachFollowerPercent: Number.parseFloat(reelReachFollowerPercent) || 0,
-      reelInteractionCount: Number.parseInt(reelInteractionCount) || 0,
-      reelInteractionFollowerPercent: Number.parseFloat(reelInteractionFollowerPercent) || 0,
-      reelReachSourceProfile: Number.parseInt(reelReachSourceProfile) || 0,
-      reelReachSourceReel: Number.parseInt(reelReachSourceReel) || 0,
-      reelReachSourceExplore: Number.parseInt(reelReachSourceExplore) || 0,
-      reelReachSourceSearch: Number.parseInt(reelReachSourceSearch) || 0,
-      reelReachSourceOther: Number.parseInt(reelReachSourceOther) || 0,
-      reelReachedAccounts: Number.parseInt(reelReachedAccounts) || 0,
-      reelSkipRate: Number.parseFloat(reelSkipRate) || 0,
-      reelNormalSkipRate: Number.parseFloat(reelNormalSkipRate) || 0,
-      reelPlayTime: Number.parseInt(reelPlayTime) || 0,
-      reelAvgPlayTime: Number.parseFloat(reelAvgPlayTime) || 0,
+      reachFollowerPercent: toFloatSafe(reachFollowerPercent),
+      interactionCount: toIntSafe(interactionCount),
+      interactionFollowerPercent: toFloatSafe(interactionFollowerPercent),
+      reachSourceProfile: toIntSafe(reachSourceProfile),
+      reachSourceFeed: toIntSafe(reachSourceFeed),
+      reachSourceExplore: toIntSafe(reachSourceExplore),
+      reachSourceSearch: toIntSafe(reachSourceSearch),
+      reachSourceOther: toIntSafe(reachSourceOther),
+      reachedAccounts: toIntSafe(reachedAccounts),
+      profileVisits: toIntSafe(profileVisits),
+      profileFollows: toIntSafe(profileFollows),
+      externalLinkTaps: toIntSafe(externalLinkTaps),
+      reelReachFollowerPercent: toFloatSafe(reelReachFollowerPercent),
+      reelInteractionCount: toIntSafe(reelInteractionCount),
+      reelInteractionFollowerPercent: toFloatSafe(reelInteractionFollowerPercent),
+      reelReachSourceProfile: toIntSafe(reelReachSourceProfile),
+      reelReachSourceReel: toIntSafe(reelReachSourceReel),
+      reelReachSourceExplore: toIntSafe(reelReachSourceExplore),
+      reelReachSourceSearch: toIntSafe(reelReachSourceSearch),
+      reelReachSourceOther: toIntSafe(reelReachSourceOther),
+      reelReachedAccounts: toIntSafe(reelReachedAccounts),
+      reelSkipRate: toFloatSafe(reelSkipRate),
+      reelNormalSkipRate: toFloatSafe(reelNormalSkipRate),
+      reelPlayTime: toIntSafe(reelPlayTime),
+      reelAvgPlayTime: toFloatSafe(reelAvgPlayTime),
       audience: audience || null,
       reachSource: reachSource || null,
       commentThreads: Array.isArray(commentThreads)
@@ -526,13 +714,11 @@ export async function POST(request: NextRequest) {
             }))
             .filter((thread) => thread.comment || thread.reply)
         : [],
-      sentiment: sentiment || null,
-      sentimentMemo: sentimentMemo || "",
       createdAt: now,
       updatedAt: now,
     };
 
-    const analyticsCollection = adminDb.collection("analytics");
+    const analyticsCollection = adminDb.collection(COLLECTIONS.ANALYTICS);
 
     if (analyticsData.postId) {
       const existingSnapshot = await analyticsCollection
@@ -569,15 +755,21 @@ export async function POST(request: NextRequest) {
         await syncPlanFollowerProgress(uid);
         // follower_countsは更新しない（homeページで入力された値はそのまま保持）
 
-        // 更新時もAIアドバイスを自動生成・保存
-        // syncPlanFollowerProgress完了後に実行（計画データが更新された後に実行）
-        // 非同期で実行（エラーが発生しても保存処理は成功として返す）
-        generateAndSaveAIAdvice(uid, analyticsData.postId, category || "feed", title || "", hashtags || []).catch(
-          (error) => {
-            console.error("AIアドバイス自動生成エラー（非同期）:", error);
-            // エラーをログに記録するだけで、ユーザーには影響しない
-          }
-        );
+        if (analyticsData.postId) {
+          await evaluateAndRecordSuggestionOutcome({
+            userId: uid,
+            postId: analyticsData.postId,
+            postType: (category || "feed") as "feed" | "reel" | "story",
+            likes,
+            comments,
+            shares,
+            saves,
+            reach,
+            followerIncrease,
+          });
+        }
+
+        await syncPostImageFromThumbnail(uid, analyticsData.postId, thumbnail);
 
         return NextResponse.json({
           success: true,
@@ -603,17 +795,21 @@ export async function POST(request: NextRequest) {
     await syncPlanFollowerProgress(uid);
     // follower_countsは更新しない（homeページで入力された値はそのまま保持）
 
-    // postIdがある場合、バックグラウンドでAIアドバイスを自動生成・保存
-    // syncPlanFollowerProgress完了後に実行（計画データが更新された後に実行）
     if (postId) {
-      // 非同期で実行（エラーが発生しても保存処理は成功として返す）
-      generateAndSaveAIAdvice(uid, postId, category || "feed", title || "", hashtags || []).catch(
-        (error) => {
-          console.error("AIアドバイス自動生成エラー（非同期）:", error);
-          // エラーをログに記録するだけで、ユーザーには影響しない
-        }
-      );
+      await evaluateAndRecordSuggestionOutcome({
+        userId: uid,
+        postId,
+        postType: (category || "feed") as "feed" | "reel" | "story",
+        likes,
+        comments,
+        shares,
+        saves,
+        reach,
+        followerIncrease,
+      });
     }
+
+    await syncPostImageFromThumbnail(uid, postId, thumbnail);
 
     return NextResponse.json({
       success: true,
@@ -626,5 +822,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(body, { status });
   }
 }
-
-

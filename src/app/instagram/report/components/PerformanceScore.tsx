@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Info } from "lucide-react";
 
 interface PerformanceScoreProps {
   score: number;
@@ -29,21 +28,12 @@ interface PerformanceScoreProps {
   isLoading?: boolean;
 }
 
-const ratingColors: Record<string, { bg: string; text: string; border: string }> = {
-  S: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300" },
-  A: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300" },
-  B: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300" },
-  C: { bg: "bg-yellow-100", text: "text-yellow-700", border: "border-yellow-300" },
-  D: { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-300" },
-  F: { bg: "bg-red-100", text: "text-red-700", border: "border-red-300" },
-};
-
 export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
-  score,
-  rating,
-  label,
-  color,
-  breakdown,
+  score: _score,
+  rating: _rating,
+  label: _label,
+  color: _color,
+  breakdown: _breakdown,
   kpis,
   metrics,
   isLoading = false,
@@ -58,8 +48,6 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
       </div>
     );
   }
-
-  const ratingStyle = ratingColors[rating] || ratingColors.C;
 
   return (
     <div className="bg-white border border-gray-200 p-4 mb-4">
@@ -134,4 +122,3 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
     </div>
   );
 };
-

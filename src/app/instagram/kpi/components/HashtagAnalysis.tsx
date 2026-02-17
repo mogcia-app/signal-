@@ -19,7 +19,7 @@ export const HashtagAnalysis: React.FC<HashtagAnalysisProps> = ({
 
   // 最大使用回数を取得（バーの幅計算用）
   const maxCount = useMemo(() => {
-    if (hashtagStats.length === 0) return 1;
+    if (hashtagStats.length === 0) {return 1;}
     return Math.max(...hashtagStats.map((item) => item.count));
   }, [hashtagStats]);
 

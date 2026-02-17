@@ -34,10 +34,23 @@ interface CoachingModePromptParams {
     reachFollowerPercent: number;
     interactionCount: number;
     interactionFollowerPercent: number;
-    audience: any;
-    reachSource: any;
+    audience: Record<string, unknown> | null;
+    reachSource: Record<string, unknown> | null;
   } | null;
-  payload: any;
+  payload: {
+    post?: {
+      title?: string;
+      category?: string;
+      hasImageData?: boolean;
+      [key: string]: unknown;
+    };
+    analytics?: {
+      reposts?: number;
+      [key: string]: unknown;
+    } | null;
+    [key: string]: unknown;
+  };
+  benchmark: BenchmarkResult;
 }
 
 interface LearningModePromptParams extends CoachingModePromptParams {
@@ -63,13 +76,216 @@ interface LearningModePromptParams extends CoachingModePromptParams {
   } | null;
 }
 
-async function callOpenAIForPostInsight(prompt: string, systemPrompt?: string): Promise<string> {
+type ReactionMetrics = {
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  followerIncrease: number;
+  reposts: number;
+};
+
+type BenchmarkResult = {
+  sampleSize: number;
+  averages: ReactionMetrics & { score: number };
+  current: ReactionMetrics & { score: number };
+  scoreDiffPercent: number | null;
+  scoreLabel: "higher" | "lower" | "same" | "learning";
+};
+
+const toNumber = (value: unknown): number => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
+
+const normalizePostId = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return "";
+};
+
+const canAnalyzeImageUrl = async (imageUrl: string | null): Promise<boolean> => {
+  if (!imageUrl) {
+    return false;
+  }
+  if (imageUrl.startsWith("data:image/")) {
+    return true;
+  }
+  if (!/^https?:\/\//.test(imageUrl)) {
+    return false;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2500);
+  try {
+    const response = await fetch(imageUrl, {
+      method: "HEAD",
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const contentType = response.headers.get("content-type") || "";
+    return response.ok && contentType.startsWith("image/");
+  } catch (_error) {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const clampPercent = (value: number): number => Math.max(-999, Math.min(999, value));
+
+const calcReactionScore = (metrics: ReactionMetrics): number => {
+  return (
+    metrics.likes * 1 +
+    metrics.comments * 2 +
+    metrics.shares * 3 +
+    metrics.saves * 2 +
+    metrics.followerIncrease * 4 +
+    metrics.reposts * 2
+  );
+};
+
+const buildBenchmarkSummary = (benchmark: BenchmarkResult): string => {
+  if (benchmark.sampleSize < 3 || benchmark.scoreDiffPercent === null) {
+    return `判定基準: 比較対象が${benchmark.sampleSize}件のため学習中（3件以上で比較判定）`;
+  }
+
+  const diffText =
+    benchmark.scoreDiffPercent > 0
+      ? `+${benchmark.scoreDiffPercent}%`
+      : `${benchmark.scoreDiffPercent}%`;
+
+  const toneText =
+    benchmark.scoreLabel === "higher"
+      ? "直近平均より反応が高めです"
+      : benchmark.scoreLabel === "lower"
+        ? "直近平均より反応が低めです"
+        : "直近平均と同水準です";
+
+  return `判定基準: 直近${benchmark.sampleSize}投稿平均との差（反応スコア ${diffText}）${toneText}`;
+};
+
+const isVagueText = (value: string): boolean => {
+  const text = String(value || "").trim();
+  if (!text) {
+    return true;
+  }
+  const vagueKeywords = [
+    "魅力的",
+    "工夫",
+    "見直す",
+    "改善",
+    "強化",
+    "意識",
+    "検討",
+    "最適化",
+    "クオリティ",
+    "わかりやすく",
+  ];
+  const hasVague = vagueKeywords.some((keyword) => text.includes(keyword));
+  const hasSpecificNumber = /\d+/.test(text);
+  return hasVague && !hasSpecificNumber;
+};
+
+const concreteActionTemplates = (postType: string): string[] => {
+  if (postType === "reel") {
+    return [
+      "冒頭3秒で商品名とベネフィットを12文字以内のテロップで表示してみてください",
+      "15〜30秒の中で1カット2秒以内を目安に編集し、最後に保存CTAを1行入れてください",
+    ];
+  }
+  if (postType === "story") {
+    return [
+      "1枚目に結論を15文字以内で配置し、2枚目で詳細を補足する2枚構成にしてみてください",
+      "質問スタンプで二択を入れ、回答しやすい短文の問いかけを添えてください",
+    ];
+  }
+  return [
+    "1枚目は主役の商品を画面の70%で中央配置し、余白を上下10%残してみてください",
+    "キャプション冒頭20文字以内でベネフィットを1つ明記し、文末に質問を1つ入れてください",
+  ];
+};
+
+const concreteImageAdviceTemplates = (postType: string): string[] => {
+  if (postType === "reel") {
+    return [
+      "冒頭カットは手元アップで質感を見せ、次のカットで商品全体が分かる引き画に切り替えてください",
+      "テロップは1行12文字以内・2行までに絞り、背景とのコントラストを高めてください",
+    ];
+  }
+  return [
+    "主役の商品を中央に置き、背景は単色か木目で情報を増やしすぎない構図にしてみてください",
+    "明るさを+10〜15程度上げ、文字は1行12文字以内にすると内容が伝わりやすくなります",
+  ];
+};
+
+const enforceConcreteItems = (
+  items: string[] | undefined,
+  postType: string,
+  fallbackTemplates: string[],
+  limit = 2,
+): string[] => {
+  const normalized = (Array.isArray(items) ? items : [])
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+
+  const concreted = normalized.map((item, index) =>
+    isVagueText(item) ? fallbackTemplates[index % fallbackTemplates.length] : item
+  );
+
+  const deduped: string[] = [];
+  const keys = new Set<string>();
+  for (const item of concreted) {
+    const key = item.replace(/[。\s]/g, "");
+    if (!key || keys.has(key)) {
+      continue;
+    }
+    keys.add(key);
+    deduped.push(item);
+  }
+
+  const withFallback = deduped.length > 0 ? deduped : concreteActionTemplates(postType);
+  return withFallback.slice(0, limit);
+};
+
+async function callOpenAIForPostInsight(
+  prompt: string,
+  systemPrompt?: string,
+  imageUrl?: string | null,
+): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error("OpenAI API key not configured");
   }
 
   const defaultSystemPrompt = `あなたはInstagram運用のエキスパートアナリストです。投稿データ、分析データ、フィードバック、計画情報、事業内容を総合的に分析し、この投稿の良かった部分、改善すべきポイント、次は何をすべきか（次の一手）を具体的に提案してください。出力はJSONのみ。`;
+
+  const userContent: Array<
+    | { type: "text"; text: string }
+    | { type: "image_url"; image_url: { url: string } }
+  > = [{ type: "text", text: prompt }];
+
+  if (
+    imageUrl &&
+    (imageUrl.startsWith("http://") ||
+      imageUrl.startsWith("https://") ||
+      imageUrl.startsWith("data:image/"))
+  ) {
+    userContent.push({
+      type: "image_url",
+      image_url: { url: imageUrl },
+    });
+  }
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -88,7 +304,7 @@ async function callOpenAIForPostInsight(prompt: string, systemPrompt?: string): 
         },
         {
           role: "user",
-          content: prompt,
+          content: userContent,
         },
       ],
     }),
@@ -105,74 +321,60 @@ async function callOpenAIForPostInsight(prompt: string, systemPrompt?: string): 
 
 // Coaching Mode（初月）：投稿の質の指導
 function buildCoachingModePrompt(params: CoachingModePromptParams): string {
-  const { aiDirection, currentFollowers, planInfo, analyticsMetrics, payload } = params;
+  const { analyticsMetrics, payload, benchmark } = params;
+  const postType = payload?.post?.category || "feed";
+  const hasImage = Boolean(payload?.post?.hasImageData);
+  const reactionMetrics = {
+    likes: analyticsMetrics?.likes ?? 0,
+    comments: analyticsMetrics?.comments ?? 0,
+    shares: analyticsMetrics?.shares ?? 0,
+    saves: analyticsMetrics?.saves ?? 0,
+    followerIncrease: analyticsMetrics?.followerIncrease ?? 0,
+    reposts: (payload?.analytics?.reposts as number | undefined) ?? 0,
+  };
 
-  return `以下のInstagram投稿データを分析し、JSON形式で出力してください。
+  return `以下のInstagram分析データを見て、JSON形式で出力してください。
 
-${aiDirection && aiDirection.lockedAt ? `【今月のAI方針（最優先・必須参照）】
-- メインテーマ: ${aiDirection.mainTheme}
-- 避けるべき焦点: ${aiDirection.avoidFocus.join(", ")}
-- 優先KPI: ${aiDirection.priorityKPI}
-- 投稿ルール: ${aiDirection.postingRules.join(", ")}
+【重要】
+- 根拠に使ってよいのは「反応データの数値」のみです
+- 投稿文、ハッシュタグ、運用計画、事業情報、方針データは評価に使わないでください
+- 閲覧数（リーチ）は評価対象にしないでください。リーチへの言及は禁止です
+- 目標値との比較表現（例: 目標未達）は使わないでください
+- 数字が0の場合も、断定的に否定せず「次に試す改善案」を提案してください
+- 文体は初心者にもわかるやさしい日本語にしてください
+- 文末はアドバイザーらしく「〜してみてください」「〜がおすすめです」を基本にしてください
 
-**重要**: この投稿が上記の「今月のAI方針」と一致しているか、乖離しているかを必ず評価してください。
+【対象投稿タイプ】
+${postType}
 
-` : ""}【あなたの役割】
-あなたはInstagram運用のトレーナーです。投稿の質を向上させるための具体的な指導を行ってください。
+【反応データ（この数値だけを根拠にする）】
+${JSON.stringify(reactionMetrics, null, 2)}
 
-【分析のポイント】
-- 投稿内容・ハッシュタグ・投稿日時を確認
-- 分析ページで入力された分析データ（いいね数、コメント数、リーチ数、フォロワー増加数など）を評価
-- 計画の目標フォロワー数・KPI・ターゲット層と比較
-- **重要**: 現在のフォロワー数（${currentFollowers}人）と目標フォロワー数（${planInfo?.targetFollowers || 0}人）の差を正確に考慮してください
-- **重要**: この投稿によるフォロワー増加数（${analyticsMetrics?.followerIncrease || 0}人）を正確に参照してください。フォロワー増加数が記入されている場合は、それを考慮して評価してください
-- **重要**: リーチ数、いいね数、コメント数など、目標値が設定されていない項目については、「目標に対して低い」「目標に達していない」という評価は行わないでください。これらの項目には目標値が存在しないため、目標との比較はできません
-- 事業内容・ターゲット市場を踏まえた提案
-${aiDirection && aiDirection.lockedAt ? `- **今月のAI方針との一致/乖離を評価**` : ""}
+【判定基準（サーバー側計算済み）】
+${JSON.stringify(benchmark, null, 2)}
+- summary は必ず「判定基準: ...」で始めてください
+- 「反応が少ない/多い」は sampleSize が3件以上のときのみ使用してください
+- sampleSize が3件未満の場合は「学習中」と表現してください
 
-【データの扱いに関する重要事項】
-- **データがない項目について**: 分析ページに項目がない、または値が0の場合は、その項目について「データがない」または「未入力」として扱い、改善を求める指摘は行わないでください
-- **フォロワー増加数について**: フォロワー増加数が記入されている場合は、その数値を正確に参照し、目標達成の評価に反映してください
-- **エンゲージメント率について**: エンゲージメント率は分析ページに項目がないため、エンゲージメント率に関する言及は一切行わないでください
-- **リーチ数、いいね数、コメント数などについて**: これらの項目には目標値が設定されていません。したがって、「目標に対して低い」「目標に達していない」「目標に対して高い」などの目標との比較評価は行わないでください。数値そのものの評価や、より良い結果を得るための改善提案は可能ですが、目標値との比較は絶対に行わないでください
-
-【目標達成見込みの評価基準】
-以下の3つの観点から総合的に評価してください：
-1. **計画との整合性**: 運用計画の目標（フォロワー増加のみ。リーチ数、いいね数、コメント数などに目標値は設定されていない）に対して、この投稿がどの程度貢献しているか
-2. **今月のAI方針との整合性**: メインテーマ、優先KPI、避けるべき焦点、投稿ルールに沿っているか
-3. **投稿パフォーマンス**: リーチ、いいね、コメント、保存、シェアなどの数値を評価しますが、これらの項目には目標値が設定されていないため、目標との比較は行わず、数値そのものや改善の余地を評価してください
-
-評価結果：
-- **high（高）**: 計画や今月の方針に沿っており、目標達成が見込める投稿
-- **medium（中）**: 部分的に計画に沿っているが、改善の余地がある投稿
-- **low（低）**: 計画や今月の方針から乖離しており、目標達成が困難な投稿
+【画像アドバイスの条件】
+${hasImage ? `- 画像は提供されています。${postType}として「この画像で何が伝わるか」「どう改善すると良いか」を具体的に2-4点で出してください
+- 抽象表現は避け、撮影・構図・明るさ・文字量など、実際に試せる助言にしてください` : "- 画像は提供されていません。imageAdvice は空配列にしてください"}
 
 出力形式:
 {
-  "summary": "投稿全体の一言まとめ（30-60文字程度）",
+  "summary": "判定基準: ... で始まる要点（基準と評価を1文で明示）",
   "strengths": ["この投稿の良かった部分1", "この投稿の良かった部分2"],
   "improvements": ["改善すべきポイント1", "改善すべきポイント2"],
-  "nextActions": ["次は何をすべきか？（次の一手）1", "次は何をすべきか？（次の一手）2"]${aiDirection && aiDirection.lockedAt ? `,
-  "directionAlignment": "一致" | "乖離" | "要注意",
-  "directionComment": "今月のAI方針との関係性を1文で説明（例: 「今月の重点「${aiDirection.mainTheme}」に沿った投稿です」または「今月の重点からズレています」）"
-}` : ""},
+  "nextActions": ["次に試す具体アクション1", "次に試す具体アクション2"],
+  "imageAdvice": ["画像に関する具体アドバイス1", "画像に関する具体アドバイス2（画像が無い場合は空配列）"],
   "goalAchievementProspect": "high" | "medium" | "low",
-  "goalAchievementReason": "目標達成見込みの評価理由（計画内容、今月のAI方針、投稿パフォーマンスを総合的に評価した結果を1-2文で説明）"
+  "goalAchievementReason": "数値から見た見込み理由（1-2文）"
 }
 条件:
 - 箇条書きは2-3個に収める
-- 具体的かつ実行しやすい表現にする
-- 日本語で記述する
-- 事業内容・ターゲット層・計画の目標を踏まえた提案にする
-- 分析データの数値を具体的に参照する
-- **重要**: フォロワー増加数が記入されている場合は、その数値を正確に参照し、「目標未達成」という評価は行わないでください。フォロワー増加数が大きい場合は、それを評価に含めてください
-- **重要**: データがない項目（値が0またはnull、または分析ページに項目がない）については、改善を求める指摘は行わないでください
-- **重要**: エンゲージメント率は分析ページに項目がないため、エンゲージメント率に関する言及は一切行わないでください。エンゲージメント率についての評価、改善提案、言及は一切含めないでください
-- **最重要**: リーチ数、いいね数、コメント数、保存数、シェア数など、目標値が設定されていない項目については、「目標に対して低い」「目標に達していない」「目標に対して高い」などの目標との比較評価は絶対に行わないでください。これらの項目には目標値が存在しないため、目標との比較は不可能です。改善提案をする場合は、「より多くのリーチを獲得するために」「リーチを増やすために」という形で、目標値との比較ではなく、数値の向上を目指す提案としてください
-${aiDirection && aiDirection.lockedAt ? `- **今月のAI方針「${aiDirection.mainTheme}」を必ず考慮して、「nextActions」を提案してください。月次レポートの提案と一貫性を持たせてください。**` : ""}
-
-投稿データ:
-${JSON.stringify(payload, null, 2)}`;
+- 数値を適切に参照する（目安: 具体行動には文字数・秒数・比率のいずれかを1つ以上入れる）
+- improvements と nextActions は内容が重複しないようにしてください
+- 日本語で記述する`;
 }
 
 // サーバー側でパターン一致スコアを計算
@@ -205,18 +407,18 @@ function calculatePatternScore(
   // 3. 統計的有意性（最大20点）
   // "higher"が多いほど成功パターンに近い
   let higherCount = 0;
-  if (significance.reach === "higher") higherCount++;
-  if (significance.engagement === "higher") higherCount++;
-  if (significance.savesRate === "higher") higherCount++;
-  if (significance.commentsRate === "higher") higherCount++;
+  if (significance.reach === "higher") {higherCount++;}
+  if (significance.engagement === "higher") {higherCount++;}
+  if (significance.savesRate === "higher") {higherCount++;}
+  if (significance.commentsRate === "higher") {higherCount++;}
   score += higherCount * 5;
 
   // "lower"が多いほど減点
   let lowerCount = 0;
-  if (significance.reach === "lower") lowerCount++;
-  if (significance.engagement === "lower") lowerCount++;
-  if (significance.savesRate === "lower") lowerCount++;
-  if (significance.commentsRate === "lower") lowerCount++;
+  if (significance.reach === "lower") {lowerCount++;}
+  if (significance.engagement === "lower") {lowerCount++;}
+  if (significance.savesRate === "lower") {lowerCount++;}
+  if (significance.commentsRate === "lower") {lowerCount++;}
   score -= lowerCount * 3;
 
   // 4. 勝ちパターンとの一致度（最大30点）
@@ -381,6 +583,7 @@ ${aiDirection && aiDirection.lockedAt ? `【今月のAI方針】
   "directionAlignment": "一致" | "乖離" | "要注意",
   "directionComment": "今月のAI方針との関係性（1文）"
 }` : ""},
+  "imageAdvice": ["画像改善アドバイス1", "画像改善アドバイス2（画像が無い場合は空配列）"],
   "goalAchievementProspect": "high" | "medium" | "low",
   "goalAchievementReason": "目標達成見込みの評価理由（パターン一致度に基づく。1-2文）"
 }
@@ -390,7 +593,9 @@ ${aiDirection && aiDirection.lockedAt ? `【今月のAI方針】
 - 判定は既にサーバー側で決定されています。あなたはその判定結果を解釈し、説明してください
 - 判定を変更したり、独自の判定をしてはいけません
 - エンゲージメント率に関する言及は一切行わないでください
-- リーチ数、いいね数、コメント数など、目標値が設定されていない項目については、「目標に対して低い」などの目標との比較評価は行わないでください`;
+- リーチ数、いいね数、コメント数など、目標値が設定されていない項目については、「目標に対して低い」などの目標との比較評価は行わないでください
+- 文体は初心者にも分かる、やさしい日本語にしてください。強い否定・断定（例: 「全く反響がない」「成功の見込みが低い」）は使わないでください
+- データが少ない場合は「現時点では判断材料が限られるため、まずはテスト投稿で傾向を確認しましょう」のように、前向きな表現にしてください`;
 
   return { 
     prompt, 
@@ -418,6 +623,7 @@ export async function POST(request: NextRequest) {
       masterContext,
       postDoc,
       analyticsDoc,
+      analyticsHistoryDoc,
       planDoc,
       followerCountDoc,
       userProfile,
@@ -425,28 +631,14 @@ export async function POST(request: NextRequest) {
       getMasterContext(userId, { forceRefresh }),
       adminDb.collection("posts").doc(postId).get(),
       adminDb.collection("analytics").where("userId", "==", userId).where("postId", "==", postId).limit(1).get(),
+      adminDb.collection("analytics").where("userId", "==", userId).limit(50).get(),
       adminDb.collection("plans").where("userId", "==", userId).where("snsType", "==", "instagram").where("status", "==", "active").orderBy("createdAt", "desc").limit(1).get(),
       adminDb.collection("follower_counts").where("userId", "==", userId).where("snsType", "==", "instagram").orderBy("date", "desc").limit(1).get(),
       getUserProfile(userId),
     ]);
 
-    if (!masterContext?.postPatterns?.signals?.length) {
-      return NextResponse.json(
-        { success: false, error: "投稿分析データがまだ生成されていません" },
-        { status: 404 }
-      );
-    }
-
-    const rawSignal = masterContext.postPatterns.signals.find((item) => item.postId === postId);
-
-    if (!rawSignal) {
-      return NextResponse.json(
-        { success: false, error: "対象の投稿分析データが見つかりません" },
-        { status: 404 }
-      );
-    }
-
-    const signal = rawSignal as Partial<PostLearningSignal>;
+    const rawSignal = masterContext?.postPatterns?.signals?.find((item) => item.postId === postId);
+    const signal = (rawSignal ?? {}) as Partial<PostLearningSignal>;
 
     const metrics: PostLearningSignal["metrics"] = signal.metrics
       ? {
@@ -546,7 +738,15 @@ export async function POST(request: NextRequest) {
     const postScheduledTime = postData?.scheduledTime || postData?.publishedTime || "";
 
     // 分析データを取得
-    const analyticsData = analyticsDoc.empty ? null : analyticsDoc.docs[0].data();
+    const normalizedRequestedPostId = normalizePostId(postId);
+    const matchedAnalyticsFromHistory = analyticsHistoryDoc.docs
+      .map((doc) => doc.data())
+      .find((item) => normalizePostId(item.postId) === normalizedRequestedPostId);
+
+    const analyticsData =
+      (!analyticsDoc.empty ? analyticsDoc.docs[0].data() : null) ||
+      matchedAnalyticsFromHistory ||
+      (postData?.analytics ? postData.analytics : null);
     const analyticsMetrics = analyticsData ? {
       likes: analyticsData.likes || 0,
       comments: analyticsData.comments || 0,
@@ -554,6 +754,7 @@ export async function POST(request: NextRequest) {
       reach: analyticsData.reach || 0,
       saves: analyticsData.saves || 0,
       followerIncrease: analyticsData.followerIncrease || 0,
+      reposts: analyticsData.reposts || 0,
       engagementRate: analyticsData.engagementRate || 0,
       reachFollowerPercent: analyticsData.reachFollowerPercent || 0,
       interactionCount: analyticsData.interactionCount || 0,
@@ -561,6 +762,92 @@ export async function POST(request: NextRequest) {
       audience: analyticsData.audience || null,
       reachSource: analyticsData.reachSource || null,
     } : null;
+
+    const currentCategory =
+      signal.category ??
+      (typeof analyticsData?.category === "string" ? analyticsData.category : null) ??
+      postData?.postType ??
+      "feed";
+    const currentReactionMetrics: ReactionMetrics = {
+      likes: toNumber(analyticsData?.likes),
+      comments: toNumber(analyticsData?.comments),
+      shares: toNumber(analyticsData?.shares),
+      saves: toNumber(analyticsData?.saves),
+      followerIncrease: toNumber(analyticsData?.followerIncrease),
+      reposts: toNumber(analyticsData?.reposts),
+    };
+
+    const categoryAnalytics: Array<Record<string, unknown>> = analyticsHistoryDoc.docs
+      .map((doc) => doc.data())
+      .filter((item) => {
+        const itemPostId = normalizePostId(item.postId);
+        const itemCategory = typeof item.category === "string" ? item.category : "";
+        if (itemPostId === normalizedRequestedPostId) {
+          return false;
+        }
+        if (!itemCategory) {
+          return true;
+        }
+        return itemCategory === currentCategory;
+      })
+      .slice(0, 10);
+
+    const sampleSize = categoryAnalytics.length;
+    const avgMetrics: ReactionMetrics = categoryAnalytics.reduce<ReactionMetrics>(
+      (acc, item) => ({
+        likes: acc.likes + toNumber(item.likes),
+        comments: acc.comments + toNumber(item.comments),
+        shares: acc.shares + toNumber(item.shares),
+        saves: acc.saves + toNumber(item.saves),
+        followerIncrease: acc.followerIncrease + toNumber(item.followerIncrease),
+        reposts: acc.reposts + toNumber(item.reposts),
+      }),
+      { likes: 0, comments: 0, shares: 0, saves: 0, followerIncrease: 0, reposts: 0 }
+    );
+
+    const averages: ReactionMetrics =
+      sampleSize > 0
+        ? {
+            likes: Math.round((avgMetrics.likes / sampleSize) * 10) / 10,
+            comments: Math.round((avgMetrics.comments / sampleSize) * 10) / 10,
+            shares: Math.round((avgMetrics.shares / sampleSize) * 10) / 10,
+            saves: Math.round((avgMetrics.saves / sampleSize) * 10) / 10,
+            followerIncrease: Math.round((avgMetrics.followerIncrease / sampleSize) * 10) / 10,
+            reposts: Math.round((avgMetrics.reposts / sampleSize) * 10) / 10,
+          }
+        : { likes: 0, comments: 0, shares: 0, saves: 0, followerIncrease: 0, reposts: 0 };
+
+    const currentScore = calcReactionScore(currentReactionMetrics);
+    const averageScore = calcReactionScore(averages);
+    const scoreDiffPercent =
+      sampleSize >= 3
+        ? averageScore === 0
+          ? currentScore > 0
+            ? 100
+            : 0
+          : clampPercent(Math.round(((currentScore - averageScore) / averageScore) * 100))
+        : null;
+
+    const benchmark: BenchmarkResult = {
+      sampleSize,
+      averages: {
+        ...averages,
+        score: Math.round(averageScore),
+      },
+      current: {
+        ...currentReactionMetrics,
+        score: Math.round(currentScore),
+      },
+      scoreDiffPercent,
+      scoreLabel:
+        sampleSize < 3 || scoreDiffPercent === null
+          ? "learning"
+          : scoreDiffPercent >= 15
+            ? "higher"
+            : scoreDiffPercent <= -15
+              ? "lower"
+              : "same",
+    };
 
     // フィードバックデータを取得
     const feedbackSentiment = analyticsData?.sentiment || null;
@@ -601,14 +888,25 @@ export async function POST(request: NextRequest) {
       challenges: Array.isArray(userProfile.businessInfo.challenges) ? userProfile.businessInfo.challenges : [],
     } : null;
 
+    const aiImageUrl =
+      (typeof analyticsData?.thumbnail === "string" && analyticsData.thumbnail.trim().length > 0
+        ? analyticsData.thumbnail.trim()
+        : null) ||
+      (typeof postData?.imageUrl === "string" && postData.imageUrl.trim().length > 0
+        ? postData.imageUrl.trim()
+        : null);
+    const hasAnalyzableImage = await canAnalyzeImageUrl(aiImageUrl);
+
     const payload = {
       // 投稿情報
       post: {
-        id: signal.postId ?? "",
+        id: signal.postId ?? postId,
         title: postTitle,
         content: postContent,
         hashtags: postHashtags,
-        category: signal.category ?? "feed",
+        category: signal.category ?? postData?.postType ?? "feed",
+        imageUrl: typeof postData?.imageUrl === "string" ? postData.imageUrl : null,
+        hasImageData: hasAnalyzableImage,
         scheduledDate: postScheduledDate ? (postScheduledDate instanceof Date ? postScheduledDate.toISOString().split("T")[0] : String(postScheduledDate).split("T")[0]) : null,
         scheduledTime: postScheduledTime,
       },
@@ -640,8 +938,7 @@ export async function POST(request: NextRequest) {
     const aiDirection = await fetchAIDirection(userId);
 
     // モード判定：投稿数に基づいてcoaching mode / learning modeを切り替え
-    const signalCount = masterContext?.postPatterns?.signals?.length || 0;
-    const isLearningMode = signalCount >= 5; // 5件以上でlearning mode
+    const isLearningMode = false;
 
     // アカウントの勝ちパターンを抽出（learning mode用）
     const winningPatterns = isLearningMode && masterContext?.postPatterns?.signals
@@ -726,6 +1023,7 @@ export async function POST(request: NextRequest) {
         planInfo,
         analyticsMetrics,
         payload,
+        benchmark,
         signal,
         cluster,
         comparisons,
@@ -744,10 +1042,11 @@ export async function POST(request: NextRequest) {
         planInfo,
         analyticsMetrics,
         payload,
+        benchmark,
       });
     }
 
-    const rawResponse = await callOpenAIForPostInsight(prompt, systemPrompt);
+    const rawResponse = await callOpenAIForPostInsight(prompt, systemPrompt, aiImageUrl);
     const trimmed = rawResponse.trim();
     
     // JSONを抽出（マークダウンコードブロックや余分なテキストを処理）
@@ -802,6 +1101,7 @@ export async function POST(request: NextRequest) {
       patternBasedPrediction?: "今後フォロワーが増える見込み" | "伸びにくい" | "判断保留";
       patternReason?: string;
       winningPattern?: string;
+      imageAdvice?: string[];
     };
     
     try {
@@ -811,6 +1111,89 @@ export async function POST(request: NextRequest) {
       console.error("元のレスポンス:", rawResponse);
       console.error("抽出したJSON:", jsonText);
       throw new Error("AIの応答を解析できませんでした。再度お試しください。");
+    }
+
+    const mentionsReach = (value: string): boolean => /リーチ|閲覧数/.test(value);
+    const stripReachMentions = (items: string[] | undefined): string[] =>
+      (Array.isArray(items) ? items : []).filter((item) => typeof item === "string" && !mentionsReach(item));
+    const normalizeForCompare = (value: string): string =>
+      value
+        .replace(/[・。\s]/g, "")
+        .replace(/(必要があります|してみてください|がおすすめです|を見直す|を強化する|を取り入れる)/g, "");
+    const dedupeBySimilarity = (items: string[]): string[] => {
+      const seen = new Set<string>();
+      const result: string[] = [];
+      for (const raw of items) {
+        const item = String(raw || "").trim();
+        if (!item) {continue;}
+        const key = normalizeForCompare(item);
+        if (!key || seen.has(key)) {continue;}
+        seen.add(key);
+        result.push(item);
+      }
+      return result;
+    };
+
+    const sanitizedStrengths = stripReachMentions(parsed.strengths);
+    const sanitizedImprovements = stripReachMentions(parsed.improvements);
+    const sanitizedNextActions = stripReachMentions(parsed.nextActions);
+    const sanitizedImageAdvice = stripReachMentions(parsed.imageAdvice);
+
+    const benchmarkSummary = buildBenchmarkSummary(benchmark);
+    const hasAnyReaction =
+      currentReactionMetrics.likes > 0 ||
+      currentReactionMetrics.comments > 0 ||
+      currentReactionMetrics.shares > 0 ||
+      currentReactionMetrics.saves > 0 ||
+      currentReactionMetrics.followerIncrease > 0 ||
+      currentReactionMetrics.reposts > 0;
+    const rawSummary = typeof parsed.summary === "string" && !mentionsReach(parsed.summary)
+      ? parsed.summary.trim()
+      : "";
+    const claimsAllZero = /全て0|すべて0|すべてが0|反応データ.*0/.test(rawSummary);
+    const safeSummary = hasAnyReaction && claimsAllZero ? "" : rawSummary;
+    parsed.summary = safeSummary.startsWith("判定基準:")
+      ? safeSummary
+      : `${benchmarkSummary}${safeSummary ? `。${safeSummary}` : ""}`;
+    parsed.goalAchievementReason = typeof parsed.goalAchievementReason === "string" && !mentionsReach(parsed.goalAchievementReason)
+      ? parsed.goalAchievementReason
+      : "入力された反応データをもとに、改善余地があるポイントを確認しました。次回は改善アクションを試して比較するのがおすすめです。";
+    parsed.strengths = dedupeBySimilarity(sanitizedStrengths);
+    parsed.improvements = enforceConcreteItems(
+      dedupeBySimilarity(sanitizedImprovements),
+      payload?.post?.category || "feed",
+      concreteActionTemplates(payload?.post?.category || "feed"),
+      2,
+    );
+    parsed.nextActions = enforceConcreteItems(
+      dedupeBySimilarity(sanitizedNextActions),
+      payload?.post?.category || "feed",
+      concreteActionTemplates(payload?.post?.category || "feed"),
+      2,
+    );
+    parsed.imageAdvice = payload?.post?.hasImageData
+      ? enforceConcreteItems(
+          sanitizedImageAdvice,
+          payload?.post?.category || "feed",
+          concreteImageAdviceTemplates(payload?.post?.category || "feed"),
+          2,
+        )
+      : [];
+
+    // improvements（課題）と nextActions（実行策）が重複しないように分離
+    const improvementKeys = new Set((parsed.improvements || []).map((item) => normalizeForCompare(item)));
+    parsed.nextActions = (parsed.nextActions || []).filter((item) => !improvementKeys.has(normalizeForCompare(item)));
+
+    if ((parsed.strengths?.length ?? 0) === 0) {
+      parsed.strengths = benchmark.sampleSize < 3
+        ? ["比較対象はまだ少ないですが、今回の数値を基準として次回の改善比較ができる状態です"]
+        : ["直近平均との差を確認できるため、改善の優先順位をつけやすい状態です"];
+    }
+    if ((parsed.improvements?.length ?? 0) === 0) {
+      parsed.improvements = concreteActionTemplates(payload?.post?.category || "feed").slice(0, 1);
+    }
+    if ((parsed.nextActions?.length ?? 0) === 0) {
+      parsed.nextActions = concreteActionTemplates(payload?.post?.category || "feed").slice(1, 2);
     }
 
     return NextResponse.json({
@@ -846,6 +1229,9 @@ export async function POST(request: NextRequest) {
           : null,
         patternReason: isLearningMode && typeof parsed.patternReason === "string" ? parsed.patternReason : null,
         winningPattern: isLearningMode && typeof parsed.winningPattern === "string" ? parsed.winningPattern : null,
+        imageAdvice: Array.isArray(parsed.imageAdvice)
+          ? parsed.imageAdvice.filter((item: unknown): item is string => typeof item === "string")
+          : [],
       },
     });
   } catch (error) {
@@ -880,6 +1266,7 @@ export async function POST(request: NextRequest) {
           "必要に応じて管理者へ「AIサマリー機能の有効化」をご依頼ください。",
           "運用記録やフィードバックの入力を継続し、準備が整ったタイミングで再試行してください。",
         ],
+        imageAdvice: [],
       };
 
       return NextResponse.json({

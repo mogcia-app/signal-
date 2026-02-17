@@ -7,6 +7,7 @@ import { checkUserContract } from "../lib/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { getToolMaintenanceStatus } from "@/lib/tool-maintenance";
+import { BotStatusCard } from "./bot-status-card";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -18,6 +19,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const [isCheckingContract, setIsCheckingContract] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [checkingMaintenance, setCheckingMaintenance] = useState(false);
+  const [loaderProgress, setLoaderProgress] = useState(16);
 
   // ユーザーが認証済みの場合、契約期間を定期的にチェック
   useEffect(() => {
@@ -83,15 +85,30 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [user, loading, router]);
 
+  useEffect(() => {
+    if (!(loading || checkingMaintenance)) {
+      setLoaderProgress(16);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setLoaderProgress((prev) => (prev >= 90 ? 24 : prev + 7));
+    }, 180);
+
+    return () => clearInterval(timer);
+  }, [loading, checkingMaintenance]);
+
   if (loading || checkingMaintenance) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative w-16 h-16 mx-auto mb-4">
-            <div className="absolute inset-0 border-2 border-gray-200 rounded-full"></div>
-            <div className="absolute inset-0 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <p className="text-sm font-medium text-gray-700">読み込み中...</p>
+      <div className="min-h-screen bg-white/90 backdrop-blur-[1px] flex items-center justify-center px-4">
+        <div className="w-[min(94vw,1200px)]">
+          <BotStatusCard
+            title="読み込み中..."
+            subtitle="アカウント情報を確認しています"
+            progress={loaderProgress}
+            large
+            borderless
+          />
         </div>
       </div>
     );

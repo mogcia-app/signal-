@@ -9,6 +9,7 @@ interface PostData {
   content: string;
   hashtags: string[];
   postType: "feed" | "reel" | "story";
+  imageUrl?: string | null;
   publishedAt: string | null;
   publishedTime: string | null;
   scheduledDate?: Date | string | admin.firestore.Timestamp | null;
@@ -74,6 +75,7 @@ export async function GET(request: NextRequest) {
         content: data.content || "",
         hashtags: Array.isArray(data.hashtags) ? data.hashtags : [],
         postType: data.postType || "feed",
+        imageUrl: data.imageUrl || null,
         publishedAt,
         publishedTime,
         scheduledDate: scheduledDate instanceof Date ? scheduledDate.toISOString().split("T")[0] : (typeof scheduledDate === "string" ? scheduledDate.split("T")[0] : scheduledDate),
@@ -131,4 +133,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(body, { status });
   }
 }
-

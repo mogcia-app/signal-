@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Brain, Layers, ListChecks, Target, Award, Sparkles, Loader2 } from "lucide-react";
+import { Brain, Layers, ListChecks, Target, Award, Sparkles } from "lucide-react";
 import { getLearningPhaseLabel } from "../../../../utils/learningPhase";
 import type { ReportData } from "../../../../types/report";
 import type { AIReference, MasterContextSummary, SnapshotReference } from "../../../../types/ai";
@@ -31,7 +31,7 @@ const sourceIconMap: Record<AIReference["sourceType"], React.ReactNode> = {
   manual: <Layers className="w-3.5 h-3.5 text-slate-500" />,
 };
 
-export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ selectedMonth, reportData }) => {
+export const AILearningReferences: React.FC<AILearningReferencesProps> = ({ selectedMonth: _selectedMonth, reportData }) => {
   // reportDataからAI学習リファレンスデータを取得
   const masterContext: MasterContextSummary | null = reportData?.aiLearningReferences?.masterContext || null;
   const references: AIReference[] = reportData?.aiLearningReferences?.references || [];

@@ -9,12 +9,12 @@
  * @returns 週間投稿回数（数値）
  */
 export function convertWeeklyPostsToNumber(value: string | number | undefined): number {
-  if (typeof value === "number") return value;
-  if (typeof value !== "string") return 0;
-  if (value === "none") return 0;
-  if (value === "weekly-1-2") return 1.5;
-  if (value === "weekly-3-4") return 3.5;
-  if (value === "daily") return 7;
+  if (typeof value === "number") {return value;}
+  if (typeof value !== "string") {return 0;}
+  if (value === "none") {return 0;}
+  if (value === "weekly-1-2") {return 1.5;}
+  if (value === "weekly-3-4") {return 3.5;}
+  if (value === "daily") {return 7;}
   return 0;
 }
 
@@ -24,12 +24,12 @@ export function convertWeeklyPostsToNumber(value: string | number | undefined): 
  * @returns 週間ストーリーズ投稿回数（数値）
  */
 export function convertStoryFrequencyToNumber(value: string | number | undefined): number {
-  if (typeof value === "number") return value;
-  if (typeof value !== "string") return 0;
-  if (!value || value === "none") return 0;
-  if (value === "weekly-1-2") return 2;
-  if (value === "weekly-3-4") return 4;
-  if (value === "daily") return 7;
+  if (typeof value === "number") {return value;}
+  if (typeof value !== "string") {return 0;}
+  if (!value || value === "none") {return 0;}
+  if (value === "weekly-1-2") {return 2;}
+  if (value === "weekly-3-4") {return 4;}
+  if (value === "daily") {return 7;}
   return 0;
 }
 

@@ -97,8 +97,6 @@ interface AnalyticsData {
   // 閲覧数ソース分析
   reachSource?: ReachSourceData;
   commentThreads?: CommentThread[];
-  sentiment?: "satisfied" | "dissatisfied" | null;
-  sentimentMemo?: string;
 }
 
 function createDefaultInputData(): FeedInputData {
@@ -187,11 +185,13 @@ function AnalyticsFeedContent() {
     content: string;
     hashtags: string[];
     postType: "feed" | "reel" | "story";
+    imageUrl?: string | null;
     publishedAt?: string;
     publishedTime?: string;
   } | null>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [isResetConfirming, setIsResetConfirming] = useState(false);
   const [inputData, setInputData] = useState<FeedInputData>(createDefaultInputData());
 
   // BFF APIから投稿データと分析データを取得
@@ -225,6 +225,7 @@ function AnalyticsFeedContent() {
             content: post.content || "",
             hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
             postType: post.postType || "feed",
+            imageUrl: post.imageUrl || null,
             publishedAt: post.publishedAt || null,
             publishedTime: post.publishedTime || null,
             scheduledDate: post.scheduledDate || null,
@@ -265,6 +266,10 @@ function AnalyticsFeedContent() {
               publishedTimeValue ??
               prev.publishedTime ??
               new Date().toTimeString().slice(0, 5),
+            thumbnail:
+              typeof postData.imageUrl === "string" && postData.imageUrl.length > 0
+                ? postData.imageUrl
+                : prev.thumbnail,
           }));
         }
 
@@ -317,8 +322,6 @@ function AnalyticsFeedContent() {
           audience?: AudienceData;
           reachSource?: ReachSourceData;
           commentThreads?: CommentThread[];
-          sentiment?: "satisfied" | "dissatisfied" | null;
-          sentimentMemo?: string;
         }) => ({
           id: item.id || "",
           userId: user.uid,
@@ -369,8 +372,6 @@ function AnalyticsFeedContent() {
           audience: item.audience || {},
           reachSource: item.reachSource || {},
           commentThreads: Array.isArray(item.commentThreads) ? item.commentThreads : [],
-          sentiment: item.sentiment ?? null,
-          sentimentMemo: item.sentimentMemo ?? "",
         }));
 
         setAnalyticsData(convertedData);
@@ -410,6 +411,10 @@ function AnalyticsFeedContent() {
           postData.publishedTime ??
           prev.publishedTime ??
           new Date().toTimeString().slice(0, 5),
+        thumbnail:
+          typeof postData.imageUrl === "string" && postData.imageUrl.length > 0
+            ? postData.imageUrl
+            : prev.thumbnail,
       }));
     }
   }, [postData]);
@@ -449,8 +454,6 @@ function AnalyticsFeedContent() {
           profileFollows: String(latestAnalytics.profileFollows || 0),
           externalLinkTaps: String(latestAnalytics.externalLinkTaps || 0),
           commentThreads: latestAnalytics.commentThreads || [],
-          sentiment: latestAnalytics.sentiment || null,
-          sentimentMemo: latestAnalytics.sentimentMemo || "",
           // オーディエンスデータ
           audience: latestAnalytics.audience
             ? {
@@ -501,7 +504,8 @@ function AnalyticsFeedContent() {
       setTimeout(() => setToastMessage(null), 4000);
       return;
     }
-    if (!window.confirm("この投稿に紐付く分析データをすべて削除します。よろしいですか？")) {
+    if (!isResetConfirming) {
+      setIsResetConfirming(true);
       return;
     }
 
@@ -552,27 +556,34 @@ function AnalyticsFeedContent() {
       setTimeout(() => setToastMessage(null), 5000);
     } finally {
       setIsResetting(false);
+      setIsResetConfirming(false);
     }
-  }, [user?.uid, postData, router, fetchAnalyticsData]);
+  }, [user?.uid, postData, router, fetchAnalyticsData, isResetConfirming]);
 
   // 投稿分析データを保存（simple API経由）
-  const handleSaveAnalytics = async (sentimentData?: {
-    sentiment: "satisfied" | "dissatisfied" | null;
-    memo: string;
-  }) => {
+  const handleSaveAnalytics = async (payload?: { memo: string }) => {
     if (!user?.uid) {
       // ログイン画面に自動リダイレクト
       router.push("/login");
       return;
     }
 
-    if (!inputData.likes) {
-      setToastMessage({ message: "いいね数を入力してください", type: 'error' });
-      setTimeout(() => setToastMessage(null), 3000);
-      return;
-    }
-    if (!inputData.reach) {
-      setToastMessage({ message: "閲覧数を入力してください", type: 'error' });
+    const requiredReactionFields: Array<{ key: keyof FeedInputData; label: string }> = [
+      { key: "likes", label: "いいね数" },
+      { key: "comments", label: "コメント数" },
+      { key: "shares", label: "シェア数" },
+      { key: "reposts", label: "リポスト数" },
+      { key: "saves", label: "保存数" },
+      { key: "followerIncrease", label: "フォロワー増加数" },
+    ];
+    const missingFields = requiredReactionFields.filter(
+      ({ key }) => String(inputData[key] ?? "").trim() === ""
+    );
+    if (missingFields.length > 0) {
+      setToastMessage({
+        message: `フィード反応データは必須です（未入力: ${missingFields.map((f) => f.label).join("、")}）`,
+        type: "error",
+      });
       setTimeout(() => setToastMessage(null), 3000);
       return;
     }
@@ -580,6 +591,18 @@ function AnalyticsFeedContent() {
     setIsLoading(true);
     try {
       console.log("Saving analytics data via simple API");
+      const toHalfWidth = (value: string): string =>
+        value.replace(/[０-９．，－]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0));
+      const parseIntSafe = (value: unknown): number => {
+        const normalized = toHalfWidth(String(value ?? "")).replace(/,/g, "").trim();
+        const matched = normalized.match(/-?\d+/);
+        return matched ? Number.parseInt(matched[0], 10) : 0;
+      };
+      const parseFloatSafe = (value: unknown): number => {
+        const normalized = toHalfWidth(String(value ?? "")).replace(/,/g, "").trim();
+        const matched = normalized.match(/-?\d+(?:\.\d+)?/);
+        return matched ? Number.parseFloat(matched[0]) : 0;
+      };
 
       // Firebase認証トークンを取得
       const response = await fetch("/api/analytics/simple", {
@@ -590,13 +613,13 @@ function AnalyticsFeedContent() {
         body: JSON.stringify({
           userId: user.uid,
           postId: postData?.id ?? null,
-          likes: parseInt(inputData.likes) || 0,
-          comments: parseInt(inputData.comments) || 0,
-          shares: parseInt(inputData.shares) || 0,
-          reposts: parseInt(inputData.reposts) || 0,
-          reach: parseInt(inputData.reach) || 0,
-          saves: parseInt(inputData.saves) || 0,
-          followerIncrease: parseInt(inputData.followerIncrease) || 0,
+          likes: parseIntSafe(inputData.likes),
+          comments: parseIntSafe(inputData.comments),
+          shares: parseIntSafe(inputData.shares),
+          reposts: parseIntSafe(inputData.reposts),
+          reach: parseIntSafe(inputData.reach),
+          saves: parseIntSafe(inputData.saves),
+          followerIncrease: parseIntSafe(inputData.followerIncrease),
           publishedAt: inputData.publishedAt,
           publishedTime: inputData.publishedTime,
           title: inputData.title,
@@ -608,45 +631,45 @@ function AnalyticsFeedContent() {
           thumbnail: inputData.thumbnail,
           category: inputData.category,
           // フィード専用フィールド
-          reachFollowerPercent: parseFloat(inputData.reachFollowerPercent) || 0,
-          interactionCount: parseInt(inputData.interactionCount) || 0,
-          interactionFollowerPercent: parseFloat(inputData.interactionFollowerPercent) || 0,
-          reachSourceProfile: parseInt(inputData.reachSourceProfile) || 0,
-          reachSourceFeed: parseInt(inputData.reachSourceFeed) || 0,
-          reachSourceExplore: parseInt(inputData.reachSourceExplore) || 0,
-          reachSourceSearch: parseInt(inputData.reachSourceSearch) || 0,
-          reachSourceOther: parseInt(inputData.reachSourceOther) || 0,
-          reachedAccounts: parseInt(inputData.reachedAccounts) || 0,
-          profileVisits: parseInt(inputData.profileVisits) || 0,
-          profileFollows: parseInt(inputData.profileFollows) || 0,
-          externalLinkTaps: parseInt(inputData.externalLinkTaps) || 0,
+          reachFollowerPercent: parseFloatSafe(inputData.reachFollowerPercent),
+          interactionCount: parseIntSafe(inputData.interactionCount),
+          interactionFollowerPercent: parseFloatSafe(inputData.interactionFollowerPercent),
+          reachSourceProfile: parseIntSafe(inputData.reachSourceProfile),
+          reachSourceFeed: parseIntSafe(inputData.reachSourceFeed),
+          reachSourceExplore: parseIntSafe(inputData.reachSourceExplore),
+          reachSourceSearch: parseIntSafe(inputData.reachSourceSearch),
+          reachSourceOther: parseIntSafe(inputData.reachSourceOther),
+          reachedAccounts: parseIntSafe(inputData.reachedAccounts),
+          profileVisits: parseIntSafe(inputData.profileVisits),
+          profileFollows: parseIntSafe(inputData.profileFollows),
+          externalLinkTaps: parseIntSafe(inputData.externalLinkTaps),
           audience: {
             gender: {
-              male: parseFloat(inputData.audience.gender.male) || 0,
-              female: parseFloat(inputData.audience.gender.female) || 0,
-              other: parseFloat(inputData.audience.gender.other) || 0,
+              male: parseFloatSafe(inputData.audience.gender.male),
+              female: parseFloatSafe(inputData.audience.gender.female),
+              other: parseFloatSafe(inputData.audience.gender.other),
             },
             age: {
-              "13-17": parseFloat(inputData.audience.age["13-17"]) || 0,
-              "18-24": parseFloat(inputData.audience.age["18-24"]) || 0,
-              "25-34": parseFloat(inputData.audience.age["25-34"]) || 0,
-              "35-44": parseFloat(inputData.audience.age["35-44"]) || 0,
-              "45-54": parseFloat(inputData.audience.age["45-54"]) || 0,
-              "55-64": parseFloat(inputData.audience.age["55-64"]) || 0,
-              "65+": parseFloat(inputData.audience.age["65+"]) || 0,
+              "13-17": parseFloatSafe(inputData.audience.age["13-17"]),
+              "18-24": parseFloatSafe(inputData.audience.age["18-24"]),
+              "25-34": parseFloatSafe(inputData.audience.age["25-34"]),
+              "35-44": parseFloatSafe(inputData.audience.age["35-44"]),
+              "45-54": parseFloatSafe(inputData.audience.age["45-54"]),
+              "55-64": parseFloatSafe(inputData.audience.age["55-64"]),
+              "65+": parseFloatSafe(inputData.audience.age["65+"]),
             },
           },
           reachSource: {
             sources: {
-              posts: parseFloat(inputData.reachSource.sources.posts) || 0,
-              profile: parseFloat(inputData.reachSource.sources.profile) || 0,
-              explore: parseFloat(inputData.reachSource.sources.explore) || 0,
-              search: parseFloat(inputData.reachSource.sources.search) || 0,
-              other: parseFloat(inputData.reachSource.sources.other) || 0,
+              posts: parseFloatSafe(inputData.reachSource.sources.posts),
+              profile: parseFloatSafe(inputData.reachSource.sources.profile),
+              explore: parseFloatSafe(inputData.reachSource.sources.explore),
+              search: parseFloatSafe(inputData.reachSource.sources.search),
+              other: parseFloatSafe(inputData.reachSource.sources.other),
             },
             followers: {
-              followers: parseFloat(inputData.reachSource.followers.followers) || 0,
-              nonFollowers: parseFloat(inputData.reachSource.followers.nonFollowers) || 0,
+              followers: parseFloatSafe(inputData.reachSource.followers.followers),
+              nonFollowers: parseFloatSafe(inputData.reachSource.followers.nonFollowers),
             },
           },
           commentThreads: inputData.commentThreads
@@ -655,8 +678,6 @@ function AnalyticsFeedContent() {
               reply: thread.reply?.trim() || "",
             }))
             .filter((thread) => thread.comment || thread.reply),
-          sentiment: sentimentData?.sentiment || null,
-          sentimentMemo: sentimentData?.memo || "",
         }),
       });
 
@@ -668,51 +689,15 @@ function AnalyticsFeedContent() {
       const result = await response.json();
       console.log("Analytics saved via simple API:", result);
 
-      let feedbackErrorMessage: string | null = null;
-      if (postData?.id && sentimentData?.sentiment) {
-        const sentimentMap: Record<"satisfied" | "dissatisfied", "positive" | "negative"> = {
-          satisfied: "positive",
-          dissatisfied: "negative",
-        };
-
-        try {
-          const feedbackResponse = await fetch("/api/ai/feedback", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              userId: user.uid,
-              postId: postData.id,
-              sentiment: sentimentMap[sentimentData.sentiment],
-              comment: sentimentData.memo?.trim() ? sentimentData.memo.trim() : undefined,
-            }),
-          });
-
-          if (!feedbackResponse.ok) {
-            const feedbackError = await feedbackResponse.json().catch(() => ({}));
-            throw new Error(feedbackError.error || "フィードバックの保存に失敗しました");
-          }
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : "フィードバックの保存中に未知のエラーが発生しました";
-          console.error("投稿フィードバック保存エラー:", message);
-          feedbackErrorMessage = message;
-        }
-      }
-
-      if (feedbackErrorMessage) {
-        setToastMessage({
-          message: `分析データは保存しましたが、フィードバックの保存に失敗しました: ${feedbackErrorMessage}`,
-          type: "error",
-        });
-      } else {
-        setToastMessage({ message: "投稿分析データを保存しました！", type: "success" });
-      }
+      void payload;
+      setToastMessage({ message: "投稿分析データを保存しました！", type: "success" });
       setTimeout(() => setToastMessage(null), 3000);
 
       // データを再取得
       await fetchAnalyticsData();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("posts-analytics-updated"));
+      }
 
       // 次のアクションを即座に更新
       if (
@@ -781,11 +766,24 @@ function AnalyticsFeedContent() {
               className="inline-flex items-center px-3 py-2 text-xs font-semibold text-red-600 border border-red-500 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${isResetting ? "animate-spin" : ""}`} />
-              {isResetting ? "リセット中..." : "分析データをリセット"}
+              {isResetting
+                ? "リセット中..."
+                : isResetConfirming
+                  ? "もう一度押してリセット確定"
+                  : "分析データをリセット"}
             </button>
           </div>
           {resetError ? (
             <p className="text-sm text-red-600">{resetError}</p>
+          ) : null}
+          {isResetConfirming && !isResetting ? (
+            <button
+              type="button"
+              onClick={() => setIsResetConfirming(false)}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              キャンセル
+            </button>
           ) : null}
 
           <FeedAnalyticsForm

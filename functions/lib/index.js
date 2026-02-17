@@ -1,12 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.weeklyBackup = exports.setToolMaintenanceMode = exports.getToolMaintenanceStatus = exports.aiChat = exports.api = exports.helloWorld = void 0;
+exports.updateMonthlySummary = exports.weeklyBackup = exports.setToolMaintenanceMode = exports.getToolMaintenanceStatus = exports.aiChat = exports.api = exports.helloWorld = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
+const firestore_1 = require("firebase-functions/v2/firestore");
 const firebase_functions_1 = require("firebase-functions");
 const openai_1 = require("openai");
 const admin = require("firebase-admin");
 const storage_1 = require("@google-cloud/storage");
+const monthly_summary_aggregation_1 = require("./monthly-summary-aggregation");
 // Initialize Firebase Admin
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -21,6 +23,11 @@ const getOpenAI = () => {
 };
 // Initialize Cloud Storage
 const storage = new storage_1.Storage();
+const COLLECTIONS = {
+    ANALYTICS: "analytics",
+    MONTHLY_KPI_SUMMARIES: "monthly_kpi_summaries",
+    TOOL_MAINTENANCE: "toolMaintenance",
+};
 // Start writing Firebase Functions
 // https://firebase.google.com/docs/functions/typescript
 exports.helloWorld = (0, https_1.onRequest)({ cors: true }, (request, response) => {
@@ -111,18 +118,34 @@ ${context ? JSON.stringify(context, null, 2) : "計画情報なし"}
 });
 // Tool Maintenance Mode Functions
 // CORS設定のヘルパー関数
-function setCorsHeaders(res) {
-    res.set("Access-Control-Allow-Origin", "*");
+function setCorsHeaders(req, res) {
+    // 本番環境では特定のオリジンのみ許可
+    const allowedOrigins = [
+        "https://signaltool.app",
+        "https://signal-portal.com",
+        "http://localhost:3000", // 開発環境用
+    ];
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+        res.set("Access-Control-Allow-Origin", origin);
+    }
+    else {
+        // 開発環境やその他の場合はワイルドカード
+        res.set("Access-Control-Allow-Origin", "*");
+    }
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set("Access-Control-Max-Age", "3600"); // プリフライトのキャッシュ時間
 }
 // メンテナンス状態の取得
 exports.getToolMaintenanceStatus = (0, https_1.onRequest)({ cors: true }, async (req, res) => {
-    setCorsHeaders(res);
+    // OPTIONSリクエスト（プリフライト）を先に処理
     if (req.method === "OPTIONS") {
+        setCorsHeaders(req, res);
         res.status(204).send("");
         return;
     }
+    setCorsHeaders(req, res);
     if (req.method !== "GET") {
         res.status(405).json({ success: false, error: "Method not allowed" });
         return;
@@ -131,7 +154,7 @@ exports.getToolMaintenanceStatus = (0, https_1.onRequest)({ cors: true }, async 
         // Firestoreからメンテナンス状態を取得
         const maintenanceDoc = await admin
             .firestore()
-            .collection("toolMaintenance")
+            .collection(COLLECTIONS.TOOL_MAINTENANCE)
             .doc("current")
             .get();
         if (!maintenanceDoc.exists) {
@@ -177,11 +200,13 @@ exports.getToolMaintenanceStatus = (0, https_1.onRequest)({ cors: true }, async 
 });
 // メンテナンスモードの設定
 exports.setToolMaintenanceMode = (0, https_1.onRequest)({ cors: true }, async (req, res) => {
-    setCorsHeaders(res);
+    // OPTIONSリクエスト（プリフライト）を先に処理
     if (req.method === "OPTIONS") {
+        setCorsHeaders(req, res);
         res.status(204).send("");
         return;
     }
+    setCorsHeaders(req, res);
     if (req.method !== "POST") {
         res.status(405).json({ success: false, error: "Method not allowed" });
         return;
@@ -197,7 +222,7 @@ exports.setToolMaintenanceMode = (0, https_1.onRequest)({ cors: true }, async (r
             return;
         }
         // Firestoreに保存
-        const maintenanceRef = admin.firestore().collection("toolMaintenance").doc("current");
+        const maintenanceRef = admin.firestore().collection(COLLECTIONS.TOOL_MAINTENANCE).doc("current");
         const updateData = {
             enabled,
             message: message || (enabled ? "システムメンテナンス中です。しばらくお待ちください。" : ""),
@@ -355,4 +380,134 @@ exports.weeklyBackup = (0, scheduler_1.onSchedule)({
         });
         throw error;
     }
+});
+/**
+ * analytics 書き込み時に monthly_kpi_summaries を差分更新
+ * create/update/delete すべてに対応
+ */
+exports.updateMonthlySummary = (0, firestore_1.onDocumentWritten)({
+    document: `${COLLECTIONS.ANALYTICS}/{docId}`,
+    region: "asia-northeast1",
+    memory: "256MiB",
+}, async (event) => {
+    var _a, _b, _c, _d;
+    const docId = event.params.docId;
+    const beforeData = ((_b = (_a = event.data) === null || _a === void 0 ? void 0 : _a.before) === null || _b === void 0 ? void 0 : _b.exists) ? event.data.before.data() : undefined;
+    const afterData = ((_d = (_c = event.data) === null || _c === void 0 ? void 0 : _c.after) === null || _d === void 0 ? void 0 : _d.exists) ? event.data.after.data() : undefined;
+    const beforeContribution = (0, monthly_summary_aggregation_1.buildContribution)(beforeData);
+    const afterContribution = (0, monthly_summary_aggregation_1.buildContribution)(afterData);
+    if (!beforeContribution && !afterContribution) {
+        firebase_functions_1.logger.info("monthly summary skipped: analytics document has no aggregatable payload", { docId });
+        return;
+    }
+    const patches = new Map();
+    const getPatch = (userId, month) => {
+        const key = `${userId}_${month}`;
+        const existing = patches.get(key);
+        if (existing) {
+            return existing;
+        }
+        const created = (0, monthly_summary_aggregation_1.createPatch)(userId, month, docId);
+        patches.set(key, created);
+        return created;
+    };
+    if (beforeContribution) {
+        const patch = getPatch(beforeContribution.userId, beforeContribution.month);
+        (0, monthly_summary_aggregation_1.addContributionToPatch)(patch, (0, monthly_summary_aggregation_1.negateContribution)(beforeContribution));
+    }
+    if (afterContribution) {
+        const patch = getPatch(afterContribution.userId, afterContribution.month);
+        (0, monthly_summary_aggregation_1.addContributionToPatch)(patch, afterContribution);
+    }
+    if (patches.size === 0) {
+        return;
+    }
+    const db = admin.firestore();
+    for (const [docKey, patch] of patches.entries()) {
+        const ref = db.collection(COLLECTIONS.MONTHLY_KPI_SUMMARIES).doc(docKey);
+        await db.runTransaction(async (tx) => {
+            var _a;
+            const snapshot = await tx.get(ref);
+            const existing = snapshot.exists ? snapshot.data() : null;
+            const breakdownEntries = Array.isArray(existing === null || existing === void 0 ? void 0 : existing.dailyBreakdown)
+                ? existing === null || existing === void 0 ? void 0 : existing.dailyBreakdown
+                : [];
+            const breakdownMap = new Map();
+            for (const item of breakdownEntries) {
+                const date = typeof item.date === "string" ? item.date : null;
+                if (!date) {
+                    continue;
+                }
+                breakdownMap.set(date, {
+                    likes: (0, monthly_summary_aggregation_1.toNumber)(item.likes),
+                    reach: (0, monthly_summary_aggregation_1.toNumber)(item.reach),
+                    saves: (0, monthly_summary_aggregation_1.toNumber)(item.saves),
+                    comments: (0, monthly_summary_aggregation_1.toNumber)(item.comments),
+                    engagement: (0, monthly_summary_aggregation_1.toNumber)(item.engagement),
+                });
+            }
+            for (const [date, dailyDelta] of patch.dailyByDate.entries()) {
+                const current = (_a = breakdownMap.get(date)) !== null && _a !== void 0 ? _a : {
+                    likes: 0,
+                    reach: 0,
+                    saves: 0,
+                    comments: 0,
+                    engagement: 0,
+                };
+                const next = {
+                    likes: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)(current.likes, dailyDelta.likes),
+                    reach: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)(current.reach, dailyDelta.reach),
+                    saves: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)(current.saves, dailyDelta.saves),
+                    comments: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)(current.comments, dailyDelta.comments),
+                    engagement: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)(current.engagement, dailyDelta.engagement),
+                };
+                const isEmpty = next.likes === 0 &&
+                    next.reach === 0 &&
+                    next.saves === 0 &&
+                    next.comments === 0 &&
+                    next.engagement === 0;
+                if (isEmpty) {
+                    breakdownMap.delete(date);
+                }
+                else {
+                    breakdownMap.set(date, next);
+                }
+            }
+            const sortedBreakdown = Array.from(breakdownMap.entries())
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([date, values]) => ({
+                date,
+                likes: values.likes,
+                reach: values.reach,
+                saves: values.saves,
+                comments: values.comments,
+                engagement: values.engagement,
+            }));
+            const nextData = {
+                userId: patch.userId,
+                month: patch.month,
+                snsType: patch.snsType,
+                totalLikes: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalLikes), patch.delta.likes),
+                totalComments: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalComments), patch.delta.comments),
+                totalShares: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalShares), patch.delta.shares),
+                totalReach: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalReach), patch.delta.reach),
+                totalSaves: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalSaves), patch.delta.saves),
+                totalFollowerIncrease: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalFollowerIncrease), patch.delta.followerIncrease),
+                totalInteraction: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalInteraction), patch.delta.interaction),
+                totalExternalLinkTaps: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalExternalLinkTaps), patch.delta.externalLinkTaps),
+                totalProfileVisits: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.totalProfileVisits), patch.delta.profileVisits),
+                postCount: (0, monthly_summary_aggregation_1.applyDeltaNonNegative)((0, monthly_summary_aggregation_1.toNumber)(existing === null || existing === void 0 ? void 0 : existing.postCount), patch.delta.postCount),
+                dailyBreakdown: sortedBreakdown,
+                lastAnalyticsDocId: patch.lastAnalyticsDocId,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            };
+            tx.set(ref, nextData, { merge: true });
+        });
+    }
+    firebase_functions_1.logger.info("monthly summaries updated", {
+        docId,
+        targetCount: patches.size,
+        targets: Array.from(patches.keys()),
+        eventId: event.id,
+    });
 });

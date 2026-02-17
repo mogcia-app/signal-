@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       success: true,
       limits,
     });
-  } catch (error) {
+  } catch (_error) {
     // 認証エラーの場合はデフォルト値を返す
     const { searchParams } = new URL(request.url);
     const postType = (searchParams.get("postType") || "feed") as "feed" | "reel" | "story";
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { postType = "feed", content, hashtags, schedule, prompt } = body;
+    const { postType = "feed", content, hashtags, schedule: _schedule, prompt } = body;
 
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -118,4 +118,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

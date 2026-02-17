@@ -66,18 +66,22 @@ export async function GET(request: NextRequest) {
     //   data: doc.data()
     // })));
 
-    const posts = postsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate
-        ? doc.data().createdAt.toDate()
-        : new Date(doc.data().createdAt),
-      publishedAt: doc.data().publishedAt?.toDate
-        ? doc.data().publishedAt.toDate()
-        : doc.data().publishedAt
-          ? new Date(doc.data().publishedAt)
-          : undefined,
-    })) as Array<{
+    const posts = postsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      const { imageData: _imageData, ...rest } = data;
+      return {
+        id: doc.id,
+        ...rest,
+        createdAt: data.createdAt?.toDate
+          ? data.createdAt.toDate()
+          : new Date(data.createdAt),
+        publishedAt: data.publishedAt?.toDate
+          ? data.publishedAt.toDate()
+          : data.publishedAt
+            ? new Date(data.publishedAt)
+            : undefined,
+      };
+    }) as Array<{
       id: string;
       userId: string;
       title: string;
@@ -88,7 +92,6 @@ export async function GET(request: NextRequest) {
       scheduledTime?: string;
       status: "draft" | "scheduled" | "published";
       imageUrl?: string | null;
-      imageData?: string | null;
       createdAt: Date;
       updatedAt: Date;
       publishedAt?: Date; // 投稿日時を追加

@@ -63,6 +63,28 @@ if (typeof window !== "undefined") {
   const originalWarn = console.warn;
   const originalError = console.error;
 
+  const isExpectedOfflineFirestoreError = (args: unknown[]): boolean => {
+    const text = args
+      .map((arg) => {
+        if (typeof arg === "string") {return arg;}
+        if (arg instanceof Error) {return `${arg.name}: ${arg.message}`;}
+        try {
+          return JSON.stringify(arg);
+        } catch {
+          return String(arg);
+        }
+      })
+      .join(" ")
+      .toLowerCase();
+
+    return (
+      text.includes("could not reach cloud firestore backend") ||
+      text.includes("backend didn't respond within 10 seconds") ||
+      text.includes("failed to get document because the client is offline") ||
+      text.includes("client is offline")
+    );
+  };
+
   const formatArgs = (args: unknown[]): string =>
     args
       .map((arg) => {
@@ -99,6 +121,17 @@ if (typeof window !== "undefined") {
 
   // console.error をオーバーライド
   console.error = (...args: unknown[]) => {
+    // Firestoreのオフライン系は想定内なので warning 扱いに落とす
+    if (isExpectedOfflineFirestoreError(args)) {
+      Sentry.addBreadcrumb({
+        message: formatArgs(args),
+        level: "warning",
+        category: "console",
+      });
+      originalWarn(...(args as Parameters<typeof console.warn>));
+      return;
+    }
+
     Sentry.addBreadcrumb({
       message: formatArgs(args),
       level: "error",

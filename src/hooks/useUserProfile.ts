@@ -134,6 +134,7 @@ export const useUserProfile = () => {
           errorMessage.includes("QUIC") ||
           errorMessage.includes("ERR_INTERNET_DISCONNECTED") ||
           errorMessage.includes("ERR_NETWORK_IO_SUSPENDED");
+        const isPermissionDenied = errorCode === "permission-denied";
         
         if (isNetworkError) {
           // ネットワークエラーは一時的なものなので、エラーを設定せずに既存のデータを保持
@@ -167,6 +168,14 @@ export const useUserProfile = () => {
           }
           
           // エラーを設定しない（既存のデータを保持）
+          return;
+        }
+
+        if (isPermissionDenied) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn("⚠️ Firestore権限エラーのためユーザー情報リアルタイム取得をスキップ:", errorMessage);
+          }
+          setLoading(false);
           return;
         }
         

@@ -217,6 +217,12 @@ service cloud.firestore {
                        request.resource.data.userId == resource.data.userId;
       allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
     }
+
+    // KPI月次サマリーはクライアントSDKからの直接アクセスを禁止
+    // Cloud Functions / API Route の Admin SDK は Security Rules をバイパスする
+    match /monthly_kpi_summaries/{document=**} {
+      allow read, write: if false;
+    }
     
     // その他のコレクション（明示的に許可されていないものは拒否）
     match /{document=**} {
@@ -224,4 +230,3 @@ service cloud.firestore {
     }
   }
 }
-

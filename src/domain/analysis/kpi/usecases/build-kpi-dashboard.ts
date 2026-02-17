@@ -17,6 +17,7 @@ export interface BuildKpiDashboardInput {
   postsWithAnalytics: PostWithAnalytics[];
   totals: KPITotals;
   previousTotals: KPITotals;
+  previousFeedReelShares: number;
   changes: KPIChanges;
   reachSourceAnalysis: ReachSourceAnalysis;
   snapshotStatusMap: Map<string, "gold" | "negative" | "normal">;
@@ -39,6 +40,7 @@ export function buildKpiDashboard(input: BuildKpiDashboardInput): KPIDashboard {
   const breakdowns = buildKpiBreakdowns({
     totals: input.totals,
     previousTotals: input.previousTotals,
+    previousFeedReelShares: input.previousFeedReelShares,
     changes: input.changes,
     reachSourceAnalysis: input.reachSourceAnalysis,
     posts: input.postsWithAnalytics,

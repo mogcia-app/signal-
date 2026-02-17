@@ -10,7 +10,7 @@ import { PlanInput } from "./plan-input"
 import { StrategyPlan } from "./strategy-plan"
 import { ExecutionState } from "./execution-state"
 import { UserProfile } from "@/types/user"
-import { extractTodayTasks, getCurrentWeekIndex } from "@/lib/plans/weekly-plans"
+import { getCurrentWeekIndex } from "@/lib/plans/weekly-plans"
 import { getLocalDate, getLocalDateForDate } from "@/lib/utils/timezone"
 
 export class PlanEngine {
@@ -105,7 +105,7 @@ export class PlanEngine {
    */
   static startExecution(
     strategy: StrategyPlan,
-    currentDate: Date = new Date(),
+    _currentDate: Date = new Date(),
     timezone: string = "Asia/Tokyo"
   ): ExecutionState {
     const localDate = getLocalDate(timezone)
@@ -491,10 +491,10 @@ export class PlanEngine {
    * 投稿頻度を数値に変換
    */
   private static convertWeeklyPostsToNumber(value: string): number {
-    if (value === "none") return 0
-    if (value === "weekly-1-2") return 1.5
-    if (value === "weekly-3-4") return 3.5
-    if (value === "daily") return 7
+    if (value === "none") {return 0}
+    if (value === "weekly-1-2") {return 1.5}
+    if (value === "weekly-3-4") {return 3.5}
+    if (value === "daily") {return 7}
     return 0
   }
   
@@ -502,10 +502,10 @@ export class PlanEngine {
    * ストーリーズ頻度を数値に変換
    */
   private static convertStoryFrequencyToNumber(value: string | undefined): number {
-    if (!value || value === "none") return 0
-    if (value === "weekly-1-2") return 2
-    if (value === "weekly-3-4") return 4
-    if (value === "daily") return 7
+    if (!value || value === "none") {return 0}
+    if (value === "weekly-1-2") {return 2}
+    if (value === "weekly-3-4") {return 4}
+    if (value === "daily") {return 7}
     return 0
   }
   
@@ -529,4 +529,3 @@ export class PlanEngine {
     }
   }
 }
-

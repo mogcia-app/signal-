@@ -5,15 +5,18 @@ import type {
   AnalyticsDocument,
   FollowerCountDocument,
   KpiRepositoryData,
+  MonthlyKpiSummaryDailyBreakdownDocument,
+  MonthlyKpiSummaryDocument,
   PlanGoalDocument,
   SnapshotStatus,
+  YearMonthString,
 } from "@/repositories/types";
 
 export class KpiDashboardRepository {
   static async fetchKpiRawData(userId: string, month: string): Promise<KpiRepositoryData> {
     const previousMonth = toPreviousMonth(month);
 
-    const [currentAnalytics, previousAnalytics, followerCounts, snapshotStatusMap, activePlan, initialFollowers] =
+    const [currentMonthly, previousMonthly, followerCounts, snapshotStatusMap, activePlan, initialFollowers] =
       await Promise.all([
         this.fetchMonthlyAnalytics(userId, month),
         this.fetchMonthlyAnalytics(userId, previousMonth),
@@ -25,8 +28,10 @@ export class KpiDashboardRepository {
 
     return {
       month,
-      currentAnalytics,
-      previousAnalytics,
+      currentAnalytics: currentMonthly.analytics,
+      previousAnalytics: previousMonthly.analytics,
+      currentSummary: currentMonthly.summary,
+      previousSummary: previousMonthly.summary,
       followerCount: followerCounts.current,
       previousFollowerCount: followerCounts.previous,
       snapshotStatusMap,
@@ -35,7 +40,33 @@ export class KpiDashboardRepository {
     };
   }
 
-  static async fetchMonthlyAnalytics(userId: string, month: string): Promise<AnalyticsDocument[]> {
+  static async fetchMonthlyAnalytics(
+    userId: string,
+    month: string
+  ): Promise<{ analytics: AnalyticsDocument[]; summary: MonthlyKpiSummaryDocument | null }> {
+    const summaryDoc = await adminDb
+      .collection(COLLECTIONS.MONTHLY_KPI_SUMMARIES)
+      .doc(`${userId}_${month}`)
+      .get();
+
+    if (summaryDoc.exists) {
+      const summary = this.normalizeMonthlySummaryDocument(summaryDoc.id, summaryDoc.data(), userId, month);
+      if (summary) {
+        return {
+          analytics: [],
+          summary,
+        };
+      }
+    }
+
+    const analytics = await this.fetchAndAggregateFromRawAnalytics(userId, month);
+    return {
+      analytics,
+      summary: null,
+    };
+  }
+
+  private static async fetchAndAggregateFromRawAnalytics(userId: string, month: string): Promise<AnalyticsDocument[]> {
     const { startTimestamp, endTimestamp } = toTimestampRange(month);
 
     const snapshot = await adminDb
@@ -55,6 +86,72 @@ export class KpiDashboardRepository {
     }
 
     return analytics;
+  }
+
+  private static normalizeMonthlySummaryDocument(
+    docId: string,
+    data: FirebaseFirestore.DocumentData | undefined,
+    userId: string,
+    month: string
+  ): MonthlyKpiSummaryDocument | null {
+    if (!data) {
+      return null;
+    }
+
+    const docUserId = typeof data.userId === "string" ? data.userId : "";
+    const rawMonth = typeof data.month === "string" ? data.month : "";
+    if (docUserId !== userId || rawMonth !== month) {
+      return null;
+    }
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(rawMonth)) {
+      return null;
+    }
+    const docMonth = rawMonth as YearMonthString;
+
+    const dailyBreakdown: MonthlyKpiSummaryDailyBreakdownDocument[] = Array.isArray(data.dailyBreakdown)
+      ? data.dailyBreakdown
+          .map((entry) => {
+            if (!entry || typeof entry !== "object") {
+              return null;
+            }
+            const row = entry as Record<string, unknown>;
+            const rawDate = typeof row.date === "string" ? row.date : null;
+            if (!rawDate || !/^\d{4}-(0[1-9]|1[0-2])-\d{2}$/.test(rawDate)) {
+              return null;
+            }
+            return {
+              date: rawDate as MonthlyKpiSummaryDailyBreakdownDocument["date"],
+              likes: Number(row.likes || 0),
+              reach: Number(row.reach || 0),
+              saves: Number(row.saves || 0),
+              comments: Number(row.comments || 0),
+              engagement: Number(row.engagement || 0),
+            };
+          })
+          .filter((entry): entry is MonthlyKpiSummaryDailyBreakdownDocument => entry !== null)
+      : [];
+
+    return {
+      userId: docUserId,
+      month: docMonth,
+      snsType: "instagram",
+      totalLikes: Number(data.totalLikes || 0),
+      totalComments: Number(data.totalComments || 0),
+      totalShares: Number(data.totalShares || 0),
+      totalReach: Number(data.totalReach || 0),
+      totalSaves: Number(data.totalSaves || 0),
+      totalFollowerIncrease: Number(data.totalFollowerIncrease || 0),
+      totalInteraction: Number(data.totalInteraction || 0),
+      totalExternalLinkTaps: Number(data.totalExternalLinkTaps || 0),
+      totalProfileVisits: Number(data.totalProfileVisits || 0),
+      postCount: Number(data.postCount || 0),
+      dailyBreakdown,
+      lastAnalyticsDocId:
+        typeof data.lastAnalyticsDocId === "string" && data.lastAnalyticsDocId.trim().length > 0
+          ? data.lastAnalyticsDocId
+          : docId,
+      updatedAt: toDate(data.updatedAt) || new Date(),
+    };
   }
 
   static async fetchFollowerCounts(

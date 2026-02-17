@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { InputData } from "./types";
 
 interface ReelAnalyticsBasicInfoProps {
@@ -14,14 +13,12 @@ interface ReelAnalyticsBasicInfoProps {
     hashtags: string[];
     postType: "feed" | "reel" | "story";
   } | null;
-  onShowToast?: (message: string, type: "success" | "error") => void;
 }
 
 export const ReelAnalyticsBasicInfo: React.FC<ReelAnalyticsBasicInfoProps> = ({
   data,
   onInputChange,
   postData,
-  onShowToast,
 }) => {
   return (
     <div className="space-y-4">
@@ -121,4 +118,3 @@ export const ReelAnalyticsBasicInfo: React.FC<ReelAnalyticsBasicInfoProps> = ({
       </div>
   );
 };
-

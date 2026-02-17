@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     // PlanInputを保存（新しいアーキテクチャ）
     // 注意: StrategyPlanは保存しない。Homeページで動的に生成される
-    const planId = await PlanRepository.savePlanInput(planInput);
+    await PlanRepository.savePlanInput(planInput);
 
     // 既存のレスポンス形式に変換（後方互換性のため）
     const plan = {

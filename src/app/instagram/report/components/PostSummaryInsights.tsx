@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FileText, TrendingUp, AlertCircle, Lightbulb } from "lucide-react";
+import { FileText, TrendingUp, Lightbulb } from "lucide-react";
 import type { ReportData } from "../../../../types/report";
 
 interface PostSummaryInsightsProps {
@@ -26,7 +26,7 @@ interface AggregatedInsights {
 }
 
 export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
-  selectedMonth,
+  selectedMonth: _selectedMonth,
   reportData,
 }) => {
   // reportDataから投稿サマリーを取得して集計（useMemoでメモ化）
@@ -219,4 +219,3 @@ export const PostSummaryInsights: React.FC<PostSummaryInsightsProps> = ({
     </div>
   );
 };
-

@@ -76,12 +76,12 @@ interface SuggestedAdjustment {
  * 成長率難易度係数を取得
  */
 function getBaseAchievementRate(growthRate: number): number {
-  if (growthRate < 5) return 0.95;
-  if (growthRate < 10) return 0.80;
-  if (growthRate < 15) return 0.65;
-  if (growthRate < 25) return 0.45;
-  if (growthRate < 40) return 0.25;
-  if (growthRate < 60) return 0.10;
+  if (growthRate < 5) {return 0.95;}
+  if (growthRate < 10) {return 0.80;}
+  if (growthRate < 15) {return 0.65;}
+  if (growthRate < 25) {return 0.45;}
+  if (growthRate < 40) {return 0.25;}
+  if (growthRate < 60) {return 0.10;}
   return 0.03;
 }
 
@@ -125,11 +125,11 @@ function getReelPostCoefficient(reelCapability: string): number {
  * 投稿頻度達成補正を取得
  */
 function getPostingFrequencyCorrection(postingScore: number): number {
-  if (postingScore < 0.3) return 0.20;
-  if (postingScore < 0.6) return 0.50;
-  if (postingScore < 0.9) return 0.80;
-  if (postingScore < 1.2) return 1.00;
-  if (postingScore < 1.5) return 1.15;
+  if (postingScore < 0.3) {return 0.20;}
+  if (postingScore < 0.6) {return 0.50;}
+  if (postingScore < 0.9) {return 0.80;}
+  if (postingScore < 1.2) {return 1.00;}
+  if (postingScore < 1.5) {return 1.15;}
   return 1.30;
 }
 
@@ -137,14 +137,14 @@ function getPostingFrequencyCorrection(postingScore: number): number {
  * 現在フォロワー規模係数を取得
  */
 function getFollowerScaleCoefficient(currentFollowers: number): number {
-  if (currentFollowers <= 50) return 0.60;
-  if (currentFollowers <= 100) return 0.75;
-  if (currentFollowers <= 300) return 0.90;
-  if (currentFollowers <= 500) return 1.00;
-  if (currentFollowers <= 1000) return 1.10;
-  if (currentFollowers <= 3000) return 1.20;
-  if (currentFollowers <= 5000) return 1.15;
-  if (currentFollowers <= 10000) return 1.10;
+  if (currentFollowers <= 50) {return 0.60;}
+  if (currentFollowers <= 100) {return 0.75;}
+  if (currentFollowers <= 300) {return 0.90;}
+  if (currentFollowers <= 500) {return 1.00;}
+  if (currentFollowers <= 1000) {return 1.10;}
+  if (currentFollowers <= 3000) {return 1.20;}
+  if (currentFollowers <= 5000) {return 1.15;}
+  if (currentFollowers <= 10000) {return 1.10;}
   return 1.05;
 }
 
@@ -162,15 +162,15 @@ function getPurposeMatchingCoefficient(
 
   switch (operationPurpose) {
     case "認知拡大":
-      if (hasReel && !hasFeed) return 1.20;
-      if (hasFeed && !hasReel) return 0.90;
+      if (hasReel && !hasFeed) {return 1.20;}
+      if (hasFeed && !hasReel) {return 0.90;}
       return 1.05;
 
     case "採用・リクルーティング強化":
       return 0.95;
 
     case "商品・サービスの販売促進":
-      if (hasBoth) return 1.10;
+      if (hasBoth) {return 1.10;}
       return 1.00;
 
     case "ファンを作りたい":
@@ -479,7 +479,7 @@ function getRegionCoefficient(
   }
 
   // 基本係数（地域限定はリーチ範囲が狭まる）
-  let baseCoefficient = 0.75;
+  const baseCoefficient = 0.75;
 
   // 運用目的別の補正
   let purposeMultiplier = 1.0;
@@ -542,7 +542,7 @@ function analyzeRisks(
   growthRate: number,
   operationPurpose: string,
   regionRestriction: string | undefined,
-  achievementRate: number
+  _achievementRate: number
 ): Risk[] {
   const risks: Risk[] = [];
 
@@ -980,7 +980,7 @@ function generateSuggestedAdjustments(
  */
 export async function POST(request: NextRequest) {
   try {
-    const { uid: userId } = await requireAuthContext(request, {
+    await requireAuthContext(request, {
       requireContract: true,
       rateLimit: { key: "plan-simulation", limit: 20, windowSeconds: 60 },
       auditEventName: "plan_simulation",

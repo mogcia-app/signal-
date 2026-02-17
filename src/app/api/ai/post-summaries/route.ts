@@ -10,6 +10,7 @@ interface PostSummaryRecord {
   summary: string;
   insights: string[];
   recommendedActions: string[];
+  imageAdvice?: string[];
   generatedAt?: string;
   postHashtags?: string[];
   postPublishedAt?: string | null;
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
   const { uid } = await requireAuthContext(request);
   const body = await request.json();
 
-  const { userId, postId, summary, insights, recommendedActions, category, postTitle, postHashtags, postPublishedAt } = body;
+  const { userId, postId, summary, insights, recommendedActions, imageAdvice, category, postTitle, postHashtags, postPublishedAt } = body;
 
   if (userId !== uid) {
     return NextResponse.json({ success: false, error: "権限がありません" }, { status: 403 });
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
       summary,
       insights: Array.isArray(insights) ? insights : [],
       recommendedActions: Array.isArray(recommendedActions) ? recommendedActions : [],
+      imageAdvice: Array.isArray(imageAdvice) ? imageAdvice : [],
       generatedAt: now,
       postHashtags: Array.isArray(postHashtags) ? postHashtags : undefined,
       postPublishedAt: postPublishedAt || null,
@@ -125,4 +127,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

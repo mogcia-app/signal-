@@ -1,18 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function StoryLabRedirectPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("type", "story");
-    const query = params.toString();
-    router.replace(query ? `/instagram/lab?${query}` : "/instagram/lab");
-  }, [router, searchParams]);
+    // 一時停止: 旧 /instagram/lab/story 導線
+    router.replace("/home");
+  }, [router]);
 
   return null;
 }

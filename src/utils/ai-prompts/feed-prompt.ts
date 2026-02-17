@@ -20,8 +20,8 @@ export const buildFeedPrompt = (
 【商品・サービス情報】
 ${businessInfo.productsOrServices.map((p, index) => {
   let info = `${index + 1}. ${p.name}`;
-  if (p.details) info += ` - ${p.details}`;
-  if (p.price) info += ` (${p.price}円)`;
+  if (p.details) {info += ` - ${p.details}`;}
+  if (p.price) {info += ` (${p.price}円)`;}
   return info;
 }).join("\n")}
 
@@ -72,7 +72,7 @@ ${businessInfo.productsOrServices.map((p, index) => {
 ${productGuidance}
 
 ${(() => {
-  if (!contentTypes || contentTypes.length === 0) return "";
+  if (!contentTypes || contentTypes.length === 0) {return "";}
   
   const contentTypeLabels: Record<string, string> = {
     product: "商品・サービスの紹介",

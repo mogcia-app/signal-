@@ -1,6 +1,9 @@
 import type { PostAnalyticsSummary, PostType } from "@/domain/analysis/kpi/types";
 
 export type SnapshotStatus = "gold" | "negative" | "normal";
+export type YearMonthString = `${number}-${"01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09" | "10" | "11" | "12"}`;
+export type YearMonthDayString =
+  `${number}-${"01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09" | "10" | "11" | "12"}-${string}`;
 
 export interface AnalyticsDocument {
   postId: string;
@@ -17,6 +20,34 @@ export interface FollowerCountDocument {
   followers: number;
 }
 
+export interface MonthlyKpiSummaryDailyBreakdownDocument {
+  date: YearMonthDayString;
+  likes: number;
+  reach: number;
+  saves: number;
+  comments: number;
+  engagement: number;
+}
+
+export interface MonthlyKpiSummaryDocument {
+  userId: string;
+  month: YearMonthString;
+  snsType: "instagram";
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalReach: number;
+  totalSaves: number;
+  totalFollowerIncrease: number;
+  totalInteraction: number;
+  totalExternalLinkTaps: number;
+  totalProfileVisits: number;
+  postCount: number;
+  dailyBreakdown: MonthlyKpiSummaryDailyBreakdownDocument[];
+  lastAnalyticsDocId: string;
+  updatedAt: Date;
+}
+
 export interface PlanGoalDocument {
   targetFollowers: number;
   currentFollowers: number;
@@ -27,6 +58,8 @@ export interface KpiRepositoryData {
   month: string;
   currentAnalytics: AnalyticsDocument[];
   previousAnalytics: AnalyticsDocument[];
+  currentSummary: MonthlyKpiSummaryDocument | null;
+  previousSummary: MonthlyKpiSummaryDocument | null;
   followerCount: FollowerCountDocument | null;
   previousFollowerCount: FollowerCountDocument | null;
   snapshotStatusMap: Map<string, SnapshotStatus>;
@@ -132,6 +165,8 @@ export interface HomeDashboardPlanDocument {
   id: string;
   title: string;
   generatedStrategy: string;
+  aiGenerationStatus?: "pending" | "completed" | "failed";
+  aiGenerationCompletedAt?: Date | null;
   formData: Record<string, unknown>;
   simulationResult: Record<string, unknown> | null;
   startDate: Date | null;

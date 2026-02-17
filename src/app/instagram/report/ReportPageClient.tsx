@@ -10,10 +10,10 @@ import { RiskDetection } from "./components/RiskDetection";
 import { PostSummaryInsights } from "./components/PostSummaryInsights";
 import { useAuth } from "../../../contexts/auth-context";
 import { useProgress } from "../../../contexts/progress-context";
-import { SkeletonCard } from "../../../components/ui/SkeletonLoader";
 import { useReportPageData } from "./hooks/useReportPageData";
 import { useMonthAutoUpdate } from "@/hooks/useMonthAutoUpdate";
 import { getMonthDisplayName } from "@/utils/date-utils";
+import { BotStatusCard } from "../../../components/bot-status-card";
 
 export default function ReportPageClient() {
   const { user } = useAuth();
@@ -86,17 +86,24 @@ export default function ReportPageClient() {
 
         {/* ローディング表示 */}
         {isLoading && !performanceScore && (
-          <div className="space-y-6" role="status" aria-live="polite" aria-label="データを読み込み中">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+          <div className="mb-6" role="status" aria-live="polite" aria-label="データを読み込み中">
+            <BotStatusCard
+              title="生成中..."
+              subtitle="月次レポートを準備中です"
+              progress={35}
+            />
           </div>
         )}
         
         {/* 部分ローディング表示 */}
         {isPartiallyLoading && performanceScore && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded" role="status" aria-live="polite">
-            <p className="text-sm text-blue-700">データを更新中...</p>
+          <div className="mb-4" role="status" aria-live="polite">
+            <BotStatusCard
+              title="更新中..."
+              subtitle="最新データを反映しています"
+              progress={72}
+              compact
+            />
           </div>
         )}
 

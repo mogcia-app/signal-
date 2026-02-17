@@ -6,26 +6,26 @@ import { useRouter, useSearchParams } from "next/navigation";
 import SNSLayout from "../../../components/sns-layout";
 import { postsApi } from "../../../lib/api";
 import { useAuth } from "../../../contexts/auth-context";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { canAccessFeature } from "@/lib/plan-access";
 import { notify } from "../../../lib/ui/notifications";
 import {
   Image as ImageIcon,
   Heart,
   MessageCircle,
   Share,
-  Eye as EyeIcon,
+  Bookmark,
   Calendar,
   Clock,
   Trash2,
   CheckCircle,
   X,
+  Bot,
+  Send,
+  Sparkles,
 } from "lucide-react";
 import type { AIReference, SnapshotReference } from "@/types/ai";
 
 // コンポーネントのインポート
 import PostCard from "./components/PostCard";
-import PostStats from "./components/PostStats";
 import { SkeletonPostCard } from "../../../components/ui/SkeletonLoader";
 
 interface PostData {
@@ -42,7 +42,6 @@ interface PostData {
   scheduledTime?: string;
   status: "draft" | "created" | "scheduled" | "published";
   imageUrl?: string | null;
-  imageData?: string | null;
   createdAt:
     | Date
     | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
@@ -108,12 +107,23 @@ const normalizeHashtags = (hashtags: PostData["hashtags"]): string[] => {
   return [];
 };
 
+const normalizePostId = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return "";
+};
+
 interface AnalyticsData {
   id: string;
   postId?: string;
   likes: number;
   comments: number;
   shares: number;
+  saves: number;
   reach: number;
   engagementRate: number;
   publishedAt: Date;
@@ -122,7 +132,6 @@ interface AnalyticsData {
   hashtags?: string[];
   category?: string;
   thumbnail?: string;
-  sentiment?: "satisfied" | "dissatisfied" | null;
   memo?: string;
   followerIncrease?: number;
   audience?: {
@@ -156,17 +165,72 @@ interface AnalyticsData {
   };
 }
 
+interface AdvisorMessage {
+  id: string;
+  role: "assistant" | "user";
+  text: string;
+}
+
+interface AdvisorPostOption {
+  id: string;
+  title: string;
+  postType: "feed" | "reel";
+  dateLabel: string;
+  sortAt: number;
+}
+
+const formatPostTypeLabel = (postType: "feed" | "reel" | "story"): string => {
+  if (postType === "reel") {
+    return "リール";
+  }
+  if (postType === "story") {
+    return "ストーリーズ";
+  }
+  return "フィード";
+};
+
+const toTimestamp = (value: unknown): number => {
+  if (!value) {
+    return 0;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+  }
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+  }
+  if (typeof value === "object" && value && "toDate" in value) {
+    const converted = (value as { toDate?: () => Date }).toDate?.();
+    return converted && !Number.isNaN(converted.getTime()) ? converted.getTime() : 0;
+  }
+  return 0;
+};
+
+const formatDateLabel = (timestamp: number): string => {
+  if (!timestamp) {
+    return "日時未設定";
+  }
+  return new Date(timestamp).toLocaleString("ja-JP", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const ADVISOR_SECTION_HEADINGS = new Set(["根拠データ", "解釈", "次の1アクション"]);
+
 export default function InstagramPostsPage() {
   const { user } = useAuth();
-  const { userProfile, loading: profileLoading } = useUserProfile();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabButtonsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   // URLパラメータから初期タブを取得
-  const getInitialTab = (): "all" | "analyzed" | "created" => {
+  const getInitialTab = (): "all" | "feed" | "reel" | "story" => {
     const tabParam = searchParams.get("tab");
-    if (tabParam === "analyzed" || tabParam === "created" || tabParam === "all") {
+    if (tabParam === "all" || tabParam === "feed" || tabParam === "reel" || tabParam === "story") {
       return tabParam;
     }
     return "all";
@@ -175,32 +239,28 @@ export default function InstagramPostsPage() {
   // すべてのHooksを早期リターンの前に定義
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "analyzed" | "created">(getInitialTab());
+  const [activeTab, setActiveTab] = useState<"all" | "feed" | "reel" | "story">(getInitialTab());
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'post' | 'analytics'; id: string; onConfirm: () => void } | null>(null);
-
-  const [scheduledPosts, setScheduledPosts] = useState<
-    Array<{
-      day: string;
-      date: string;
-      type: string;
-      title: string;
-      time: string;
-      status: string;
-    }>
-  >([]);
-
-  const [unanalyzedPosts, setUnanalyzedPosts] = useState<
-    Array<{
-      id: string;
-      title: string;
-      type: string;
-      imageUrl: string | null;
-      createdAt: string;
-      status: string;
-    }>
-  >([]);
+  const [advisorOpen, setAdvisorOpen] = useState(false);
+  const [advisorInput, setAdvisorInput] = useState("");
+  const [advisorLoading, setAdvisorLoading] = useState(false);
+  const [advisorPostFilter, setAdvisorPostFilter] = useState("");
+  const [selectedAdvisorPostId, setSelectedAdvisorPostId] = useState("");
+  const [isAdvisorSelectorOpen, setIsAdvisorSelectorOpen] = useState(true);
+  const [advisorMessages, setAdvisorMessages] = useState<AdvisorMessage[]>([
+    {
+      id: "initial",
+      role: "assistant",
+      text: "分析チャットです。先に投稿を選ぶと、保存済み分析データだけを使って回答します。",
+    },
+  ]);
+  const [advisorSuggestedQuestions, setAdvisorSuggestedQuestions] = useState<string[]>([
+    "なぜ伸びた？",
+    "何を直せばいい？",
+    "次回何を変える？",
+  ]);
 
   // BFF APIから投稿一覧と分析データを取得
   const fetchPosts = useCallback(async () => {
@@ -216,6 +276,7 @@ export default function InstagramPostsPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -229,8 +290,6 @@ export default function InstagramPostsPage() {
         // BFF APIから取得したデータを設定
         setPosts(result.data.posts || []);
         setAnalyticsData(result.data.analytics || []);
-        setScheduledPosts(result.data.scheduledPosts || []);
-        setUnanalyzedPosts(result.data.unanalyzedPosts || []);
         
         // 手動入力の分析データも設定（BFF APIから取得済み）
         // manualAnalyticsDataはanalyticsDataからフィルタリングして取得
@@ -250,10 +309,22 @@ export default function InstagramPostsPage() {
     }
   }, [user?.uid, fetchPosts]);
 
+  useEffect(() => {
+    const handleAnalyticsUpdated = () => {
+      if (user?.uid) {
+        void fetchPosts();
+      }
+    };
+    window.addEventListener("posts-analytics-updated", handleAnalyticsUpdated);
+    return () => {
+      window.removeEventListener("posts-analytics-updated", handleAnalyticsUpdated);
+    };
+  }, [fetchPosts, user?.uid]);
+
   // URLパラメータとタブ状態を同期
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam === "analyzed" || tabParam === "created" || tabParam === "all") {
+    if (tabParam === "all" || tabParam === "feed" || tabParam === "reel" || tabParam === "story") {
       if (activeTab !== tabParam) {
         setActiveTab(tabParam);
       }
@@ -261,7 +332,7 @@ export default function InstagramPostsPage() {
   }, [searchParams, activeTab]);
 
   // タブ変更時にURLパラメータを更新
-  const handleTabChange = useCallback((tab: "all" | "analyzed" | "created") => {
+  const handleTabChange = useCallback((tab: "all" | "feed" | "reel" | "story") => {
     setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
@@ -276,14 +347,23 @@ export default function InstagramPostsPage() {
         if (prevPosts.length === 0) {return prevPosts;}
 
         return [...prevPosts].sort((a: PostData, b: PostData) => {
-          // 作成済み（created）を最優先
-          if (a.status === "created" && b.status !== "created") {return -1;}
-          if (b.status === "created" && a.status !== "created") {return 1;}
-
-          // 同じステータスの場合は、投稿日時で降順（新しい順）
-          // 優先順位: publishedAt > scheduledDate > createdAt
+          // 投稿予定日を最優先に、降順（新しい順）
+          // 優先順位: scheduledDate > publishedAt > createdAt
           const getDate = (post: PostData): Date => {
-            // 1. publishedAt（実際に投稿した日時）を優先
+            // 1. scheduledDate（投稿予定日）を最優先
+            if (post.scheduledDate) {
+              if (post.scheduledDate instanceof Date) {
+                return post.scheduledDate;
+              }
+              if (typeof post.scheduledDate === "string") {
+                const date = new Date(post.scheduledDate);
+                if (!isNaN(date.getTime())) {
+                  return date;
+                }
+              }
+            }
+
+            // 2. publishedAt（実際に投稿した日時）を次に優先
             const analytics = analyticsData.find((ad) => ad.postId === post.id);
             if (analytics?.publishedAt) {
               if (analytics.publishedAt instanceof Date) {
@@ -296,20 +376,7 @@ export default function InstagramPostsPage() {
                 }
               }
             }
-            
-            // 2. scheduledDate（投稿予定日）を次に優先
-            if (post.scheduledDate) {
-              if (post.scheduledDate instanceof Date) {
-                return post.scheduledDate;
-              }
-              if (typeof post.scheduledDate === "string") {
-                const date = new Date(post.scheduledDate);
-                if (!isNaN(date.getTime())) {
-                  return date;
-                }
-              }
-            }
-            
+
             // 3. createdAt（作成日時）をフォールバック
             if (post.createdAt instanceof Date) {
               return post.createdAt;
@@ -428,21 +495,19 @@ export default function InstagramPostsPage() {
 
     const allPostsCount = posts.length + manualAnalyticsData.length;
 
-    const analyzedPostsCount =
-      posts.filter((post) => {
-        const hasAnalytics = analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
-        return hasAnalytics;
-      }).length + manualAnalyticsData.length;
-
-    const createdOnlyCount = posts.filter((post) => {
-      const hasAnalytics = analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
-      return !hasAnalytics;
-    }).length;
+    const feedCount =
+      posts.filter((post) => post.postType === "feed").length +
+      manualAnalyticsData.filter((a) => a.category === "feed").length;
+    const reelCount =
+      posts.filter((post) => post.postType === "reel").length +
+      manualAnalyticsData.filter((a) => a.category === "reel").length;
+    const storyCount = posts.filter((post) => post.postType === "story").length;
 
     return {
       all: allPostsCount,
-      analyzed: analyzedPostsCount,
-      created: createdOnlyCount,
+      feed: feedCount,
+      reel: reelCount,
+      story: storyCount,
     };
   }, [posts, analyticsData]);
 
@@ -450,15 +515,13 @@ export default function InstagramPostsPage() {
   const filteredPosts = React.useMemo(() => {
     const filtered = posts.filter((post) => {
       if (activeTab === "all") {return true;}
-      const hasAnalytics = analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
-      const shouldShow = activeTab === "analyzed" ? hasAnalytics : !hasAnalytics;
+      const shouldShow = post.postType === activeTab;
 
       // デバッグログ
       console.log("Post filtering:", {
         postId: post.id,
         title: post.title,
         activeTab,
-        hasAnalytics,
         shouldShow,
       });
 
@@ -473,7 +536,176 @@ export default function InstagramPostsPage() {
     });
 
     return filtered;
-  }, [posts, analyticsData, activeTab, manualAnalyticsData]);
+  }, [posts, activeTab, manualAnalyticsData]);
+
+  const advisorPostOptions = React.useMemo<AdvisorPostOption[]>(() => {
+    const mapped = posts
+      .filter((post) => post.postType === "feed" || post.postType === "reel")
+      .map((post) => {
+        const postKey = normalizePostId(post.id);
+        const linkedAnalytics = analyticsData.find((a) => normalizePostId(a.postId) === postKey);
+        if (!linkedAnalytics) {
+          return null;
+        }
+
+        const scheduledAt = toTimestamp(post.scheduledDate);
+        const analyticsPublishedAt = toTimestamp(linkedAnalytics.publishedAt);
+        const createdAt = toTimestamp(post.createdAt);
+        const sortAt = scheduledAt || analyticsPublishedAt || createdAt;
+
+        return {
+          id: post.id,
+          title: (post.title || "タイトル未設定").trim() || "タイトル未設定",
+          postType: post.postType === "reel" ? "reel" : "feed",
+          dateLabel: formatDateLabel(sortAt),
+          sortAt,
+        } satisfies AdvisorPostOption;
+      })
+      .filter((option): option is AdvisorPostOption => Boolean(option))
+      .sort((a, b) => b.sortAt - a.sortAt);
+
+    return mapped;
+  }, [posts, analyticsData]);
+
+  const filteredAdvisorPostOptions = React.useMemo(() => {
+    const keyword = advisorPostFilter.trim().toLowerCase();
+    if (!keyword) {
+      return advisorPostOptions;
+    }
+    return advisorPostOptions.filter((option) => {
+      const haystack = `${option.title} ${formatPostTypeLabel(option.postType)} ${option.dateLabel}`.toLowerCase();
+      return haystack.includes(keyword);
+    });
+  }, [advisorPostFilter, advisorPostOptions]);
+
+  const selectedAdvisorPostOption = React.useMemo(
+    () => advisorPostOptions.find((option) => option.id === selectedAdvisorPostId) || null,
+    [advisorPostOptions, selectedAdvisorPostId],
+  );
+
+  const sendAdvisorMessage = useCallback(
+    async (rawMessage: string) => {
+      const message = rawMessage.trim();
+      if (!message || advisorLoading) {
+        return;
+      }
+
+      if (!selectedAdvisorPostId) {
+        notify({ type: "error", message: "先に相談対象の投稿を選択してください" });
+        return;
+      }
+
+      const userMessage: AdvisorMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        text: message,
+      };
+      setAdvisorMessages((prev) => [...prev, userMessage]);
+      setAdvisorInput("");
+      setAdvisorLoading(true);
+
+      try {
+        const response = await fetch("/api/instagram/posts/advisor-chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+            selectedPostId: selectedAdvisorPostId,
+          }),
+        });
+
+        const result = (await response.json().catch(() => null)) as
+          | {
+              success?: boolean;
+              data?: { reply?: string; suggestedQuestions?: string[] };
+              error?: string;
+            }
+          | null;
+
+        if (!response.ok || !result?.success || !result?.data?.reply) {
+          throw new Error(result?.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const assistantMessage: AdvisorMessage = {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          text: result.data.reply,
+        };
+        setAdvisorMessages((prev) => [...prev, assistantMessage]);
+        setAdvisorSuggestedQuestions(
+          Array.isArray(result.data.suggestedQuestions) && result.data.suggestedQuestions.length > 0
+            ? result.data.suggestedQuestions.slice(0, 3)
+            : ["なぜ伸びた？", "何を直せばいい？", "次回何を変える？"],
+        );
+      } catch (error) {
+        console.error("advisor chat error:", error);
+        setAdvisorMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-error-${Date.now()}`,
+            role: "assistant",
+            text: "回答生成に失敗しました。少し時間を空けて再度お試しください。",
+          },
+        ]);
+      } finally {
+        setAdvisorLoading(false);
+      }
+    },
+    [advisorLoading, selectedAdvisorPostId],
+  );
+
+  useEffect(() => {
+    if (advisorPostOptions.length === 0) {
+      if (selectedAdvisorPostId) {
+        setSelectedAdvisorPostId("");
+      }
+      return;
+    }
+
+    const exists = advisorPostOptions.some((option) => option.id === selectedAdvisorPostId);
+    if (!exists) {
+      setSelectedAdvisorPostId(advisorPostOptions[0].id);
+    }
+  }, [advisorPostOptions, selectedAdvisorPostId]);
+
+  useEffect(() => {
+    if (selectedAdvisorPostId) {
+      setIsAdvisorSelectorOpen(false);
+    } else {
+      setIsAdvisorSelectorOpen(true);
+    }
+  }, [selectedAdvisorPostId]);
+
+  const renderAdvisorMessage = (message: AdvisorMessage) => {
+    if (message.role === "user") {
+      return <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.text}</p>;
+    }
+
+    const lines = message.text.split("\n").map((line) => line.trim());
+    return (
+      <div className="space-y-1.5">
+        {lines.map((line, index) => {
+          if (!line) {
+            return <div key={`line-${index}`} className="h-1.5" />;
+          }
+          if (ADVISOR_SECTION_HEADINGS.has(line)) {
+            return (
+              <p key={`line-${index}`} className="text-sm font-semibold text-gray-900">
+                {line}
+              </p>
+            );
+          }
+          return (
+            <p key={`line-${index}`} className="whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700">
+              {line}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -505,7 +737,7 @@ export default function InstagramPostsPage() {
       {/* 削除確認モーダル */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-none p-6 max-w-md w-full mx-4 border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {deleteConfirm.type === 'post' ? '投稿を削除' : '分析データを削除'}
             </h3>
@@ -517,13 +749,13 @@ export default function InstagramPostsPage() {
             <div className="flex space-x-3 justify-end">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-none transition-colors"
               >
                 キャンセル
               </button>
               <button
                 onClick={() => deleteConfirm.onConfirm()}
-                className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors"
+                className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-none transition-colors"
               >
                 削除する
               </button>
@@ -537,9 +769,6 @@ export default function InstagramPostsPage() {
         customDescription="作成した投稿の詳細表示・管理・削除・分析を行えます"
       >
         <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 bg-white min-h-screen">
-          {/* 統計表示 */}
-          <PostStats scheduledPosts={scheduledPosts} unanalyzedPosts={unanalyzedPosts} />
-
           {/* 投稿一覧 */}
           {loading ? (
             <div className="space-y-4">
@@ -556,7 +785,7 @@ export default function InstagramPostsPage() {
               </p>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => (window.location.href = "/instagram/lab")}
+                  onClick={() => (window.location.href = "/home")}
                   className="inline-flex items-center px-4 py-2 bg-orange-500 text-white  hover:bg-orange-600 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
                   aria-label="新しい投稿を作成する"
                 >
@@ -593,39 +822,58 @@ export default function InstagramPostsPage() {
                       ref={(el) => {
                         tabButtonsRef.current[1] = el;
                       }}
-                      onClick={() => handleTabChange("analyzed")}
+                      onClick={() => handleTabChange("feed")}
                       role="tab"
-                      aria-selected={activeTab === "analyzed"}
-                      aria-controls="posts-analyzed"
-                      id="tab-analyzed"
-                      tabIndex={activeTab === "analyzed" ? 0 : -1}
+                      aria-selected={activeTab === "feed"}
+                      aria-controls="posts-feed"
+                      id="tab-feed"
+                      tabIndex={activeTab === "feed" ? 0 : -1}
                       className={`py-2 px-4 font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2 ${
-                        activeTab === "analyzed"
+                        activeTab === "feed"
                           ? "bg-[#ff8a15] text-white shadow-sm"
                           : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                       }`}
                     >
-                      分析済み ({tabCounts.analyzed})
+                      フィード ({tabCounts.feed})
                       <span className="sr-only">（Ctrl+2で切り替え）</span>
                     </button>
                     <button
                       ref={(el) => {
                         tabButtonsRef.current[2] = el;
                       }}
-                      onClick={() => handleTabChange("created")}
+                      onClick={() => handleTabChange("reel")}
                       role="tab"
-                      aria-selected={activeTab === "created"}
-                      aria-controls="posts-created"
-                      id="tab-created"
-                      tabIndex={activeTab === "created" ? 0 : -1}
+                      aria-selected={activeTab === "reel"}
+                      aria-controls="posts-reel"
+                      id="tab-reel"
+                      tabIndex={activeTab === "reel" ? 0 : -1}
                       className={`py-2 px-4 font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2 ${
-                        activeTab === "created"
+                        activeTab === "reel"
                           ? "bg-[#ff8a15] text-white shadow-sm"
                           : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                       }`}
                     >
-                      作成のみ ({tabCounts.created})
+                      リール ({tabCounts.reel})
                       <span className="sr-only">（Ctrl+3で切り替え）</span>
+                    </button>
+                    <button
+                      ref={(el) => {
+                        tabButtonsRef.current[3] = el;
+                      }}
+                      onClick={() => handleTabChange("story")}
+                      role="tab"
+                      aria-selected={activeTab === "story"}
+                      aria-controls="posts-story"
+                      id="tab-story"
+                      tabIndex={activeTab === "story" ? 0 : -1}
+                      className={`py-2 px-4 font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2 ${
+                        activeTab === "story"
+                          ? "bg-[#ff8a15] text-white shadow-sm"
+                          : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                      }`}
+                    >
+                      ストーリーズ ({tabCounts.story})
+                      <span className="sr-only">（Ctrl+4で切り替え）</span>
                     </button>
                   </nav>
                 </div>
@@ -633,9 +881,13 @@ export default function InstagramPostsPage() {
 
               {/* 手動入力の分析データを表示 */}
               {manualAnalyticsData.length > 0 &&
-                (activeTab === "all" || activeTab === "analyzed") && (
+                activeTab !== "story" &&
+                (activeTab === "all" ||
+                  manualAnalyticsData.some((a) => a.category === activeTab)) && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-                    {manualAnalyticsData.map((analytics, index) => (
+                    {manualAnalyticsData
+                      .filter((analytics) => activeTab === "all" || analytics.category === activeTab)
+                      .map((analytics, index) => (
                       <div
                         key={`manual-${index}`}
                         className="bg-white shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
@@ -680,17 +932,6 @@ export default function InstagramPostsPage() {
                               <span className="px-2 py-1 text-xs  bg-green-100 text-green-800 font-medium">
                                 分析済み
                               </span>
-                              {analytics.sentiment && (
-                                <span
-                                  className={`px-2 py-1 text-xs font-medium ${
-                                    analytics.sentiment === "satisfied"
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-100 text-red-800"
-                                  }`}
-                                >
-                                  {analytics.sentiment === "satisfied" ? "😊 満足" : "😞 不満"}
-                                </span>
-                              )}
                             </div>
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-black">
@@ -795,6 +1036,7 @@ export default function InstagramPostsPage() {
                                 <div className="text-lg font-bold text-black">
                                   {(analytics.likes || 0).toLocaleString()}
                                 </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">いいね</div>
                               </div>
                               <div>
                                 <div className="flex items-center justify-center mb-1">
@@ -803,6 +1045,7 @@ export default function InstagramPostsPage() {
                                 <div className="text-lg font-bold text-black">
                                   {(analytics.comments || 0).toLocaleString()}
                                 </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">コメント</div>
                               </div>
                               <div>
                                 <div className="flex items-center justify-center mb-1">
@@ -811,14 +1054,16 @@ export default function InstagramPostsPage() {
                                 <div className="text-lg font-bold text-black">
                                   {(analytics.shares || 0).toLocaleString()}
                                 </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">シェア</div>
                               </div>
                               <div>
                                 <div className="flex items-center justify-center mb-1">
-                                  <EyeIcon size={16} className="text-black" />
+                                  <Bookmark size={16} className="text-black" />
                                 </div>
                                 <div className="text-lg font-bold text-black">
-                                  {(analytics.reach || 0).toLocaleString()}
+                                  {(analytics.saves || 0).toLocaleString()}
                                 </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">保存</div>
                               </div>
                             </div>
                           </div>
@@ -836,10 +1081,12 @@ export default function InstagramPostsPage() {
                 aria-labelledby={`tab-${activeTab}`}
               >
                 {filteredPosts.map((post: PostData & { hasAnalytics?: boolean; analyticsFromData?: PostData["analytics"] }) => {
-                  const hasAnalytics = post.hasAnalytics !== undefined
-                    ? post.hasAnalytics
-                    : analyticsData.some((a) => a.postId === post.id) || !!post.analytics;
-                  const analyticsFromData = post.analyticsFromData || analyticsData.find((a) => a.postId === post.id);
+                  const postIdKey = normalizePostId(post.id);
+                  const hasAnalytics =
+                    analyticsData.some((a) => normalizePostId(a.postId) === postIdKey);
+                  const analyticsFromData =
+                    post.analyticsFromData ||
+                    analyticsData.find((a) => normalizePostId(a.postId) === postIdKey);
                   const postAnalytics: AnalyticsData | null = analyticsFromData
                     ? {
                         id: (analyticsFromData as { id?: string })?.id || post.id,
@@ -847,6 +1094,7 @@ export default function InstagramPostsPage() {
                         likes: (analyticsFromData as { likes?: number })?.likes || 0,
                         comments: (analyticsFromData as { comments?: number })?.comments || 0,
                         shares: (analyticsFromData as { shares?: number })?.shares || 0,
+                        saves: (analyticsFromData as { saves?: number })?.saves || 0,
                         reach: (analyticsFromData as { reach?: number })?.reach || 0,
                         engagementRate: (analyticsFromData as { engagementRate?: number })?.engagementRate || 0,
                         followerIncrease: (analyticsFromData as { followerIncrease?: number })?.followerIncrease,
@@ -870,7 +1118,9 @@ export default function InstagramPostsPage() {
                         content: (analyticsFromData as { content?: string })?.content,
                         hashtags: (() => {
                           const hashtags = (analyticsFromData as { hashtags?: string[] | string })?.hashtags;
-                          if (!hashtags) return undefined;
+                          if (!hashtags) {
+                            return undefined;
+                          }
                           return Array.isArray(hashtags) ? hashtags : typeof hashtags === 'string' ? normalizeHashtags(hashtags) : undefined;
                         })(),
                         category: (analyticsFromData as { category?: string })?.category,
@@ -878,27 +1128,7 @@ export default function InstagramPostsPage() {
                         audience: (analyticsFromData as { audience?: unknown })?.audience as AnalyticsData['audience'],
                         reachSource: (analyticsFromData as { reachSource?: unknown })?.reachSource as AnalyticsData['reachSource'],
                       }
-                    : post.analytics
-                      ? {
-                          id: post.id,
-                          postId: post.id,
-                          likes: post.analytics.likes,
-                          comments: post.analytics.comments,
-                          shares: post.analytics.shares,
-                          reach: post.analytics.reach,
-                          engagementRate: post.analytics.engagementRate,
-                          publishedAt: post.analytics.publishedAt,
-                          followerIncrease: (post.analytics as { followerIncrease?: number })?.followerIncrease,
-                          title: post.title,
-                          content: post.content,
-                           
-                          hashtags: normalizeHashtags(post.hashtags),
-                          category: undefined,
-                          thumbnail: undefined,
-                          audience: post.analytics.audience,
-                          reachSource: post.analytics.reachSource,
-                        }
-                      : null;
+                    : null;
 
                   return (
                     <PostCard
@@ -914,6 +1144,178 @@ export default function InstagramPostsPage() {
             </div>
           )}
         </div>
+
+        <button
+          onClick={() => setAdvisorOpen((prev) => !prev)}
+          className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 bg-gradient-to-r from-[#FF8A15] to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg hover:opacity-95"
+          aria-label="分析チャットを開く"
+        >
+          <Bot size={18} />
+          分析チャットβ
+        </button>
+
+        {advisorOpen && (
+          <section className="fixed bottom-24 right-6 z-40 flex h-[74vh] min-h-[620px] max-h-[840px] w-[min(96vw,620px)] flex-col overflow-hidden border border-gray-200 bg-white">
+            <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Bot size={18} className="text-[#ff8a15]" />
+                <h3 className="text-base font-bold text-gray-900">分析チャット（β）</h3>
+              </div>
+              <button
+                onClick={() => setAdvisorOpen(false)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+                aria-label="閉じる"
+              >
+                閉じる
+              </button>
+            </header>
+
+            <div className="border-b border-gray-200 bg-[#fff9f3] p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold text-gray-800">相談する投稿を選択</p>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center border border-[#ffd3a8] bg-white px-2 py-1 text-[11px] font-medium text-[#c76400]">
+                    対象 {filteredAdvisorPostOptions.length}件
+                  </span>
+                  {selectedAdvisorPostOption && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAdvisorSelectorOpen((prev) => !prev)}
+                      className="border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      {isAdvisorSelectorOpen ? "閉じる" : "投稿を変更"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {isAdvisorSelectorOpen && (
+                <>
+                  <label className="mb-1 block text-[11px] font-medium text-gray-600">絞り込み</label>
+                  <input
+                    type="text"
+                    value={advisorPostFilter}
+                    onChange={(event) => setAdvisorPostFilter(event.target.value)}
+                    placeholder="例: 新商品 / 02/18 / リール"
+                    className="mb-3 w-full border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#ff8a15] focus:outline-none"
+                  />
+
+                  <label className="mb-1 block text-[11px] font-medium text-gray-600">投稿を選択</label>
+                  <select
+                    value={selectedAdvisorPostId}
+                    onChange={(event) => {
+                      setSelectedAdvisorPostId(event.target.value);
+                      if (event.target.value) {
+                        setIsAdvisorSelectorOpen(false);
+                      }
+                    }}
+                    className="w-full border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#ff8a15] focus:outline-none"
+                  >
+                    {filteredAdvisorPostOptions.length === 0 ? (
+                      <option value="">保存済み分析データがある投稿がありません</option>
+                    ) : (
+                      filteredAdvisorPostOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.title} / {option.dateLabel} / {formatPostTypeLabel(option.postType)}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </>
+              )}
+
+              {selectedAdvisorPostOption && (
+                <div className="mt-3 border border-[#ffd9b5] bg-white p-2.5">
+                  <p className="mb-1 line-clamp-1 text-sm font-semibold text-gray-900">
+                    {selectedAdvisorPostOption.title}
+                  </p>
+                  <div className="flex items-center gap-2 text-[11px] text-gray-600">
+                    <span className="inline-flex bg-[#fff5ea] px-2 py-1 text-[#c76400]">
+                      {formatPostTypeLabel(selectedAdvisorPostOption.postType)}
+                    </span>
+                    <span>{selectedAdvisorPostOption.dateLabel}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto bg-[#fafafa] px-4 py-4">
+              {advisorMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 ${
+                      message.role === "user"
+                        ? "bg-gradient-to-r from-[#FF8A15] to-orange-500 text-white"
+                        : "border border-gray-200 bg-white text-gray-800 shadow-sm"
+                    }`}
+                  >
+                    {renderAdvisorMessage(message)}
+                  </div>
+                </div>
+              ))}
+              {advisorLoading && (
+                <div className="flex justify-start">
+                  <div className="max-w-[92%] rounded-2xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-600">
+                    回答を生成しています...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 bg-white px-3 py-3">
+              <div className="mb-2 flex flex-wrap gap-2">
+                {advisorSuggestedQuestions.map((question) => (
+                  <button
+                    key={question}
+                    type="button"
+                    onClick={() => {
+                      void sendAdvisorMessage(question);
+                    }}
+                    disabled={!selectedAdvisorPostId || advisorLoading}
+                    className="inline-flex items-center gap-1 border border-[#ffbe84] bg-[#fff5ea] px-2 py-1 text-xs font-medium text-[#c76400] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Sparkles size={12} />
+                    {question}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={advisorInput}
+                  onChange={(event) => setAdvisorInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void sendAdvisorMessage(advisorInput);
+                    }
+                  }}
+                  disabled={!selectedAdvisorPostId || advisorLoading}
+                  placeholder={
+                    selectedAdvisorPostId
+                      ? "例: なぜ反応が弱かった？"
+                      : "先に投稿を選択してください"
+                  }
+                  className="h-10 flex-1 border border-gray-300 px-3 text-sm focus:border-[#ff8a15] focus:outline-none disabled:bg-gray-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    void sendAdvisorMessage(advisorInput);
+                  }}
+                  disabled={!advisorInput.trim() || !selectedAdvisorPostId || advisorLoading}
+                  className="inline-flex h-10 w-10 items-center justify-center bg-gradient-to-r from-[#FF8A15] to-orange-500 text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="送信"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
       </SNSLayout>
     </>
   );

@@ -60,6 +60,13 @@ export async function checkUserContract(userId: string): Promise<boolean> {
 
     return true;
   } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    if (code === "permission-denied") {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("⚠️ Contract check skipped due to Firestore permission-denied:", userId);
+      }
+      return true;
+    }
     if (process.env.NODE_ENV === "development") {
       console.error("❌ Error checking contract:", error);
     }

@@ -7,7 +7,7 @@ import { useAuth } from "../../../../contexts/auth-context";
 
 // マークダウン記法を削除する関数
 const removeMarkdown = (text: string): string => {
-  if (!text) return text;
+  if (!text) {return text;}
   return text
     .replace(/\*\*/g, "") // **太字**
     .replace(/\*/g, "") // *斜体*
@@ -35,7 +35,7 @@ interface MonthlyActionPlansProps {
   onRegenerate?: () => void;
 }
 
-export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selectedMonth, kpis, reportData, onRegenerate }) => {
+export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selectedMonth, kpis: _kpis, reportData, onRegenerate }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [aiDirection, setAiDirection] = useState<{
     month: string;
@@ -48,6 +48,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
   const [isEditing, setIsEditing] = useState(false); // 編集モード
   const [editedTheme, setEditedTheme] = useState(""); // 編集中のテーマ
   const [isSaving, setIsSaving] = useState(false); // 保存中フラグ
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const { user } = useAuth();
 
   // reportDataからアクションプランを取得
@@ -143,44 +144,6 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
     }
   };
 
-  const handleLockDirection = async () => {
-    if (!user?.uid || isLocking) {
-      return;
-    }
-
-    setIsLocking(true);
-    try {
-      const response = await fetch("/api/ai-direction", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ month: nextMonth }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        // ai_directionの状態を更新
-        const updatedResponse = await fetch(`/api/ai-direction?month=${nextMonth}`);
-        const updatedResult = await updatedResponse.json();
-        if (updatedResult.success && updatedResult.data) {
-          setAiDirection({
-            month: updatedResult.data.month,
-            mainTheme: updatedResult.data.mainTheme,
-            lockedAt: updatedResult.data.lockedAt,
-          });
-        }
-      } else {
-        alert("確定に失敗しました。もう一度お試しください。");
-      }
-    } catch (error) {
-      console.error("ai_direction確定エラー:", error);
-      alert("確定に失敗しました。もう一度お試しください。");
-    } finally {
-      setIsLocking(false);
-    }
-  };
-
   return (
     <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
       {/* ヘッダー */}
@@ -214,6 +177,11 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
       {/* コンテンツ */}
       {isExpanded && (
         <div className="mt-4 pt-4 border-t border-gray-200 animate-in fade-in duration-300">
+          {inlineError && (
+            <div className="mb-4 border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {inlineError}
+            </div>
+          )}
           {actionPlans.length > 0 ? (
             <>
               {/* 選択式UI: ai_directionが未確定の場合（常に表示） */}
@@ -289,10 +257,11 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                   <div className="flex gap-3 pt-4 border-t border-gray-200">
                     <button
                       onClick={async () => {
+                        setInlineError(null);
                         // 選択されたアクションプランからai_directionを作成して確定
                         if (!user?.uid || isLocking || selectedPlanIndex === null) {
                           if (selectedPlanIndex === null) {
-                            alert("重点方針を選択してください。");
+                            setInlineError("重点方針を選択してください。");
                           }
                           return;
                         }
@@ -340,13 +309,14 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                                 lockedAt: updatedResult.data.lockedAt,
                               });
                               setSelectedPlanIndex(null); // 選択をリセット
+                              setInlineError(null);
                             }
                           } else {
-                            alert(result.error || "確定に失敗しました。もう一度お試しください。");
+                            setInlineError(result.error || "確定に失敗しました。もう一度お試しください。");
                           }
                         } catch (error) {
                           console.error("ai_direction作成・確定エラー:", error);
-                          alert("確定に失敗しました。もう一度お試しください。");
+                          setInlineError("確定に失敗しました。もう一度お試しください。");
                         } finally {
                           setIsLocking(false);
                         }
@@ -392,9 +362,10 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                   <div className="flex gap-3 pt-4 border-t border-gray-200">
                     <button
                       onClick={async () => {
+                        setInlineError(null);
                         if (!user?.uid || isSaving || !editedTheme.trim()) {
                           if (!editedTheme.trim()) {
-                            alert("重点方針を入力してください。");
+                            setInlineError("重点方針を入力してください。");
                           }
                           return;
                         }
@@ -429,13 +400,14 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                               });
                               setIsEditing(false);
                               setEditedTheme("");
+                              setInlineError(null);
                             }
                           } else {
-                            alert(result.error || "確定に失敗しました。もう一度お試しください。");
+                            setInlineError(result.error || "確定に失敗しました。もう一度お試しください。");
                           }
                         } catch (error) {
                           console.error("ai_direction作成・確定エラー:", error);
-                          alert("確定に失敗しました。もう一度お試しください。");
+                          setInlineError("確定に失敗しました。もう一度お試しください。");
                         } finally {
                           setIsSaving(false);
                         }
@@ -526,4 +498,3 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
     </div>
   );
 };
-

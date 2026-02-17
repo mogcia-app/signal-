@@ -14,7 +14,6 @@ interface PostData {
   scheduledDate?: Date | string | admin.firestore.Timestamp | null;
   scheduledTime?: string | null;
   imageUrl?: string | null;
-  imageData?: string | null;
   createdAt: Date | string | admin.firestore.Timestamp;
   updatedAt?: Date | string | admin.firestore.Timestamp;
   publishedAt?: Date | string | admin.firestore.Timestamp;
@@ -76,12 +75,13 @@ export async function GET(request: NextRequest) {
 
     const posts: PostData[] = postsSnapshot.docs.map((doc) => {
       const data = doc.data();
+      const { imageData: _imageData, ...rest } = data;
       return {
         id: doc.id,
         status: (data.status || "created") as PostData["status"],
         postType: (data.postType || "feed") as PostData["postType"],
         title: data.title || "",
-        ...data,
+        ...rest,
         createdAt: data.createdAt?.toDate?.() || data.createdAt,
         scheduledDate: data.scheduledDate?.toDate?.() || data.scheduledDate,
       } as PostData;
@@ -309,7 +309,7 @@ export async function GET(request: NextRequest) {
 
     // ===== 3. パフォーマンスサマリー =====
     const weeklyAnalytics = analytics.filter((analytics) => {
-      if (!analytics.publishedAt) return false;
+      if (!analytics.publishedAt) {return false;}
       const publishedAt = analytics.publishedAt instanceof Date 
         ? analytics.publishedAt 
         : (analytics.publishedAt as admin.firestore.Timestamp)?.toDate 
@@ -413,7 +413,7 @@ export async function GET(request: NextRequest) {
     const recentAnalytics = analytics
       .filter((a) => a.publishedAt)
       .sort((a, b) => {
-        if (!a.publishedAt || !b.publishedAt) return 0;
+        if (!a.publishedAt || !b.publishedAt) {return 0;}
         const aPublishedAt = a.publishedAt instanceof Date 
           ? a.publishedAt 
           : (a.publishedAt as admin.firestore.Timestamp)?.toDate 
@@ -517,7 +517,7 @@ export async function GET(request: NextRequest) {
 
       // フォロワー増加目標
       const monthlyAnalytics = analytics.filter((a) => {
-        if (!a.publishedAt) return false;
+        if (!a.publishedAt) {return false;}
         const publishedAt = a.publishedAt instanceof Date 
           ? a.publishedAt 
           : (a.publishedAt as admin.firestore.Timestamp)?.toDate 
@@ -655,4 +655,3 @@ function getTimeAgo(date: Date): string {
     return `${months}ヶ月前`;
   }
 }
-

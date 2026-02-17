@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getAdminAuth, getAdminDb, adminDb } from "../firebase-admin";
+import { getAdminAuth, getAdminDb } from "../firebase-admin";
 import { logAccessEvent, logSecurityEvent } from "./logging";
 
 export class UnauthorizedError extends Error {
@@ -333,5 +333,4 @@ export function buildErrorResponse(error: unknown) {
     },
   };
 }
-
 

@@ -57,6 +57,26 @@ export interface AIGenerationMetadata {
   promptVersion?: string;
   temperature?: number;
   fallbackUsed?: boolean;
+  labContext?: {
+    mustDo: string[];
+    avoid: string[];
+    kpiFocus: string[];
+    styleRules: string[];
+  };
+  playbook?: {
+    updatedAt: string | null;
+    sections: Array<{
+      id: string;
+      title: string;
+      score: number;
+    }>;
+  };
+  suggestion?: {
+    id: string;
+    patternKey: string;
+    patternLabel: string;
+    postType: "feed" | "reel" | "story";
+  };
 }
 
 export interface AIGenerationResponse {

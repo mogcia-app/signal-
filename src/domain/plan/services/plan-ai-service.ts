@@ -85,7 +85,7 @@ export class PlanAIGenerationService {
       const dedupeByDay = (posts: Array<{ day: string; content: string; type: "feed" | "reel" }>) => {
         const seen = new Set<string>()
         return posts.filter((p) => {
-          if (seen.has(p.day)) return false
+          if (seen.has(p.day)) {return false}
           seen.add(p.day)
           return true
         })
@@ -268,16 +268,16 @@ export class PlanAIGenerationService {
       storyPosts: number
     }
   ): string {
-    const { weeklyIncreases, calculatedExpectedResults, weeklyPostsNum, weeklyReelPosts, monthlyFeedPosts, reelPosts, storyPosts } = simulationResult
+    const { weeklyIncreases, calculatedExpectedResults, weeklyPostsNum, weeklyReelPosts, monthlyFeedPosts: _monthlyFeedPosts, reelPosts: _reelPosts, storyPosts } = simulationResult
 
     // 投稿頻度の文字列表現
-    const weeklyPostsText = input.weeklyPosts === "none" ? "投稿しない" 
+    const _weeklyPostsText = input.weeklyPosts === "none" ? "投稿しない" 
       : input.weeklyPosts === "weekly-1-2" ? "週に1〜2回" 
       : input.weeklyPosts === "weekly-3-4" ? "週に3〜4回" 
       : input.weeklyPosts === "daily" ? "毎日" 
       : `週${weeklyPostsNum}回`
 
-    const reelCapabilityText = input.reelCapability === "none" ? "投稿しない"
+    const _reelCapabilityText = input.reelCapability === "none" ? "投稿しない"
       : input.reelCapability === "weekly-1-2" ? "週に1〜2回"
       : input.reelCapability === "weekly-3-4" ? "週に3〜4回"
       : input.reelCapability === "daily" ? "毎日"
@@ -368,13 +368,13 @@ ${input.postingTime ? `希望時間帯: ${postingTimeText}` : ""}
     // デフォルトの投稿スケジュール
     const postingDays: Array<{ day: string; time: string; type: string }> = []
     const roundedWeeklyPosts = Math.round(weeklyPostsNum)
-    if (roundedWeeklyPosts >= 1) postingDays.push({ day: "火曜", time: "19:00", type: "feed" })
-    if (roundedWeeklyPosts >= 2) postingDays.push({ day: "金曜", time: "12:00", type: "feed" })
-    if (roundedWeeklyPosts >= 3) postingDays.push({ day: "月曜", time: "13:00", type: "feed" })
-    if (roundedWeeklyPosts >= 4) postingDays.push({ day: "水曜", time: "15:00", type: "feed" })
-    if (roundedWeeklyPosts >= 5) postingDays.push({ day: "木曜", time: "18:00", type: "feed" })
-    if (roundedWeeklyPosts >= 6) postingDays.push({ day: "土曜", time: "12:00", type: "feed" })
-    if (roundedWeeklyPosts >= 7) postingDays.push({ day: "日曜", time: "14:00", type: "feed" })
+    if (roundedWeeklyPosts >= 1) {postingDays.push({ day: "火曜", time: "19:00", type: "feed" })}
+    if (roundedWeeklyPosts >= 2) {postingDays.push({ day: "金曜", time: "12:00", type: "feed" })}
+    if (roundedWeeklyPosts >= 3) {postingDays.push({ day: "月曜", time: "13:00", type: "feed" })}
+    if (roundedWeeklyPosts >= 4) {postingDays.push({ day: "水曜", time: "15:00", type: "feed" })}
+    if (roundedWeeklyPosts >= 5) {postingDays.push({ day: "木曜", time: "18:00", type: "feed" })}
+    if (roundedWeeklyPosts >= 6) {postingDays.push({ day: "土曜", time: "12:00", type: "feed" })}
+    if (roundedWeeklyPosts >= 7) {postingDays.push({ day: "日曜", time: "14:00", type: "feed" })}
 
     const storyDays: Array<{ day: string; time: string }> = []
     if (storyPosts > 0) {

@@ -118,8 +118,11 @@ export interface CurrentPlan {
   userId?: string;
   snsType?: string;
   status?: string;
+  aiGenerationStatus?: "pending" | "completed" | "failed";
+  aiGenerationCompletedAt?: string | Date | null;
   title?: string;
   targetFollowers?: number;
+  targetFollowerIncrease?: number;
   currentFollowers?: number;
   startDate?: string | Date | null;
   endDate?: string | Date | null;
@@ -174,4 +177,3 @@ export interface AISectionsResponse {
   data?: AISections;
   error?: string;
 }
-

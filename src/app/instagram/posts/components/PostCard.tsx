@@ -6,17 +6,13 @@ import {
   Trash2,
   Eye,
   Calendar,
-  Clock,
-  Image as ImageIcon,
   Heart,
   MessageCircle,
   Share,
-  Eye as EyeIcon,
-  Edit,
+  Bookmark,
   BarChart3,
   TrendingUp,
 } from "lucide-react";
-import type { AIReference } from "@/types/ai";
 
 interface PostData {
   id: string;
@@ -34,7 +30,6 @@ interface PostData {
   scheduledTime?: string;
   status: "draft" | "created" | "scheduled" | "published";
   imageUrl?: string | null;
-  imageData?: string | null;
   createdAt:
     | Date
     | { toDate(): Date; seconds: number; nanoseconds: number; type?: string }
@@ -82,7 +77,7 @@ interface PostData {
       };
     };
   };
-  generationReferences?: AIReference[];
+  generationReferences?: Array<{ sourceType?: string }>;
 }
 
 interface AnalyticsData {
@@ -91,6 +86,7 @@ interface AnalyticsData {
   likes: number;
   comments: number;
   shares: number;
+  saves: number;
   reach: number;
   engagementRate: number;
   publishedAt: Date;
@@ -235,23 +231,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
     }
   };
 
-  const referenceTypeMeta: Record<
-    AIReference["sourceType"] | "default",
-    { label: string; badgeClass: string }
-  > = {
-    profile: { label: "アカウント設定", badgeClass: "border-slate-200 bg-slate-50 text-slate-700" },
-    plan: { label: "運用計画", badgeClass: "border-indigo-200 bg-indigo-50 text-indigo-700" },
-    masterContext: { label: "マスターコンテキスト", badgeClass: "border-amber-200 bg-amber-50 text-amber-700" },
-    snapshot: { label: "投稿実績", badgeClass: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-    feedback: { label: "フィードバック", badgeClass: "border-rose-200 bg-rose-50 text-rose-700" },
-    analytics: { label: "分析データ", badgeClass: "border-blue-200 bg-blue-50 text-blue-700" },
-    manual: { label: "メモ", badgeClass: "border-slate-200 bg-slate-50 text-slate-700" },
-    default: { label: "参照データ", badgeClass: "border-slate-200 bg-slate-50 text-slate-700" },
-  };
-
-  const getReferenceMeta = (sourceType: AIReference["sourceType"]) =>
-    referenceTypeMeta[sourceType] ?? referenceTypeMeta.default;
-
   return (
     <article className="relative bg-white shadow-sm border border-gray-100 overflow-visible hover:shadow-md transition-all duration-200 aspect-square flex flex-col" aria-label={`投稿: ${post.title || "無題"}`}>
       {/* バッジをカード上部から少しはみ出すように配置 */}
@@ -261,12 +240,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
             🤖 AI生成
           </span>
         )}
-        <span className={`px-2.5 py-1 text-[10px] font-medium ${getStatusColor(post.status)} shadow-sm`}>
-          {getStatusLabel(post.status)}
-        </span>
-        {hasAnalytics && post.postType !== "story" && (
-          <span className="px-2.5 py-1 text-[10px] bg-green-100 text-green-700 font-medium shadow-sm">
-            分析済み
+        {post.status !== "created" && (
+          <span className={`px-2.5 py-1 text-[10px] font-medium ${getStatusColor(post.status)} shadow-sm`}>
+            {getStatusLabel(post.status)}
+          </span>
+        )}
+        {!hasAnalytics && post.postType !== "story" && (
+          <span className="px-2.5 py-1 text-[10px] bg-gradient-to-r from-[#FF8A15] to-orange-500 text-white font-bold shadow-sm">
+            分析未設定
           </span>
         )}
         {hasAnalytics &&
@@ -285,37 +266,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
       </div>
 
       {/* 画像（正方形） */}
-      {(post.imageData || post.imageUrl) ? (
+      {post.imageUrl ? (
         <div className="w-full aspect-square bg-gray-100 relative overflow-hidden">
-          {post.imageData ? (
-            post.imageData.startsWith("data:") ? (
-              <img
-                src={post.imageData}
-                alt={post.title || "投稿画像"}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            ) : (
-              <Image
-                src={post.imageData}
-                alt={post.title || "投稿画像"}
-                fill
-                quality={90}
-                className="object-cover"
-                loading="lazy"
-                unoptimized
-              />
-            )
-          ) : post.imageUrl ? (
-            <Image
-              src={post.imageUrl}
-              alt={post.title || "投稿画像"}
-              fill
-              loading="lazy"
-              quality={90}
-              className="object-cover"
-            />
-          ) : null}
+          <Image
+            src={post.imageUrl}
+            alt={post.title || "投稿画像"}
+            fill
+            loading="lazy"
+            quality={90}
+            className="object-cover"
+          />
         </div>
       ) : (
         <div className="w-full aspect-square bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 relative overflow-hidden flex items-center justify-center border border-gray-200">
@@ -468,6 +428,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
                 <div className="text-xs font-bold text-gray-900">
                   {(postAnalytics.likes || 0).toLocaleString()}
                 </div>
+                <div className="text-[10px] text-gray-500 leading-none mt-0.5">いいね</div>
               </div>
               <div>
                 <div className="flex items-center justify-center mb-0.5">
@@ -476,6 +437,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
                 <div className="text-xs font-bold text-gray-900">
                   {(postAnalytics.comments || 0).toLocaleString()}
                 </div>
+                <div className="text-[10px] text-gray-500 leading-none mt-0.5">コメント</div>
               </div>
               <div>
                 <div className="flex items-center justify-center mb-0.5">
@@ -484,14 +446,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
                 <div className="text-xs font-bold text-gray-900">
                   {(postAnalytics.shares || 0).toLocaleString()}
                 </div>
+                <div className="text-[10px] text-gray-500 leading-none mt-0.5">シェア</div>
               </div>
               <div>
                 <div className="flex items-center justify-center mb-0.5">
-                  <EyeIcon size={12} className="text-gray-600" />
+                  <Bookmark size={12} className="text-gray-600" />
                 </div>
                 <div className="text-xs font-bold text-gray-900">
-                  {(postAnalytics.reach || 0).toLocaleString()}
+                  {(postAnalytics.saves || 0).toLocaleString()}
                 </div>
+                <div className="text-[10px] text-gray-500 leading-none mt-0.5">保存</div>
               </div>
             </div>
             {postAnalytics.followerIncrease !== undefined && postAnalytics.followerIncrease !== null && (
@@ -513,14 +477,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
         <div className="mt-auto pt-3 border-t border-gray-100">
           <div className="flex items-center justify-end gap-1.5">
             <a
-              href={`/instagram/lab/${post.postType}?edit=${post.id}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"
-              aria-label={`投稿「${post.title || "無題"}」を編集`}
-            >
-              <Edit size={12} />
-              編集
-            </a>
-            <a
               href={`/instagram/posts/${post.id}`}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"
               aria-label={`投稿「${post.title || "無題"}」の詳細を表示`}
@@ -536,16 +492,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
               >
                 <BarChart3 size={12} />
                 分析
-              </a>
-            )}
-            {hasAnalytics && post.postType !== "story" && (
-              <a
-                href={`${post.postType === "feed" ? "/analytics/feed" : "/instagram/analytics/reel"}?postId=${post.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"
-                aria-label={`投稿「${post.title || "無題"}」の分析を編集`}
-              >
-                <BarChart3 size={12} />
-                分析編集
               </a>
             )}
             <button

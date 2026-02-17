@@ -111,18 +111,18 @@ export async function GET(request: NextRequest) {
             const weeklyFreq = (savedPlanData.schedule as { weeklyFrequency?: string })?.weeklyFrequency?.replace("週", "").replace("回", "") || "";
             const weeklyNum = parseInt(weeklyFreq) || 0;
             // 新しい形式に変換
-            if (weeklyNum === 0) return "none";
-            if (weeklyNum <= 2) return "weekly-1-2";
-            if (weeklyNum <= 4) return "weekly-3-4";
+            if (weeklyNum === 0) {return "none";}
+            if (weeklyNum <= 2) {return "weekly-1-2";}
+            if (weeklyNum <= 4) {return "weekly-3-4";}
             return "daily";
           })() || (formData.weeklyPosts as string) || "weekly-1-2",
           reelCapability: (() => {
             const reelPosts = (savedPlanData.schedule as { reelPosts?: number })?.reelPosts || 0;
             const weeklyReelPosts = reelPosts / 4; // 月間から週間へ変換
             // 新しい形式に変換
-            if (weeklyReelPosts === 0) return "none";
-            if (weeklyReelPosts <= 2) return "weekly-1-2";
-            if (weeklyReelPosts <= 4) return "weekly-3-4";
+            if (weeklyReelPosts === 0) {return "none";}
+            if (weeklyReelPosts <= 2) {return "weekly-1-2";}
+            if (weeklyReelPosts <= 4) {return "weekly-3-4";}
             return "daily";
           })() || (formData.reelCapability as string) || "weekly-1-2",
           storyFrequency: (() => {

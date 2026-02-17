@@ -10,7 +10,6 @@ import {
 } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { authFetch } from "../utils/authFetch";
-import { UserProfile } from "../types/user";
 import { checkUserContract } from "../lib/auth";
 import { installAuthFetch } from "../utils/installAuthFetch";
 
@@ -23,6 +22,21 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const isExpectedOfflineFirestoreError = (error: unknown): boolean => {
+  const maybeFirebaseError = error as { code?: string; message?: string };
+  const code = maybeFirebaseError?.code || "";
+  const message = (maybeFirebaseError?.message || "").toLowerCase();
+
+  return (
+    code === "unavailable" ||
+    code === "permission-denied" ||
+    code === "failed-precondition" ||
+    message.includes("could not reach cloud firestore backend") ||
+    message.includes("client is offline") ||
+    message.includes("backend didn't respond within 10 seconds")
+  );
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -129,6 +143,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             }
                           })
                           .catch((error) => {
+                            if (isExpectedOfflineFirestoreError(error)) {
+                              if (process.env.NODE_ENV === "development") {
+                                console.warn("[auth-context] FirestoreオフラインのためSentryユーザー設定をスキップ");
+                              }
+                              return;
+                            }
                             console.error("[auth-context] Sentry設定エラー（Firestore取得）:", error);
                           });
                       })

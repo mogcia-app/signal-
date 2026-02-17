@@ -39,7 +39,7 @@ interface SimulationResult {
  */
 export function deriveWeeklyPlans(
   formData: PlanFormData,
-  simulationResult: SimulationResult | null
+  _simulationResult: SimulationResult | null
 ): WeeklyPlan[] {
   // formDataから投稿頻度を取得
   const weeklyFeedPosts = formData.weeklyFeedPosts || 0;
@@ -173,7 +173,7 @@ function formatDate(date: Date): string {
 export function getCurrentWeekIndex(
   startDate: Date | admin.firestore.Timestamp | string | { toDate?: () => Date },
   localDate: string,
-  timezone: string
+  _timezone: string
 ): number {
   // startDateをDateオブジェクトに変換
   let startDateObj: Date;
@@ -242,4 +242,3 @@ export function extractTodayTasks(
   // 一致するタスクが0件の場合、空配列を返す（休養日）
   return todayTasks;
 }
-

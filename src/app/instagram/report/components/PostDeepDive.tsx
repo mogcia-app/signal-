@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { BarChart3, Sparkles, TrendingDown, Loader2 } from "lucide-react";
+import { BarChart3, Sparkles, TrendingDown } from "lucide-react";
 import type { ReportData } from "../../../../types/report";
 
 interface PostDeepDiveProps {
@@ -26,19 +26,6 @@ interface PostDeepDiveData {
   snapshotReferences?: Array<{
     id: string;
     status: "gold" | "negative" | "normal";
-    summary?: string;
-  }>;
-}
-
-interface PatternHighlights {
-  gold?: Array<{
-    id: string;
-    status: "gold";
-    summary?: string;
-  }>;
-  negative?: Array<{
-    id: string;
-    status: "negative";
     summary?: string;
   }>;
 }
@@ -73,7 +60,7 @@ const badgeConfig: Record<
 };
 
 function formatDateLabel(value?: Date | string) {
-  if (!value) return "";
+  if (!value) {return "";}
   const date = typeof value === "string" ? new Date(value) : value;
   return date.toLocaleDateString("ja-JP");
 }
@@ -89,7 +76,7 @@ function MetricCell({ label, value }: { label: string; value?: number }) {
   );
 }
 
-export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth, reportData }) => {
+export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth: _selectedMonth, reportData }) => {
   // reportDataから投稿ディープダイブデータを取得
   const posts: PostDeepDiveData[] = reportData?.postDeepDive?.posts || [];
 
@@ -194,4 +181,3 @@ export const PostDeepDive: React.FC<PostDeepDiveProps> = ({ selectedMonth, repor
     </div>
   );
 };
-

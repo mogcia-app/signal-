@@ -4,64 +4,79 @@ import type {
   KPIChanges,
   KPITotals,
   PostWithAnalytics,
+  RawAnalyticsEntry,
   ReachSourceAnalysis,
 } from "@/domain/analysis/kpi/types";
 import type { BuildKpiDashboardInput } from "@/domain/analysis/kpi/usecases/build-kpi-dashboard";
 import type { AnalyticsDocument, KpiRepositoryData } from "@/repositories/types";
-
-interface RawAnalyticsEntry {
-  publishedAt: Date;
-  likes: number;
-  comments: number;
-  shares: number;
-  reach: number;
-  saves: number;
-}
 
 export function aggregateKpiInput(raw: KpiRepositoryData): BuildKpiDashboardInput {
   const postsWithAnalytics = deduplicateAnalyticsByPost(raw.currentAnalytics);
   const previousAnalytics = deduplicateAnalyticsByPost(raw.previousAnalytics);
   const rawAnalyticsEntries = toRawAnalyticsEntries(raw.currentAnalytics);
   const { followerCount, previousFollowerCount } = raw;
+  const hasCurrentSummary = Boolean(raw.currentSummary);
 
-  const profileVisitsFromPosts = postsWithAnalytics.reduce(
-    (sum, post) => sum + (post.analyticsSummary?.profileVisits || 0),
-    0
-  );
-  const profileVisitsFromOther = followerCount?.profileVisits || 0;
+  const profileVisitsFromPosts = hasCurrentSummary
+    ? raw.currentSummary!.totalProfileVisits
+    : postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.profileVisits || 0), 0);
+  const profileVisitsFromOther = hasCurrentSummary ? 0 : followerCount?.profileVisits || 0;
 
-  const externalLinkTapsFromPosts = postsWithAnalytics
-    .filter((post) => post.postType === "feed")
-    .reduce((sum, post) => sum + (post.analyticsSummary?.externalLinkTaps || 0), 0);
-  const externalLinkTapsFromOther = followerCount?.externalLinkTaps || 0;
+  const externalLinkTapsFromPosts = hasCurrentSummary
+    ? raw.currentSummary!.totalExternalLinkTaps
+    : postsWithAnalytics
+        .filter((post) => post.postType === "feed")
+        .reduce((sum, post) => sum + (post.analyticsSummary?.externalLinkTaps || 0), 0);
+  const externalLinkTapsFromOther = hasCurrentSummary ? 0 : followerCount?.externalLinkTaps || 0;
 
   const currentFollowers = followerCount?.followers || 0;
   const previousCurrentFollowers = previousFollowerCount?.followers || 0;
 
-  const followerIncreaseFromReel = postsWithAnalytics
-    .filter((post) => post.postType === "reel")
-    .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
-  const followerIncreaseFromFeed = postsWithAnalytics
-    .filter((post) => post.postType === "feed")
-    .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
+  const followerIncreaseFromReel = hasCurrentSummary
+    ? 0
+    : postsWithAnalytics
+        .filter((post) => post.postType === "reel")
+        .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
+  const followerIncreaseFromFeed = hasCurrentSummary
+    ? 0
+    : postsWithAnalytics
+        .filter((post) => post.postType === "feed")
+        .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
   const followerIncreaseFromPosts = followerIncreaseFromReel + followerIncreaseFromFeed;
-  const followerIncreaseFromOther = currentFollowers;
+  const followerIncreaseFromOther = hasCurrentSummary
+    ? raw.currentSummary!.totalFollowerIncrease
+    : currentFollowers;
 
-  const totals = calculateTotals(postsWithAnalytics, followerCount);
-  totals.totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
+  const totals = raw.currentSummary
+    ? totalsFromSummary(raw.currentSummary)
+    : calculateTotals(postsWithAnalytics, followerCount);
+  if (!raw.currentSummary) {
+    totals.totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
+  }
 
-  const previousTotals = calculatePreviousTotals(previousAnalytics, previousFollowerCount);
+  const previousTotals = raw.previousSummary
+    ? totalsFromSummary(raw.previousSummary)
+    : calculatePreviousTotals(previousAnalytics, previousFollowerCount);
   const isFirstMonth = !previousFollowerCount && previousAnalytics.length === 0;
 
   const changes = calculateChanges(totals, previousTotals);
   const reachSourceAnalysis = calculateReachSourceAnalysis(postsWithAnalytics);
-  const dailyKPIs = aggregateDailyKPIs(rawAnalyticsEntries, raw.month);
-  const goalAchievements = calculateGoalAchievements(totals, raw.activePlan, postsWithAnalytics.length);
+  const dailyKPIs = raw.currentSummary
+    ? aggregateDailyKPIsFromSummary(raw.currentSummary, raw.month)
+    : aggregateDailyKPIs(rawAnalyticsEntries, raw.month);
+  const goalAchievements = calculateGoalAchievements(
+    totals,
+    raw.activePlan,
+    raw.currentSummary?.postCount ?? postsWithAnalytics.length
+  );
 
   return {
     postsWithAnalytics,
     totals,
     previousTotals,
+    previousFeedReelShares: previousAnalytics
+      .filter((post) => post.postType === "feed" || post.postType === "reel")
+      .reduce((sum, post) => sum + (post.analyticsSummary?.shares || 0), 0),
     changes,
     reachSourceAnalysis,
     snapshotStatusMap: raw.snapshotStatusMap,
@@ -79,6 +94,57 @@ export function aggregateKpiInput(raw: KpiRepositoryData): BuildKpiDashboardInpu
     isFirstMonth,
     initialFollowers: raw.initialFollowers,
   };
+}
+
+function totalsFromSummary(summary: NonNullable<KpiRepositoryData["currentSummary"]>): KPITotals {
+  return {
+    totalLikes: summary.totalLikes || 0,
+    totalComments: summary.totalComments || 0,
+    totalShares: summary.totalShares || 0,
+    totalReach: summary.totalReach || 0,
+    totalSaves: summary.totalSaves || 0,
+    totalFollowerIncrease: summary.totalFollowerIncrease || 0,
+    totalInteraction: summary.totalInteraction || 0,
+    totalExternalLinkTaps: summary.totalExternalLinkTaps || 0,
+    totalProfileVisits: summary.totalProfileVisits || 0,
+  };
+}
+
+function aggregateDailyKPIsFromSummary(
+  summary: NonNullable<KpiRepositoryData["currentSummary"]>,
+  month: string
+): DailyKPI[] {
+  const [year, m] = month.split("-").map(Number);
+  const daysInMonth = new Date(year, m, 0).getDate();
+
+  const byDate = new Map<string, { likes: number; reach: number; saves: number; comments: number; engagement: number }>();
+  for (const entry of summary.dailyBreakdown) {
+    byDate.set(entry.date, {
+      likes: entry.likes || 0,
+      reach: entry.reach || 0,
+      saves: entry.saves || 0,
+      comments: entry.comments || 0,
+      engagement: entry.engagement || 0,
+    });
+  }
+
+  const dailyKPIs: DailyKPI[] = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const currentDate = new Date(year, m - 1, day);
+    const dayKey = currentDate.toISOString().split("T")[0];
+    const daily = byDate.get(dayKey);
+    dailyKPIs.push({
+      date: dayKey,
+      label: `${m}/${day}`,
+      likes: daily?.likes || 0,
+      reach: daily?.reach || 0,
+      saves: daily?.saves || 0,
+      comments: daily?.comments || 0,
+      engagement: daily?.engagement || 0,
+    });
+  }
+
+  return dailyKPIs;
 }
 
 function deduplicateAnalyticsByPost(analytics: AnalyticsDocument[]): PostWithAnalytics[] {
@@ -111,7 +177,7 @@ function toRawAnalyticsEntries(analytics: AnalyticsDocument[]): RawAnalyticsEntr
   }));
 }
 
-function calculateTotals(posts: PostWithAnalytics[], followerCount: KpiRepositoryData["followerCount"]): KPITotals {
+export function calculateTotals(posts: PostWithAnalytics[], followerCount: KpiRepositoryData["followerCount"]): KPITotals {
   const profileVisitsFromHome = followerCount?.profileVisits || 0;
   const externalLinkTapsFromHome = followerCount?.externalLinkTaps || 0;
 
@@ -124,7 +190,7 @@ function calculateTotals(posts: PostWithAnalytics[], followerCount: KpiRepositor
     totalFollowerIncrease: 0,
     totalInteraction: posts.reduce((sum, post) => {
       const s = post.analyticsSummary;
-      if (!s) return sum;
+      if (!s) {return sum;}
       return sum + (s.likes || 0) + (s.saves || 0) + (s.comments || 0) + (s.shares || 0);
     }, 0),
     totalExternalLinkTaps:
@@ -160,7 +226,7 @@ function calculatePreviousTotals(
     totalFollowerIncrease: previousFollowerIncreaseFromPosts + previousFollowerIncreaseFromOther,
     totalInteraction: previousAnalytics.reduce((sum, post) => {
       const s = post.analyticsSummary;
-      if (!s) return sum;
+      if (!s) {return sum;}
       return sum + (s.likes || 0) + (s.saves || 0) + (s.comments || 0) + (s.shares || 0);
     }, 0),
     totalExternalLinkTaps:
@@ -205,7 +271,7 @@ function calculateReachSourceAnalysis(posts: PostWithAnalytics[]): ReachSourceAn
   };
 }
 
-function aggregateDailyKPIs(entries: RawAnalyticsEntry[], month: string): DailyKPI[] {
+export function aggregateDailyKPIs(entries: RawAnalyticsEntry[], month: string): DailyKPI[] {
   const [year, m] = month.split("-").map(Number);
   const daysInMonth = new Date(year, m, 0).getDate();
 
@@ -246,7 +312,7 @@ function calculateGoalAchievements(
   plan: KpiRepositoryData["activePlan"],
   postCount: number
 ): GoalAchievement[] {
-  if (!plan) return [];
+  if (!plan) {return [];}
 
   const goalAchievements: GoalAchievement[] = [];
   const followerIncreaseTarget = Math.max(0, plan.targetFollowers - plan.currentFollowers);
@@ -290,8 +356,8 @@ function calculateGoalAchievements(
 }
 
 function achievementStatus(rate: number): GoalAchievement["status"] {
-  if (rate >= 100) return "achieved";
-  if (rate >= 70) return "on_track";
-  if (rate >= 50) return "at_risk";
+  if (rate >= 100) {return "achieved";}
+  if (rate >= 70) {return "on_track";}
+  if (rate >= 50) {return "at_risk";}
   return "not_set";
 }

@@ -23,7 +23,7 @@ export const PlanReviewBanner: React.FC<PlanReviewBannerProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (reasons.length === 0) return null;
+  if (reasons.length === 0) {return null;}
 
   const criticalReasons = reasons.filter((r) => r.severity === "critical");
   const hasCritical = criticalReasons.length > 0;

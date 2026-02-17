@@ -14,6 +14,7 @@ export const COLLECTIONS = {
   AI_POST_SUMMARIES: "ai_post_summaries",
   AI_MASTER_CONTEXT_CACHE: "ai_master_context_cache",
   AI_ACTION_LOGS: "ai_action_logs",
+  AI_SUGGESTION_PATTERNS: "ai_suggestion_patterns",
   AI_DIRECTION: "ai_direction",
   AB_TESTS: "ab_tests",
   MONTHLY_REVIEWS: "monthly_reviews",

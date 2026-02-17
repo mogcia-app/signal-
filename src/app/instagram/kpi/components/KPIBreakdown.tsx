@@ -58,14 +58,14 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
 }) => {
   // 最も値が低いKPI項目を特定（来月強化すべきもの）
   const lowestKPIKey = useMemo(() => {
-    if (!breakdowns || breakdowns.length === 0) return null;
+    if (!breakdowns || breakdowns.length === 0) {return null;}
     
     // 比較可能なKPI項目のみを対象（単位が同じもの同士で比較）
     const comparableKPIs = breakdowns.filter(
       (item) => item.value !== undefined && item.value !== null && Number.isFinite(item.value)
     );
     
-    if (comparableKPIs.length === 0) return null;
+    if (comparableKPIs.length === 0) {return null;}
     
     // 値が最も低いKPI項目を特定
     const lowest = comparableKPIs.reduce((min, current) => {
@@ -158,7 +158,7 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
                   </p>
                   {item.key === "engagement" && (
                     <p className="mt-1 text-[10px] text-gray-500">
-                      Signalでは「いいね + コメント + シェア + 保存」を独自に合算した値です
+                      リール・フィードのシェア合計です
                     </p>
                   )}
                   {item.key === "total_interaction" && (
@@ -287,4 +287,3 @@ export const KPIBreakdownComponent: React.FC<KPIBreakdownProps> = ({
     </div>
   );
 };
-

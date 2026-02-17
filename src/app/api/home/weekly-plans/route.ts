@@ -60,8 +60,8 @@ function buildScheduleTitle(
   }
 
   if (!content) {
-    if (postType === "reel") return "リール投稿";
-    if (postType === "story") return "ストーリーズ投稿";
+    if (postType === "reel") {return "リール投稿";}
+    if (postType === "story") {return "ストーリーズ投稿";}
     return "フィード投稿";
   }
 
@@ -69,10 +69,10 @@ function buildScheduleTitle(
 }
 
 function weeklyOptionToCount(option: unknown): number {
-  if (option === "none") return 0;
-  if (option === "weekly-1-2") return 2;
-  if (option === "weekly-3-4") return 4;
-  if (option === "daily") return 7;
+  if (option === "none") {return 0;}
+  if (option === "weekly-1-2") {return 2;}
+  if (option === "weekly-3-4") {return 4;}
+  if (option === "daily") {return 7;}
   return 0;
 }
 
@@ -450,7 +450,7 @@ export async function GET(request: NextRequest) {
       const dayNameOnly = dayName.replace("曜", "").replace("曜日", "").trim();
       if (postType === "story") {
         const storyDay = strategyPlan.schedule.storyDays.find(sd => {
-          if (!sd.day) return false;
+          if (!sd.day) {return false;}
           const sdDay = sd.day.replace("曜", "").replace("曜日", "").trim();
           return sdDay === dayNameOnly;
         });
@@ -458,7 +458,7 @@ export async function GET(request: NextRequest) {
       }
 
       const postingDay = strategyPlan.schedule.postingDays.find(pd => {
-        if (!pd.day) return false;
+        if (!pd.day) {return false;}
         const pdDay = pd.day.replace("曜", "").replace("曜日", "").trim();
         return pdDay === dayNameOnly && (pd.type === postType || (!pd.type && postType === "feed"));
       });
@@ -551,7 +551,7 @@ export async function GET(request: NextRequest) {
               .sort((a, b) => a.sortValue - b.sortValue)
               .filter((item, _, arr) => {
                 const isGeneric = genericTitles.includes(item.title || "");
-                if (!isGeneric) return true;
+                if (!isGeneric) {return true;}
                 return !arr.some(
                   (other) =>
                     other !== item &&
@@ -602,7 +602,7 @@ export async function GET(request: NextRequest) {
 
             return [...cleaned, ...extras]
               .sort((a, b) => a.sortValue - b.sortValue)
-              .map(({ sortValue, ...rest }) => rest);
+              .map(({ sortValue: _sortValue, ...rest }) => rest);
           })(),
           storyContent: Array.isArray(currentWeekPlan.storyContent) 
             ? currentWeekPlan.storyContent 

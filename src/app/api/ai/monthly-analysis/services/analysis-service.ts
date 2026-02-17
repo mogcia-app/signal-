@@ -751,10 +751,6 @@ export async function performAIAnalysis(
   }
 
   // プロンプトを構築（学習段階に応じて最適化）
-  // postsArrayCount is calculated but not used
-  // const postsArrayCount =
-  //   (Array.isArray(summaryExtras?.posts) ? summaryExtras.posts.length : 0) +
-    (Array.isArray(summaryExtras?.postDeepDive) ? summaryExtras.postDeepDive.length : 0);
   // 低データ判定は「投稿は0だが、他のKPIが存在する」ケースに限定
   const lowDataMode = totalPosts === 0 && totalReach > 0;
   let prompt = `Instagram分析データを基に、簡潔に分析してください。
@@ -1001,4 +997,3 @@ ${patternLines.length > 0 ? `投稿パターン: ${patternLines.join(" / ")}` : 
     };
   }
 }
-

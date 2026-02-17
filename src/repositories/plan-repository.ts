@@ -201,6 +201,8 @@ export class PlanRepository {
           snsType: planInput.snsType,
           planType: "manual",
           status: "active",
+          aiGenerationStatus: "completed",
+          aiGenerationCompletedAt: admin.firestore.FieldValue.serverTimestamp(),
           startDate,
           endDate: endDateTimestamp,
           formData: cleanedPlanInput,
@@ -342,9 +344,9 @@ export class PlanRepository {
    * Firestoreの日付をDateオブジェクトに変換
    */
   private static parseFirestoreDate(date: admin.firestore.Timestamp | Date | string | undefined): Date | null {
-    if (!date) return null
-    if (date instanceof Date) return date
-    if (typeof date === "string") return new Date(date)
+    if (!date) {return null}
+    if (date instanceof Date) {return date}
+    if (typeof date === "string") {return new Date(date)}
     if (date && typeof date === "object" && "toDate" in date) {
       return (date as admin.firestore.Timestamp).toDate()
     }
@@ -355,7 +357,7 @@ export class PlanRepository {
    * 数値を安全にパース
    */
   private static parseNumber(value: unknown, defaultValue: number): number {
-    if (typeof value === "number") return value
+    if (typeof value === "number") {return value}
     if (typeof value === "string") {
       const parsed = Number(value)
       return isNaN(parsed) ? defaultValue : parsed
@@ -367,7 +369,7 @@ export class PlanRepository {
    * 文字列を安全にパース
    */
   private static parseString(value: unknown, defaultValue: string): string {
-    if (typeof value === "string") return value
+    if (typeof value === "string") {return value}
     return defaultValue
   }
   
@@ -375,7 +377,7 @@ export class PlanRepository {
    * オプショナル文字列を安全にパース
    */
   private static parseOptionalString(value: unknown): string | undefined {
-    if (typeof value === "string" && value.trim() !== "") return value
+    if (typeof value === "string" && value.trim() !== "") {return value}
     return undefined
   }
   
@@ -423,7 +425,7 @@ export class PlanRepository {
    * 
    * 注意: このメソッドは削除予定です。新しいコードでは使用しないでください。
    */
-  static async getActiveStrategyPlan(userId: string, snsType: string = "instagram"): Promise<StrategyPlan | null> {
+  static async getActiveStrategyPlan(userId: string, _snsType: string = "instagram"): Promise<StrategyPlan | null> {
     console.warn("[PlanRepository.getActiveStrategyPlan] 非推奨メソッドが呼び出されました。新しいアーキテクチャでは使用しないでください。")
     
     const userDoc = await adminDb.collection("users").doc(userId).get()
@@ -474,9 +476,9 @@ export class PlanRepository {
    * 注意: このメソッドは削除予定です。新しいコードでは使用しないでください。
    */
   static async saveStrategyPlan(
-    userId: string,
-    planInput: PlanInput,
-    strategy: Omit<StrategyPlan, "id" | "planInputId" | "userId" | "snsType" | "createdAt" | "updatedAt">
+    _userId: string,
+    _planInput: PlanInput,
+    _strategy: Omit<StrategyPlan, "id" | "planInputId" | "userId" | "snsType" | "createdAt" | "updatedAt">
   ): Promise<string> {
     console.warn("[PlanRepository.saveStrategyPlan] 非推奨メソッドが呼び出されました。新しいアーキテクチャでは使用しないでください。")
     throw new Error("saveStrategyPlanは非推奨です。PlanInputのみを保存してください。")

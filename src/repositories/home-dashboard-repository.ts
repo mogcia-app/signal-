@@ -77,6 +77,74 @@ export class HomeDashboardRepository {
       );
   }
 
+  static async fetchActivePlanDocument(activePlanId: string | null | undefined): Promise<Record<string, unknown> | null> {
+    if (!activePlanId) {
+      return null;
+    }
+
+    const snapshot = await adminDb.collection(COLLECTIONS.PLANS).doc(activePlanId).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+
+    return (snapshot.data() || null) as Record<string, unknown> | null;
+  }
+
+  static async fetchScheduledPosts(userId: string): Promise<
+    Array<{
+      id: string;
+      type: "feed" | "reel" | "story";
+      content: string;
+      title: string;
+      scheduledTime: Date;
+    }>
+  > {
+    const snapshot = await adminDb.collection(COLLECTIONS.POSTS).where("userId", "==", userId).get();
+
+    return snapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        const scheduledTime = toDate(data.scheduledDate);
+        if (!scheduledTime) {
+          return null;
+        }
+
+        const type = data.postType === "reel" || data.postType === "story" ? data.postType : "feed";
+        return {
+          id: doc.id,
+          type,
+          content: String(data.content || ""),
+          title: String(data.title || ""),
+          scheduledTime,
+        };
+      })
+      .filter((post): post is NonNullable<typeof post> => post !== null);
+  }
+
+  static async countRecentPostsNeedingReply(userId: string, days = 7): Promise<number> {
+    const snapshot = await adminDb.collection(COLLECTIONS.ANALYTICS).where("userId", "==", userId).get();
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    return snapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        const publishedAt = toDate(data.publishedAt);
+        if (!publishedAt || publishedAt < since) {
+          return null;
+        }
+
+        const comments = Number(data.comments || 0);
+        const commentThreads = Array.isArray(data.commentThreads) ? data.commentThreads : [];
+        return {
+          comments,
+          hasReplies: commentThreads.length > 0,
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+      .filter((entry) => entry.comments > 0 && !entry.hasReplies).length;
+  }
+
   private static normalizeAnalytics(data: FirebaseFirestore.DocumentData) {
     const publishedAt = toDate(data.publishedAt);
     if (!publishedAt) {
@@ -123,6 +191,13 @@ export class HomeDashboardRepository {
       id,
       title: String(data.title || "運用計画"),
       generatedStrategy: String(data.generatedStrategy || ""),
+      aiGenerationStatus:
+        data.aiGenerationStatus === "pending" ||
+        data.aiGenerationStatus === "completed" ||
+        data.aiGenerationStatus === "failed"
+          ? data.aiGenerationStatus
+          : undefined,
+      aiGenerationCompletedAt: toDate(data.aiGenerationCompletedAt),
       formData: (data.formData || {}) as Record<string, unknown>,
       simulationResult: (data.simulationResult as Record<string, unknown> | null) || null,
       startDate: toDate(data.startDate),

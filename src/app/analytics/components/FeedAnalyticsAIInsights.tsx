@@ -79,20 +79,6 @@ interface AggregatedMetrics {
     publishedTime: string;
     weekday: string;
   }>;
-  feedbackEntries: Array<{
-    sentiment: "satisfied" | "dissatisfied";
-    sentimentLabel: string;
-    memo: string;
-    relatedPostTitle: string;
-    publishedAt: string;
-    publishedTime: string;
-    weekday: string;
-  }>;
-  feedbackStats: {
-    total: number;
-    satisfied: number;
-    dissatisfied: number;
-  };
   postCount: number;
   masterContext: MasterContextSummary | null;
   targetCategory: string;
@@ -295,32 +281,6 @@ const FeedAnalyticsAIInsights: React.FC<FeedAnalyticsAIInsightsProps> = ({
       });
     });
 
-    const feedbackEntries = filteredData
-      .filter((post) => post.sentiment && (post.sentimentMemo?.trim()?.length ?? 0) > 0)
-      .map((post) => {
-        const publishedDate =
-          post.publishedAt instanceof Date ? post.publishedAt.toISOString().split("T")[0] : "";
-        const weekday =
-          post.publishedAt instanceof Date
-            ? post.publishedAt.toLocaleDateString("ja-JP", { weekday: "long" })
-            : "";
-        return {
-          sentiment: post.sentiment as "satisfied" | "dissatisfied",
-          sentimentLabel: post.sentiment === "satisfied" ? "満足" : "改善したい",
-          memo: post.sentimentMemo?.trim() ?? "",
-          relatedPostTitle: post.title ?? "",
-          publishedAt: publishedDate,
-          publishedTime: post.publishedTime ?? "",
-          weekday,
-        };
-      });
-
-    const feedbackStats = {
-      total: feedbackEntries.length,
-      satisfied: feedbackEntries.filter((entry) => entry.sentiment === "satisfied").length,
-      dissatisfied: feedbackEntries.filter((entry) => entry.sentiment === "dissatisfied").length,
-    };
-
     const recentPosts = filteredData
       .slice()
       .sort((a, b) => {
@@ -354,8 +314,6 @@ const FeedAnalyticsAIInsights: React.FC<FeedAnalyticsAIInsightsProps> = ({
       averages,
       commentThreads,
       recentPosts,
-      feedbackEntries,
-      feedbackStats,
       postCount: filteredData.length,
       masterContext,
       targetCategory,

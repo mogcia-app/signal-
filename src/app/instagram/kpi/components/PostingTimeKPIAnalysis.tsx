@@ -155,9 +155,9 @@ export const PostingTimeKPIAnalysis: React.FC<PostingTimeKPIAnalysisProps> = ({
         displayColors: true,
         boxPadding: 6,
         callbacks: {
-          label: function (context: any) {
-            const label = context.dataset.label || "";
-            const value = context.parsed.y;
+          label: function (context: { dataset?: { label?: string }; parsed?: { y?: number } }) {
+            const label = context.dataset?.label || "";
+            const value = Number(context.parsed?.y ?? 0);
             if (label.includes("エンゲージメント率")) {
               return `${label}: ${value.toFixed(2)}%`;
             }
@@ -192,7 +192,7 @@ export const PostingTimeKPIAnalysis: React.FC<PostingTimeKPIAnalysisProps> = ({
           },
           color: "#94A3B8",
           padding: 10,
-          callback: function (value: any) {
+          callback: function (value: number | string) {
             return value + "%";
           },
         },
@@ -222,8 +222,8 @@ export const PostingTimeKPIAnalysis: React.FC<PostingTimeKPIAnalysisProps> = ({
           },
           color: "#94A3B8",
           padding: 10,
-          callback: function (value: any) {
-            return value.toLocaleString();
+          callback: function (value: number | string) {
+            return typeof value === "number" ? value.toLocaleString() : String(value);
           },
         },
       },
@@ -336,4 +336,3 @@ export const PostingTimeKPIAnalysis: React.FC<PostingTimeKPIAnalysisProps> = ({
     </div>
   );
 };
-

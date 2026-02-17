@@ -14,7 +14,6 @@ interface PostData {
   scheduledDate?: Date | string | null;
   scheduledTime?: string | null;
   imageUrl?: string | null;
-  imageData?: string | null;
   createdAt: Date | string | admin.firestore.Timestamp;
   updatedAt: Date | string | admin.firestore.Timestamp;
   [key: string]: unknown;
@@ -42,6 +41,17 @@ interface AnalyticsData {
   [key: string]: unknown;
 }
 
+const normalizePostId = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+};
+
 /**
  * 投稿一覧ページ用のBFF API
  * 投稿データと分析データを結合し、分類・フィルタリング済みのデータを返す
@@ -63,11 +73,12 @@ export async function GET(request: NextRequest) {
     // 投稿データを処理
     const posts: PostData[] = postsSnapshot.docs.map((doc) => {
       const data = doc.data();
+      const { imageData: _imageData, ...rest } = data;
       return {
         id: doc.id,
         status: (data.status || "created") as PostData["status"],
         postType: (data.postType || "feed") as PostData["postType"],
-        ...data,
+        ...rest,
         createdAt: data.createdAt?.toDate?.() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
         scheduledDate: data.scheduledDate?.toDate?.() || data.scheduledDate,
@@ -98,7 +109,7 @@ export async function GET(request: NextRequest) {
       
       return {
         id: doc.id,
-        postId: data.postId || null,
+        postId: normalizePostId(data.postId),
         likes: data.likes || 0,
         comments: data.comments || 0,
         shares: data.shares || 0,
@@ -120,34 +131,18 @@ export async function GET(request: NextRequest) {
     });
 
     // 投稿を分析済み/未分析に分類
-    const analyzedPostIds = new Set(
+    const analyzedPostIdsFromAnalytics = new Set(
       analyticsData
-        .map((analytics) => analytics.postId)
+        .map((analytics) => normalizePostId(analytics.postId))
         .filter((postId): postId is string => Boolean(postId))
     );
+    const analyzedPostIds = new Set<string>([...analyzedPostIdsFromAnalytics]);
 
-    // 投稿をソート（投稿日時降順：最新が上）
-    // 優先順位: publishedAt > scheduledDate > createdAt
+    // 投稿をソート（投稿予定日降順：最新が上）
+    // 優先順位: scheduledDate > publishedAt > createdAt
     const sortedPosts = [...posts].sort((a, b) => {
       const getDate = (post: PostData): number => {
-        // 1. publishedAt（実際に投稿した日時）を優先
-        const analyticsForPost = analyticsData.find((a) => a.postId === post.id);
-        if (analyticsForPost?.publishedAt) {
-          if (analyticsForPost.publishedAt instanceof Date) {
-            return analyticsForPost.publishedAt.getTime();
-          }
-          if (analyticsForPost.publishedAt && typeof analyticsForPost.publishedAt === "object" && "toDate" in analyticsForPost.publishedAt) {
-            return (analyticsForPost.publishedAt as { toDate(): Date }).toDate().getTime();
-          }
-          if (typeof analyticsForPost.publishedAt === "string") {
-            const date = new Date(analyticsForPost.publishedAt);
-            if (!isNaN(date.getTime())) {
-              return date.getTime();
-            }
-          }
-        }
-        
-        // 2. scheduledDate（投稿予定日）を次に優先
+        // 1. scheduledDate（投稿予定日）を最優先
         if (post.scheduledDate) {
           if (post.scheduledDate instanceof Date) {
             return post.scheduledDate.getTime();
@@ -162,7 +157,25 @@ export async function GET(request: NextRequest) {
             }
           }
         }
-        
+
+        // 2. publishedAt（実際に投稿した日時）を次に優先
+        const postKey = normalizePostId(post.id);
+        const analyticsForPost = analyticsData.find((a) => normalizePostId(a.postId) === postKey);
+        if (analyticsForPost?.publishedAt) {
+          if (analyticsForPost.publishedAt instanceof Date) {
+            return analyticsForPost.publishedAt.getTime();
+          }
+          if (analyticsForPost.publishedAt && typeof analyticsForPost.publishedAt === "object" && "toDate" in analyticsForPost.publishedAt) {
+            return (analyticsForPost.publishedAt as { toDate(): Date }).toDate().getTime();
+          }
+          if (typeof analyticsForPost.publishedAt === "string") {
+            const date = new Date(analyticsForPost.publishedAt);
+            if (!isNaN(date.getTime())) {
+              return date.getTime();
+            }
+          }
+        }
+
         // 3. createdAt（作成日時）をフォールバック
         if (post.createdAt instanceof Date) {
           return post.createdAt.getTime();
@@ -189,8 +202,12 @@ export async function GET(request: NextRequest) {
     }
 
     const postsWithAnalytics: PostWithAnalytics[] = sortedPosts.map((post) => {
-      const hasAnalytics = analyzedPostIds.has(post.id) || !!(post as PostData & { analytics?: unknown }).analytics;
-      const analyticsFromData = analyticsData.find((a) => a.postId === post.id);
+      const postKey = normalizePostId(post.id);
+      const hasAnalytics = !!(
+        (postKey && analyzedPostIds.has(postKey)) ||
+        (post as PostData & { analytics?: unknown }).analytics
+      );
+      const analyticsFromData = analyticsData.find((a) => normalizePostId(a.postId) === postKey);
 
       return {
         ...post,
@@ -207,12 +224,20 @@ export async function GET(request: NextRequest) {
     const allPostsCount = posts.length + manualAnalyticsData.length;
     const analyzedPostsCount =
       posts.filter((post) => {
-        const hasAnalytics = analyzedPostIds.has(post.id) || !!(post as PostData & { analytics?: unknown }).analytics;
+        const postKey = normalizePostId(post.id);
+        const hasAnalytics = !!(
+          (postKey && analyzedPostIds.has(postKey)) ||
+          (post as PostData & { analytics?: unknown }).analytics
+        );
         return hasAnalytics;
       }).length + manualAnalyticsData.length;
 
     const createdOnlyCount = posts.filter((post) => {
-      const hasAnalytics = analyzedPostIds.has(post.id) || !!(post as PostData & { analytics?: unknown }).analytics;
+      const postKey = normalizePostId(post.id);
+      const hasAnalytics = !!(
+        (postKey && analyzedPostIds.has(postKey)) ||
+        (post as PostData & { analytics?: unknown }).analytics
+      );
       return !hasAnalytics;
     }).length;
 
@@ -224,8 +249,8 @@ export async function GET(request: NextRequest) {
     
     const scheduledPosts = sortedPosts
       .filter((post) => {
-        if (post.status !== "created") return false;
-        if (!post.scheduledDate) return false;
+        if (post.status !== "created") {return false;}
+        if (!post.scheduledDate) {return false;}
 
         try {
           const scheduledDate = post.scheduledDate instanceof Date
@@ -267,6 +292,23 @@ export async function GET(request: NextRequest) {
           return false;
         }
       })
+      .sort((a, b) => {
+        const dateA = a.scheduledDate instanceof Date ? a.scheduledDate : new Date(a.scheduledDate as string);
+        const dateB = b.scheduledDate instanceof Date ? b.scheduledDate : new Date(b.scheduledDate as string);
+        const dayDiff = dateA.getTime() - dateB.getTime();
+        if (dayDiff !== 0) {return dayDiff;}
+
+        const toMinutes = (time?: string | null): number => {
+          const matched = String(time || "").match(/^(\d{1,2}):(\d{2})$/);
+          if (!matched) {return 24 * 60 - 1;}
+          const h = Number(matched[1]);
+          const m = Number(matched[2]);
+          if (Number.isNaN(h) || Number.isNaN(m)) {return 24 * 60 - 1;}
+          return h * 60 + m;
+        };
+
+        return toMinutes(a.scheduledTime) - toMinutes(b.scheduledTime);
+      })
       .slice(0, 5)
       .map((post) => {
         try {
@@ -294,19 +336,12 @@ export async function GET(request: NextRequest) {
     // 未分析投稿を計算
     const unanalyzedPosts = sortedPosts
       .filter((post) => {
-        if (post.status !== "created") return false;
-        if (!post.scheduledDate) return false;
-        if (post.id && analyzedPostIds.has(post.id)) return false;
-
-        try {
-          const scheduledDate = post.scheduledDate instanceof Date
-            ? post.scheduledDate
-            : new Date(post.scheduledDate as string);
-          return scheduledDate < today;
-        } catch (error) {
-          console.error("未分析投稿の日付変換エラー:", error, post);
-          return false;
-        }
+        if (post.status !== "created") {return false;}
+        const postKey = normalizePostId(post.id);
+        const postWithAnalytics = postsWithAnalytics.find(
+          (candidate) => normalizePostId(candidate.id) === postKey
+        );
+        return !postWithAnalytics?.hasAnalytics;
       })
       .slice(0, 5)
       .map((post) => {
@@ -337,6 +372,7 @@ export async function GET(request: NextRequest) {
       likes: analytics.likes || 0,
       comments: analytics.comments || 0,
       shares: analytics.shares || 0,
+      saves: analytics.saves || 0,
       reach: analytics.reach || 0,
       engagementRate: analytics.engagementRate || 0,
       publishedAt: analytics.publishedAt,
@@ -345,7 +381,6 @@ export async function GET(request: NextRequest) {
       hashtags: analytics.hashtags,
       category: analytics.category,
       thumbnail: analytics.thumbnail,
-      sentiment: analytics.sentiment,
       memo: analytics.memo,
       audience: analytics.audience,
       reachSource: analytics.reachSource,
@@ -372,4 +407,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(body, { status });
   }
 }
-

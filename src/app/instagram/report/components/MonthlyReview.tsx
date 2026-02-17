@@ -24,7 +24,7 @@ interface MonthlyReviewData {
   analyzedCount: number;
 }
 
-export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpis, reportData, onRegenerate }) => {
+export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth: _selectedMonth, kpis: _kpis, reportData, onRegenerate }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // reportDataから月次レビューデータを取得（useMemoでメモ化）
@@ -137,4 +137,3 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth, kpi
     </div>
   );
 };
-

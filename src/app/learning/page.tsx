@@ -1,22 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
 import { authFetch } from "../../utils/authFetch";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
 import { clientCache, generateCacheKey } from "../../utils/cache";
-import { actionLogsApi } from "@/lib/api";
 import { getLearningPhaseLabel } from "@/utils/learningPhase";
-import type { AIActionLog } from "@/types/ai";
 import type {
-  PostPatternInsights,
-  FeedbackEntry,
   LearningBadge,
-  PostInsight,
   MasterContextResponse,
-  LearningContextCardData,
 } from "./types";
 import {
   Crown,
@@ -38,9 +32,6 @@ import {
 } from "lucide-react";
 import { SuccessImprovementGallery } from "./components/SuccessImprovementGallery";
 
-type ActionLogEntry = AIActionLog;
-
-
 export default function LearningDashboardPage() {
   const { user } = useAuth();
 
@@ -50,15 +41,7 @@ export default function LearningDashboardPage() {
   const [contextError, setContextError] = useState<string | null>(null);
   const [contextData, setContextData] = useState<MasterContextResponse | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [postInsights, setPostInsights] = useState<Record<string, PostInsight>>({});
-  const [feedbackHistory, setFeedbackHistory] = useState<FeedbackEntry[]>([]);
-  const [actionHistory, setActionHistory] = useState<ActionLogEntry[]>([]);
-  const [actionLogPendingId, setActionLogPendingId] = useState<string | null>(null);
-  const [actionLogError, setActionLogError] = useState<string | null>(null);
-  const [sharedLearningContext, setSharedLearningContext] = useState<LearningContextCardData | null>(
-    null
-  );
-  const [aiDirection, setAiDirection] = useState<{
+  const [aiDirection] = useState<{
     month: string;
     mainTheme: string;
     priorityKPI: string;
@@ -68,68 +51,7 @@ export default function LearningDashboardPage() {
   } | null>(null);
 
   const isAuthReady = useMemo(() => Boolean(user?.uid), [user?.uid]);
-
-  const actionLogMap = useMemo(() => {
-    const map = new Map<string, ActionLogEntry>();
-    actionHistory.forEach((entry) => {
-      map.set(entry.actionId, entry);
-    });
-    return map;
-  }, [actionHistory]);
-
-
-
-  const handleActionLogToggle = useCallback(
-    async ({
-      actionId,
-      title,
-      focusArea,
-      applied,
-    }: {
-      actionId: string;
-      title: string;
-      focusArea: string;
-      applied: boolean;
-    }) => {
-      if (!user?.uid) {
-        setActionLogError("アクションを更新するにはログインしてください。");
-        return;
-      }
-      setActionLogPendingId(actionId);
-      setActionLogError(null);
-      try {
-        await actionLogsApi.upsert({
-          userId: user.uid,
-          actionId,
-          title,
-          focusArea,
-          applied,
-        });
-        const existing = actionLogMap.get(actionId);
-        const updated: ActionLogEntry = {
-          id: existing?.id ?? `${user.uid}_${actionId}`,
-          actionId,
-          title,
-          focusArea,
-          applied,
-          resultDelta: existing?.resultDelta ?? null,
-          feedback: existing?.feedback ?? "",
-          createdAt: existing?.createdAt ?? new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setActionHistory((prev) => {
-          const others = prev.filter((entry) => entry.actionId !== actionId);
-          return [updated, ...others];
-        });
-      } catch (error) {
-        console.error("Action log toggle error:", error);
-        setActionLogError("アクションの更新に失敗しました。時間をおいて再度お試しください。");
-      } finally {
-        setActionLogPendingId(null);
-      }
-    },
-    [user?.uid, actionLogMap]
-  );
+  const hasInitialDataRef = useRef(false);
 
   useEffect(() => {
     if (!isAuthReady || !user?.uid) {
@@ -155,12 +77,9 @@ export default function LearningDashboardPage() {
 
       // キャッシュから取得を試みる（初回のみ）
       const cachedData = clientCache.get<MasterContextResponse>(cacheKey);
-      if (cachedData && !isCancelled && !contextData) {
+      if (cachedData && !isCancelled && !hasInitialDataRef.current) {
         setContextData(cachedData);
-        setPostInsights(cachedData?.postInsights ?? {});
-        setSharedLearningContext(cachedData?.learningContext ?? null);
-        setFeedbackHistory([]);
-        setActionHistory([]);
+        hasInitialDataRef.current = true;
         setContextError(null);
         setIsContextLoading(false);
         // バックグラウンドで最新データを取得
@@ -168,7 +87,7 @@ export default function LearningDashboardPage() {
       }
 
       // 初回ロード時は全体ローディング、再取得時は部分ローディング
-      const isInitialLoad = !contextData;
+      const isInitialLoad = !hasInitialDataRef.current;
       if (isInitialLoad) {
         setIsContextLoading(true);
       } else {
@@ -218,44 +137,8 @@ export default function LearningDashboardPage() {
           
           // マスターコンテキストデータを設定
           setContextData(data);
-          setPostInsights(data?.postInsights ?? {});
-          setSharedLearningContext(data?.learningContext ?? null);
+          hasInitialDataRef.current = true;
           setRetryCount(0);
-
-          // フィードバック履歴とアクション履歴を設定
-          const mappedFeedback: FeedbackEntry[] = Array.isArray(data.feedbackHistory)
-            ? data.feedbackHistory.map((entry: any) => ({
-                id: String(entry.id ?? ""),
-                postId: entry.postId ?? null,
-                sentiment:
-                  entry.sentiment === "positive" || entry.sentiment === "negative"
-                    ? entry.sentiment
-                    : "neutral",
-                comment: entry.comment ?? "",
-                weight: typeof entry.weight === "number" ? entry.weight : 1,
-                createdAt: typeof entry.createdAt === "string" ? entry.createdAt : null,
-              }))
-            : [];
-          const mappedActions: ActionLogEntry[] = Array.isArray(data.actionHistory)
-            ? data.actionHistory.map((entry: any) => ({
-                id: String(entry.id ?? ""),
-                actionId: String(entry.actionId ?? ""),
-                title: entry.title ?? "未設定",
-                focusArea: entry.focusArea ?? "全体",
-                applied: Boolean(entry.applied),
-                resultDelta:
-                  typeof entry.resultDelta === "number" ? Number(entry.resultDelta) : null,
-                feedback: entry.feedback ?? "",
-                updatedAt:
-                  typeof entry.updatedAt === "string"
-                    ? entry.updatedAt
-                    : typeof entry.createdAt === "string"
-                      ? entry.createdAt
-                      : null,
-              }))
-            : [];
-          setFeedbackHistory(mappedFeedback);
-          setActionHistory(mappedActions);
         }
       } catch (error) {
         console.error("学習ダッシュボードデータ取得エラー:", error);
@@ -284,11 +167,8 @@ export default function LearningDashboardPage() {
           );
           setContextError(errorMessage);
           // エラー時も既存のデータは保持
-          if (!contextData) {
+          if (!hasInitialDataRef.current) {
             setContextData(null);
-            setSharedLearningContext(null);
-            setFeedbackHistory([]);
-            setActionHistory([]);
           }
           setRetryCount(retryAttempt + 1);
         }
@@ -313,7 +193,7 @@ export default function LearningDashboardPage() {
         clearTimeout(timeoutId);
       }
     };
-  }, [isAuthReady, user?.uid]); // contextDataを依存配列から削除して無限ループを防止
+  }, [isAuthReady, user?.uid]);
 
   const patternInsights = contextData?.postPatterns;
 
@@ -435,44 +315,8 @@ export default function LearningDashboardPage() {
                         const cacheKey = generateCacheKey("learning-dashboard", { userId: user?.uid || "" });
                         clientCache.set(cacheKey, result.data, 5 * 60 * 1000);
                         setContextData(result.data);
-                        setPostInsights(result.data?.postInsights ?? {});
-                        setSharedLearningContext(result.data?.learningContext ?? null);
+                        hasInitialDataRef.current = true;
                         setRetryCount(0);
-                        
-                        // フィードバック履歴とアクション履歴を設定
-                        const mappedFeedback: FeedbackEntry[] = Array.isArray(result.data.feedbackHistory)
-                          ? result.data.feedbackHistory.map((entry: any) => ({
-                              id: String(entry.id ?? ""),
-                              postId: entry.postId ?? null,
-                              sentiment:
-                                entry.sentiment === "positive" || entry.sentiment === "negative"
-                                  ? entry.sentiment
-                                  : "neutral",
-                              comment: entry.comment ?? "",
-                              weight: typeof entry.weight === "number" ? entry.weight : 1,
-                              createdAt: typeof entry.createdAt === "string" ? entry.createdAt : null,
-                            }))
-                          : [];
-                        const mappedActions: ActionLogEntry[] = Array.isArray(result.data.actionHistory)
-                          ? result.data.actionHistory.map((entry: any) => ({
-                              id: String(entry.id ?? ""),
-                              actionId: String(entry.actionId ?? ""),
-                              title: entry.title ?? "未設定",
-                              focusArea: entry.focusArea ?? "全体",
-                              applied: Boolean(entry.applied),
-                              resultDelta:
-                                typeof entry.resultDelta === "number" ? Number(entry.resultDelta) : null,
-                              feedback: entry.feedback ?? "",
-                              updatedAt:
-                                typeof entry.updatedAt === "string"
-                                  ? entry.updatedAt
-                                  : typeof entry.createdAt === "string"
-                                    ? entry.createdAt
-                                    : null,
-                            }))
-                          : [];
-                        setFeedbackHistory(mappedFeedback);
-                        setActionHistory(mappedActions);
                       }
                     } else {
                       throw new Error(`HTTP error! status: ${response.status}`);
@@ -503,7 +347,7 @@ export default function LearningDashboardPage() {
                 {retryCount > 0 && (
                   <button
                     onClick={() => {
-                      const fetchDashboardData = async (retryAttempt = 0) => {
+                      const fetchDashboardData = async () => {
                         // 簡易的な再取得関数
                         setIsContextLoading(true);
                         setContextError(null);
@@ -517,8 +361,7 @@ export default function LearningDashboardPage() {
                             const result = await response.json();
                             if (result.success && result.data) {
                               setContextData(result.data);
-                              setPostInsights(result.data?.postInsights ?? {});
-                              setSharedLearningContext(result.data?.learningContext ?? null);
+                              hasInitialDataRef.current = true;
                               setRetryCount(0);
                             }
                           }
@@ -927,4 +770,3 @@ export default function LearningDashboardPage() {
     </SNSLayout>
   );
 }
-

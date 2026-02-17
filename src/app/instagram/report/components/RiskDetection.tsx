@@ -67,7 +67,7 @@ const severityConfig: Record<string, {
   },
 };
 
-export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpis, reportData }) => {
+export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth: _selectedMonth, kpis: _kpis, reportData }) => {
   // reportDataからリスクアラートを取得
   const alerts: RiskAlert[] = Array.isArray(reportData?.riskAlerts) ? reportData.riskAlerts : [];
 
@@ -131,4 +131,3 @@ export const RiskDetection: React.FC<RiskDetectionProps> = ({ selectedMonth, kpi
     </div>
   );
 };
-

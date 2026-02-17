@@ -8,7 +8,7 @@ import { AlertCircle, CheckCircle } from "lucide-react";
 
 // ネットワーク接続をチェックする関数
 const checkNetworkConnection = (): boolean => {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") {return true;}
   return navigator.onLine;
 };
 

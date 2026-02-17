@@ -1,9 +1,20 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions";
 import OpenAI from "openai";
 import * as admin from "firebase-admin";
 import { Storage } from "@google-cloud/storage";
+import {
+  addContributionToPatch,
+  applyDeltaNonNegative,
+  buildContribution,
+  createPatch,
+  negateContribution,
+  toNumber,
+  type DailyDelta,
+  type SummaryPatch,
+} from "./monthly-summary-aggregation";
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
@@ -21,6 +32,11 @@ const getOpenAI = () => {
 
 // Initialize Cloud Storage
 const storage = new Storage();
+const COLLECTIONS = {
+  ANALYTICS: "analytics",
+  MONTHLY_KPI_SUMMARIES: "monthly_kpi_summaries",
+  TOOL_MAINTENANCE: "toolMaintenance",
+} as const;
 
 // Start writing Firebase Functions
 // https://firebase.google.com/docs/functions/typescript
@@ -168,7 +184,7 @@ export const getToolMaintenanceStatus = onRequest({ cors: true }, async (req, re
     // Firestoreからメンテナンス状態を取得
     const maintenanceDoc = await admin
       .firestore()
-      .collection("toolMaintenance")
+      .collection(COLLECTIONS.TOOL_MAINTENANCE)
       .doc("current")
       .get();
 
@@ -245,7 +261,7 @@ export const setToolMaintenanceMode = onRequest({ cors: true }, async (req, res)
     }
 
     // Firestoreに保存
-    const maintenanceRef = admin.firestore().collection("toolMaintenance").doc("current");
+    const maintenanceRef = admin.firestore().collection(COLLECTIONS.TOOL_MAINTENANCE).doc("current");
 
     const updateData: any = {
       enabled,
@@ -428,5 +444,161 @@ export const weeklyBackup = onSchedule(
       });
       throw error;
     }
+  }
+);
+
+/**
+ * analytics 書き込み時に monthly_kpi_summaries を差分更新
+ * create/update/delete すべてに対応
+ */
+export const updateMonthlySummary = onDocumentWritten(
+  {
+    document: `${COLLECTIONS.ANALYTICS}/{docId}`,
+    region: "asia-northeast1",
+    memory: "256MiB",
+  },
+  async (event) => {
+    const docId = event.params.docId as string;
+    const beforeData = event.data?.before?.exists ? event.data.before.data() : undefined;
+    const afterData = event.data?.after?.exists ? event.data.after.data() : undefined;
+
+    const beforeContribution = buildContribution(beforeData);
+    const afterContribution = buildContribution(afterData);
+
+    if (!beforeContribution && !afterContribution) {
+      logger.info("monthly summary skipped: analytics document has no aggregatable payload", { docId });
+      return;
+    }
+
+    const patches = new Map<string, SummaryPatch>();
+    const getPatch = (userId: string, month: string): SummaryPatch => {
+      const key = `${userId}_${month}`;
+      const existing = patches.get(key);
+      if (existing) {
+        return existing;
+      }
+      const created = createPatch(userId, month, docId);
+      patches.set(key, created);
+      return created;
+    };
+
+    if (beforeContribution) {
+      const patch = getPatch(beforeContribution.userId, beforeContribution.month);
+      addContributionToPatch(patch, negateContribution(beforeContribution));
+    }
+
+    if (afterContribution) {
+      const patch = getPatch(afterContribution.userId, afterContribution.month);
+      addContributionToPatch(patch, afterContribution);
+    }
+
+    if (patches.size === 0) {
+      return;
+    }
+
+    const db = admin.firestore();
+
+    for (const [docKey, patch] of patches.entries()) {
+      const ref = db.collection(COLLECTIONS.MONTHLY_KPI_SUMMARIES).doc(docKey);
+
+      await db.runTransaction(async (tx) => {
+        const snapshot = await tx.get(ref);
+        const existing = snapshot.exists ? snapshot.data() : null;
+
+        const breakdownEntries = Array.isArray(existing?.dailyBreakdown)
+          ? (existing?.dailyBreakdown as Array<Record<string, unknown>>)
+          : [];
+        const breakdownMap = new Map<string, DailyDelta>();
+
+        for (const item of breakdownEntries) {
+          const date = typeof item.date === "string" ? item.date : null;
+          if (!date) {
+            continue;
+          }
+          breakdownMap.set(date, {
+            likes: toNumber(item.likes),
+            reach: toNumber(item.reach),
+            saves: toNumber(item.saves),
+            comments: toNumber(item.comments),
+            engagement: toNumber(item.engagement),
+          });
+        }
+
+        for (const [date, dailyDelta] of patch.dailyByDate.entries()) {
+          const current = breakdownMap.get(date) ?? {
+            likes: 0,
+            reach: 0,
+            saves: 0,
+            comments: 0,
+            engagement: 0,
+          };
+          const next = {
+            likes: applyDeltaNonNegative(current.likes, dailyDelta.likes),
+            reach: applyDeltaNonNegative(current.reach, dailyDelta.reach),
+            saves: applyDeltaNonNegative(current.saves, dailyDelta.saves),
+            comments: applyDeltaNonNegative(current.comments, dailyDelta.comments),
+            engagement: applyDeltaNonNegative(current.engagement, dailyDelta.engagement),
+          };
+
+          const isEmpty =
+            next.likes === 0 &&
+            next.reach === 0 &&
+            next.saves === 0 &&
+            next.comments === 0 &&
+            next.engagement === 0;
+
+          if (isEmpty) {
+            breakdownMap.delete(date);
+          } else {
+            breakdownMap.set(date, next);
+          }
+        }
+
+        const sortedBreakdown = Array.from(breakdownMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([date, values]) => ({
+            date,
+            likes: values.likes,
+            reach: values.reach,
+            saves: values.saves,
+            comments: values.comments,
+            engagement: values.engagement,
+          }));
+
+        const nextData = {
+          userId: patch.userId,
+          month: patch.month,
+          snsType: patch.snsType,
+          totalLikes: applyDeltaNonNegative(toNumber(existing?.totalLikes), patch.delta.likes),
+          totalComments: applyDeltaNonNegative(toNumber(existing?.totalComments), patch.delta.comments),
+          totalShares: applyDeltaNonNegative(toNumber(existing?.totalShares), patch.delta.shares),
+          totalReach: applyDeltaNonNegative(toNumber(existing?.totalReach), patch.delta.reach),
+          totalSaves: applyDeltaNonNegative(toNumber(existing?.totalSaves), patch.delta.saves),
+          totalFollowerIncrease: applyDeltaNonNegative(
+            toNumber(existing?.totalFollowerIncrease),
+            patch.delta.followerIncrease
+          ),
+          totalInteraction: applyDeltaNonNegative(toNumber(existing?.totalInteraction), patch.delta.interaction),
+          totalExternalLinkTaps: applyDeltaNonNegative(
+            toNumber(existing?.totalExternalLinkTaps),
+            patch.delta.externalLinkTaps
+          ),
+          totalProfileVisits: applyDeltaNonNegative(toNumber(existing?.totalProfileVisits), patch.delta.profileVisits),
+          postCount: applyDeltaNonNegative(toNumber(existing?.postCount), patch.delta.postCount),
+          dailyBreakdown: sortedBreakdown,
+          lastAnalyticsDocId: patch.lastAnalyticsDocId,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        tx.set(ref, nextData, { merge: true });
+      });
+    }
+
+    logger.info("monthly summaries updated", {
+      docId,
+      targetCount: patches.size,
+      targets: Array.from(patches.keys()),
+      eventId: event.id,
+    });
   }
 );

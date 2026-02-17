@@ -30,9 +30,14 @@ function initializeAdmin() {
   }
 
   try {
+    const storageBucket =
+      process.env.FIREBASE_STORAGE_BUCKET ||
+      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+      `${serviceAccount.projectId}.appspot.com`;
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
       projectId: serviceAccount.projectId,
+      storageBucket,
     });
     isInitialized = true;
     console.log("[firebase-admin] initialized", serviceAccount.projectId);
@@ -107,13 +112,50 @@ export function getAdminAuth() {
   return admin.auth();
 }
 
+export function getAdminStorageBucket() {
+  // ビルド時には初期化をスキップ
+  if (isBuildTime) {
+    throw new Error("Firebase Admin SDK cannot be initialized during build time.");
+  }
+
+  if (!isInitialized) {
+    initializeAdmin();
+  }
+
+  if (!admin.apps.length) {
+    const serviceAccount = {
+      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+    };
+
+    if (!serviceAccount.clientEmail || !serviceAccount.privateKey) {
+      throw new Error(
+        "Firebase Admin SDK is not initialized. Missing environment variables: " +
+        `FIREBASE_ADMIN_CLIENT_EMAIL=${Boolean(serviceAccount.clientEmail)}, ` +
+        `FIREBASE_ADMIN_PRIVATE_KEY=${Boolean(serviceAccount.privateKey)}`
+      );
+    }
+
+    throw new Error("Firebase Admin SDK initialization failed. Check logs for details.");
+  }
+
+  const app = admin.app();
+  const configuredBucket =
+    (app.options.storageBucket as string | undefined) ||
+    process.env.FIREBASE_STORAGE_BUCKET ||
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+    `${app.options.projectId || process.env.FIREBASE_ADMIN_PROJECT_ID || "signal-v1-fc481"}.appspot.com`;
+
+  return admin.storage().bucket(configuredBucket);
+}
+
 // 互換のため（既存コードで使用されている場合）
 // ビルド時には初期化をスキップし、実行時に遅延初期化する
 // Proxyを使用してすべてのメソッド呼び出しをインターセプト
 export const adminDb = new Proxy({} as admin.firestore.Firestore, {
   get(_target, prop) {
     const db = getAdminDb();
-    const value = (db as any)[prop];
+    const value = (db as unknown as Record<PropertyKey, unknown>)[prop];
     if (typeof value === "function") {
       return value.bind(db);
     }
@@ -124,7 +166,7 @@ export const adminDb = new Proxy({} as admin.firestore.Firestore, {
 export const adminAuth = new Proxy({} as admin.auth.Auth, {
   get(_target, prop) {
     const auth = getAdminAuth();
-    const value = (auth as any)[prop];
+    const value = (auth as unknown as Record<PropertyKey, unknown>)[prop];
     if (typeof value === "function") {
       return value.bind(auth);
     }

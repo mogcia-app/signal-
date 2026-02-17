@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { MessageCircle, Smile, Frown, Meh, ExternalLink, AlertTriangle, Loader2 } from "lucide-react";
+import { MessageCircle, Smile, Frown, Meh, ExternalLink, AlertTriangle } from "lucide-react";
 import { getLabEditorHref, getAnalyticsHref } from "../../../../utils/links";
 import type { ReportData, FeedbackSentimentSummary, FeedbackPostSentimentEntry, FeedbackSentimentComment } from "../../../../types/report";
 
@@ -94,7 +94,7 @@ function CommentList({
   );
 }
 
-export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMonth, reportData }) => {
+export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMonth: _selectedMonth, reportData }) => {
   // reportDataからフィードバック感情分析データを取得
   const summary: FeedbackSentimentSummary | null = reportData?.feedbackSentiment || null;
 
@@ -120,8 +120,8 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
 
   const renderPostRow = (post: FeedbackPostSentimentEntry) => {
     const postScore = post.score ?? 0;
-    const labHref = getLabEditorHref(post.postType || "feed", post.postId);
-    const analyticsHref = getAnalyticsHref(post.postType || "feed", post.postId);
+    const _labHref = getLabEditorHref(post.postType || "feed", post.postId);
+    const _analyticsHref = getAnalyticsHref(post.postType || "feed", post.postId);
 
     return (
       <div
@@ -304,4 +304,3 @@ export const FeedbackSentiment: React.FC<FeedbackSentimentProps> = ({ selectedMo
     </div>
   );
 };
-
