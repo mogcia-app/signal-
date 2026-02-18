@@ -150,7 +150,7 @@ export default function SNSLayout({
               }`}
             >
               <Home size={18} className="flex-shrink-0" />
-              <span>ホーム</span>
+              <span>ダッシュボード</span>
             </Link>
             {/* {canAccessFeature(userProfile, "canAccessPlan") && (
               <Link

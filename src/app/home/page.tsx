@@ -2178,7 +2178,7 @@ export default function HomePage() {
   }, [guidedElapsedMs, guidedFlowStartMs]);
 
   return (
-    <SNSLayout customTitle="ホーム" customDescription="今日のタスクと成果を確認">
+    <SNSLayout customTitle="ダッシュボード" customDescription="運用計画・投稿文生成・今月の成果をひと目で確認">
       <div className="w-full px-4 sm:px-6 md:px-8 py-6 bg-gray-50 min-h-screen">
         {/* 挨拶セクション */}
         <div className="mb-6">
@@ -2298,9 +2298,9 @@ export default function HomePage() {
                     <button
                       onClick={() => setShowPlanCreatedBanner(false)}
                       className="text-sm font-light underline hover:no-underline"
-                      aria-label="ホームに戻る"
+                      aria-label="ダッシュボードに戻る"
                     >
-                      ホームに戻る
+                      ダッシュボードに戻る
                     </button>
                   </div>
                   <button
