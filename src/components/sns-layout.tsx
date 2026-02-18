@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
-import { Menu, X, Home, User, BookOpen, BarChart, Target, Sparkles } from "lucide-react";
+import { Menu, X, User, Sparkles } from "lucide-react";
 
 interface SNSLayoutProps {
   children: ReactNode;
@@ -149,7 +149,13 @@ export default function SNSLayout({
                   : "text-black hover:bg-gray-100"
               }`}
             >
-              <Home size={18} className="flex-shrink-0" />
+              <span
+                className={`w-6 h-6 rounded-none flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
+                  pathname === "/home" ? "bg-orange-200 text-orange-900" : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                P
+              </span>
               <span>ダッシュボード</span>
             </Link>
             {/* {canAccessFeature(userProfile, "canAccessPlan") && (
@@ -198,7 +204,13 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <BookOpen size={18} className="flex-shrink-0" />
+                <span
+                  className={`w-6 h-6 rounded-none flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
+                    pathname === "/instagram/posts" ? "bg-orange-200 text-orange-900" : "bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  D
+                </span>
                 <span>投稿一覧</span>
               </Link>
             )}
@@ -215,19 +227,6 @@ export default function SNSLayout({
                 <span>投稿分析</span>
               </Link>
             )} */}
-            {canAccessFeature(userProfile, "canAccessReport") && (
-              <Link
-                href="/instagram/report"
-                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
-                  pathname === "/instagram/report"
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <BarChart size={18} className="flex-shrink-0" />
-                <span>月次レポート</span>
-              </Link>
-            )}
             {canAccessFeature(userProfile, "canAccessKPI") && (
               <Link
                 href="/instagram/kpi"
@@ -237,8 +236,33 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <Target size={18} className="flex-shrink-0" />
+                <span
+                  className={`w-6 h-6 rounded-none flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
+                    pathname === "/instagram/kpi" ? "bg-orange-200 text-orange-900" : "bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  C
+                </span>
                 <span>KPIコンソール</span>
+              </Link>
+            )}
+            {canAccessFeature(userProfile, "canAccessReport") && (
+              <Link
+                href="/instagram/report"
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                  pathname === "/instagram/report"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <span
+                  className={`w-6 h-6 rounded-none flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
+                    pathname === "/instagram/report" ? "bg-orange-200 text-orange-900" : "bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  A
+                </span>
+                <span>月次レポート</span>
               </Link>
             )}
             {canAccessFeature(userProfile, "canAccessLearning") && (
