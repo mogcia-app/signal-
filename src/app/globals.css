@@ -186,3 +186,10 @@ body {
 .animate-gradient-x {
   animation: gradient-x 3s ease infinite;
 }
+
+/* App pages with SNSLayout: desktop soft zoom to reduce visual pressure */
+@media (min-width: 1280px) {
+  .app-soft-zoom {
+    zoom: 0.75;
+  }
+}

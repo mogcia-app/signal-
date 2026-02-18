@@ -62,7 +62,7 @@ export default function SNSLayout({
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col lg:flex-row">
+    <div className="app-soft-zoom min-h-screen bg-white flex flex-col lg:flex-row">
       {/* ハンバーガーメニューボタン（スマホのみ表示） */}
       {!shouldHideNav && (
         <button

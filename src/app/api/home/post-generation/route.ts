@@ -414,27 +414,6 @@ const applyCalendarTitleTemplate = (title: string, postType: PostType): string =
   return `${normalized}${typeLabel}のポイント`;
 };
 
-const shouldInjectRegionForDate = (scheduledDate?: string): boolean => {
-  if (!scheduledDate) {return false;}
-  const parsed = new Date(scheduledDate);
-  if (Number.isNaN(parsed.getTime())) {return false;}
-  return parsed.getDate() % 2 === 0;
-};
-
-const injectRegionIntoTitle = (title: string, regionName: string): string => {
-  const normalized = String(title || "").trim();
-  const region = String(regionName || "").trim();
-  if (!normalized || !region) {return normalized;}
-  if (normalized.includes(region)) {return normalized;}
-  const prefixMatch = normalized.match(/^(\[[^\]]+\]|【[^】]+】)/);
-  if (!prefixMatch) {
-    return `${region}の${normalized}`;
-  }
-  const prefix = prefixMatch[0];
-  const rest = normalized.slice(prefix.length).trim();
-  return `${prefix}${region}の${rest}`;
-};
-
 const deriveRecruitSubject = (params: {
   industry: string;
   description: string;
@@ -459,14 +438,12 @@ const normalizeToPostTitle = (params: {
   industry?: string;
   description?: string;
   scheduledDate?: string;
-  regionName?: string;
 }): string => {
   const body = String(params.title || "")
     .replace(/^(?:\[[^\]]+\])+/g, "")
     .replace(/^(?:【[^】]+】)+/g, "")
     .trim();
   const product = params.productName || "コーヒー";
-  const region = String(params.regionName || "").trim();
   const purpose = normalizePurposeKey(params.operationPurpose || "");
   const weakWords = ["コツ", "構成", "共通点", "テンプレ", "ポイント共有", "見直し項目", "一番困る", "豆知識", "要点まとめ", "作り方"];
   const isWeak = !body || weakWords.some((word) => body.includes(word));
@@ -503,7 +480,7 @@ const normalizeToPostTitle = (params: {
     }),
     product,
   });
-  return purpose === "sales" && region ? `${region}の${picked}` : picked;
+  return picked;
 };
 
 const normalizeGeneratedContent = (value: string): string => {
@@ -514,24 +491,79 @@ const normalizeGeneratedContent = (value: string): string => {
     .trim();
 };
 
+const enforceStoryShortCaption = (value: string): string => {
+  const normalized = normalizeGeneratedContent(value)
+    .replace(/[。！？]\s*/g, "。")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+  if (!normalized) {return "今日のポイント、どちらが気になりますか？";}
+
+  const singleLine = normalized.replace(/\n/g, " ");
+  let compact = singleLine.slice(0, 50).trim();
+  if (compact.length < 20) {
+    const base = compact || "今日のポイント";
+    compact = `${base}、どちらが気になりますか？`.slice(0, 50);
+  }
+
+  if (compact.length > 28) {
+    const splitAt = Math.min(
+      Math.max(compact.indexOf("。") + 1, 0) || 0,
+      Math.max(compact.indexOf("、") + 1, 0) || 0
+    );
+    if (splitAt > 8 && splitAt < compact.length - 8) {
+      return `${compact.slice(0, splitAt)}\n${compact.slice(splitAt).trim()}`;
+    }
+    return `${compact.slice(0, 24).trim()}\n${compact.slice(24).trim()}`;
+  }
+  return compact;
+};
+
 const isMetaExplanationContent = (content: string): boolean => {
   const normalized = String(content || "");
   return /(今日は|ご紹介します|コツを|3つご紹介|ぜひこれら|参考にして)/.test(normalized);
+};
+
+const removeRegionText = (text: string, regionName: string): string => {
+  const region = String(regionName || "").trim();
+  const normalizedText = String(text || "").trim();
+  if (!region || !normalizedText) {return normalizedText;}
+
+  return normalizedText
+    .replaceAll(`${region}の`, "")
+    .replaceAll(`${region}で`, "")
+    .replaceAll(`${region}発`, "")
+    .replaceAll(region, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^\s*[、。]/, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+};
+
+const toRegionHashtag = (regionName: string): string => {
+  return String(regionName || "")
+    .replace(/^#+/, "")
+    .replace(/\s+/g, "")
+    .trim();
+};
+
+const applyRegionHashtag = (hashtags: string[], regionName: string): string[] => {
+  const regionTag = toRegionHashtag(regionName);
+  if (!regionTag) {return hashtags.slice(0, 5);}
+  if (hashtags.includes(regionTag)) {return hashtags.slice(0, 5);}
+  return [regionTag, ...hashtags.filter((tag) => tag !== regionTag)].slice(0, 5);
 };
 
 const buildCaptionFallback = (params: {
   title: string;
   targetLabel: string;
   productName: string;
-  regionName: string;
 }): string => {
   const titleBody = String(params.title || "")
     .replace(/^(?:\[[^\]]+\])+/g, "")
     .replace(/^(?:【[^】]+】)+/g, "")
     .trim();
   const product = params.productName || "コーヒー";
-  const region = params.regionName ? `${params.regionName}で` : "";
-  return `${region}${product}をもっと楽しみたい${params.targetLabel}へ。\n${titleBody}\n\n今日は「すぐ試せる1アクション」を紹介します。\n保存して、次の投稿準備に使ってください。`;
+  return `${product}をもっと楽しみたい${params.targetLabel}へ。\n${titleBody}\n\n今日は「すぐ試せる1アクション」を紹介します。\n保存して、次の投稿準備に使ってください。`;
 };
 
 export async function POST(request: NextRequest) {
@@ -615,7 +647,9 @@ export async function POST(request: NextRequest) {
       businessContextLines.length > 0 ? `\n【事業コンテキスト】\n${businessContextLines.join("\n")}` : "",
       inputTargetAudience ? `ターゲット属性: ${inputTargetAudience}` : "",
       `KPIタグ: [${kpiTag}]`,
-      inputRegionName ? `地域限定: ${inputRegionName}` : "",
+      inputRegionName
+        ? `地域限定設定あり: ${inputRegionName}（地域名はタイトル/本文に書かず、ハッシュタグのみで表現）`
+        : "",
       normalizedImageData
         ? "添付画像があります。画像の被写体・雰囲気・色味・シーンと矛盾しない投稿文にしてください。画像にない事実は断定しないでください。postHintsには必ず画像活用の具体ヒントを1件以上含めてください。"
         : "画像は未添付です。投稿タイプに合う素材（画像/動画）の提案を postHints に必ず1件以上含めてください。",
@@ -652,7 +686,9 @@ export async function POST(request: NextRequest) {
         : "",
       mode === "calendarTitle"
         ? "タイトルは投稿サムネイルにそのまま使える、商品・ブランド訴求の文にしてください。禁止: ノウハウ見出し（コツ/構成/共通点/テンプレ/作り方/要点まとめ/豆知識）。『誰向けか』より『何を投稿するか』を優先し、商品・サービス名を含めてください。"
-        : "本文は実務でそのまま投稿できるキャプションとして作成してください。禁止: 解説口調（今日は〜を紹介します等）、講義文、箇条書きの説明。必須: 冒頭フック1文 + 本文2-4文 + CTA1文。Markdown記法（**）は禁止。",
+        : postType === "story"
+          ? "本文はストーリーズ用の短文に限定してください。必須: 20〜50文字、1〜2行、1枚目で問いかけを置く。禁止: 長文説明、講義口調、箇条書き。Markdown記法（**）は禁止。"
+          : "本文は実務でそのまま投稿できるキャプションとして作成してください。禁止: 解説口調（今日は〜を紹介します等）、講義文、箇条書きの説明。必須: 冒頭フック1文 + 本文2-4文 + CTA1文。Markdown記法（**）は禁止。",
     ]
       .filter(Boolean)
       .join("\n");
@@ -712,10 +748,7 @@ export async function POST(request: NextRequest) {
         )
       : rawTitle;
     const title = draftCalendarTitle;
-    const regionalizedTitle =
-      mode !== "calendarTitle" && inputRegionName && shouldInjectRegionForDate(body.scheduledDate)
-        ? injectRegionIntoTitle(title, inputRegionName)
-        : title;
+    const regionalizedTitle = mode !== "calendarTitle" ? removeRegionText(title, inputRegionName) : title;
     const finalTitleBase = removeKpiPrefix(regionalizedTitle);
     const normalizedFinalTitle = normalizeToPostTitle({
       title: finalTitleBase,
@@ -725,13 +758,12 @@ export async function POST(request: NextRequest) {
       industry: businessSignals.industry,
       description: businessSignals.description,
       scheduledDate: body.scheduledDate,
-      regionName: inputRegionName,
     });
     const normalizedSuggestedTime = normalizeSuggestedTime(String(parsed.suggestedTime || suggestedTime), suggestedTime);
 
     const rawContent = String(parsed.content || "");
     const normalizedContent = normalizeGeneratedContent(rawContent);
-    const finalContent =
+    const defaultContent =
       mode === "calendarTitle"
         ? ""
         : isMetaExplanationContent(normalizedContent)
@@ -739,9 +771,14 @@ export async function POST(request: NextRequest) {
               title: normalizedFinalTitle,
               targetLabel: businessSignals.targetLabel,
               productName: selectedProduct?.name || businessSignals.productNames[0] || "",
-              regionName: inputRegionName,
             })
           : normalizedContent;
+    const finalContent =
+      mode === "calendarTitle"
+        ? ""
+        : postType === "story"
+          ? enforceStoryShortCaption(defaultContent)
+          : defaultContent;
     const productAdjustedTitle =
       selectedProduct && mode !== "calendarTitle"
         ? ensureProductInTitle(normalizedFinalTitle, selectedProduct.name)
@@ -754,6 +791,9 @@ export async function POST(request: NextRequest) {
       selectedProduct && mode !== "calendarTitle"
         ? ensureProductInContent(finalContent, selectedProduct.name)
         : finalContent;
+    const sanitizedTitle = inputRegionName ? removeRegionText(dedupedTitle, inputRegionName) : dedupedTitle;
+    const sanitizedContent = inputRegionName ? removeRegionText(productAdjustedContent, inputRegionName) : productAdjustedContent;
+    const outputHashtags = mode === "calendarTitle" ? [] : applyRegionHashtag(limitedHashtags, inputRegionName);
     const aiPostHints = Array.isArray(parsed.postHints)
       ? parsed.postHints
           .map((item) => normalizePostHint(String(item || "")))
@@ -771,10 +811,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        title: dedupedTitle,
+        title: sanitizedTitle,
         hook: typeof parsed.hook === "string" && parsed.hook.trim().length > 0 ? parsed.hook.trim() : undefined,
-        content: productAdjustedContent,
-        hashtags: mode === "calendarTitle" ? [] : limitedHashtags,
+        content: sanitizedContent,
+        hashtags: outputHashtags,
         suggestedTime: normalizedSuggestedTime,
         kpiTag,
         generationVariant,

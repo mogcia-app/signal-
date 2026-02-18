@@ -2043,7 +2043,12 @@ export default function HomePage() {
     try {
       const activePurpose = String(dashboardData?.currentPlan?.operationPurpose || "").trim() || quickPlanPurpose;
       const directionText = String(item.direction || item.label || "").trim() || "投稿方針";
-      const promptText = `${activePurpose}向けの${directionText}`;
+      const hookText = String(item.hook || "").trim();
+      const primaryGuide = getShortGuideText(directionText, item.type).trim();
+      const emphasisText = hookText || primaryGuide;
+      const promptText = emphasisText
+        ? `${activePurpose}向けの${directionText}。特に${emphasisText}`
+        : `${activePurpose}向けの${directionText}`;
       const response = await authFetch("/api/home/post-generation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
