@@ -11,6 +11,8 @@ interface AdvisorChatRequest {
     postType?: unknown;
     draftTitle?: unknown;
     draftContent?: unknown;
+    generatedTitle?: unknown;
+    generatedContent?: unknown;
     imageAttached?: unknown;
   };
 }
@@ -78,13 +80,13 @@ const buildImageIdeasForProduct = (productName: string, postType: string): Image
       concept: `${normalizedProduct}の魅力を正面から伝える定番案`,
       composition: "商品を中央に配置、背景は単色で高級感を出す",
       overlayText: `${normalizedProduct}で始める、今日の一杯`,
-      prompt: `${normalizedProduct}のパッケージを中央配置。背景は無地でミニマル。柔らかい自然光。高級感のあるコーヒー商品写真。日本のカフェの雰囲気。正方形構図。高精細。`,
+      prompt: `${normalizedProduct}のパッケージを中央配置。背景は無地でミニマル。柔らかい自然光。高級感のある商品写真。日本のカフェの雰囲気。正方形構図。高精細。`,
       hook: `「${normalizedProduct}、最初の一口で印象が変わる。」`,
     },
     {
       title: `${typeLabel}案2: 利用シーン訴求`,
       concept: "生活シーンに溶け込む使い方を見せる案",
-      composition: "机上にカップと商品を配置、朝の自然光で撮影",
+      composition: "机上に商品を配置、朝の自然光で撮影",
       overlayText: "忙しい朝でも、満足感のある一杯を",
       prompt: `${normalizedProduct}とコーヒーカップを木の机の上に配置。朝の窓光。生活感のある商品写真。暖色トーン。質感はリアル。SNS投稿向け。`,
       hook: "「この一杯が、朝の集中を変える。」",
@@ -98,6 +100,58 @@ const buildImageIdeasForProduct = (productName: string, postType: string): Image
       hook: `「迷ったら、まず${normalizedProduct}から。」`,
     },
   ];
+};
+
+const buildCompositionAdvice = (params: {
+  productName: string;
+  postType: string;
+  postTitle: string;
+}): string => {
+  const product = params.productName || "商品";
+  const typeLabel = params.postType === "reel" ? "リール" : params.postType === "story" ? "ストーリーズ" : "フィード";
+  const titleSnippet = params.postTitle ? `「${params.postTitle.slice(0, 20)}」` : `「${product}の魅力」`;
+
+  const lines = [
+    `${typeLabel}の1枚目、推奨構図を提案します。`,
+    ``,
+    `◎ 被写体配置: ${product}を画面中央〜やや左に置き、右1/3に余白を確保`,
+    `◎ アングル: 正面〜30°斜め俯瞰（商品の形が伝わる角度）`,
+    `◎ 背景: 白・ベージュ・グレーの単色、または自然光が差し込む木目テーブル`,
+    `◎ テキスト位置: ${titleSnippet}を右上または左下に白抜き文字で配置`,
+    ``,
+    `NGパターン:`,
+    `・被写体が小さすぎて何の商品かわからない`,
+    `・背景が雑然として商品が埋もれる`,
+    `・テキストが小さすぎてサムネで読めない`,
+  ];
+
+  return lines.join("\n");
+};
+
+const buildTextOverlayAdvice = (params: {
+  productName: string;
+  postType: string;
+  postTitle: string;
+}): string => {
+  const product = params.productName || "商品";
+  const typeLabel = params.postType === "reel" ? "リール" : params.postType === "story" ? "ストーリーズ" : "フィード";
+  const baseText = params.postTitle ? params.postTitle.slice(0, 20) : `${product}の魅力`;
+
+  const lines = [
+    `${typeLabel}の1枚目に入れるテキスト案です。`,
+    ``,
+    `案1（フック型）  ▶ ${baseText}`,
+    `案2（問いかけ型）▶ ${product}、選ぶなら？`,
+    `案3（数字型）   ▶ 3つの理由で${product}を選ぶ`,
+    ``,
+    `推奨スタイル:`,
+    `・文字数: 10〜20文字以内`,
+    `・フォント: 太め（Noto Sans Black等）`,
+    `・色: 白または黒で背景とコントラストを確保`,
+    `・位置: 上部1/3 または 下部1/3（中央は商品に空ける）`,
+  ];
+
+  return lines.join("\n");
 };
 
 export async function POST(request: NextRequest) {
@@ -122,11 +176,57 @@ export async function POST(request: NextRequest) {
     const postType = normalizeText(body?.context?.postType) || "feed";
     const draftTitle = normalizeText(body?.context?.draftTitle);
     const draftContent = normalizeText(body?.context?.draftContent);
+    const generatedTitle = normalizeText(body?.context?.generatedTitle);
+    const generatedContent = normalizeText(body?.context?.generatedContent);
     const imageAttached = Boolean(body?.context?.imageAttached);
 
-    const imageConsult = includesAny(message, ["画像", "写真", "素材", "ビジュアル", "サムネ"]);
-    const copyConsult = includesAny(message, ["投稿文", "キャプション", "本文", "タイトル", "文面"]);
+    // 実際に使うタイトル・本文（下書き優先、なければ生成済み候補を使用）
+    const activeTitle = draftTitle || generatedTitle;
+    const activeContent = draftContent || generatedContent;
 
+    const imageConsult = includesAny(message, ["画像", "写真", "素材", "ビジュアル", "サムネ", "どんな画像"]);
+    const compositionConsult = includesAny(message, ["構図", "アングル", "フレーミング", "1枚目の構図"]);
+    const textOverlayConsult = includesAny(message, ["テキスト入れるなら", "テキスト入れ", "文字入れ", "オーバーレイ", "テキストは"]);
+
+    // 構図相談
+    if (compositionConsult) {
+      const reply = buildCompositionAdvice({
+        productName: resolvedProductName,
+        postType,
+        postTitle: activeTitle,
+      });
+      return NextResponse.json({
+        success: true,
+        data: {
+          reply,
+          suggestedQuestions: [
+            "どんな画像が合う？",
+            "テキスト入れるなら何？",
+          ],
+        },
+      });
+    }
+
+    // テキストオーバーレイ相談
+    if (textOverlayConsult) {
+      const reply = buildTextOverlayAdvice({
+        productName: resolvedProductName,
+        postType,
+        postTitle: activeTitle,
+      });
+      return NextResponse.json({
+        success: true,
+        data: {
+          reply,
+          suggestedQuestions: [
+            "どんな画像が合う？",
+            "1枚目の構図は？",
+          ],
+        },
+      });
+    }
+
+    // 画像相談（商品が複数あり未選択の場合）
     if (imageConsult && productNames.length > 1 && !resolvedProductName) {
       return NextResponse.json({
         success: true,
@@ -137,6 +237,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 画像相談（商品確定済み）
     if (imageConsult && resolvedProductName) {
       const ideas = buildImageIdeasForProduct(resolvedProductName, postType);
       const reply = [
@@ -167,28 +268,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (copyConsult && !draftTitle && !draftContent) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          reply: "この投稿文について、どこを直したいですか？（冒頭フック / 長さ / CTA / トーン）",
-          suggestedQuestions: [
-            "冒頭フックを強くしたい",
-            "CTAをもう少し自然にしたい",
-            "短く読みやすくしたい",
-          ],
-        },
-      });
-    }
-
     if (!openai) {
       return NextResponse.json({
         success: true,
         data: {
-          reply: "投稿目的・商品・投稿タイプを教えていただければ、具体案を作成します。",
+          reply: "商品・投稿タイプを教えていただければ、具体案を作成します。",
           suggestedQuestions: [
-            "どの画像を作ればいい？",
-            "この投稿文の改善点は？",
+            "どんな画像が合う？",
+            "1枚目の構図は？",
+            "テキスト入れるなら何？",
           ],
         },
       });
@@ -199,7 +287,6 @@ export async function POST(request: NextRequest) {
       "回答は日本語で2-5文、具体的・実行可能にしてください。",
       "必要なら質問は1つだけ返してください。",
       "画像相談では、構図/被写体/テキストの方向性まで提案してください。",
-      "投稿文相談では、冒頭フック・価値訴求・CTAの観点で改善提案してください。",
       "専門用語の説明は不要。すぐ実行できる回答を返してください。",
     ].join("\n");
 
@@ -209,8 +296,8 @@ export async function POST(request: NextRequest) {
       `選択中の商品: ${resolvedProductName || "未選択"}`,
       `商品候補: ${productNames.join(" / ") || "なし"}`,
       `画像添付: ${imageAttached ? "あり" : "なし"}`,
-      draftTitle ? `下書きタイトル: ${draftTitle}` : "",
-      draftContent ? `下書き本文: ${draftContent.slice(0, 800)}` : "",
+      activeTitle ? `投稿タイトル: ${activeTitle}` : "",
+      activeContent ? `投稿本文: ${activeContent.slice(0, 800)}` : "",
       "出力はJSON: {\"reply\": string, \"suggestedQuestions\": string[]}",
     ]
       .filter(Boolean)
@@ -218,7 +305,7 @@ export async function POST(request: NextRequest) {
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.6,
+      temperature: 0.5,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
@@ -236,7 +323,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        reply: reply || "投稿目的に合わせて、具体案を3つに分けて提案できます。何を優先しますか？",
+        reply: reply || "投稿に合わせた具体案を提案できます。何を優先しますか？",
         suggestedQuestions,
       },
     });

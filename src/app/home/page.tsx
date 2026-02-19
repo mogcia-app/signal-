@@ -340,12 +340,13 @@ export default function HomePage() {
     {
       id: "advisor-initial",
       role: "assistant",
-      text: "画像案や投稿文の相談ができます。まずは「どの画像を作ればいい？」のように聞いてください。",
+      text: "生成した投稿文に合わせた画像の相談ができます。下のボタンから選んでください。",
     },
   ]);
   const [advisorSuggestedQuestions, setAdvisorSuggestedQuestions] = useState<string[]>([
-    "どの画像を作ればいい？",
-    "この投稿文の改善点は？",
+    "どんな画像が合う？",
+    "1枚目の構図は？",
+    "テキスト入れるなら何？",
   ]);
   const planCardRef = useRef<HTMLDivElement | null>(null);
   const postComposerRef = useRef<HTMLDivElement | null>(null);
@@ -1452,6 +1453,14 @@ export default function HomePage() {
             postType: homePostType,
             draftTitle: homeDraftTitle.trim() || undefined,
             draftContent: homeDraftContent.trim() || undefined,
+            generatedTitle: (() => {
+              const c = homeGeneratedCandidates.find((x) => x.variant === homeSelectedCandidateVariant) || homeGeneratedCandidates[0];
+              return c?.title || undefined;
+            })(),
+            generatedContent: (() => {
+              const c = homeGeneratedCandidates.find((x) => x.variant === homeSelectedCandidateVariant) || homeGeneratedCandidates[0];
+              return c?.content || undefined;
+            })(),
             imageAttached: Boolean(homeAttachedImage),
           },
         }),
@@ -3496,7 +3505,7 @@ export default function HomePage() {
                       void sendAdvisorMessage(advisorInput);
                     }
                   }}
-                  placeholder="どの画像を作ればいい？"
+                  placeholder="その他の質問はこちらへ..."
                   className="flex-1 px-3 py-2.5 border border-gray-300 text-sm bg-white"
                 />
                 <button
