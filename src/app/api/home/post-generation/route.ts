@@ -639,6 +639,17 @@ export async function POST(request: NextRequest) {
     const kpiTag = normalizeKpiTag(fallbackKpiTag);
 
     const generationPromptText = [
+      selectedProduct
+        ? [
+            "【商品強制指定 - 最優先ルール】",
+            `今回の投稿は ${selectedProduct.key}「${selectedProduct.name}」を主役にしてください。`,
+            selectedProduct.details ? `商品説明: ${selectedProduct.details}` : "",
+            selectedProduct.price ? `価格情報: ${selectedProduct.price}` : "",
+            "titleの冒頭および contentの冒頭に必ず商品名を含めること。他商品の話を主軸にしないでください。",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        : "",
       `投稿タイプ: ${typeLabel}`,
       `投稿テーマ: ${prompt}`,
       operationPurpose ? `投稿目的: ${operationPurpose}` : "",
@@ -655,17 +666,6 @@ export async function POST(request: NextRequest) {
         : "画像は未添付です。投稿タイプに合う素材（画像/動画）の提案を postHints に必ず1件以上含めてください。",
       normalizedImageData && imageContext
         ? `画像補足情報: ${imageContext}`
-        : "",
-      selectedProduct
-        ? [
-            "【商品強制指定】",
-            `今回の投稿は ${selectedProduct.key}「${selectedProduct.name}」を主役にしてください。`,
-            selectedProduct.details ? `商品説明: ${selectedProduct.details}` : "",
-            selectedProduct.price ? `価格情報: ${selectedProduct.price}` : "",
-            "タイトルまたは本文冒頭に必ず商品名を含め、他商品の話を主軸にしないでください。",
-          ]
-            .filter(Boolean)
-            .join("\n")
         : "",
       generationVariant === "advice"
         ? [
@@ -703,7 +703,7 @@ export async function POST(request: NextRequest) {
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: mode === "calendarTitle" ? 0.45 : 0.7,
+      temperature: mode === "calendarTitle" ? 0.45 : 0.45,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -711,7 +711,7 @@ export async function POST(request: NextRequest) {
           content:
             mode === "calendarTitle"
               ? "あなたはInstagram運用担当の編集者です。出力はJSONのみ。必ず title, content, hashtags, suggestedTime, postHints を返してください。titleは12-24文字で具体語（題材・対象・行動）を含め、抽象語だけの表現は禁止。禁止例: 新しい月の始まり/新しい発見/知っておきたい。contentは空文字、hashtagsは空配列でよい。postHintsは『1文で実行できる改善指示』を1-3件で返してください。抽象語（意識/工夫/魅力など）だけの文は禁止。"
-              : "あなたはInstagram運用担当のアシスタントです。出力はJSONのみ。必ず title, content, hashtags, suggestedTime, postHints を返してください。hashtagsは#なしの配列、最大5件。postHintsは投稿文に沿った『1文で実行できる改善指示』を1-3件で返してください。抽象語（意識/工夫/魅力など）だけの文は禁止。",
+              : `あなたはInstagram運用担当のアシスタントです。出力はJSONのみ。必ず以下のスキーマで返してください: {"title": string（12〜28文字）, "content": string（投稿本文）, "hashtags": string[]（#なし・最大5件）, "suggestedTime": string（HH:MM形式）, "postHints": string[]（1〜3件）}。【最重要】ユーザーメッセージに「商品強制指定」がある場合、titleの冒頭とcontentの冒頭に必ず指定された商品名を含めること。この規則は他のすべての指示より優先される。postHintsは投稿文に沿った『1文で実行できる改善指示』を1-3件。抽象語（意識/工夫/魅力など）だけの文は禁止。`,
         },
         {
           role: "user",
