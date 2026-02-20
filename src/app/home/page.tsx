@@ -348,6 +348,8 @@ export default function HomePage() {
     "1枚目の構図は？",
     "テキスト入れるなら何？",
   ]);
+  // null = 自動検出、string = ユーザーが選択したキー
+  const [advisorContextPostKey, setAdvisorContextPostKey] = useState<string | null>(null);
   const planCardRef = useRef<HTMLDivElement | null>(null);
   const postComposerRef = useRef<HTMLDivElement | null>(null);
   const [isPlanCardHighlighted, setIsPlanCardHighlighted] = useState(false);
@@ -367,6 +369,62 @@ export default function HomePage() {
     const productSelectKey = String(product?.id || product?.name || `idx-${index}`);
     return productSelectKey === homeSelectedProductId;
   })?.name;
+
+  // チャット参照ポストの選択肢（生成済み候補 + 下書き）
+  const advisorPostOptions = (() => {
+    const typeLabel = homePostType === "reel" ? "リール" : homePostType === "story" ? "ストーリーズ" : "フィード";
+    const opts: { key: string; label: string; title: string; content: string; postType: string; productName: string }[] = [];
+    homeGeneratedCandidates.forEach((c) => {
+      opts.push({
+        key: `candidate-${c.variant}`,
+        label: `${c.label}（${typeLabel}）`,
+        title: c.title,
+        content: c.content,
+        postType: homePostType,
+        productName: selectedProductName || "",
+      });
+    });
+    if (homeDraftTitle.trim() || homeDraftContent.trim()) {
+      opts.push({
+        key: "draft",
+        label: `現在の下書き（${typeLabel}）`,
+        title: homeDraftTitle.trim(),
+        content: homeDraftContent.trim(),
+        postType: homePostType,
+        productName: selectedProductName || "",
+      });
+    }
+    return opts;
+  })();
+
+  // 自動または手動で選択された参照ポスト
+  const activeAdvisorPost = (() => {
+    if (advisorContextPostKey) {
+      return advisorPostOptions.find((o) => o.key === advisorContextPostKey) || advisorPostOptions[0] || null;
+    }
+    const autoKey = homeSelectedCandidateVariant
+      ? `candidate-${homeSelectedCandidateVariant}`
+      : homeGeneratedCandidates.length > 0
+      ? `candidate-${homeGeneratedCandidates[0].variant}`
+      : null;
+    return autoKey
+      ? (advisorPostOptions.find((o) => o.key === autoKey) || advisorPostOptions[0] || null)
+      : advisorPostOptions[0] || null;
+  })();
+
+  const buildAdvisorGreeting = (post: typeof activeAdvisorPost): string => {
+    if (!post) {return "生成した投稿文に合わせた画像・動画の相談ができます。まず投稿を生成してください。";}
+    const typeLabel = post.postType === "reel" ? "リール" : post.postType === "story" ? "ストーリーズ" : "フィード";
+    const productPart = post.productName ? `${post.productName}の` : "";
+    const titleSnippet = (post.title || post.content.slice(0, 30)).slice(0, 30);
+    return `${productPart}${typeLabel}投稿ですね。\n\n「${titleSnippet}」\n\nどんなことを知りたいですか？`;
+  };
+
+  const buildAdvisorButtons = (postType: string): string[] => {
+    if (postType === "reel") {return ["どんな動画が合う？", "冒頭3秒は？", "テキスト入れるなら何？"];}
+    if (postType === "story") {return ["どんな画像が合う？", "スタンプ活用は？", "テキスト入れるなら何？"];}
+    return ["どんな画像が合う？", "1枚目の構図は？", "テキスト入れるなら何？"];
+  };
 
   const getWeeklyCountLabel = (count: number): string => {
     const safe = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
@@ -415,6 +473,23 @@ export default function HomePage() {
     }, 120);
     return () => window.clearInterval(id);
   }, [guidedFlowStartMs]);
+
+  // チャット開閉・投稿切り替え時にグリーティングをリセット
+  useEffect(() => {
+    if (!isAdvisorOpen) {
+      setAdvisorContextPostKey(null);
+      return;
+    }
+    const post = activeAdvisorPost;
+    const greeting = buildAdvisorGreeting(post);
+    const buttons = buildAdvisorButtons(post?.postType || "feed");
+    setAdvisorMessages([{ id: `advisor-initial-${Date.now()}`, role: "assistant", text: greeting }]);
+    setAdvisorSuggestedQuestions(buttons);
+    setAdvisorInput("");
+  // activeAdvisorPost は advisorContextPostKey と homeGeneratedCandidates から導出されるため、
+  // isAdvisorOpen と advisorContextPostKey の変化でのみリセットする（会話中途リセット防止）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdvisorOpen, advisorContextPostKey]);
 
   const parseSavedWeekDays = (value: unknown): WeekDay[] => {
     if (!Array.isArray(value)) {return [];}
@@ -1449,18 +1524,12 @@ export default function HomePage() {
           message,
           context: {
             selectedProductId: homeSelectedProductId || undefined,
-            selectedProductName: selectedProductName || undefined,
-            postType: homePostType,
+            selectedProductName: activeAdvisorPost?.productName || selectedProductName || undefined,
+            postType: activeAdvisorPost?.postType || homePostType,
             draftTitle: homeDraftTitle.trim() || undefined,
             draftContent: homeDraftContent.trim() || undefined,
-            generatedTitle: (() => {
-              const c = homeGeneratedCandidates.find((x) => x.variant === homeSelectedCandidateVariant) || homeGeneratedCandidates[0];
-              return c?.title || undefined;
-            })(),
-            generatedContent: (() => {
-              const c = homeGeneratedCandidates.find((x) => x.variant === homeSelectedCandidateVariant) || homeGeneratedCandidates[0];
-              return c?.content || undefined;
-            })(),
+            generatedTitle: activeAdvisorPost?.title || undefined,
+            generatedContent: activeAdvisorPost?.content || undefined,
             imageAttached: Boolean(homeAttachedImage),
           },
         }),
@@ -3444,6 +3513,24 @@ export default function HomePage() {
                 閉じる
               </button>
             </div>
+            {advisorPostOptions.length > 0 && (
+              <div className="border-b border-gray-100 px-3 py-1.5 bg-white flex items-center gap-2">
+                <span className="text-[10px] text-gray-400 whitespace-nowrap flex-shrink-0">参照中:</span>
+                <select
+                  value={activeAdvisorPost?.key || ""}
+                  onChange={(e) => {
+                    setAdvisorContextPostKey(e.target.value || null);
+                  }}
+                  className="flex-1 text-[11px] text-gray-700 border border-gray-200 px-2 py-0.5 bg-white min-w-0 truncate"
+                >
+                  {advisorPostOptions.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2 px-3 py-3 bg-gray-50">
               {advisorMessages.map((msg) => (
                 <div key={msg.id} className={`flex items-end gap-2 ${msg.role === "assistant" ? "justify-start" : "justify-end"}`}>

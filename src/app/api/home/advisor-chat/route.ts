@@ -70,6 +70,8 @@ const inferProductFromMessage = (message: string, productNames: string[]): strin
   return matched ? normalizeText(matched) : "";
 };
 
+// ── 静的アドバイス builders ──────────────────────────────────────
+
 const buildImageIdeasForProduct = (productName: string, postType: string): ImageIdea[] => {
   const normalizedProduct = normalizeText(productName) || "商品";
   const typeLabel = postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード";
@@ -111,7 +113,7 @@ const buildCompositionAdvice = (params: {
   const typeLabel = params.postType === "reel" ? "リール" : params.postType === "story" ? "ストーリーズ" : "フィード";
   const titleSnippet = params.postTitle ? `「${params.postTitle.slice(0, 20)}」` : `「${product}の魅力」`;
 
-  const lines = [
+  return [
     `${typeLabel}の1枚目、推奨構図を提案します。`,
     ``,
     `◎ 被写体配置: ${product}を画面中央〜やや左に置き、右1/3に余白を確保`,
@@ -123,9 +125,7 @@ const buildCompositionAdvice = (params: {
     `・被写体が小さすぎて何の商品かわからない`,
     `・背景が雑然として商品が埋もれる`,
     `・テキストが小さすぎてサムネで読めない`,
-  ];
-
-  return lines.join("\n");
+  ].join("\n");
 };
 
 const buildTextOverlayAdvice = (params: {
@@ -137,7 +137,7 @@ const buildTextOverlayAdvice = (params: {
   const typeLabel = params.postType === "reel" ? "リール" : params.postType === "story" ? "ストーリーズ" : "フィード";
   const baseText = params.postTitle ? params.postTitle.slice(0, 20) : `${product}の魅力`;
 
-  const lines = [
+  return [
     `${typeLabel}の1枚目に入れるテキスト案です。`,
     ``,
     `案1（フック型）  ▶ ${baseText}`,
@@ -149,10 +149,73 @@ const buildTextOverlayAdvice = (params: {
     `・フォント: 太め（Noto Sans Black等）`,
     `・色: 白または黒で背景とコントラストを確保`,
     `・位置: 上部1/3 または 下部1/3（中央は商品に空ける）`,
-  ];
-
-  return lines.join("\n");
+  ].join("\n");
 };
+
+const buildVideoAdvice = (params: {
+  productName: string;
+  postTitle: string;
+}): string => {
+  const product = params.productName || "商品";
+  const baseText = params.postTitle ? params.postTitle.slice(0, 15) : `${product}の魅力`;
+
+  return [
+    `${product}のリール向け動画素材案を3つ提案します。`,
+    ``,
+    `案1（変化訴求）: 使う前→使った後のビフォーアフター（3〜7秒）`,
+    `案2（商品訴求）: ${product}を手に取り、パッケージをゆっくり映すシンプルカット`,
+    `案3（シーン訴求）: 朝の生活シーンに${product}が自然に登場する10〜15秒の日常映像`,
+    ``,
+    `共通ポイント:`,
+    `・縦型9:16で撮影（スマホ縦持ちそのまま）`,
+    `・明るい自然光、または柔らかい室内光を使う`,
+    `・冒頭にテキスト「${baseText}」を入れると離脱防止になります`,
+  ].join("\n");
+};
+
+const buildReelOpeningAdvice = (params: {
+  productName: string;
+  postTitle: string;
+}): string => {
+  const product = params.productName || "商品";
+  const baseText = params.postTitle ? params.postTitle.slice(0, 15) : `${product}の魅力`;
+
+  return [
+    `リール冒頭3秒の構成案を3パターン提案します。`,
+    ``,
+    `案1（問いかけ型）: 画面に大きく「${baseText}？」とテキスト表示 → 答えは次のカットへ`,
+    `案2（動き訴求型）: ${product}を手で持ち上げる・注ぐ動作から始め、視線を引きつける`,
+    `案3（数字フック型）: 「3秒でわかる」「〇〇円以下で実現」など数字を冒頭に大きく置く`,
+    ``,
+    `NGパターン:`,
+    `・ロゴやタイトル画面から始める（スキップされやすい）`,
+    `・暗い・ブレた映像（0.5秒以内に離脱される）`,
+    `・無音で始まる（音があると続きを見てもらいやすい）`,
+  ].join("\n");
+};
+
+const buildStoryStampAdvice = (params: {
+  productName: string;
+  postTitle: string;
+}): string => {
+  const product = params.productName || "商品";
+  const titleSnippet = params.postTitle ? params.postTitle.slice(0, 20) : `${product}について`;
+
+  return [
+    `ストーリーズのスタンプ活用案を3つ提案します。`,
+    ``,
+    `案1（アンケートスタンプ）: 「${titleSnippet}、気になる？」YES / NO で反応を集める`,
+    `案2（投票スタンプ）: 「どちらが好き？」A案 vs B案 で参加ハードルを下げる`,
+    `案3（質問スタンプ）: 「${product}について聞きたいことは？」自由入力で深いエンゲージを得る`,
+    ``,
+    `活用ポイント:`,
+    `・スタンプは画面中央〜下部に置くと押されやすい`,
+    `・回答後に「教えてくれてありがとう！」とDMや次のストーリーで返すと信頼感アップ`,
+    `・アンケート結果は翌日ストーリーで共有すると継続視聴につながる`,
+  ].join("\n");
+};
+
+// ── ルートハンドラ ──────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
@@ -184,49 +247,79 @@ export async function POST(request: NextRequest) {
     const activeTitle = draftTitle || generatedTitle;
     const activeContent = draftContent || generatedContent;
 
-    const imageConsult = includesAny(message, ["画像", "写真", "素材", "ビジュアル", "サムネ", "どんな画像"]);
+    // 質問タイプ判定
+    const imageConsult     = includesAny(message, ["画像", "写真", "素材", "ビジュアル", "サムネ", "どんな画像"]);
     const compositionConsult = includesAny(message, ["構図", "アングル", "フレーミング", "1枚目の構図"]);
     const textOverlayConsult = includesAny(message, ["テキスト入れるなら", "テキスト入れ", "文字入れ", "オーバーレイ", "テキストは"]);
+    const videoConsult     = includesAny(message, ["動画", "どんな動画", "映像", "ムービー", "どんな動画が合う"]);
+    const reelOpeningConsult = includesAny(message, ["冒頭3秒", "冒頭", "つかみ", "オープニング"]);
+    const storyStampConsult  = includesAny(message, ["スタンプ", "アンケート", "投票", "スライダー", "スタンプ活用"]);
 
-    // 構図相談
+    // ── リール動画相談 ──
+    if (videoConsult || (postType === "reel" && imageConsult)) {
+      const reply = buildVideoAdvice({ productName: resolvedProductName, postTitle: activeTitle });
+      return NextResponse.json({
+        success: true,
+        data: {
+          reply,
+          suggestedQuestions: ["冒頭3秒は？", "テキスト入れるなら何？"],
+        },
+      });
+    }
+
+    // ── リール冒頭3秒相談 ──
+    if (reelOpeningConsult) {
+      const reply = buildReelOpeningAdvice({ productName: resolvedProductName, postTitle: activeTitle });
+      return NextResponse.json({
+        success: true,
+        data: {
+          reply,
+          suggestedQuestions: ["どんな動画が合う？", "テキスト入れるなら何？"],
+        },
+      });
+    }
+
+    // ── ストーリーズ スタンプ相談 ──
+    if (storyStampConsult) {
+      const reply = buildStoryStampAdvice({ productName: resolvedProductName, postTitle: activeTitle });
+      return NextResponse.json({
+        success: true,
+        data: {
+          reply,
+          suggestedQuestions: ["どんな画像が合う？", "テキスト入れるなら何？"],
+        },
+      });
+    }
+
+    // ── 構図相談 ──
     if (compositionConsult) {
-      const reply = buildCompositionAdvice({
-        productName: resolvedProductName,
-        postType,
-        postTitle: activeTitle,
-      });
+      const reply = buildCompositionAdvice({ productName: resolvedProductName, postType, postTitle: activeTitle });
       return NextResponse.json({
         success: true,
         data: {
           reply,
-          suggestedQuestions: [
-            "どんな画像が合う？",
-            "テキスト入れるなら何？",
-          ],
+          suggestedQuestions: postType === "reel"
+            ? ["どんな動画が合う？", "テキスト入れるなら何？"]
+            : ["どんな画像が合う？", "テキスト入れるなら何？"],
         },
       });
     }
 
-    // テキストオーバーレイ相談
+    // ── テキストオーバーレイ相談 ──
     if (textOverlayConsult) {
-      const reply = buildTextOverlayAdvice({
-        productName: resolvedProductName,
-        postType,
-        postTitle: activeTitle,
-      });
+      const reply = buildTextOverlayAdvice({ productName: resolvedProductName, postType, postTitle: activeTitle });
       return NextResponse.json({
         success: true,
         data: {
           reply,
-          suggestedQuestions: [
-            "どんな画像が合う？",
-            "1枚目の構図は？",
-          ],
+          suggestedQuestions: postType === "reel"
+            ? ["どんな動画が合う？", "冒頭3秒は？"]
+            : ["どんな画像が合う？", "1枚目の構図は？"],
         },
       });
     }
 
-    // 画像相談（商品が複数あり未選択の場合）
+    // ── 画像相談（商品が複数あり未選択の場合）──
     if (imageConsult && productNames.length > 1 && !resolvedProductName) {
       return NextResponse.json({
         success: true,
@@ -237,7 +330,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 画像相談（商品確定済み）
+    // ── 画像相談（商品確定済み）──
     if (imageConsult && resolvedProductName) {
       const ideas = buildImageIdeasForProduct(resolvedProductName, postType);
       const reply = [
@@ -273,11 +366,11 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           reply: "商品・投稿タイプを教えていただければ、具体案を作成します。",
-          suggestedQuestions: [
-            "どんな画像が合う？",
-            "1枚目の構図は？",
-            "テキスト入れるなら何？",
-          ],
+          suggestedQuestions: postType === "reel"
+            ? ["どんな動画が合う？", "冒頭3秒は？", "テキスト入れるなら何？"]
+            : postType === "story"
+            ? ["どんな画像が合う？", "スタンプ活用は？", "テキスト入れるなら何？"]
+            : ["どんな画像が合う？", "1枚目の構図は？", "テキスト入れるなら何？"],
         },
       });
     }
