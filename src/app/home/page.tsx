@@ -3533,24 +3533,91 @@ export default function HomePage() {
                 閉じる
               </button>
             </div>
-            {advisorPostOptions.length > 0 && (
-              <div className="border-b border-gray-100 px-3 py-1.5 bg-white flex items-center gap-2">
-                <span className="text-[10px] text-gray-400 whitespace-nowrap flex-shrink-0">参照中:</span>
+            {/* 投稿タイプ・商品選択・アクションパネル */}
+            <div className="border-b border-gray-100 bg-white px-3 py-2 space-y-2">
+              {/* 投稿タイプ */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-500 whitespace-nowrap w-[4.5rem] flex-shrink-0">投稿タイプ</span>
                 <select
-                  value={activeAdvisorPost?.key || ""}
-                  onChange={(e) => {
-                    setAdvisorContextPostKey(e.target.value || null);
-                  }}
-                  className="flex-1 text-[11px] text-gray-700 border border-gray-200 px-2 py-0.5 bg-white min-w-0 truncate"
+                  value={homePostType}
+                  onChange={(e) => setHomePostType(e.target.value as "feed" | "reel" | "story")}
+                  className="flex-1 text-[11px] text-gray-700 border border-gray-200 px-2 py-1 bg-white"
                 >
-                  {advisorPostOptions.map((opt) => (
-                    <option key={opt.key} value={opt.key}>
-                      {opt.label}
-                    </option>
-                  ))}
+                  <option value="feed">フィード</option>
+                  <option value="reel">リール</option>
+                  <option value="story">ストーリーズ</option>
                 </select>
               </div>
-            )}
+              {/* 商品・サービス選択 */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-500 whitespace-nowrap w-[4.5rem] flex-shrink-0">商品・サービス</span>
+                {onboardingProducts.length > 0 ? (
+                  <select
+                    value={homeSelectedProductId}
+                    onChange={(e) => setHomeSelectedProductId(e.target.value)}
+                    className="flex-1 text-[11px] text-gray-700 border border-gray-200 px-2 py-1 bg-white min-w-0"
+                  >
+                    <option value="">選択しない</option>
+                    {onboardingProducts.map((product, index) => {
+                      const key = String(product?.id || product?.name || `idx-${index}`);
+                      return (
+                        <option key={key} value={key}>
+                          {String(product?.name || "商品名未設定")}
+                        </option>
+                      );
+                    })}
+                  </select>
+                ) : (
+                  <span className="text-[10px] text-gray-400">オンボーディング未設定</span>
+                )}
+              </div>
+              {/* アクションボタン */}
+              <div className="flex gap-1.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const productName = selectedProductName || "この商品";
+                    const typeLabel = homePostType === "reel" ? "リール" : homePostType === "story" ? "ストーリーズ" : "フィード";
+                    void sendAdvisorMessage(`${productName}の${typeLabel}に合う画像案を提案して`);
+                  }}
+                  disabled={isAdvisorLoading}
+                  className="flex-1 px-2 py-1.5 text-[11px] font-medium border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60"
+                >
+                  画像案を出す
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const productName = selectedProductName || "この商品";
+                    const typeLabel = homePostType === "reel" ? "リール" : homePostType === "story" ? "ストーリーズ" : "フィード";
+                    void sendAdvisorMessage(`${productName}の${typeLabel}向けの動画構成案を出して`);
+                  }}
+                  disabled={isAdvisorLoading}
+                  className="flex-1 px-2 py-1.5 text-[11px] font-medium border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60"
+                >
+                  動画構成案を出す
+                </button>
+              </div>
+              {/* 参照中投稿（生成済みがある場合） */}
+              {advisorPostOptions.length > 0 && (
+                <div className="flex items-center gap-2 pt-0.5 border-t border-gray-100">
+                  <span className="text-[10px] text-gray-400 whitespace-nowrap flex-shrink-0">参照投稿:</span>
+                  <select
+                    value={activeAdvisorPost?.key || ""}
+                    onChange={(e) => {
+                      setAdvisorContextPostKey(e.target.value || null);
+                    }}
+                    className="flex-1 text-[11px] text-gray-700 border border-gray-200 px-2 py-0.5 bg-white min-w-0 truncate"
+                  >
+                    {advisorPostOptions.map((opt) => (
+                      <option key={opt.key} value={opt.key}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2 px-3 py-3 bg-gray-50">
               {advisorMessages.map((msg) => (
                 <div key={msg.id} className={`flex items-end gap-2 ${msg.role === "assistant" ? "justify-start" : "justify-end"}`}>
@@ -3612,7 +3679,7 @@ export default function HomePage() {
                       void sendAdvisorMessage(advisorInput);
                     }
                   }}
-                  placeholder="その他の質問はこちらへ..."
+                  placeholder="投稿文を入れて画像・動画を相談する..."
                   className="flex-1 px-3 py-2.5 border border-gray-300 text-sm bg-white"
                 />
                 <button
