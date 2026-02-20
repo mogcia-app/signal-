@@ -350,6 +350,7 @@ export default function HomePage() {
   ]);
   // null = 自動検出、string = ユーザーが選択したキー
   const [advisorContextPostKey, setAdvisorContextPostKey] = useState<string | null>(null);
+  const isAdvisorOpenRef = useRef(false);
   const planCardRef = useRef<HTMLDivElement | null>(null);
   const postComposerRef = useRef<HTMLDivElement | null>(null);
   const [isPlanCardHighlighted, setIsPlanCardHighlighted] = useState(false);
@@ -369,6 +370,9 @@ export default function HomePage() {
     const productSelectKey = String(product?.id || product?.name || `idx-${index}`);
     return productSelectKey === homeSelectedProductId;
   })?.name;
+
+  // isAdvisorOpenRef を毎レンダーで同期（effect内でのstale closure対策）
+  isAdvisorOpenRef.current = isAdvisorOpen;
 
   // チャット参照ポストの選択肢（生成済み候補 + 下書き）
   const advisorPostOptions = (() => {
@@ -490,6 +494,22 @@ export default function HomePage() {
   // isAdvisorOpen と advisorContextPostKey の変化でのみリセットする（会話中途リセット防止）
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdvisorOpen, advisorContextPostKey]);
+
+  // チャットが開いている間に候補が到着したとき、会話未開始ならグリーティングを更新
+  useEffect(() => {
+    if (!isAdvisorOpenRef.current || homeGeneratedCandidates.length === 0) {return;}
+    const post = activeAdvisorPost;
+    const greeting = buildAdvisorGreeting(post);
+    const buttons = buildAdvisorButtons(post?.postType || "feed");
+    setAdvisorMessages((prev) => {
+      // 会話が始まっている（ユーザー発言がある）場合はリセットしない
+      if (prev.some((m) => m.role === "user")) {return prev;}
+      return [{ id: `advisor-initial-${Date.now()}`, role: "assistant", text: greeting }];
+    });
+    setAdvisorSuggestedQuestions(buttons);
+  // homeGeneratedCandidates.length の変化でのみ実行。activeAdvisorPost は closure から取得
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homeGeneratedCandidates.length]);
 
   const parseSavedWeekDays = (value: unknown): WeekDay[] => {
     if (!Array.isArray(value)) {return [];}
