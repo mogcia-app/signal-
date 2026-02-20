@@ -820,7 +820,19 @@ export default function HomePage() {
         const response = await authFetch("/api/home/advisor-chat");
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result?.success || !result?.data) {
-          resetAdvisorFlow();
+          setAdvisorIntent("image-fit");
+          setAdvisorSource("undecided");
+          setAdvisorPostType("feed");
+          setSelectedAdvisorProductId("");
+          setAdvisorProductConfigured(false);
+          setAdvisorMessages([
+            {
+              id: `advisor-initial-${Date.now()}`,
+              role: "assistant",
+              text: `こんにちは${userName}さん\nどのようなことでお困りですか？`,
+            },
+          ]);
+          setAdvisorSuggestedQuestions(["画像作成のコツを教えて", "動画作成のコツを教えて"]);
           return;
         }
 
@@ -868,24 +880,50 @@ export default function HomePage() {
           const lastAssistantText = [...messages].reverse().find((msg) => msg.role === "assistant")?.text || "";
           if (isImageProposalReply(lastAssistantText) || isVideoProposalReply(lastAssistantText)) {
             setAdvisorProductConfigured(true);
-            setAdvisorSuggestedQuestions(advisorFollowupQuestions);
+            setAdvisorSuggestedQuestions(["別トーンでもう1案ください", "他の相談もする"]);
           } else {
             const restoredQuestions = normalizeAdvisorQuestions(result.data.suggestedQuestions);
-            setAdvisorSuggestedQuestions(restoredQuestions.length > 0 ? restoredQuestions : advisorInitialQuestions);
+            setAdvisorSuggestedQuestions(
+              restoredQuestions.length > 0 ? restoredQuestions : ["画像作成のコツを教えて", "動画作成のコツを教えて"]
+            );
           }
         } else {
-          resetAdvisorFlow();
+          setAdvisorIntent("image-fit");
+          setAdvisorSource("undecided");
+          setAdvisorPostType("feed");
+          setSelectedAdvisorProductId("");
+          setAdvisorProductConfigured(false);
+          setAdvisorMessages([
+            {
+              id: `advisor-initial-${Date.now()}`,
+              role: "assistant",
+              text: `こんにちは${userName}さん\nどのようなことでお困りですか？`,
+            },
+          ]);
+          setAdvisorSuggestedQuestions(["画像作成のコツを教えて", "動画作成のコツを教えて"]);
         }
       } catch (error) {
         console.error("ホーム相談チャット履歴復元エラー:", error);
-        resetAdvisorFlow();
+        setAdvisorIntent("image-fit");
+        setAdvisorSource("undecided");
+        setAdvisorPostType("feed");
+        setSelectedAdvisorProductId("");
+        setAdvisorProductConfigured(false);
+        setAdvisorMessages([
+          {
+            id: `advisor-initial-${Date.now()}`,
+            role: "assistant",
+            text: `こんにちは${userName}さん\nどのようなことでお困りですか？`,
+          },
+        ]);
+        setAdvisorSuggestedQuestions(["画像作成のコツを教えて", "動画作成のコツを教えて"]);
       } finally {
         setHasLoadedAdvisorHistory(true);
       }
     };
 
     void loadAdvisorHistory();
-  }, [hasLoadedAdvisorHistory, isAdvisorOpen, user?.uid]);
+  }, [hasLoadedAdvisorHistory, isAdvisorOpen, user?.uid, userName]);
 
   // 明日の準備を取得
   useEffect(() => {
@@ -2036,26 +2074,6 @@ export default function HomePage() {
     return "フィード";
   };
   const getDirectionLabel = (value?: string): string => String(value || "").trim().replace(/系$/, "") || "商品紹介";
-  const getAimLabelFromPurpose = (purpose: string): string => {
-    const normalized = String(purpose || "").trim();
-    switch (normalized) {
-      case "認知拡大":
-        return "リーチ";
-      case "採用・リクルーティング強化":
-      case "求人・リクルート強化":
-        return "プロフィール遷移";
-      case "商品・サービスの販売促進":
-        return "保存率";
-      case "ファンを作りたい":
-        return "保存率";
-      case "来店・問い合わせを増やしたい":
-        return "プロフィール遷移";
-      case "企業イメージ・ブランディング":
-        return "いいね";
-      default:
-        return "保存率";
-    }
-  };
   const getDirectionGuideSteps = (directionRaw: string, type: "feed" | "reel" | "story"): string[] => {
     const direction = getDirectionLabel(directionRaw);
     if (direction.includes("比較")) {

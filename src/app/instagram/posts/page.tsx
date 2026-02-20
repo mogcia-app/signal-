@@ -231,7 +231,7 @@ export default function InstagramPostsPage() {
       ? "今月のAI残回数: 無制限"
       : `今月のAI残回数: ${Math.max(aiUsageSummary?.remaining || 0, 0)}回`;
 
-  const applyUsageFromApi = (value: unknown) => {
+  const applyUsageFromApi = useCallback((value: unknown) => {
     if (!value || typeof value !== "object") {return;}
     const row = value as { month?: unknown; limit?: unknown; used?: unknown; remaining?: unknown; breakdown?: unknown };
     const month = String(row.month || "").trim();
@@ -243,7 +243,7 @@ export default function InstagramPostsPage() {
       remaining: row.remaining === null ? null : Number(row.remaining || 0),
       breakdown: row.breakdown && typeof row.breakdown === "object" ? (row.breakdown as Record<string, number>) : {},
     });
-  };
+  }, [setAiUsageSummary]);
 
   // URLパラメータから初期タブを取得
   const getInitialTab = (): "all" | "feed" | "reel" | "story" => {
@@ -671,7 +671,7 @@ export default function InstagramPostsPage() {
         setAdvisorLoading(false);
       }
     },
-    [advisorLoading, selectedAdvisorPostId],
+    [advisorLoading, applyUsageFromApi, selectedAdvisorPostId],
   );
 
   useEffect(() => {
