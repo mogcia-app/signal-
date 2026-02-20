@@ -1,12 +1,12 @@
 /**
  * プラン階層別アクセス制御ユーティリティ
  * 
- * ユーザーのプラン階層（梅・竹・松）に基づいて、各機能へのアクセス権限を管理します。
+ * ユーザーのプラン階層（ベーシック・スタンダード・プロ）に基づいて、各機能へのアクセス権限を管理します。
  */
 
 import { UserProfile } from "@/types/user";
 
-export type PlanTier = "ume" | "take" | "matsu";
+export type PlanTier = "basic" | "standard" | "pro";
 
 /**
  * 各プラン階層で利用可能な機能の定義
@@ -18,7 +18,7 @@ export type PlanTier = "ume" | "take" | "matsu";
  * 例: canAccessAnalytics → canAccessPostAnalytics, canAccessKPIAnalytics
  */
 export const PLAN_FEATURES = {
-  ume: {
+  basic: {
     canAccessLab: true, // 投稿ラボ
     canAccessPosts: false, // 投稿一覧（将来的には canAccessPostList, canAccessPostDetail に分割可能）
     canAccessAnalytics: false, // 投稿分析（将来的には canAccessPostAnalytics, canAccessKPIAnalytics に分割可能）
@@ -26,9 +26,9 @@ export const PLAN_FEATURES = {
     canAccessReport: false, // レポート
     canAccessKPI: false, // KPIダッシュボード（将来的には canAccessKPI として独立）
     canAccessLearning: false, // 学習ページ
-    canAccessHome: false, // ホームページ（松プランのみアクセス可能）
+    canAccessHome: false, // ホームページ（プロプランのみアクセス可能）
   },
-  take: {
+  standard: {
     canAccessLab: true, // 投稿ラボ
     canAccessPosts: true, // 投稿一覧
     canAccessAnalytics: false, // 投稿分析
@@ -36,9 +36,9 @@ export const PLAN_FEATURES = {
     canAccessReport: false, // レポート
     canAccessKPI: false, // KPIダッシュボード
     canAccessLearning: false, // 学習ページ
-    canAccessHome: false, // ホームページ（松プランのみアクセス可能）
+    canAccessHome: false, // ホームページ（プロプランのみアクセス可能）
   },
-  matsu: {
+  pro: {
     canAccessLab: true, // 投稿ラボ
     canAccessPosts: true, // 投稿一覧
     canAccessAnalytics: true, // 投稿分析
@@ -46,11 +46,11 @@ export const PLAN_FEATURES = {
     canAccessReport: true, // レポート
     canAccessKPI: true, // KPIダッシュボード
     canAccessLearning: true, // 学習ページ
-    canAccessHome: true, // ホームページ（松プランのみアクセス可能）
+    canAccessHome: true, // ホームページ（プロプランのみアクセス可能）
   },
 } as const;
 
-export type PlanFeature = keyof typeof PLAN_FEATURES.ume;
+export type PlanFeature = keyof typeof PLAN_FEATURES.basic;
 
 /**
  * プランアクセス情報の型
@@ -58,13 +58,21 @@ export type PlanFeature = keyof typeof PLAN_FEATURES.ume;
 export type PlanAccess = typeof PLAN_FEATURES[PlanTier];
 
 /**
- * ユーザーのプラン階層を取得（デフォルトは"ume"）
+ * ユーザーのプラン階層を取得（デフォルトは"basic"）
  * 
  * @param userProfile - ユーザープロフィール
  * @returns プラン階層
  */
 export function getUserPlanTier(userProfile: UserProfile | null | undefined): PlanTier {
-  return userProfile?.planTier || "ume";
+  const rawTier = String(userProfile?.planTier || "").trim().toLowerCase();
+  if (rawTier === "basic" || rawTier === "standard" || rawTier === "pro") {
+    return rawTier as PlanTier;
+  }
+  // 旧値との互換性を維持
+  if (rawTier === "ume") {return "basic";}
+  if (rawTier === "take") {return "standard";}
+  if (rawTier === "matsu") {return "pro";}
+  return "basic";
 }
 
 /**
@@ -100,9 +108,9 @@ export function getAccessDeniedMessage(feature: string): string {
  */
 export function getPlanTierDisplayName(tier: PlanTier): string {
   const names = {
-    ume: "梅プラン",
-    take: "竹プラン",
-    matsu: "松プラン",
+    basic: "ベーシックプラン",
+    standard: "スタンダードプラン",
+    pro: "プロプラン",
   };
   return names[tier];
 }
@@ -115,9 +123,9 @@ export function getPlanTierDisplayName(tier: PlanTier): string {
  */
 export function getPlanTierPrice(tier: PlanTier): number {
   const prices = {
-    ume: 15000,
-    take: 30000,
-    matsu: 60000,
+    basic: 15000,
+    standard: 30000,
+    pro: 60000,
   };
   return prices[tier];
 }
@@ -147,4 +155,3 @@ export function getPlanAccess(
   const tier = getUserPlanTier(userProfile);
   return PLAN_FEATURES[tier];
 }
-

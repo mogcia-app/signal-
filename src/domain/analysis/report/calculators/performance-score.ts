@@ -5,10 +5,12 @@ export function calculatePerformanceScore(params: {
   analyzedCount: number;
   hasPlan: boolean;
   totalLikes: number;
-  totalReach: number;
-  totalSaves: number;
   totalComments: number;
+  totalShares: number;
+  totalReposts: number;
+  totalSaves: number;
   totalFollowerIncrease: number;
+  totalReach: number;
   analyticsData: AnalyticsData[];
 }): PerformanceScoreResult {
   const {
@@ -16,10 +18,12 @@ export function calculatePerformanceScore(params: {
     analyzedCount,
     hasPlan,
     totalLikes,
-    totalReach,
-    totalSaves,
     totalComments,
+    totalShares,
+    totalReposts,
+    totalSaves,
     totalFollowerIncrease,
+    totalReach,
     analyticsData,
   } = params;
 
@@ -37,10 +41,14 @@ export function calculatePerformanceScore(params: {
       },
       kpis: {
         totalLikes: 0,
-        totalReach: 0,
-        totalSaves: 0,
         totalComments: 0,
+        totalShares: 0,
+        totalReposts: 0,
+        totalSaves: 0,
         totalFollowerIncrease: 0,
+        totalReach: 0,
+        engagementRate: null,
+        engagementRateNeedsReachInput: false,
       },
       metrics: {
         postCount: 0,
@@ -82,6 +90,28 @@ export function calculatePerformanceScore(params: {
   let label: string;
   let color: string;
 
+  const engagementTargetPosts = analyticsData.filter(
+    (data) => data.postType === "feed" || data.postType === "reel"
+  );
+  const engagementReachPosts = engagementTargetPosts.filter((data) => (data.reach || 0) > 0);
+  const engagementRateNeedsReachInput =
+    engagementTargetPosts.length > 0 &&
+    engagementReachPosts.length === 0;
+  const engagementRate = (() => {
+    if (engagementTargetPosts.length === 0 || engagementRateNeedsReachInput) {
+      return null;
+    }
+    const numerator = engagementReachPosts.reduce(
+      (sum, data) => sum + (data.likes || 0) + (data.comments || 0) + (data.saves || 0),
+      0
+    );
+    const denominator = engagementReachPosts.reduce((sum, data) => sum + (data.reach || 0), 0);
+    if (denominator <= 0) {
+      return null;
+    }
+    return (numerator / denominator) * 100;
+  })();
+
   if (totalScore >= 85) {
     rating = "S";
     label = "業界トップ0.1%";
@@ -116,10 +146,14 @@ export function calculatePerformanceScore(params: {
     breakdown,
     kpis: {
       totalLikes,
-      totalReach,
-      totalSaves,
       totalComments,
+      totalShares,
+      totalReposts,
+      totalSaves,
       totalFollowerIncrease,
+      totalReach,
+      engagementRate,
+      engagementRateNeedsReachInput,
     },
     metrics: {
       postCount,

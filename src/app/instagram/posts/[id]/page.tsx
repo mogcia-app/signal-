@@ -121,7 +121,7 @@ export default function PostDetailPage() {
   // プラン階層別アクセス制御: 梅プランでは投稿詳細にアクセスできない
   useEffect(() => {
     if (!profileLoading && !canAccessFeature(userProfile, "canAccessPosts")) {
-      router.push("/home");
+      router.push("/dashboard");
     }
   }, [userProfile, profileLoading, router]);
 
@@ -298,7 +298,7 @@ export default function PostDetailPage() {
   // プラン階層別アクセス制御: 梅プランでは投稿詳細にアクセスできない
   useEffect(() => {
     if (!profileLoading && !canAccessFeature(userProfile, "canAccessPosts")) {
-      router.push("/home");
+      router.push("/dashboard");
     }
   }, [userProfile, profileLoading, router]);
 

@@ -4,6 +4,10 @@ import { requireAuthContext } from "@/lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { adminDb } from "@/lib/firebase-admin";
 import { PURPOSE_TITLE_TEMPLATES, normalizePurposeKey } from "@/lib/ai/home-title-templates";
+import { getInstagramAlgorithmBrief } from "@/lib/ai/instagram-algorithm-brief";
+import { getMonthlyActionFocus } from "@/lib/ai/monthly-action-focus";
+import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
+import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
 
 type PostType = "feed" | "reel" | "story";
 
@@ -613,6 +617,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "OpenAI APIキーが未設定です" }, { status: 500 });
     }
 
+    const userProfile = await getUserProfile(uid);
+    await assertAiOutputAvailable({
+      uid,
+      userProfile,
+    });
+
     const suggestedTime = body.scheduledTime || defaultTimes[postType]?.[0] || "19:00";
     const typeLabel = postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード";
     const mode = body.mode || "default";
@@ -624,9 +634,11 @@ export async function POST(request: NextRequest) {
       String(body.regionRestriction || "") === "restricted" ? String(body.regionName || "").trim() : "";
     const avoidTitles = Array.isArray(body.avoidTitles) ? body.avoidTitles.map((v) => String(v || "").trim()).filter(Boolean) : [];
     const avoidTitleKeys = new Set(avoidTitles.map((title) => normalizeTitleKey(title)));
-    const userProfile = await getUserProfile(uid);
     const businessInfo = userProfile?.businessInfo ? (userProfile.businessInfo as unknown as Record<string, unknown>) : null;
     const businessContextLines = buildBusinessContext(businessInfo);
+    const algorithmBrief = await getInstagramAlgorithmBrief();
+    const monthlyActionFocus = await getMonthlyActionFocus(uid);
+    const monthlyActionFocusPrompt = monthlyActionFocus?.promptText || "";
     const productCandidates = buildProductCandidates(businessInfo);
     const selectedProduct = pickProductById(productCandidates, body.forcedProductId) || pickRandomProduct(productCandidates);
     const latestAdviceReference =
@@ -645,6 +657,8 @@ export async function POST(request: NextRequest) {
       body.scheduledDate ? `投稿日: ${body.scheduledDate}` : "",
       `投稿時間: ${suggestedTime}`,
       businessContextLines.length > 0 ? `\n【事業コンテキスト】\n${businessContextLines.join("\n")}` : "",
+      `\n【最新Instagram運用参照（固定ファイル）】\n${algorithmBrief}`,
+      monthlyActionFocusPrompt ? `\n【今月の注力施策】\n${monthlyActionFocusPrompt}` : "",
       inputTargetAudience ? `ターゲット属性: ${inputTargetAudience}` : "",
       `KPIタグ: [${kpiTag}]`,
       inputRegionName
@@ -808,6 +822,25 @@ export async function POST(request: NextRequest) {
         hasImage: Boolean(normalizedImageData),
       });
 
+    const usage = await consumeAiOutput({
+      uid,
+      userProfile,
+      feature: "home_post_generation",
+    });
+
+    await logImplicitAiAction({
+      uid,
+      feature: "home_post_generation",
+      title: monthlyActionFocus?.title || sanitizedTitle || "AI投稿文生成",
+      action: monthlyActionFocus?.action || "投稿文を生成して保存",
+      focusMonth: monthlyActionFocus?.month || "",
+      metadata: {
+        postType,
+        selectedProduct: selectedProduct?.name || "",
+        operationPurpose: operationPurpose || "",
+      },
+    });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -835,8 +868,25 @@ export async function POST(request: NextRequest) {
           : null,
         postHints: [primaryHint],
       },
+      usage,
     });
   } catch (error) {
+    if (error instanceof AiUsageLimitError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `今月のAI出力回数の上限に達しました（${error.month} / ${error.limit ?? "無制限"}回）。`,
+          code: "ai_output_limit_exceeded",
+          usage: {
+            month: error.month,
+            limit: error.limit,
+            used: error.used,
+            remaining: error.remaining,
+          },
+        },
+        { status: 429 }
+      );
+    }
     console.error("ホーム投稿生成エラー:", error);
     return NextResponse.json({ error: "投稿生成に失敗しました" }, { status: 500 });
   }

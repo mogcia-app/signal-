@@ -4,6 +4,7 @@ export interface MonthlyReviewStore {
   getMonthlyReview(userId: string, month: string): Promise<{
     review: string;
     actionPlans: ParsedActionPlan[];
+    isFallback?: boolean;
   } | null>;
   saveMonthlyReview(params: {
     userId: string;
@@ -44,19 +45,20 @@ export async function loadReusableMonthlyReview(params: {
   userId: string;
   month: string;
   forceRegenerate: boolean;
-}): Promise<{ monthlyReview: string | null; actionPlans: ParsedActionPlan[] }> {
+}): Promise<{ monthlyReview: string | null; actionPlans: ParsedActionPlan[]; isFallback: boolean }> {
   if (params.forceRegenerate) {
-    return { monthlyReview: null, actionPlans: [] };
+    return { monthlyReview: null, actionPlans: [], isFallback: false };
   }
 
   const saved = await params.store.getMonthlyReview(params.userId, params.month);
   if (!saved) {
-    return { monthlyReview: null, actionPlans: [] };
+    return { monthlyReview: null, actionPlans: [], isFallback: false };
   }
 
   return {
     monthlyReview: saved.review || null,
     actionPlans: saved.actionPlans || [],
+    isFallback: Boolean(saved.isFallback),
   };
 }
 
@@ -90,23 +92,25 @@ export async function persistGeneratedMonthlyReview(params: {
   analyzedCount: number;
   postsForDirection: DirectionPostInput[];
 }): Promise<void> {
+  const enrichedActionPlans = enrichActionPlans(params.actionPlans);
+
   await params.store.saveMonthlyReview({
     userId: params.userId,
     month: params.month,
     review: params.review,
-    actionPlans: params.actionPlans,
+    actionPlans: enrichedActionPlans,
     hasPlan: params.hasPlan,
     analyzedCount: params.analyzedCount,
     isFallback: false,
     merge: false,
   });
 
-  if (params.actionPlans.length === 0) {
+  if (enrichedActionPlans.length === 0) {
     return;
   }
 
   const nextMonth = toNextMonth(params.month);
-  const direction = buildDirectionDraft(params.actionPlans, params.postsForDirection);
+  const direction = buildDirectionDraft(enrichedActionPlans, params.postsForDirection);
 
   await params.store.upsertAiDirection({
     userId: params.userId,
@@ -164,6 +168,44 @@ function buildDirectionDraft(actionPlans: ParsedActionPlan[], posts: DirectionPo
     postingRules: postingRules.length > 0 ? postingRules : ["1投稿1メッセージ"],
     optimalPostingTime: calculateOptimalPostingTime(posts),
   };
+}
+
+function inferKpiMeta(plan: ParsedActionPlan): {
+  kpiKey: "likes" | "comments" | "shares" | "saves" | "reach" | "followerIncrease";
+  kpiLabel: string;
+} {
+  const text = `${plan.title} ${plan.description} ${plan.action}`.toLowerCase();
+  if (/(保存|save)/.test(text)) {
+    return { kpiKey: "saves", kpiLabel: "保存" };
+  }
+  if (/(コメント|comment)/.test(text)) {
+    return { kpiKey: "comments", kpiLabel: "コメント" };
+  }
+  if (/(シェア|共有|share|repost)/.test(text)) {
+    return { kpiKey: "shares", kpiLabel: "シェア" };
+  }
+  if (/(リーチ|閲覧|reach)/.test(text)) {
+    return { kpiKey: "reach", kpiLabel: "リーチ" };
+  }
+  if (/(フォロワー|follower)/.test(text)) {
+    return { kpiKey: "followerIncrease", kpiLabel: "フォロワー増減" };
+  }
+  return { kpiKey: "likes", kpiLabel: "いいね" };
+}
+
+function enrichActionPlans(actionPlans: ParsedActionPlan[]): ParsedActionPlan[] {
+  return actionPlans.map((plan) => {
+    if (plan.kpiKey && plan.kpiLabel) {
+      return plan;
+    }
+    const inferred = inferKpiMeta(plan);
+    return {
+      ...plan,
+      kpiKey: inferred.kpiKey,
+      kpiLabel: inferred.kpiLabel,
+      evaluationRule: "increase_vs_previous_month",
+    };
+  });
 }
 
 function calculateOptimalPostingTime(posts: DirectionPostInput[]): string | null {

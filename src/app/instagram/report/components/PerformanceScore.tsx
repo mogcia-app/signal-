@@ -15,10 +15,14 @@ interface PerformanceScoreProps {
   };
   kpis: {
     totalLikes: number;
-    totalReach: number;
-    totalSaves: number;
     totalComments: number;
+    totalShares: number;
+    totalReposts: number;
+    totalSaves: number;
     totalFollowerIncrease: number;
+    totalReach: number;
+    engagementRate: number | null;
+    engagementRateNeedsReachInput: boolean;
   };
   metrics: {
     postCount: number;
@@ -58,7 +62,7 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
       {/* KPI表示 */}
       <div className="mb-4">
         <h3 className="text-xs font-semibold text-gray-700 mb-2">主要KPI</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2 md:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-2 md:gap-3">
           <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-gray-700 mb-0.5 sm:mb-1">いいね数</p>
             <p className="text-sm sm:text-base md:text-lg font-bold text-[#ff8a15] break-all">
@@ -66,21 +70,27 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
             </p>
           </div>
           <div className="bg-white p-2 sm:p-3 border border-gray-200">
-            <p className="text-xs font-medium text-blue-700 mb-0.5 sm:mb-1">リーチ数</p>
-            <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 break-all">
-              {kpis.totalReach.toLocaleString()}
+            <p className="text-xs font-medium text-purple-700 mb-0.5 sm:mb-1">コメント数</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-purple-900 break-all">
+              {kpis.totalComments.toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
+            <p className="text-xs font-medium text-sky-700 mb-0.5 sm:mb-1">シェア数</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-sky-900 break-all">
+              {kpis.totalShares.toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
+            <p className="text-xs font-medium text-indigo-700 mb-0.5 sm:mb-1">リポスト数</p>
+            <p className="text-sm sm:text-base md:text-lg font-bold text-indigo-900 break-all">
+              {kpis.totalReposts.toLocaleString()}
             </p>
           </div>
           <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-green-700 mb-0.5 sm:mb-1">保存数</p>
             <p className="text-sm sm:text-base md:text-lg font-bold text-green-900 break-all">
               {kpis.totalSaves.toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-white p-2 sm:p-3 border border-gray-200">
-            <p className="text-xs font-medium text-purple-700 mb-0.5 sm:mb-1">コメント数</p>
-            <p className="text-sm sm:text-base md:text-lg font-bold text-purple-900 break-all">
-              {kpis.totalComments.toLocaleString()}
             </p>
           </div>
           <div className="bg-white p-2 sm:p-3 border border-gray-200">
@@ -91,6 +101,18 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
               {kpis.totalFollowerIncrease >= 0 ? "+" : ""}
               {kpis.totalFollowerIncrease.toLocaleString()}
             </p>
+          </div>
+          <div className="bg-white p-2 sm:p-3 border border-gray-200">
+            <p className="text-xs font-medium text-amber-700 mb-0.5 sm:mb-1">エンゲージメント率</p>
+            {kpis.engagementRateNeedsReachInput ? (
+              <p className="text-[11px] sm:text-xs font-medium text-gray-600 leading-relaxed">
+                閲覧数の入力が必要です
+              </p>
+            ) : (
+              <p className="text-sm sm:text-base md:text-lg font-bold text-amber-900 break-all">
+                {kpis.engagementRate === null ? "-" : `${kpis.engagementRate.toFixed(1)}%`}
+              </p>
+            )}
           </div>
         </div>
       </div>

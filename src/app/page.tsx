@@ -13,7 +13,7 @@ function HomeContent() {
     if (!loading) {
       if (user) {
         // 既にログインしている場合は/homeにリダイレクト
-        router.push("/home");
+        router.push("/dashboard");
       } else {
         // 未ログインの場合
         const userId = searchParams.get("userId");

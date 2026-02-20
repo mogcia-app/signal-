@@ -4,9 +4,11 @@ export interface AnalyticsData {
   likes: number;
   comments: number;
   shares: number;
+  reposts?: number;
   reach: number;
   saves?: number;
   followerIncrease?: number;
+  postType?: "feed" | "reel" | "story" | "carousel" | "video";
   publishedAt: Date | admin.firestore.Timestamp;
 }
 
@@ -23,10 +25,14 @@ export interface PerformanceScoreResult {
   };
   kpis: {
     totalLikes: number;
-    totalReach: number;
-    totalSaves: number;
     totalComments: number;
+    totalShares: number;
+    totalReposts: number;
+    totalSaves: number;
     totalFollowerIncrease: number;
+    totalReach: number;
+    engagementRate: number | null;
+    engagementRateNeedsReachInput: boolean;
   };
   metrics: {
     postCount: number;
@@ -39,6 +45,9 @@ export interface ParsedActionPlan {
   title: string;
   description: string;
   action: string;
+  kpiKey?: "likes" | "comments" | "shares" | "saves" | "reach" | "followerIncrease";
+  kpiLabel?: string;
+  evaluationRule?: "increase_vs_previous_month";
 }
 
 export interface AiTextGenerationRequest {

@@ -43,6 +43,9 @@ export interface ReportCompleteResult {
     actionPlans: ParsedActionPlan[];
     hasPlan: boolean;
     analyzedCount: number;
+    generationState: "locked" | "ready" | "generated";
+    requiredCount: number;
+    remainingCount: number;
   };
 }
 
@@ -50,6 +53,7 @@ interface BuildReportCompleteInput {
   userId: string;
   month: string;
   forceRegenerate: boolean;
+  allowAiGeneration: boolean;
   reportData: ReportRepositoryData;
   aiClient: AiClient | null;
   monthlyReviewStore: MonthlyReviewStore;
@@ -103,6 +107,13 @@ function buildPostsForDirection(postIds: string[], analyticsByPostId: Map<string
 }
 
 export async function buildReportComplete(input: BuildReportCompleteInput): Promise<ReportCompleteResult> {
+  const planStartDate = input.reportData.activePlan?.startDate || input.reportData.activePlan?.createdAt || null;
+  const planEndDate = input.reportData.activePlan?.endDate || null;
+  const hasPlan =
+    Boolean(input.reportData.activePlan) &&
+    (!planStartDate || planStartDate <= input.reportData.endDate) &&
+    (!planEndDate || planEndDate >= input.reportData.startDate);
+
   const postIdsInPeriod = new Set(input.reportData.posts);
   const analyticsByPostId = deduplicateAnalyticsByPost(input.reportData.analytics, postIdsInPeriod);
 
@@ -110,21 +121,22 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
     likes: data.likes,
     comments: data.comments,
     shares: data.shares,
+    reposts: data.reposts,
     reach: data.reach,
     saves: data.saves,
     followerIncrease: data.followerIncrease,
+    postType: data.postType,
     publishedAt: data.publishedAt,
   }));
 
   const postCount = postIdsInPeriod.size;
   const analyzedCount = validAnalyticsData.length;
-  const hasPlan = Boolean(input.reportData.activePlan);
-
   const totalLikes = validAnalyticsData.reduce((sum, data) => sum + data.likes, 0);
   const totalReach = validAnalyticsData.reduce((sum, data) => sum + data.reach, 0);
   const totalSaves = validAnalyticsData.reduce((sum, data) => sum + (data.saves || 0), 0);
   const totalComments = validAnalyticsData.reduce((sum, data) => sum + data.comments, 0);
   const totalShares = validAnalyticsData.reduce((sum, data) => sum + data.shares, 0);
+  const totalReposts = validAnalyticsData.reduce((sum, data) => sum + (data.reposts || 0), 0);
   const followerIncreaseFromPosts = validAnalyticsData.reduce((sum, data) => sum + (data.followerIncrease || 0), 0);
   const followerIncreaseFromOther = input.reportData.followerCount?.followers || 0;
   const totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
@@ -134,10 +146,12 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
     analyzedCount,
     hasPlan,
     totalLikes,
-    totalReach,
-    totalSaves,
     totalComments,
+    totalShares,
+    totalReposts,
+    totalSaves,
     totalFollowerIncrease,
+    totalReach,
     analyticsData: validAnalyticsData,
   });
 
@@ -203,7 +217,7 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
     postSummaries: validPostSummaries,
     totalReach,
     hasPlan,
-    plan: input.reportData.activePlan,
+    plan: hasPlan ? input.reportData.activePlan : null,
     user: input.reportData.user,
   });
 
@@ -213,6 +227,7 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
     userId: input.userId,
     month: input.month,
     forceRegenerate: input.forceRegenerate,
+    allowAiGeneration: input.allowAiGeneration,
     totals: {
       analyzedCount,
       hasPlan,
@@ -222,6 +237,8 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
       totalSaves,
       totalShares,
       totalFollowerIncrease,
+      engagementRate: performanceScore.kpis.engagementRate,
+      engagementRateNeedsReachInput: performanceScore.kpis.engagementRateNeedsReachInput,
       prevTotalReach: previous.totalReach,
       prevTotalFollowerIncrease: previous.totalFollowerIncrease,
     },
@@ -246,6 +263,9 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
       actionPlans: monthlyReview.actionPlans,
       hasPlan,
       analyzedCount,
+      generationState: monthlyReview.generationState,
+      requiredCount: monthlyReview.requiredCount,
+      remainingCount: monthlyReview.remainingCount,
     },
   };
 }

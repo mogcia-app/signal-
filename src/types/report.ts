@@ -137,6 +137,11 @@ export interface MonthlyReviewData {
   challenges: string[];
   nextActions: string[];
   actionPlans?: ActionPlan[];
+  hasPlan?: boolean;
+  analyzedCount?: number;
+  generationState?: "locked" | "ready" | "generated";
+  requiredCount?: number;
+  remainingCount?: number;
   kpiSummary?: {
     key: string;
     label: string;
@@ -163,10 +168,14 @@ export interface ReportData {
     };
     kpis: {
       totalLikes: number;
-      totalReach: number;
-      totalSaves: number;
       totalComments: number;
+      totalShares: number;
+      totalReposts: number;
+      totalSaves: number;
       totalFollowerIncrease: number;
+      totalReach: number;
+      engagementRate: number | null;
+      engagementRateNeedsReachInput: boolean;
     };
     metrics: {
       postCount: number;

@@ -14,6 +14,7 @@ export const monthlyReviewStore: MonthlyReviewStore = {
     return {
       review: data?.review || "",
       actionPlans: data?.actionPlans || [],
+      isFallback: Boolean(data?.isFallback),
     };
   },
 

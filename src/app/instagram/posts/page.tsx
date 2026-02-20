@@ -7,6 +7,7 @@ import SNSLayout from "../../../components/sns-layout";
 import { postsApi } from "../../../lib/api";
 import { useAuth } from "../../../contexts/auth-context";
 import { notify } from "../../../lib/ui/notifications";
+import { useAiUsageSummary } from "@/hooks/useAiUsageSummary";
 import {
   Image as ImageIcon,
   Heart,
@@ -19,8 +20,6 @@ import {
   CheckCircle,
   X,
   Bot,
-  Send,
-  Sparkles,
 } from "lucide-react";
 import type { AIReference, SnapshotReference } from "@/types/ai";
 
@@ -226,6 +225,25 @@ export default function InstagramPostsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabButtonsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const { usage: aiUsageSummary, refreshUsage, setUsage: setAiUsageSummary } = useAiUsageSummary(Boolean(user));
+  const aiUsageLabel =
+    aiUsageSummary?.remaining === null
+      ? "今月のAI残回数: 無制限"
+      : `今月のAI残回数: ${Math.max(aiUsageSummary?.remaining || 0, 0)}回`;
+
+  const applyUsageFromApi = (value: unknown) => {
+    if (!value || typeof value !== "object") {return;}
+    const row = value as { month?: unknown; limit?: unknown; used?: unknown; remaining?: unknown; breakdown?: unknown };
+    const month = String(row.month || "").trim();
+    if (!month) {return;}
+    setAiUsageSummary({
+      month,
+      limit: row.limit === null ? null : Number(row.limit || 0),
+      used: Number(row.used || 0),
+      remaining: row.remaining === null ? null : Number(row.remaining || 0),
+      breakdown: row.breakdown && typeof row.breakdown === "object" ? (row.breakdown as Record<string, number>) : {},
+    });
+  };
 
   // URLパラメータから初期タブを取得
   const getInitialTab = (): "all" | "feed" | "reel" | "story" => {
@@ -244,7 +262,6 @@ export default function InstagramPostsPage() {
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'post' | 'analytics'; id: string; onConfirm: () => void } | null>(null);
   const [advisorOpen, setAdvisorOpen] = useState(false);
-  const [advisorInput, setAdvisorInput] = useState("");
   const [advisorLoading, setAdvisorLoading] = useState(false);
   const [advisorPostFilter, setAdvisorPostFilter] = useState("");
   const [selectedAdvisorPostId, setSelectedAdvisorPostId] = useState("");
@@ -601,7 +618,6 @@ export default function InstagramPostsPage() {
         text: message,
       };
       setAdvisorMessages((prev) => [...prev, userMessage]);
-      setAdvisorInput("");
       setAdvisorLoading(true);
 
       try {
@@ -621,9 +637,11 @@ export default function InstagramPostsPage() {
               success?: boolean;
               data?: { reply?: string; suggestedQuestions?: string[] };
               error?: string;
+              usage?: unknown;
             }
           | null;
 
+        applyUsageFromApi(result?.usage);
         if (!response.ok || !result?.success || !result?.data?.reply) {
           throw new Error(result?.error || `HTTP error! status: ${response.status}`);
         }
@@ -785,7 +803,7 @@ export default function InstagramPostsPage() {
               </p>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => (window.location.href = "/home")}
+                  onClick={() => (window.location.href = "/dashboard")}
                   className="inline-flex items-center px-4 py-2 bg-orange-500 text-white  hover:bg-orange-600 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
                   aria-label="新しい投稿を作成する"
                 >
@@ -1145,177 +1163,177 @@ export default function InstagramPostsPage() {
           )}
         </div>
 
-        <button
-          onClick={() => setAdvisorOpen((prev) => !prev)}
-          className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 bg-gradient-to-r from-[#FF8A15] to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg hover:opacity-95"
-          aria-label="分析チャットを開く"
-        >
-          <Bot size={18} />
-          分析チャットβ
-        </button>
-
-        {advisorOpen && (
-          <section className="fixed bottom-24 right-6 z-40 flex h-[74vh] min-h-[620px] max-h-[840px] w-[min(96vw,620px)] flex-col overflow-hidden border border-gray-200 bg-white">
-            <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Bot size={18} className="text-[#ff8a15]" />
-                <h3 className="text-base font-bold text-gray-900">分析チャット（β）</h3>
-              </div>
-              <button
-                onClick={() => setAdvisorOpen(false)}
-                className="text-sm text-gray-500 hover:text-gray-700"
-                aria-label="閉じる"
-              >
-                閉じる
-              </button>
-            </header>
-
-            <div className="border-b border-gray-200 bg-[#fff9f3] p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-semibold text-gray-800">相談する投稿を選択</p>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center border border-[#ffd3a8] bg-white px-2 py-1 text-[11px] font-medium text-[#c76400]">
-                    対象 {filteredAdvisorPostOptions.length}件
-                  </span>
-                  {selectedAdvisorPostOption && (
-                    <button
-                      type="button"
-                      onClick={() => setIsAdvisorSelectorOpen((prev) => !prev)}
-                      className="border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      {isAdvisorSelectorOpen ? "閉じる" : "投稿を変更"}
-                    </button>
-                  )}
+        <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
+          {advisorOpen && (
+            <section className="flex h-[min(86vh,820px)] w-[min(94vw,430px)] flex-col overflow-hidden border border-gray-200 bg-white shadow-lg lg:w-[430px]">
+              <header className="flex items-center justify-between border-b border-gray-200 px-3 py-5">
+                <div className="flex items-center gap-1.5">
+                  <Bot className="h-3.5 w-3.5 text-orange-600" />
+                  <h3 className="text-xs font-semibold text-gray-800">分析チャットβ</h3>
                 </div>
-              </div>
-
-              {isAdvisorSelectorOpen && (
-                <>
-                  <label className="mb-1 block text-[11px] font-medium text-gray-600">絞り込み</label>
-                  <input
-                    type="text"
-                    value={advisorPostFilter}
-                    onChange={(event) => setAdvisorPostFilter(event.target.value)}
-                    placeholder="例: 新商品 / 02/18 / リール"
-                    className="mb-3 w-full border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#ff8a15] focus:outline-none"
-                  />
-
-                  <label className="mb-1 block text-[11px] font-medium text-gray-600">投稿を選択</label>
-                  <select
-                    value={selectedAdvisorPostId}
-                    onChange={(event) => {
-                      setSelectedAdvisorPostId(event.target.value);
-                      if (event.target.value) {
-                        setIsAdvisorSelectorOpen(false);
-                      }
-                    }}
-                    className="w-full border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#ff8a15] focus:outline-none"
-                  >
-                    {filteredAdvisorPostOptions.length === 0 ? (
-                      <option value="">保存済み分析データがある投稿がありません</option>
-                    ) : (
-                      filteredAdvisorPostOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.title} / {option.dateLabel} / {formatPostTypeLabel(option.postType)}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </>
-              )}
-
-              {selectedAdvisorPostOption && (
-                <div className="mt-3 border border-[#ffd9b5] bg-white p-2.5">
-                  <p className="mb-1 line-clamp-1 text-sm font-semibold text-gray-900">
-                    {selectedAdvisorPostOption.title}
-                  </p>
-                  <div className="flex items-center gap-2 text-[11px] text-gray-600">
-                    <span className="inline-flex bg-[#fff5ea] px-2 py-1 text-[#c76400]">
-                      {formatPostTypeLabel(selectedAdvisorPostOption.postType)}
-                    </span>
-                    <span>{selectedAdvisorPostOption.dateLabel}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex-1 space-y-3 overflow-y-auto bg-[#fafafa] px-4 py-4">
-              {advisorMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                <button
+                  onClick={() => setAdvisorOpen(false)}
+                  className="text-xs text-gray-500 hover:text-gray-700"
+                  aria-label="閉じる"
                 >
-                  <div
-                    className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 ${
-                      message.role === "user"
-                        ? "bg-gradient-to-r from-[#FF8A15] to-orange-500 text-white"
-                        : "border border-gray-200 bg-white text-gray-800 shadow-sm"
-                    }`}
-                  >
-                    {renderAdvisorMessage(message)}
-                  </div>
-                </div>
-              ))}
-              {advisorLoading && (
-                <div className="flex justify-start">
-                  <div className="max-w-[92%] rounded-2xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-600">
-                    回答を生成しています...
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-gray-200 bg-white px-3 py-3">
-              <div className="mb-2 flex flex-wrap gap-2">
-                {advisorSuggestedQuestions.map((question) => (
+                  閉じる
+                </button>
+              </header>
+              <div className="border-b border-gray-200 bg-gray-50 px-3 py-2">
+                <div className="flex items-center justify-between text-[11px] text-gray-600">
+                  <span>{aiUsageLabel}</span>
                   <button
-                    key={question}
                     type="button"
                     onClick={() => {
-                      void sendAdvisorMessage(question);
+                      void refreshUsage();
                     }}
-                    disabled={!selectedAdvisorPostId || advisorLoading}
-                    className="inline-flex items-center gap-1 border border-[#ffbe84] bg-[#fff5ea] px-2 py-1 text-xs font-medium text-[#c76400] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="text-gray-500 hover:text-gray-700"
                   >
-                    <Sparkles size={12} />
-                    {question}
+                    更新
                   </button>
+                </div>
+              </div>
+
+              <div className="border-b border-orange-300 bg-gradient-to-r from-[#FF8A15] to-orange-500 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-bold text-white">相談する投稿を選択</p>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center border border-[#ffd3a8] bg-white px-2 py-1 text-[11px] font-medium text-[#c76400]">
+                      対象 {filteredAdvisorPostOptions.length}件
+                    </span>
+                    {selectedAdvisorPostOption && (
+                      <button
+                        type="button"
+                        onClick={() => setIsAdvisorSelectorOpen((prev) => !prev)}
+                        className="border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        {isAdvisorSelectorOpen ? "閉じる" : "投稿を変更"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {isAdvisorSelectorOpen && (
+                  <>
+                    <label className="mb-1 block text-[11px] font-medium text-gray-600">絞り込み</label>
+                    <input
+                      type="text"
+                      value={advisorPostFilter}
+                      onChange={(event) => setAdvisorPostFilter(event.target.value)}
+                      placeholder="例: 新商品 / 02/18 / リール"
+                      className="mb-3 w-full border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#ff8a15] focus:outline-none"
+                    />
+
+                    <label className="mb-1 block text-[11px] font-medium text-gray-600">投稿を選択</label>
+                    <select
+                      value={selectedAdvisorPostId}
+                      onChange={(event) => {
+                        setSelectedAdvisorPostId(event.target.value);
+                        if (event.target.value) {
+                          setIsAdvisorSelectorOpen(false);
+                        }
+                      }}
+                      className="w-full border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#ff8a15] focus:outline-none"
+                    >
+                      {filteredAdvisorPostOptions.length === 0 ? (
+                        <option value="">保存済み分析データがある投稿がありません</option>
+                      ) : (
+                        filteredAdvisorPostOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.title} / {option.dateLabel} / {formatPostTypeLabel(option.postType)}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </>
+                )}
+
+                {selectedAdvisorPostOption && (
+                  <div className="mt-3 border border-[#ffd9b5] bg-white p-2.5">
+                    <p className="mb-1 line-clamp-1 text-sm font-semibold text-gray-900">
+                      {selectedAdvisorPostOption.title}
+                    </p>
+                    <div className="flex items-center gap-2 text-[11px] text-gray-600">
+                      <span className="inline-flex bg-[#fff5ea] px-2 py-1 text-[#c76400]">
+                        {formatPostTypeLabel(selectedAdvisorPostOption.postType)}
+                      </span>
+                      <span>{selectedAdvisorPostOption.dateLabel}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-2 bg-gray-50 px-3 py-3">
+                {advisorMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex items-end gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {message.role === "assistant" && (
+                      <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600">
+                        <Bot className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                    <div
+                      className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
+                        message.role === "user"
+                          ? "bg-gradient-to-r from-[#FF8A15] to-orange-500 text-white"
+                          : "border border-gray-200 bg-white text-gray-700"
+                      }`}
+                    >
+                      {renderAdvisorMessage(message)}
+                    </div>
+                  </div>
                 ))}
+                {advisorLoading && (
+                  <div className="flex items-end gap-2 justify-start">
+                    <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600">
+                      <Bot className="h-3.5 w-3.5" />
+                    </span>
+                    <div className="max-w-[88%] rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
+                      回答中...
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={advisorInput}
-                  onChange={(event) => setAdvisorInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      void sendAdvisorMessage(advisorInput);
-                    }
-                  }}
-                  disabled={!selectedAdvisorPostId || advisorLoading}
-                  placeholder={
-                    selectedAdvisorPostId
-                      ? "例: なぜ反応が弱かった？"
-                      : "先に投稿を選択してください"
-                  }
-                  className="h-10 flex-1 border border-gray-300 px-3 text-sm focus:border-[#ff8a15] focus:outline-none disabled:bg-gray-100"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    void sendAdvisorMessage(advisorInput);
-                  }}
-                  disabled={!advisorInput.trim() || !selectedAdvisorPostId || advisorLoading}
-                  className="inline-flex h-10 w-10 items-center justify-center bg-gradient-to-r from-[#FF8A15] to-orange-500 text-white disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label="送信"
-                >
-                  <Send size={16} />
-                </button>
+
+              {advisorSuggestedQuestions.length > 0 && (
+                <div className="border-t border-gray-200 px-3 py-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {advisorSuggestedQuestions.map((question) => (
+                      <button
+                        key={question}
+                        type="button"
+                        onClick={() => {
+                          void sendAdvisorMessage(question);
+                        }}
+                        disabled={!selectedAdvisorPostId || advisorLoading}
+                        className="px-2 py-1 text-[11px] border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-gray-200 px-3 py-2">
+                <p className="text-[11px] text-gray-500">
+                  質問は上の3ボタンから選択してください
+                </p>
               </div>
-            </div>
-          </section>
-        )}
+            </section>
+          )}
+
+          <button
+            onClick={() => setAdvisorOpen((prev) => !prev)}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FF8A15] to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg hover:opacity-95"
+            aria-label="分析チャットを開く"
+          >
+            <Bot size={18} />
+            分析チャットβ
+          </button>
+        </div>
       </SNSLayout>
     </>
   );

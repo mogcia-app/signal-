@@ -65,7 +65,7 @@ export interface UserProfile {
   billingInfo?: BillingInfo; // 課金情報
   notes?: string; // 管理者メモ
   setupRequired?: boolean; // 初期設定が必要かどうか
-  planTier?: "ume" | "take" | "matsu"; // プラン階層（梅・竹・松）
+  planTier?: "basic" | "standard" | "pro" | "ume" | "take" | "matsu"; // プラン階層（新旧互換）
   supportId?: string; // サポートID（UUID v4、adminで付与）
   ipHistory?: IPHistoryEntry[]; // IPアドレス履歴（最新50件まで）
   activePlanId?: string | null; // 唯一のアクティブ計画ID（最重要）

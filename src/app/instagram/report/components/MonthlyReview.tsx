@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Brain, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import React from "react";
+import { Brain } from "lucide-react";
 import type { ReportData } from "../../../../types/report";
+import { BotStatusCard } from "../../../../components/bot-status-card";
 
 interface MonthlyReviewProps {
   selectedMonth: string;
@@ -14,52 +15,54 @@ interface MonthlyReviewProps {
     totalFollowerIncrease: number;
   } | null;
   reportData?: ReportData | null;
-  onRegenerate?: () => void;
+  onGenerate?: () => void;
+  usageLabel?: string;
+  onRefreshUsage?: () => void;
+  isGenerating?: boolean;
 }
 
 interface MonthlyReviewData {
   review: string; // AI生成の振り返りテキスト
   hasPlan: boolean;
-  postCount: number;
   analyzedCount: number;
+  generationState: "locked" | "ready" | "generated";
+  requiredCount: number;
+  remainingCount: number;
 }
 
-export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth: _selectedMonth, kpis: _kpis, reportData, onRegenerate }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // reportDataから月次レビューデータを取得（useMemoでメモ化）
+export const MonthlyReview: React.FC<MonthlyReviewProps> = ({
+  selectedMonth: _selectedMonth,
+  kpis: _kpis,
+  reportData,
+  onGenerate,
+  usageLabel,
+  onRefreshUsage,
+  isGenerating = false,
+}) => {
   const reviewData: MonthlyReviewData | null = React.useMemo(() => {
-    const monthlyReview = reportData?.monthlyReview as { review?: string; hasPlan?: boolean; analyzedCount?: number } | undefined;
+    const monthlyReview = reportData?.monthlyReview as {
+      review?: string;
+      hasPlan?: boolean;
+      analyzedCount?: number;
+      generationState?: "locked" | "ready" | "generated";
+      requiredCount?: number;
+      remainingCount?: number;
+    } | undefined;
+
     return monthlyReview
       ? {
           review: monthlyReview.review || "",
           hasPlan: monthlyReview.hasPlan || false,
-          postCount: 0,
           analyzedCount: monthlyReview.analyzedCount || 0,
+          generationState: monthlyReview.generationState || "locked",
+          requiredCount: monthlyReview.requiredCount || 10,
+          remainingCount: monthlyReview.remainingCount ?? Math.max(0, 10 - (monthlyReview.analyzedCount || 0)),
         }
       : null;
   }, [reportData?.monthlyReview]);
 
-  // データがある場合は自動的に展開
-  useEffect(() => {
-    if (reviewData?.review) {
-      setIsExpanded(true);
-    }
-  }, [reviewData]);
-
-  const handleToggle = () => {
-      setIsExpanded(!isExpanded);
-  };
-
-  const handleRegenerate = () => {
-    if (onRegenerate) {
-      onRegenerate();
-    }
-  };
-
   return (
     <div className="bg-white border border-gray-200 p-3 sm:p-4 mb-4">
-      {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center">
           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#ff8a15] flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
@@ -72,32 +75,49 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth: _se
             </p>
           </div>
         </div>
-
-        {reviewData && (
-        <button
-          onClick={handleToggle}
-            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all border border-gray-300"
-        >
-            {isExpanded ? (
-            <>
-              <ChevronUp className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-xs">閉じる</span>
-            </>
-          ) : (
-            <>
-                <ChevronDown className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-xs">開く</span>
-            </>
-          )}
-        </button>
-        )}
       </div>
 
-      {/* コンテンツ */}
-      {isExpanded && reviewData && (
+      {reviewData && (
         <div className="mt-4 pt-4 border-t border-gray-200 animate-in fade-in duration-300">
           <div className="space-y-4">
-            {/* 振り返りテキスト */}
+            {isGenerating && (
+              <div role="status" aria-live="polite" className="mb-1">
+                <BotStatusCard
+                  title="生成中..."
+                  subtitle="今月の振り返りを生成しています"
+                  progress={72}
+                  compact
+                />
+              </div>
+            )}
+
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-gray-600">分析データ進捗</p>
+                <p className="text-xs font-semibold text-gray-700">
+                  {Math.min(reviewData.analyzedCount, reviewData.requiredCount)}/{reviewData.requiredCount}
+                </p>
+              </div>
+              <div className="grid grid-cols-10 gap-1">
+                {Array.from({ length: reviewData.requiredCount }).map((_, index) => {
+                  const isFilled = index < Math.min(reviewData.analyzedCount, reviewData.requiredCount);
+                  return (
+                    <div
+                      key={`progress-step-${index}`}
+                      className={`h-2 border border-gray-200 rounded-none ${isFilled ? "bg-[#ff8a15]" : "bg-gray-100"}`}
+                    />
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-xs text-gray-600">
+                {reviewData.generationState === "locked"
+                  ? `あと${reviewData.remainingCount}件で分析レポート利用可能です。`
+                  : reviewData.generationState === "ready"
+                    ? "10件達成しました。ボタンを押すと今月の振り返りを生成します。"
+                    : "生成済みの今月の振り返りを表示しています。"}
+              </p>
+            </div>
+
             {reviewData.review && (
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-100">
                 <div
@@ -114,23 +134,42 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({ selectedMonth: _se
             )}
 
             {!reviewData.review && (
-              <div className="text-center py-8 text-gray-500">
-                <p className="text-sm">振り返りデータがありません</p>
+              <div className="text-center py-4 text-gray-500">
+                <p className="text-sm">
+                  {reviewData.generationState === "locked"
+                    ? "分析データが10件に達すると生成できます"
+                    : "生成ボタンを押すと今月の振り返りが表示されます"}
+                </p>
               </div>
             )}
 
-            {/* 再提案するボタン */}
-            {reviewData.review && (
-              <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
+            <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
+              {usageLabel && (
+                <div className="mr-auto flex items-center gap-2 text-[11px] text-gray-600">
+                  <span>{usageLabel}</span>
+                  {onRefreshUsage && (
+                    <button
+                      type="button"
+                      onClick={onRefreshUsage}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      更新
+                    </button>
+                  )}
+                </div>
+              )}
+              {reviewData.generationState !== "generated" && (
                 <button
-                  onClick={handleRegenerate}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors border border-gray-300"
+                  type="button"
+                  onClick={onGenerate}
+                  disabled={reviewData.generationState !== "ready" || isGenerating}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: reviewData.generationState === "ready" && !isGenerating ? "#ff8a15" : "#d1d5db" }}
                 >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>再提案する</span>
+                  <span>{isGenerating ? "生成中..." : "今月の振り返りを生成"}</span>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}

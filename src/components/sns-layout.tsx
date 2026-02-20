@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
-import { Menu, X, User, Sparkles } from "lucide-react";
+import { Menu, X, User, Sparkles, Home, BookOpen, Target, BarChart3 } from "lucide-react";
 
 interface SNSLayoutProps {
   children: ReactNode;
@@ -142,20 +142,14 @@ export default function SNSLayout({
               <span>ダッシュボード</span>
             </Link>*/}
             <Link
-              href="/home"
+              href="/dashboard"
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
-                pathname === "/home"
+                pathname === "/dashboard" || pathname === "/home"
                   ? "bg-orange-100 text-orange-800 font-medium"
                   : "text-black hover:bg-gray-100"
               }`}
             >
-              <span
-                className={`w-6 h-6 rounded-none flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
-                  pathname === "/home" ? "bg-orange-200 text-orange-900" : "bg-gray-200 text-gray-700"
-                }`}
-              >
-                P
-              </span>
+              <Home size={18} className="flex-shrink-0" />
               <span>ダッシュボード</span>
             </Link>
             {/* {canAccessFeature(userProfile, "canAccessPlan") && (
@@ -204,13 +198,7 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <span
-                  className={`w-6 h-6 rounded-none flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
-                    pathname === "/instagram/posts" ? "bg-orange-200 text-orange-900" : "bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  D
-                </span>
+                <BookOpen size={18} className="flex-shrink-0" />
                 <span>投稿一覧</span>
               </Link>
             )}
@@ -236,13 +224,7 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <span
-                  className={`w-6 h-6 rounded-none flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
-                    pathname === "/instagram/kpi" ? "bg-orange-200 text-orange-900" : "bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  C
-                </span>
+                <Target size={18} className="flex-shrink-0" />
                 <span>KPIコンソール</span>
               </Link>
             )}
@@ -255,13 +237,7 @@ export default function SNSLayout({
                     : "text-black hover:bg-gray-100"
                 }`}
               >
-                <span
-                  className={`w-6 h-6 rounded-none flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
-                    pathname === "/instagram/report" ? "bg-orange-200 text-orange-900" : "bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  A
-                </span>
+                <BarChart3 size={18} className="flex-shrink-0" />
                 <span>月次レポート</span>
               </Link>
             )}

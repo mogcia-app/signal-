@@ -36,6 +36,7 @@ export function useReportPageData({
       }
 
       const cacheKey = generateCacheKey("report-complete", { date, regenerate });
+      const defaultCacheKey = generateCacheKey("report-complete", { date, regenerate: false });
 
       if (!regenerate) {
         const cached = clientCache.get<{
@@ -78,6 +79,9 @@ export function useReportPageData({
               reportData: result.data,
             };
             clientCache.set(cacheKey, dataToCache, 10 * 60 * 1000);
+            if (regenerate) {
+              clientCache.set(defaultCacheKey, dataToCache, 10 * 60 * 1000);
+            }
             setReportData(result.data);
             setPerformanceScore(result.data.performanceScore || null);
             setRetryCount(0);

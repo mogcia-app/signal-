@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Lightbulb, ArrowRight, RefreshCw, Check, Edit } from "lucide-react";
+import { Lightbulb, ArrowRight, Check, Edit } from "lucide-react";
 import type { ActionPlan } from "../../../../types/report";
 import { useAuth } from "../../../../contexts/auth-context";
 
@@ -32,10 +32,9 @@ interface MonthlyActionPlansProps {
     totalFollowerIncrease: number;
   } | null;
   reportData?: ReportData | null;
-  onRegenerate?: () => void;
 }
 
-export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selectedMonth, kpis: _kpis, reportData, onRegenerate }) => {
+export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selectedMonth, kpis: _kpis, reportData }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [aiDirection, setAiDirection] = useState<{
     month: string;
@@ -121,15 +120,6 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
 
   const handleToggle = () => {
     setIsExpanded(!isExpanded);
-  };
-
-  const handleRegenerate = () => {
-    if (onRegenerate) {
-      // 選択状態をリセット
-      setSelectedPlanIndex(null);
-      // 月次レポートを再生成
-      onRegenerate();
-    }
   };
 
   const handleEdit = () => {
@@ -477,16 +467,6 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
               </div>
               )}
 
-              {/* 再提案するボタン */}
-              <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
-                <button
-                  onClick={handleRegenerate}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors border border-gray-300"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>再提案する</span>
-                </button>
-              </div>
             </>
           ) : (
             <div className="text-center py-6 text-gray-500">

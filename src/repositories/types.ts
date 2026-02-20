@@ -76,6 +76,7 @@ export interface ReportAnalyticsDocument {
   likes: number;
   comments: number;
   shares: number;
+  reposts?: number;
   reach: number;
   saves: number;
   followerIncrease: number;
@@ -91,6 +92,9 @@ export interface ReportPlanDocument {
   currentFollowers: number;
   strategies: string[];
   postCategories: string[];
+  startDate?: Date | null;
+  endDate?: Date | null;
+  createdAt?: Date | null;
 }
 
 export interface ReportUserDocument {

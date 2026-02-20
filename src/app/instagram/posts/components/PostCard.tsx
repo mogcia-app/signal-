@@ -5,6 +5,7 @@ import Image from "next/image";
 import {
   Trash2,
   Eye,
+  Copy,
   Calendar,
   Heart,
   MessageCircle,
@@ -13,6 +14,7 @@ import {
   BarChart3,
   TrendingUp,
 } from "lucide-react";
+import { notify } from "@/lib/ui/notifications";
 
 interface PostData {
   id: string;
@@ -154,6 +156,43 @@ const normalizeHashtags = (hashtags: PostData["hashtags"]): string[] => {
 };
 
 const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, onDeletePost }) => {
+  const handleCopyPostContent = async () => {
+    const postBody = (post.content || "").trim();
+    const hashtags = normalizeHashtags(post.hashtags);
+    const hashtagLine = hashtags.length > 0 ? hashtags.map((tag) => `#${tag}`).join(" ") : "";
+    const copyText = [postBody, hashtagLine].filter(Boolean).join("\n\n").trim();
+
+    if (!copyText) {
+      notify({ type: "error", message: "コピーする投稿文がありません" });
+      return;
+    }
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(copyText);
+      } else if (typeof document !== "undefined") {
+        const textarea = document.createElement("textarea");
+        textarea.value = copyText;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (!copied) {
+          throw new Error("fallback copy failed");
+        }
+      } else {
+        throw new Error("clipboard unavailable");
+      }
+
+      notify({ type: "success", message: "投稿文をコピーしました" });
+    } catch (_error) {
+      notify({ type: "error", message: "コピーに失敗しました" });
+    }
+  };
+
   // ステータス表示の色分け
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -476,6 +515,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
         {/* アクションボタン */}
         <div className="mt-auto pt-3 border-t border-gray-100">
           <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={handleCopyPostContent}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"
+              aria-label={`投稿「${post.title || "無題"}」の投稿文をコピー`}
+            >
+              <Copy size={12} />
+              コピー
+            </button>
             <a
               href={`/instagram/posts/${post.id}`}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:text-[#ff8a15] hover:bg-orange-50 hover:border-orange-200 transition-all focus:outline-none focus:ring-2 focus:ring-[#ff8a15] focus:ring-offset-2"

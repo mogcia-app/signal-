@@ -93,9 +93,9 @@ export default function SettingsPage() {
             <div>
               <dt className="text-sm font-medium text-gray-500">プラン</dt>
               <dd className="mt-1 text-base text-gray-900">
-                {userProfile?.planTier === "ume" && "梅"}
-                {userProfile?.planTier === "take" && "竹"}
-                {userProfile?.planTier === "matsu" && "松"}
+                {(userProfile?.planTier === "basic" || userProfile?.planTier === "ume") && "ベーシック"}
+                {(userProfile?.planTier === "standard" || userProfile?.planTier === "take") && "スタンダード"}
+                {(userProfile?.planTier === "pro" || userProfile?.planTier === "matsu") && "プロ"}
                 {!userProfile?.planTier && "未設定"}
               </dd>
             </div>
@@ -105,4 +105,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

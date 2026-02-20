@@ -7,6 +7,8 @@ import { ReportRepository } from "@/repositories/report-repository";
 import { monthlyReviewStore } from "@/repositories/monthly-review-store";
 import { buildReportComplete } from "@/domain/analysis/report/usecases/build-report-complete";
 import { createReportAiClient } from "@/domain/analysis/report/usecases/create-report-ai-client";
+import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
+import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
 
 const aiClient = createReportAiClient(process.env.OPENAI_API_KEY);
 
@@ -70,11 +72,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (forceRegenerate) {
+      await assertAiOutputAvailable({
+        uid,
+        userProfile,
+      });
+    }
+
     const reportData = await ReportRepository.fetchReportRepositoryData(uid, date);
     const data = await buildReportComplete({
       userId: uid,
       month: date,
       forceRegenerate,
+      allowAiGeneration: forceRegenerate,
       reportData,
       aiClient,
       monthlyReviewStore,
@@ -82,8 +92,46 @@ export async function GET(request: NextRequest) {
       fetchAiLearningReferences,
     });
 
-    return NextResponse.json({ success: true, data });
+    const usage = forceRegenerate
+      ? await consumeAiOutput({
+          uid,
+          userProfile,
+          feature: "analytics_monthly_review",
+        })
+      : null;
+
+    if (forceRegenerate) {
+      const firstPlan = data.monthlyReview?.actionPlans?.[0];
+      await logImplicitAiAction({
+        uid,
+        feature: "analytics_monthly_review",
+        title: typeof firstPlan?.title === "string" && firstPlan.title ? firstPlan.title : "今月の振り返り生成",
+        action: typeof firstPlan?.action === "string" ? firstPlan.action : "",
+        metadata: {
+          month: date,
+          analyzedCount: data.monthlyReview?.analyzedCount || 0,
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true, data, usage });
   } catch (error) {
+    if (error instanceof AiUsageLimitError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `今月のAI出力回数の上限に達しました（${error.month} / ${error.limit ?? "無制限"}回）。`,
+          code: "ai_output_limit_exceeded",
+          usage: {
+            month: error.month,
+            limit: error.limit,
+            used: error.used,
+            remaining: error.remaining,
+          },
+        },
+        { status: 429 }
+      );
+    }
     console.error("❌ 月次レポート統合データ取得エラー:", error);
     const { status, body } = buildErrorResponse(error);
     return NextResponse.json(body, { status });

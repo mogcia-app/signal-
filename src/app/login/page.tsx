@@ -29,7 +29,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (!authLoading) {
       if (user) {
-        router.push("/home");
+        router.push("/dashboard");
       } else {
         // ローカル環境の場合はそのまま表示、本番環境の場合はポータルサイトにリダイレクト
         const isLocal = typeof window !== "undefined" && 
@@ -100,7 +100,7 @@ export default function LoginPage() {
       setLoginSuccess(true);
       // 2秒後にホームページに遷移
       setTimeout(() => {
-        router.push("/home");
+        router.push("/dashboard");
       }, 2000);
     } catch (error: unknown) {
       // 契約期間切れのエラーの場合

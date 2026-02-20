@@ -8,7 +8,7 @@ export default function FeedLabRedirectPage() {
 
   useEffect(() => {
     // 一時停止: 旧 /instagram/lab/feed 導線
-    router.replace("/home");
+    router.replace("/dashboard");
   }, [router]);
 
   return null;

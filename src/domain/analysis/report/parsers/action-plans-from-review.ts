@@ -9,6 +9,10 @@ export function extractActionPlansFromReview(reviewText: string, nextMonth: stri
 
   const escapedMonth = nextMonth.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const patterns = [
+    /3\.\s*次の一手(?:（優先順3つ）)?[\s\S]*?(?=\n\s*4\.|\n\s*###\s*4\.|⸻|$)/i,
+    /###\s*3\.\s*次の一手(?:（優先順3つ）)?[\s\S]*?(?=\n\s*###\s*4\.|⸻|$)/i,
+    /4\.\s*次の一手(?:（優先順3つ）)?[\s\S]*?(?=\n\s*5\.|\n\s*###\s*5\.|⸻|$)/i,
+    /###\s*4\.\s*次の一手(?:（優先順3つ）)?[\s\S]*?(?=\n\s*###\s*5\.|⸻|$)/i,
     new RegExp(`📈\\s*${escapedMonth}に向けた提案[\\s\\S]*?(?=⸻|$)`, "i"),
     /📈\s*[^\n]*向けた提案[\s\S]*?(?=⸻|$)/i,
     /📈[\s\S]*?提案[\s\S]*?(?=⸻|$)/i,
@@ -27,7 +31,7 @@ export function extractActionPlansFromReview(reviewText: string, nextMonth: stri
     return actionPlans;
   }
 
-  const proposalRegex = /(\d+)\.\s*([^\n]+)(?:\n\s*([^\n]+(?:\n\s*[^\n]+)*?))?(?=\n\s*\d+\.|$)/g;
+  const proposalRegex = /(\d+)\.\s*(?:\[[A-C]\]\s*)?([^\n]+)(?:\n\s*([^\n]+(?:\n\s*[^\n]+)*?))?(?=\n\s*\d+\.|$)/g;
   let proposalMatch;
 
   while ((proposalMatch = proposalRegex.exec(proposalText)) !== null) {

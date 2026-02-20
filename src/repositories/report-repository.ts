@@ -124,6 +124,9 @@ export class ReportRepository {
       currentFollowers: Number(data.currentFollowers || 0),
       strategies: Array.isArray(data.strategies) ? data.strategies.map(String) : [],
       postCategories: Array.isArray(data.postCategories) ? data.postCategories.map(String) : [],
+      startDate: toDate(data.startDate),
+      endDate: toDate(data.endDate),
+      createdAt: toDate(data.createdAt),
     };
   }
 
@@ -284,6 +287,7 @@ export class ReportRepository {
       likes: Number(data.likes || 0),
       comments: Number(data.comments || 0),
       shares: Number(data.shares || 0),
+      reposts: Number(data.reposts || 0),
       reach: Number(data.reach || 0),
       saves: Number(data.saves || 0),
       followerIncrease: Number(data.followerIncrease || 0),
