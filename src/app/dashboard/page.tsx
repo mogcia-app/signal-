@@ -2429,9 +2429,10 @@ export default function HomePage() {
       : showAdvisorProductConfigCard
         ? "吹き出し内で投稿タイプと商品・サービスを設定してください"
         : "相談内容を入力してください";
-  const monthlyFocusHeadline = String(
+  const monthlyFocusHeadlineRaw = String(
     monthlyActionFocus?.action || monthlyActionFocus?.description || monthlyActionFocus?.title || ""
   ).trim();
+  const monthlyFocusHeadline = monthlyFocusHeadlineRaw.replace(/^実行手順:\s*/u, "").trim();
   const monthlyFocusHasContent = monthlyFocusHeadline.length > 0;
   const monthlyFocusStatus = monthlyActionFocus?.evaluation?.status || "no_data";
   const monthlyFocusStatusLabel =
@@ -2496,9 +2497,7 @@ export default function HomePage() {
               <p className="text-sm text-gray-500">読み込み中...</p>
             ) : monthlyFocusHasContent ? (
               <>
-                <p className="text-sm text-gray-900">
-                  今月の重点テーマ: {monthlyFocusHeadline}
-                </p>
+                <p className="text-sm text-gray-900">{monthlyFocusHeadline}</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center border px-2.5 py-1 text-xs font-medium ${monthlyFocusStatusClass}`}>
                     {monthlyFocusStatusLabel}
