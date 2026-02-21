@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
+import { getAnalytics } from "firebase/analytics";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -15,6 +16,7 @@ const firebaseConfig = {
     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "signal-v1-fc481.firebasestorage.app",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "913459926537",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:913459926537:web:3f27082cdf1e913c444ad8",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-4DRZN1MY83",
 };
 
 // Initialize Firebase
@@ -24,6 +26,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functions = getFunctions(app);
+export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
 // For local development, connect to emulators
 if (process.env.NODE_ENV === "development" && typeof window === "undefined") {
