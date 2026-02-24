@@ -13,6 +13,9 @@ interface AuthGuardProps {
   children: React.ReactNode;
 }
 
+const AUTH_CALLBACK_IN_PROGRESS_KEY = "signal_auth_callback_in_progress_at";
+const AUTH_CALLBACK_GRACE_MS = 15000;
+
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading, contractValid } = useAuth();
   const router = useRouter();
@@ -81,6 +84,20 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     if (!loading && !user) {
+      if (typeof window !== "undefined") {
+        const startedAtRaw = window.sessionStorage.getItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
+        if (startedAtRaw) {
+          const startedAt = Number.parseInt(startedAtRaw, 10);
+          if (Number.isFinite(startedAt)) {
+            const elapsed = Date.now() - startedAt;
+            if (elapsed >= 0 && elapsed < AUTH_CALLBACK_GRACE_MS) {
+              return;
+            }
+          }
+          window.sessionStorage.removeItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
+        }
+      }
+
       router.push("/login");
     }
   }, [user, loading, router]);

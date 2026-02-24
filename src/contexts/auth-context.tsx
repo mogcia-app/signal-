@@ -13,6 +13,8 @@ import { authFetch } from "../utils/authFetch";
 import { checkUserContract } from "../lib/auth";
 import { installAuthFetch } from "../utils/installAuthFetch";
 
+const AUTH_CALLBACK_IN_PROGRESS_KEY = "signal_auth_callback_in_progress_at";
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -96,6 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // ユーザーがログインしている場合、Firestoreドキュメントを確認・作成
       if (user) {
+        if (typeof window !== "undefined") {
+          window.sessionStorage.removeItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
+        }
+
         // セッション開始時刻を記録
         if (typeof window !== "undefined") {
           const existingSession = localStorage.getItem("signal_session_start");

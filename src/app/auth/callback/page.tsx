@@ -6,6 +6,8 @@ import { signInWithCustomToken, onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
+const AUTH_CALLBACK_IN_PROGRESS_KEY = "signal_auth_callback_in_progress_at";
+
 // ネットワーク接続をチェックする関数
 const checkNetworkConnection = (): boolean => {
   if (typeof window === "undefined") {return true;}
@@ -113,6 +115,10 @@ function AuthCallbackContent() {
 
     const handleCallback = async () => {
       try {
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(AUTH_CALLBACK_IN_PROGRESS_KEY, Date.now().toString());
+        }
+
         // URLクエリパラメータからuserIdを取得
         const userId = searchParams.get("userId");
 
@@ -214,6 +220,9 @@ function AuthCallbackContent() {
         });
       } catch (err) {
         console.error("[AuthCallback] 認証エラー:", err);
+        if (typeof window !== "undefined") {
+          window.sessionStorage.removeItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
+        }
         
         // エラーメッセージをユーザーフレンドリーに変換
         let errorMessage = "認証に失敗しました";
