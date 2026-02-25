@@ -38,7 +38,8 @@ interface PostData {
   updatedAt: Date;
 }
 
-const MAX_IMAGE_DATA_BYTES = 8_000_000;
+// Keep payload safely below serverless request size limits in production.
+const MAX_IMAGE_DATA_BYTES = 3_000_000;
 
 // 投稿作成
 export async function POST(request: NextRequest) {

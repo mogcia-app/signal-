@@ -7,7 +7,8 @@ import { canAccessFeature } from "@/lib/plan-access";
 import { deletePostImageByUrl, uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
 import type { WriteResult } from "firebase-admin/firestore";
 
-const MAX_IMAGE_DATA_BYTES = 8_000_000;
+// Keep payload safely below serverless request size limits in production.
+const MAX_IMAGE_DATA_BYTES = 3_000_000;
 
 // 特定の投稿取得
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

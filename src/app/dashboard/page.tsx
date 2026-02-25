@@ -96,7 +96,8 @@ interface HomeAdvisorMessage {
 type AdvisorIntent = "image-fit" | "composition" | "overlay-text" | "video-idea";
 type AdvisorSource = "undecided" | "draft" | "product";
 
-const HOME_DRAFT_IMAGE_DATA_MAX_BYTES = 8_000_000;
+// Keep payload safely below serverless request size limits in production.
+const HOME_DRAFT_IMAGE_DATA_MAX_BYTES = 3_000_000;
 
 interface HomeUnanalyzedPost {
   id: string;
