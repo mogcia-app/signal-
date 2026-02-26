@@ -496,30 +496,87 @@ const normalizeGeneratedContent = (value: string): string => {
 };
 
 const enforceStoryShortCaption = (value: string): string => {
+  const STORY_MAX_CHARS = 50;
+  const STORY_MIN_CHARS = 20;
+  const FALLBACK_QUESTION = "今日のポイント、どちらが気になりますか？";
+  const splitChars = ["。", "！", "？", "!", "?", "、", " "];
+  const sentenceBreakChars = ["。", "！", "？", "!", "?"];
+
+  const findLastBreakIndex = (text: string, maxChars: number): number => {
+    if (!text) {return -1;}
+    const capped = text.slice(0, maxChars);
+    let best = -1;
+    splitChars.forEach((char) => {
+      const idx = capped.lastIndexOf(char);
+      if (idx > best) {best = idx;}
+    });
+    return best;
+  };
+
+  const trimToNaturalLength = (text: string): string => {
+    if (text.length <= STORY_MAX_CHARS) {return text.trim();}
+    const sentenceBreak = findLastBreakIndex(text, STORY_MAX_CHARS);
+    if (sentenceBreak >= 14) {
+      return text.slice(0, sentenceBreak + 1).trim();
+    }
+    const softBreak = findLastBreakIndex(text, STORY_MAX_CHARS - 1);
+    if (softBreak >= 12) {
+      return text.slice(0, softBreak + 1).trim();
+    }
+    return `${text.slice(0, STORY_MAX_CHARS - 1).trim()}…`;
+  };
+
+  const splitToTwoLines = (text: string): string => {
+    if (text.length <= 28) {return text;}
+    const center = Math.floor(text.length / 2);
+    let splitAt = -1;
+
+    for (let offset = 0; offset <= 10; offset += 1) {
+      const right = center + offset;
+      const left = center - offset;
+      const rightChar = text[right] || "";
+      const leftChar = text[left] || "";
+      if (sentenceBreakChars.includes(rightChar) && right > 8 && right < text.length - 6) {
+        splitAt = right + 1;
+        break;
+      }
+      if (sentenceBreakChars.includes(leftChar) && left > 8 && left < text.length - 6) {
+        splitAt = left + 1;
+        break;
+      }
+      if (splitChars.includes(rightChar) && right > 8 && right < text.length - 6) {
+        splitAt = right + 1;
+        break;
+      }
+      if (splitChars.includes(leftChar) && left > 8 && left < text.length - 6) {
+        splitAt = left + 1;
+        break;
+      }
+    }
+
+    if (splitAt > 0) {
+      return `${text.slice(0, splitAt).trim()}\n${text.slice(splitAt).trim()}`;
+    }
+    const fallback = Math.min(26, Math.max(12, center));
+    return `${text.slice(0, fallback).trim()}\n${text.slice(fallback).trim()}`;
+  };
+
   const normalized = normalizeGeneratedContent(value)
     .replace(/[。！？]\s*/g, "。")
     .replace(/\n{2,}/g, "\n")
     .trim();
-  if (!normalized) {return "今日のポイント、どちらが気になりますか？";}
+  if (!normalized) {return FALLBACK_QUESTION;}
 
   const singleLine = normalized.replace(/\n/g, " ");
-  let compact = singleLine.slice(0, 50).trim();
-  if (compact.length < 20) {
+  let compact = trimToNaturalLength(singleLine);
+  if (compact.length < STORY_MIN_CHARS) {
     const base = compact || "今日のポイント";
-    compact = `${base}、どちらが気になりますか？`.slice(0, 50);
+    compact = trimToNaturalLength(`${base}、どちらが気になりますか？`);
   }
-
-  if (compact.length > 28) {
-    const splitAt = Math.min(
-      Math.max(compact.indexOf("。") + 1, 0) || 0,
-      Math.max(compact.indexOf("、") + 1, 0) || 0
-    );
-    if (splitAt > 8 && splitAt < compact.length - 8) {
-      return `${compact.slice(0, splitAt)}\n${compact.slice(splitAt).trim()}`;
-    }
-    return `${compact.slice(0, 24).trim()}\n${compact.slice(24).trim()}`;
+  if (compact.length < STORY_MIN_CHARS) {
+    compact = trimToNaturalLength(FALLBACK_QUESTION);
   }
-  return compact;
+  return splitToTwoLines(compact);
 };
 
 const isMetaExplanationContent = (content: string): boolean => {
