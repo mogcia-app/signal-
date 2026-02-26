@@ -1028,6 +1028,19 @@ export default function HomePage() {
       toast.error("ログインが必要です");
       return;
     }
+    if (!String(quickPlanPurpose || "").trim()) {
+      toast.error("投稿の目的を設定してください");
+      return;
+    }
+    if (!String(quickPlanStartDate || "").trim() || Number.isNaN(new Date(quickPlanStartDate).getTime())) {
+      toast.error("計画開始日を設定してください");
+      return;
+    }
+    if (quickPlanFeedDays.length === 0 || quickPlanReelDays.length === 0 || quickPlanStoryDays.length === 0) {
+      toast.error("フィード・リール・ストーリーズの投稿曜日をすべて設定してください");
+      return;
+    }
+
     const runId = `home-plan-${Date.now()}`;
     const flowStart = Date.now();
     setGuidedFlowStartMs(flowStart);
@@ -2820,6 +2833,7 @@ export default function HomePage() {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">画像（任意）</label>
+                    <p className="mb-1 text-[11px] text-gray-500">2.0MB以下推奨（3.0MB超は画像なしで保存）</p>
                     <input
                       type="file"
                       accept="image/*"

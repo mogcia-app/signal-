@@ -40,6 +40,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 });
     }
 
+    const startDate = String(body.startDate || "").trim();
+    const operationPurpose = String(body.operationPurpose || "").trim();
+    const feedDays = Array.isArray(body.feedDays) ? body.feedDays : [];
+    const reelDays = Array.isArray(body.reelDays) ? body.reelDays : [];
+    const storyDays = Array.isArray(body.storyDays) ? body.storyDays : [];
+
+    const parsedStartDate = new Date(startDate);
+    if (!startDate || Number.isNaN(parsedStartDate.getTime())) {
+      return NextResponse.json({ error: "計画開始日を設定してください" }, { status: 400 });
+    }
+    if (!operationPurpose) {
+      return NextResponse.json({ error: "投稿の目的を設定してください" }, { status: 400 });
+    }
+    if (feedDays.length === 0 || reelDays.length === 0 || storyDays.length === 0) {
+      return NextResponse.json(
+        { error: "フィード・リール・ストーリーズの投稿曜日をすべて設定してください" },
+        { status: 400 }
+      );
+    }
+
     const currentFollowers = Number(body.currentFollowers || 0);
     const targetFollowerIncrease = Number(body.targetFollowerIncrease || 0);
     const targetFollowersFromBody = Number(body.targetFollowers || 0);
@@ -59,18 +79,18 @@ export async function POST(request: NextRequest) {
     const planInput: PlanInput = {
       userId,
       snsType: "instagram",
-      startDate: body.startDate,
+      startDate,
       currentFollowers,
       targetFollowers,
       targetFollowerOption: body.targetFollowerOption,
       customTargetFollowers: body.customTargetFollowers || String(targetFollowerIncrease),
-      operationPurpose: body.operationPurpose,
+      operationPurpose,
       weeklyPosts: body.weeklyPosts as PlanInput["weeklyPosts"],
       reelCapability: body.reelCapability as PlanInput["reelCapability"],
       storyFrequency: (body.storyFrequency || "none") as PlanInput["storyFrequency"],
-      feedDays: Array.isArray(body.feedDays) ? body.feedDays : [],
-      reelDays: Array.isArray(body.reelDays) ? body.reelDays : [],
-      storyDays: Array.isArray(body.storyDays) ? body.storyDays : [],
+      feedDays,
+      reelDays,
+      storyDays,
       targetAudience: body.targetAudience,
       postingTime: body.postingTime as PlanInput["postingTime"],
       regionRestriction: (body.regionRestriction || "none") as PlanInput["regionRestriction"],

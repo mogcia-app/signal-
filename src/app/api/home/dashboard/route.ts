@@ -8,6 +8,36 @@ import { HomeDashboardRepository } from "@/repositories/home-dashboard-repositor
 const WEEK_DAYS = ["日", "月", "火", "水", "木", "金", "土"] as const;
 type WeekDay = (typeof WEEK_DAYS)[number];
 
+function addOneMonth(baseDate: Date): Date {
+  const next = new Date(baseDate);
+  next.setMonth(next.getMonth() + 1);
+  return next;
+}
+
+function isPlanComplete(formData: Record<string, unknown>, planStartDate: Date | null): boolean {
+  const operationPurpose = String(formData.operationPurpose || "").trim();
+  const parsedStartDate =
+    typeof formData.startDate === "string" ? new Date(formData.startDate) : planStartDate;
+  const hasValidStartDate = Boolean(parsedStartDate) && !Number.isNaN((parsedStartDate as Date).getTime());
+  const feedDays = Array.isArray(formData.feedDays) ? formData.feedDays : [];
+  const reelDays = Array.isArray(formData.reelDays) ? formData.reelDays : [];
+  const storyDays = Array.isArray(formData.storyDays) ? formData.storyDays : [];
+  const customIncrease = Number(formData.customTargetFollowers || 0);
+  const targetFollowers = Number(formData.targetFollowers || 0);
+  const currentFollowers = Number(formData.currentFollowers || 0);
+  const effectiveIncrease = customIncrease > 0 ? customIncrease : targetFollowers - currentFollowers;
+
+  return (
+    operationPurpose.length > 0 &&
+    hasValidStartDate &&
+    feedDays.length > 0 &&
+    reelDays.length > 0 &&
+    storyDays.length > 0 &&
+    Number.isFinite(effectiveIncrease) &&
+    effectiveIncrease > 0
+  );
+}
+
 function parseLegacyDayList(value: string): WeekDay[] {
   const normalized = value.replace(/（.*?）/g, "").trim();
   if (!normalized || normalized === "なし") {return [];}
@@ -197,80 +227,101 @@ export async function GET(request: NextRequest) {
         planStartDate = activePlan.startDate || activePlan.createdAt || new Date();
       }
 
-      const parsedFeedDays = Array.isArray(formData.feedDays) ? formData.feedDays : [];
-      const parsedReelDays = Array.isArray(formData.reelDays) ? formData.reelDays : [];
-      const parsedStoryDays = Array.isArray(formData.storyDays) ? formData.storyDays : [];
-      const targetAudienceValue = typeof formData.targetAudience === "string" ? formData.targetAudience : "";
-      const looksLegacyTargetAudience =
-        targetAudienceValue.includes("選択曜日") ||
-        targetAudienceValue.includes("フィード:") ||
-        targetAudienceValue.includes("リール:") ||
-        targetAudienceValue.includes("ストーリーズ:");
-
-      if ((parsedFeedDays.length === 0 || parsedReelDays.length === 0 || parsedStoryDays.length === 0) && looksLegacyTargetAudience) {
-        const legacy = extractLegacyScheduleFromTargetAudience(targetAudienceValue);
-        const nextFeedDays = parsedFeedDays.length > 0 ? parsedFeedDays : legacy.feedDays;
-        const nextReelDays = parsedReelDays.length > 0 ? parsedReelDays : legacy.reelDays;
-        const nextStoryDays = parsedStoryDays.length > 0 ? parsedStoryDays : legacy.storyDays;
-        const nextTargetAudience = legacy.cleanText;
-
-        formData.feedDays = nextFeedDays;
-        formData.reelDays = nextReelDays;
-        formData.storyDays = nextStoryDays;
-        formData.targetAudience = nextTargetAudience;
-
+      const completePlan = isPlanComplete(formData, planStartDate);
+      const planExpiryDate = addOneMonth(planStartDate);
+      if (!completePlan || today >= planExpiryDate) {
         try {
-          await adminDb.collection(COLLECTIONS.PLANS).doc(activePlan.id).update({
-            "formData.feedDays": nextFeedDays,
-            "formData.reelDays": nextReelDays,
-            "formData.storyDays": nextStoryDays,
-            "formData.targetAudience": nextTargetAudience,
-          });
-        } catch (migrationError) {
-          console.error("Home dashboard legacy plan migration failed:", migrationError);
+          const nextPlanStatus = completePlan ? "expired" : "invalid";
+          await Promise.all([
+            adminDb.collection("users").doc(uid).update({
+              activePlanId: null,
+              updatedAt: new Date(),
+            }),
+            adminDb.collection(COLLECTIONS.PLANS).doc(activePlan.id).update({
+              status: nextPlanStatus,
+              updatedAt: new Date(),
+            }),
+          ]);
+        } catch (planResetError) {
+          console.error("Home dashboard plan reset failed:", planResetError);
         }
-      }
+      } else {
 
-      currentPlan = {
-        id: activePlan.id,
-        title: activePlan.title,
-        strategy: activePlan.generatedStrategy,
-        aiGenerationStatus: activePlan.aiGenerationStatus || "completed",
-        aiGenerationCompletedAt: activePlan.aiGenerationCompletedAt || null,
-        formData,
-        operationPurpose: typeof formData.operationPurpose === "string" ? formData.operationPurpose : "",
-        targetFollowers:
-          typeof formData.targetFollowers === "number"
-            ? formData.targetFollowers
-            : Number(formData.targetFollowers || 0),
-        currentFollowers:
-          typeof formData.currentFollowers === "number"
-            ? formData.currentFollowers
-            : Number(formData.currentFollowers || 0),
-        targetFollowerOption:
-          typeof formData.targetFollowerOption === "string" ? formData.targetFollowerOption : "",
-        targetFollowerIncrease:
-          typeof formData.customTargetFollowers === "string"
-            ? Number(formData.customTargetFollowers || 0)
-            : Number(formData.customTargetFollowers || 0),
-        customTargetFollowers:
-          typeof formData.customTargetFollowers === "string" ? formData.customTargetFollowers : "",
-        weeklyPosts: typeof formData.weeklyPosts === "string" ? formData.weeklyPosts : "",
-        reelCapability: typeof formData.reelCapability === "string" ? formData.reelCapability : "",
-        storyFrequency: typeof formData.storyFrequency === "string" ? formData.storyFrequency : "",
-        feedDays: Array.isArray(formData.feedDays) ? formData.feedDays : [],
-        reelDays: Array.isArray(formData.reelDays) ? formData.reelDays : [],
-        storyDays: Array.isArray(formData.storyDays) ? formData.storyDays : [],
-        targetAudience: typeof formData.targetAudience === "string" ? formData.targetAudience : "",
-        postingTime: typeof formData.postingTime === "string" ? formData.postingTime : "",
-        regionRestriction: typeof formData.regionRestriction === "string" ? formData.regionRestriction : "",
-        regionName: typeof formData.regionName === "string" ? formData.regionName : "",
-        startDate: planStartDate,
-        endDate: activePlan.endDate,
-        weeklyTasks: [],
-        monthlyGoals: [],
-        aiSuggestion: null,
-      };
+        const parsedFeedDays = Array.isArray(formData.feedDays) ? formData.feedDays : [];
+        const parsedReelDays = Array.isArray(formData.reelDays) ? formData.reelDays : [];
+        const parsedStoryDays = Array.isArray(formData.storyDays) ? formData.storyDays : [];
+        const targetAudienceValue = typeof formData.targetAudience === "string" ? formData.targetAudience : "";
+        const looksLegacyTargetAudience =
+          targetAudienceValue.includes("選択曜日") ||
+          targetAudienceValue.includes("フィード:") ||
+          targetAudienceValue.includes("リール:") ||
+          targetAudienceValue.includes("ストーリーズ:");
+
+        if ((parsedFeedDays.length === 0 || parsedReelDays.length === 0 || parsedStoryDays.length === 0) && looksLegacyTargetAudience) {
+          const legacy = extractLegacyScheduleFromTargetAudience(targetAudienceValue);
+          const nextFeedDays = parsedFeedDays.length > 0 ? parsedFeedDays : legacy.feedDays;
+          const nextReelDays = parsedReelDays.length > 0 ? parsedReelDays : legacy.reelDays;
+          const nextStoryDays = parsedStoryDays.length > 0 ? parsedStoryDays : legacy.storyDays;
+          const nextTargetAudience = legacy.cleanText;
+
+          formData.feedDays = nextFeedDays;
+          formData.reelDays = nextReelDays;
+          formData.storyDays = nextStoryDays;
+          formData.targetAudience = nextTargetAudience;
+
+          try {
+            await adminDb.collection(COLLECTIONS.PLANS).doc(activePlan.id).update({
+              "formData.feedDays": nextFeedDays,
+              "formData.reelDays": nextReelDays,
+              "formData.storyDays": nextStoryDays,
+              "formData.targetAudience": nextTargetAudience,
+            });
+          } catch (migrationError) {
+            console.error("Home dashboard legacy plan migration failed:", migrationError);
+          }
+        }
+
+        currentPlan = {
+          id: activePlan.id,
+          title: activePlan.title,
+          strategy: activePlan.generatedStrategy,
+          aiGenerationStatus: activePlan.aiGenerationStatus || "completed",
+          aiGenerationCompletedAt: activePlan.aiGenerationCompletedAt || null,
+          formData,
+          operationPurpose: typeof formData.operationPurpose === "string" ? formData.operationPurpose : "",
+          targetFollowers:
+            typeof formData.targetFollowers === "number"
+              ? formData.targetFollowers
+              : Number(formData.targetFollowers || 0),
+          currentFollowers:
+            typeof formData.currentFollowers === "number"
+              ? formData.currentFollowers
+              : Number(formData.currentFollowers || 0),
+          targetFollowerOption:
+            typeof formData.targetFollowerOption === "string" ? formData.targetFollowerOption : "",
+          targetFollowerIncrease:
+            typeof formData.customTargetFollowers === "string"
+              ? Number(formData.customTargetFollowers || 0)
+              : Number(formData.customTargetFollowers || 0),
+          customTargetFollowers:
+            typeof formData.customTargetFollowers === "string" ? formData.customTargetFollowers : "",
+          weeklyPosts: typeof formData.weeklyPosts === "string" ? formData.weeklyPosts : "",
+          reelCapability: typeof formData.reelCapability === "string" ? formData.reelCapability : "",
+          storyFrequency: typeof formData.storyFrequency === "string" ? formData.storyFrequency : "",
+          feedDays: Array.isArray(formData.feedDays) ? formData.feedDays : [],
+          reelDays: Array.isArray(formData.reelDays) ? formData.reelDays : [],
+          storyDays: Array.isArray(formData.storyDays) ? formData.storyDays : [],
+          targetAudience: typeof formData.targetAudience === "string" ? formData.targetAudience : "",
+          postingTime: typeof formData.postingTime === "string" ? formData.postingTime : "",
+          regionRestriction: typeof formData.regionRestriction === "string" ? formData.regionRestriction : "",
+          regionName: typeof formData.regionName === "string" ? formData.regionName : "",
+          startDate: planStartDate,
+          endDate: activePlan.endDate,
+          weeklyTasks: [],
+          monthlyGoals: [],
+          aiSuggestion: null,
+        };
+      }
     }
 
     const monthlyProgress = currentPlan
@@ -298,7 +349,7 @@ export async function GET(request: NextRequest) {
         weeklySchedule,
         currentPlan,
         monthlyProgress,
-        simulationResult: activePlan?.simulationResult || null,
+        simulationResult: currentPlan ? activePlan?.simulationResult || null : null,
       },
     });
   } catch (error) {
