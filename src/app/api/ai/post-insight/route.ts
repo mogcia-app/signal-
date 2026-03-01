@@ -625,7 +625,6 @@ export async function POST(request: NextRequest) {
       analyticsDoc,
       analyticsHistoryDoc,
       planDoc,
-      followerCountDoc,
       userProfile,
     ] = await Promise.all([
       getMasterContext(userId, { forceRefresh }),
@@ -633,7 +632,6 @@ export async function POST(request: NextRequest) {
       adminDb.collection("analytics").where("userId", "==", userId).where("postId", "==", postId).limit(1).get(),
       adminDb.collection("analytics").where("userId", "==", userId).limit(50).get(),
       adminDb.collection("plans").where("userId", "==", userId).where("snsType", "==", "instagram").where("status", "==", "active").orderBy("createdAt", "desc").limit(1).get(),
-      adminDb.collection("follower_counts").where("userId", "==", userId).where("snsType", "==", "instagram").orderBy("date", "desc").limit(1).get(),
       getUserProfile(userId),
     ]);
 
@@ -866,13 +864,13 @@ export async function POST(request: NextRequest) {
     } : null;
 
     // 現在のフォロワー数を取得
-    let currentFollowers = 0;
-    if (!followerCountDoc.empty) {
-      const followerData = followerCountDoc.docs[0].data();
-      currentFollowers = followerData.followers || followerData.startFollowers || 0;
-    } else if (userProfile?.businessInfo?.initialFollowers) {
-      currentFollowers = userProfile.businessInfo.initialFollowers;
-    }
+    const initialFollowers = Number(userProfile?.businessInfo?.initialFollowers || 0);
+    const currentFollowers =
+      initialFollowers +
+      analyticsHistoryDoc.docs.reduce((sum, doc) => {
+        const increase = Number(doc.data()?.followerIncrease || 0);
+        return sum + (Number.isFinite(increase) ? increase : 0);
+      }, 0);
 
     // 事業内容を取得
     const businessInfo = userProfile?.businessInfo ? {

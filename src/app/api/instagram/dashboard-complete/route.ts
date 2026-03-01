@@ -62,15 +62,11 @@ export async function GET(request: NextRequest) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // 並列でデータを取得
-    const [postsSnapshot, analyticsSnapshot, goalDoc, followerCountsSnapshot] = await Promise.all([
+    const [postsSnapshot, analyticsSnapshot, goalDoc, userDoc] = await Promise.all([
       adminDb.collection("posts").where("userId", "==", uid).get(),
       adminDb.collection("analytics").where("userId", "==", uid).get(),
       adminDb.collection("goalSettings").doc(uid).get(),
-      adminDb.collection("follower_counts")
-        .where("userId", "==", uid)
-        .orderBy("date", "desc")
-        .limit(2)
-        .get(),
+      adminDb.collection("users").doc(uid).get(),
     ]);
 
     const posts: PostData[] = postsSnapshot.docs.map((doc) => {
@@ -105,8 +101,6 @@ export async function GET(request: NextRequest) {
     });
 
     const goalSettings = goalDoc.exists ? goalDoc.data() : null;
-    const followerCounts = followerCountsSnapshot.docs.map((doc) => doc.data());
-
     // 分析データをマップ化
     const analyticsMap = new Map();
     analytics.forEach((analytics) => {
@@ -173,22 +167,10 @@ export async function GET(request: NextRequest) {
       analyticsCount++;
     });
 
-    // 現在のフォロワー数を取得
-    let currentFollowers = 0;
-    if (followerCounts.length > 0) {
-      currentFollowers = followerCounts[0].count || 0;
-    } else {
-      // 分析データから計算
-      const analyticsWithFollowers = analytics.filter((a) => a.followerIncrease !== undefined);
-      if (analyticsWithFollowers.length > 0) {
-        // 最初の投稿時点のフォロワー数を推定
-        const firstAnalytics = analyticsWithFollowers[analyticsWithFollowers.length - 1];
-        const initialFollowersValue = typeof firstAnalytics.initialFollowers === 'number' ? firstAnalytics.initialFollowers : 0;
-        const followerIncreaseValue = typeof firstAnalytics.followerIncrease === 'number' ? firstAnalytics.followerIncrease : 0;
-        const initialFollowers = initialFollowersValue - followerIncreaseValue;
-        currentFollowers = initialFollowers + totalFollowerGrowth;
-      }
-    }
+    // follower_counts の手入力値は廃止済み。
+    // 現在フォロワーは initialFollowers + analytics の followerIncrease 累積で算出する。
+    const initialFollowers = userDoc.exists ? Number(userDoc.data()?.businessInfo?.initialFollowers || 0) : 0;
+    const currentFollowers = Math.max(0, initialFollowers + totalFollowerGrowth);
 
     const avgEngagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0;
     const engagement = analyticsCount > 0 ? avgEngagementRate : 0;

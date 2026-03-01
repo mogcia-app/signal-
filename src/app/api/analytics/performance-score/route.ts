@@ -305,59 +305,8 @@ export async function GET(request: NextRequest) {
       0
     );
 
-    // 2. 前月を計算
-    const [yearStr, monthStr] = date.split("-").map(Number);
-    const prevMonth = new Date(yearStr, monthStr - 2, 1);
-    const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
-
-    // 3. 当月と前月のデータを取得
-    const [currentMonthSnapshot, prevMonthSnapshot, userDoc] = await Promise.all([
-      // 当月のデータ
-      adminDb
-        .collection("follower_counts")
-        .where("userId", "==", uid)
-        .where("snsType", "==", "instagram")
-        .where("month", "==", date)
-        .limit(1)
-        .get(),
-      // 前月のデータ
-      adminDb
-        .collection("follower_counts")
-        .where("userId", "==", uid)
-        .where("snsType", "==", "instagram")
-        .where("month", "==", prevMonthStr)
-        .limit(1)
-        .get(),
-      // ユーザー情報（initialFollowers取得用）
-      adminDb.collection("users").doc(uid).get(),
-    ]);
-
-    // 4. homeで入力された値（その他からの増加数）を取得
-    let followerIncreaseFromOther = 0;
-    if (!currentMonthSnapshot.empty) {
-      const currentData = currentMonthSnapshot.docs[0].data();
-      followerIncreaseFromOther = currentData.followers || 0;
-    }
-
-    // 5. 初回ログイン月の判定（前月のデータが存在しない場合）
-    const isFirstMonth = prevMonthSnapshot.empty;
-
-    // 6. initialFollowersを取得
-    let initialFollowers = 0;
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-      initialFollowers = userData?.businessInfo?.initialFollowers || 0;
-        }
-
-    // 7. 合計増加数の計算
-    // 初回ログイン月：ツール利用開始時のフォロワー数 + 投稿からの増加数 + その他からの増加数
-    // 2ヶ月目以降：投稿からの増加数 + その他からの増加数
-    let totalFollowerIncrease: number;
-    if (isFirstMonth && initialFollowers > 0) {
-      totalFollowerIncrease = initialFollowers + followerIncreaseFromPosts + followerIncreaseFromOther;
-    } else {
-      totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
-    }
+    // follower_counts の手入力増加数は廃止済みのため、投稿に紐づく増加分のみ採用
+    const totalFollowerIncrease = followerIncreaseFromPosts;
 
     // スコアを計算
     const result = calculatePerformanceScore({
@@ -388,4 +337,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

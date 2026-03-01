@@ -99,23 +99,9 @@ export async function syncPlanFollowerProgress(userId: string) {
       return sum + value;
     }, 0);
 
-    // /homeで入力された値（その他からの増加数）を取得
-    const followerCountSnapshot = await adminDb
-      .collection("follower_counts")
-      .where("userId", "==", userId)
-      .where("snsType", "==", "instagram")
-      .where("month", "==", currentMonth)
-      .limit(1)
-      .get();
-
-    let followerIncreaseFromOther = 0;
-    if (!followerCountSnapshot.empty) {
-      const followerCountData = followerCountSnapshot.docs[0].data();
-      followerIncreaseFromOther = followerCountData.followers || 0;
-    }
-
-    // 今月の合計増加数 = 投稿からの増加数 + その他からの増加数
-    const totalMonthlyFollowerIncrease = monthlyFollowerIncrease + followerIncreaseFromOther;
+    // follower_counts の手入力増加数は廃止済み。
+    // 今月の合計増加数は投稿に紐づく値のみ採用する。
+    const totalMonthlyFollowerIncrease = monthlyFollowerIncrease;
 
     // プランの現在のフォロワー数 = initialFollowers + 今月の増加数
     const actualFollowers = Math.max(0, initialFollowers + totalMonthlyFollowerIncrease);
@@ -129,4 +115,3 @@ export async function syncPlanFollowerProgress(userId: string) {
     console.error("計画フォロワー同期エラー:", error);
   }
 }
-

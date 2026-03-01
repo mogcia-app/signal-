@@ -102,75 +102,30 @@ export async function POST(request: NextRequest) {
         return post.createdAt >= startDate && post.createdAt <= endDate;
       });
 
-    // フォロワー数を取得（最新のデータを取得）
-    const currentMonth = `${year}-${String(month).padStart(2, "0")}`;
-    const prevMonth = new Date(year, month - 2, 1);
-    const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+    // follower_counts の手入力値は廃止済み。
+    // フォロワー数は initialFollowers + analytics の followerIncrease 累積で計算する。
+    const userDoc = await adminDb.collection("users").doc(uid).get();
+    const initialFollowers = userDoc.exists ? (userDoc.data()?.businessInfo?.initialFollowers || 0) : 0;
 
-    // 最新のフォロワー数を取得（updatedAtでソートして最新のものを取得）
-    const latestFollowerSnapshot = await adminDb
-      .collection("follower_counts")
-      .where("userId", "==", uid)
-      .where("snsType", "==", "instagram")
-      .orderBy("updatedAt", "desc")
-      .limit(1)
-      .get();
-
-    // 今月と前月のデータを取得（月初の値を計算するため）
-    const [currentMonthSnapshot, prevMonthSnapshot] = await Promise.all([
+    const [analyticsUntilEndSnapshot, analyticsBeforeStartSnapshot] = await Promise.all([
       adminDb
-        .collection("follower_counts")
+        .collection("analytics")
         .where("userId", "==", uid)
-        .where("snsType", "==", "instagram")
-        .where("month", "==", currentMonth)
-        .limit(1)
+        .where("publishedAt", "<=", endTimestamp)
         .get(),
       adminDb
-        .collection("follower_counts")
+        .collection("analytics")
         .where("userId", "==", uid)
-        .where("snsType", "==", "instagram")
-        .where("month", "==", prevMonthStr)
-        .limit(1)
+        .where("publishedAt", "<", startTimestamp)
         .get(),
     ]);
 
-    let currentFollowers = 0;
-    let startFollowers = 0;
-
-    // 最新のフォロワー数を取得（updatedAtでソートした最新の値）
-    if (!latestFollowerSnapshot.empty) {
-      const latestData = latestFollowerSnapshot.docs[0].data();
-      currentFollowers = latestData.followers || 0;
-    }
-
-    // 月初の値を取得（優先順位: 今月のstartFollowers → 前月のfollowers → initialFollowers）
-    if (!currentMonthSnapshot.empty) {
-      const currentData = currentMonthSnapshot.docs[0].data();
-      if (currentData.startFollowers) {
-        startFollowers = currentData.startFollowers;
-      } else if (!prevMonthSnapshot.empty) {
-        startFollowers = prevMonthSnapshot.docs[0].data().followers || 0;
-      }
-    } else if (!prevMonthSnapshot.empty) {
-      startFollowers = prevMonthSnapshot.docs[0].data().followers || 0;
-    }
-
-    // startFollowersがまだ0の場合、initialFollowersを取得
-    if (startFollowers === 0) {
-      const userDoc = await adminDb.collection("users").doc(uid).get();
-      if (userDoc.exists) {
-        const userData = userDoc.data();
-        startFollowers = userData?.businessInfo?.initialFollowers || 0;
-      }
-    }
-
-    console.log("Follower calculation:", {
-      currentMonth,
-      prevMonthStr,
-      currentFollowers,
-      startFollowers,
-      followerIncrease: currentFollowers - startFollowers,
-    });
+    const currentFollowers =
+      initialFollowers +
+      analyticsUntilEndSnapshot.docs.reduce((sum, doc) => sum + (Number(doc.data().followerIncrease) || 0), 0);
+    const startFollowers =
+      initialFollowers +
+      analyticsBeforeStartSnapshot.docs.reduce((sum, doc) => sum + (Number(doc.data().followerIncrease) || 0), 0);
 
     // 今月の実績を計算
     const totalLikes = analyticsSnapshot.docs.reduce(
@@ -196,17 +151,11 @@ export async function POST(request: NextRequest) {
     const followersKPI = kpiBreakdowns.find((kpi: KPIBreakdown) => kpi.key === "followers");
     if (followersKPI && followersKPI.value) {
       followerIncrease = followersKPI.value;
-      console.log("Using followers KPI value:", followerIncrease);
-    } else {
-      console.log("Calculated follower increase:", followerIncrease, "from", currentFollowers, "-", startFollowers);
     }
     
     // 現在のフォロワー数（今月末のフォロワー数）を使用
     // currentFollowersは既に今月末のフォロワー数なので、そのまま使用
     const totalCurrentFollowers = currentFollowers;
-    const userDoc = await adminDb.collection("users").doc(uid).get();
-    const initialFollowers = userDoc.exists ? (userDoc.data()?.businessInfo?.initialFollowers || 0) : 0;
-    
     const actualPostCount = posts.length;
 
     // KPI分解データから伸びていない部分を分析
@@ -452,4 +401,3 @@ ${weakKPIs.length > 0 ? weakKPIs.map((kpi) => `- ${kpi.label}: ${kpi.currentValu
     );
   }
 }
-

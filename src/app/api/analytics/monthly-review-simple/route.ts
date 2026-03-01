@@ -201,13 +201,6 @@ export async function GET(request: NextRequest) {
     const analyzedCount = analyticsSnapshot.docs.length;
     const hasPlan = !plansSnapshot.empty;
 
-    // initialFollowersを取得（フォロワー数計算で使用）
-    let initialFollowers = 0;
-    if (userDoc.exists) {
-      const userData = userDoc.data();
-      initialFollowers = userData?.businessInfo?.initialFollowers || 0;
-    }
-
     // 投稿と分析データをpostIdで紐付け
     const analyticsByPostId = new Map<string, admin.firestore.DocumentData>();
     analyticsSnapshot.docs.forEach((doc) => {
@@ -241,85 +234,15 @@ export async function GET(request: NextRequest) {
         totalFollowerIncrease += data.followerIncrease || 0;
       });
 
-      // フォロワー増加数の計算（performance-scoreと同じロジック）
-      // 1. analyticsのfollowerIncreaseの合計を計算（上記で既に計算済み）
-      const followerIncreaseFromPosts = totalFollowerIncrease;
-
-      // 2. 前月を計算
-      const [yearStr, monthStr] = date.split("-").map(Number);
-      const prevMonth = new Date(yearStr, monthStr - 2, 1);
-      const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
-
-      // 3. 当月と前月のデータを取得
-      const [currentMonthSnapshot, prevMonthSnapshot] = await Promise.all([
-        // 当月のデータ
-        adminDb
-          .collection("follower_counts")
-          .where("userId", "==", uid)
-          .where("snsType", "==", "instagram")
-          .where("month", "==", date)
-          .limit(1)
-          .get(),
-        // 前月のデータ
-        adminDb
-          .collection("follower_counts")
-          .where("userId", "==", uid)
-          .where("snsType", "==", "instagram")
-          .where("month", "==", prevMonthStr)
-          .limit(1)
-          .get(),
-      ]);
-
-      // 4. homeで入力された値（その他からの増加数）を取得
-      let followerIncreaseFromOther = 0;
-      let currentFollowersFromHome = 0;
-      if (!currentMonthSnapshot.empty) {
-        const currentData = currentMonthSnapshot.docs[0].data();
-        currentFollowersFromHome = currentData.followers || 0;
-      }
-
-      // 5. 前月のhomeで入力されたフォロワー数を取得
-      let previousFollowersFromHome = 0;
-      if (!prevMonthSnapshot.empty) {
-        const prevData = prevMonthSnapshot.docs[0].data();
-        previousFollowersFromHome = prevData.followers || 0;
-      }
-
-      // 6. 初回ログイン月の判定（前月のデータが存在しない場合）
-      const isFirstMonth = prevMonthSnapshot.empty;
-
-      // 7. その他からの増加数を計算
-      if (isFirstMonth) {
-        // 初回ログイン月：homeで入力された現在のフォロワー数
-        followerIncreaseFromOther = currentFollowersFromHome;
-      } else {
-        // 2ヶ月目以降：homeで入力された現在のフォロワー数 - 前月のhomeで入力されたフォロワー数
-        followerIncreaseFromOther = currentFollowersFromHome - previousFollowersFromHome;
-      }
-
-      // 8. 合計増加数の計算
-      // 初回ログイン月：ツール利用開始時のフォロワー数 + 投稿からの増加数 + その他からの増加数
-      // 2ヶ月目以降：投稿からの増加数 + その他からの増加数
-      if (isFirstMonth && initialFollowers > 0) {
-        totalFollowerIncrease = initialFollowers + followerIncreaseFromPosts + followerIncreaseFromOther;
-      } else {
-        totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
-      }
-
-      // 9. 現在のフォロワー数を計算（表示用）
-      // homeで入力された現在のフォロワー数 + アナリティクスからの増加数
-      // 初回ログイン月：initialFollowers + followerIncreaseFromPosts + currentFollowersFromHome
-      // 2ヶ月目以降：initialFollowers + followerIncreaseFromPosts + (currentFollowersFromHome - previousFollowersFromHome)
-      // currentTotalFollowers removed (unused)
+      // follower_counts の手入力増加数は廃止済みのため、
+      // フォロワー増加は analytics に紐づく値のみ使用する。
     } else {
       // KPIデータが提供されている場合でも、シェア数は計算が必要
       analyticsByPostId.forEach((data) => {
         totalShares += data.shares || 0;
       });
       
-      // currentTotalFollowersを計算（useProvidedKpisがtrueの場合）
-      // performance-scoreから渡されたtotalFollowerIncreaseを使用
-      // prevMonthStr, prevMonthSnapshot, isFirstMonth, currentTotalFollowers removed (unused)
+      // performance-scoreから渡されたtotalFollowerIncreaseをそのまま使用
     }
 
     // 投稿タイプ別の統計を計算（analyticsコレクションのデータのみを使用）
@@ -503,21 +426,12 @@ export async function GET(request: NextRequest) {
     const prevStartTimestamp = admin.firestore.Timestamp.fromDate(prevStart);
     const prevEndTimestamp = admin.firestore.Timestamp.fromDate(prevEnd);
 
-    const [prevAnalyticsSnapshot, followerCountSnapshot] = await Promise.all([
-      adminDb
-        .collection("analytics")
-        .where("userId", "==", uid)
-        .where("publishedAt", ">=", prevStartTimestamp)
-        .where("publishedAt", "<=", prevEndTimestamp)
-        .get(),
-      adminDb
-        .collection("follower_counts")
-        .where("userId", "==", uid)
-        .where("snsType", "==", "instagram")
-        .where("month", "==", date)
-        .limit(1)
-        .get(),
-    ]);
+    const prevAnalyticsSnapshot = await adminDb
+      .collection("analytics")
+      .where("userId", "==", uid)
+      .where("publishedAt", ">=", prevStartTimestamp)
+      .where("publishedAt", "<=", prevEndTimestamp)
+      .get();
 
     let prevTotalReach = 0;
     prevAnalyticsSnapshot.docs.forEach((doc) => {
@@ -529,35 +443,7 @@ export async function GET(request: NextRequest) {
       ? ((totalReach - prevTotalReach) / prevTotalReach) * 100 
       : 0;
 
-    // フォロワー数を取得（follower_countsから、なければanalyticsから計算）
-    // currentFollowers, followerData, and latestAnalytics removed (unused)
-    if (!followerCountSnapshot.empty) {
-      // followerData removed (unused)
-    } else {
-      // follower_countsがない場合、analyticsから最新のフォロワー数を取得
-      // ただし、これは正確ではない可能性があるため、0の場合は表示しない
-      // latestAnalytics removed (unused)
-      analyticsSnapshot.docs
-        .map((doc) => {
-          const data = doc.data();
-          const publishedAt = data.publishedAt;
-          return { publishedAt, followers: data.followers || 0 };
-        })
-        .filter((item) => item.followers > 0)
-        .sort((a, b) => {
-          if (!a.publishedAt || !b.publishedAt) {
-            return 0;
-          }
-          const aTime = a.publishedAt instanceof admin.firestore.Timestamp
-            ? a.publishedAt.toMillis()
-            : a.publishedAt.getTime?.() || 0;
-          const bTime = b.publishedAt instanceof admin.firestore.Timestamp
-            ? b.publishedAt.toMillis()
-            : b.publishedAt.getTime?.() || 0;
-          return bTime - aTime;
-        });
-      // currentFollowers removed (unused)
-    }
+    // follower_counts 参照は廃止済み（このAPIではフォロワー絶対値を使わない）
 
     // 運用計画の情報を取得
     let planInfo = null;
@@ -1072,4 +958,3 @@ ${getMonthName(date)}のデータがまだありません。投稿を開始し�
     );
   }
 }
-

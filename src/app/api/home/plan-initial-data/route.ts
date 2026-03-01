@@ -49,19 +49,15 @@ export async function GET(request: NextRequest) {
     if (monthsSinceStart <= 0) {
       currentFollowers = initialFollowers;
     } else {
-      const followerCountSnapshot = await adminDb
-        .collection(COLLECTIONS.FOLLOWER_COUNTS)
+      const analyticsSnapshot = await adminDb
+        .collection(COLLECTIONS.ANALYTICS)
         .where("userId", "==", userId)
         .where("snsType", "==", "instagram")
         .get();
 
-      const kpiFollowersTotal = followerCountSnapshot.docs.reduce((sum, doc) => {
+      const kpiFollowersTotal = analyticsSnapshot.docs.reduce((sum, doc) => {
         const data = doc.data();
-        const month = typeof data.month === "string" ? data.month : "";
-        if (!month || month > currentMonth) {
-          return sum;
-        }
-        return sum + (Number(data.followers) || 0);
+        return sum + (Number(data.followerIncrease) || 0);
       }, 0);
 
       currentFollowers = initialFollowers + kpiFollowersTotal;
