@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
     let totalComments = useProvidedKpis ? providedKpis.totalComments! : 0;
     let totalSaves = useProvidedKpis ? providedKpis.totalSaves! : 0;
     let totalShares = 0; // シェア数は提供されていないので計算
-    let totalFollowerIncrease = useProvidedKpis ? providedKpis.totalFollowerIncrease! : 0;
+    let _totalFollowerIncrease = useProvidedKpis ? providedKpis.totalFollowerIncrease! : 0;
     // currentTotalFollowers removed (unused)
 
     if (!useProvidedKpis) {
@@ -231,7 +231,7 @@ export async function GET(request: NextRequest) {
         totalComments += data.comments || 0;
         totalSaves += data.saves || 0;
         totalShares += data.shares || 0;
-        totalFollowerIncrease += data.followerIncrease || 0;
+        _totalFollowerIncrease += data.followerIncrease || 0;
       });
 
       // follower_counts の手入力増加数は廃止済みのため、
