@@ -8,22 +8,18 @@ import { MonthlyReview } from "./components/MonthlyReview";
 import { useAuth } from "../../../contexts/auth-context";
 import { useProgress } from "../../../contexts/progress-context";
 import { useReportPageData } from "./hooks/useReportPageData";
-import { useMonthAutoUpdate } from "@/hooks/useMonthAutoUpdate";
-import { useAiUsageSummary } from "@/hooks/useAiUsageSummary";
-import { getMonthDisplayName } from "@/utils/date-utils";
+import { useBillingCycleMonth } from "@/hooks/useBillingCycleMonth";
+import { formatAiRemainingLabel, useAiUsageSummary } from "@/hooks/useAiUsageSummary";
 import { BotStatusCard } from "../../../components/bot-status-card";
 
 export default function ReportPageClient() {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
   const { showProgress, setProgress, hideProgress } = useProgress();
-  const [selectedMonth, setSelectedMonth] = useMonthAutoUpdate();
+  const { selectedMonth, setSelectedMonth, selectedPeriodLabel, isCycleResolved } = useBillingCycleMonth(isAuthReady);
   const [isMonthlyReviewGenerating, setIsMonthlyReviewGenerating] = useState(false);
   const { usage: aiUsageSummary, refreshUsage } = useAiUsageSummary(isAuthReady);
-  const aiUsageLabel =
-    aiUsageSummary?.remaining === null
-      ? "今月のAI残回数: 無制限"
-      : `今月のAI残回数: ${Math.max(aiUsageSummary?.remaining || 0, 0)}回`;
+  const aiUsageLabel = formatAiRemainingLabel(aiUsageSummary);
   const {
     performanceScore,
     reportData,
@@ -41,10 +37,10 @@ export default function ReportPageClient() {
 
   // 月が変更された時、または認証が準備できた時にデータを取得
   useEffect(() => {
-    if (isAuthReady && selectedMonth) {
+    if (isAuthReady && isCycleResolved && selectedMonth) {
       void fetchReportData(selectedMonth);
     }
-  }, [isAuthReady, selectedMonth, fetchReportData]);
+  }, [isAuthReady, isCycleResolved, selectedMonth, fetchReportData]);
 
   return (
     <SNSLayout customTitle="月次レポート" customDescription="月次のパフォーマンス分析とレポート">
@@ -53,7 +49,7 @@ export default function ReportPageClient() {
         <ReportHeader
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
-          getMonthDisplayName={getMonthDisplayName}
+          periodLabel={selectedPeriodLabel}
         />
 
         {/* エラー表示 */}

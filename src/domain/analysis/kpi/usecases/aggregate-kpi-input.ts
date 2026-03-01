@@ -20,14 +20,14 @@ export function aggregateKpiInput(raw: KpiRepositoryData): BuildKpiDashboardInpu
   const profileVisitsFromPosts = hasCurrentSummary
     ? raw.currentSummary!.totalProfileVisits
     : postsWithAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.profileVisits || 0), 0);
-  const profileVisitsFromOther = hasCurrentSummary ? 0 : followerCount?.profileVisits || 0;
+  const profileVisitsFromOther = 0;
 
   const externalLinkTapsFromPosts = hasCurrentSummary
     ? raw.currentSummary!.totalExternalLinkTaps
     : postsWithAnalytics
         .filter((post) => post.postType === "feed")
         .reduce((sum, post) => sum + (post.analyticsSummary?.externalLinkTaps || 0), 0);
-  const externalLinkTapsFromOther = hasCurrentSummary ? 0 : followerCount?.externalLinkTaps || 0;
+  const externalLinkTapsFromOther = 0;
 
   const currentFollowers = followerCount?.followers || 0;
   const previousCurrentFollowers = previousFollowerCount?.followers || 0;
@@ -43,27 +43,26 @@ export function aggregateKpiInput(raw: KpiRepositoryData): BuildKpiDashboardInpu
         .filter((post) => post.postType === "feed")
         .reduce((sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0), 0);
   const followerIncreaseFromPosts = followerIncreaseFromReel + followerIncreaseFromFeed;
-  const followerIncreaseFromOther = hasCurrentSummary
-    ? raw.currentSummary!.totalFollowerIncrease
-    : currentFollowers;
+  // 投稿に紐づかない手入力増加数は廃止済みのため、現在は合算しない
+  const followerIncreaseFromOther = 0;
 
   const totals = raw.currentSummary
     ? totalsFromSummary(raw.currentSummary)
-    : calculateTotals(postsWithAnalytics, followerCount);
+    : calculateTotals(postsWithAnalytics);
   if (!raw.currentSummary) {
     totals.totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
   }
 
   const previousTotals = raw.previousSummary
     ? totalsFromSummary(raw.previousSummary)
-    : calculatePreviousTotals(previousAnalytics, previousFollowerCount);
+    : calculatePreviousTotals(previousAnalytics);
   const isFirstMonth = !previousFollowerCount && previousAnalytics.length === 0;
 
   const changes = calculateChanges(totals, previousTotals);
   const reachSourceAnalysis = calculateReachSourceAnalysis(postsWithAnalytics);
   const dailyKPIs = raw.currentSummary
     ? aggregateDailyKPIsFromSummary(raw.currentSummary, raw.month)
-    : aggregateDailyKPIs(rawAnalyticsEntries, raw.month);
+    : aggregateDailyKPIs(rawAnalyticsEntries, raw.month, raw.currentRangeStart, raw.currentRangeEndExclusive);
   const goalAchievements = calculateGoalAchievements(
     totals,
     raw.activePlan,
@@ -177,9 +176,9 @@ function toRawAnalyticsEntries(analytics: AnalyticsDocument[]): RawAnalyticsEntr
   }));
 }
 
-export function calculateTotals(posts: PostWithAnalytics[], followerCount: KpiRepositoryData["followerCount"]): KPITotals {
-  const profileVisitsFromHome = followerCount?.profileVisits || 0;
-  const externalLinkTapsFromHome = followerCount?.externalLinkTaps || 0;
+export function calculateTotals(posts: PostWithAnalytics[]): KPITotals {
+  const profileVisitsFromHome = 0;
+  const externalLinkTapsFromHome = 0;
 
   return {
     totalLikes: posts.reduce((sum, post) => sum + (post.analyticsSummary?.likes || 0), 0),
@@ -205,17 +204,17 @@ export function calculateTotals(posts: PostWithAnalytics[], followerCount: KpiRe
 }
 
 function calculatePreviousTotals(
-  previousAnalytics: PostWithAnalytics[],
-  previousFollowerCount: KpiRepositoryData["previousFollowerCount"]
+  previousAnalytics: PostWithAnalytics[]
 ): KPITotals {
-  const previousProfileVisitsFromHome = previousFollowerCount?.profileVisits || 0;
-  const previousExternalLinkTapsFromHome = previousFollowerCount?.externalLinkTaps || 0;
+  const previousProfileVisitsFromHome = 0;
+  const previousExternalLinkTapsFromHome = 0;
 
   const previousFollowerIncreaseFromPosts = previousAnalytics.reduce(
     (sum, post) => sum + (post.analyticsSummary?.followerIncrease || 0),
     0
   );
-  const previousFollowerIncreaseFromOther = previousFollowerCount?.followers || 0;
+  // 投稿に紐づかない手入力増加数は廃止済みのため、現在は合算しない
+  const previousFollowerIncreaseFromOther = 0;
 
   return {
     totalLikes: previousAnalytics.reduce((sum, post) => sum + (post.analyticsSummary?.likes || 0), 0),
@@ -271,9 +270,13 @@ function calculateReachSourceAnalysis(posts: PostWithAnalytics[]): ReachSourceAn
   };
 }
 
-export function aggregateDailyKPIs(entries: RawAnalyticsEntry[], month: string): DailyKPI[] {
+export function aggregateDailyKPIs(
+  entries: RawAnalyticsEntry[],
+  month: string,
+  rangeStart?: Date,
+  rangeEndExclusive?: Date
+): DailyKPI[] {
   const [year, m] = month.split("-").map(Number);
-  const daysInMonth = new Date(year, m, 0).getDate();
 
   const analyticsByDay = new Map<string, RawAnalyticsEntry[]>();
   for (const entry of entries) {
@@ -285,8 +288,15 @@ export function aggregateDailyKPIs(entries: RawAnalyticsEntry[], month: string):
   }
 
   const dailyKPIs: DailyKPI[] = [];
-  for (let day = 1; day <= daysInMonth; day++) {
-    const currentDate = new Date(year, m - 1, day);
+  const start = rangeStart ?? new Date(year, m - 1, 1);
+  const endExclusive = rangeEndExclusive ?? new Date(year, m, 1);
+
+  for (
+    let cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    cursor < endExclusive;
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1)
+  ) {
+    const currentDate = cursor;
     const dayKey = currentDate.toISOString().split("T")[0];
     const dayAnalytics = analyticsByDay.get(dayKey) || [];
     const dayLikes = dayAnalytics.reduce((sum, d) => sum + d.likes, 0);
@@ -296,7 +306,7 @@ export function aggregateDailyKPIs(entries: RawAnalyticsEntry[], month: string):
     const dayShares = dayAnalytics.reduce((sum, d) => sum + d.shares, 0);
     dailyKPIs.push({
       date: dayKey,
-      label: `${m}/${day}`,
+      label: `${currentDate.getMonth() + 1}/${currentDate.getDate()}`,
       likes: dayLikes,
       reach: dayReach,
       saves: daySaves,

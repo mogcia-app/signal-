@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const rawData = await KpiDashboardRepository.fetchKpiRawData(uid, date);
+    const rawData = await KpiDashboardRepository.fetchKpiRawDataByBillingCycle(uid, date, userProfile);
     const aggregatedInput = aggregateKpiInput(rawData);
     const dashboard = buildKpiDashboard(aggregatedInput);
 

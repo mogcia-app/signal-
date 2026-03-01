@@ -11,6 +11,26 @@ export interface AiUsageSummary {
   breakdown?: Record<string, number>;
 }
 
+export const PRACTICAL_UNLIMITED_AI_LIMIT = 1000;
+
+export function isAiUsageUnlimited(limit: number | null | undefined): boolean {
+  return limit === null || (typeof limit === "number" && limit >= PRACTICAL_UNLIMITED_AI_LIMIT);
+}
+
+export function formatAiRemainingLabel(
+  usage: AiUsageSummary | null | undefined,
+  options?: { loading?: boolean; prefix?: string }
+): string {
+  const prefix = options?.prefix ?? "今月のAI残回数: ";
+  if (options?.loading) {
+    return `${prefix}読み込み中...`;
+  }
+  if (isAiUsageUnlimited(usage?.limit)) {
+    return `${prefix}無制限`;
+  }
+  return `${prefix}${Math.max(usage?.remaining || 0, 0)}回`;
+}
+
 export function useAiUsageSummary(enabled = true) {
   const [usage, setUsage] = useState<AiUsageSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);

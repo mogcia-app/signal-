@@ -23,6 +23,8 @@
     "migrate:home-plan-format": "node scripts/migrate-home-plan-format.js",
     "migrate:post-images:dry-run": "node scripts/migrate-post-images-to-storage.js --dry-run",
     "migrate:post-images": "node scripts/migrate-post-images-to-storage.js",
+    "migrate:follower-counts:disable-legacy:dry-run": "node scripts/migrate-follower-counts-disable-legacy.js --dry-run",
+    "migrate:follower-counts:disable-legacy": "node scripts/migrate-follower-counts-disable-legacy.js",
     "rules:check": "firebase deploy --only firestore:rules --dry-run",
     "emulators:start": "firebase emulators:start",
     "emulators:start:firestore": "firebase emulators:start --only firestore",

@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
     endOfLastWeek.setHours(23, 59, 59, 999);
 
     const user = await getUserProfile(uid);
-    const { analytics, posts, followerCounts, activePlan } = await HomeDashboardRepository.fetchDashboardData(
+    const { analytics, posts, activePlan } = await HomeDashboardRepository.fetchDashboardData(
       uid,
       user?.activePlanId || null
     );
@@ -139,31 +139,9 @@ export async function GET(request: NextRequest) {
       0
     );
 
-    let thisWeekFollowerIncreaseFromOther = 0;
-    let lastWeekFollowerIncreaseFromOther = 0;
-
-    if (followerCounts.length >= 1) {
-      const monthFollowerIncreaseFromOther = followerCounts[0].followers || 0;
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const daysSinceMonthStart =
-        Math.floor((today.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      const weeksSinceMonthStart = Math.ceil(daysSinceMonthStart / 7);
-      if (weeksSinceMonthStart > 0) {
-        thisWeekFollowerIncreaseFromOther = Math.round(monthFollowerIncreaseFromOther / weeksSinceMonthStart);
-      }
-
-      if (followerCounts.length >= 2) {
-        const previousMonthFollowerIncreaseFromOther = followerCounts[1].followers || 0;
-        const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-        const daysInPreviousMonth = previousMonthEnd.getDate();
-        const weeksInPreviousMonth = Math.ceil(daysInPreviousMonth / 7);
-        if (weeksInPreviousMonth > 0) {
-          lastWeekFollowerIncreaseFromOther = Math.round(
-            previousMonthFollowerIncreaseFromOther / weeksInPreviousMonth
-          );
-        }
-      }
-    }
+    // follower_counts の手入力値は廃止済み。週次の「その他増加」は常に0として扱う。
+    const thisWeekFollowerIncreaseFromOther = 0;
+    const lastWeekFollowerIncreaseFromOther = 0;
 
     const thisWeekKPIs = {
       likes: thisWeekAnalytics.reduce((sum, a) => sum + (a.likes || 0), 0),

@@ -138,7 +138,8 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
   const totalShares = validAnalyticsData.reduce((sum, data) => sum + data.shares, 0);
   const totalReposts = validAnalyticsData.reduce((sum, data) => sum + (data.reposts || 0), 0);
   const followerIncreaseFromPosts = validAnalyticsData.reduce((sum, data) => sum + (data.followerIncrease || 0), 0);
-  const followerIncreaseFromOther = input.reportData.followerCount?.followers || 0;
+  // 投稿に紐づかない手入力増加数は廃止済みのため、現在は合算しない
+  const followerIncreaseFromOther = 0;
   const totalFollowerIncrease = followerIncreaseFromPosts + followerIncreaseFromOther;
 
   const performanceScore = calculatePerformanceScore({

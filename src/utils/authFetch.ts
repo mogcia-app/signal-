@@ -16,6 +16,7 @@ import { getAuth, onAuthStateChanged, type Unsubscribe, type User } from "fireba
 
 const defaultFetch: typeof fetch | undefined =
   typeof fetch !== "undefined" ? fetch.bind(globalThis) : undefined;
+const DEBUG_AUTH_FETCH_KEY = "signal_debug_auth_fetch";
 
 type FetchImpl = typeof fetch;
 
@@ -225,6 +226,17 @@ const isOffline = (): boolean => {
   return navigator.onLine === false;
 };
 
+const shouldLogAuthFetchDebug = (): boolean => {
+  if (process.env.NODE_ENV !== "development" || typeof window === "undefined") {
+    return false;
+  }
+  try {
+    return window.localStorage.getItem(DEBUG_AUTH_FETCH_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
 const wait = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -357,7 +369,7 @@ export const authFetch = async (
     hasToken: Boolean(token),
   };
 
-  if (process.env.NODE_ENV === "development" && isApiRequest(input)) {
+  if (isApiRequest(input) && shouldLogAuthFetchDebug()) {
     console.debug("[authFetch]", debugInfo);
   }
 

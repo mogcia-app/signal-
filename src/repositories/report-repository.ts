@@ -1,6 +1,9 @@
 import { adminDb } from "@/lib/firebase-admin";
+import * as admin from "firebase-admin";
 import { COLLECTIONS } from "@/repositories/collections";
-import { toDate, toPreviousMonth, toTimestampRange } from "@/repositories/firestore-utils";
+import { toDate } from "@/repositories/firestore-utils";
+import type { UserProfile } from "@/types/user";
+import { getBillingCycleRangeForMonthKey } from "@/lib/server/billing-cycle";
 import type {
   DirectionAlignmentWarningDocument,
   ReportAnalyticsDocument,
@@ -22,11 +25,21 @@ function normalizePostType(value: unknown): "feed" | "reel" | "story" | "carouse
 }
 
 export class ReportRepository {
-  static async fetchReportRepositoryData(userId: string, month: string): Promise<ReportRepositoryData> {
-    const { startDate, endDate } = toTimestampRange(month);
-    const previousMonth = toPreviousMonth(month);
-    const { startTimestamp, endTimestamp } = toTimestampRange(month);
-    const { startTimestamp: prevStartTimestamp, endTimestamp: prevEndTimestamp } = toTimestampRange(previousMonth);
+  static async fetchReportRepositoryData(
+    userId: string,
+    month: string,
+    userProfile?: UserProfile | null
+  ): Promise<ReportRepositoryData> {
+    const cycle = getBillingCycleRangeForMonthKey({
+      userProfile,
+      monthKey: month,
+    });
+    const startDate = cycle.start;
+    const endDate = new Date(cycle.endExclusive.getTime() - 1);
+    const startTimestamp = this.toTimestamp(cycle.start);
+    const endTimestamp = this.toTimestamp(endDate);
+    const prevStartTimestamp = this.toTimestamp(cycle.previousStart);
+    const prevEndTimestamp = this.toTimestamp(new Date(cycle.previousEndExclusive.getTime() - 1));
 
     const [
       analytics,
@@ -44,10 +57,10 @@ export class ReportRepository {
       this.fetchActivePlan(userId),
       this.fetchUser(userId),
       this.fetchReportAnalytics(userId, prevStartTimestamp, prevEndTimestamp),
-      this.fetchFollowerCounts(userId, month),
+      this.fetchFollowerCounts(userId, cycle.key),
       this.fetchFeedbackEntries(userId, 500),
       this.fetchSnapshotStatuses(userId, startTimestamp, endTimestamp),
-      this.fetchDirectionAlignmentWarnings(userId, month),
+      this.fetchDirectionAlignmentWarnings(userId, cycle.key),
     ]);
 
     return {
@@ -64,6 +77,10 @@ export class ReportRepository {
       snapshotStatusMap,
       directionAlignmentWarnings,
     };
+  }
+
+  private static toTimestamp(date: Date): FirebaseFirestore.Timestamp {
+    return admin.firestore.Timestamp.fromDate(date);
   }
 
   static async fetchReportAnalytics(

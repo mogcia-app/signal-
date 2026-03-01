@@ -3,7 +3,6 @@
 import { useAuth } from "../contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { checkUserContract } from "../lib/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { getToolMaintenanceStatus } from "@/lib/tool-maintenance";
@@ -19,27 +18,9 @@ const AUTH_CALLBACK_GRACE_MS = 15000;
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading, contractValid } = useAuth();
   const router = useRouter();
-  const [isCheckingContract, setIsCheckingContract] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [checkingMaintenance, setCheckingMaintenance] = useState(false);
   const [loaderProgress, setLoaderProgress] = useState(16);
-
-  // ユーザーが認証済みの場合、契約期間を定期的にチェック
-  useEffect(() => {
-    if (!loading && user && !isCheckingContract) {
-      setIsCheckingContract(true);
-
-      const checkContract = async () => {
-        const isValid = await checkUserContract(user.uid);
-        if (!isValid) {
-          // 契約が無効な場合、ログアウト
-          await signOut(auth);
-        }
-      };
-
-      checkContract();
-    }
-  }, [user, loading, isCheckingContract]);
 
   // メンテナンス状態をチェック
   useEffect(() => {

@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useAiUsageSummary } from "@/hooks/useAiUsageSummary";
+import { formatAiRemainingLabel, useAiUsageSummary } from "@/hooks/useAiUsageSummary";
 import { authFetch } from "../../utils/authFetch";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
@@ -2787,11 +2787,7 @@ export default function HomePage() {
                   <div className="px-1 py-1 min-w-[220px]">
                     <div className="flex items-center justify-end gap-3">
                       <p className="text-[11px] text-gray-700">
-                        {isAiUsageLoading
-                          ? "今月のAI残回数: 読み込み中..."
-                          : aiUsage?.remaining === null
-                            ? "今月のAI残回数: 無制限"
-                            : `今月のAI残回数: ${Math.max(aiUsage?.remaining || 0, 0)}回`}
+                        {formatAiRemainingLabel(aiUsage, { loading: isAiUsageLoading })}
                       </p>
                       <button
                         type="button"
@@ -3789,11 +3785,7 @@ export default function HomePage() {
             <div className="border-b border-gray-200 px-3 py-2">
               <div className="flex items-center justify-end gap-3">
                 <p className="text-[11px] text-gray-700">
-                  {isAiUsageLoading
-                    ? "今月のAI残回数: 読み込み中..."
-                    : aiUsage?.remaining === null
-                      ? "今月のAI残回数: 無制限"
-                      : `今月のAI残回数: ${Math.max(aiUsage?.remaining || 0, 0)}回`}
+                  {formatAiRemainingLabel(aiUsage, { loading: isAiUsageLoading })}
                 </p>
                 <button
                   type="button"

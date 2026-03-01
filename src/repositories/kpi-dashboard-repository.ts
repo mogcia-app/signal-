@@ -1,6 +1,9 @@
 import { adminDb } from "@/lib/firebase-admin";
+import * as admin from "firebase-admin";
 import { COLLECTIONS } from "@/repositories/collections";
 import { toDate, toPreviousMonth, toTimestampRange } from "@/repositories/firestore-utils";
+import { getBillingCycleRangeForMonthKey } from "@/lib/server/billing-cycle";
+import type { UserProfile } from "@/types/user";
 import type {
   AnalyticsDocument,
   FollowerCountDocument,
@@ -37,6 +40,42 @@ export class KpiDashboardRepository {
       snapshotStatusMap,
       activePlan,
       initialFollowers,
+    };
+  }
+
+  static async fetchKpiRawDataByBillingCycle(
+    userId: string,
+    cycleMonthKey: string,
+    userProfile: UserProfile | null
+  ): Promise<KpiRepositoryData> {
+    const cycle = getBillingCycleRangeForMonthKey({
+      userProfile,
+      monthKey: cycleMonthKey,
+    });
+
+    const [currentAnalytics, previousAnalytics, followerCounts, snapshotStatusMap, activePlan, initialFollowers] =
+      await Promise.all([
+        this.fetchAnalyticsByRange(userId, cycle.start, cycle.endExclusive),
+        this.fetchAnalyticsByRange(userId, cycle.previousStart, cycle.previousEndExclusive),
+        this.fetchFollowerCounts(userId, cycle.key, cycle.previousKey),
+        this.fetchSnapshotStatuses(userId),
+        this.fetchActivePlanGoals(userId),
+        this.fetchInitialFollowers(userId),
+      ]);
+
+    return {
+      month: cycle.key,
+      currentAnalytics,
+      previousAnalytics,
+      currentSummary: null,
+      previousSummary: null,
+      followerCount: followerCounts.current,
+      previousFollowerCount: followerCounts.previous,
+      snapshotStatusMap,
+      activePlan,
+      initialFollowers,
+      currentRangeStart: cycle.start,
+      currentRangeEndExclusive: cycle.endExclusive,
     };
   }
 
@@ -86,6 +125,26 @@ export class KpiDashboardRepository {
     }
 
     return analytics;
+  }
+
+  private static async fetchAnalyticsByRange(
+    userId: string,
+    start: Date,
+    endExclusive: Date
+  ): Promise<AnalyticsDocument[]> {
+    const startTimestamp = admin.firestore.Timestamp.fromDate(start);
+    const endExclusiveTimestamp = admin.firestore.Timestamp.fromDate(endExclusive);
+
+    const snapshot = await adminDb
+      .collection(COLLECTIONS.ANALYTICS)
+      .where("userId", "==", userId)
+      .where("publishedAt", ">=", startTimestamp)
+      .where("publishedAt", "<", endExclusiveTimestamp)
+      .get();
+
+    return snapshot.docs
+      .map((doc) => this.normalizeAnalyticsDocument(doc.data()))
+      .filter((entry): entry is AnalyticsDocument => entry !== null);
   }
 
   private static normalizeMonthlySummaryDocument(

@@ -9,6 +9,7 @@ import { buildReportComplete } from "@/domain/analysis/report/usecases/build-rep
 import { createReportAiClient } from "@/domain/analysis/report/usecases/create-report-ai-client";
 import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
 import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
+import { getBillingCycleContext } from "@/lib/server/billing-cycle";
 
 const aiClient = createReportAiClient(process.env.OPENAI_API_KEY);
 
@@ -62,7 +63,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get("date") || new Date().toISOString().slice(0, 7);
+    const billingCycle = getBillingCycleContext({ userProfile });
+    const date = searchParams.get("date") || billingCycle.current.key;
     const forceRegenerate = searchParams.get("regenerate") === "true";
 
     if (!/^\d{4}-\d{2}$/.test(date)) {
@@ -79,7 +81,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const reportData = await ReportRepository.fetchReportRepositoryData(uid, date);
+    const reportData = await ReportRepository.fetchReportRepositoryData(uid, date, userProfile);
     const data = await buildReportComplete({
       userId: uid,
       month: date,

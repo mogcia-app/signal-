@@ -7,7 +7,7 @@ import SNSLayout from "../../../components/sns-layout";
 import { postsApi } from "../../../lib/api";
 import { useAuth } from "../../../contexts/auth-context";
 import { notify } from "../../../lib/ui/notifications";
-import { useAiUsageSummary } from "@/hooks/useAiUsageSummary";
+import { formatAiRemainingLabel, useAiUsageSummary } from "@/hooks/useAiUsageSummary";
 import {
   Image as ImageIcon,
   Heart,
@@ -226,10 +226,7 @@ export default function InstagramPostsPage() {
   const searchParams = useSearchParams();
   const tabButtonsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const { usage: aiUsageSummary, refreshUsage, setUsage: setAiUsageSummary } = useAiUsageSummary(Boolean(user));
-  const aiUsageLabel =
-    aiUsageSummary?.remaining === null
-      ? "今月のAI残回数: 無制限"
-      : `今月のAI残回数: ${Math.max(aiUsageSummary?.remaining || 0, 0)}回`;
+  const aiUsageLabel = formatAiRemainingLabel(aiUsageSummary);
 
   const applyUsageFromApi = useCallback((value: unknown) => {
     if (!value || typeof value !== "object") {return;}

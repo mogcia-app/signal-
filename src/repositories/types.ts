@@ -65,6 +65,8 @@ export interface KpiRepositoryData {
   snapshotStatusMap: Map<string, SnapshotStatus>;
   activePlan: PlanGoalDocument | null;
   initialFollowers: number;
+  currentRangeStart?: Date;
+  currentRangeEndExclusive?: Date;
 }
 
 export interface ReportAnalyticsDocument {

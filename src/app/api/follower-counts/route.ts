@@ -6,12 +6,14 @@ import * as admin from "firebase-admin";
 interface FollowerCount {
   userId: string;
   snsType: "instagram" | "x" | "tiktok";
-  followers: number; // 投稿に紐づかないフォロワー増加数（/homeで入力された値）
-  startFollowers?: number; // 月初のフォロワー数（オプション、使用しない）
+  followers: number; // 廃止: 互換性のため保持（常に0）
+  startFollowers?: number; // 廃止: 互換性のため保持（常に0）
   month: string; // YYYY-MM形式
   source: "manual" | "onboarding"; // 手動入力 or オンボーディング
-  profileVisits?: number; // プロフィールへのアクセス数（投稿に紐づかない全体の数値）
-  externalLinkTaps?: number; // 外部リンクタップ数（投稿に紐づかない全体の数値）
+  profileVisits?: number; // 廃止: 互換性のため保持（常に0）
+  externalLinkTaps?: number; // 廃止: 互換性のため保持（常に0）
+  legacyFieldsDisabled?: boolean;
+  legacyFieldsDisabledAt?: admin.firestore.Timestamp;
   createdAt: admin.firestore.Timestamp;
   updatedAt: admin.firestore.Timestamp;
 }
@@ -56,12 +58,14 @@ export async function GET(request: NextRequest) {
         id: doc.id,
         userId: data.userId,
         snsType: data.snsType,
-        followers: data.followers,
-        startFollowers: data.startFollowers || data.followers,
+        followers: 0,
+        startFollowers: 0,
         month: data.month,
         source: data.source,
-        profileVisits: data.profileVisits || 0,
-        externalLinkTaps: data.externalLinkTaps || 0,
+        profileVisits: 0,
+        externalLinkTaps: 0,
+        legacyFieldsDisabled: true,
+        legacyManualInput: data.legacyManualInput || null,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
       },
@@ -91,13 +95,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { followers, month, snsType = "instagram", source = "manual", profileVisits, externalLinkTaps } = body;
 
-    if (!followers || typeof followers !== "number" || followers < 0) {
-      return NextResponse.json(
-        { error: "フォロワー数は0以上の数値である必要があります" },
-        { status: 400 }
-      );
-    }
-
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
       return NextResponse.json(
         { error: "monthはYYYY-MM形式である必要があります" },
@@ -117,48 +114,60 @@ export async function POST(request: NextRequest) {
       .get();
 
     let docRef;
+    const legacyPayload = {
+      followers: typeof followers === "number" && followers > 0 ? followers : 0,
+      profileVisits: typeof profileVisits === "number" && profileVisits > 0 ? profileVisits : 0,
+      externalLinkTaps: typeof externalLinkTaps === "number" && externalLinkTaps > 0 ? externalLinkTaps : 0,
+      submittedAt: now,
+    };
     if (!existingSnapshot.empty) {
-      // 既存のドキュメントを更新（増加数を加算）
+      // 既存のドキュメントを更新（旧フィールドは無効化を維持）
       docRef = existingSnapshot.docs[0].ref;
-      const existingData = existingSnapshot.docs[0].data();
-      const existingFollowers = existingData.followers || 0;
-      const existingProfileVisits = existingData.profileVisits || 0;
-      const existingExternalLinkTaps = existingData.externalLinkTaps || 0;
-      
-      // 増加数として加算（既存の値 + 入力された値）
       const updateData: Partial<FollowerCount> = {
-        followers: existingFollowers + followers, // 既存の値に加算
+        followers: 0,
+        startFollowers: 0,
+        profileVisits: 0,
+        externalLinkTaps: 0,
+        legacyFieldsDisabled: true,
+        legacyFieldsDisabledAt: now,
         source,
         updatedAt: now,
       };
-      if (profileVisits !== undefined) {
-        updateData.profileVisits = existingProfileVisits + profileVisits; // 既存の値に加算
-      }
-      if (externalLinkTaps !== undefined) {
-        updateData.externalLinkTaps = existingExternalLinkTaps + externalLinkTaps; // 既存の値に加算
-      }
-      if (!existingData.startFollowers) {
-        updateData.startFollowers = existingData.followers; // 最初の値を月初として保存
-      }
-      await docRef.update(updateData);
+
+      await docRef.set(
+        {
+          ...updateData,
+          legacyManualInput: {
+            ...legacyPayload,
+          },
+        },
+        { merge: true }
+      );
     } else {
-      // 新規作成（月初の値としても使用）
+      // 新規作成（旧フィールドは常に0で保持）
       const newData: Omit<FollowerCount, "createdAt" | "updatedAt"> & {
         createdAt: admin.firestore.Timestamp;
         updatedAt: admin.firestore.Timestamp;
       } = {
         userId: uid,
         snsType,
-        followers,
-        startFollowers: followers, // 月初の値としても保存
+        followers: 0,
+        startFollowers: 0,
         month,
         source,
-        profileVisits: profileVisits || 0,
-        externalLinkTaps: externalLinkTaps || 0,
+        profileVisits: 0,
+        externalLinkTaps: 0,
+        legacyFieldsDisabled: true,
+        legacyFieldsDisabledAt: now,
         createdAt: now,
         updatedAt: now,
       };
-      docRef = await adminDb.collection("follower_counts").add(newData);
+      docRef = await adminDb.collection("follower_counts").add({
+        ...newData,
+        legacyManualInput: {
+          ...legacyPayload,
+        },
+      });
     }
 
     const updatedDoc = await docRef.get();
@@ -170,11 +179,13 @@ export async function POST(request: NextRequest) {
         id: updatedDoc.id,
         userId: data?.userId,
         snsType: data?.snsType,
-        followers: data?.followers,
+        followers: 0,
         month: data?.month,
         source: data?.source,
-        profileVisits: data?.profileVisits || 0,
-        externalLinkTaps: data?.externalLinkTaps || 0,
+        profileVisits: 0,
+        externalLinkTaps: 0,
+        legacyFieldsDisabled: true,
+        legacyManualInput: data?.legacyManualInput || null,
         createdAt: data?.createdAt?.toDate?.()?.toISOString() || data?.createdAt,
         updatedAt: data?.updatedAt?.toDate?.()?.toISOString() || data?.updatedAt,
       },
@@ -191,4 +202,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -10,10 +10,10 @@ import {
 } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { authFetch } from "../utils/authFetch";
-import { checkUserContract } from "../lib/auth";
 import { installAuthFetch } from "../utils/installAuthFetch";
 
 const AUTH_CALLBACK_IN_PROGRESS_KEY = "signal_auth_callback_in_progress_at";
+const DEBUG_AUTH_KEY = "signal_debug_auth";
 
 interface AuthContextType {
   user: User | null;
@@ -40,6 +40,23 @@ const isExpectedOfflineFirestoreError = (error: unknown): boolean => {
   );
 };
 
+const shouldDebugAuthLogs = (): boolean => {
+  if (process.env.NODE_ENV !== "development" || typeof window === "undefined") {
+    return false;
+  }
+  try {
+    return window.localStorage.getItem(DEBUG_AUTH_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+const authDebug = (...args: unknown[]) => {
+  if (shouldDebugAuthLogs()) {
+    console.debug(...args);
+  }
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -50,14 +67,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     installAuthFetch();
   }, []);
 
-  // ユーザードキュメントを作成または更新する関数（APIルート経由）
-  const ensureUserDocument = useCallback(async (user: User) => {
-    try {
-      // トークンが取得できるまで少し待つ（認証状態が完全に確立されるまで）
-      await new Promise((resolve) => setTimeout(resolve, 100));
+  const requestWith401Retry = useCallback(
+    async (
+      input: RequestInfo | URL,
+      options: RequestInit,
+      max401Retries = 2,
+      initialDelayMs = 120,
+    ): Promise<Response> => {
+      let response = await authFetch(input, options);
 
+      for (let attempt = 0; response.status === 401 && attempt < max401Retries; attempt += 1) {
+        const delay = initialDelayMs * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        response = await authFetch(input, options);
+      }
+
+      return response;
+    },
+    [],
+  );
+
+  // ユーザードキュメントを作成または更新する関数（APIルート経由）
+  const ensureUserDocument = useCallback(async (user: User): Promise<void> => {
+    try {
       // APIルート経由でユーザードキュメントを確認・作成
-      const response = await authFetch("/api/user/ensure", {
+      const response = await requestWith401Retry("/api/user/ensure", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,10 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || errorData.details || `Failed to ensure user document: ${response.status}`;
         
-        // Unauthorizedエラーの場合は、トークンの問題である可能性が高い
+        // Unauthorizedは認証直後タイミングの可能性があるため、ここでは致命扱いしない
         if (response.status === 401) {
-          console.warn("🔐 Unauthorized error - token may not be ready yet, will retry on next auth state change");
-          return; // エラーを投げずに終了（次回の認証状態変更時に再試行される）
+          authDebug("[auth-context] /api/user/ensure returned 401 after immediate retries");
+          return;
         }
         
         throw new Error(errorMessage);
@@ -80,9 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await response.json();
       if (result.success) {
         if (result.created) {
-          console.log("✅ User document created via API:", user.uid);
+          authDebug("✅ User document created via API:", user.uid);
         } else {
-          console.log("✅ User document already exists:", user.uid);
+          authDebug("✅ User document already exists:", user.uid);
         }
       }
     } catch (error) {
@@ -90,7 +124,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // エラーが発生してもアプリケーションの動作を継続
       // （ユーザードキュメントが存在しない場合でも、後で作成される可能性がある）
     }
-  }, []);
+  }, [requestWith401Retry]);
+
+  const checkContractStatus = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await requestWith401Retry(
+        "/api/user/contract-status",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+        2,
+        150,
+      );
+
+      if (response.status === 401) {
+        authDebug("[auth-context] /api/user/contract-status returned 401 after retries");
+        return true;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Contract status request failed: ${response.status}`);
+      }
+
+      const result = (await response.json().catch(() => null)) as
+        | { success?: boolean; isValid?: boolean }
+        | null;
+
+      if (!result?.success || typeof result.isValid !== "boolean") {
+        throw new Error("Invalid contract status response");
+      }
+
+      return result.isValid;
+    } catch (error) {
+      console.error("[auth-context] Contract status check failed:", error);
+      return true;
+    }
+  }, [requestWith401Retry]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -141,18 +213,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 Sentry.setTag("plan", planTier || "unknown");
                                 Sentry.setTag("account_type", accountType || "unknown");
                                 Sentry.setTag("user_id", user.uid);
-                                
-                                if (process.env.NODE_ENV === "development") {
-                                  console.log("✅ SentryにサポートIDを設定:", supportId);
-                                }
+
+                                authDebug("✅ SentryにサポートIDを設定:", supportId);
                               }
                             }
                           })
                           .catch((error) => {
                             if (isExpectedOfflineFirestoreError(error)) {
-                              if (process.env.NODE_ENV === "development") {
-                                console.warn("[auth-context] FirestoreオフラインのためSentryユーザー設定をスキップ");
-                              }
+                              authDebug("[auth-context] FirestoreオフラインのためSentryユーザー設定をスキップ");
                               return;
                             }
                             console.error("[auth-context] Sentry設定エラー（Firestore取得）:", error);
@@ -172,7 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           // 契約期間をチェック
-          const isValid = await checkUserContract(user.uid);
+          const isValid = await checkContractStatus();
           setContractValid(isValid);
 
           if (!isValid) {
@@ -211,8 +279,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setLoading(false);
 
-      // 開発環境で認証情報をコンソールに表示
-      if (process.env.NODE_ENV === "development") {
+      // 開発環境かつ明示的に有効化した場合のみ認証情報を表示
+      if (shouldDebugAuthLogs()) {
         console.group("🔐 Firebase Authentication Info");
         if (user) {
           console.log("✅ User Authenticated:", {
@@ -229,17 +297,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               lastSignInTime: user.metadata.lastSignInTime,
             },
           });
-          console.log("📱 Access Token:", "Not directly accessible from User object");
-          console.log("🔄 Refresh Token:", "Not directly accessible from User object");
-        } else {
-          console.log("❌ No user authenticated");
         }
         console.groupEnd();
       }
     });
 
     return () => unsubscribe();
-  }, [router, ensureUserDocument]);
+  }, [router, ensureUserDocument, checkContractStatus]);
 
   // 6時間で自動ログアウト機能
   useEffect(() => {
@@ -299,7 +363,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (currentUser) {
         // 契約期間をチェック
-        const isValid = await checkUserContract(currentUser.uid);
+        const isValid = await checkContractStatus();
 
         if (!isValid) {
           // 契約が無効な場合はログアウト

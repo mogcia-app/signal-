@@ -4,6 +4,8 @@ import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/a
 import * as admin from "firebase-admin";
 import { KpiDashboardRepository } from "@/repositories/kpi-dashboard-repository";
 import { aggregateKpiInput } from "@/domain/analysis/kpi/usecases/aggregate-kpi-input";
+import { getUserProfile } from "@/lib/server/user-profile";
+import { getBillingCycleContext } from "@/lib/server/billing-cycle";
 
 /**
  * 今月のKPIデータを取得（/kpi-breakdownと同じロジックを使用）
@@ -20,30 +22,36 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date"); // YYYY-MM形式（オプション、指定がない場合は今月）
+    const userProfile = await getUserProfile(uid);
 
-    // 日付を決定
+    // 日付レンジを決定
     const now = new Date();
-    let targetDate: Date;
+    let dateStr: string;
+    let startDate: Date;
+    let endDateExclusive: Date;
+    let previousStartDate: Date;
+    let previousEndDateExclusive: Date;
+
     if (date) {
       const [year, month] = date.split("-").map(Number);
-      targetDate = new Date(year, month - 1, 1);
+      const targetDate = new Date(year, month - 1, 1);
+      dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
+      startDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+      endDateExclusive = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 1);
+      previousStartDate = new Date(targetDate.getFullYear(), targetDate.getMonth() - 1, 1);
+      previousEndDateExclusive = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
     } else {
-      targetDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      const cycle = getBillingCycleContext({ userProfile, now });
+      dateStr = cycle.current.key;
+      startDate = cycle.current.start;
+      endDateExclusive = cycle.current.endExclusive;
+      previousStartDate = cycle.previous.start;
+      previousEndDateExclusive = cycle.previous.endExclusive;
     }
-
-    const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
-
-    // 今月の開始日と終了日
-    const startDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-    const endDate = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
     const startTimestamp = admin.firestore.Timestamp.fromDate(startDate);
-    const endTimestamp = admin.firestore.Timestamp.fromDate(endDate);
-
-    // 前月の開始日と終了日
-    const previousStartDate = new Date(targetDate.getFullYear(), targetDate.getMonth() - 1, 1);
-    const previousEndDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), 0, 23, 59, 59, 999);
+    const endExclusiveTimestamp = admin.firestore.Timestamp.fromDate(endDateExclusive);
     const previousStartTimestamp = admin.firestore.Timestamp.fromDate(previousStartDate);
-    const previousEndTimestamp = admin.firestore.Timestamp.fromDate(previousEndDate);
+    const previousEndExclusiveTimestamp = admin.firestore.Timestamp.fromDate(previousEndDateExclusive);
 
     // 今月のanalyticsデータを取得
     const analyticsSnapshot = await adminDb
@@ -51,7 +59,7 @@ export async function GET(request: NextRequest) {
       .where("userId", "==", uid)
       .where("snsType", "==", "instagram")
       .where("publishedAt", ">=", startTimestamp)
-      .where("publishedAt", "<=", endTimestamp)
+      .where("publishedAt", "<", endExclusiveTimestamp)
       .get();
 
     // 前月のanalyticsデータを取得
@@ -60,7 +68,7 @@ export async function GET(request: NextRequest) {
       .where("userId", "==", uid)
       .where("snsType", "==", "instagram")
       .where("publishedAt", ">=", previousStartTimestamp)
-      .where("publishedAt", "<=", previousEndTimestamp)
+      .where("publishedAt", "<", previousEndExclusiveTimestamp)
       .get();
 
     const frequencyToWeeklyCount = (value: unknown): number => {
@@ -94,25 +102,6 @@ export async function GET(request: NextRequest) {
       }, 0),
     };
 
-    // デバッグログ: 詳細なフォロワー増加数の確認
-    const followerIncreaseDetails = analyticsSnapshot.docs
-      .filter(doc => (doc.data().followerIncrease || 0) > 0)
-      .map(doc => ({
-        analyticsId: doc.id,
-        postId: doc.data().postId || null,
-        followerIncrease: doc.data().followerIncrease || 0,
-        publishedAt: doc.data().publishedAt,
-      }));
-    
-    console.log("[Home Monthly KPIs] フォロワー増加数デバッグ:", {
-      analyticsSnapshotSize: analyticsSnapshot.docs.length,
-      thisMonthTotals,
-      followerIncreaseFromPosts: thisMonthTotals.followerIncrease,
-      followerIncreaseDetails,
-      dateStr,
-      userId: uid,
-    });
-
     // 前月の合計を計算
     const previousMonthTotals = {
       likes: previousAnalyticsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().likes || 0), 0),
@@ -125,40 +114,14 @@ export async function GET(request: NextRequest) {
       followerIncrease: previousAnalyticsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().followerIncrease || 0), 0),
     };
 
-    // follower_countsから「その他からの増加数」を取得
-    const followerCountSnapshot = await adminDb
-      .collection("follower_counts")
-      .where("userId", "==", uid)
-      .where("snsType", "==", "instagram")
-      .where("month", "==", dateStr)
-      .limit(1)
-      .get();
-
-    let followerIncreaseFromOther = 0;
-    let profileVisits = 0;
-    if (!followerCountSnapshot.empty) {
-      const followerCountData = followerCountSnapshot.docs[0].data();
-      followerIncreaseFromOther = followerCountData.followers || 0;
-      profileVisits = Number(followerCountData.profileVisits || 0);
-    }
-
-    // 前月のfollower_countsを取得
-    const previousMonthStr = `${previousStartDate.getFullYear()}-${String(previousStartDate.getMonth() + 1).padStart(2, "0")}`;
-    const previousFollowerCountSnapshot = await adminDb
-      .collection("follower_counts")
-      .where("userId", "==", uid)
-      .where("snsType", "==", "instagram")
-      .where("month", "==", previousMonthStr)
-      .limit(1)
-      .get();
-
-    let previousFollowerIncreaseFromOther = 0;
-    let previousProfileVisits = 0;
-    if (!previousFollowerCountSnapshot.empty) {
-      const previousFollowerCountData = previousFollowerCountSnapshot.docs[0].data();
-      previousFollowerIncreaseFromOther = previousFollowerCountData.followers || 0;
-      previousProfileVisits = Number(previousFollowerCountData.profileVisits || 0);
-    }
+    // 手入力の follower_counts 数値は廃止済み。プロフィール遷移率は analytics 側の値のみ利用する。
+    const followerIncreaseFromOther = 0;
+    const previousFollowerIncreaseFromOther = 0;
+    const profileVisits = analyticsSnapshot.docs.reduce((sum, doc) => sum + (Number(doc.data().profileVisits) || 0), 0);
+    const previousProfileVisits = previousAnalyticsSnapshot.docs.reduce(
+      (sum, doc) => sum + (Number(doc.data().profileVisits) || 0),
+      0
+    );
 
     let plannedMonthlyPosts = 0;
     try {
@@ -186,7 +149,7 @@ export async function GET(request: NextRequest) {
     let previousTotalFollowerIncrease =
       previousMonthTotals.followerIncrease + previousFollowerIncreaseFromOther;
     try {
-      const kpiRawData = await KpiDashboardRepository.fetchKpiRawData(uid, dateStr);
+      const kpiRawData = await KpiDashboardRepository.fetchKpiRawDataByBillingCycle(uid, dateStr, userProfile);
       const kpiAggregated = aggregateKpiInput(kpiRawData);
       totalFollowerIncrease = Number(kpiAggregated.totals.totalFollowerIncrease || totalFollowerIncrease);
       previousTotalFollowerIncrease = Number(
@@ -208,29 +171,8 @@ export async function GET(request: NextRequest) {
       previousPlannedMonthlyPosts > 0
         ? Math.min(999, (previousMonthTotals.postCount / previousPlannedMonthlyPosts) * 100)
         : 0;
-    
-    // デバッグログ: 最終的なフォロワー増加数の計算
-    console.log("[Home Monthly KPIs] フォロワー増加数最終計算デバッグ:", {
-      followerIncreaseFromPosts: thisMonthTotals.followerIncrease,
-      followerIncreaseFromOther,
-      totalFollowerIncrease,
-      previousTotalFollowerIncrease,
-      dateStr,
-      userId: uid,
-    });
-
     // 初月かどうかを判定（前月のanalyticsデータが存在しない場合、初月と判断）
     const isFirstMonth = previousAnalyticsSnapshot.empty;
-
-    // デバッグログ
-    console.log("[Home Monthly KPIs] フォロワー数内訳:", {
-      followerIncreaseFromPosts: thisMonthTotals.followerIncrease,
-      followerIncreaseFromOther,
-      totalFollowerIncrease,
-      previousTotalFollowerIncrease,
-      isFirstMonth,
-      previousAnalyticsCount: previousAnalyticsSnapshot.docs.length,
-    });
 
     // 前月比を計算（初月の場合はundefined）
     const changes = {

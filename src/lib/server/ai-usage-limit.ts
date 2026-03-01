@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import type { UserProfile } from "@/types/user";
 import { adminDb } from "@/lib/firebase-admin";
 import { getUserPlanTier, type PlanTier } from "@/lib/plan-access";
+import { getBillingCycleContext } from "@/lib/server/billing-cycle";
 
 export type AiOutputFeature =
   | "home_post_generation"
@@ -24,12 +25,11 @@ interface AiUsageDoc {
 }
 
 const AI_USAGE_COLLECTION = "ai_output_usage_monthly";
-const DEFAULT_TIMEZONE = "Asia/Tokyo";
 
 const PLAN_LIMITS: Record<PlanTier, AiUsageLimitConfig> = {
-  basic: { monthlyLimit: 10 },
-  standard: { monthlyLimit: 20 },
-  pro: { monthlyLimit: 50 },
+  basic: { monthlyLimit: 25 },
+  standard: { monthlyLimit: 55 },
+  pro: { monthlyLimit: 1000 },
 };
 
 export class AiUsageLimitError extends Error {
@@ -53,27 +53,6 @@ export class AiUsageLimitError extends Error {
   }
 }
 
-const normalizeTimezone = (timezone: string | undefined): string => {
-  const candidate = String(timezone || "").trim() || DEFAULT_TIMEZONE;
-  try {
-    new Intl.DateTimeFormat("ja-JP", { timeZone: candidate }).format(new Date());
-    return candidate;
-  } catch {
-    return DEFAULT_TIMEZONE;
-  }
-};
-
-const getMonthKey = (date: Date, timezone: string): string => {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-  }).formatToParts(date);
-  const year = parts.find((part) => part.type === "year")?.value || "1970";
-  const month = parts.find((part) => part.type === "month")?.value || "01";
-  return `${year}-${month}`;
-};
-
 const buildDocId = (uid: string, monthKey: string): string => `${uid}_${monthKey}`;
 
 const resolveUsageContext = (params: {
@@ -85,11 +64,11 @@ const resolveUsageContext = (params: {
   limit: number | null;
   timezone: string;
 } => {
-  const now = params.now || new Date();
   const tier = getUserPlanTier(params.userProfile);
   const limit = PLAN_LIMITS[tier].monthlyLimit;
-  const timezone = normalizeTimezone(params.userProfile?.timezone);
-  const monthKey = getMonthKey(now, timezone);
+  const billingCycle = getBillingCycleContext({ userProfile: params.userProfile, now: params.now });
+  const timezone = billingCycle.timezone;
+  const monthKey = billingCycle.current.key;
   return { monthKey, tier, limit, timezone };
 };
 
