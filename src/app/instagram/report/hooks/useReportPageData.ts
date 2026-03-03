@@ -5,6 +5,7 @@ import { authFetch } from "@/utils/authFetch";
 import { handleError } from "@/utils/error-handling";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
 import { clientCache, generateCacheKey } from "@/utils/cache";
+import { createIdempotencyKey } from "@/utils/idempotency";
 import type { ReportData } from "@/types/report";
 import type { ReportCompleteResponse } from "@/data/contracts/report-complete-response";
 import type { PerformanceScoreResult } from "@/domain/analysis/report/types";
@@ -30,7 +31,7 @@ export function useReportPageData({
   const [retryCount, setRetryCount] = useState(0);
 
   const fetchReportData = useCallback(
-    async (date: string, regenerate = false, retryAttempt = 0) => {
+    async (date: string, regenerate = false, retryAttempt = 0, requestId?: string) => {
       if (!isAuthReady) {
         return;
       }
@@ -63,8 +64,10 @@ export function useReportPageData({
 
       try {
         const params = new URLSearchParams({ date });
+        const idempotencyRequestId = regenerate ? (requestId || createIdempotencyKey("report-complete")) : "";
         if (regenerate) {
           params.append("regenerate", "true");
+          params.append("requestId", idempotencyRequestId);
         }
 
         setProgress(30);
@@ -93,9 +96,16 @@ export function useReportPageData({
           }
         } else {
           const errorData = await response.json().catch(() => ({}));
+          if (response.status === 202 && errorData?.code === "request_in_progress") {
+            if (retryAttempt < 5) {
+              await new Promise((resolve) => setTimeout(resolve, 1200));
+              await fetchReportData(date, regenerate, retryAttempt + 1, idempotencyRequestId);
+            }
+            return;
+          }
           if (response.status >= 500 && retryAttempt < 2) {
             setTimeout(() => {
-              void fetchReportData(date, regenerate, retryAttempt + 1);
+              void fetchReportData(date, regenerate, retryAttempt + 1, idempotencyRequestId);
             }, 1000 * (retryAttempt + 1));
             return;
           }
@@ -112,7 +122,7 @@ export function useReportPageData({
       } catch (err) {
         if (retryAttempt < 2) {
           setTimeout(() => {
-            void fetchReportData(date, regenerate, retryAttempt + 1);
+            void fetchReportData(date, regenerate, retryAttempt + 1, requestId);
           }, 1000 * (retryAttempt + 1));
           return;
         }

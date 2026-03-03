@@ -8,9 +8,16 @@ import { getInstagramAlgorithmBrief } from "@/lib/ai/instagram-algorithm-brief";
 import { getMonthlyActionFocus } from "@/lib/ai/monthly-action-focus";
 import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
 import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
+import {
+  acquireAiRequestLock,
+  buildAiRequestKey,
+  completeAiRequestLock,
+  failAiRequestLock,
+} from "@/lib/server/ai-idempotency";
 
 interface AdvisorChatRequest {
   message?: unknown;
+  idempotencyKey?: unknown;
   context?: {
     selectedProductId?: unknown;
     selectedProductName?: unknown;
@@ -317,6 +324,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let idempotencyContext: { uid: string; requestKey: string } | null = null;
   try {
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
@@ -332,6 +340,40 @@ export async function POST(request: NextRequest) {
     if (!message) {
       return NextResponse.json({ success: false, error: "message is required" }, { status: 400 });
     }
+
+    const idempotencyKey =
+      normalizeText(body?.idempotencyKey) ||
+      buildAiRequestKey({
+        message,
+        advisorIntent,
+        advisorSource,
+        selectedProductId: normalizeText(body?.context?.selectedProductId || body?.context?.advisorProductId),
+        selectedProductName: normalizeText(body?.context?.selectedProductName || body?.context?.advisorProductName),
+        postType: normalizeText(body?.context?.postType),
+        draftTitle: normalizeText(body?.context?.draftTitle),
+        draftContent: normalizeText(body?.context?.draftContent),
+        imageAttached: Boolean(body?.context?.imageAttached),
+      });
+    const lock = await acquireAiRequestLock({
+      uid,
+      feature: "home_advisor_chat",
+      requestKey: idempotencyKey,
+    });
+    if (lock.state === "completed") {
+      return NextResponse.json(lock.payload.body, { status: lock.payload.status });
+    }
+    if (lock.state === "in_progress") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "request_in_progress",
+          error: "同じチャットリクエストを処理中です。しばらく待ってください。",
+          retryAfterSeconds: lock.retryAfterSeconds,
+        },
+        { status: 202 }
+      );
+    }
+    idempotencyContext = { uid, requestKey: idempotencyKey };
 
     const finalize = async (
       reply: string,
@@ -366,10 +408,17 @@ export async function POST(request: NextRequest) {
       }).catch((error) => {
         console.error("home advisor chat save error:", error);
       });
-      return NextResponse.json({
+      const responseBody = {
         success: true,
         data: { reply, suggestedQuestions: suggestedQuestions.slice(0, 8) },
-      });
+      };
+      await completeAiRequestLock({
+        uid,
+        feature: "home_advisor_chat",
+        requestKey: idempotencyKey,
+        payload: { status: 200, body: responseBody },
+      }).catch(() => undefined);
+      return NextResponse.json(responseBody);
     };
 
     const userProfile = await getUserProfile(uid);
@@ -564,6 +613,13 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof AiUsageLimitError) {
+      if (idempotencyContext) {
+        await failAiRequestLock({
+          uid: idempotencyContext.uid,
+          feature: "home_advisor_chat",
+          requestKey: idempotencyContext.requestKey,
+        }).catch(() => undefined);
+      }
       return NextResponse.json(
         {
           success: false,
@@ -578,6 +634,13 @@ export async function POST(request: NextRequest) {
         },
         { status: 429 }
       );
+    }
+    if (idempotencyContext) {
+      await failAiRequestLock({
+        uid: idempotencyContext.uid,
+        feature: "home_advisor_chat",
+        requestKey: idempotencyContext.requestKey,
+      }).catch(() => undefined);
     }
     console.error("home advisor chat error:", error);
     return NextResponse.json({ success: false, error: "チャット応答の生成に失敗しました" }, { status: 500 });

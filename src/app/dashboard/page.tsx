@@ -11,6 +11,7 @@ import { formatAiRemainingLabel, useAiUsageSummary } from "@/hooks/useAiUsageSum
 import { authFetch } from "../../utils/authFetch";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
+import { createIdempotencyKey } from "@/utils/idempotency";
 import { TrendingUp, X, Target, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Bot, Send } from "lucide-react";
 
 // マークダウン記法を削除する関数
@@ -377,6 +378,9 @@ export default function HomePage() {
     "画像作成のコツを教えて",
     "動画作成のコツを教えて",
   ]);
+  const homePostGenerationInFlightRef = useRef(false);
+  const advisorSendInFlightRef = useRef(false);
+  const timelineGenerationInFlightRef = useRef<Set<string>>(new Set());
   const planCardRef = useRef<HTMLDivElement | null>(null);
   const postComposerRef = useRef<HTMLDivElement | null>(null);
   const [isPlanCardHighlighted, setIsPlanCardHighlighted] = useState(false);
@@ -1394,6 +1398,8 @@ export default function HomePage() {
   };
 
   const generatePostInHome = async () => {
+    if (isGeneratingHomePost || homePostGenerationInFlightRef.current) {return;}
+    homePostGenerationInFlightRef.current = true;
     setIsGeneratingHomePost(true);
     setHomeRecommendedCandidateVariant(null);
     setHomeGenerationProgress({
@@ -1416,6 +1422,9 @@ export default function HomePage() {
               signal: controller.signal,
             });
             const result = await response.json();
+            if (response.status === 202 && result?.code === "request_in_progress") {
+              throw new Error("REQUEST_IN_PROGRESS");
+            }
             if (!response.ok || !result?.success || !result?.data) {
               const message = String(result?.error || "投稿生成に失敗しました");
               const retriable = response.status >= 500 || response.status === 429;
@@ -1436,6 +1445,9 @@ export default function HomePage() {
               hadRetriableFailure = true;
             } else {
               lastError = error instanceof Error ? error : new Error("投稿生成に失敗しました");
+            }
+            if (lastError.message === "REQUEST_IN_PROGRESS") {
+              throw lastError;
             }
             if (/failed to fetch|network|timeout|fetch/i.test(lastError.message)) {
               hadRetriableFailure = true;
@@ -1486,6 +1498,7 @@ export default function HomePage() {
       const randomResult = await requestHomePostGeneration({
           ...basePayload,
           generationVariant: "random",
+          idempotencyKey: createIdempotencyKey("home-post-random"),
       });
 
       const selectedProductId = String(randomResult?.data?.selectedProduct?.id || "").trim();
@@ -1498,6 +1511,7 @@ export default function HomePage() {
       const adviceResult = await requestHomePostGeneration({
           ...basePayload,
           generationVariant: "advice",
+          idempotencyKey: createIdempotencyKey("home-post-advice"),
           forcedProductId: selectedProductId || undefined,
           kpiFocus: selectedKpiTag || String(basePayload.kpiFocus || ""),
           avoidTitles: [String(randomResult?.data?.title || "").trim()].filter(Boolean),
@@ -1569,6 +1583,8 @@ export default function HomePage() {
       if (errorMessage === "GENERATION_TIMEOUT") {
         console.warn("ホーム投稿生成タイムアウト");
         toast.error("AI生成がタイムアウトしました。時間をおいて再試行してください。");
+      } else if (errorMessage === "REQUEST_IN_PROGRESS") {
+        toast("すでに投稿生成を処理中です。完了まで少しお待ちください。");
       } else if (
         errorMessage === "NETWORK_UNSTABLE" ||
         /failed to fetch|network|timeout|fetch/i.test(errorMessage)
@@ -1581,6 +1597,7 @@ export default function HomePage() {
       }
     } finally {
       setIsGeneratingHomePost(false);
+      homePostGenerationInFlightRef.current = false;
       setTimeout(() => setHomeGenerationProgress(null), 250);
     }
   };
@@ -1681,7 +1698,7 @@ export default function HomePage() {
     }
   ) => {
     const message = rawMessage.trim();
-    if (!message || isAdvisorLoading) {return;}
+    if (!message || isAdvisorLoading || advisorSendInFlightRef.current) {return;}
 
     if (message === "他の相談もする") {
       resetAdvisorFlow();
@@ -1738,6 +1755,7 @@ export default function HomePage() {
     setAdvisorMessages((prev) => [...prev, userMessage]);
     setAdvisorInput("");
     setAdvisorSuggestedQuestions([]);
+    advisorSendInFlightRef.current = true;
     setIsAdvisorLoading(true);
 
     try {
@@ -1761,10 +1779,22 @@ export default function HomePage() {
             advisorProductName: selectedAdvisorProductName || undefined,
             advisorProductConfigured: options?.forceAdvisorProductConfigured ?? advisorProductConfigured,
           },
+          idempotencyKey: createIdempotencyKey("home-advisor-chat"),
         }),
       });
 
       const result = await response.json().catch(() => ({}));
+      if (response.status === 202 && result?.code === "request_in_progress") {
+        setAdvisorMessages((prev) => [
+          ...prev,
+          {
+            id: `advisor-system-${Date.now()}`,
+            role: "assistant",
+            text: "前の回答を生成中です。完了まで少しお待ちください。",
+          },
+        ]);
+        return;
+      }
       if (!response.ok || !result?.success || !result?.data?.reply) {
         throw new Error(result?.error || "チャット応答の取得に失敗しました");
       }
@@ -1796,6 +1826,7 @@ export default function HomePage() {
       ]);
     } finally {
       setIsAdvisorLoading(false);
+      advisorSendInFlightRef.current = false;
     }
   };
 
@@ -2330,6 +2361,10 @@ export default function HomePage() {
   };
 
   const handleGeneratePostFromTimelineItem = async (item: EditableTimelineItem) => {
+    if (generatingTimelinePostKey === item.key || timelineGenerationInFlightRef.current.has(item.key)) {
+      return;
+    }
+    timelineGenerationInFlightRef.current.add(item.key);
     setGeneratingTimelinePostKey(item.key);
     try {
       const activePurpose = String(dashboardData?.currentPlan?.operationPurpose || "").trim() || quickPlanPurpose;
@@ -2359,9 +2394,14 @@ export default function HomePage() {
             dashboardData?.currentPlan?.regionRestriction === "restricted" ? "restricted" : quickPlanRegionRestriction,
           regionName:
             String(dashboardData?.currentPlan?.regionName || "").trim() || quickPlanRegionName.trim(),
+          idempotencyKey: createIdempotencyKey(`home-post-timeline-${item.key}`),
         }),
       });
       const result = await response.json().catch(() => ({}));
+      if (response.status === 202 && result?.code === "request_in_progress") {
+        toast("この投稿文は現在生成中です。完了まで少しお待ちください。");
+        return;
+      }
       if (!response.ok || !result?.success || !result?.data) {
         throw new Error(result?.error || "投稿文生成に失敗しました");
       }
@@ -2386,6 +2426,7 @@ export default function HomePage() {
       toast.error(error instanceof Error ? error.message : "投稿文生成に失敗しました");
     } finally {
       setGeneratingTimelinePostKey(null);
+      timelineGenerationInFlightRef.current.delete(item.key);
     }
   };
 
@@ -3870,7 +3911,8 @@ export default function HomePage() {
                           { forceAdvisorProductConfigured: true, overrideAdvisorSource: "product" }
                         );
                       }}
-                      className="w-full py-2 bg-[#FF8A15] text-white text-xs hover:bg-[#e67a0f]"
+                      disabled={isAdvisorLoading}
+                      className="w-full py-2 bg-[#FF8A15] text-white text-xs hover:bg-[#e67a0f] disabled:opacity-60"
                     >
                       この条件で提案
                     </button>

@@ -8,6 +8,7 @@ import { postsApi } from "../../../lib/api";
 import { useAuth } from "../../../contexts/auth-context";
 import { notify } from "../../../lib/ui/notifications";
 import { formatAiRemainingLabel, useAiUsageSummary } from "@/hooks/useAiUsageSummary";
+import { createIdempotencyKey } from "@/utils/idempotency";
 import {
   Image as ImageIcon,
   Heart,
@@ -275,6 +276,7 @@ export default function InstagramPostsPage() {
     "何を直せばいい？",
     "次回何を変える？",
   ]);
+  const advisorSendInFlightRef = useRef(false);
 
   // BFF APIから投稿一覧と分析データを取得
   const fetchPosts = useCallback(async () => {
@@ -600,7 +602,7 @@ export default function InstagramPostsPage() {
   const sendAdvisorMessage = useCallback(
     async (rawMessage: string) => {
       const message = rawMessage.trim();
-      if (!message || advisorLoading) {
+      if (!message || advisorLoading || advisorSendInFlightRef.current) {
         return;
       }
 
@@ -615,6 +617,7 @@ export default function InstagramPostsPage() {
         text: message,
       };
       setAdvisorMessages((prev) => [...prev, userMessage]);
+      advisorSendInFlightRef.current = true;
       setAdvisorLoading(true);
 
       try {
@@ -626,6 +629,7 @@ export default function InstagramPostsPage() {
           body: JSON.stringify({
             message,
             selectedPostId: selectedAdvisorPostId,
+            idempotencyKey: createIdempotencyKey("instagram-posts-advisor-chat"),
           }),
         });
 
@@ -635,10 +639,22 @@ export default function InstagramPostsPage() {
               data?: { reply?: string; suggestedQuestions?: string[] };
               error?: string;
               usage?: unknown;
+              code?: string;
             }
           | null;
 
         applyUsageFromApi(result?.usage);
+        if (response.status === 202 && result?.code === "request_in_progress") {
+          setAdvisorMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-system-${Date.now()}`,
+              role: "assistant",
+              text: "前の回答を生成中です。完了まで少しお待ちください。",
+            },
+          ]);
+          return;
+        }
         if (!response.ok || !result?.success || !result?.data?.reply) {
           throw new Error(result?.error || `HTTP error! status: ${response.status}`);
         }
@@ -666,6 +682,7 @@ export default function InstagramPostsPage() {
         ]);
       } finally {
         setAdvisorLoading(false);
+        advisorSendInFlightRef.current = false;
       }
     },
     [advisorLoading, applyUsageFromApi, selectedAdvisorPostId],

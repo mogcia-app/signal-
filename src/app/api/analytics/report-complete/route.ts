@@ -10,6 +10,12 @@ import { createReportAiClient } from "@/domain/analysis/report/usecases/create-r
 import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
 import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
 import { getBillingCycleContext } from "@/lib/server/billing-cycle";
+import {
+  acquireAiRequestLock,
+  buildAiRequestKey,
+  completeAiRequestLock,
+  failAiRequestLock,
+} from "@/lib/server/ai-idempotency";
 
 const aiClient = createReportAiClient(process.env.OPENAI_API_KEY);
 
@@ -47,6 +53,7 @@ async function fetchAiLearningReferences(userId: string) {
 }
 
 export async function GET(request: NextRequest) {
+  let idempotencyContext: { uid: string; requestKey: string } | null = null;
   try {
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
@@ -66,6 +73,7 @@ export async function GET(request: NextRequest) {
     const billingCycle = getBillingCycleContext({ userProfile });
     const date = searchParams.get("date") || billingCycle.current.key;
     const forceRegenerate = searchParams.get("regenerate") === "true";
+    const requestId = String(searchParams.get("requestId") || "").trim();
 
     if (!/^\d{4}-\d{2}$/.test(date)) {
       return NextResponse.json(
@@ -75,6 +83,34 @@ export async function GET(request: NextRequest) {
     }
 
     if (forceRegenerate) {
+      const idempotencyKey =
+        requestId ||
+        buildAiRequestKey({
+          route: "analytics_report_complete",
+          date,
+          forceRegenerate,
+        });
+      const lock = await acquireAiRequestLock({
+        uid,
+        feature: "analytics_monthly_review",
+        requestKey: idempotencyKey,
+      });
+      if (lock.state === "completed") {
+        return NextResponse.json(lock.payload.body, { status: lock.payload.status });
+      }
+      if (lock.state === "in_progress") {
+        return NextResponse.json(
+          {
+            success: false,
+            code: "request_in_progress",
+            error: "同じレポート再生成リクエストを処理中です。しばらく待ってください。",
+            retryAfterSeconds: lock.retryAfterSeconds,
+          },
+          { status: 202 }
+        );
+      }
+      idempotencyContext = { uid, requestKey: idempotencyKey };
+
       await assertAiOutputAvailable({
         uid,
         userProfile,
@@ -116,9 +152,25 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, data, usage });
+    const responseBody = { success: true, data, usage };
+    if (forceRegenerate && idempotencyContext) {
+      await completeAiRequestLock({
+        uid,
+        feature: "analytics_monthly_review",
+        requestKey: idempotencyContext.requestKey,
+        payload: { status: 200, body: responseBody },
+      }).catch(() => undefined);
+    }
+    return NextResponse.json(responseBody);
   } catch (error) {
     if (error instanceof AiUsageLimitError) {
+      if (idempotencyContext) {
+        await failAiRequestLock({
+          uid: idempotencyContext.uid,
+          feature: "analytics_monthly_review",
+          requestKey: idempotencyContext.requestKey,
+        }).catch(() => undefined);
+      }
       return NextResponse.json(
         {
           success: false,
@@ -133,6 +185,13 @@ export async function GET(request: NextRequest) {
         },
         { status: 429 }
       );
+    }
+    if (idempotencyContext) {
+      await failAiRequestLock({
+        uid: idempotencyContext.uid,
+        feature: "analytics_monthly_review",
+        requestKey: idempotencyContext.requestKey,
+      }).catch(() => undefined);
     }
     console.error("❌ 月次レポート統合データ取得エラー:", error);
     const { status, body } = buildErrorResponse(error);

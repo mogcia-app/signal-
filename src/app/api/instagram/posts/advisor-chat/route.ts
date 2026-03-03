@@ -7,11 +7,18 @@ import { getMonthlyActionFocusPrompt } from "@/lib/ai/monthly-action-focus";
 import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
 import { requireAuthContext } from "@/lib/server/auth-context";
 import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
+import {
+  acquireAiRequestLock,
+  buildAiRequestKey,
+  completeAiRequestLock,
+  failAiRequestLock,
+} from "@/lib/server/ai-idempotency";
 import { getUserProfile } from "@/lib/server/user-profile";
 
 interface AdvisorChatRequest {
   message?: unknown;
   selectedPostId?: unknown;
+  idempotencyKey?: unknown;
 }
 
 interface AnalyticsDoc {
@@ -292,6 +299,7 @@ const buildSummary = (params: {
 };
 
 export async function POST(request: NextRequest) {
+  let idempotencyContext: { uid: string; requestKey: string } | null = null;
   try {
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
@@ -313,6 +321,32 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+    const idempotencyKey =
+      normalizeText(body?.idempotencyKey) ||
+      buildAiRequestKey({
+        message,
+        selectedPostId,
+      });
+    const lock = await acquireAiRequestLock({
+      uid,
+      feature: "instagram_posts_advisor_chat",
+      requestKey: idempotencyKey,
+    });
+    if (lock.state === "completed") {
+      return NextResponse.json(lock.payload.body, { status: lock.payload.status });
+    }
+    if (lock.state === "in_progress") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "request_in_progress",
+          error: "同じチャットリクエストを処理中です。しばらく待ってください。",
+          retryAfterSeconds: lock.retryAfterSeconds,
+        },
+        { status: 202 },
+      );
+    }
+    idempotencyContext = { uid, requestKey: idempotencyKey };
 
     const userProfile = await getUserProfile(uid);
     const algorithmBrief = await getInstagramAlgorithmBrief();
@@ -432,9 +466,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, data: result, usage });
+    const responseBody = { success: true, data: result, usage };
+    await completeAiRequestLock({
+      uid,
+      feature: "instagram_posts_advisor_chat",
+      requestKey: idempotencyKey,
+      payload: { status: 200, body: responseBody },
+    }).catch(() => undefined);
+    return NextResponse.json(responseBody);
   } catch (error) {
     if (error instanceof AiUsageLimitError) {
+      if (idempotencyContext) {
+        await failAiRequestLock({
+          uid: idempotencyContext.uid,
+          feature: "instagram_posts_advisor_chat",
+          requestKey: idempotencyContext.requestKey,
+        }).catch(() => undefined);
+      }
       return NextResponse.json(
         {
           success: false,
@@ -449,6 +497,13 @@ export async function POST(request: NextRequest) {
         },
         { status: 429 },
       );
+    }
+    if (idempotencyContext) {
+      await failAiRequestLock({
+        uid: idempotencyContext.uid,
+        feature: "instagram_posts_advisor_chat",
+        requestKey: idempotencyContext.requestKey,
+      }).catch(() => undefined);
     }
     console.error("instagram posts advisor chat error:", error);
     return NextResponse.json(

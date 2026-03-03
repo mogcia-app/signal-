@@ -52,6 +52,11 @@ const normalizePostId = (value: unknown): string | null => {
   return null;
 };
 
+const isAnalyzablePostType = (postType: unknown): boolean => {
+  const normalized = String(postType || "").trim().toLowerCase();
+  return normalized === "feed" || normalized === "reel";
+};
+
 /**
  * 投稿一覧ページ用のBFF API
  * 投稿データと分析データを結合し、分類・フィルタリング済みのデータを返す
@@ -203,10 +208,9 @@ export async function GET(request: NextRequest) {
 
     const postsWithAnalytics: PostWithAnalytics[] = sortedPosts.map((post) => {
       const postKey = normalizePostId(post.id);
-      const hasAnalytics = !!(
-        (postKey && analyzedPostIds.has(postKey)) ||
-        (post as PostData & { analytics?: unknown }).analytics
-      );
+      const hasAnalytics =
+        !isAnalyzablePostType(post.postType) ||
+        !!((postKey && analyzedPostIds.has(postKey)) || (post as PostData & { analytics?: unknown }).analytics);
       const analyticsFromData = analyticsData.find((a) => normalizePostId(a.postId) === postKey);
 
       return {
@@ -233,6 +237,7 @@ export async function GET(request: NextRequest) {
       }).length + manualAnalyticsData.length;
 
     const createdOnlyCount = posts.filter((post) => {
+      if (!isAnalyzablePostType(post.postType)) {return false;}
       const postKey = normalizePostId(post.id);
       const hasAnalytics = !!(
         (postKey && analyzedPostIds.has(postKey)) ||
@@ -337,6 +342,7 @@ export async function GET(request: NextRequest) {
     const unanalyzedPosts = sortedPosts
       .filter((post) => {
         if (post.status !== "created") {return false;}
+        if (!isAnalyzablePostType(post.postType)) {return false;}
         const postKey = normalizePostId(post.id);
         const postWithAnalytics = postsWithAnalytics.find(
           (candidate) => normalizePostId(candidate.id) === postKey

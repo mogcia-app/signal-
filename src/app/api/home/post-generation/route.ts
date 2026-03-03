@@ -8,12 +8,19 @@ import { getInstagramAlgorithmBrief } from "@/lib/ai/instagram-algorithm-brief";
 import { getMonthlyActionFocus } from "@/lib/ai/monthly-action-focus";
 import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
 import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
+import {
+  acquireAiRequestLock,
+  buildAiRequestKey,
+  completeAiRequestLock,
+  failAiRequestLock,
+} from "@/lib/server/ai-idempotency";
 
 type PostType = "feed" | "reel" | "story";
 
 interface HomePostGenerationRequest {
   prompt: string;
   postType: PostType;
+  idempotencyKey?: string;
   scheduledDate?: string;
   scheduledTime?: string;
   imageData?: string;
@@ -628,6 +635,7 @@ const buildCaptionFallback = (params: {
 };
 
 export async function POST(request: NextRequest) {
+  let idempotencyContext: { uid: string; requestKey: string } | null = null;
   try {
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
@@ -675,6 +683,46 @@ export async function POST(request: NextRequest) {
     }
 
     const userProfile = await getUserProfile(uid);
+    const idempotencyKey =
+      String(body.idempotencyKey || "").trim() ||
+      buildAiRequestKey({
+        action,
+        postType,
+        mode: body.mode || "default",
+        prompt,
+        imageContext,
+        hasImage: Boolean(normalizedImageData),
+        generationVariant: body.generationVariant || "random",
+        forcedProductId: body.forcedProductId || "",
+        scheduledDate: body.scheduledDate || "",
+        scheduledTime: body.scheduledTime || "",
+        operationPurpose: body.operationPurpose || "",
+        kpiFocus: body.kpiFocus || "",
+        targetAudience: body.targetAudience || "",
+        regionRestriction: body.regionRestriction || "",
+        regionName: body.regionName || "",
+      });
+    const lock = await acquireAiRequestLock({
+      uid,
+      feature: "home_post_generation",
+      requestKey: idempotencyKey,
+    });
+    if (lock.state === "completed") {
+      return NextResponse.json(lock.payload.body, { status: lock.payload.status });
+    }
+    if (lock.state === "in_progress") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "request_in_progress",
+          error: "同じ生成リクエストを処理中です。しばらく待ってください。",
+          retryAfterSeconds: lock.retryAfterSeconds,
+        },
+        { status: 202 }
+      );
+    }
+    idempotencyContext = { uid, requestKey: idempotencyKey };
+
     await assertAiOutputAvailable({
       uid,
       userProfile,
@@ -898,7 +946,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    const responseBody = {
       success: true,
       data: {
         title: sanitizedTitle,
@@ -926,23 +974,42 @@ export async function POST(request: NextRequest) {
         postHints: [primaryHint],
       },
       usage,
-    });
+    };
+    await completeAiRequestLock({
+      uid,
+      feature: "home_post_generation",
+      requestKey: idempotencyKey,
+      payload: { status: 200, body: responseBody },
+    }).catch(() => undefined);
+    return NextResponse.json(responseBody);
   } catch (error) {
     if (error instanceof AiUsageLimitError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `今月のAI出力回数の上限に達しました（${error.month} / ${error.limit ?? "無制限"}回）。`,
-          code: "ai_output_limit_exceeded",
-          usage: {
-            month: error.month,
-            limit: error.limit,
-            used: error.used,
-            remaining: error.remaining,
-          },
+      if (idempotencyContext) {
+        await failAiRequestLock({
+          uid: idempotencyContext.uid,
+          feature: "home_post_generation",
+          requestKey: idempotencyContext.requestKey,
+        }).catch(() => undefined);
+      }
+      const body = {
+        success: false,
+        error: `今月のAI出力回数の上限に達しました（${error.month} / ${error.limit ?? "無制限"}回）。`,
+        code: "ai_output_limit_exceeded",
+        usage: {
+          month: error.month,
+          limit: error.limit,
+          used: error.used,
+          remaining: error.remaining,
         },
-        { status: 429 }
-      );
+      };
+      return NextResponse.json(body, { status: 429 });
+    }
+    if (idempotencyContext) {
+      await failAiRequestLock({
+        uid: idempotencyContext.uid,
+        feature: "home_post_generation",
+        requestKey: idempotencyContext.requestKey,
+      }).catch(() => undefined);
     }
     console.error("ホーム投稿生成エラー:", error);
     return NextResponse.json({ error: "投稿生成に失敗しました" }, { status: 500 });
