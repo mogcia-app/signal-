@@ -234,6 +234,7 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
       hasPlan,
       totalLikes,
       totalReach,
+      totalReposts,
       totalComments,
       totalSaves,
       totalShares,

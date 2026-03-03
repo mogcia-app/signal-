@@ -70,6 +70,29 @@ export default function ReportPageClient() {
           </div>
         )}
 
+        {/* 初回ローディング表示 */}
+        {isLoading && !performanceScore && (
+          <div className="space-y-4 mb-6" role="status" aria-live="polite">
+            <BotStatusCard
+              title="月次レポートを読み込み中..."
+              subtitle="分析データを集計しています"
+              progress={48}
+            />
+            <div className="bg-white border border-gray-200 p-4 animate-pulse">
+              <div className="h-4 w-40 bg-gray-200 mb-3" />
+              <div className="h-3 w-full bg-gray-100 mb-2" />
+              <div className="h-3 w-5/6 bg-gray-100 mb-2" />
+              <div className="h-3 w-2/3 bg-gray-100" />
+            </div>
+            <div className="bg-white border border-gray-200 p-4 animate-pulse">
+              <div className="h-4 w-32 bg-gray-200 mb-3" />
+              <div className="h-3 w-full bg-gray-100 mb-2" />
+              <div className="h-3 w-4/5 bg-gray-100 mb-2" />
+              <div className="h-3 w-1/2 bg-gray-100" />
+            </div>
+          </div>
+        )}
+
         {/* パフォーマンス評価 */}
         {performanceScore && (
           <PerformanceScore

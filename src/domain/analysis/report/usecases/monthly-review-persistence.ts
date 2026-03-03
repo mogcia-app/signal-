@@ -5,6 +5,7 @@ export interface MonthlyReviewStore {
     review: string;
     actionPlans: ParsedActionPlan[];
     isFallback?: boolean;
+    analyzedCount?: number;
   } | null>;
   saveMonthlyReview(params: {
     userId: string;
@@ -45,20 +46,21 @@ export async function loadReusableMonthlyReview(params: {
   userId: string;
   month: string;
   forceRegenerate: boolean;
-}): Promise<{ monthlyReview: string | null; actionPlans: ParsedActionPlan[]; isFallback: boolean }> {
+}): Promise<{ monthlyReview: string | null; actionPlans: ParsedActionPlan[]; isFallback: boolean; analyzedCount: number | null }> {
   if (params.forceRegenerate) {
-    return { monthlyReview: null, actionPlans: [], isFallback: false };
+    return { monthlyReview: null, actionPlans: [], isFallback: false, analyzedCount: null };
   }
 
   const saved = await params.store.getMonthlyReview(params.userId, params.month);
   if (!saved) {
-    return { monthlyReview: null, actionPlans: [], isFallback: false };
+    return { monthlyReview: null, actionPlans: [], isFallback: false, analyzedCount: null };
   }
 
   return {
     monthlyReview: saved.review || null,
     actionPlans: saved.actionPlans || [],
     isFallback: Boolean(saved.isFallback),
+    analyzedCount: typeof saved.analyzedCount === "number" ? saved.analyzedCount : null,
   };
 }
 

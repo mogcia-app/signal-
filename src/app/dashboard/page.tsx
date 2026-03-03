@@ -2489,15 +2489,6 @@ export default function HomePage() {
   ).trim();
   const monthlyFocusHeadline = monthlyFocusHeadlineRaw.replace(/^実行手順:\s*/u, "").trim();
   const monthlyFocusHasContent = monthlyFocusHeadline.length > 0;
-  const monthlyFocusStatus = monthlyActionFocus?.evaluation?.status || "no_data";
-  const monthlyFocusStatusLabel =
-    monthlyFocusStatus === "achieved" ? "達成" : monthlyFocusStatus === "not_achieved" ? "未達" : "判定不可";
-  const monthlyFocusStatusClass =
-    monthlyFocusStatus === "achieved"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-      : monthlyFocusStatus === "not_achieved"
-        ? "bg-orange-50 text-orange-700 border-orange-200"
-        : "bg-gray-50 text-gray-600 border-gray-200";
 
   const renderGateLoader = (params: {
     message: string;
@@ -2552,18 +2543,10 @@ export default function HomePage() {
               <p className="text-sm text-gray-500">読み込み中...</p>
             ) : monthlyFocusHasContent ? (
               <>
-                <p className="text-sm text-gray-900">{monthlyFocusHeadline}</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex items-center border px-2.5 py-1 text-xs font-medium ${monthlyFocusStatusClass}`}>
-                    {monthlyFocusStatusLabel}
-                  </span>
-                  <span className="text-xs text-gray-600">
-                    {monthlyActionFocus?.evaluation?.summary || "先月施策Aは判定不可（データ不足）"}
-                  </span>
-                </div>
+                <p className="text-sm text-gray-900">{monthlyFocusHeadline.replace(/^今は、/u, "")}</p>
               </>
             ) : (
-              <p className="text-sm text-gray-600">今月の振り返りを生成してください</p>
+              <p className="text-sm text-gray-600">保存数とシェア数を意識しましょう</p>
             )}
           </div>
         </div>

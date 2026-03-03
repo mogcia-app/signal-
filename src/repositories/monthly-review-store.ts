@@ -15,6 +15,7 @@ export const monthlyReviewStore: MonthlyReviewStore = {
       review: data?.review || "",
       actionPlans: data?.actionPlans || [],
       isFallback: Boolean(data?.isFallback),
+      analyzedCount: typeof data?.analyzedCount === "number" ? data.analyzedCount : undefined,
     };
   },
 

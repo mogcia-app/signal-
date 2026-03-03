@@ -5,6 +5,7 @@ import {
   buildNoDataMonthlyReview,
   formatFollowerChangeText,
   formatReachChangeText,
+  isNoDataMonthlyReview,
   type DirectionAlignmentWarning,
 } from "@/domain/analysis/report/usecases/monthly-review-generation";
 import { generateMonthlyReviewWithAi } from "@/domain/analysis/report/usecases/generate-monthly-review-with-ai";
@@ -30,6 +31,7 @@ interface MonthlyTotals {
   hasPlan: boolean;
   totalLikes: number;
   totalReach: number;
+  totalReposts: number;
   totalComments: number;
   totalSaves: number;
   totalShares: number;
@@ -83,6 +85,16 @@ export async function orchestrateMonthlyReview(
   });
   monthlyReview = reusableReview.monthlyReview;
   actionPlans = reusableReview.actionPlans;
+  const isReusableReviewStale =
+    Boolean(monthlyReview) &&
+    !reusableReview.isFallback &&
+    (isNoDataMonthlyReview(String(monthlyReview || "")) ||
+      (typeof reusableReview.analyzedCount === "number" &&
+        reusableReview.analyzedCount !== input.totals.analyzedCount));
+  if (isReusableReviewStale) {
+    monthlyReview = null;
+    actionPlans = [];
+  }
   let generationState: "locked" | "ready" | "generated" =
     input.totals.analyzedCount < requiredCount ? "locked" : "ready";
   if (input.totals.analyzedCount < requiredCount) {
@@ -113,7 +125,7 @@ export async function orchestrateMonthlyReview(
             nextMonth,
             analyzedCount: input.totals.analyzedCount,
             totalLikes: input.totals.totalLikes,
-            totalReach: input.totals.totalReach,
+            totalReposts: input.totals.totalReposts,
             totalComments: input.totals.totalComments,
             totalSaves: input.totals.totalSaves,
             totalShares: input.totals.totalShares,
@@ -135,7 +147,7 @@ export async function orchestrateMonthlyReview(
             nextMonth,
             analyzedCount: input.totals.analyzedCount,
             totalLikes: input.totals.totalLikes,
-            totalReach: input.totals.totalReach,
+            totalReposts: input.totals.totalReposts,
             totalComments: input.totals.totalComments,
             totalSaves: input.totals.totalSaves,
             totalFollowerIncrease: input.totals.totalFollowerIncrease,

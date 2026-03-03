@@ -91,32 +91,34 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({
               </div>
             )}
 
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-100">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-gray-600">分析データ進捗</p>
-                <p className="text-xs font-semibold text-gray-700">
-                  {Math.min(reviewData.analyzedCount, reviewData.requiredCount)}/{reviewData.requiredCount}
+            {!reviewData.review && (
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-600">分析データ進捗</p>
+                  <p className="text-xs font-semibold text-gray-700">
+                    {Math.min(reviewData.analyzedCount, reviewData.requiredCount)}/{reviewData.requiredCount}
+                  </p>
+                </div>
+                <div className="grid grid-cols-10 gap-1">
+                  {Array.from({ length: reviewData.requiredCount }).map((_, index) => {
+                    const isFilled = index < Math.min(reviewData.analyzedCount, reviewData.requiredCount);
+                    return (
+                      <div
+                        key={`progress-step-${index}`}
+                        className={`h-2 border border-gray-200 rounded-none ${isFilled ? "bg-[#ff8a15]" : "bg-gray-100"}`}
+                      />
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-gray-600">
+                  {reviewData.generationState === "locked"
+                    ? `あと${reviewData.remainingCount}件で分析レポート利用可能です。`
+                    : reviewData.generationState === "ready"
+                      ? "10件達成しました。ボタンを押すと今月の振り返りを生成します。"
+                      : "生成済みの今月の振り返りを表示しています。"}
                 </p>
               </div>
-              <div className="grid grid-cols-10 gap-1">
-                {Array.from({ length: reviewData.requiredCount }).map((_, index) => {
-                  const isFilled = index < Math.min(reviewData.analyzedCount, reviewData.requiredCount);
-                  return (
-                    <div
-                      key={`progress-step-${index}`}
-                      className={`h-2 border border-gray-200 rounded-none ${isFilled ? "bg-[#ff8a15]" : "bg-gray-100"}`}
-                    />
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-xs text-gray-600">
-                {reviewData.generationState === "locked"
-                  ? `あと${reviewData.remainingCount}件で分析レポート利用可能です。`
-                  : reviewData.generationState === "ready"
-                    ? "10件達成しました。ボタンを押すと今月の振り返りを生成します。"
-                    : "生成済みの今月の振り返りを表示しています。"}
-              </p>
-            </div>
+            )}
 
             {reviewData.review && (
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-100">
@@ -158,17 +160,15 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({
                   )}
                 </div>
               )}
-              {reviewData.generationState !== "generated" && (
-                <button
-                  type="button"
-                  onClick={onGenerate}
-                  disabled={reviewData.generationState !== "ready" || isGenerating}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: reviewData.generationState === "ready" && !isGenerating ? "#ff8a15" : "#d1d5db" }}
-                >
-                  <span>{isGenerating ? "生成中..." : "今月の振り返りを生成"}</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={onGenerate}
+                disabled={reviewData.generationState === "locked" || isGenerating}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                style={{ backgroundColor: reviewData.generationState !== "locked" && !isGenerating ? "#ff8a15" : "#d1d5db" }}
+              >
+                <span>{isGenerating ? "生成中..." : "今月の振り返りを再生成"}</span>
+              </button>
             </div>
           </div>
         </div>

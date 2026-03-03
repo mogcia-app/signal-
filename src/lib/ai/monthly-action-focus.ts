@@ -16,6 +16,12 @@ interface MonthlyActionPlanRow {
   evaluationRule?: unknown;
 }
 
+interface MonthlyReviewDocRow {
+  actionPlans?: unknown;
+  analyzedCount?: unknown;
+  review?: unknown;
+}
+
 interface MonthlyKpiSummaryRow {
   totalLikes?: unknown;
   totalComments?: unknown;
@@ -47,6 +53,11 @@ export interface MonthlyActionFocus {
   promptText: string;
   evaluation: MonthlyActionEvaluation | null;
 }
+
+const DEFAULT_FOCUS_TITLE = "今月の重点テーマ";
+const DEFAULT_FOCUS_DESCRIPTION = "Instagramの配信拡張シグナルを優先し、保存とシェアを軸に改善します。";
+const DEFAULT_FOCUS_ACTION = "今は、保存数とシェア数を意識しましょう";
+const DEFAULT_REFLECTION_RULE = "投稿の3本に1本は、共有したくなる比較・チェックリスト型に寄せる。";
 
 function inferKpiMeta(row: MonthlyActionPlanRow): { kpiKey: KpiKey; kpiLabel: string } {
   const kpiKeyRaw = normalizeText(row.kpiKey);
@@ -103,7 +114,17 @@ async function fetchActionPlan(uid: string, month: string): Promise<MonthlyActio
   if (!doc.exists) {
     return null;
   }
-  const data = doc.data() as { actionPlans?: unknown } | undefined;
+  const data = (doc.data() || {}) as MonthlyReviewDocRow;
+  const analyzedCountRaw = data.analyzedCount;
+  const analyzedCount =
+    typeof analyzedCountRaw === "number" ? analyzedCountRaw : Number.isFinite(Number(analyzedCountRaw)) ? Number(analyzedCountRaw) : null;
+  const reviewText = normalizeText(data.review);
+  if (
+    (typeof analyzedCount === "number" && analyzedCount < 10) ||
+    reviewText.includes("のデータがまだありません。投稿を開始してデータを蓄積しましょう。")
+  ) {
+    return null;
+  }
   const actionPlans = Array.isArray(data?.actionPlans) ? (data?.actionPlans as MonthlyActionPlanRow[]) : [];
   const firstPlan = actionPlans[0];
   if (!firstPlan) {
@@ -201,69 +222,148 @@ function formatFocusPrompt(params: {
   action: string;
   kpiLabel: string;
   evaluation: MonthlyActionEvaluation | null;
+  reflectionRule: string;
 }): string {
+  const ruleText = normalizeText(params.reflectionRule) || DEFAULT_REFLECTION_RULE;
   return [
-    `今月の注力施策（${params.month} / 次の一手[A]）:`,
+    `今月の注力施策（${params.month}）:`,
     params.title ? `- タイトル: ${params.title}` : "",
     params.description ? `- 目的: ${params.description}` : "",
-    params.action ? `- 実行手順: ${params.action}` : "",
+    params.action ? `- 実行要点: ${params.action}` : "",
     `- 判定対象KPI: ${params.kpiLabel}`,
     params.evaluation ? `- 先月判定: ${params.evaluation.summary}` : "",
+    "",
+    `【来月のAI方針】\n${ruleText}`,
     "- 上記施策に沿って提案を優先してください。",
   ]
     .filter(Boolean)
     .join("\n");
 }
 
+function extractReflectionRule(reviewText: string): string {
+  const source = String(reviewText || "").trim();
+  if (!source) {
+    return "";
+  }
+
+  const rulePatterns = [
+    /来月のAI方針\s*[:：]\s*(.+)/i,
+    /次月反映ルール\s*[:：]\s*(.+)/i,
+    /反映ルール\s*[:：]\s*(.+)/i,
+  ];
+  for (const pattern of rulePatterns) {
+    const match = source.match(pattern);
+    const value = normalizeText(match?.[1]);
+    if (value) {
+      return value;
+    }
+  }
+  return "";
+}
+
+async function fetchReflectionRule(uid: string, month: string): Promise<string> {
+  const docRef = adminDb.collection(COLLECTIONS.MONTHLY_REVIEWS).doc(`${uid}_${month}`);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    return "";
+  }
+
+  const data = (doc.data() || {}) as MonthlyReviewDocRow;
+  const reviewText = normalizeText(data.review);
+  const fromReview = extractReflectionRule(reviewText);
+  if (fromReview) {
+    return fromReview;
+  }
+
+  const actionPlans = Array.isArray(data.actionPlans) ? (data.actionPlans as MonthlyActionPlanRow[]) : [];
+  const firstPlan = actionPlans[0];
+  if (!firstPlan) {
+    return "";
+  }
+  const action = normalizeText(firstPlan.action);
+  return action || "";
+}
+
+async function resolveReflectionRule(uid: string, currentMonth: string): Promise<string> {
+  const previousMonth = toPreviousMonth(currentMonth);
+  const [currentRule, previousRule] = await Promise.all([
+    fetchReflectionRule(uid, currentMonth),
+    fetchReflectionRule(uid, previousMonth),
+  ]);
+
+  if (currentRule) {
+    return currentRule;
+  }
+  if (previousRule) {
+    return previousRule;
+  }
+  return DEFAULT_REFLECTION_RULE;
+}
+
 export async function getMonthlyActionFocus(uid: string): Promise<MonthlyActionFocus | null> {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const previousMonth = toPreviousMonth(currentMonth);
 
   try {
-    const [currentAction, previousAction, evaluation] = await Promise.all([
-      fetchActionPlan(uid, currentMonth),
-      fetchActionPlan(uid, previousMonth),
+    const [evaluation, reflectionRule] = await Promise.all([
       evaluatePreviousAction(uid, currentMonth),
+      resolveReflectionRule(uid, currentMonth),
     ]);
-    const selectedMonth = currentAction ? currentMonth : previousMonth;
-    const selectedAction = currentAction || previousAction;
-    if (!selectedAction) {
-      return null;
-    }
-
-    const title = normalizeText(selectedAction.title);
-    const description = normalizeText(selectedAction.description);
-    const action = normalizeText(selectedAction.action);
-    if (!title && !description && !action) {
-      return null;
-    }
-    const kpiMeta = inferKpiMeta(selectedAction);
+    const title = DEFAULT_FOCUS_TITLE;
+    const description = DEFAULT_FOCUS_DESCRIPTION;
+    const action = DEFAULT_FOCUS_ACTION;
     const promptText = formatFocusPrompt({
-      month: selectedMonth,
+      month: currentMonth,
       title,
       description,
       action,
-      kpiLabel: kpiMeta.kpiLabel,
+      kpiLabel: "保存/シェア",
       evaluation,
+      reflectionRule,
     });
     return {
-      month: selectedMonth,
+      month: currentMonth,
       title,
       description,
       action,
-      kpiKey: kpiMeta.kpiKey,
-      kpiLabel: kpiMeta.kpiLabel,
+      kpiKey: "shares",
+      kpiLabel: "保存/シェア",
       promptText,
       evaluation,
     };
   } catch (error) {
     console.warn("monthly action focus read failed:", error);
-    return null;
+    const promptText = formatFocusPrompt({
+      month: currentMonth,
+      title: DEFAULT_FOCUS_TITLE,
+      description: DEFAULT_FOCUS_DESCRIPTION,
+      action: DEFAULT_FOCUS_ACTION,
+      kpiLabel: "保存/シェア",
+      evaluation: null,
+      reflectionRule: DEFAULT_REFLECTION_RULE,
+    });
+    return {
+      month: currentMonth,
+      title: DEFAULT_FOCUS_TITLE,
+      description: DEFAULT_FOCUS_DESCRIPTION,
+      action: DEFAULT_FOCUS_ACTION,
+      kpiKey: "shares",
+      kpiLabel: "保存/シェア",
+      promptText,
+      evaluation: null,
+    };
   }
 }
 
 export async function getMonthlyActionFocusPrompt(uid: string): Promise<string> {
   const focus = await getMonthlyActionFocus(uid);
-  return focus?.promptText || "";
+  return focus?.promptText || formatFocusPrompt({
+    month: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+    title: DEFAULT_FOCUS_TITLE,
+    description: DEFAULT_FOCUS_DESCRIPTION,
+    action: DEFAULT_FOCUS_ACTION,
+    kpiLabel: "保存/シェア",
+    evaluation: null,
+    reflectionRule: DEFAULT_REFLECTION_RULE,
+  });
 }
