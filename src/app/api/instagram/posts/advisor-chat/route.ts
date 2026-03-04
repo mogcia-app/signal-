@@ -22,6 +22,9 @@ interface AdvisorChatRequest {
 }
 
 interface AnalyticsDoc {
+  postId?: unknown;
+  title?: unknown;
+  content?: unknown;
   likes?: unknown;
   comments?: unknown;
   shares?: unknown;
@@ -41,23 +44,60 @@ interface AnalyticsDoc {
   reelSkipRate?: unknown;
   reelNormalSkipRate?: unknown;
   publishedAt?: unknown;
+  publishedTime?: unknown;
   createdAt?: unknown;
   category?: unknown;
 }
 
 interface GeneratedAdvice {
-  interpretation: string;
+  why: string;
   action: string;
 }
 
+interface ComparisonContext {
+  summary: string;
+  sampleSize: number;
+  strongerMetric: string | null;
+  weakerMetric: string | null;
+  hasReliableComparison: boolean;
+}
+
+type AdvisorIntent = "why_grew" | "fix" | "next_change" | "other";
+
 const normalizeText = (value: unknown): string => String(value || "").trim();
-const COPY_GUIDE_TEXT = "投稿一覧の『コピー』ボタンから、当日使う投稿文をそのまま取得できます。";
-const SUGGESTED_QUESTIONS = ["なぜ伸びた？", "何を直せばいい？", "次回何を変える？"];
+const SUGGESTED_QUESTIONS = ["なぜ伸びた？", "次の一手は？"];
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 const containsEngagementTerm = (value: string): boolean =>
   /エンゲージメント|engagement/i.test(String(value || ""));
+const containsHashtagTerm = (value: string): boolean =>
+  /ハッシュタグ|#|タグ\b/i.test(String(value || ""));
+const looksAbstract = (value: string): boolean =>
+  /価値のある|関心を得|工夫が必要|改善余地|重要です|強化し|活用し|最適化/i.test(String(value || ""));
+const containsAwkwardTerm = (value: string): boolean =>
+  /配信/.test(String(value || ""));
+const isConcreteAction = (value: string): boolean =>
+  /次回は/.test(value) && /判定/.test(value) && /[0-9一二三四五六七八九十]+(本|秒|文字|行|回)/.test(value);
+
+const detectIntent = (message: string): AdvisorIntent => {
+  const lower = message.toLowerCase();
+  if (lower.includes("なぜ伸") || lower.includes("なんで伸") || lower.includes("why")) {
+    return "why_grew";
+  }
+  if (lower.includes("何を直") || lower.includes("どこを直") || lower.includes("改善")) {
+    return "fix";
+  }
+  if (
+    lower.includes("次回何を変") ||
+    lower.includes("次に何を変") ||
+    lower.includes("次回") ||
+    lower.includes("次の一手")
+  ) {
+    return "next_change";
+  }
+  return "other";
+};
 
 const toNumber = (value: unknown): number => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -102,9 +142,248 @@ const formatPostType = (value: string): string => {
   return "フィード";
 };
 
+const normalizeContent = (value: unknown): string => {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) {
+    return "未設定";
+  }
+  return text.length > 240 ? `${text.slice(0, 240)}...` : text;
+};
+
+const formatDateJa = (date: Date | null): string => {
+  if (!date) {
+    return "未設定";
+  }
+  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
+};
+
+const formatTime = (value: unknown): string => {
+  const text = String(value || "").trim();
+  if (!text) {
+    return "未設定";
+  }
+  const hhmm = text.match(/^(\d{1,2}):(\d{2})/);
+  if (!hhmm) {
+    return text;
+  }
+  return `${hhmm[1].padStart(2, "0")}:${hhmm[2]}`;
+};
+
+const normalizeImageUrl = (value: unknown): string | null => {
+  const text = String(value || "").trim();
+  if (!text) {
+    return null;
+  }
+  if (text.startsWith("http://") || text.startsWith("https://") || text.startsWith("data:image/")) {
+    return text;
+  }
+  return null;
+};
+
+const buildContentSnippet = (content: string): string => {
+  const text = String(content || "").trim();
+  if (!text || text === "未設定") {
+    return "投稿文の主題";
+  }
+  const punct = text.search(/[。！？\n]/);
+  if (punct > 0 && punct <= 42) {
+    return text.slice(0, punct);
+  }
+  if (text.length <= 42) {
+    return text;
+  }
+  return `${text.slice(0, 42)}…`;
+};
+
+const tokenize = (value: string): string[] => {
+  const normalized = String(value || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized) {
+    return [];
+  }
+  return normalized
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2)
+    .slice(0, 30);
+};
+
+const overlapScore = (a: string[], b: string[]): number => {
+  if (a.length === 0 || b.length === 0) {
+    return 0;
+  }
+  const bSet = new Set(b);
+  return a.reduce((sum, token) => sum + (bSet.has(token) ? 1 : 0), 0);
+};
+
+const signed = (value: number): string => (value > 0 ? `+${value}` : `${value}`);
+
+const buildComparisonContext = (params: {
+  selectedPostId: string;
+  postType: "feed" | "reel" | "story";
+  currentTitle: string;
+  currentContent: string;
+  current: {
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    reposts: number;
+    followerIncrease: number;
+  };
+  history: AnalyticsDoc[];
+}): ComparisonContext => {
+  const currentTokens = tokenize(`${params.currentTitle} ${params.currentContent}`);
+  const candidates = params.history
+    .filter((item) => normalizeText(item.postId) !== params.selectedPostId)
+    .filter((item) => {
+      const category = normalizeText(item.category).toLowerCase();
+      return !category || category === params.postType;
+    })
+    .map((item) => {
+      const title = normalizeText(item.title);
+      const content = normalizeText(item.content);
+      const score = overlapScore(currentTokens, tokenize(`${title} ${content}`));
+      const createdAt = toDate(item.createdAt)?.getTime() || toDate(item.publishedAt)?.getTime() || 0;
+      return { item, score, createdAt };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return b.createdAt - a.createdAt;
+    });
+
+  const scored = candidates.filter((row) => row.score >= 2);
+  const picked = scored.slice(0, 5);
+  const sampleSize = picked.length;
+  if (sampleSize === 0) {
+    return {
+      summary: "比較対象の類似投稿が不足しているため、今回は単体指標を優先して評価しました。",
+      sampleSize: 0,
+      strongerMetric: null,
+      weakerMetric: null,
+      hasReliableComparison: false,
+    };
+  }
+
+  const avg = picked.reduce(
+    (acc, row) => {
+      acc.likes += toNumber(row.item.likes);
+      acc.comments += toNumber(row.item.comments);
+      acc.shares += toNumber(row.item.shares);
+      acc.saves += toNumber(row.item.saves);
+      acc.reposts += toNumber(row.item.reposts);
+      acc.followerIncrease += toNumber(row.item.followerIncrease);
+      return acc;
+    },
+    { likes: 0, comments: 0, shares: 0, saves: 0, reposts: 0, followerIncrease: 0 },
+  );
+
+  const baseline = {
+    likes: Math.round((avg.likes / sampleSize) * 10) / 10,
+    comments: Math.round((avg.comments / sampleSize) * 10) / 10,
+    shares: Math.round((avg.shares / sampleSize) * 10) / 10,
+    saves: Math.round((avg.saves / sampleSize) * 10) / 10,
+    reposts: Math.round((avg.reposts / sampleSize) * 10) / 10,
+    followerIncrease: Math.round((avg.followerIncrease / sampleSize) * 10) / 10,
+  };
+
+  const diffs = [
+    { key: "いいね", value: Math.round((params.current.likes - baseline.likes) * 10) / 10 },
+    { key: "コメント", value: Math.round((params.current.comments - baseline.comments) * 10) / 10 },
+    { key: "シェア", value: Math.round((params.current.shares - baseline.shares) * 10) / 10 },
+    { key: "保存", value: Math.round((params.current.saves - baseline.saves) * 10) / 10 },
+    { key: "リポスト", value: Math.round((params.current.reposts - baseline.reposts) * 10) / 10 },
+    { key: "フォロワー増加", value: Math.round((params.current.followerIncrease - baseline.followerIncrease) * 10) / 10 },
+  ];
+  const stronger = [...diffs].sort((a, b) => b.value - a.value)[0];
+  const weaker = [...diffs].sort((a, b) => a.value - b.value)[0];
+
+  const summary =
+    `類似投稿${sampleSize}件平均との差分は、保存${signed(Math.round((params.current.saves - baseline.saves) * 10) / 10)}、` +
+    `シェア${signed(Math.round((params.current.shares - baseline.shares) * 10) / 10)}、` +
+    `フォロワー増加${signed(Math.round((params.current.followerIncrease - baseline.followerIncrease) * 10) / 10)}です。`;
+
+  return {
+    summary,
+    sampleSize,
+    strongerMetric: stronger?.key || null,
+    weakerMetric: weaker?.key || null,
+    hasReliableComparison: true,
+  };
+};
+
+const sanitizeWhy = (value: string): string =>
+  String(value || "")
+    .replace(/配信/g, "投稿")
+    .replace(/ハッシュタグ|#\S*/g, "")
+    .trim();
+
+const sanitizeAction = (value: string): string =>
+  String(value || "")
+    .replace(/配信/g, "投稿")
+    .replace(/ハッシュタグ|#\S*/g, "")
+    .trim();
+
+const isThinWhy = (value: string): boolean => {
+  const text = String(value || "").trim();
+  if (text.length < 90) {
+    return true;
+  }
+  const hasMetricToken = /(いいね|保存|シェア|コメント|リポスト|フォロワー増加)\s*[-+]?\d+/.test(text);
+  return !hasMetricToken;
+};
+
+const buildAdviceFromData = (params: {
+  postContent: string;
+  comparisonContext: ComparisonContext;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  reposts: number;
+  followerIncrease: number;
+}): GeneratedAdvice => {
+  const { postContent, comparisonContext, likes, comments, shares, saves, reposts, followerIncrease } = params;
+  const snippet = buildContentSnippet(postContent);
+  const metrics = [
+    { key: "保存", value: saves },
+    { key: "シェア", value: shares },
+    { key: "コメント", value: comments },
+    { key: "リポスト", value: reposts },
+    { key: "いいね", value: likes },
+  ].sort((a, b) => b.value - a.value);
+  const top = metrics[0];
+  const second = metrics[1];
+  const weakest = metrics[metrics.length - 1];
+
+  const compareText = comparisonContext.hasReliableComparison ? `${comparisonContext.summary} ` : "";
+  const why =
+    followerIncrease > 0
+      ? `${compareText}投稿文「${snippet}」に対して${top.key}${top.value}と${second.key}${second.value}が同時に反応し、読むだけで終わらない行動導線が成立しました。特にフォロワー増加${followerIncrease}まで波及しており、訴求内容とCTAの接続が機能したことが伸長要因です。`
+      : `${compareText}投稿文「${snippet}」に対して${top.key}${top.value}と${second.key}${second.value}が同時に反応し、反応行動へ繋がる導線が機能しました。類似投稿平均との差分でも優位指標が確認でき、今回の訴求構成が有効だったと判断できます。`;
+
+  const targetMetric =
+    comparisonContext.hasReliableComparison && comparisonContext.weakerMetric
+      ? comparisonContext.weakerMetric
+      : weakest.key;
+  const action = `次回は冒頭1行を15文字以内で結論先出しにし、末尾に質問CTAを1つだけ入れて${targetMetric}を補強してください。判定は次回投稿で${targetMetric}が今回値を上回れば継続です。`;
+
+  return { why, action };
+};
+
 const generateGrowthAdvice = async (params: {
   title: string;
   postType: "feed" | "reel" | "story";
+  postContent: string;
+  publishedDate: string;
+  publishedTime: string;
+  imageUrl?: string | null;
+  comparisonContext: ComparisonContext;
   analytics: {
     likes: number;
     comments: number;
@@ -116,23 +395,41 @@ const generateGrowthAdvice = async (params: {
   };
   algorithmBrief: string;
   monthlyActionFocusPrompt: string;
-}): Promise<GeneratedAdvice | null> => {
+}): Promise<GeneratedAdvice> => {
   if (!openai) {
-    return null;
+    return buildAdviceFromData({
+      postContent: params.postContent,
+      comparisonContext: params.comparisonContext,
+      likes: params.analytics.likes,
+      comments: params.analytics.comments,
+      shares: params.analytics.shares,
+      saves: params.analytics.saves,
+      reposts: params.analytics.reposts,
+      followerIncrease: params.analytics.followerIncrease,
+    });
   }
 
   const systemPrompt = [
     "あなたはInstagram運用の実務コーチです。",
     "保存済み分析データのみを根拠に、推測せずに答えてください。",
-    "出力はJSONのみ: {\"interpretation\": string, \"action\": string}",
-    "interpretationは1文、actionは1文で、どちらも実行可能な具体策にしてください。",
-    "actionは次回投稿で再現性を検証できる内容にしてください。",
+    "出力はJSONのみ: {\"why\": string, \"action\": string}",
+    "whyは『なぜ伸びたか』への回答として2〜4文で具体的に述べてください。投稿文と数値をつないで因果を説明してください。",
+    "whyには最低2つの数値（例: いいね34、保存21）を必ず含め、類似投稿との差分にも1文で触れてください。",
+    "「配信」という語は使わず、必ず「投稿」と表現してください。",
+    "投稿日時の生データ（YYYY/MM/DD HH:mm）は繰り返し記載しないでください。",
+    "actionは次回投稿で再現性を検証できる内容にしてください。必ず「次回は〜。判定は〜。」の形にしてください。",
     "「エンゲージメント」「エンゲージメント率」という語は一切使わないでください。",
+    "ハッシュタグ・タグ・#記号には一切触れないでください。",
+    "抽象語（価値がある、関心が高い、工夫が必要 等）だけで終わらせないでください。",
   ].join("\n");
 
   const userPrompt = [
     `対象投稿: ${params.title || "タイトル未設定"}`,
     `投稿タイプ: ${formatPostType(params.postType)}`,
+    `投稿日: ${params.publishedDate}`,
+    `投稿時間: ${params.publishedTime}`,
+    `投稿文: ${params.postContent}`,
+    `比較学習: ${params.comparisonContext.summary}`,
     `いいね: ${params.analytics.likes}`,
     `コメント: ${params.analytics.comments}`,
     `シェア: ${params.analytics.shares}`,
@@ -153,37 +450,119 @@ const generateGrowthAdvice = async (params: {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        {
+          role: "user",
+          content: params.imageUrl
+            ? [
+                { type: "text", text: userPrompt },
+                { type: "image_url", image_url: { url: params.imageUrl } },
+              ]
+            : [{ type: "text", text: userPrompt }],
+        },
       ],
     });
 
     const raw = completion.choices[0]?.message?.content || "{}";
-    const parsed = JSON.parse(raw) as { interpretation?: unknown; action?: unknown };
-    const interpretation = normalizeText(parsed.interpretation);
-    const action = normalizeText(parsed.action);
+    let parsed = JSON.parse(raw) as { why?: unknown; action?: unknown };
+    let why = sanitizeWhy(normalizeText(parsed.why));
+    let action = sanitizeAction(normalizeText(parsed.action));
 
-    if (!interpretation || !action) {
-      return null;
-    }
-    if (containsEngagementTerm(interpretation) || containsEngagementTerm(action)) {
-      return null;
+    if (!why || !action) {
+      const repair = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "以下をJSONに整形してください。出力形式: {\"why\": string, \"action\": string}。空文字は禁止。whyは1〜2文、actionは「次回は〜。判定は〜。」。",
+          },
+          { role: "user", content: raw || "{}" },
+        ],
+      });
+      const repairedRaw = repair.choices[0]?.message?.content || "{}";
+      parsed = JSON.parse(repairedRaw) as { why?: unknown; action?: unknown };
+      why = sanitizeWhy(normalizeText(parsed.why));
+      action = sanitizeAction(normalizeText(parsed.action));
     }
 
-    return { interpretation, action };
+    if (!why || containsHashtagTerm(why) || containsAwkwardTerm(why) || looksAbstract(why)) {
+      why = buildAdviceFromData({
+        postContent: params.postContent,
+        comparisonContext: params.comparisonContext,
+        likes: params.analytics.likes,
+        comments: params.analytics.comments,
+        shares: params.analytics.shares,
+        saves: params.analytics.saves,
+        reposts: params.analytics.reposts,
+        followerIncrease: params.analytics.followerIncrease,
+      }).why;
+    }
+    if (isThinWhy(why)) {
+      const enriched = buildAdviceFromData({
+        postContent: params.postContent,
+        comparisonContext: params.comparisonContext,
+        likes: params.analytics.likes,
+        comments: params.analytics.comments,
+        shares: params.analytics.shares,
+        saves: params.analytics.saves,
+        reposts: params.analytics.reposts,
+        followerIncrease: params.analytics.followerIncrease,
+      }).why;
+      why = enriched;
+    }
+
+    if (!action || containsHashtagTerm(action) || !isConcreteAction(action) || containsEngagementTerm(action)) {
+      action = buildAdviceFromData({
+        postContent: params.postContent,
+        comparisonContext: params.comparisonContext,
+        likes: params.analytics.likes,
+        comments: params.analytics.comments,
+        shares: params.analytics.shares,
+        saves: params.analytics.saves,
+        reposts: params.analytics.reposts,
+        followerIncrease: params.analytics.followerIncrease,
+      }).action;
+    }
+
+    return { why, action };
   } catch (error) {
     console.error("instagram posts advisor ai generation error:", error);
-    return null;
+    return buildAdviceFromData({
+      postContent: params.postContent,
+      comparisonContext: params.comparisonContext,
+      likes: params.analytics.likes,
+      comments: params.analytics.comments,
+      shares: params.analytics.shares,
+      saves: params.analytics.saves,
+      reposts: params.analytics.reposts,
+      followerIncrease: params.analytics.followerIncrease,
+    });
   }
 };
 
 const buildSummary = (params: {
   postType: "feed" | "reel" | "story";
-  title: string;
+  postContent: string;
+  publishedDate: string;
+  publishedTime: string;
+  comparisonContext: ComparisonContext;
   analytics: AnalyticsDoc;
   message: string;
   aiGeneratedAdvice?: GeneratedAdvice | null;
 }) => {
-  const { postType, title, analytics, message, aiGeneratedAdvice } = params;
+  const {
+    postType,
+    postContent: _postContent,
+    publishedDate: _publishedDate,
+    publishedTime: _publishedTime,
+    comparisonContext,
+    analytics,
+    message,
+    aiGeneratedAdvice,
+  } = params;
+  const intent = detectIntent(message);
 
   const likes = toNumber(analytics.likes);
   const comments = toNumber(analytics.comments);
@@ -197,16 +576,10 @@ const buildSummary = (params: {
       ? toNumber(analytics.reelInteractionCount) || likes + comments + shares + saves + reposts
       : toNumber(analytics.interactionCount) || likes + comments + shares + saves + reposts;
 
-  const reachedAccounts =
-    postType === "reel" ? toNumber(analytics.reelReachedAccounts) : toNumber(analytics.reachedAccounts);
-
   const profileVisits = toNumber(analytics.profileVisits);
   const profileFollows = toNumber(analytics.profileFollows);
   const externalLinkTaps = toNumber(analytics.externalLinkTaps);
-  const reelPlayTime = toNumber(analytics.reelPlayTime);
-  const reelAvgPlayTime = toNumber(analytics.reelAvgPlayTime);
   const reelSkipRate = toNumber(analytics.reelSkipRate);
-  const reelNormalSkipRate = toNumber(analytics.reelNormalSkipRate);
 
   const allCoreZero =
     likes === 0 &&
@@ -217,20 +590,16 @@ const buildSummary = (params: {
     followerIncrease === 0 &&
     interactionCount === 0;
 
-  const conversationStrength = comments + shares + saves;
-  const tractionScore = likes + comments * 3 + shares * 4 + saves * 3 + followerIncrease * 5;
-
-  let interpretation = "反応が入り始めており、改善余地がある中間フェーズです。";
-  if (allCoreZero) {
-    interpretation =
-      "保存済みデータ上は主要指標が0で、投稿内容より前に露出導線（告知・初速）が不足している状態です。";
-  } else if (tractionScore >= 80 || conversationStrength >= 15 || followerIncrease >= 5) {
-    interpretation =
-      "保存・シェア・コメントの複合反応が出ており、内容の価値がフォロワーに伝わっている状態です。";
-  } else if (likes > 0 && conversationStrength === 0) {
-    interpretation =
-      "閲覧後のリアクションは出ていますが、会話や共有に繋がる要素が弱く、拡散余地が残っています。";
-  }
+  let whyReason = buildAdviceFromData({
+    postContent: _postContent,
+    comparisonContext,
+    likes,
+    comments,
+    shares,
+    saves,
+    reposts,
+    followerIncrease,
+  }).why;
 
   const messageLower = message.toLowerCase();
   let action = "次回は冒頭20文字でベネフィットを1つ明示し、末尾に質問を1つ入れてコメント導線を作ってください。";
@@ -255,42 +624,22 @@ const buildSummary = (params: {
       "次回はリンクタップ前提で、投稿本文中に『誰向けか』を1行追加し、無駄クリックを減らしてください。";
   }
 
-  if (aiGeneratedAdvice && (messageLower.includes("なぜ伸") || messageLower.includes("バズ") || messageLower.includes("良かった"))) {
-    interpretation = aiGeneratedAdvice.interpretation;
+  if (aiGeneratedAdvice) {
+    whyReason = aiGeneratedAdvice.why;
     action = aiGeneratedAdvice.action;
   }
 
-  const evidenceLines: string[] = [
-    `対象投稿: ${title || "タイトル未設定"}（${formatPostType(postType)}）`,
-    `反応指標: いいね ${likes} / コメント ${comments} / シェア ${shares} / 保存 ${saves} / リポスト ${reposts}`,
-    `補助指標: インタラクション ${interactionCount} / フォロワー増加 ${followerIncrease}`,
-  ];
-
-  if (postType === "feed") {
-    evidenceLines.push(
-      `フィード補足: リーチしたアカウント ${reachedAccounts} / プロフィールアクセス ${profileVisits} / プロフィールフォロー ${profileFollows} / 外部リンクタップ ${externalLinkTaps}`,
-    );
+  const replyLines: string[] = [];
+  if (intent === "why_grew") {
+    replyLines.push(whyReason);
+  } else if (intent === "fix") {
+    replyLines.push(whyReason, "", "次の1アクション", action);
+  } else if (intent === "next_change") {
+    replyLines.push(whyReason, "", "次の1アクション", action);
+  } else {
+    replyLines.push(whyReason, "", "次の1アクション", action);
   }
-
-  if (postType === "reel") {
-    evidenceLines.push(
-      `リール補足: リーチしたアカウント ${reachedAccounts} / 再生時間 ${reelPlayTime}秒 / 平均再生時間 ${reelAvgPlayTime}秒 / スキップ率 ${reelSkipRate}% / 通常視聴でのスキップ率 ${reelNormalSkipRate}%`,
-    );
-  }
-
-  const copyGuide = COPY_GUIDE_TEXT;
-
-  const reply = [
-    "根拠データ",
-    ...evidenceLines,
-    "",
-    "解釈",
-    interpretation,
-    "",
-    "次の1アクション",
-    action,
-    copyGuide,
-  ].join("\n");
+  const reply = replyLines.join("\n");
 
   return {
     reply,
@@ -368,6 +717,11 @@ export async function POST(request: NextRequest) {
       .where("userId", "==", uid)
       .where("postId", "==", selectedPostId)
       .get();
+    const analyticsHistorySnapshot = await db
+      .collection("analytics")
+      .where("userId", "==", uid)
+      .limit(80)
+      .get();
 
     if (analyticsSnapshot.empty) {
       return NextResponse.json(
@@ -375,7 +729,7 @@ export async function POST(request: NextRequest) {
           success: true,
           data: {
             reply:
-              `根拠データ\nこの投稿には保存済み分析データがありません。\n\n解釈\n未保存データは参照しない仕様のため、分析チャットでは回答できない状態です。\n\n次の1アクション\n先に分析ページで数値を保存してから、再度質問してください。\n${COPY_GUIDE_TEXT}`,
+              "この投稿には保存済み分析データがありません。先に分析ページで数値を保存してから、再度質問してください。",
             suggestedQuestions: SUGGESTED_QUESTIONS,
           },
         },
@@ -407,9 +761,19 @@ export async function POST(request: NextRequest) {
       postTypeRaw === "reel" ? "reel" : postTypeRaw === "story" ? "story" : "feed";
 
     const title = normalizeText(postData.title);
-    const messageLower = message.toLowerCase();
-    const shouldUseAiForGrowthAdvice =
-      messageLower.includes("なぜ伸") || messageLower.includes("バズ") || messageLower.includes("良かった");
+    const postContent = normalizeContent(postData.content);
+    const publishedDate = formatDateJa(
+      toDate(latestAnalyticsDoc.publishedAt) ||
+        toDate(postData.publishedAt) ||
+        toDate(postData.scheduledDate) ||
+        toDate(postData.createdAt),
+    );
+    const publishedTime = formatTime(
+      latestAnalyticsDoc.publishedTime || postData.publishedTime || postData.scheduledTime,
+    );
+    const intent = detectIntent(message);
+    const shouldUseAiForGrowthAdvice = intent === "why_grew" || intent === "next_change";
+    const imageUrl = normalizeImageUrl(postData.imageUrl || postData.thumbnail);
 
     const likes = toNumber(latestAnalyticsDoc.likes);
     const comments = toNumber(latestAnalyticsDoc.comments);
@@ -417,6 +781,21 @@ export async function POST(request: NextRequest) {
     const reposts = toNumber(latestAnalyticsDoc.reposts);
     const saves = toNumber(latestAnalyticsDoc.saves);
     const followerIncrease = toNumber(latestAnalyticsDoc.followerIncrease);
+    const comparisonContext = buildComparisonContext({
+      selectedPostId,
+      postType,
+      currentTitle: title,
+      currentContent: postContent,
+      current: {
+        likes,
+        comments,
+        shares,
+        saves,
+        reposts,
+        followerIncrease,
+      },
+      history: analyticsHistorySnapshot.docs.map((doc) => doc.data() as AnalyticsDoc),
+    });
     const interactionCount =
       postType === "reel"
         ? toNumber(latestAnalyticsDoc.reelInteractionCount) || likes + comments + shares + saves + reposts
@@ -426,6 +805,11 @@ export async function POST(request: NextRequest) {
       ? await generateGrowthAdvice({
           title,
           postType,
+          postContent,
+          publishedDate,
+          publishedTime,
+          imageUrl,
+          comparisonContext,
           analytics: {
             likes,
             comments,
@@ -442,7 +826,10 @@ export async function POST(request: NextRequest) {
 
     const result = buildSummary({
       postType,
-      title,
+      postContent,
+      publishedDate,
+      publishedTime,
+      comparisonContext,
       analytics: latestAnalyticsDoc,
       message,
       aiGeneratedAdvice,

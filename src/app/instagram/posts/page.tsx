@@ -273,8 +273,7 @@ export default function InstagramPostsPage() {
   ]);
   const [advisorSuggestedQuestions, setAdvisorSuggestedQuestions] = useState<string[]>([
     "なぜ伸びた？",
-    "何を直せばいい？",
-    "次回何を変える？",
+    "次の一手は？",
   ]);
   const advisorSendInFlightRef = useRef(false);
 
@@ -667,8 +666,8 @@ export default function InstagramPostsPage() {
         setAdvisorMessages((prev) => [...prev, assistantMessage]);
         setAdvisorSuggestedQuestions(
           Array.isArray(result.data.suggestedQuestions) && result.data.suggestedQuestions.length > 0
-            ? result.data.suggestedQuestions.slice(0, 3)
-            : ["なぜ伸びた？", "何を直せばいい？", "次回何を変える？"],
+            ? result.data.suggestedQuestions.slice(0, 2)
+            : ["なぜ伸びた？", "次の一手は？"],
         );
       } catch (error) {
         console.error("advisor chat error:", error);
@@ -1183,18 +1182,18 @@ export default function InstagramPostsPage() {
               <header className="flex items-center justify-between border-b border-gray-200 px-3 py-5">
                 <div className="flex items-center gap-1.5">
                   <Bot className="h-3.5 w-3.5 text-orange-600" />
-                  <h3 className="text-xs font-semibold text-gray-800">分析チャットβ</h3>
+                  <h3 className="text-sm font-semibold text-gray-800">分析チャットβ</h3>
                 </div>
                 <button
                   onClick={() => setAdvisorOpen(false)}
-                  className="text-xs text-gray-500 hover:text-gray-700"
+                  className="text-sm text-gray-500 hover:text-gray-700"
                   aria-label="閉じる"
                 >
                   閉じる
                 </button>
               </header>
               <div className="border-b border-gray-200 bg-gray-50 px-3 py-2">
-                <div className="flex items-center justify-between text-[11px] text-gray-600">
+                <div className="flex items-center justify-between text-xs text-gray-600">
                   <span>{aiUsageLabel}</span>
                   <button
                     type="button"
@@ -1210,16 +1209,16 @@ export default function InstagramPostsPage() {
 
               <div className="border-b border-orange-300 bg-gradient-to-r from-[#FF8A15] to-orange-500 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="text-xs font-bold text-white">相談する投稿を選択</p>
+                  <p className="text-sm font-bold text-white">相談する投稿を選択</p>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center border border-[#ffd3a8] bg-white px-2 py-1 text-[11px] font-medium text-[#c76400]">
+                    <span className="inline-flex items-center border border-[#ffd3a8] bg-white px-2 py-1 text-xs font-medium text-[#c76400]">
                       対象 {filteredAdvisorPostOptions.length}件
                     </span>
                     {selectedAdvisorPostOption && (
                       <button
                         type="button"
                         onClick={() => setIsAdvisorSelectorOpen((prev) => !prev)}
-                        className="border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                        className="border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
                       >
                         {isAdvisorSelectorOpen ? "閉じる" : "投稿を変更"}
                       </button>
@@ -1229,7 +1228,7 @@ export default function InstagramPostsPage() {
 
                 {isAdvisorSelectorOpen && (
                   <>
-                    <label className="mb-1 block text-[11px] font-medium text-gray-600">絞り込み</label>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">絞り込み</label>
                     <input
                       type="text"
                       value={advisorPostFilter}
@@ -1238,7 +1237,7 @@ export default function InstagramPostsPage() {
                       className="mb-3 w-full border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#ff8a15] focus:outline-none"
                     />
 
-                    <label className="mb-1 block text-[11px] font-medium text-gray-600">投稿を選択</label>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">投稿を選択</label>
                     <select
                       value={selectedAdvisorPostId}
                       onChange={(event) => {
@@ -1267,7 +1266,7 @@ export default function InstagramPostsPage() {
                     <p className="mb-1 line-clamp-1 text-sm font-semibold text-gray-900">
                       {selectedAdvisorPostOption.title}
                     </p>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-600">
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
                       <span className="inline-flex bg-[#fff5ea] px-2 py-1 text-[#c76400]">
                         {formatPostTypeLabel(selectedAdvisorPostOption.postType)}
                       </span>
@@ -1289,7 +1288,7 @@ export default function InstagramPostsPage() {
                       </span>
                     )}
                     <div
-                      className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
+                      className={`max-w-[88%] rounded-2xl px-3 py-2 text-[15px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
                         message.role === "user"
                           ? "bg-gradient-to-r from-[#FF8A15] to-orange-500 text-white"
                           : "border border-gray-200 bg-white text-gray-700"
@@ -1304,7 +1303,7 @@ export default function InstagramPostsPage() {
                     <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-orange-200 bg-white text-orange-600">
                       <Bot className="h-3.5 w-3.5" />
                     </span>
-                    <div className="max-w-[88%] rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
+                    <div className="max-w-[88%] rounded-2xl border border-gray-200 bg-white px-3 py-2 text-[15px] text-gray-500">
                       回答中...
                     </div>
                   </div>
@@ -1322,7 +1321,7 @@ export default function InstagramPostsPage() {
                           void sendAdvisorMessage(question);
                         }}
                         disabled={!selectedAdvisorPostId || advisorLoading}
-                        className="px-2 py-1 text-[11px] border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60"
+                        className="px-2 py-1 text-xs border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60"
                       >
                         {question}
                       </button>
@@ -1331,11 +1330,6 @@ export default function InstagramPostsPage() {
                 </div>
               )}
 
-              <div className="border-t border-gray-200 px-3 py-2">
-                <p className="text-[11px] text-gray-500">
-                  質問は上の3ボタンから選択してください
-                </p>
-              </div>
             </section>
           )}
 
