@@ -621,8 +621,18 @@ export default function HomePage() {
       setQuickPlanStartDate(result.data.startDate);
       const parsedStartDate = new Date(result.data.startDate);
       if (!Number.isNaN(parsedStartDate.getTime())) {
-        setCalendarViewYear(parsedStartDate.getFullYear());
-        setCalendarViewMonth(parsedStartDate.getMonth());
+        const todayDate = new Date();
+        const todayOnly = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+        const startOnly = new Date(
+          parsedStartDate.getFullYear(),
+          parsedStartDate.getMonth(),
+          parsedStartDate.getDate()
+        );
+
+        // 今月表示を優先しつつ、未来開始プランだけ開始月を表示
+        const focusDate = todayOnly < startOnly ? parsedStartDate : todayDate;
+        setCalendarViewYear(focusDate.getFullYear());
+        setCalendarViewMonth(focusDate.getMonth());
       }
     }
 
