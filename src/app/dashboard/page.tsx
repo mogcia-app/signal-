@@ -325,6 +325,14 @@ export default function HomePage() {
   const [showHomePlanForm, setShowHomePlanForm] = useState(false);
   const [calendarViewYear, setCalendarViewYear] = useState<number>(today.getFullYear());
   const [calendarViewMonth, setCalendarViewMonth] = useState<number>(today.getMonth());
+  const calendarViewRef = useRef<{ year: number; month: number }>({
+    year: today.getFullYear(),
+    month: today.getMonth(),
+  });
+  const lastSystemMonthRef = useRef<{ year: number; month: number }>({
+    year: today.getFullYear(),
+    month: today.getMonth(),
+  });
   const [isWeeklyPlanMarkedOnCalendar, setIsWeeklyPlanMarkedOnCalendar] = useState(false);
   const [isGeneratingMonthlyCalendarPlan, setIsGeneratingMonthlyCalendarPlan] = useState(false);
   const [monthlyCalendarPlan, setMonthlyCalendarPlan] = useState<MonthlyCalendarPlanItem[]>([]);
@@ -444,6 +452,62 @@ export default function HomePage() {
         return "保存率";
     }
   };
+
+  useEffect(() => {
+    calendarViewRef.current = {
+      year: calendarViewYear,
+      month: calendarViewMonth,
+    };
+  }, [calendarViewYear, calendarViewMonth]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {return;}
+
+    const syncCalendarMonthIfNeeded = () => {
+      const now = new Date();
+      const nextSystemMonth = {
+        year: now.getFullYear(),
+        month: now.getMonth(),
+      };
+      const prevSystemMonth = lastSystemMonthRef.current;
+
+      if (
+        nextSystemMonth.year === prevSystemMonth.year &&
+        nextSystemMonth.month === prevSystemMonth.month
+      ) {
+        return;
+      }
+
+      const currentCalendar = calendarViewRef.current;
+      const shouldFollowSystemMonth =
+        currentCalendar.year === prevSystemMonth.year &&
+        currentCalendar.month === prevSystemMonth.month;
+
+      lastSystemMonthRef.current = nextSystemMonth;
+
+      if (shouldFollowSystemMonth) {
+        setCalendarViewYear(nextSystemMonth.year);
+        setCalendarViewMonth(nextSystemMonth.month);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncCalendarMonthIfNeeded();
+      }
+    };
+
+    // 長時間タブを開いたままでも月跨ぎを検知する
+    const intervalId = window.setInterval(syncCalendarMonthIfNeeded, 60_000);
+    window.addEventListener("focus", syncCalendarMonthIfNeeded);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncCalendarMonthIfNeeded);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (guidedFlowStartMs === null) {return;}
