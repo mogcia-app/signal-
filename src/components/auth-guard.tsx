@@ -3,7 +3,7 @@
 import { useAuth } from "../contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged, type Unsubscribe } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { getToolMaintenanceStatus } from "@/lib/tool-maintenance";
 import { BotStatusCard } from "./bot-status-card";
@@ -14,6 +14,7 @@ interface AuthGuardProps {
 
 const AUTH_CALLBACK_IN_PROGRESS_KEY = "signal_auth_callback_in_progress_at";
 const AUTH_CALLBACK_GRACE_MS = 15000;
+const AUTH_RESOLUTION_WAIT_TIMEOUT_MS = 3000;
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading, contractValid } = useAuth();
@@ -64,23 +65,106 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }, [user, router]);
 
   useEffect(() => {
-    if (!loading && !user) {
-      if (typeof window !== "undefined") {
-        const startedAtRaw = window.sessionStorage.getItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
-        if (startedAtRaw) {
-          const startedAt = Number.parseInt(startedAtRaw, 10);
-          if (Number.isFinite(startedAt)) {
-            const elapsed = Date.now() - startedAt;
-            if (elapsed >= 0 && elapsed < AUTH_CALLBACK_GRACE_MS) {
-              return;
-            }
-          }
-          window.sessionStorage.removeItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
-        }
+    if (loading || user) {return;}
+
+    let cancelled = false;
+    let authStateTimeoutId: number | null = null;
+    let authStateUnsubscribe: Unsubscribe | null = null;
+
+    const shouldHoldForAuthCallback = (): boolean => {
+      if (typeof window === "undefined") {return false;}
+      const startedAtRaw = window.sessionStorage.getItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
+      if (!startedAtRaw) {return false;}
+
+      const startedAt = Number.parseInt(startedAtRaw, 10);
+      if (!Number.isFinite(startedAt)) {
+        window.sessionStorage.removeItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
+        return false;
       }
 
-      router.push("/login");
-    }
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= 0 && elapsed < AUTH_CALLBACK_GRACE_MS) {
+        return true;
+      }
+
+      window.sessionStorage.removeItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
+      return false;
+    };
+
+    const waitForAuthStateResolution = async (): Promise<void> => {
+      if (typeof window === "undefined" || auth.currentUser) {
+        return;
+      }
+
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        const settle = () => {
+          if (settled) {return;}
+          settled = true;
+          if (authStateUnsubscribe) {
+            authStateUnsubscribe();
+            authStateUnsubscribe = null;
+          }
+          if (authStateTimeoutId !== null) {
+            window.clearTimeout(authStateTimeoutId);
+            authStateTimeoutId = null;
+          }
+          resolve();
+        };
+
+        authStateUnsubscribe = onAuthStateChanged(auth, () => {
+          settle();
+        });
+
+        authStateTimeoutId = window.setTimeout(() => {
+          settle();
+        }, AUTH_RESOLUTION_WAIT_TIMEOUT_MS);
+      });
+    };
+
+    const confirmAndRedirect = async () => {
+      // Contextより先にFirebase本体が更新されている場合はリダイレクトしない
+      if (auth.currentUser || shouldHoldForAuthCallback()) {
+        return;
+      }
+
+      // 初回のAuth解決（onAuthStateChanged初回発火）まで待機
+      await waitForAuthStateResolution();
+      if (cancelled) {return;}
+
+      if (auth.currentUser || shouldHoldForAuthCallback()) {
+        return;
+      }
+
+      const userIdFromQuery =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("userId")
+          : null;
+      if (userIdFromQuery) {
+        router.replace(`/auth/callback?userId=${encodeURIComponent(userIdFromQuery)}`);
+        return;
+      }
+
+      const next =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : "/";
+      router.replace(`/login?next=${encodeURIComponent(next)}`);
+    };
+
+    void confirmAndRedirect();
+
+    return () => {
+      cancelled = true;
+      if (authStateUnsubscribe) {
+        authStateUnsubscribe();
+        authStateUnsubscribe = null;
+      }
+      if (authStateTimeoutId !== null && typeof window !== "undefined") {
+        window.clearTimeout(authStateTimeoutId);
+        authStateTimeoutId = null;
+      }
+    };
   }, [user, loading, router]);
 
   useEffect(() => {

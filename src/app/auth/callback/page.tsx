@@ -111,6 +111,7 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
+    let redirectTimeoutId: NodeJS.Timeout | null = null;
     let unsubscribe: (() => void) | null = null;
 
     const handleCallback = async () => {
@@ -209,8 +210,8 @@ function AuthCallbackContent() {
             setStatus("リダイレクト中...");
             
             // 少し遅延を入れてからリダイレクト（認証状態が完全に反映されるまで待つ）
-            setTimeout(() => {
-              router.push("/dashboard");
+            redirectTimeoutId = setTimeout(() => {
+              router.replace("/dashboard");
             }, 500);
           } else if (!user && !hasRedirected.current) {
             // ユーザーがnullの場合は、まだ認証処理中の可能性があるため待機
@@ -248,6 +249,9 @@ function AuthCallbackContent() {
         if (timeoutId) {
           clearTimeout(timeoutId);
         }
+        if (redirectTimeoutId) {
+          clearTimeout(redirectTimeoutId);
+        }
         if (unsubscribe) {
           unsubscribe();
         }
@@ -261,8 +265,14 @@ function AuthCallbackContent() {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      if (redirectTimeoutId) {
+        clearTimeout(redirectTimeoutId);
+      }
       if (unsubscribe) {
         unsubscribe();
+      }
+      if (typeof window !== "undefined" && !hasRedirected.current) {
+        window.sessionStorage.removeItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
       }
     };
   }, [router, searchParams]);

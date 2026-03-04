@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../contexts/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { getToolMaintenanceStatus } from "@/lib/tool-maintenance";
 
 const loginMaintenanceEnabled = process.env.NEXT_PUBLIC_LOGIN_MAINTENANCE === "true";
 const isProductionBuild = process.env.NODE_ENV === "production";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,13 +23,28 @@ export default function LoginPage() {
 
   const { signIn, user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const nextPath = useMemo(() => {
+    const rawNext = searchParams.get("next");
+    if (!rawNext) {
+      return "/dashboard";
+    }
+
+    // open redirect防止: 相対パスのみ許可
+    if (!rawNext.startsWith("/") || rawNext.startsWith("//")) {
+      return "/dashboard";
+    }
+
+    return rawNext;
+  }, [searchParams]);
 
   // 既にログインしている場合は/homeにリダイレクト
   // 未ログインの場合はローカル環境ではそのまま表示、本番環境ではポータルサイトにリダイレクト
   useEffect(() => {
     if (!authLoading) {
       if (user) {
-        router.push("/dashboard");
+        router.replace(nextPath);
       } else {
         // ローカル環境の場合はそのまま表示、本番環境の場合はポータルサイトにリダイレクト
         const isLocal = typeof window !== "undefined" && 
@@ -43,7 +58,7 @@ export default function LoginPage() {
         // ローカル環境の場合はそのまま表示（何もしない）
       }
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, nextPath]);
 
   // メンテナンス状態をチェック
   useEffect(() => {
@@ -100,7 +115,7 @@ export default function LoginPage() {
       setLoginSuccess(true);
       // 2秒後にホームページに遷移
       setTimeout(() => {
-        router.push("/dashboard");
+        router.replace(nextPath);
       }, 2000);
     } catch (error: unknown) {
       // 契約期間切れのエラーの場合
@@ -391,5 +406,25 @@ export default function LoginPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#ff8a15]/10">
+          <div className="text-center">
+            <div className="relative w-16 h-16 mx-auto mb-4">
+              <div className="absolute inset-0 border-2 border-gray-200 rounded-full"></div>
+              <div className="absolute inset-0 border-2 border-[#FF8A15] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-sm font-medium text-gray-700">読み込み中...</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
