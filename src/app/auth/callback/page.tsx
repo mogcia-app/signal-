@@ -124,7 +124,8 @@ function AuthCallbackContent() {
         const userId = searchParams.get("userId");
 
         if (!userId) {
-          throw new Error("User ID not found");
+          router.replace("/login");
+          return;
         }
 
         console.log("[AuthCallback] 認証処理を開始します。userId:", userId);

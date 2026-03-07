@@ -19,6 +19,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   contractValid: boolean;
+  contractStatusLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [contractValid, setContractValid] = useState(false);
+  const [contractStatusLoading, setContractStatusLoading] = useState(false);
 
   useEffect(() => {
     installAuthFetch();
@@ -166,10 +168,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
       setUser(user);
 
       // ユーザーがログインしている場合、Firestoreドキュメントを確認・作成
       if (user) {
+        setContractStatusLoading(true);
         if (typeof window !== "undefined") {
           window.sessionStorage.removeItem(AUTH_CALLBACK_IN_PROGRESS_KEY);
         }
@@ -242,6 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // 契約期間をチェック
           const isValid = await checkContractStatus();
           setContractValid(isValid);
+          setContractStatusLoading(false);
 
           if (!isValid) {
             // 契約が無効な場合、ログアウト処理
@@ -259,9 +264,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error("Error ensuring user document:", error);
           }
           setContractValid(false);
+          setContractStatusLoading(false);
         }
       } else {
         setContractValid(false);
+        setContractStatusLoading(false);
         // ログアウト時はセッション情報をクリア
         if (typeof window !== "undefined") {
           localStorage.removeItem("signal_session_start");
@@ -323,17 +330,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           firebaseSignOut(auth);
           localStorage.removeItem("signal_session_start");
 
-          // ローカル環境の場合は/loginにリダイレクト、本番環境の場合はポータルページに自動リダイレクト
+          // セッション期限切れ時は/loginへ遷移
           if (typeof window !== "undefined") {
-            const isLocal = window.location.hostname === "localhost" || 
-              window.location.hostname === "127.0.0.1" ||
-              process.env.NODE_ENV === "development";
-            
-            if (isLocal) {
-              router.push("/login");
-            } else {
-              window.location.href = "https://signal-portal.com/";
-            }
+            router.push("/login");
           }
         }
       }
@@ -421,6 +420,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     contractValid,
+    contractStatusLoading,
     signIn,
     signOut,
   };
