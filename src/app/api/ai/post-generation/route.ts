@@ -16,6 +16,7 @@ import {
 } from "@/lib/ai/suggestion-learning";
 import { COLLECTIONS } from "@/repositories/collections";
 import { AIGenerationResponse, SnapshotReference, AIReference } from "@/types/ai";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 /**
  * ユーザー名から固定の企業ハッシュタグを生成
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "ai-post-generation", limit: 30, windowSeconds: 60 },
       auditEventName: "ai_post_generation",
     });
+    await assertFeatureEnabled("ai.generate");
 
     const body: PostGenerationRequest = await request.json();
     let { prompt } = body;

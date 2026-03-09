@@ -4,6 +4,7 @@ import { PlanRepository } from "@/repositories/plan-repository";
 import { PlanInput } from "@/domain/plan/plan-input";
 import { PlanEngine } from "@/domain/plan/plan-engine";
 import { getUserProfile } from "@/lib/server/user-profile";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 interface PlanSaveRequest {
   startDate: string;
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "home-plan-save", limit: 20, windowSeconds: 60 },
       auditEventName: "home_plan_save",
     });
+    await assertFeatureEnabled("plan.write");
 
     const body: PlanSaveRequest = await request.json();
 

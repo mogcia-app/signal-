@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthContext } from "@/lib/server/auth-context";
 import { PlanRepository } from "@/repositories/plan-repository";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -9,6 +10,7 @@ export async function DELETE(request: NextRequest) {
       rateLimit: { key: "home-plan-delete", limit: 10, windowSeconds: 60 },
       auditEventName: "home_plan_delete",
     });
+    await assertFeatureEnabled("plan.write");
 
     const { searchParams } = new URL(request.url);
     const planId = searchParams.get("planId");

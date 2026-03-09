@@ -8,6 +8,7 @@ import { getInstagramAlgorithmBrief } from "@/lib/ai/instagram-algorithm-brief";
 import { getMonthlyActionFocus } from "@/lib/ai/monthly-action-focus";
 import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
 import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 import {
   acquireAiRequestLock,
   buildAiRequestKey,
@@ -642,6 +643,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "home-post-generation", limit: 40, windowSeconds: 60 },
       auditEventName: "home_post_generation",
     });
+    await assertFeatureEnabled("ai.generate");
 
     const body = (await request.json()) as HomePostGenerationRequest;
     const action = body.action || "generatePost";

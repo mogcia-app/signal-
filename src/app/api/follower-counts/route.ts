@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import * as admin from "firebase-admin";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 interface FollowerCount {
   userId: string;
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "follower-counts-post", limit: 10, windowSeconds: 60 },
       auditEventName: "follower_counts_post",
     });
+    await assertFeatureEnabled("dashboard.write");
 
     const body = await request.json();
     const { followers, month, snsType = "instagram", source = "manual", profileVisits, externalLinkTaps } = body;

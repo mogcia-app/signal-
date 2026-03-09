@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAdminDb } from "../../../../lib/firebase-admin";
 import { requireAuthContext } from "../../../../lib/server/auth-context";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -10,6 +11,7 @@ export async function DELETE(request: NextRequest) {
       rateLimit: { key: "analytics-delete-by-post", limit: 10, windowSeconds: 60 },
       auditEventName: "analytics_delete_by_post",
     });
+    await assertFeatureEnabled("analytics.write");
 
     const { searchParams } = new URL(request.url);
     const postId = searchParams.get("postId");
@@ -57,4 +59,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-

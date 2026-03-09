@@ -12,6 +12,7 @@ import {
 } from "@/lib/ai/suggestion-learning";
 import { uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
 import * as admin from "firebase-admin";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 // 注意: follower_countsは更新しない（homeページで入力された値はそのまま保持）
 // analyticsのfollowerIncreaseは各投稿ごとに保存され、集計は表示側（kpi-breakdown等）で行う
@@ -584,6 +585,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "analytics-simple-post", limit: 20, windowSeconds: 60 },
       auditEventName: "analytics_simple_post",
     });
+    await assertFeatureEnabled("analytics.write");
 
     const body = await request.json();
 

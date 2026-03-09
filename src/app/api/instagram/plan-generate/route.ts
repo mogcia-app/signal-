@@ -4,6 +4,7 @@ import { getUserProfile } from "@/lib/server/user-profile";
 import { PlanRepository } from "@/repositories/plan-repository";
 import { PlanEngine } from "@/domain/plan/plan-engine";
 import { PlanInput } from "@/domain/plan/plan-input";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 interface PlanGenerateRequest {
   startDate: string;
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "plan-generate", limit: 10, windowSeconds: 60 },
       auditEventName: "plan_generate",
     });
+    await assertFeatureEnabled("plan.write");
 
     const body: PlanGenerateRequest = await request.json();
 

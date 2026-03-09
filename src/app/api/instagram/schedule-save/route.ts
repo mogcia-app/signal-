@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "../../../../lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 export async function POST(request: NextRequest) {
   try {
     const { uid } = await requireAuthContext(request, { requireContract: true });
+    await assertFeatureEnabled("post.write");
 
     const body = await request.json();
     const {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthContext } from "@/lib/server/auth-context";
 import { PlanRepository } from "@/repositories/plan-repository";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -9,6 +10,7 @@ export async function DELETE(request: NextRequest) {
       rateLimit: { key: "plan-delete", limit: 10, windowSeconds: 60 },
       auditEventName: "plan_delete",
     });
+    await assertFeatureEnabled("plan.write");
 
     // 削除する計画のIDを取得（クエリパラメータまたはリクエストボディから）
     const { searchParams } = new URL(request.url);
@@ -38,4 +40,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-

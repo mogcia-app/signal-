@@ -4,6 +4,7 @@ import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-contex
 import { getUserProfile } from "@/lib/server/user-profile";
 import { adminDb } from "@/lib/firebase-admin";
 import { COLLECTIONS } from "@/repositories/collections";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 type CalendarPostType = "feed" | "reel" | "story";
 type CalendarDayLabel = "日" | "月" | "火" | "水" | "木" | "金" | "土";
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "home-monthly-calendar-plan-post", limit: 20, windowSeconds: 60 },
       auditEventName: "home_monthly_calendar_plan_post",
     });
+    await assertFeatureEnabled("plan.write");
 
     const body = (await request.json()) as {
       planId?: string;

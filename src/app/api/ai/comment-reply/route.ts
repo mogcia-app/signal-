@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 import { requireAuthContext } from "../../../../lib/server/auth-context";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 type CommentReplyBody = {
   comment: string;
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "ai-comment-reply", limit: 20, windowSeconds: 60 },
       auditEventName: "ai_comment_reply",
     });
+    await assertFeatureEnabled("ai.generate");
 
     requestBody = (await request.json()) as CommentReplyBody;
     const body = requestBody;
@@ -214,4 +216,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

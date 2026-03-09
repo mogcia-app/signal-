@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 // 目標達成度チェック関数
 async function checkGoalAchievement(userId: string) {
@@ -251,6 +252,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: true,
+      rateLimit: { key: "analytics-create", limit: 20, windowSeconds: 60 },
+      auditEventName: "analytics_create",
+    });
+    await assertFeatureEnabled("analytics.write");
+
     const body = await request.json();
     const {
       userId,
@@ -274,8 +282,13 @@ export async function POST(request: NextRequest) {
       sentimentMemo,
     } = body;
 
+    if (userId && userId !== uid) {
+      return NextResponse.json({ error: "別ユーザーの分析データは保存できません" }, { status: 403 });
+    }
+    const resolvedUserId = uid;
+
     // バリデーション
-    if (!userId || !likes || !reach) {
+    if (!likes || !reach) {
       return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
     }
 
@@ -284,7 +297,7 @@ export async function POST(request: NextRequest) {
     const engagementRate = Number(reach) > 0 ? (totalEngagement / Number(reach)) * 100 : 0;
 
     const analyticsData: Omit<AnalyticsData, "id"> = {
-      userId,
+      userId: resolvedUserId,
       postId: postId || null,
       likes: Number(likes),
       comments: Number(comments),
@@ -338,7 +351,7 @@ export async function POST(request: NextRequest) {
 
     // 目標達成度をチェック
     try {
-      await checkGoalAchievement(userId);
+      await checkGoalAchievement(resolvedUserId);
     } catch (error) {
       console.error("Goal achievement check error:", error);
       // 目標チェックに失敗してもanalytics保存は成功しているので続行

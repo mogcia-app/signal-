@@ -4,6 +4,7 @@ import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth
 import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 import type { AIReference } from "@/types/ai";
 import type { SnapshotReference as BaseSnapshotReference } from "@/types/ai";
 
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
       rateLimit: { key: "posts-create", limit: 30, windowSeconds: 60 },
       auditEventName: "posts_create",
     });
+    await assertFeatureEnabled("post.write");
 
     const body = await request.json();
     console.log("POST /api/posts - Received data:", body);

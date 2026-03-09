@@ -6,6 +6,7 @@ import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { deletePostImageByUrl, uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
 import type { WriteResult } from "firebase-admin/firestore";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 // Keep payload safely below serverless request size limits in production.
 const MAX_IMAGE_DATA_BYTES = 3_000_000;
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
     });
+    await assertFeatureEnabled("post.write");
 
     // プラン階層別アクセス制御: 梅プランでは投稿詳細取得にアクセスできない
     const userProfile = await getUserProfile(uid);
@@ -66,6 +68,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
     });
+    await assertFeatureEnabled("post.write");
 
     // プラン階層別アクセス制御: 梅プランでは投稿更新にアクセスできない
     const userProfile = await getUserProfile(uid);

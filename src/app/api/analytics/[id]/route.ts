@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
+import { assertFeatureEnabled } from "@/lib/server/feature-guard";
 
 // 個別の分析データを削除
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -12,6 +13,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
       rateLimit: { key: "analytics-delete", limit: 10, windowSeconds: 60 },
       auditEventName: "analytics_delete",
     });
+    await assertFeatureEnabled("analytics.write");
 
     console.log("=== ANALYTICS DELETE REQUEST ===");
     console.log("Analytics ID:", id);

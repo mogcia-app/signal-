@@ -24,6 +24,8 @@ export async function middleware(req: NextRequest) {
   const publicApiPaths = [
     "/api/auth/generate-custom-token", // 認証コールバック用（認証前にアクセスするため）
     "/api/tool-maintenance", // メンテナンス状態取得（ログインページで認証前にアクセスするため）
+    "/api/feature-flags", // 公開フラグ取得
+    "/api/invite/consume", // 招待リンク検証・消費（認証前）
   ];
 
   // 公開APIパスの場合は認証チェックをスキップ
