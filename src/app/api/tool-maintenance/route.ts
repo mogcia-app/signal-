@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "../../../lib/firebase-admin";
+import {
+  normalizeMaintenanceDoc,
+  serializeMaintenanceForResponse,
+} from "@/lib/server/maintenance-config";
 
 // キャッシュ用（メモリキャッシュ）
 let cachedStatus: {
-  data: {
-    enabled: boolean;
-    message: string;
-    scheduledStart: string | null;
-    scheduledEnd: string | null;
-    updatedBy: string;
-    updatedAt: string | null;
-  };
+  data: ReturnType<typeof serializeMaintenanceForResponse>;
   timestamp: number;
 } | null = null;
 
@@ -30,44 +27,9 @@ export async function GET() {
     // Firestoreから直接取得（Cloud Functionに依存しない）
     const maintenanceDoc = await adminDb.collection("toolMaintenance").doc("current").get();
 
-    let resultData: {
-      enabled: boolean;
-      message: string;
-      scheduledStart: string | null;
-      scheduledEnd: string | null;
-      updatedBy: string;
-      updatedAt: string | null;
-    };
-
-    if (!maintenanceDoc.exists) {
-      // デフォルト値（メンテナンス無効）
-      resultData = {
-        enabled: false,
-        message: "",
-        scheduledStart: null,
-        scheduledEnd: null,
-        updatedBy: "",
-        updatedAt: null,
-      };
-    } else {
-      const data = maintenanceDoc.data();
-      const updatedAt = data?.updatedAt;
-      const updatedAtISO =
-        updatedAt && updatedAt.toDate
-          ? updatedAt.toDate().toISOString()
-          : updatedAt instanceof Date
-            ? updatedAt.toISOString()
-            : updatedAt || null;
-
-      resultData = {
-        enabled: data?.enabled || false,
-        message: data?.message || "",
-        scheduledStart: data?.scheduledStart || null,
-        scheduledEnd: data?.scheduledEnd || null,
-        updatedBy: data?.updatedBy || "",
-        updatedAt: updatedAtISO,
-      };
-    }
+    const resultData = serializeMaintenanceForResponse(
+      normalizeMaintenanceDoc(maintenanceDoc.data()),
+    );
 
     // キャッシュを更新
     cachedStatus = {
@@ -96,6 +58,20 @@ export async function GET() {
       data: {
         enabled: false,
         message: "",
+        allowAdminBypass: true,
+        allowedRoles: ["super_admin"],
+        loginBlocked: false,
+        sessionPolicy: "allow_existing",
+        allowPasswordReset: true,
+        featureFlags: {
+          "dashboard.write": true,
+          "plan.write": true,
+          "post.write": true,
+          "analytics.write": true,
+          "ai.generate": true,
+        },
+        version: 0,
+        updatedByEmail: "",
         scheduledStart: null,
         scheduledEnd: null,
         updatedBy: "",
@@ -104,4 +80,3 @@ export async function GET() {
     });
   }
 }
-

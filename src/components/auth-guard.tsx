@@ -17,9 +17,10 @@ const AUTH_CALLBACK_GRACE_MS = 15000;
 const AUTH_RESOLUTION_WAIT_TIMEOUT_MS = 3000;
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { user, loading, contractValid } = useAuth();
+  const { user, loading, contractValid, contractStatusLoading } = useAuth();
   const router = useRouter();
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [loginBlockedForceLogout, setLoginBlockedForceLogout] = useState(false);
   const [checkingMaintenance, setCheckingMaintenance] = useState(false);
   const [loaderProgress, setLoaderProgress] = useState(16);
 
@@ -29,6 +30,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
       try {
         const status = await getToolMaintenanceStatus();
         setMaintenanceMode(status.enabled);
+        setLoginBlockedForceLogout(
+          status.loginBlocked === true && status.sessionPolicy === "force_logout",
+        );
 
         // スケジュールされたメンテナンスのチェック
         if (status.scheduledStart && status.scheduledEnd) {
@@ -45,6 +49,17 @@ export function AuthGuard({ children }: AuthGuardProps) {
           // メンテナンス中はログアウトしてメンテナンス画面にリダイレクト
           await signOut(auth);
           router.push("/maintenance");
+          return;
+        }
+
+        if (
+          status.loginBlocked &&
+          status.sessionPolicy === "force_logout" &&
+          user
+        ) {
+          // ログイン制御ON + force_logoutの場合は既存セッションも終了
+          await signOut(auth);
+          router.push("/login?blocked=1");
         }
       } catch (error) {
         console.error("Error checking maintenance:", error);
@@ -168,7 +183,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (!(loading || checkingMaintenance)) {
+    if (!(loading || checkingMaintenance || (user && contractStatusLoading))) {
       setLoaderProgress(16);
       return;
     }
@@ -178,15 +193,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }, 180);
 
     return () => clearInterval(timer);
-  }, [loading, checkingMaintenance]);
+  }, [loading, checkingMaintenance, user, contractStatusLoading]);
 
-  if (loading || checkingMaintenance) {
+  if (loading || checkingMaintenance || (user && contractStatusLoading)) {
     return (
       <div className="min-h-screen bg-white/90 backdrop-blur-[1px] flex items-center justify-center px-4">
         <div className="w-[min(94vw,1200px)]">
           <BotStatusCard
             title="読み込み中..."
-            subtitle="アカウント情報を確認しています"
+            subtitle={user && contractStatusLoading ? "契約状態を判定しています" : "アカウント情報を確認しています"}
             progress={loaderProgress}
             large
             borderless
@@ -200,8 +215,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return null;
   }
 
-  if (maintenanceMode) {
-    return null; // メンテナンス画面にリダイレクト中
+  if (maintenanceMode || loginBlockedForceLogout) {
+    return null; // リダイレクト中
   }
 
   if (!contractValid) {

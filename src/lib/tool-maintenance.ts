@@ -6,18 +6,40 @@ const MAINTENANCE_DOC_PATH = "toolMaintenance/current";
 export interface ToolMaintenance {
   enabled: boolean;
   message: string;
+  allowAdminBypass: boolean;
+  allowedRoles: string[];
+  loginBlocked: boolean;
+  sessionPolicy: "allow_existing" | "force_logout";
+  allowPasswordReset: boolean;
+  featureFlags: Record<string, boolean>;
+  version: number;
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   updatedBy: string;
+  updatedByEmail: string;
   updatedAt: string | null;
 }
 
 const DEFAULT_MAINTENANCE_STATUS: ToolMaintenance = {
   enabled: false,
   message: "",
+  allowAdminBypass: true,
+  allowedRoles: ["super_admin"],
+  loginBlocked: false,
+  sessionPolicy: "allow_existing",
+  allowPasswordReset: true,
+  featureFlags: {
+    "dashboard.write": true,
+    "plan.write": true,
+    "post.write": true,
+    "analytics.write": true,
+    "ai.generate": true,
+  },
+  version: 0,
   scheduledStart: null,
   scheduledEnd: null,
   updatedBy: "",
+  updatedByEmail: "",
   updatedAt: null,
 };
 
@@ -55,9 +77,17 @@ export async function getToolMaintenanceStatus(): Promise<ToolMaintenance> {
       return {
         enabled: result.data.enabled || false,
         message: result.data.message || "",
+        allowAdminBypass: result.data.allowAdminBypass ?? true,
+        allowedRoles: Array.isArray(result.data.allowedRoles) ? result.data.allowedRoles : ["super_admin"],
+        loginBlocked: result.data.loginBlocked === true,
+        sessionPolicy: result.data.sessionPolicy === "force_logout" ? "force_logout" : "allow_existing",
+        allowPasswordReset: result.data.allowPasswordReset ?? true,
+        featureFlags: result.data.featureFlags || DEFAULT_MAINTENANCE_STATUS.featureFlags,
+        version: typeof result.data.version === "number" ? result.data.version : 0,
         scheduledStart: result.data.scheduledStart || null,
         scheduledEnd: result.data.scheduledEnd || null,
         updatedBy: result.data.updatedBy || "",
+        updatedByEmail: result.data.updatedByEmail || "",
         updatedAt: result.data.updatedAt || null,
       };
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../contexts/auth-context";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import { useRouter } from "next/navigation";
@@ -11,11 +11,13 @@ import {
   Calendar,
 } from "lucide-react";
 import SNSLayout from "../../components/sns-layout";
+import toast from "react-hot-toast";
 
 export default function OnboardingPage() {
   const { user, loading: authLoading } = useAuth();
   const { userProfile } = useUserProfile();
   const router = useRouter();
+  const [copiedSupportId, setCopiedSupportId] = useState(false);
 
   useEffect(() => {
     // loading中はリダイレクトしない（Firebase初期化待ち）
@@ -23,6 +25,22 @@ export default function OnboardingPage() {
       router.push("/login");
     }
   }, [user, authLoading, router]);
+
+  const copySupportId = async () => {
+    if (!userProfile?.supportId) {
+      toast.error("サポートIDが設定されていません");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(userProfile.supportId);
+      setCopiedSupportId(true);
+      toast.success("サポートIDをコピーしました");
+      setTimeout(() => setCopiedSupportId(false), 2000);
+    } catch (error) {
+      toast.error("コピーに失敗しました");
+      console.error("コピーエラー:", error);
+    }
+  };
 
   // 表示用の変換関数（英語キーを日本語に変換、既に日本語の場合はそのまま返す）
   const getIndustryLabel = (value: string) => {
@@ -223,6 +241,36 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               )}
+
+              {/* サポートID */}
+              <div className="pt-4 border-t border-gray-200 mt-4">
+                <label className="block text-xs font-medium text-gray-500 mb-3">サポートID</label>
+                {userProfile.supportId ? (
+                  <div className="space-y-3">
+                    <p className="text-xs text-gray-600">
+                      問い合わせの際に、このサポートIDをお知らせください。サポートIDは個人情報ではありません。
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <code className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 text-sm font-mono break-all">
+                        {userProfile.supportId}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={copySupportId}
+                        className="px-4 py-3 bg-[#FF8A15] text-white text-sm font-medium hover:bg-[#e67a0f] whitespace-nowrap"
+                      >
+                        {copiedSupportId ? "コピー済み" : "コピー"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 border border-yellow-200 p-4">
+                    <p className="text-yellow-800 text-sm">
+                      サポートIDがまだ付与されていません。管理者にお問い合わせください。
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
