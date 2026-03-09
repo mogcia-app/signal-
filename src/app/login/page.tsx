@@ -62,9 +62,10 @@ function LoginPageContent() {
     const checkMaintenance = async () => {
       try {
         const status = await getToolMaintenanceStatus();
+        const statusWithLoginBlocked = status as typeof status & { loginBlocked?: boolean };
         setMaintenanceMode(status.enabled);
         setMaintenanceMessage(status.message);
-        setLoginBlocked(status.loginBlocked);
+        setLoginBlocked(statusWithLoginBlocked.loginBlocked === true);
 
         // スケジュールされたメンテナンスのチェック
         if (status.scheduledStart && status.scheduledEnd) {
