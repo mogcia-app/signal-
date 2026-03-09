@@ -5,6 +5,7 @@ import { useAuth } from "../../contexts/auth-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { getToolMaintenanceStatus } from "@/lib/tool-maintenance";
+import { authFetch } from "@/utils/authFetch";
 
 const loginMaintenanceEnabled = process.env.NEXT_PUBLIC_LOGIN_MAINTENANCE === "true";
 const isProductionBuild = process.env.NODE_ENV === "production";
@@ -18,6 +19,7 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState("");
+  const [loginBlocked, setLoginBlocked] = useState(false);
   const [checkingMaintenance, setCheckingMaintenance] = useState(true);
   const isMaintenanceMode = loginMaintenanceEnabled && !isProductionBuild;
 
@@ -39,6 +41,13 @@ function LoginPageContent() {
     return rawNext;
   }, [searchParams]);
 
+  useEffect(() => {
+    const blocked = searchParams.get("blocked");
+    if (blocked === "1") {
+      setError("現在ログインを一時停止しています。しばらくしてから再度お試しください。");
+    }
+  }, [searchParams]);
+
   // 既にログインしている場合は/homeにリダイレクト
   useEffect(() => {
     if (!authLoading) {
@@ -55,6 +64,7 @@ function LoginPageContent() {
         const status = await getToolMaintenanceStatus();
         setMaintenanceMode(status.enabled);
         setMaintenanceMessage(status.message);
+        setLoginBlocked(status.loginBlocked);
 
         // スケジュールされたメンテナンスのチェック
         if (status.scheduledStart && status.scheduledEnd) {
@@ -92,7 +102,7 @@ function LoginPageContent() {
     setError("");
 
     // メンテナンス中はログインをブロック
-    if (maintenanceMode || isMaintenanceMode) {
+    if (maintenanceMode || isMaintenanceMode || loginBlocked) {
       setError("現在メンテナンス中です。しばらくお待ちください。");
       setLoading(false);
       return;
@@ -100,6 +110,17 @@ function LoginPageContent() {
 
     try {
       await signIn(email, password);
+      void authFetch("/api/auth/login-events/success", {
+        method: "POST",
+        keepalive: true,
+        body: JSON.stringify({
+          source: "/login",
+          currentPath: "/login",
+          nextPath,
+        }),
+      }).catch(() => {
+        // ログ送信失敗でログイン処理は失敗させない
+      });
       setLoginSuccess(true);
       // 2秒後にホームページに遷移
       setTimeout(() => {
@@ -109,6 +130,22 @@ function LoginPageContent() {
       // 契約期間切れのエラーの場合
       const errorMessage = error instanceof Error ? error.message : "";
       const errorCode = (error as { code?: string })?.code;
+
+      void fetch("/api/auth/login-events/failed", {
+        method: "POST",
+        keepalive: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          errorCode: errorCode || "unknown",
+          source: "/login",
+          currentPath: "/login",
+        }),
+      }).catch(() => {
+        // ログ送信失敗で画面挙動は変えない
+      });
 
       if (errorMessage === "CONTRACT_EXPIRED" || errorCode === "auth/contract-expired") {
         setError("契約期間が終了しています。管理者にご連絡ください。");
@@ -185,6 +222,34 @@ function LoginPageContent() {
           </p>
           <div className="text-sm text-gray-500">
             メンテナンスが完了次第、サービスを再開いたします。
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loginBlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#ff8a15]/10 p-4 relative overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #000 1px, transparent 1px),
+              linear-gradient(to bottom, #000 1px, transparent 1px)
+            `,
+            backgroundSize: "48px 48px",
+          }}
+        ></div>
+
+        <div className="relative max-w-md w-full bg-white border-2 border-gray-900 rounded-lg shadow-lg p-8 text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold mb-4">ログイン一時停止中</h1>
+          <p className="text-gray-600 mb-6 whitespace-pre-wrap">
+            {maintenanceMessage || "現在ログインを一時停止しています。しばらくしてから再度お試しください。"}
+          </p>
+          <div className="text-sm text-gray-500">
+            復旧後にログイン可能になります。
           </div>
         </div>
       </div>

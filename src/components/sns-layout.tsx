@@ -7,6 +7,7 @@ import { useUserProfile } from "../hooks/useUserProfile";
 import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
 import { Menu, X, User, Sparkles, Home, BookOpen, Target, BarChart3 } from "lucide-react";
+import { trackPageButtonClick, trackSidebarClick } from "@/lib/ui/sidebar-click-tracker";
 
 interface SNSLayoutProps {
   children: ReactNode;
@@ -30,6 +31,11 @@ export default function SNSLayout({
 
   const { user, signOut } = useAuth();
   const { userProfile } = useUserProfile();
+  const normalizedRole = String(userProfile?.role || "").trim().toLowerCase();
+  const isAdminConsoleRole =
+    normalizedRole === "admin" ||
+    normalizedRole === "billing_admin" ||
+    normalizedRole === "super_admin";
 
   // URLパラメータでモックアップモードを検出
   const isMockupMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mockup") === "true";
@@ -69,12 +75,79 @@ export default function SNSLayout({
   }, []);
 
   const handleSignOut = async () => {
+    trackSidebarClick({
+      buttonId: "sidebar.logout",
+      label: "ログアウト",
+      href: "/login",
+      currentPath: pathname,
+    });
     try {
       await signOut();
       router.push("/login");
     } catch (error) {
       console.error("ログアウトエラー:", error);
     }
+  };
+
+  const handleSidebarTrackedClick = (buttonId: string, label: string, href: string) => {
+    trackSidebarClick({
+      buttonId,
+      label,
+      href,
+      currentPath: pathname,
+    });
+  };
+
+  const handleMainButtonClickCapture = (event: React.MouseEvent<HTMLElement>) => {
+    const target = event.target as Element | null;
+    if (!target) {
+      return;
+    }
+
+    const clickable = target.closest(
+      "button, [role='button'], input[type='button'], input[type='submit']",
+    ) as HTMLElement | null;
+    if (!clickable) {
+      return;
+    }
+
+    if (clickable.closest("#app-sidebar")) {
+      return;
+    }
+
+    if (clickable.getAttribute("aria-controls") === "app-sidebar") {
+      return;
+    }
+
+    if (clickable.getAttribute("data-track-ignore") === "true") {
+      return;
+    }
+
+    const rawLabel =
+      clickable.getAttribute("data-track-label") ||
+      clickable.getAttribute("aria-label") ||
+      clickable.textContent ||
+      clickable.getAttribute("value") ||
+      "";
+    const label = rawLabel.replace(/\s+/g, " ").trim().slice(0, 120);
+    if (!label) {
+      return;
+    }
+
+    const explicitId = clickable.getAttribute("data-track-id") || clickable.id;
+    const fallbackId = label
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 80);
+    const buttonId = explicitId?.trim() || fallbackId || "unknown_button";
+
+    trackPageButtonClick({
+      buttonId,
+      label,
+      pagePath: pathname,
+      currentPath: pathname,
+    });
   };
 
   return (
@@ -151,6 +224,7 @@ export default function SNSLayout({
             </Link>*/}
             <Link
               href="/dashboard"
+              onClick={() => handleSidebarTrackedClick("sidebar.dashboard", "ダッシュボード", "/dashboard")}
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
                 pathname === "/dashboard" || pathname === "/home"
                   ? "bg-orange-100 text-orange-800 font-medium"
@@ -200,6 +274,7 @@ export default function SNSLayout({
             {canAccessFeature(userProfile, "canAccessPosts") && (
               <Link
                 href="/instagram/posts"
+                onClick={() => handleSidebarTrackedClick("sidebar.posts", "投稿一覧", "/instagram/posts")}
                 className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
                   pathname === "/instagram/posts"
                     ? "bg-orange-100 text-orange-800 font-medium"
@@ -226,6 +301,7 @@ export default function SNSLayout({
             {canAccessFeature(userProfile, "canAccessKPI") && (
               <Link
                 href="/instagram/kpi"
+                onClick={() => handleSidebarTrackedClick("sidebar.kpi", "KPIコンソール", "/instagram/kpi")}
                 className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
                   pathname === "/instagram/kpi"
                     ? "bg-orange-100 text-orange-800 font-medium"
@@ -239,6 +315,7 @@ export default function SNSLayout({
             {canAccessFeature(userProfile, "canAccessReport") && (
               <Link
                 href="/instagram/report"
+                onClick={() => handleSidebarTrackedClick("sidebar.report", "月次レポート", "/instagram/report")}
                 className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
                   pathname === "/instagram/report"
                     ? "bg-orange-100 text-orange-800 font-medium"
@@ -252,6 +329,7 @@ export default function SNSLayout({
             {canAccessFeature(userProfile, "canAccessLearning") && (
               <Link
                 href="/learning"
+                onClick={() => handleSidebarTrackedClick("sidebar.learning", "学習ダッシュボード", "/learning")}
                 className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
                   pathname.startsWith("/learning")
                     ? "bg-orange-100 text-orange-800 font-medium"
@@ -262,8 +340,55 @@ export default function SNSLayout({
                 <span>学習ダッシュボード</span>
               </Link>
             )}
+            {isAdminConsoleRole && (
+              <Link
+                href="/admin/maintenance"
+                onClick={() =>
+                  handleSidebarTrackedClick("sidebar.admin_maintenance", "メンテナンス管理", "/admin/maintenance")
+                }
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                  pathname === "/admin/maintenance"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <BarChart3 size={18} className="flex-shrink-0" />
+                <span>メンテナンス管理</span>
+              </Link>
+            )}
+            {isAdminConsoleRole && (
+              <Link
+                href="/admin/ui-events"
+                onClick={() => handleSidebarTrackedClick("sidebar.admin_ui_events", "UI操作ログ", "/admin/ui-events")}
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                  pathname === "/admin/ui-events"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <BarChart3 size={18} className="flex-shrink-0" />
+                <span>UI操作ログ</span>
+              </Link>
+            )}
+            {isAdminConsoleRole && (
+              <Link
+                href="/admin/login-events"
+                onClick={() =>
+                  handleSidebarTrackedClick("sidebar.admin_login_events", "ログイン監査ログ", "/admin/login-events")
+                }
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                  pathname === "/admin/login-events"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <BarChart3 size={18} className="flex-shrink-0" />
+                <span>ログイン監査ログ</span>
+              </Link>
+            )}
             <Link
               href="/onboarding"
+              onClick={() => handleSidebarTrackedClick("sidebar.account", "マイアカウント", "/onboarding")}
               className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
                 pathname === "/onboarding"
                   ? "bg-orange-100 text-orange-800 font-medium"
@@ -317,6 +442,9 @@ export default function SNSLayout({
             href="https://signal-portal.com/"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() =>
+              handleSidebarTrackedClick("sidebar.portal", "会員サイト", "https://signal-portal.com/")
+            }
             className="w-full px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
           >
             <span>会員サイト</span>
@@ -373,7 +501,12 @@ export default function SNSLayout({
         </div>
 
         {/* メインコンテンツ */}
-        <main className={`px-4 sm:px-6 py-4 sm:py-6 ${contentClassName ?? ""}`}>{children}</main>
+        <main
+          className={`px-4 sm:px-6 py-4 sm:py-6 ${contentClassName ?? ""}`}
+          onClickCapture={handleMainButtonClickCapture}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );
