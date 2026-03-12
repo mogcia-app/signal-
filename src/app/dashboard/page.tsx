@@ -1135,9 +1135,13 @@ export default function HomePage() {
       if (!initialResponse.ok) {
         throw new Error("初期データの取得に失敗しました");
       }
-      const initialData = await initialResponse.json() as { currentFollowers?: number };
-      const currentFollowers = Number(initialData.currentFollowers || 0);
-      if (!Number.isFinite(currentFollowers) || currentFollowers <= 0) {
+      const initialData = await initialResponse.json() as { currentFollowers?: number | string | null };
+      const currentFollowersRaw =
+        typeof initialData.currentFollowers === "string"
+          ? initialData.currentFollowers.replace(/,/g, "").trim()
+          : initialData.currentFollowers;
+      const currentFollowers = Number(currentFollowersRaw ?? 0);
+      if (!Number.isFinite(currentFollowers) || currentFollowers < 0) {
         throw new Error("現在のフォロワー数を取得できませんでした");
       }
 
