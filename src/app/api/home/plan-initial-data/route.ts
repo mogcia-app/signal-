@@ -35,6 +35,26 @@ function monthDiff(fromMonthKey: string, toMonthKey: string): number {
   return (toYear - fromYear) * 12 + (toMonth - fromMonth);
 }
 
+function toPositiveNumber(value: unknown): number | null {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized) || normalized <= 0) {
+    return null;
+  }
+  return normalized;
+}
+
+function getSavedCurrentFollowers(planData: Record<string, unknown>): number | null {
+  const savedPlanData = (planData.planData || null) as SavedPlanData | null;
+  const formData = (planData.formData || {}) as SavedPlanData;
+
+  return (
+    toPositiveNumber(savedPlanData?.actualFollowers) ||
+    toPositiveNumber(savedPlanData?.currentFollowers) ||
+    toPositiveNumber(formData.currentFollowers) ||
+    null
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { uid: userId } = await requireAuthContext(request, {
@@ -88,6 +108,10 @@ export async function GET(request: NextRequest) {
       hasExistingPlan = true;
       const planDoc = plansSnapshot.docs[0];
       const planData = planDoc.data();
+      const savedCurrentFollowers = getSavedCurrentFollowers(planData);
+      if (currentFollowers <= 0 && savedCurrentFollowers) {
+        currentFollowers = savedCurrentFollowers;
+      }
       simulationResult = (planData.simulationResult || planData.planData || null) as Record<string, unknown> | null;
       const formData = (planData.formData || {}) as Record<string, unknown>;
 
