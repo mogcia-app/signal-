@@ -4,6 +4,27 @@ import { getUserProfile } from "@/lib/server/user-profile";
 import { adminDb } from "@/lib/firebase-admin";
 import { COLLECTIONS } from "@/repositories/collections";
 
+type SavedPlanData = {
+  actualFollowers?: unknown;
+  currentFollowers?: unknown;
+};
+
+function toSafeNumber(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.replace(/,/g, "").trim();
+    if (!normalized) {
+      return null;
+    }
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
 function toMonthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
@@ -23,7 +44,7 @@ export async function GET(request: NextRequest) {
     });
 
     const userProfile = await getUserProfile(userId);
-    const initialFollowers = userProfile?.businessInfo?.initialFollowers || 0;
+    const initialFollowers = toSafeNumber(userProfile?.businessInfo?.initialFollowers) ?? 0;
     const accountCreationDate = userProfile?.businessInfo?.accountCreationDate;
 
     const plansSnapshot = await adminDb
@@ -57,7 +78,7 @@ export async function GET(request: NextRequest) {
 
       const kpiFollowersTotal = analyticsSnapshot.docs.reduce((sum, doc) => {
         const data = doc.data();
-        return sum + (Number(data.followerIncrease) || 0);
+        return sum + (toSafeNumber(data.followerIncrease) ?? 0);
       }, 0);
 
       currentFollowers = initialFollowers + kpiFollowersTotal;
@@ -164,6 +185,18 @@ export async function GET(request: NextRequest) {
       canUseAISuggestion = creationDate <= oneYearAgo;
     }
 
+    console.info("[home/plan-initial-data] response", {
+      userId,
+      path: request.nextUrl.pathname,
+      initialFollowers,
+      currentFollowers,
+      hasExistingPlan,
+      monthsSinceStart,
+      accountCreationDate: accountCreationDate ?? null,
+      currentFollowersType: typeof currentFollowers,
+      initialFollowersType: typeof initialFollowers,
+    });
+
     return NextResponse.json({
       initialFollowers,
       currentFollowers,
@@ -174,7 +207,10 @@ export async function GET(request: NextRequest) {
       accountCreationDate,
     });
   } catch (error) {
-    console.error("ホーム初期データ取得エラー:", error);
+    console.error("[home/plan-initial-data] error", {
+      path: request.nextUrl.pathname,
+      error,
+    });
     return NextResponse.json({ error: "ホーム初期データの取得に失敗しました" }, { status: 500 });
   }
 }

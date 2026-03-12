@@ -3,6 +3,7 @@
 import { authFetch } from "@/utils/authFetch";
 
 const SIDEBAR_SESSION_KEY = "signal_sidebar_session_id";
+let trackingUnavailable = false;
 
 const ensureSessionId = (): string => {
   if (typeof window === "undefined") {
@@ -27,6 +28,10 @@ export type SidebarClickPayload = {
 };
 
 export const trackSidebarClick = (payload: SidebarClickPayload) => {
+  if (trackingUnavailable) {
+    return;
+  }
+
   const sessionId = ensureSessionId();
 
   void authFetch("/api/ui-events/sidebar-click", {
@@ -37,6 +42,10 @@ export const trackSidebarClick = (payload: SidebarClickPayload) => {
       sessionId,
       clickedAt: new Date().toISOString(),
     }),
+  }).then((response) => {
+    if (response.status === 404 || response.status === 405) {
+      trackingUnavailable = true;
+    }
   }).catch((error) => {
     if (process.env.NODE_ENV === "development") {
       console.debug("[sidebar-click] tracking failed", error);
@@ -52,6 +61,10 @@ export type PageButtonClickPayload = {
 };
 
 export const trackPageButtonClick = (payload: PageButtonClickPayload) => {
+  if (trackingUnavailable) {
+    return;
+  }
+
   const sessionId = ensureSessionId();
 
   void authFetch("/api/ui-events/page-button-click", {
@@ -62,6 +75,10 @@ export const trackPageButtonClick = (payload: PageButtonClickPayload) => {
       sessionId,
       clickedAt: new Date().toISOString(),
     }),
+  }).then((response) => {
+    if (response.status === 404 || response.status === 405) {
+      trackingUnavailable = true;
+    }
   }).catch((error) => {
     if (process.env.NODE_ENV === "development") {
       console.debug("[page-button-click] tracking failed", error);
