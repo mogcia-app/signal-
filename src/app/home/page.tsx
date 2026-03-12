@@ -7,16 +7,17 @@ import SNSLayout from "../../components/sns-layout";
 import { useAuth } from "../../contexts/auth-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { authFetch } from "../../utils/authFetch";
-import { useProgress } from "../../contexts/progress-context";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
-import { TrendingUp, Loader2, X, Copy, Check, Save, Edit, Target, Sparkles } from "lucide-react";
+import { TrendingUp, Loader2, X, Copy, Check, Edit, Target, Sparkles } from "lucide-react";
 // Client-side logging - use console.error directly
 import CommentReplyAssistant from "../instagram/lab/components/CommentReplyAssistant";
 
 // マークダウン記法を削除する関数
 const removeMarkdown = (text: string): string => {
-  if (!text) return text;
+  if (!text) {
+    return text;
+  }
   return text
     .replace(/\*\*/g, "") // **太字**
     .replace(/\*/g, "") // *斜体*
@@ -48,7 +49,6 @@ export default function HomePage() {
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
   const router = useRouter();
-  const { showProgress, setProgress, hideProgress } = useProgress();
 
   // 今日の日付を取得
   const today = new Date();
@@ -73,7 +73,7 @@ export default function HomePage() {
   const [otherProfileVisits, setOtherProfileVisits] = useState<number | "">("");
   const [otherExternalLinkTaps, setOtherExternalLinkTaps] = useState<number | "">("");
   const [isSavingOtherKPI, setIsSavingOtherKPI] = useState(false);
-  const [isLoadingOtherKPI, setIsLoadingOtherKPI] = useState(false);
+  const [_isLoadingOtherKPI, setIsLoadingOtherKPI] = useState(false);
   
   // AI方向性（重点方針）のstate
   const [aiDirection, setAiDirection] = useState<{
@@ -81,7 +81,7 @@ export default function HomePage() {
     mainTheme: string;
     lockedAt: string | null;
   } | null>(null);
-  const [isLoadingAiDirection, setIsLoadingAiDirection] = useState(false);
+  const [_isLoadingAiDirection, setIsLoadingAiDirection] = useState(false);
   
   // 今月のKPIデータ
   const [monthlyKPIs, setMonthlyKPIs] = useState<{
@@ -240,13 +240,14 @@ export default function HomePage() {
         clearInterval(interval);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 初回マウント時のみ実行
 
   // AI方向性（重点方針）を取得（今月または来月の確定済みを取得）
   useEffect(() => {
     const fetchAiDirection = async () => {
-      if (!user?.uid) return;
+      if (!user?.uid) {
+        return;
+      }
       
       try {
         setIsLoadingAiDirection(true);
@@ -329,7 +330,7 @@ export default function HomePage() {
       
       const response = await authFetch(`/api/follower-counts?month=${month}&snsType=instagram`);
       if (response.ok) {
-        const data = await response.json() as {
+        await response.json() as {
           success?: boolean;
           data?: {
             followers?: number;
