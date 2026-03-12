@@ -36,7 +36,14 @@ export async function POST(request: NextRequest) {
 
     const body: PlanSaveRequest = await request.json();
 
-    if (!body.startDate || !body.currentFollowers || !body.operationPurpose || !body.weeklyPosts || !body.reelCapability) {
+    if (
+      !body.startDate ||
+      body.currentFollowers === undefined ||
+      body.currentFollowers === null ||
+      !body.operationPurpose ||
+      !body.weeklyPosts ||
+      !body.reelCapability
+    ) {
       return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 });
     }
 
