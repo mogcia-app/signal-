@@ -3060,7 +3060,7 @@ export default function HomePage() {
                           })}
                         </select>
                       ) : (
-                        <p className="text-[11px] text-gray-500">オンボーディングの商品・サービス情報が未設定です</p>
+                        <p className="text-[11px] text-gray-500">マイページの商品・サービス情報が未設定です</p>
                       )}
                     </div>
 
