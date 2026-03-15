@@ -8,6 +8,7 @@ import { postsApi } from "../../../lib/api";
 import { useAuth } from "../../../contexts/auth-context";
 import { notify } from "../../../lib/ui/notifications";
 import { formatAiRemainingLabel, useAiUsageSummary } from "@/hooks/useAiUsageSummary";
+import { authFetch } from "../../../utils/authFetch";
 import { createIdempotencyKey } from "@/utils/idempotency";
 import {
   Image as ImageIcon,
@@ -620,7 +621,7 @@ export default function InstagramPostsPage() {
       setAdvisorLoading(true);
 
       try {
-        const response = await fetch("/api/instagram/posts/advisor-chat", {
+        const response = await authFetch("/api/instagram/posts/advisor-chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

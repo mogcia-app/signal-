@@ -575,7 +575,7 @@ function AnalyticsReelContent() {
       };
 
       // Firebase認証トークンを取得
-      const response = await fetch("/api/analytics/simple", {
+      const response = await authFetch("/api/analytics/simple", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

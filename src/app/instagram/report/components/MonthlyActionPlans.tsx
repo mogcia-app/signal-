@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Lightbulb, ArrowRight, Check, Edit } from "lucide-react";
 import type { ActionPlan } from "../../../../types/report";
 import { useAuth } from "../../../../contexts/auth-context";
+import { authFetch } from "../../../../utils/authFetch";
 
 // マークダウン記法を削除する関数
 const removeMarkdown = (text: string): string => {
@@ -273,7 +274,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                           }
 
                           // ai_directionを作成して確定
-                          const response = await fetch("/api/ai-direction", {
+                          const response = await authFetch("/api/ai-direction", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
@@ -290,7 +291,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                           const result = await response.json();
                           if (result.success) {
                             // 状態を更新
-                            const updatedResponse = await fetch(`/api/ai-direction?month=${nextMonth}`);
+                            const updatedResponse = await authFetch(`/api/ai-direction?month=${nextMonth}`);
                             const updatedResult = await updatedResponse.json();
                             if (updatedResult.success && updatedResult.data) {
                               setAiDirection({
@@ -363,7 +364,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                         setIsSaving(true);
                         try {
                           // ai_directionを作成して確定
-                          const response = await fetch("/api/ai-direction", {
+                          const response = await authFetch("/api/ai-direction", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
@@ -380,7 +381,7 @@ export const MonthlyActionPlans: React.FC<MonthlyActionPlansProps> = ({ selected
                           const result = await response.json();
                           if (result.success) {
                             // 状態を更新
-                            const updatedResponse = await fetch(`/api/ai-direction?month=${nextMonth}`);
+                            const updatedResponse = await authFetch(`/api/ai-direction?month=${nextMonth}`);
                             const updatedResult = await updatedResponse.json();
                             if (updatedResult.success && updatedResult.data) {
                               setAiDirection({

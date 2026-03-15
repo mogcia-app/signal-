@@ -332,7 +332,7 @@ const FeedAnalyticsAIInsights: React.FC<FeedAnalyticsAIInsightsProps> = ({
       const { masterContext: contextSummary, targetCategory: category, ...metricsPayload } =
         aggregatedMetrics;
 
-      const response = await fetch("/api/analytics/ai-insight", {
+      const response = await authFetch("/api/analytics/ai-insight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

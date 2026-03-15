@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:vercel": "npm run lint:strict && npm run typecheck && next build --no-lint",
+    "build:vercel": "npm run test:api && npm run lint:strict && npm run typecheck && next build --no-lint",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:strict": "eslint src --ext .ts,.tsx,.js,.jsx --max-warnings=0",
@@ -14,6 +14,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "jest",
+    "test:api": "jest --runInBand src/app/api/users/route.test.ts src/app/api/feedback/route.test.ts src/app/api/invite/consume/route.test.ts src/app/api/user/sns-profile/route.test.ts src/app/api/rag/route.test.ts src/app/api/review/meta/insights/route.test.ts src/app/api/posts/route.test.ts src/app/api/analytics/update-published-time/route.test.ts",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ai-quality": "node scripts/ai-quality-regression.js",
