@@ -1,51 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
-import { collection, getDocs, doc, updateDoc, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { adminDb } from "@/lib/firebase-admin";
+import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 
-// 既存のanalyticsデータにpublishedTimeフィールドを追加
+function normalizePublishedAt(input: unknown): Date | null {
+  if (!input) {
+    return null;
+  }
+
+  if (input instanceof Date) {
+    return Number.isNaN(input.getTime()) ? null : input;
+  }
+
+  if (typeof input === "object" && input !== null) {
+    const maybeTimestamp = input as { toDate?: () => Date };
+    if (typeof maybeTimestamp.toDate === "function") {
+      const date = maybeTimestamp.toDate();
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await request.json();
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "analytics-update-published-time", limit: 5, windowSeconds: 60 },
+      auditEventName: "analytics_update_published_time",
+    });
 
-    if (!userId) {
-      return NextResponse.json({ error: "userIdが必要です" }, { status: 400 });
+    const body = await request.json().catch(() => ({}));
+    const userId = typeof body.userId === "string" && body.userId.trim() ? body.userId : uid;
+
+    if (userId !== uid) {
+      return NextResponse.json({ error: "他のユーザーのanalyticsは更新できません" }, { status: 403 });
     }
 
-    // ユーザーのanalyticsデータを取得
-    const q = query(collection(db, "analytics"), where("userId", "==", userId));
-
-    const snapshot = await getDocs(q);
-    const updates = [];
+    const snapshot = await adminDb.collection("analytics").where("userId", "==", userId).get();
+    const updates: Array<{ id: string; publishedAt: string; publishedTime: string }> = [];
 
     for (const docSnapshot of snapshot.docs) {
       const data = docSnapshot.data();
+      const publishedAt = normalizePublishedAt(data.publishedAt);
 
-      // publishedTimeフィールドがない場合のみ更新
-      if (!data.publishedTime && data.publishedAt) {
-        // publishedAtから時間を抽出してpublishedTimeフィールドを追加
-        const publishedAt = data.publishedAt.toDate();
+      if (!data.publishedTime && publishedAt) {
         const hours = publishedAt.getHours().toString().padStart(2, "0");
         const minutes = publishedAt.getMinutes().toString().padStart(2, "0");
         const publishedTime = `${hours}:${minutes}`;
 
-        await updateDoc(doc(db, "analytics", docSnapshot.id), {
-          publishedTime: publishedTime,
+        await adminDb.collection("analytics").doc(docSnapshot.id).update({
+          publishedTime,
         });
 
         updates.push({
           id: docSnapshot.id,
-          publishedAt: data.publishedAt.toDate().toISOString(),
-          publishedTime: publishedTime,
+          publishedAt: publishedAt.toISOString(),
+          publishedTime,
         });
       }
     }
 
     return NextResponse.json({
       message: `${updates.length}件のデータを更新しました`,
-      updates: updates,
+      updates,
     });
   } catch (error) {
     console.error("publishedTime更新エラー:", error);
-    return NextResponse.json({ error: "データ更新に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

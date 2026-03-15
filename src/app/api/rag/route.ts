@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "../../../lib/firebase";
+import * as admin from "firebase-admin";
+import { adminDb } from "../../../lib/firebase-admin";
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  orderBy,
-  limit,
-  increment,
-} from "firebase/firestore";
+  buildErrorResponse,
+  ForbiddenError,
+  requireAuthContext,
+} from "../../../lib/server/auth-context";
 
-// ベクトル検索用のインターフェース
 interface VectorDocument {
   id: string;
   userId: string;
@@ -28,7 +21,6 @@ interface VectorDocument {
   qualityScore: number;
 }
 
-// 学習データインターフェース
 interface LearningData {
   id: string;
   userId: string;
@@ -43,7 +35,18 @@ interface LearningData {
   };
 }
 
-// 簡易ベクトル類似度計算（コサイン類似度）
+function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
+  if (candidate === undefined || candidate === null || candidate === "") {
+    return authenticatedUid;
+  }
+
+  if (typeof candidate !== "string" || candidate !== authenticatedUid) {
+    throw new ForbiddenError("他のユーザーのRAGデータにはアクセスできません");
+  }
+
+  return candidate;
+}
+
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
   if (vecA.length !== vecB.length) {return 0;}
 
@@ -62,9 +65,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// テキストを簡易ベクトルに変換（実際の実装ではOpenAI Embeddings APIを使用）
 function textToVector(text: string): number[] {
-  // 簡易実装：文字の出現頻度ベースのベクトル
   const words = text.toLowerCase().split(/\s+/);
   const wordCount: { [key: string]: number } = {};
 
@@ -72,7 +73,6 @@ function textToVector(text: string): number[] {
     wordCount[word] = (wordCount[word] || 0) + 1;
   });
 
-  // 固定サイズのベクトル（実際は動的）
   const vector = new Array(100).fill(0);
   const wordsArray = Object.keys(wordCount);
 
@@ -85,7 +85,6 @@ function textToVector(text: string): number[] {
   return vector;
 }
 
-// 質問のカテゴリを自動分類
 function categorizeQuestion(question: string): string {
   const lowerQuestion = question.toLowerCase();
 
@@ -106,12 +105,10 @@ function categorizeQuestion(question: string): string {
   }
 }
 
-// 質問のタグを自動生成
 function generateTags(question: string): string[] {
   const tags: string[] = [];
   const lowerQuestion = question.toLowerCase();
 
-  // キーワードベースのタグ生成
   const keywordMap: { [key: string]: string[] } = {
     instagram: ["instagram", "sns"],
     投稿: ["posting", "content"],
@@ -132,56 +129,45 @@ function generateTags(question: string): string[] {
     }
   });
 
-  return [...new Set(tags)]; // 重複削除
+  return [...new Set(tags)];
 }
 
-// RAG検索：類似質問を検索
-async function searchSimilarQuestions(userId: string, question: string, threshold: number = 0.7) {
+async function searchSimilarQuestions(userId: string, question: string, threshold = 0.7) {
   try {
     const questionVector = textToVector(question);
     const category = categorizeQuestion(question);
 
-    // 同じカテゴリの質問を取得
-    const vectorRef = collection(db, "vector_documents");
-    const q = query(
-      vectorRef,
-      where("userId", "==", userId),
-      where("category", "==", category),
-      orderBy("qualityScore", "desc"),
-      limit(20)
-    );
+    const snapshot = await adminDb
+      .collection("vector_documents")
+      .where("userId", "==", userId)
+      .where("category", "==", category)
+      .orderBy("qualityScore", "desc")
+      .limit(20)
+      .get();
 
-    const snapshot = await getDocs(q);
-    const similarQuestions: VectorDocument[] = [];
+    const similarQuestions: Array<VectorDocument & { similarity: number }> = [];
 
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data() as VectorDocument;
+    snapshot.docs.forEach((snapshotDoc) => {
+      const data = snapshotDoc.data() as VectorDocument;
       const similarity = cosineSimilarity(questionVector, data.vector);
 
       if (similarity >= threshold) {
         similarQuestions.push({
           ...data,
-          id: doc.id,
+          id: snapshotDoc.id,
           similarity,
-        } as VectorDocument & { similarity: number });
+        });
       }
     });
 
-    // 類似度でソート
-    similarQuestions.sort(
-      (a, b) =>
-        (b as VectorDocument & { similarity: number }).similarity -
-        (a as VectorDocument & { similarity: number }).similarity
-    );
-
-    return similarQuestions.slice(0, 3); // 上位3件を返す
+    similarQuestions.sort((a, b) => b.similarity - a.similarity);
+    return similarQuestions.slice(0, 3);
   } catch (error) {
     console.error("RAG検索エラー:", error);
     return [];
   }
 }
 
-// 学習データを記録
 async function recordLearningData(
   userId: string,
   interactionType: string,
@@ -189,7 +175,6 @@ async function recordLearningData(
   context: Record<string, unknown> = {}
 ) {
   try {
-    const learningRef = collection(db, "learning_data");
     const learningData: LearningData = {
       id: "",
       userId,
@@ -204,8 +189,7 @@ async function recordLearningData(
       },
     };
 
-    await addDoc(learningRef, learningData);
-
+    await adminDb.collection("learning_data").add(learningData);
     return { success: true };
   } catch (error) {
     console.error("学習データ記録エラー:", error);
@@ -213,15 +197,13 @@ async function recordLearningData(
   }
 }
 
-// ベクトルドキュメントを保存
 async function saveVectorDocument(
   userId: string,
   question: string,
   answer: string,
-  qualityScore: number = 0.5
+  qualityScore = 0.5
 ) {
   try {
-    const vectorRef = collection(db, "vector_documents");
     const vectorDoc: VectorDocument = {
       id: "",
       userId,
@@ -236,8 +218,7 @@ async function saveVectorDocument(
       qualityScore,
     };
 
-    const docRef = await addDoc(vectorRef, vectorDoc);
-
+    const docRef = await adminDb.collection("vector_documents").add(vectorDoc);
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error("ベクトルドキュメント保存エラー:", error);
@@ -245,12 +226,22 @@ async function saveVectorDocument(
   }
 }
 
-// 使用回数を更新
-async function updateUsageCount(documentId: string) {
+async function updateUsageCount(userId: string, documentId: string) {
   try {
-    const docRef = doc(db, "vector_documents", documentId);
-    await updateDoc(docRef, {
-      usageCount: increment(1),
+    const docRef = adminDb.collection("vector_documents").doc(documentId);
+    const snapshot = await docRef.get();
+
+    if (!snapshot.exists) {
+      throw new Error("Document not found");
+    }
+
+    const data = snapshot.data() as { userId?: string } | undefined;
+    if (data?.userId !== userId) {
+      throw new ForbiddenError("他のユーザーのRAGドキュメントは更新できません");
+    }
+
+    await docRef.update({
+      usageCount: admin.firestore.FieldValue.increment(1),
       updatedAt: new Date(),
     });
 
@@ -261,26 +252,26 @@ async function updateUsageCount(documentId: string) {
   }
 }
 
-// メインAPIエンドポイント
 export async function GET(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "rag-read", limit: 60, windowSeconds: 60 },
+      auditEventName: "rag_read",
+    });
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const userId = resolveRequestedUserId(searchParams.get("userId"), uid);
     const question = searchParams.get("question");
     const action = searchParams.get("action");
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID required" }, { status: 401 });
-    }
-
     switch (action) {
-      case "search":
+      case "search": {
         if (!question) {
           return NextResponse.json({ error: "Question required for search" }, { status: 400 });
         }
 
         const similarQuestions = await searchSimilarQuestions(userId, question);
-
         return NextResponse.json({
           success: true,
           data: {
@@ -289,68 +280,63 @@ export async function GET(request: NextRequest) {
             recommendedAction: similarQuestions.length > 0 ? "use_cached" : "generate_new",
           },
         });
+      }
 
-      case "record":
+      case "record": {
         const interactionType = searchParams.get("interactionType") || "question";
         const content = searchParams.get("content") || "";
-        const context = JSON.parse(searchParams.get("context") || "{}");
-
+        const context = JSON.parse(searchParams.get("context") || "{}") as Record<string, unknown>;
         const recordResult = await recordLearningData(userId, interactionType, content, context);
-
         return NextResponse.json(recordResult);
+      }
 
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
   } catch (error) {
     console.error("RAG API error:", error);
-    return NextResponse.json(
-      {
-        error: "RAG API failed",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId, question, answer, qualityScore, action } = body;
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "rag-write", limit: 30, windowSeconds: 60 },
+      auditEventName: "rag_write",
+    });
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID required" }, { status: 401 });
-    }
+    const body = await request.json();
+    const { userId, question, answer, qualityScore, action, documentId } = body;
+    const resolvedUserId = resolveRequestedUserId(userId, uid);
 
     switch (action) {
-      case "save":
+      case "save": {
         if (!question || !answer) {
           return NextResponse.json({ error: "Question and answer required" }, { status: 400 });
         }
 
-        const saveResult = await saveVectorDocument(userId, question, answer, qualityScore);
+        const saveResult = await saveVectorDocument(resolvedUserId, question, answer, qualityScore);
         return NextResponse.json(saveResult);
+      }
 
-      case "update_usage":
-        if (!body.documentId) {
+      case "update_usage": {
+        if (!documentId) {
           return NextResponse.json({ error: "Document ID required" }, { status: 400 });
         }
 
-        const updateResult = await updateUsageCount(body.documentId);
+        const updateResult = await updateUsageCount(resolvedUserId, documentId);
         return NextResponse.json(updateResult);
+      }
 
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
   } catch (error) {
     console.error("RAG API POST error:", error);
-    return NextResponse.json(
-      {
-        error: "RAG API POST failed",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

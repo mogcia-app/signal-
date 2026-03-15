@@ -1,9 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "../../../../lib/firebase-admin";
 import * as admin from "firebase-admin";
+import {
+  buildErrorResponse,
+  ForbiddenError,
+  requireAuthContext,
+} from "../../../../lib/server/auth-context";
+
+function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
+  if (candidate === undefined || candidate === null || candidate === "") {
+    return authenticatedUid;
+  }
+
+  if (typeof candidate !== "string" || candidate !== authenticatedUid) {
+    throw new ForbiddenError("他のユーザーのアクションログにはアクセスできません");
+  }
+
+  return candidate;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "ai-action-logs-write", limit: 30, windowSeconds: 60 },
+      auditEventName: "ai_action_logs_write",
+    });
+
     const body = await request.json();
     const {
       userId,
@@ -22,19 +45,20 @@ export async function POST(request: NextRequest) {
       resultDelta?: number;
       feedback?: string;
     } = body || {};
+    const resolvedUserId = resolveRequestedUserId(userId, uid);
 
-    if (!userId || !actionId) {
+    if (!actionId) {
       return NextResponse.json(
-        { success: false, error: "userId, actionId は必須です" },
+        { success: false, error: "actionId は必須です" },
         { status: 400 }
       );
     }
 
     const db = getAdminDb();
-    const docRef = db.collection("ai_action_logs").doc(`${userId}_${actionId}`);
+    const docRef = db.collection("ai_action_logs").doc(`${resolvedUserId}_${actionId}`);
     await docRef.set(
       {
-        userId,
+        userId: resolvedUserId,
         actionId,
         title: title || "",
         focusArea: focusArea || "",
@@ -50,23 +74,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("アクションログ保存エラー:", error);
-    return NextResponse.json(
-      { success: false, error: "アクションログの保存に失敗しました" },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "ai-action-logs-read", limit: 60, windowSeconds: 60 },
+      auditEventName: "ai_action_logs_read",
+    });
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const userId = resolveRequestedUserId(searchParams.get("userId"), uid);
     const period = searchParams.get("period");
     const limitParam = searchParams.get("limit");
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId が必要です" }, { status: 400 });
-    }
 
     const limit = Math.min(Math.max(Number(limitParam) || 20, 1), 100);
 
@@ -104,10 +128,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: logs });
   } catch (error) {
     console.error("アクションログ取得エラー:", error);
-    return NextResponse.json(
-      { success: false, error: "アクションログの取得に失敗しました" },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
-

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "../../../lib/firebase";
-import { collection, addDoc, getDocs, doc, updateDoc, query, where } from "firebase/firestore";
+import { adminDb } from "../../../lib/firebase-admin";
+import {
+  buildErrorResponse,
+  ForbiddenError,
+  requireAuthContext,
+} from "../../../lib/server/auth-context";
 
-// ユーザープロフィールの型定義
 interface UserProfile {
   id?: string;
   userId: string;
@@ -37,23 +40,63 @@ interface UserProfile {
   updatedAt: Date;
 }
 
-// ユーザープロフィール作成
+async function findUserProfileDocByUserId(userId: string) {
+  const snapshot = await adminDb
+    .collection("userProfiles")
+    .where("userId", "==", userId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  return snapshot.docs[0];
+}
+
+function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
+  if (candidate === undefined || candidate === null || candidate === "") {
+    return authenticatedUid;
+  }
+
+  if (typeof candidate !== "string") {
+    throw new ForbiddenError("不正なuserIdです");
+  }
+
+  if (candidate !== authenticatedUid) {
+    throw new ForbiddenError("他のユーザープロフィールにはアクセスできません");
+  }
+
+  return candidate;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "users-profile-create", limit: 20, windowSeconds: 60 },
+      auditEventName: "users_profile_create",
+    });
+
     const body = await request.json();
     const { userId, email, displayName, avatarUrl, bio, preferences, socialAccounts } = body;
+    const resolvedUserId = resolveRequestedUserId(userId, uid);
 
-    // バリデーション
-    if (!userId || !email) {
+    if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
     }
 
+    const existingProfile = await findUserProfileDocByUserId(resolvedUserId);
+    if (existingProfile) {
+      return NextResponse.json({ error: "ユーザープロフィールは既に存在します" }, { status: 409 });
+    }
+
     const userData: Omit<UserProfile, "id"> = {
-      userId,
+      userId: resolvedUserId,
       email,
-      displayName: displayName || "",
-      avatarUrl: avatarUrl || "",
-      bio: bio || "",
+      displayName: typeof displayName === "string" ? displayName : "",
+      avatarUrl: typeof avatarUrl === "string" ? avatarUrl : "",
+      bio: typeof bio === "string" ? bio : "",
       preferences: preferences || {
         theme: "light",
         language: "ja",
@@ -69,7 +112,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    const docRef = await addDoc(collection(db, "userProfiles"), userData);
+    const docRef = await adminDb.collection("userProfiles").add(userData);
 
     return NextResponse.json({
       id: docRef.id,
@@ -78,88 +121,77 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("ユーザープロフィール作成エラー:", error);
-    return NextResponse.json(
-      { error: "ユーザープロフィールの作成に失敗しました" },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
-// ユーザープロフィール取得
 export async function GET(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "users-profile-read", limit: 60, windowSeconds: 60 },
+      auditEventName: "users_profile_read",
+    });
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const resolvedUserId = resolveRequestedUserId(searchParams.get("userId"), uid);
+    const profileDoc = await findUserProfileDocByUserId(resolvedUserId);
 
-    if (!userId) {
-      return NextResponse.json({ error: "userIdが必要です" }, { status: 400 });
-    }
-
-    const q = query(collection(db, "userProfiles"), where("userId", "==", userId));
-
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
+    if (!profileDoc) {
       return NextResponse.json({ error: "ユーザープロフィールが見つかりません" }, { status: 404 });
     }
 
     const userData = {
-      id: snapshot.docs[0].id,
-      ...snapshot.docs[0].data(),
+      id: profileDoc.id,
+      ...profileDoc.data(),
     };
 
     return NextResponse.json({ user: userData });
   } catch (error) {
     console.error("ユーザープロフィール取得エラー:", error);
-    return NextResponse.json(
-      { error: "ユーザープロフィールの取得に失敗しました" },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
-// ユーザープロフィール更新
 export async function PUT(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "users-profile-update", limit: 30, windowSeconds: 60 },
+      auditEventName: "users_profile_update",
+    });
+
     const body = await request.json();
     const { userId, displayName, avatarUrl, bio, preferences, socialAccounts } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: "userIdが必要です" }, { status: 400 });
-    }
+    const resolvedUserId = resolveRequestedUserId(userId, uid);
 
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
-    // 更新するフィールドのみ追加
     if (displayName !== undefined) {updateData.displayName = displayName;}
     if (avatarUrl !== undefined) {updateData.avatarUrl = avatarUrl;}
     if (bio !== undefined) {updateData.bio = bio;}
     if (preferences !== undefined) {updateData.preferences = preferences;}
     if (socialAccounts !== undefined) {updateData.socialAccounts = socialAccounts;}
 
-    // まずユーザーを検索
-    const q = query(collection(db, "userProfiles"), where("userId", "==", userId));
+    const profileDoc = await findUserProfileDocByUserId(resolvedUserId);
 
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
+    if (!profileDoc) {
       return NextResponse.json({ error: "ユーザープロフィールが見つかりません" }, { status: 404 });
     }
 
-    const docRef = doc(db, "userProfiles", snapshot.docs[0].id);
-    await updateDoc(docRef, updateData);
+    await adminDb.collection("userProfiles").doc(profileDoc.id).update(updateData);
 
     return NextResponse.json({
       message: "ユーザープロフィールが更新されました",
-      id: snapshot.docs[0].id,
+      id: profileDoc.id,
     });
   } catch (error) {
     console.error("ユーザープロフィール更新エラー:", error);
-    return NextResponse.json(
-      { error: "ユーザープロフィールの更新に失敗しました" },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

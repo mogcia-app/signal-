@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildAIContext } from "@/lib/ai/context";
+import {
+  buildErrorResponse,
+  ForbiddenError,
+  requireAuthContext,
+} from "@/lib/server/auth-context";
 
 // infra層: Firestoreアクセス
 import { getReportSummary } from "./infra/firestore/report-summary";
@@ -21,18 +26,35 @@ import { performAIAnalysis as performAIAnalysisService } from "./services/analys
 
 // 型定義はservicesで使用
 
+function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
+  if (candidate === undefined || candidate === null || candidate === "") {
+    return authenticatedUid;
+  }
+
+  if (typeof candidate !== "string" || candidate !== authenticatedUid) {
+    throw new ForbiddenError("他のユーザーのAI分析にはアクセスできません");
+  }
+
+  return candidate;
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log("🤖 AI分析API開始");
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "ai-monthly-analysis-read", limit: 15, windowSeconds: 60 },
+      auditEventName: "ai_monthly_analysis_read",
+    });
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const userId = resolveRequestedUserId(searchParams.get("userId"), uid);
     const period = searchParams.get("period") as "weekly" | "monthly";
     const date = searchParams.get("date");
 
-    if (!userId || !period || !date) {
+    if (!period || !date) {
       return NextResponse.json(
-        { error: "userId, period, date パラメータが必要です" },
+        { error: "period, date パラメータが必要です" },
         { status: 400 }
       );
     }
@@ -105,14 +127,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("❌ AI分析APIエラー:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "AI分析の実行に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
-

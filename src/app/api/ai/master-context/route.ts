@@ -7,6 +7,11 @@ import type {
   PostPerformanceTag,
 } from "../monthly-analysis/types";
 import { buildAIContext } from "@/lib/ai/context";
+import {
+  buildErrorResponse,
+  ForbiddenError,
+  requireAuthContext,
+} from "@/lib/server/auth-context";
 import type { AIReference, SnapshotReference } from "@/types/ai";
 
 type PostPatternSummaries = Partial<Record<PostPerformanceTag, PatternSummary>>;
@@ -76,14 +81,28 @@ type LearningContextPayload = {
   } | null;
 };
 
+function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
+  if (candidate === undefined || candidate === null || candidate === "") {
+    return authenticatedUid;
+  }
+
+  if (typeof candidate !== "string" || candidate !== authenticatedUid) {
+    throw new ForbiddenError("他のユーザーのマスターコンテキストにはアクセスできません");
+  }
+
+  return candidate;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "ai-master-context-read", limit: 30, windowSeconds: 60 },
+      auditEventName: "ai_master_context_read",
+    });
 
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
-    }
+    const { searchParams } = new URL(request.url);
+    const userId = resolveRequestedUserId(searchParams.get("userId"), uid);
 
     const forceRefreshParam = searchParams.get("forceRefresh");
     const forceRefresh = Boolean(forceRefreshParam && forceRefreshParam !== "0");
@@ -150,14 +169,8 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("マスターコンテキスト取得エラー:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "マスターコンテキストの取得に失敗しました",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
-
 

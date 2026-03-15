@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 
 // iPad Safari対応: Node.jsランタイムを明示的に指定
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "instagram-story-schedule", limit: 10, windowSeconds: 60 },
+      auditEventName: "instagram_story_schedule_generate",
+    });
+
     console.log("=== STORY SCHEDULE API CALLED ===");
 
     // iPad Chrome対応: User-Agentをチェック
@@ -133,6 +140,19 @@ export async function POST(request: NextRequest) {
     console.error("=== STORY SCHEDULE ERROR ===");
     console.error("Error details:", error);
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+
+    const { status, body } = buildErrorResponse(error);
+    if (status !== 500) {
+      return NextResponse.json(body, {
+        status,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
+    }
 
     return NextResponse.json(
       {

@@ -1,9 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "../../../../lib/firebase-admin";
 import * as admin from "firebase-admin";
+import {
+  buildErrorResponse,
+  ForbiddenError,
+  requireAuthContext,
+} from "../../../../lib/server/auth-context";
+
+function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
+  if (candidate === undefined || candidate === null || candidate === "") {
+    return authenticatedUid;
+  }
+
+  if (typeof candidate !== "string" || candidate !== authenticatedUid) {
+    throw new ForbiddenError("他のユーザーの投稿フィードバックにはアクセスできません");
+  }
+
+  return candidate;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "ai-feedback-write", limit: 30, windowSeconds: 60 },
+      auditEventName: "ai_feedback_write",
+    });
+
     const body = await request.json();
     const {
       userId,
@@ -24,10 +47,11 @@ export async function POST(request: NextRequest) {
       goalAchievementProspect?: "high" | "medium" | "low";
       goalAchievementReason?: string;
     } = body || {};
+    const resolvedUserId = resolveRequestedUserId(userId, uid);
 
-    if (!userId || !postId) {
+    if (!postId) {
       return NextResponse.json(
-        { success: false, error: "userId, postId は必須です" },
+        { success: false, error: "postId は必須です" },
         { status: 400 }
       );
     }
@@ -42,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     const db = getAdminDb();
     await db.collection("ai_post_feedback").add({
-      userId,
+      userId: resolvedUserId,
       postId,
       sentiment: sentiment || (goalAchievementProspect === "high" ? "positive" : goalAchievementProspect === "low" ? "negative" : "neutral"), // 後方互換性のため
       comment: comment || "",
@@ -56,22 +80,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("投稿フィードバック保存エラー:", error);
-    return NextResponse.json(
-      { success: false, error: "投稿フィードバックの保存に失敗しました" },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const limitParam = searchParams.get("limit");
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "ai-feedback-read", limit: 60, windowSeconds: 60 },
+      auditEventName: "ai_feedback_read",
+    });
 
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId が必要です" }, { status: 400 });
-    }
+    const { searchParams } = new URL(request.url);
+    const userId = resolveRequestedUserId(searchParams.get("userId"), uid);
+    const limitParam = searchParams.get("limit");
 
     const limit = Math.min(Math.max(Number(limitParam) || 20, 1), 100);
 
@@ -100,10 +124,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: feedback });
   } catch (error) {
     console.error("投稿フィードバック取得エラー:", error);
-    return NextResponse.json(
-      { success: false, error: "投稿フィードバックの取得に失敗しました" },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
-

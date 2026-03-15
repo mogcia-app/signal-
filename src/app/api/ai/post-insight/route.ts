@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMasterContext } from "../monthly-analysis/infra/firestore/master-context";
 import type { PostLearningSignal } from "../monthly-analysis/types";
 import { adminDb } from "@/lib/firebase-admin";
+import {
+  buildErrorResponse,
+  ForbiddenError,
+  requireAuthContext,
+} from "@/lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { fetchAIDirection } from "@/lib/ai/context";
 
@@ -9,6 +14,18 @@ interface PostInsightRequest {
   userId?: string;
   postId?: string;
   forceRefresh?: boolean;
+}
+
+function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
+  if (candidate === undefined || candidate === null || candidate === "") {
+    return authenticatedUid;
+  }
+
+  if (typeof candidate !== "string" || candidate !== authenticatedUid) {
+    throw new ForbiddenError("他のユーザーの投稿インサイトにはアクセスできません");
+  }
+
+  return candidate;
 }
 
 interface CoachingModePromptParams {
@@ -608,12 +625,19 @@ ${aiDirection && aiDirection.lockedAt ? `【今月のAI方針】
 
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "ai-post-insight-read", limit: 20, windowSeconds: 60 },
+      auditEventName: "ai_post_insight_read",
+    });
+
     const body = (await request.json()) as PostInsightRequest;
     const { userId, postId, forceRefresh } = body;
+    const resolvedUserId = resolveRequestedUserId(userId, uid);
 
-    if (!userId || !postId) {
+    if (!postId) {
       return NextResponse.json(
-        { success: false, error: "userId と postId は必須です" },
+        { success: false, error: "postId は必須です" },
         { status: 400 }
       );
     }
@@ -627,13 +651,18 @@ export async function POST(request: NextRequest) {
       planDoc,
       userProfile,
     ] = await Promise.all([
-      getMasterContext(userId, { forceRefresh }),
+      getMasterContext(resolvedUserId, { forceRefresh }),
       adminDb.collection("posts").doc(postId).get(),
-      adminDb.collection("analytics").where("userId", "==", userId).where("postId", "==", postId).limit(1).get(),
-      adminDb.collection("analytics").where("userId", "==", userId).limit(50).get(),
-      adminDb.collection("plans").where("userId", "==", userId).where("snsType", "==", "instagram").where("status", "==", "active").orderBy("createdAt", "desc").limit(1).get(),
-      getUserProfile(userId),
+      adminDb.collection("analytics").where("userId", "==", resolvedUserId).where("postId", "==", postId).limit(1).get(),
+      adminDb.collection("analytics").where("userId", "==", resolvedUserId).limit(50).get(),
+      adminDb.collection("plans").where("userId", "==", resolvedUserId).where("snsType", "==", "instagram").where("status", "==", "active").orderBy("createdAt", "desc").limit(1).get(),
+      getUserProfile(resolvedUserId),
     ]);
+
+    const postDataFromDoc = postDoc.exists ? postDoc.data() : null;
+    if (postDataFromDoc?.userId && postDataFromDoc.userId !== resolvedUserId) {
+      throw new ForbiddenError("他のユーザーの投稿インサイトにはアクセスできません");
+    }
 
     const rawSignal = masterContext?.postPatterns?.signals?.find((item) => item.postId === postId);
     const signal = (rawSignal ?? {}) as Partial<PostLearningSignal>;
@@ -728,7 +757,7 @@ export async function POST(request: NextRequest) {
         };
 
     // 投稿データを取得
-    const postData = postDoc.exists ? postDoc.data() : null;
+    const postData = postDataFromDoc;
     const postTitle = postData?.title || signal.title || "タイトル未設定";
     const postContent = postData?.content || "";
     const postHashtags = Array.isArray(postData?.hashtags) ? postData.hashtags : (Array.isArray(signal.hashtags) ? signal.hashtags : []);
@@ -933,7 +962,7 @@ export async function POST(request: NextRequest) {
     };
 
     // ai_direction（今月のAI方針）を取得
-    const aiDirection = await fetchAIDirection(userId);
+    const aiDirection = await fetchAIDirection(resolvedUserId);
 
     // モード判定：投稿数に基づいてcoaching mode / learning modeを切り替え
     const isLearningMode = false;
@@ -1279,12 +1308,17 @@ export async function POST(request: NextRequest) {
     // エラーメッセージを安全に返す（機密情報を除外）
     const safeMessage = message.length > 200 ? "投稿AIサマリーの生成に失敗しました" : message;
     
-    return NextResponse.json(
-      {
-        success: false,
-        error: safeMessage,
-      },
-      { status: 500 }
-    );
+    const { status, body } =
+      error instanceof ForbiddenError
+        ? buildErrorResponse(error)
+        : {
+            status: 500,
+            body: {
+              success: false,
+              error: safeMessage,
+            },
+          };
+
+    return NextResponse.json(body, { status });
   }
 }

@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "instagram-reel-structure", limit: 10, windowSeconds: 60 },
+      auditEventName: "instagram_reel_structure_generate",
+    });
+
     const body = await request.json();
     const { prompt, businessInfo } = body;
 
@@ -21,6 +28,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("動画構成生成エラー:", error);
+    const { status, body } = buildErrorResponse(error);
+    if (status !== 500) {
+      return NextResponse.json(body, { status });
+    }
     return NextResponse.json({ error: "動画構成生成に失敗しました" }, { status: 500 });
   }
 }

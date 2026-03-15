@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -9,6 +10,12 @@ const openai = process.env.OPENAI_API_KEY
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "ai-generate-thumbnail", limit: 10, windowSeconds: 60 },
+      auditEventName: "ai_generate_thumbnail",
+    });
+
     if (!openai) {
       return NextResponse.json(
         { error: "OPENAI_API_KEY が未設定です" },
@@ -62,18 +69,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Thumbnail generation error:", error);
-
-    // OpenAI API エラーの詳細を取得
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          error: "画像生成に失敗しました",
-          details: error.message,
-        },
-        { status: 500 }
-      );
+    const { status, body } = buildErrorResponse(error);
+    if (status !== 500) {
+      return NextResponse.json(body, { status });
     }
-
-    return NextResponse.json({ error: "画像生成に失敗しました" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "画像生成に失敗しました",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }

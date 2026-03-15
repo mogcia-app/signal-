@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "../../../lib/firebase";
-import { collection, addDoc, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { adminDb } from "../../../lib/firebase-admin";
+import {
+  buildErrorResponse,
+  ForbiddenError,
+  requireAuthContext,
+} from "../../../lib/server/auth-context";
 
-// フィードバックデータのインターフェース
 interface FeedbackData {
   id?: string;
   userId: string;
@@ -14,24 +17,42 @@ interface FeedbackData {
   processed: boolean;
 }
 
-// フィードバックを保存
+function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
+  if (candidate === undefined || candidate === null || candidate === "") {
+    return authenticatedUid;
+  }
+
+  if (typeof candidate !== "string" || candidate !== authenticatedUid) {
+    throw new ForbiddenError("他のユーザーのフィードバックにはアクセスできません");
+  }
+
+  return candidate;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "feedback-create", limit: 20, windowSeconds: 60 },
+      auditEventName: "feedback_create",
+    });
+
     const body = await request.json();
     const { userId, pageType, satisfaction, feedback, contextData } = body;
+    const resolvedUserId = resolveRequestedUserId(userId, uid);
 
-    if (!userId || !pageType || !satisfaction || !feedback) {
+    if (!pageType || !satisfaction || !feedback) {
       return NextResponse.json(
         {
           success: false,
-          error: "userId, pageType, satisfaction, and feedback are required",
+          error: "pageType, satisfaction, and feedback are required",
         },
         { status: 400 }
       );
     }
 
     const feedbackData: FeedbackData = {
-      userId,
+      userId: resolvedUserId,
       pageType,
       satisfaction,
       feedback,
@@ -40,7 +61,7 @@ export async function POST(request: NextRequest) {
       processed: false,
     };
 
-    const docRef = await addDoc(collection(db, "user_feedback"), feedbackData);
+    const docRef = await adminDb.collection("user_feedback").add(feedbackData);
 
     return NextResponse.json({
       success: true,
@@ -49,52 +70,39 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("フィードバック保存エラー:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to save feedback",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
-// フィードバックを取得（学習用）
 export async function GET(request: NextRequest) {
   try {
+    const { uid } = await requireAuthContext(request, {
+      requireContract: false,
+      rateLimit: { key: "feedback-read", limit: 60, windowSeconds: 60 },
+      auditEventName: "feedback_read",
+    });
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    const resolvedUserId = resolveRequestedUserId(searchParams.get("userId"), uid);
     const pageType = searchParams.get("pageType");
 
-    if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "userId is required",
-        },
-        { status: 400 }
-      );
-    }
-
-    let q = query(
-      collection(db, "user_feedback"),
-      where("userId", "==", userId),
-      orderBy("timestamp", "desc"),
-      limit(50)
-    );
+    let queryRef: FirebaseFirestore.Query = adminDb
+      .collection("user_feedback")
+      .where("userId", "==", resolvedUserId)
+      .orderBy("timestamp", "desc")
+      .limit(50);
 
     if (pageType) {
-      q = query(
-        collection(db, "user_feedback"),
-        where("userId", "==", userId),
-        where("pageType", "==", pageType),
-        orderBy("timestamp", "desc"),
-        limit(50)
-      );
+      queryRef = adminDb
+        .collection("user_feedback")
+        .where("userId", "==", resolvedUserId)
+        .where("pageType", "==", pageType)
+        .orderBy("timestamp", "desc")
+        .limit(50);
     }
 
-    const snapshot = await getDocs(q);
+    const snapshot = await queryRef.get();
     const feedbacks = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
@@ -106,13 +114,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("フィードバック取得エラー:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch feedback",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
