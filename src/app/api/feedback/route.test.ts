@@ -3,34 +3,13 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockFeedbackAdd = jest.fn();
-const mockFeedbackGet = jest.fn();
+const mockFeedbackCreate = jest.fn();
+const mockFeedbackListByUser = jest.fn();
 
-jest.mock("../../../lib/firebase-admin", () => ({
-  adminDb: {
-    collection: (name: string) => {
-      if (name !== "user_feedback") {
-        throw new Error(`Unexpected collection: ${name}`);
-      }
-
-      return {
-        add: (...args: unknown[]) => mockFeedbackAdd(...args),
-        where: () => ({
-          orderBy: () => ({
-            limit: () => ({
-              get: (...args: unknown[]) => mockFeedbackGet(...args),
-            }),
-          }),
-          where: () => ({
-            orderBy: () => ({
-              limit: () => ({
-                get: (...args: unknown[]) => mockFeedbackGet(...args),
-              }),
-            }),
-          }),
-        }),
-      };
-    },
+jest.mock("@/repositories/feedback-repository", () => ({
+  FeedbackRepository: {
+    create: (...args: unknown[]) => mockFeedbackCreate(...args),
+    listByUser: (...args: unknown[]) => mockFeedbackListByUser(...args),
   },
 }));
 
@@ -45,15 +24,18 @@ jest.mock("../../../lib/server/auth-context", () => {
 describe("API regression foundation: /api/feedback", () => {
   const loadRoute = async () => import("./route");
   let consoleErrorSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   test("returns 401 when auth context rejects", async () => {
@@ -88,11 +70,11 @@ describe("API regression foundation: /api/feedback", () => {
       error: "他のユーザーのフィードバックにはアクセスできません",
       code: "FORBIDDEN",
     });
-    expect(mockFeedbackGet).not.toHaveBeenCalled();
+    expect(mockFeedbackListByUser).not.toHaveBeenCalled();
   });
 
   test("creates feedback for the authenticated user", async () => {
-    mockFeedbackAdd.mockResolvedValueOnce({ id: "feedback-1" });
+    mockFeedbackCreate.mockResolvedValueOnce({ id: "feedback-1" });
 
     const { POST } = await loadRoute();
     const request = createJsonRequest("http://localhost:3000/api/feedback", {
@@ -114,15 +96,13 @@ describe("API regression foundation: /api/feedback", () => {
       message: "フィードバックが保存されました",
       id: "feedback-1",
     });
-    expect(mockFeedbackAdd).toHaveBeenCalledTimes(1);
-    expect(mockFeedbackAdd.mock.calls[0][0]).toMatchObject({
+    expect(mockFeedbackCreate).toHaveBeenCalledTimes(1);
+    expect(mockFeedbackCreate.mock.calls[0][0]).toMatchObject({
       userId: "user-1",
       pageType: "analytics",
       satisfaction: "satisfied",
       feedback: "helpful",
       contextData: { source: "test" },
-      processed: false,
     });
-    expect(mockFeedbackAdd.mock.calls[0][0].timestamp).toBeInstanceOf(Date);
   });
 });

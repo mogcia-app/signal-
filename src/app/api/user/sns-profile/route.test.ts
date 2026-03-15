@@ -3,23 +3,12 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockUserGet = jest.fn();
-const mockUserUpdate = jest.fn();
+const mockGetSnsProfiles = jest.fn();
 
-jest.mock("@/lib/firebase-admin", () => ({
-  adminDb: {
-    collection: (name: string) => {
-      if (name !== "users") {
-        throw new Error(`Unexpected collection: ${name}`);
-      }
-
-      return {
-        doc: () => ({
-          get: (...args: unknown[]) => mockUserGet(...args),
-          update: (...args: unknown[]) => mockUserUpdate(...args),
-        }),
-      };
-    },
+jest.mock("@/repositories/user-profile-repository", () => ({
+  UserProfileRepository: {
+    getSnsProfiles: (...args: unknown[]) => mockGetSnsProfiles(...args),
+    updateSnsProfile: jest.fn(),
   },
 }));
 
@@ -34,15 +23,18 @@ jest.mock("@/lib/server/auth-context", () => {
 describe("API regression foundation: /api/user/sns-profile", () => {
   const loadRoute = async () => import("./route");
   let consoleErrorSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   test("returns 401 when auth context rejects", async () => {
@@ -77,17 +69,12 @@ describe("API regression foundation: /api/user/sns-profile", () => {
       error: "他のユーザーのSNSプロフィールにはアクセスできません",
       code: "FORBIDDEN",
     });
-    expect(mockUserGet).not.toHaveBeenCalled();
+    expect(mockGetSnsProfiles).not.toHaveBeenCalled();
   });
 
   test("returns the authenticated user's sns profiles when authorized", async () => {
-    mockUserGet.mockResolvedValueOnce({
-      exists: true,
-      data: () => ({
-        snsProfiles: {
-          instagram: { handle: "@user-1" },
-        },
-      }),
+    mockGetSnsProfiles.mockResolvedValueOnce({
+      instagram: { handle: "@user-1" },
     });
 
     const { GET } = await loadRoute();
@@ -101,6 +88,6 @@ describe("API regression foundation: /api/user/sns-profile", () => {
         instagram: { handle: "@user-1" },
       },
     });
-    expect(mockUserGet).toHaveBeenCalledTimes(1);
+    expect(mockGetSnsProfiles).toHaveBeenCalledTimes(1);
   });
 });

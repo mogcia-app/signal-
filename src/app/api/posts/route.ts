@@ -1,42 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
-import type { AIReference } from "@/types/ai";
-import type { SnapshotReference as BaseSnapshotReference } from "@/types/ai";
-
-// 投稿データの型定義
-type SnapshotReference = Omit<BaseSnapshotReference, "score" | "summary"> & {
-  score?: number;
-  summary?: string;
-};
-
-interface PostData {
-  id?: string;
-  userId: string;
-  title: string;
-  content: string;
-  hashtags: string[];
-  postType: "feed" | "reel" | "story";
-  scheduledDate?: string;
-  scheduledTime?: string;
-  status: "draft" | "scheduled" | "published";
-  imageUrl?: string | null;
-  analytics?: {
-    likes: number;
-    comments: number;
-    shares: number;
-    reach: number;
-    engagementRate: number;
-    publishedAt: Date;
-  };
-  snapshotReferences?: SnapshotReference[];
-  generationReferences?: AIReference[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { PostRepository } from "@/repositories/post-repository";
 
 // Keep payload safely below serverless request size limits in production.
 const MAX_IMAGE_DATA_BYTES = 3_000_000;
@@ -115,7 +82,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const postData: Omit<PostData, "id"> = {
+    const postData = {
       userId,
       title,
       content,
@@ -130,28 +97,24 @@ export async function POST(request: NextRequest) {
       generationReferences: Array.isArray(generationReferences)
         ? generationReferences.slice(0, 8)
         : [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
 
-    console.log("About to save to Firestore:", postData);
-    console.log("保存される投稿タイプ:", postData.postType);
-    const docRef = await adminDb.collection("posts").add(postData);
+    const createdPost = await PostRepository.create(postData);
 
     // デバッグ用ログ
     console.log("Post created successfully:", {
-      id: docRef.id,
-      status: postData.status,
-      title: postData.title,
-      userId: postData.userId,
+      id: createdPost.id,
+      status: createdPost.status,
+      title: createdPost.title,
+      userId: createdPost.userId,
     });
 
     // 通知機能は削除されました
 
     return NextResponse.json({
-      id: docRef.id,
+      id: createdPost.id,
       message: "投稿が保存されました",
-      data: { ...postData, id: docRef.id },
+      data: createdPost,
     });
   } catch (error) {
     console.error("投稿作成エラー:", error);
@@ -202,9 +165,6 @@ export async function GET(request: NextRequest) {
     console.log("Firebase API key found, proceeding with database query");
     console.log("Query parameters:", { userId, status, postType, limit });
 
-    // Admin SDKでクエリ構築
-    let queryRef: FirebaseFirestore.Query = adminDb.collection("posts");
-
     if (!userId) {
       return NextResponse.json({ error: "userIdが必要です" }, { status: 400 });
     }
@@ -213,57 +173,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "別ユーザーの投稿にはアクセスできません" }, { status: 403 });
     }
 
-    console.log("Filtering posts by userId:", userId);
-    queryRef = queryRef.where("userId", "==", userId);
-    if (status) {
-      console.log("Filtering posts by status:", status);
-      queryRef = queryRef.where("status", "==", status);
-    }
-    if (postType) {
-      console.log("Filtering posts by postType:", postType);
-      queryRef = queryRef.where("postType", "==", postType);
-    }
+    const result = await PostRepository.list({
+      userId,
+      status,
+      postType,
+      limit,
+    });
 
-    const snapshot = await queryRef.get();
-    const posts = snapshot.docs
-      .map((doc) => {
-        const data = doc.data();
-        const { imageData: _imageData, ...rest } = data;
-        // 取得した投稿タイプのデバッグログ
-        console.log("取得した投稿タイプデバッグ:", {
-          postId: doc.id,
-          postType: data.postType,
-          title: data.title,
-        });
-        return {
-          id: doc.id,
-          ...rest,
-          createdAt: data.createdAt?.toDate?.() || data.createdAt,
-        };
-      })
-      .sort((a, b) => {
-        const aTime =
-          a.createdAt instanceof Date
-            ? a.createdAt.getTime()
-            : new Date(a.createdAt as string).getTime();
-        const bTime =
-          b.createdAt instanceof Date
-            ? b.createdAt.getTime()
-            : new Date(b.createdAt as string).getTime();
-        return bTime - aTime;
-      })
-      .slice(0, limit);
+    console.log("Fetched posts from collection:", result.posts.length, "records");
+    console.log("Posts query result sample:", result.posts.slice(0, 2));
 
-    console.log("Fetched posts from collection:", posts.length, "records");
-    console.log("Posts query result sample:", posts.slice(0, 2));
-
-    const response = {
-      posts,
-      total: snapshot.size,
-    };
-
-    console.log("Returning response:", response);
-    return NextResponse.json(response);
+    console.log("Returning response:", result);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("=== POSTS API ERROR ===");
     console.error("Error details:", error);

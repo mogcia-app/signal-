@@ -3,29 +3,13 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockUserProfilesGet = jest.fn();
-const mockUserProfilesAdd = jest.fn();
-const mockUserProfilesDocUpdate = jest.fn();
+const mockFindLegacyProfileByUserId = jest.fn();
 
-jest.mock("../../../lib/firebase-admin", () => ({
-  adminDb: {
-    collection: (name: string) => {
-      if (name !== "userProfiles") {
-        throw new Error(`Unexpected collection: ${name}`);
-      }
-
-      return {
-        where: () => ({
-          limit: () => ({
-            get: (...args: unknown[]) => mockUserProfilesGet(...args),
-          }),
-        }),
-        add: (...args: unknown[]) => mockUserProfilesAdd(...args),
-        doc: () => ({
-          update: (...args: unknown[]) => mockUserProfilesDocUpdate(...args),
-        }),
-      };
-    },
+jest.mock("@/repositories/user-profile-repository", () => ({
+  UserProfileRepository: {
+    findLegacyProfileByUserId: (...args: unknown[]) => mockFindLegacyProfileByUserId(...args),
+    createLegacyProfile: jest.fn(),
+    updateLegacyProfile: jest.fn(),
   },
 }));
 
@@ -40,15 +24,18 @@ jest.mock("../../../lib/server/auth-context", () => {
 describe("API regression foundation: /api/users", () => {
   const loadRoute = async () => import("./route");
   let consoleErrorSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   test("returns 401 when auth context rejects", async () => {
@@ -83,22 +70,15 @@ describe("API regression foundation: /api/users", () => {
       error: "他のユーザープロフィールにはアクセスできません",
       code: "FORBIDDEN",
     });
-    expect(mockUserProfilesGet).not.toHaveBeenCalled();
+    expect(mockFindLegacyProfileByUserId).not.toHaveBeenCalled();
   });
 
   test("returns the authenticated user's profile when authorized", async () => {
-    mockUserProfilesGet.mockResolvedValueOnce({
-      empty: false,
-      docs: [
-        {
-          id: "profile-1",
-          data: () => ({
-            userId: "user-1",
-            email: "user@example.com",
-            displayName: "User One",
-          }),
-        },
-      ],
+    mockFindLegacyProfileByUserId.mockResolvedValueOnce({
+      id: "profile-1",
+      userId: "user-1",
+      email: "user@example.com",
+      displayName: "User One",
     });
 
     const { GET } = await loadRoute();
@@ -117,6 +97,6 @@ describe("API regression foundation: /api/users", () => {
         displayName: "User One",
       },
     });
-    expect(mockUserProfilesGet).toHaveBeenCalledTimes(1);
+    expect(mockFindLegacyProfileByUserId).toHaveBeenCalledTimes(1);
   });
 });

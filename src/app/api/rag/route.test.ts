@@ -3,42 +3,14 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockVectorDocumentsGet = jest.fn();
-const mockLearningDataAdd = jest.fn();
+const mockSearchSimilarQuestions = jest.fn();
 
-jest.mock("firebase-admin", () => ({
-  firestore: {
-    FieldValue: {
-      increment: (value: number) => ({ __increment: value }),
-    },
-  },
-}));
-
-jest.mock("../../../lib/firebase-admin", () => ({
-  adminDb: {
-    collection: (name: string) => {
-      if (name === "vector_documents") {
-        return {
-          where: () => ({
-            where: () => ({
-              orderBy: () => ({
-                limit: () => ({
-                  get: (...args: unknown[]) => mockVectorDocumentsGet(...args),
-                }),
-              }),
-            }),
-          }),
-        };
-      }
-
-      if (name === "learning_data") {
-        return {
-          add: (...args: unknown[]) => mockLearningDataAdd(...args),
-        };
-      }
-
-      throw new Error(`Unexpected collection: ${name}`);
-    },
+jest.mock("@/repositories/rag-repository", () => ({
+  RagRepository: {
+    searchSimilarQuestions: (...args: unknown[]) => mockSearchSimilarQuestions(...args),
+    recordLearningData: jest.fn(),
+    saveVectorDocument: jest.fn(),
+    updateUsageCount: jest.fn(),
   },
 }));
 
@@ -53,15 +25,18 @@ jest.mock("../../../lib/server/auth-context", () => {
 describe("API regression foundation: /api/rag", () => {
   const loadRoute = async () => import("./route");
   let consoleErrorSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   test("returns 401 when auth context rejects", async () => {
@@ -98,33 +73,26 @@ describe("API regression foundation: /api/rag", () => {
       error: "他のユーザーのRAGデータにはアクセスできません",
       code: "FORBIDDEN",
     });
-    expect(mockVectorDocumentsGet).not.toHaveBeenCalled();
+    expect(mockSearchSimilarQuestions).not.toHaveBeenCalled();
   });
 
   test("returns similar questions for the authenticated user", async () => {
-    const matchingVector = new Array(100).fill(0);
-    matchingVector[0] = 1;
-    matchingVector[1] = 1;
-
-    mockVectorDocumentsGet.mockResolvedValueOnce({
-      docs: [
-        {
-          id: "vector-1",
-          data: () => ({
-            userId: "user-1",
-            question: "alpha beta",
-            answer: "Keep a consistent cadence",
-            vector: matchingVector,
-            category: "general",
-            tags: ["posting"],
-            createdAt: new Date("2024-01-01T00:00:00Z"),
-            updatedAt: new Date("2024-01-01T00:00:00Z"),
-            usageCount: 1,
-            qualityScore: 0.9,
-          }),
-        },
-      ],
-    });
+    mockSearchSimilarQuestions.mockResolvedValueOnce([
+      {
+        id: "vector-1",
+        userId: "user-1",
+        question: "alpha beta",
+        answer: "Keep a consistent cadence",
+        vector: [1, 1],
+        category: "general",
+        tags: ["posting"],
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+        updatedAt: new Date("2024-01-01T00:00:00Z"),
+        usageCount: 1,
+        qualityScore: 0.9,
+        similarity: 0.92,
+      },
+    ]);
 
     const { GET } = await loadRoute();
     const request = createJsonRequest(

@@ -31,9 +31,127 @@ interface FirestorePlanData {
   endDate?: admin.firestore.Timestamp | Date | string
   createdAt?: admin.firestore.Timestamp | Date
   updatedAt?: admin.firestore.Timestamp | Date
+  monthlyCalendarPlan?: unknown
+}
+
+export type CalendarPostType = "feed" | "reel" | "story"
+export type CalendarDayLabel = "日" | "月" | "火" | "水" | "木" | "金" | "土"
+
+export interface MonthlyCalendarPlanItem {
+  dateIso: string
+  dayLabel: CalendarDayLabel
+  postType: CalendarPostType
+  suggestedTime: string
+  title: string
+  direction?: string
+  hook?: string
+}
+
+export interface MonthlyCalendarPlanPayload {
+  startDate: string
+  endDate: string
+  items: MonthlyCalendarPlanItem[]
 }
 
 export class PlanRepository {
+  static async getActivePlanId(userId: string): Promise<string | null> {
+    const userDoc = await adminDb.collection("users").doc(userId).get()
+    if (!userDoc.exists) {
+      return null
+    }
+
+    const activePlanId = userDoc.data()?.activePlanId
+    return typeof activePlanId === "string" && activePlanId ? activePlanId : null
+  }
+
+  static async getOwnedPlanDocument(userId: string, planId: string): Promise<Record<string, unknown> | null> {
+    const planDoc = await adminDb.collection("plans").doc(planId).get()
+    if (!planDoc.exists) {
+      return null
+    }
+
+    const data = (planDoc.data() || null) as Record<string, unknown> | null
+    if (!data || String(data.userId || "") !== userId) {
+      return null
+    }
+
+    return {
+      id: planDoc.id,
+      ...data,
+    }
+  }
+
+  static async saveStrategyPlanData(params: {
+    userId: string
+    planId: string
+    strategyPlan: StrategyPlan
+  }): Promise<void> {
+    const ownedPlan = await this.getOwnedPlanDocument(params.userId, params.planId)
+    if (!ownedPlan) {
+      throw new Error("PLAN_NOT_FOUND")
+    }
+
+    await adminDb.collection("plans").doc(params.planId).set(
+      {
+        planData: {
+          weeklyPlans: params.strategyPlan.weeklyPlans,
+          schedule: params.strategyPlan.schedule,
+          expectedResults: params.strategyPlan.expectedResults,
+          difficulty: params.strategyPlan.difficulty,
+          monthlyGrowthRate: params.strategyPlan.monthlyGrowthRate,
+          features: params.strategyPlan.features || [],
+          suggestedContentTypes: params.strategyPlan.suggestedContentTypes || [],
+          startDate: params.strategyPlan.startDate,
+          endDate: params.strategyPlan.endDate,
+        },
+      },
+      { merge: true }
+    )
+  }
+
+  static async getMonthlyCalendarPlan(
+    userId: string,
+    planId: string,
+  ): Promise<MonthlyCalendarPlanPayload | null> {
+    const ownedPlan = await this.getOwnedPlanDocument(userId, planId)
+    if (!ownedPlan) {
+      return null
+    }
+
+    const monthlyPlan = (ownedPlan.monthlyCalendarPlan || null) as MonthlyCalendarPlanPayload | null
+    if (!monthlyPlan || typeof monthlyPlan !== "object") {
+      return null
+    }
+
+    return monthlyPlan
+  }
+
+  static async saveMonthlyCalendarPlan(params: {
+    userId: string
+    planId: string
+    startDate: string
+    endDate: string
+    items: MonthlyCalendarPlanItem[]
+  }): Promise<void> {
+    const ownedPlan = await this.getOwnedPlanDocument(params.userId, params.planId)
+    if (!ownedPlan) {
+      throw new Error("PLAN_NOT_FOUND")
+    }
+
+    await adminDb.collection("plans").doc(params.planId).set(
+      {
+        monthlyCalendarPlan: {
+          startDate: params.startDate,
+          endDate: params.endDate,
+          items: params.items,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    )
+  }
+
   /**
    * アクティブなPlanInputを取得（新しいアーキテクチャ）
    * 
@@ -45,16 +163,9 @@ export class PlanRepository {
   static async getActivePlanInput(userId: string, snsType: string = "instagram"): Promise<PlanInput | null> {
     try {
       // ユーザードキュメントを取得
-      const userDoc = await adminDb.collection("users").doc(userId).get()
-      if (!userDoc.exists) {
+      const activePlanId = await this.getActivePlanId(userId)
+      if (!activePlanId) {
         console.warn(`[PlanRepository] ユーザーが見つかりません: ${userId}`)
-        return null
-      }
-      
-      const userData = userDoc.data()
-      const activePlanId = userData?.activePlanId
-      
-      if (!activePlanId || typeof activePlanId !== "string") {
         return null
       }
       

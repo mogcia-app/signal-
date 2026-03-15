@@ -3,25 +3,11 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockAnalyticsGet = jest.fn();
-const mockAnalyticsUpdate = jest.fn();
+const mockFillMissingPublishedTime = jest.fn();
 
-jest.mock("@/lib/firebase-admin", () => ({
-  adminDb: {
-    collection: (name: string) => {
-      if (name !== "analytics") {
-        throw new Error(`Unexpected collection: ${name}`);
-      }
-
-      return {
-        where: () => ({
-          get: (...args: unknown[]) => mockAnalyticsGet(...args),
-        }),
-        doc: () => ({
-          update: (...args: unknown[]) => mockAnalyticsUpdate(...args),
-        }),
-      };
-    },
+jest.mock("@/repositories/analytics-repository", () => ({
+  AnalyticsRepository: {
+    fillMissingPublishedTime: (...args: unknown[]) => mockFillMissingPublishedTime(...args),
   },
 }));
 
@@ -36,15 +22,18 @@ jest.mock("@/lib/server/auth-context", () => {
 describe("API regression foundation: /api/analytics/update-published-time", () => {
   const loadRoute = async () => import("./route");
   let consoleErrorSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   test("returns 401 when auth context rejects", async () => {
@@ -83,32 +72,17 @@ describe("API regression foundation: /api/analytics/update-published-time", () =
     expect(body).toEqual({
       error: "他のユーザーのanalyticsは更新できません",
     });
-    expect(mockAnalyticsGet).not.toHaveBeenCalled();
+    expect(mockFillMissingPublishedTime).not.toHaveBeenCalled();
   });
 
   test("updates missing publishedTime values for the authenticated user", async () => {
-    const localPublishedAt = new Date(2024, 0, 2, 3, 4, 0);
-
-    mockAnalyticsGet.mockResolvedValueOnce({
-      docs: [
-        {
-          id: "analytics-1",
-          data: () => ({
-            userId: "user-1",
-            publishedAt: localPublishedAt,
-            publishedTime: "",
-          }),
-        },
-        {
-          id: "analytics-2",
-          data: () => ({
-            userId: "user-1",
-            publishedAt: new Date("2024-01-02T05:06:00Z"),
-            publishedTime: "05:06",
-          }),
-        },
-      ],
-    });
+    mockFillMissingPublishedTime.mockResolvedValueOnce([
+      {
+        id: "analytics-1",
+        publishedAt: "2024-01-02T03:04:00.000Z",
+        publishedTime: "03:04",
+      },
+    ]);
 
     const { POST } = await loadRoute();
     const request = createJsonRequest("http://localhost:3000/api/analytics/update-published-time", {
@@ -129,9 +103,7 @@ describe("API regression foundation: /api/analytics/update-published-time", () =
         publishedTime: "03:04",
       }),
     ]);
-    expect(mockAnalyticsUpdate).toHaveBeenCalledTimes(1);
-    expect(mockAnalyticsUpdate).toHaveBeenCalledWith({
-      publishedTime: "03:04",
-    });
+    expect(mockFillMissingPublishedTime).toHaveBeenCalledTimes(1);
+    expect(mockFillMissingPublishedTime).toHaveBeenCalledWith("user-1");
   });
 });

@@ -1,58 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "../../../lib/firebase-admin";
 import {
   buildErrorResponse,
   ForbiddenError,
   requireAuthContext,
 } from "../../../lib/server/auth-context";
-
-interface UserProfile {
-  id?: string;
-  userId: string;
-  email: string;
-  displayName?: string;
-  avatarUrl?: string;
-  bio?: string;
-  preferences: {
-    theme: "light" | "dark";
-    language: string;
-    notifications: boolean;
-  };
-  socialAccounts: {
-    instagram?: {
-      username: string;
-      connected: boolean;
-    };
-    twitter?: {
-      username: string;
-      connected: boolean;
-    };
-    youtube?: {
-      username: string;
-      connected: boolean;
-    };
-    tiktok?: {
-      username: string;
-      connected: boolean;
-    };
-  };
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-async function findUserProfileDocByUserId(userId: string) {
-  const snapshot = await adminDb
-    .collection("userProfiles")
-    .where("userId", "==", userId)
-    .limit(1)
-    .get();
-
-  if (snapshot.empty) {
-    return null;
-  }
-
-  return snapshot.docs[0];
-}
+import { UserProfileRepository } from "@/repositories/user-profile-repository";
 
 function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
   if (candidate === undefined || candidate === null || candidate === "") {
@@ -86,38 +38,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
     }
 
-    const existingProfile = await findUserProfileDocByUserId(resolvedUserId);
+    const existingProfile = await UserProfileRepository.findLegacyProfileByUserId(resolvedUserId);
     if (existingProfile) {
       return NextResponse.json({ error: "ユーザープロフィールは既に存在します" }, { status: 409 });
     }
 
-    const userData: Omit<UserProfile, "id"> = {
+    const userData = await UserProfileRepository.createLegacyProfile({
       userId: resolvedUserId,
       email,
-      displayName: typeof displayName === "string" ? displayName : "",
-      avatarUrl: typeof avatarUrl === "string" ? avatarUrl : "",
-      bio: typeof bio === "string" ? bio : "",
-      preferences: preferences || {
-        theme: "light",
-        language: "ja",
-        notifications: true,
-      },
-      socialAccounts: socialAccounts || {
-        instagram: { username: "", connected: false },
-        twitter: { username: "", connected: false },
-        youtube: { username: "", connected: false },
-        tiktok: { username: "", connected: false },
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const docRef = await adminDb.collection("userProfiles").add(userData);
+      displayName: typeof displayName === "string" ? displayName : undefined,
+      avatarUrl: typeof avatarUrl === "string" ? avatarUrl : undefined,
+      bio: typeof bio === "string" ? bio : undefined,
+      preferences,
+      socialAccounts,
+    });
 
     return NextResponse.json({
-      id: docRef.id,
+      id: userData.id,
       message: "ユーザープロフィールが作成されました",
-      data: { ...userData, id: docRef.id },
+      data: userData,
     });
   } catch (error) {
     console.error("ユーザープロフィール作成エラー:", error);
@@ -136,16 +75,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const resolvedUserId = resolveRequestedUserId(searchParams.get("userId"), uid);
-    const profileDoc = await findUserProfileDocByUserId(resolvedUserId);
-
-    if (!profileDoc) {
+    const userData = await UserProfileRepository.findLegacyProfileByUserId(resolvedUserId);
+    if (!userData) {
       return NextResponse.json({ error: "ユーザープロフィールが見つかりません" }, { status: 404 });
     }
-
-    const userData = {
-      id: profileDoc.id,
-      ...profileDoc.data(),
-    };
 
     return NextResponse.json({ user: userData });
   } catch (error) {
@@ -167,27 +100,21 @@ export async function PUT(request: NextRequest) {
     const { userId, displayName, avatarUrl, bio, preferences, socialAccounts } = body;
     const resolvedUserId = resolveRequestedUserId(userId, uid);
 
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
+    const updated = await UserProfileRepository.updateLegacyProfile(resolvedUserId, {
+      displayName,
+      avatarUrl,
+      bio,
+      preferences,
+      socialAccounts,
+    });
 
-    if (displayName !== undefined) {updateData.displayName = displayName;}
-    if (avatarUrl !== undefined) {updateData.avatarUrl = avatarUrl;}
-    if (bio !== undefined) {updateData.bio = bio;}
-    if (preferences !== undefined) {updateData.preferences = preferences;}
-    if (socialAccounts !== undefined) {updateData.socialAccounts = socialAccounts;}
-
-    const profileDoc = await findUserProfileDocByUserId(resolvedUserId);
-
-    if (!profileDoc) {
+    if (!updated) {
       return NextResponse.json({ error: "ユーザープロフィールが見つかりません" }, { status: 404 });
     }
 
-    await adminDb.collection("userProfiles").doc(profileDoc.id).update(updateData);
-
     return NextResponse.json({
       message: "ユーザープロフィールが更新されました",
-      id: profileDoc.id,
+      id: updated.id,
     });
   } catch (error) {
     console.error("ユーザープロフィール更新エラー:", error);

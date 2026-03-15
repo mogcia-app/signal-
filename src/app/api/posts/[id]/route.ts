@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "../../../../lib/firebase-admin";
-import * as admin from "firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { deletePostImageByUrl, uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
-import type { WriteResult } from "firebase-admin/firestore";
+import { PostRepository } from "@/repositories/post-repository";
 
 // Keep payload safely below serverless request size limits in production.
 const MAX_IMAGE_DATA_BYTES = 3_000_000;
@@ -32,27 +30,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.log("=== POST GET REQUEST ===");
     console.log("Post ID:", postId);
 
-    const docRef = adminDb.collection("posts").doc(postId);
-    const docSnap = await docRef.get();
-
-    if (!docSnap.exists) {
+    const post = await PostRepository.getById(uid, postId);
+    if (!post) {
       return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
     }
 
-    const postData = {
-      id: docSnap.id,
-      ...(docSnap.data()
-        ? (() => {
-            const { imageData: _imageData, ...rest } = docSnap.data() as Record<string, unknown>;
-            return rest;
-          })()
-        : {}),
-      createdAt: docSnap.data()?.createdAt?.toDate?.() || docSnap.data()?.createdAt,
-      updatedAt: docSnap.data()?.updatedAt?.toDate?.() || docSnap.data()?.updatedAt,
-    };
-
     console.log("Post retrieved successfully:", postId);
-    return NextResponse.json({ post: postData });
+    return NextResponse.json({ post });
   } catch (error) {
     console.error("=== POST GET ERROR ===");
     console.error("Error details:", error);
@@ -97,25 +81,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     console.log("Post ID:", postId);
     console.log("Update data:", { title, content, hashtags, postType, status });
 
-    const docRef = adminDb.collection("posts").doc(postId);
-    const currentDoc = await docRef.get();
-    const currentData = currentDoc.exists ? currentDoc.data() : null;
-    const currentImageUrl = typeof currentData?.imageUrl === "string" ? currentData.imageUrl : "";
-
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
     let uploadedImageUrl: string | null = null;
+    const updates: Record<string, unknown> = {};
 
     // 更新するフィールドのみ追加
-    if (title !== undefined) {updateData.title = title;}
-    if (content !== undefined) {updateData.content = content;}
-    if (hashtags !== undefined) {updateData.hashtags = hashtags;}
-    if (postType !== undefined) {updateData.postType = postType;}
-    if (scheduledDate !== undefined) {updateData.scheduledDate = scheduledDate;}
-    if (scheduledTime !== undefined) {updateData.scheduledTime = scheduledTime;}
-    if (status !== undefined) {updateData.status = status;}
-    if (imageUrl !== undefined) {updateData.imageUrl = imageUrl;}
+    if (title !== undefined) {updates.title = title;}
+    if (content !== undefined) {updates.content = content;}
+    if (hashtags !== undefined) {updates.hashtags = hashtags;}
+    if (postType !== undefined) {updates.postType = postType;}
+    if (scheduledDate !== undefined) {updates.scheduledDate = scheduledDate;}
+    if (scheduledTime !== undefined) {updates.scheduledTime = scheduledTime;}
+    if (status !== undefined) {updates.status = status;}
+    if (imageUrl !== undefined) {updates.imageUrl = imageUrl;}
     if (imageData !== undefined) {
       const normalizedImageData = typeof imageData === "string" ? imageData.trim() : imageData;
       if (typeof normalizedImageData === "string" && normalizedImageData.length > 0) {
@@ -143,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             imageDataUrl: normalizedImageData,
           });
           uploadedImageUrl = uploaded.imageUrl;
-          updateData.imageUrl = uploadedImageUrl;
+          updates.imageUrl = uploadedImageUrl;
         } catch (uploadError) {
           console.error("投稿画像アップロードエラー:", uploadError);
           return NextResponse.json(
@@ -152,74 +129,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           );
         }
       } else if (!normalizedImageData) {
-        updateData.imageUrl = null;
+        updates.imageUrl = null;
       }
-      updateData.imageData = null;
+      updates.imageData = null;
     }
-    if (analytics !== undefined) {updateData.analytics = analytics;}
+    if (analytics !== undefined) {updates.analytics = analytics;}
 
-    await docRef.update(updateData);
-    if (uploadedImageUrl && currentImageUrl && currentImageUrl !== uploadedImageUrl) {
-      await deletePostImageByUrl(currentImageUrl);
-    } else if (imageData !== undefined && !body.imageData && currentImageUrl) {
-      await deletePostImageByUrl(currentImageUrl);
-    }
-
-    // scheduledDateまたはscheduledTimeが変更された場合、対応するanalyticsコレクションのpublishedAtも更新
-    if (scheduledDate !== undefined || scheduledTime !== undefined) {
-      try {
-        // 該当するanalyticsデータを取得
-        const analyticsSnapshot = await adminDb
-          .collection("analytics")
-          .where("userId", "==", uid)
-          .where("postId", "==", postId)
-          .get();
-
-        if (!analyticsSnapshot.empty) {
-          // 投稿データを取得してscheduledDateとscheduledTimeを確認
-          const postDoc = await docRef.get();
-          const postData = postDoc.data();
-          
-          // 更新後のscheduledDateとscheduledTimeを取得
-          const finalScheduledDate = scheduledDate !== undefined ? scheduledDate : postData?.scheduledDate;
-          const finalScheduledTime = scheduledTime !== undefined ? scheduledTime : postData?.scheduledTime;
-
-          if (finalScheduledDate) {
-            // scheduledDateとscheduledTimeからpublishedAtを計算
-            let publishedAtDate: Date;
-            if (finalScheduledDate instanceof Date) {
-              publishedAtDate = new Date(finalScheduledDate);
-            } else if (typeof finalScheduledDate === "string") {
-              publishedAtDate = new Date(finalScheduledDate);
-            } else {
-              publishedAtDate = new Date();
-            }
-
-            // scheduledTimeがある場合、時刻を設定
-            if (finalScheduledTime && typeof finalScheduledTime === "string") {
-              const [hours, minutes] = finalScheduledTime.split(":").map(Number);
-              if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
-                publishedAtDate.setHours(hours, minutes, 0, 0);
-              }
-            }
-
-            // すべてのanalyticsドキュメントを更新
-            const batch = adminDb.batch();
-            analyticsSnapshot.docs.forEach((analyticsDoc) => {
-              batch.update(analyticsDoc.ref, {
-                publishedAt: admin.firestore.Timestamp.fromDate(publishedAtDate),
-                publishedTime: finalScheduledTime || publishedAtDate.toTimeString().slice(0, 5),
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-            });
-            await batch.commit();
-            console.log(`Updated publishedAt for ${analyticsSnapshot.size} analytics records for post ${postId}`);
-          }
-        }
-      } catch (analyticsUpdateError) {
-        console.error("Analytics publishedAt update error:", analyticsUpdateError);
-        // analytics更新に失敗しても投稿更新は成功しているので続行
-      }
+    const { previousImageUrl } = await PostRepository.updateById({
+      userId: uid,
+      postId,
+      updates,
+    });
+    if (uploadedImageUrl && previousImageUrl && previousImageUrl !== uploadedImageUrl) {
+      await deletePostImageByUrl(previousImageUrl);
+    } else if (imageData !== undefined && !body.imageData && previousImageUrl) {
+      await deletePostImageByUrl(previousImageUrl);
     }
 
     console.log("Post updated successfully:", postId);
@@ -260,73 +184,7 @@ export async function DELETE(
     console.log("=== POST DELETE REQUEST ===");
     console.log("Post ID:", postId);
 
-    // 投稿の存在確認
-    const docRef = adminDb.collection("posts").doc(postId);
-    const docSnap = await docRef.get();
-
-    if (!docSnap.exists) {
-      console.log("Post not found:", postId);
-      return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
-    }
-
-    const postData = docSnap.data();
-
-    // 投稿を削除
-    await docRef.delete();
-
-    // 投稿に紐づくデータを削除（analytics、フィードバック、アクションログ）
-    try {
-      const cleanupTasks: Array<Promise<WriteResult[] | void>> = [];
-
-      // analyticsコレクションから削除（postIdで紐づく分析データ）
-      if (postData?.userId) {
-        const analyticsSnapshot = await adminDb
-          .collection("analytics")
-          .where("userId", "==", postData.userId)
-          .where("postId", "==", postId)
-          .get();
-
-        if (!analyticsSnapshot.empty) {
-          const batch = adminDb.batch();
-          analyticsSnapshot.forEach((analyticsDoc) => batch.delete(analyticsDoc.ref));
-          cleanupTasks.push(batch.commit());
-          console.log(`Deleted ${analyticsSnapshot.size} analytics records for post ${postId}`);
-        }
-      }
-
-      // ai_post_feedback の削除
-      const feedbackSnapshot = await adminDb
-        .collection("ai_post_feedback")
-        .where("postId", "==", postId)
-        .get();
-
-      if (!feedbackSnapshot.empty) {
-        const batch = adminDb.batch();
-        feedbackSnapshot.forEach((feedbackDoc) => batch.delete(feedbackDoc.ref));
-        cleanupTasks.push(batch.commit());
-        console.log(`Deleted ${feedbackSnapshot.size} feedback records for post ${postId}`);
-      }
-
-      // ai_action_logs の削除（フォーカスエリアに postId を含むエントリ）
-      if (postData?.userId) {
-        const actionSnapshot = await adminDb
-          .collection("ai_action_logs")
-          .where("userId", "==", postData.userId)
-          .where("focusArea", "==", `learning-${postId}`)
-          .get();
-
-        if (!actionSnapshot.empty) {
-          const batch = adminDb.batch();
-          actionSnapshot.forEach((actionDoc) => batch.delete(actionDoc.ref));
-          cleanupTasks.push(batch.commit());
-          console.log(`Deleted ${actionSnapshot.size} action logs for post ${postId}`);
-        }
-      }
-
-      await Promise.all(cleanupTasks);
-    } catch (cleanupError) {
-      console.error("⚠️ Cleanup error after post deletion:", cleanupError);
-    }
+    await PostRepository.deleteById({ userId: uid, postId });
 
     console.log("Post deleted successfully:", postId);
     return NextResponse.json({

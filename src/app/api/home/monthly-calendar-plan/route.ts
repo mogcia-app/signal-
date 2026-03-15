@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as admin from "firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
-import { adminDb } from "@/lib/firebase-admin";
-import { COLLECTIONS } from "@/repositories/collections";
-
-type CalendarPostType = "feed" | "reel" | "story";
-type CalendarDayLabel = "日" | "月" | "火" | "水" | "木" | "金" | "土";
-
-interface MonthlyCalendarPlanItem {
-  dateIso: string;
-  dayLabel: CalendarDayLabel;
-  postType: CalendarPostType;
-  suggestedTime: string;
-  title: string;
-  direction?: string;
-  hook?: string;
-}
-
-interface MonthlyCalendarPlanPayload {
-  startDate: string;
-  endDate: string;
-  items: MonthlyCalendarPlanItem[];
-}
+import {
+  CalendarDayLabel,
+  CalendarPostType,
+  MonthlyCalendarPlanItem,
+  PlanRepository,
+} from "@/repositories/plan-repository";
 
 const isValidPostType = (value: unknown): value is CalendarPostType =>
   value === "feed" || value === "reel" || value === "story";
@@ -88,17 +72,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: null });
     }
 
-    const planDoc = await adminDb.collection(COLLECTIONS.PLANS).doc(planId).get();
-    if (!planDoc.exists) {
-      return NextResponse.json({ success: true, data: null });
-    }
-
-    const planData = planDoc.data() || {};
-    if (String(planData.userId || "") !== uid) {
-      return NextResponse.json({ error: "権限がありません" }, { status: 403 });
-    }
-
-    const monthlyPlan = (planData.monthlyCalendarPlan || null) as MonthlyCalendarPlanPayload | null;
+    const monthlyPlan = await PlanRepository.getMonthlyCalendarPlan(uid, planId);
     if (!monthlyPlan || typeof monthlyPlan !== "object") {
       return NextResponse.json({ success: true, data: null });
     }
@@ -140,30 +114,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "startDate/endDate が不正です" }, { status: 400 });
     }
 
-    const planDocRef = adminDb.collection(COLLECTIONS.PLANS).doc(planId);
-    const planDoc = await planDocRef.get();
-    if (!planDoc.exists) {
+    const ownedPlan = await PlanRepository.getOwnedPlanDocument(uid, planId);
+    if (!ownedPlan) {
       return NextResponse.json({ error: "計画が見つかりません" }, { status: 404 });
-    }
-    const planData = planDoc.data() || {};
-    if (String(planData.userId || "") !== uid) {
-      return NextResponse.json({ error: "権限がありません" }, { status: 403 });
     }
 
     const normalizedItems = normalizeItems(body.items);
-
-    await planDocRef.set(
-      {
-        monthlyCalendarPlan: {
-          startDate: body.startDate,
-          endDate: body.endDate,
-          items: normalizedItems,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+    await PlanRepository.saveMonthlyCalendarPlan({
+      userId: uid,
+      planId,
+      startDate: body.startDate,
+      endDate: body.endDate,
+      items: normalizedItems,
+    });
 
     return NextResponse.json({
       success: true,

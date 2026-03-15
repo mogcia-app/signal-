@@ -3,24 +3,14 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockUserGet = jest.fn();
-const mockUserUpdate = jest.fn();
+const mockGetUserDocument = jest.fn();
+const mockUpdateUserDocument = jest.fn();
 
-jest.mock("../../../../lib/firebase-admin", () => ({
-  getAdminDb: () => ({
-    collection: (name: string) => {
-      if (name !== "users") {
-        throw new Error(`Unexpected collection: ${name}`);
-      }
-
-      return {
-        doc: () => ({
-          get: (...args: unknown[]) => mockUserGet(...args),
-          update: (...args: unknown[]) => mockUserUpdate(...args),
-        }),
-      };
-    },
-  }),
+jest.mock("@/repositories/user-profile-repository", () => ({
+  UserProfileRepository: {
+    getUserDocument: (...args: unknown[]) => mockGetUserDocument(...args),
+    updateUserDocument: (...args: unknown[]) => mockUpdateUserDocument(...args),
+  },
 }));
 
 jest.mock("../../../../lib/server/auth-context", () => {
@@ -35,17 +25,20 @@ describe("API regression foundation: /api/user/profile", () => {
   const loadRoute = async () => import("./route");
   let consoleErrorSpy: jest.SpyInstance;
   let consoleLogSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
     consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   test("returns 401 when auth context rejects", async () => {
@@ -79,26 +72,16 @@ describe("API regression foundation: /api/user/profile", () => {
       success: false,
       error: "Unauthorized",
     });
-    expect(mockUserGet).not.toHaveBeenCalled();
+    expect(mockGetUserDocument).not.toHaveBeenCalled();
   });
 
   test("updates the authenticated user's profile", async () => {
-    mockUserGet
-      .mockResolvedValueOnce({
-        exists: true,
-        data: () => ({
-          email: "user@example.com",
-          businessInfo: { companyName: "Old Co" },
-        }),
-      })
-      .mockResolvedValueOnce({
-        id: "user-1",
-        data: () => ({
-          email: "user@example.com",
-          name: "Updated User",
-          businessInfo: { companyName: "New Co" },
-        }),
-      });
+    mockUpdateUserDocument.mockResolvedValueOnce({
+      id: "user-1",
+      email: "user@example.com",
+      name: "Updated User",
+      businessInfo: { companyName: "New Co" },
+    });
 
     const { PUT } = await loadRoute();
     const request = createJsonRequest("http://localhost:3000/api/user/profile", {
@@ -127,11 +110,10 @@ describe("API regression foundation: /api/user/profile", () => {
       name: "Updated User",
       businessInfo: { companyName: "New Co" },
     });
-    expect(mockUserUpdate).toHaveBeenCalledTimes(1);
-    expect(mockUserUpdate.mock.calls[0][0]).toMatchObject({
+    expect(mockUpdateUserDocument).toHaveBeenCalledTimes(1);
+    expect(mockUpdateUserDocument).toHaveBeenCalledWith("user-1", {
       name: "Updated User",
       businessInfo: { companyName: "New Co" },
     });
-    expect(mockUserUpdate.mock.calls[0][0].updatedAt).toEqual(expect.any(String));
   });
 });

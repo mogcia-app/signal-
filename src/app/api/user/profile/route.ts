@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb } from "../../../../lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "../../../../lib/server/auth-context";
-import { UserProfile, UserProfileUpdate } from "../../../../types/user";
+import { UserProfileRepository } from "@/repositories/user-profile-repository";
+import { UserProfileUpdate } from "../../../../types/user";
 
 /**
  * ユーザープロファイル取得API
@@ -29,17 +29,11 @@ export async function GET(request: NextRequest) {
     }
 
     console.log("📊 ユーザープロファイル取得:", { userId });
-
-    // Admin SDKを使用してFirestoreからユーザー情報を取得
-    const db = getAdminDb();
-    const userDoc = await db.collection("users").doc(userId).get();
-
-    if (!userDoc.exists) {
+    const userData = await UserProfileRepository.getUserDocument(userId);
+    if (!userData) {
       console.log("❌ ユーザーが見つかりません:", userId);
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
-
-    const userData = { id: userDoc.id, ...userDoc.data() } as UserProfile;
     console.log("✅ ユーザープロファイル取得成功:", userData.email);
 
     return NextResponse.json({
@@ -77,53 +71,11 @@ export async function PUT(request: NextRequest) {
     }
 
     console.log("📝 ユーザープロファイル更新:", { userId, updates });
-
-    // Admin SDKを使用してFirestoreのユーザー情報を取得
-    const db = getAdminDb();
-    const userDoc = await db.collection("users").doc(userId).get();
-
-    if (!userDoc.exists) {
+    const updatedUserData = await UserProfileRepository.updateUserDocument(userId, updates);
+    if (!updatedUserData) {
       console.log("❌ ユーザーが見つかりません:", userId);
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
-
-    // 既存のデータを取得
-    const existingData = userDoc.data() || {};
-
-    // 更新データを準備
-    // businessInfoが含まれている場合は、既存のbusinessInfoとマージ
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (updates.name !== undefined) {
-      updateData.name = updates.name;
-    }
-
-    if (updates.businessInfo !== undefined) {
-      // 既存のbusinessInfoとマージ
-      const existingBusinessInfo = existingData.businessInfo || {};
-      updateData.businessInfo = {
-        ...existingBusinessInfo,
-        ...updates.businessInfo,
-      };
-    }
-
-    if (updates.snsAISettings !== undefined) {
-      // 既存のsnsAISettingsとマージ
-      const existingSnsAISettings = existingData.snsAISettings || {};
-      updateData.snsAISettings = {
-        ...existingSnsAISettings,
-        ...updates.snsAISettings,
-      };
-    }
-
-    // Admin SDKを使用してFirestoreを更新
-    await db.collection("users").doc(userId).update(updateData);
-
-    // 更新後のデータを取得
-    const updatedUserDoc = await db.collection("users").doc(userId).get();
-    const updatedUserData = { id: updatedUserDoc.id, ...updatedUserDoc.data() } as UserProfile;
 
     console.log("✅ ユーザープロファイル更新成功:", updatedUserData.email);
 

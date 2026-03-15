@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "../../../lib/firebase-admin";
 import {
   buildErrorResponse,
   ForbiddenError,
   requireAuthContext,
 } from "../../../lib/server/auth-context";
-
-interface FeedbackData {
-  id?: string;
-  userId: string;
-  pageType: "analytics" | "monthly-report" | "plan" | "posts";
-  satisfaction: "satisfied" | "dissatisfied";
-  feedback: string;
-  contextData: Record<string, unknown>;
-  timestamp: Date;
-  processed: boolean;
-}
+import { FeedbackRepository } from "@/repositories/feedback-repository";
 
 function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
   if (candidate === undefined || candidate === null || candidate === "") {
@@ -51,22 +40,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const feedbackData: FeedbackData = {
+    const created = await FeedbackRepository.create({
       userId: resolvedUserId,
       pageType,
       satisfaction,
       feedback,
       contextData: contextData || {},
-      timestamp: new Date(),
-      processed: false,
-    };
-
-    const docRef = await adminDb.collection("user_feedback").add(feedbackData);
+    });
 
     return NextResponse.json({
       success: true,
       message: "フィードバックが保存されました",
-      id: docRef.id,
+      id: created.id,
     });
   } catch (error) {
     console.error("フィードバック保存エラー:", error);
@@ -87,26 +72,7 @@ export async function GET(request: NextRequest) {
     const resolvedUserId = resolveRequestedUserId(searchParams.get("userId"), uid);
     const pageType = searchParams.get("pageType");
 
-    let queryRef: FirebaseFirestore.Query = adminDb
-      .collection("user_feedback")
-      .where("userId", "==", resolvedUserId)
-      .orderBy("timestamp", "desc")
-      .limit(50);
-
-    if (pageType) {
-      queryRef = adminDb
-        .collection("user_feedback")
-        .where("userId", "==", resolvedUserId)
-        .where("pageType", "==", pageType)
-        .orderBy("timestamp", "desc")
-        .limit(50);
-    }
-
-    const snapshot = await queryRef.get();
-    const feedbacks = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const feedbacks = await FeedbackRepository.listByUser(resolvedUserId, pageType);
 
     return NextResponse.json({
       success: true,

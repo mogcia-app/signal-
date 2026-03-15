@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
 import {
   buildErrorResponse,
   ForbiddenError,
   requireAuthContext,
 } from "@/lib/server/auth-context";
+import { UserProfileRepository } from "@/repositories/user-profile-repository";
 
 function resolveRequestedUserId(candidate: unknown, authenticatedUid: string): string {
   if (candidate === undefined || candidate === null || candidate === "") {
@@ -34,30 +34,19 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "必須フィールドが不足しています" }, { status: 400 });
     }
 
-    const userDocRef = adminDb.collection("users").doc(resolvedUserId);
-    const userDoc = await userDocRef.get();
+    const snsProfiles = await UserProfileRepository.updateSnsProfile(
+      resolvedUserId,
+      platform,
+      profileData as Record<string, unknown>,
+    );
 
-    if (!userDoc.exists) {
+    if (!snsProfiles) {
       return NextResponse.json({ error: "ユーザーが見つかりません" }, { status: 404 });
     }
 
-    const userData = userDoc.data() || {};
-    const currentSnsProfiles = (userData.snsProfiles as Record<string, unknown> | undefined) || {};
-
-    currentSnsProfiles[platform] = {
-      ...(currentSnsProfiles[platform] as Record<string, unknown> | undefined),
-      ...(profileData as Record<string, unknown>),
-      lastUpdated: new Date().toISOString(),
-    };
-
-    await userDocRef.update({
-      snsProfiles: currentSnsProfiles,
-      updatedAt: new Date(),
-    });
-
     return NextResponse.json({
       message: "SNSプロフィールが更新されました",
-      snsProfiles: currentSnsProfiles,
+      snsProfiles,
     });
   } catch (error) {
     console.error("SNSプロフィール更新エラー:", error);
@@ -78,14 +67,10 @@ export async function GET(request: NextRequest) {
     const resolvedUserId = resolveRequestedUserId(searchParams.get("userId"), uid);
     const platform = searchParams.get("platform");
 
-    const userDoc = await adminDb.collection("users").doc(resolvedUserId).get();
-
-    if (!userDoc.exists) {
+    const snsProfiles = await UserProfileRepository.getSnsProfiles(resolvedUserId);
+    if (!snsProfiles) {
       return NextResponse.json({ error: "ユーザーが見つかりません" }, { status: 404 });
     }
-
-    const userData = userDoc.data() || {};
-    const snsProfiles = (userData.snsProfiles as Record<string, unknown> | undefined) || {};
 
     if (platform) {
       return NextResponse.json({
