@@ -3,29 +3,13 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockPostsGet = jest.fn();
 const mockGetUserProfile = jest.fn();
 const mockCanAccessFeature = jest.fn();
+const mockPostList = jest.fn();
 
-jest.mock("../../../lib/firebase-admin", () => ({
-  adminDb: {
-    collection: (name: string) => {
-      if (name !== "posts") {
-        throw new Error(`Unexpected collection: ${name}`);
-      }
-
-      return {
-        where: () => ({
-          get: (...args: unknown[]) => mockPostsGet(...args),
-          where: () => ({
-            get: (...args: unknown[]) => mockPostsGet(...args),
-            where: () => ({
-              get: (...args: unknown[]) => mockPostsGet(...args),
-            }),
-          }),
-        }),
-      };
-    },
+jest.mock("@/repositories/post-repository", () => ({
+  PostRepository: {
+    list: (...args: unknown[]) => mockPostList(...args),
   },
 }));
 
@@ -98,23 +82,29 @@ describe("API regression foundation: /api/posts", () => {
     expect(body).toEqual({
       error: "別ユーザーの投稿にはアクセスできません",
     });
-    expect(mockPostsGet).not.toHaveBeenCalled();
+    expect(mockPostList).not.toHaveBeenCalled();
   });
 
   test("returns posts for the authenticated user when feature access is allowed", async () => {
-    mockPostsGet.mockResolvedValueOnce({
-      size: 1,
-      docs: [
+    mockPostList.mockResolvedValueOnce({
+      total: 1,
+      posts: [
         {
           id: "post-1",
-          data: () => ({
-            userId: "user-1",
-            title: "Post title",
-            content: "Post body",
-            postType: "feed",
-            status: "draft",
-            createdAt: { toDate: () => new Date("2024-01-02T03:04:05Z") },
-          }),
+          userId: "user-1",
+          title: "Post title",
+          content: "Post body",
+          postType: "feed",
+          status: "draft",
+          hashtags: [],
+          scheduledDate: null,
+          scheduledTime: null,
+          imageUrl: null,
+          analytics: null,
+          snapshotReferences: [],
+          generationReferences: [],
+          createdAt: new Date("2024-01-02T03:04:05Z"),
+          updatedAt: new Date("2024-01-02T03:04:05Z"),
         },
       ],
     });
@@ -139,5 +129,11 @@ describe("API regression foundation: /api/posts", () => {
     );
     expect(mockGetUserProfile).toHaveBeenCalledWith("user-1");
     expect(mockCanAccessFeature).toHaveBeenCalledWith({ plan: "matsu" }, "canAccessPosts");
+    expect(mockPostList).toHaveBeenCalledWith({
+      userId: "user-1",
+      status: null,
+      postType: null,
+      limit: 50,
+    });
   });
 });

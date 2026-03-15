@@ -5,32 +5,13 @@ import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 const mockRequireAuthContext = jest.fn();
 const mockGetUserProfile = jest.fn();
 const mockCanAccessFeature = jest.fn();
-const mockPostGet = jest.fn();
+const mockPostGetById = jest.fn();
 
-jest.mock("../../../../lib/firebase-admin", () => ({
-  adminDb: {
-    collection: (name: string) => {
-      if (name !== "posts") {
-        throw new Error(`Unexpected collection: ${name}`);
-      }
-
-      return {
-        doc: () => ({
-          get: (...args: unknown[]) => mockPostGet(...args),
-        }),
-      };
-    },
-  },
-}));
-
-jest.mock("firebase-admin", () => ({
-  firestore: {
-    Timestamp: {
-      fromDate: jest.fn(),
-    },
-    FieldValue: {
-      serverTimestamp: jest.fn(),
-    },
+jest.mock("@/repositories/post-repository", () => ({
+  PostRepository: {
+    getById: (...args: unknown[]) => mockPostGetById(...args),
+    updateById: jest.fn(),
+    deleteById: jest.fn(),
   },
 }));
 
@@ -106,20 +87,26 @@ describe("API regression foundation: /api/posts/[id]", () => {
     expect(body).toEqual({
       error: "投稿管理機能は、現在のプランではご利用いただけません。",
     });
-    expect(mockPostGet).not.toHaveBeenCalled();
+    expect(mockPostGetById).not.toHaveBeenCalled();
   });
 
   test("returns the requested post when authorized", async () => {
-    mockPostGet.mockResolvedValueOnce({
-      exists: true,
+    mockPostGetById.mockResolvedValueOnce({
       id: "post-1",
-      data: () => ({
-        userId: "user-1",
-        title: "Post title",
-        content: "Post body",
-        createdAt: { toDate: () => new Date("2024-01-01T00:00:00Z") },
-        updatedAt: { toDate: () => new Date("2024-01-02T00:00:00Z") },
-      }),
+      userId: "user-1",
+      title: "Post title",
+      content: "Post body",
+      hashtags: [],
+      postType: "feed",
+      status: "draft",
+      scheduledDate: null,
+      scheduledTime: null,
+      imageUrl: null,
+      analytics: null,
+      snapshotReferences: [],
+      generationReferences: [],
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-02T00:00:00Z"),
     });
 
     const { GET } = await loadRoute();
@@ -135,5 +122,6 @@ describe("API regression foundation: /api/posts/[id]", () => {
         title: "Post title",
       }),
     );
+    expect(mockPostGetById).toHaveBeenCalledWith("user-1", "post-1");
   });
 });
