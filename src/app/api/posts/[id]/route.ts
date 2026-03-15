@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../lib/firebase-admin";
 import * as admin from "firebase-admin";
-import { requireAuthContext } from "@/lib/server/auth-context";
+import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
 import { canAccessFeature } from "@/lib/plan-access";
 import { deletePostImageByUrl, uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
@@ -56,7 +56,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error("=== POST GET ERROR ===");
     console.error("Error details:", error);
-    return NextResponse.json({ error: "投稿の取得に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -229,7 +230,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error("=== POST UPDATE ERROR ===");
     console.error("Error details:", error);
-    return NextResponse.json({ error: "投稿の更新に失敗しました" }, { status: 500 });
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 
@@ -336,14 +338,7 @@ export async function DELETE(
     console.error("=== POST DELETE ERROR ===");
     console.error("Error details:", error);
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "投稿の削除に失敗しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const { status, body } = buildErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

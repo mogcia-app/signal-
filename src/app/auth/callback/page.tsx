@@ -120,15 +120,14 @@ function AuthCallbackContent() {
           window.sessionStorage.setItem(AUTH_CALLBACK_IN_PROGRESS_KEY, Date.now().toString());
         }
 
-        // URLクエリパラメータからuserIdを取得
-        const userId = searchParams.get("userId");
+        const token = searchParams.get("token")?.trim() ?? "";
 
-        if (!userId) {
+        if (!token) {
           router.replace("/login");
           return;
         }
 
-        console.log("[AuthCallback] 認証処理を開始します。userId:", userId);
+        console.log("[AuthCallback] 認証処理を開始します。token present:", Boolean(token));
 
         setStatus("認証トークンを生成中...");
 
@@ -140,7 +139,7 @@ function AuthCallbackContent() {
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ userId }),
+              body: JSON.stringify({ token }),
             });
 
             if (!res.ok) {
@@ -233,10 +232,8 @@ function AuthCallbackContent() {
         
         if (errorCode === "auth/network-request-failed" || errMessage.includes("ERR_CONNECTION_CLOSED") || errMessage.includes("network")) {
           errorMessage = "ネットワークエラーが発生しました。インターネット接続を確認し、しばらく待ってから再度お試しください。";
-        } else if (errMessage.includes("User ID not found")) {
-          errorMessage = "ユーザーIDが見つかりませんでした。URLを確認してください。";
-        } else if (errMessage.includes("Invalid user ID")) {
-          errorMessage = "無効なユーザーIDです。";
+        } else if (errMessage.includes("token")) {
+          errorMessage = "ログインリンクが無効か期限切れです。新しいリンクを取得してください。";
         } else if (errMessage.includes("not active")) {
           errorMessage = "アカウントがアクティブではありません。管理者にお問い合わせください。";
         } else if (errMessage.includes("ネットワーク接続がありません")) {

@@ -136,15 +136,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
         return;
       }
 
-      const userIdFromQuery =
-        typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search).get("userId")
-          : null;
-      if (userIdFromQuery) {
-        router.replace(`/auth/callback?userId=${encodeURIComponent(userIdFromQuery)}`);
-        return;
-      }
-
       const next =
         typeof window !== "undefined"
           ? `${window.location.pathname}${window.location.search}`

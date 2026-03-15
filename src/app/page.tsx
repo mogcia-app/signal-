@@ -15,15 +15,11 @@ function HomeContent() {
         // 既にログインしている場合は/homeにリダイレクト
         router.push("/dashboard");
       } else {
-        // 未ログインの場合
-        const userId = searchParams.get("userId");
-        
-        if (userId) {
-          // ポータルサイトからのアクセス（userIdパラメータあり）
-          // 認証コールバックページにリダイレクトして自動ログイン
-          router.push(`/auth/callback?userId=${encodeURIComponent(userId)}`);
+        const token = searchParams.get("token");
+
+        if (token) {
+          router.push(`/auth/callback?token=${encodeURIComponent(token)}`);
         } else {
-          // userIdなしの直接アクセスは/loginへリダイレクト
           router.push("/login");
         }
       }
