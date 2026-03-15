@@ -40,11 +40,13 @@ describe("API regression foundation: /api/posts/[id]", () => {
   const loadRoute = async () => import("./route");
   let consoleErrorSpy: jest.SpyInstance;
   let consoleLogSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
     mockGetUserProfile.mockResolvedValue({ plan: "matsu" });
     mockCanAccessFeature.mockReturnValue(true);
@@ -53,6 +55,7 @@ describe("API regression foundation: /api/posts/[id]", () => {
   afterEach(() => {
     consoleErrorSpy.mockRestore();
     consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   test("returns 401 when auth context rejects", async () => {
