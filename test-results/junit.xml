@@ -1,103 +1,111 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="42" failures="0" errors="0" time="0.689">
-  <testsuite name="GET /api/analytics/report-complete" errors="0" failures="0" skipped="0" timestamp="2026-02-17T21:48:06" time="0.166" tests="4">
-    <testcase classname="GET /api/analytics/report-complete" name="returns success response with stable payload shape" time="0.081">
+<testsuites name="jest tests" tests="41" failures="0" errors="0" time="1.358">
+  <testsuite name="API regression foundation: /api/home/monthly-calendar-plan" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:20" time="0.366" tests="6">
+    <testcase classname="API regression foundation: /api/home/monthly-calendar-plan" name="returns 401 when auth context rejects" time="0.269">
     </testcase>
-    <testcase classname="GET /api/analytics/report-complete" name="returns 403 when user cannot access report feature" time="0.001">
+    <testcase classname="API regression foundation: /api/home/monthly-calendar-plan" name="returns null data when no active plan can be resolved" time="0.001">
     </testcase>
-    <testcase classname="GET /api/analytics/report-complete" name="returns 400 when date format is invalid" time="0.001">
+    <testcase classname="API regression foundation: /api/home/monthly-calendar-plan" name="returns the saved monthly calendar plan" time="0.001">
     </testcase>
-    <testcase classname="GET /api/analytics/report-complete" name="returns mapped error response when exception is thrown" time="0.003">
+    <testcase classname="API regression foundation: /api/home/monthly-calendar-plan" name="returns 400 when startDate or endDate is invalid" time="0.001">
     </testcase>
-  </testsuite>
-  <testsuite name="Date Utils" errors="0" failures="0" skipped="0" timestamp="2026-02-17T21:48:07" time="0.057" tests="8">
-    <testcase classname="Date Utils &gt; formatDate" name="should format date correctly" time="0.032">
+    <testcase classname="API regression foundation: /api/home/monthly-calendar-plan" name="returns 404 when the plan does not belong to the user" time="0.001">
     </testcase>
-    <testcase classname="Date Utils &gt; formatDate" name="should handle different dates" time="0.001">
-    </testcase>
-    <testcase classname="Date Utils &gt; isToday" name="should return true for today" time="0">
-    </testcase>
-    <testcase classname="Date Utils &gt; isToday" name="should return false for yesterday" time="0">
-    </testcase>
-    <testcase classname="Date Utils &gt; isToday" name="should return false for tomorrow" time="0">
-    </testcase>
-    <testcase classname="Date Utils &gt; getDaysBetween" name="should calculate days correctly" time="0">
-    </testcase>
-    <testcase classname="Date Utils &gt; getDaysBetween" name="should handle same day" time="0">
-    </testcase>
-    <testcase classname="Date Utils &gt; getDaysBetween" name="should handle reversed dates" time="0">
+    <testcase classname="API regression foundation: /api/home/monthly-calendar-plan" name="saves the normalized monthly calendar plan" time="0.002">
     </testcase>
   </testsuite>
-  <testsuite name="buildReviewContext" errors="0" failures="0" skipped="0" timestamp="2026-02-17T21:48:07" time="0.019" tests="3">
-    <testcase classname="buildReviewContext" name="builds postTypeInfo and topPostInfo from analytics" time="0.004">
+  <testsuite name="API regression foundation: /api/users" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:20" time="0.081" tests="3">
+    <testcase classname="API regression foundation: /api/users" name="returns 401 when auth context rejects" time="0.062">
     </testcase>
-    <testcase classname="buildReviewContext" name="aggregates strengths/actions into postSummaryInsights and resolves plan title" time="0.001">
+    <testcase classname="API regression foundation: /api/users" name="returns 403 when another user&apos;s profile is requested" time="0.001">
     </testcase>
-    <testcase classname="buildReviewContext" name="builds businessInfoText and aiSettingsText when user data exists" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="Validation Functions" errors="0" failures="0" skipped="0" timestamp="2026-02-17T21:48:07" time="0.015" tests="12">
-    <testcase classname="Validation Functions &gt; isValidEmail" name="should validate correct email addresses" time="0.001">
-    </testcase>
-    <testcase classname="Validation Functions &gt; isValidEmail" name="should reject invalid email addresses" time="0">
-    </testcase>
-    <testcase classname="Validation Functions &gt; isValidEmail" name="should handle edge cases" time="0">
-    </testcase>
-    <testcase classname="Validation Functions &gt; isValidURL" name="should validate correct URLs" time="0.001">
-    </testcase>
-    <testcase classname="Validation Functions &gt; isValidURL" name="should reject invalid URLs" time="0">
-    </testcase>
-    <testcase classname="Validation Functions &gt; isValidURL" name="should handle edge cases" time="0">
-    </testcase>
-    <testcase classname="Validation Functions &gt; validatePassword" name="should accept strong passwords" time="0">
-    </testcase>
-    <testcase classname="Validation Functions &gt; validatePassword" name="should reject short passwords" time="0">
-    </testcase>
-    <testcase classname="Validation Functions &gt; validatePassword" name="should reject passwords without uppercase" time="0.001">
-    </testcase>
-    <testcase classname="Validation Functions &gt; validatePassword" name="should reject passwords without lowercase" time="0">
-    </testcase>
-    <testcase classname="Validation Functions &gt; validatePassword" name="should reject passwords without numbers" time="0">
-    </testcase>
-    <testcase classname="Validation Functions &gt; validatePassword" name="should return multiple errors" time="0">
+    <testcase classname="API regression foundation: /api/users" name="returns the authenticated user&apos;s profile when authorized" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="analyzeFeedbackSentiment" errors="0" failures="0" skipped="0" timestamp="2026-02-17T21:48:07" time="0.024" tests="3">
-    <testcase classname="analyzeFeedbackSentiment" name="returns null when no entry is in period" time="0">
+  <testsuite name="API regression foundation: /api/user/sns-profile" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:20" time="0.094" tests="3">
+    <testcase classname="API regression foundation: /api/user/sns-profile" name="returns 401 when auth context rejects" time="0.065">
     </testcase>
-    <testcase classname="analyzeFeedbackSentiment" name="prioritizes goalAchievementProspect over sentiment and aggregates counts" time="0.001">
+    <testcase classname="API regression foundation: /api/user/sns-profile" name="returns 403 when another user&apos;s sns profile is requested" time="0">
     </testcase>
-    <testcase classname="analyzeFeedbackSentiment" name="sorts posts by score desc then total desc and keeps top 6" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="cn (className utility)" errors="0" failures="0" skipped="0" timestamp="2026-02-17T21:48:07" time="0.024" tests="7">
-    <testcase classname="cn (className utility)" name="should merge className strings" time="0.004">
-    </testcase>
-    <testcase classname="cn (className utility)" name="should handle conditional classes" time="0">
-    </testcase>
-    <testcase classname="cn (className utility)" name="should handle Tailwind conflicting classes" time="0">
-    </testcase>
-    <testcase classname="cn (className utility)" name="should handle undefined and null" time="0">
-    </testcase>
-    <testcase classname="cn (className utility)" name="should handle empty string" time="0">
-    </testcase>
-    <testcase classname="cn (className utility)" name="should handle arrays" time="0">
-    </testcase>
-    <testcase classname="cn (className utility)" name="should handle objects for conditional classes" time="0.001">
+    <testcase classname="API regression foundation: /api/user/sns-profile" name="returns the authenticated user&apos;s sns profiles when authorized" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="buildPostDeepDive" errors="0" failures="0" skipped="0" timestamp="2026-02-17T21:48:07" time="0.016" tests="3">
-    <testcase classname="buildPostDeepDive" name="builds deep dive with computed engagementRate and snapshot reference" time="0">
+  <testsuite name="API regression foundation: /api/review/meta/publish" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.076" tests="3">
+    <testcase classname="API regression foundation: /api/review/meta/publish" name="returns 401 when auth context rejects" time="0.06">
     </testcase>
-    <testcase classname="buildPostDeepDive" name="returns engagementRate 0 when reach is 0" time="0.001">
+    <testcase classname="API regression foundation: /api/review/meta/publish" name="returns 400 when required publish fields are missing" time="0">
     </testcase>
-    <testcase classname="buildPostDeepDive" name="applies limit and keeps map insertion order" time="0">
+    <testcase classname="API regression foundation: /api/review/meta/publish" name="returns template publish response for authenticated requests" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="Example Test Suite" errors="0" failures="0" skipped="0" timestamp="2026-02-17T21:48:07" time="0.012" tests="2">
-    <testcase classname="Example Test Suite" name="should pass this test" time="0">
+  <testsuite name="API regression foundation: /api/feedback" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.075" tests="3">
+    <testcase classname="API regression foundation: /api/feedback" name="returns 401 when auth context rejects" time="0.056">
     </testcase>
-    <testcase classname="Example Test Suite" name="should calculate correctly" time="0">
+    <testcase classname="API regression foundation: /api/feedback" name="returns 403 when another user&apos;s feedback is requested" time="0">
+    </testcase>
+    <testcase classname="API regression foundation: /api/feedback" name="creates feedback for the authenticated user" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="API regression foundation: /api/posts/[id]" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.077" tests="3">
+    <testcase classname="API regression foundation: /api/posts/[id]" name="returns 401 when auth context rejects" time="0.06">
+    </testcase>
+    <testcase classname="API regression foundation: /api/posts/[id]" name="returns 403 when plan access is denied" time="0.001">
+    </testcase>
+    <testcase classname="API regression foundation: /api/posts/[id]" name="returns the requested post when authorized" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="API regression foundation: /api/posts" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.077" tests="3">
+    <testcase classname="API regression foundation: /api/posts" name="returns 401 when auth context rejects" time="0.056">
+    </testcase>
+    <testcase classname="API regression foundation: /api/posts" name="returns 403 when another user&apos;s posts are requested" time="0.002">
+    </testcase>
+    <testcase classname="API regression foundation: /api/posts" name="returns posts for the authenticated user when feature access is allowed" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="API regression foundation: /api/review/meta/insights" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.08" tests="2">
+    <testcase classname="API regression foundation: /api/review/meta/insights" name="returns 401 when auth context rejects" time="0.065">
+    </testcase>
+    <testcase classname="API regression foundation: /api/review/meta/insights" name="returns template insights for authenticated requests" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="API regression foundation: /api/rag" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.073" tests="3">
+    <testcase classname="API regression foundation: /api/rag" name="returns 401 when auth context rejects" time="0.057">
+    </testcase>
+    <testcase classname="API regression foundation: /api/rag" name="returns 403 when another user&apos;s rag data is requested" time="0.001">
+    </testcase>
+    <testcase classname="API regression foundation: /api/rag" name="returns similar questions for the authenticated user" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="API regression foundation: /api/user/profile" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.065" tests="3">
+    <testcase classname="API regression foundation: /api/user/profile" name="returns 401 when auth context rejects" time="0.049">
+    </testcase>
+    <testcase classname="API regression foundation: /api/user/profile" name="returns 403 when another user&apos;s profile is requested" time="0.001">
+    </testcase>
+    <testcase classname="API regression foundation: /api/user/profile" name="updates the authenticated user&apos;s profile" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="API regression foundation: /api/home/weekly-plans" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.077" tests="4">
+    <testcase classname="API regression foundation: /api/home/weekly-plans" name="returns 401 when auth context rejects" time="0.058">
+    </testcase>
+    <testcase classname="API regression foundation: /api/home/weekly-plans" name="returns 404 when user profile is missing" time="0.001">
+    </testcase>
+    <testcase classname="API regression foundation: /api/home/weekly-plans" name="returns null data when no weekly plans are available" time="0">
+    </testcase>
+    <testcase classname="API regression foundation: /api/home/weekly-plans" name="returns weekly plan data for authenticated users" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="API regression foundation: /api/analytics/update-published-time" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.067" tests="3">
+    <testcase classname="API regression foundation: /api/analytics/update-published-time" name="returns 401 when auth context rejects" time="0.053">
+    </testcase>
+    <testcase classname="API regression foundation: /api/analytics/update-published-time" name="returns 403 when another user&apos;s analytics are updated" time="0">
+    </testcase>
+    <testcase classname="API regression foundation: /api/analytics/update-published-time" name="updates missing publishedTime values for the authenticated user" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="API regression foundation: /api/invite/consume" errors="0" failures="0" skipped="0" timestamp="2026-03-17T13:02:21" time="0.092" tests="2">
+    <testcase classname="API regression foundation: /api/invite/consume" name="allows public access with a valid invite token" time="0.035">
+    </testcase>
+    <testcase classname="API regression foundation: /api/invite/consume" name="returns 400 when token is missing" time="0.03">
     </testcase>
   </testsuite>
 </testsuites>
