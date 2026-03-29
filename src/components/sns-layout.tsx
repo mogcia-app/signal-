@@ -285,6 +285,20 @@ export default function SNSLayout({
                 <span>投稿一覧</span>
               </Link>
             )}
+            {/* {canAccessFeature(userProfile, "canAccessPosts") && (
+              <Link
+                href="/instagram/scheduler"
+                onClick={() => handleSidebarTrackedClick("sidebar.scheduler", "予約投稿", "/instagram/scheduler")}
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                  pathname === "/instagram/scheduler"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <CalendarClock size={18} className="flex-shrink-0" />
+                <span>予約投稿</span>
+              </Link>
+            )} */}
             {/* {canAccessFeature(userProfile, "canAccessAnalytics") && (
               <Link
                 href="/analytics/feed"
