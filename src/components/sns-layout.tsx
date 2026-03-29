@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
-import { Menu, X, User, Sparkles, Home, BookOpen, Target, BarChart3 } from "lucide-react";
+import { Menu, X, User, Sparkles, Home, BookOpen, Target, BarChart3, CalendarClock } from "lucide-react";
 import { trackPageButtonClick, trackSidebarClick } from "@/lib/ui/sidebar-click-tracker";
 
 interface SNSLayoutProps {
@@ -398,6 +398,26 @@ export default function SNSLayout({
               >
                 <BarChart3 size={18} className="flex-shrink-0" />
                 <span>ログイン監査ログ</span>
+              </Link>
+            )}
+            {isAdminConsoleRole && (
+              <Link
+                href="/admin/instagram-accounts"
+                onClick={() =>
+                  handleSidebarTrackedClick(
+                    "sidebar.admin_instagram_accounts",
+                    "Instagram連携管理",
+                    "/admin/instagram-accounts",
+                  )
+                }
+                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                  pathname === "/admin/instagram-accounts"
+                    ? "bg-orange-100 text-orange-800 font-medium"
+                    : "text-black hover:bg-gray-100"
+                }`}
+              >
+                <CalendarClock size={18} className="flex-shrink-0" />
+                <span>Instagram連携管理</span>
               </Link>
             )}
             <Link

@@ -77,8 +77,8 @@ const looksAbstract = (value: string): boolean =>
   /価値のある|関心を得|工夫が必要|改善余地|重要です|強化し|活用し|最適化/i.test(String(value || ""));
 const containsAwkwardTerm = (value: string): boolean =>
   /配信/.test(String(value || ""));
-const isConcreteAction = (value: string): boolean =>
-  /次回は/.test(value) && /判定/.test(value) && /[0-9一二三四五六七八九十]+(本|秒|文字|行|回)/.test(value);
+const isStrategicAction = (value: string): boolean =>
+  /次回は/.test(value) && /判定/.test(value) && /(投稿|リール|フィード|ストーリーズ|テーマ|型|切り口|構成|訴求|指標)/.test(value);
 
 const detectIntent = (message: string): AdvisorIntent => {
   const lower = message.toLowerCase();
@@ -339,6 +339,7 @@ const isThinWhy = (value: string): boolean => {
 };
 
 const buildAdviceFromData = (params: {
+  postType: "feed" | "reel" | "story";
   postContent: string;
   comparisonContext: ComparisonContext;
   likes: number;
@@ -348,7 +349,7 @@ const buildAdviceFromData = (params: {
   reposts: number;
   followerIncrease: number;
 }): GeneratedAdvice => {
-  const { postContent, comparisonContext, likes, comments, shares, saves, reposts, followerIncrease } = params;
+  const { postType, postContent, comparisonContext, likes, comments, shares, saves, reposts, followerIncrease } = params;
   const snippet = buildContentSnippet(postContent);
   const metrics = [
     { key: "保存", value: saves },
@@ -360,6 +361,17 @@ const buildAdviceFromData = (params: {
   const top = metrics[0];
   const second = metrics[1];
   const weakest = metrics[metrics.length - 1];
+  const contentType =
+    top.key === "保存"
+      ? "チェックリスト型"
+      : top.key === "シェア"
+        ? "比較・共有型"
+        : top.key === "コメント"
+          ? "意見募集型"
+          : followerIncrease > 0
+            ? "フォロー転換型"
+            : "結論先出し型";
+  const channelText = postType === "reel" ? "リール" : postType === "story" ? "ストーリーズ" : "フィード";
 
   const compareText = comparisonContext.hasReliableComparison ? `${comparisonContext.summary} ` : "";
   const why =
@@ -371,7 +383,7 @@ const buildAdviceFromData = (params: {
     comparisonContext.hasReliableComparison && comparisonContext.weakerMetric
       ? comparisonContext.weakerMetric
       : weakest.key;
-  const action = `次回は冒頭1行を15文字以内で結論先出しにし、末尾に質問CTAを1つだけ入れて${targetMetric}を補強してください。判定は次回投稿で${targetMetric}が今回値を上回れば継続です。`;
+  const action = `次回は${channelText}で「${snippet}」と近いテーマを${contentType}として再現し、今回強かった${top.key}をもう一度取りにいってください。判定は次回投稿で${top.key}を維持しつつ、弱かった${targetMetric}が今回値を上回れば継続です。`;
 
   return { why, action };
 };
@@ -398,6 +410,7 @@ const generateGrowthAdvice = async (params: {
 }): Promise<GeneratedAdvice> => {
   if (!openai) {
     return buildAdviceFromData({
+      postType: params.postType,
       postContent: params.postContent,
       comparisonContext: params.comparisonContext,
       likes: params.analytics.likes,
@@ -417,7 +430,9 @@ const generateGrowthAdvice = async (params: {
     "whyには最低2つの数値（例: いいね34、保存21）を必ず含め、類似投稿との差分にも1文で触れてください。",
     "「配信」という語は使わず、必ず「投稿」と表現してください。",
     "投稿日時の生データ（YYYY/MM/DD HH:mm）は繰り返し記載しないでください。",
-    "actionは次回投稿で再現性を検証できる内容にしてください。必ず「次回は〜。判定は〜。」の形にしてください。",
+    "actionは投稿文の書き方指示ではなく、次回どんな投稿方針で再検証するかの戦略提案にしてください。",
+    "actionは必ず「次回は〜。判定は〜。」の形にしてください。",
+    "actionでは文字数、CTA文言、語尾修正などの細かい執筆指示は避け、テーマ・型・訴求・投稿形式・狙う指標に言及してください。",
     "「エンゲージメント」「エンゲージメント率」という語は一切使わないでください。",
     "ハッシュタグ・タグ・#記号には一切触れないでください。",
     "抽象語（価値がある、関心が高い、工夫が必要 等）だけで終わらせないでください。",
@@ -489,6 +504,7 @@ const generateGrowthAdvice = async (params: {
 
     if (!why || containsHashtagTerm(why) || containsAwkwardTerm(why) || looksAbstract(why)) {
       why = buildAdviceFromData({
+        postType: params.postType,
         postContent: params.postContent,
         comparisonContext: params.comparisonContext,
         likes: params.analytics.likes,
@@ -501,6 +517,7 @@ const generateGrowthAdvice = async (params: {
     }
     if (isThinWhy(why)) {
       const enriched = buildAdviceFromData({
+        postType: params.postType,
         postContent: params.postContent,
         comparisonContext: params.comparisonContext,
         likes: params.analytics.likes,
@@ -513,8 +530,9 @@ const generateGrowthAdvice = async (params: {
       why = enriched;
     }
 
-    if (!action || containsHashtagTerm(action) || !isConcreteAction(action) || containsEngagementTerm(action)) {
+    if (!action || containsHashtagTerm(action) || !isStrategicAction(action) || containsEngagementTerm(action)) {
       action = buildAdviceFromData({
+        postType: params.postType,
         postContent: params.postContent,
         comparisonContext: params.comparisonContext,
         likes: params.analytics.likes,
@@ -530,6 +548,7 @@ const generateGrowthAdvice = async (params: {
   } catch (error) {
     console.error("instagram posts advisor ai generation error:", error);
     return buildAdviceFromData({
+      postType: params.postType,
       postContent: params.postContent,
       comparisonContext: params.comparisonContext,
       likes: params.analytics.likes,
@@ -591,6 +610,7 @@ const buildSummary = (params: {
     interactionCount === 0;
 
   let whyReason = buildAdviceFromData({
+    postType,
     postContent: _postContent,
     comparisonContext,
     likes,
@@ -606,22 +626,22 @@ const buildSummary = (params: {
 
   if (allCoreZero) {
     action =
-      "次回は投稿前にストーリーズで予告を1本入れ、投稿直後30分で既存フォロワーへ導線を作って初速を確保してください。";
+      "次回は同テーマをいきなり再投稿せず、ストーリーズで需要確認してから本投稿に戻してください。判定は次回投稿で保存かコメントのどちらかが0を超えれば継続です。";
   } else if (messageLower.includes("なぜ伸") || messageLower.includes("バズ") || messageLower.includes("良かった")) {
     action =
-      "次回は今回反応が強かった要素（保存されやすい情報または共有したくなる一言）を冒頭に再配置して再現性を検証してください。";
+      "次回は今回反応が強かった切り口を別テーマでもう1本再現してください。判定は次回投稿で保存またはシェアが今回水準に近ければ継続です。";
   } else if (messageLower.includes("悪") || messageLower.includes("弱") || messageLower.includes("直")) {
     action =
-      "次回は1投稿1メッセージに絞り、画像内テキストを15文字以内に短縮して主題の伝達速度を上げてください。";
+      "次回は同じテーマでも切り口を1つに絞った別パターンで再検証してください。判定は次回投稿で弱かった指標が今回値を上回れば継続です。";
   } else if (postType === "reel" && reelSkipRate > 0) {
     action =
-      "次回リールは冒頭2秒で結論を先出しし、テロップを短文化してスキップ率の改善を確認してください。";
+      "次回は同テーマをリールで再検証しつつ、冒頭で結論が伝わる構成を優先してください。判定は次回投稿でスキップ率が今回より下がれば継続です。";
   } else if (profileVisits > 0 && profileFollows === 0) {
     action =
-      "次回はCTAを『プロフィールの固定投稿へ』の1文に統一し、プロフィール遷移後の離脱を減らしてください。";
+      "次回はプロフィール遷移後に何を得られるかが明確な訴求テーマで再投稿してください。判定は次回投稿でフォロワー増加が今回値を上回れば継続です。";
   } else if (externalLinkTaps > 0) {
     action =
-      "次回はリンクタップ前提で、投稿本文中に『誰向けか』を1行追加し、無駄クリックを減らしてください。";
+      "次回はクリック誘導より保存されやすい情報提供型へ寄せて再検証してください。判定は次回投稿で保存が今回値を上回れば継続です。";
   }
 
   if (aiGeneratedAdvice) {
@@ -635,7 +655,7 @@ const buildSummary = (params: {
   } else if (intent === "fix") {
     replyLines.push(whyReason, "", "次の1アクション", action);
   } else if (intent === "next_change") {
-    replyLines.push(whyReason, "", "次の1アクション", action);
+    replyLines.push("次の1アクション", action);
   } else {
     replyLines.push(whyReason, "", "次の1アクション", action);
   }

@@ -3,7 +3,7 @@
 import { createNextJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockGetMetaReviewInsights = jest.fn();
+const mockGetMetaReviewConnectionStatus = jest.fn();
 
 jest.mock("@/lib/server/auth-context", () => {
   const actual = jest.requireActual("@/lib/server/auth-context");
@@ -14,10 +14,10 @@ jest.mock("@/lib/server/auth-context", () => {
 });
 
 jest.mock("@/lib/server/meta-review", () => ({
-  getMetaReviewInsights: (...args: unknown[]) => mockGetMetaReviewInsights(...args),
+  getMetaReviewConnectionStatus: (...args: unknown[]) => mockGetMetaReviewConnectionStatus(...args),
 }));
 
-describe("API regression foundation: /api/review/meta/insights", () => {
+describe("API regression foundation: /api/review/meta/connect/status", () => {
   const loadRoute = async () => import("./route");
   let consoleWarnSpy: jest.SpyInstance;
 
@@ -25,16 +25,12 @@ describe("API regression foundation: /api/review/meta/insights", () => {
     jest.clearAllMocks();
     consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
-    mockGetMetaReviewInsights.mockResolvedValue({
-      mediaId: "media-1",
-      metrics: [
-        { name: "impressions", value: 1200 },
-        { name: "reach", value: 980 },
-        { name: "likes", value: 140 },
-        { name: "comments", value: 12 },
-        { name: "saved", value: 22 },
-      ],
-      note: "Metrics fetched from the Instagram Graph API for the requested media.",
+    mockGetMetaReviewConnectionStatus.mockResolvedValue({
+      pageConnected: true,
+      instagramConnected: true,
+      pageId: "page-1",
+      instagramAccountId: "ig-1",
+      note: "Connected page token can access the linked Instagram Business account.",
     });
   });
 
@@ -50,9 +46,7 @@ describe("API regression foundation: /api/review/meta/insights", () => {
     mockRequireAuthContext.mockRejectedValueOnce(new UnauthorizedError("Missing Bearer token"));
 
     const { GET } = await loadRoute();
-    const request = createNextJsonRequest(
-      "http://localhost:3000/api/review/meta/insights?mediaId=media-1",
-    );
+    const request = createNextJsonRequest("http://localhost:3000/api/review/meta/connect/status");
     const response = await GET(request as never);
     const body = await readJson<{ success: boolean; error: string; code: string }>(response);
 
@@ -64,29 +58,32 @@ describe("API regression foundation: /api/review/meta/insights", () => {
     });
   });
 
-  test("returns live insights for authenticated requests", async () => {
+  test("returns live connection status for authenticated requests", async () => {
     const { GET } = await loadRoute();
-    const request = createNextJsonRequest(
-      "http://localhost:3000/api/review/meta/insights?mediaId=media-1",
-    );
+    const request = createNextJsonRequest("http://localhost:3000/api/review/meta/connect/status");
     const response = await GET(request as never);
     const body = await readJson<{
       success: boolean;
       data: {
-        mediaId: string;
-        metrics: Array<{ name: string; value: number }>;
+        pageConnected: boolean;
+        instagramConnected: boolean;
+        pageId: string | null;
+        instagramAccountId: string | null;
         note: string;
       };
     }>(response);
 
     expect(response.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.data.mediaId).toBe("media-1");
-    expect(body.data.metrics).toHaveLength(5);
-    expect(body.data.note).toContain("Instagram Graph API");
-    expect(mockGetMetaReviewInsights).toHaveBeenCalledWith({
-      clientId: "user-1",
-      mediaId: "media-1",
+    expect(body).toEqual({
+      success: true,
+      data: {
+        pageConnected: true,
+        instagramConnected: true,
+        pageId: "page-1",
+        instagramAccountId: "ig-1",
+        note: "Connected page token can access the linked Instagram Business account.",
+      },
     });
+    expect(mockGetMetaReviewConnectionStatus).toHaveBeenCalledWith("user-1");
   });
 });

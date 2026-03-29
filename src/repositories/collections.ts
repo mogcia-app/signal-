@@ -27,6 +27,9 @@ export const COLLECTIONS = {
   MONTHLY_KPI_SUMMARIES: "monthly_kpi_summaries",
   TOOL_MAINTENANCE: "toolMaintenance",
   SERVICE_RATE_LIMITS: "serviceRateLimits",
+  INSTAGRAM_ACCOUNTS: "instagram_accounts",
+  INSTAGRAM_OAUTH_STATES: "instagram_oauth_states",
+  SCHEDULED_POSTS: "scheduled_posts",
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
