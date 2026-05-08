@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
-import { getUserProfile } from "@/lib/server/user-profile";
-import { canAccessFeature } from "@/lib/plan-access";
 import * as admin from "firebase-admin";
 
 interface AnalyticsData {
@@ -183,15 +181,6 @@ export async function GET(request: NextRequest) {
       rateLimit: { key: "analytics-performance-score", limit: 30, windowSeconds: 60 },
       auditEventName: "analytics_performance_score_access",
     });
-
-    // プラン階層別アクセス制御: 松プランのみアクセス可能
-    const userProfile = await getUserProfile(uid);
-    if (!canAccessFeature(userProfile, "canAccessAnalytics")) {
-      return NextResponse.json(
-        { error: "投稿分析機能は、現在のプランではご利用いただけません。" },
-        { status: 403 }
-      );
-    }
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date"); // YYYY-MM形式

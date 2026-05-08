@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
-import { getUserProfile } from "@/lib/server/user-profile";
-import { canAccessFeature } from "@/lib/plan-access";
 import { deletePostImageByUrl, uploadPostImageDataUrl } from "@/lib/server/post-image-storage";
 import { PostRepository } from "@/repositories/post-repository";
 
@@ -14,15 +12,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
     });
-
-    // プラン階層別アクセス制御: 梅プランでは投稿詳細取得にアクセスできない
-    const userProfile = await getUserProfile(uid);
-    if (!canAccessFeature(userProfile, "canAccessPosts")) {
-      return NextResponse.json(
-        { error: "投稿管理機能は、現在のプランではご利用いただけません。" },
-        { status: 403 }
-      );
-    }
 
     const resolvedParams = await params;
     const postId = resolvedParams.id;
@@ -51,15 +40,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
     });
-
-    // プラン階層別アクセス制御: 梅プランでは投稿更新にアクセスできない
-    const userProfile = await getUserProfile(uid);
-    if (!canAccessFeature(userProfile, "canAccessPosts")) {
-      return NextResponse.json(
-        { error: "投稿管理機能は、現在のプランではご利用いただけません。" },
-        { status: 403 }
-      );
-    }
 
     const resolvedParams = await params;
     const postId = resolvedParams.id;
@@ -168,15 +148,6 @@ export async function DELETE(
     const { uid } = await requireAuthContext(request, {
       requireContract: true,
     });
-
-    // プラン階層別アクセス制御: 梅プランでは投稿削除にアクセスできない
-    const userProfile = await getUserProfile(uid);
-    if (!canAccessFeature(userProfile, "canAccessPosts")) {
-      return NextResponse.json(
-        { error: "投稿管理機能は、現在のプランではご利用いただけません。" },
-        { status: 403 }
-      );
-    }
 
     const resolvedParams = await params;
     const postId = resolvedParams.id;

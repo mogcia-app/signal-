@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { adminDb } from "@/lib/firebase-admin";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
-import { getUserProfile } from "@/lib/server/user-profile";
-import { canAccessFeature } from "@/lib/plan-access";
 import * as admin from "firebase-admin";
 
 const openai = process.env.OPENAI_API_KEY
@@ -47,15 +45,6 @@ export async function GET(request: NextRequest) {
       rateLimit: { key: "analytics-monthly-proposals", limit: 10, windowSeconds: 60 },
       auditEventName: "analytics_monthly_proposals_access",
     });
-
-    // プラン階層別アクセス制御: 松プランのみアクセス可能
-    const userProfile = await getUserProfile(uid);
-    if (!canAccessFeature(userProfile, "canAccessReport")) {
-      return NextResponse.json(
-        { success: false, error: "月次レポート機能は、現在のプランではご利用いただけません。" },
-        { status: 403 }
-      );
-    }
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date") || new Date().toISOString().slice(0, 7); // YYYY-MM形式
@@ -463,4 +452,3 @@ function parseActionPlansFromText(text: string): ActionPlan[] {
   
   return actionPlans;
 }
-

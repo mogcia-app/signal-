@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthContext } from "@/lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
-import { canAccessFeature } from "@/lib/plan-access";
 import { buildKpiDashboard } from "@/domain/analysis/kpi/usecases/build-kpi-dashboard";
 import { aggregateKpiInput } from "@/domain/analysis/kpi/usecases/aggregate-kpi-input";
 import { KpiDashboardRepository } from "@/repositories/kpi-dashboard-repository";
@@ -11,13 +10,6 @@ export async function GET(request: NextRequest) {
     const { uid } = await requireAuthContext(request);
 
     const userProfile = await getUserProfile(uid);
-    if (!canAccessFeature(userProfile, "canAccessKPI")) {
-      return NextResponse.json(
-        { success: false, error: "KPIダッシュボード機能は、現在のプランではご利用いただけません。" },
-        { status: 403 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
     if (!date) {

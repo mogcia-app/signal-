@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/auth-context";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { canAccessFeature } from "../lib/plan-access";
 import { ReactNode, useState, useEffect } from "react";
 import { Menu, X, User, Sparkles, Home, BookOpen, Target, BarChart3, CalendarClock } from "lucide-react";
 import { trackPageButtonClick, trackSidebarClick } from "@/lib/ui/sidebar-click-tracker";
@@ -271,20 +270,18 @@ export default function SNSLayout({
               <span>投稿ラボ</span>
             </Link> */}
 
-            {canAccessFeature(userProfile, "canAccessPosts") && (
-              <Link
-                href="/instagram/posts"
-                onClick={() => handleSidebarTrackedClick("sidebar.posts", "投稿一覧", "/instagram/posts")}
-                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
-                  pathname === "/instagram/posts"
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <BookOpen size={18} className="flex-shrink-0" />
-                <span>投稿一覧</span>
-              </Link>
-            )}
+            <Link
+              href="/instagram/posts"
+              onClick={() => handleSidebarTrackedClick("sidebar.posts", "投稿一覧", "/instagram/posts")}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                pathname === "/instagram/posts"
+                  ? "bg-orange-100 text-orange-800 font-medium"
+                  : "text-black hover:bg-gray-100"
+              }`}
+            >
+              <BookOpen size={18} className="flex-shrink-0" />
+              <span>投稿一覧</span>
+            </Link>
             {/* {canAccessFeature(userProfile, "canAccessPosts") && (
               <Link
                 href="/instagram/scheduler"
@@ -312,48 +309,42 @@ export default function SNSLayout({
                 <span>投稿分析</span>
               </Link>
             )} */}
-            {canAccessFeature(userProfile, "canAccessKPI") && (
-              <Link
-                href="/instagram/kpi"
-                onClick={() => handleSidebarTrackedClick("sidebar.kpi", "KPIコンソール", "/instagram/kpi")}
-                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
-                  pathname === "/instagram/kpi"
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <Target size={18} className="flex-shrink-0" />
-                <span>KPIコンソール</span>
-              </Link>
-            )}
-            {canAccessFeature(userProfile, "canAccessReport") && (
-              <Link
-                href="/instagram/report"
-                onClick={() => handleSidebarTrackedClick("sidebar.report", "月次レポート", "/instagram/report")}
-                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
-                  pathname === "/instagram/report"
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <BarChart3 size={18} className="flex-shrink-0" />
-                <span>月次レポート</span>
-              </Link>
-            )}
-            {canAccessFeature(userProfile, "canAccessLearning") && (
-              <Link
-                href="/learning"
-                onClick={() => handleSidebarTrackedClick("sidebar.learning", "学習ダッシュボード", "/learning")}
-                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
-                  pathname.startsWith("/learning")
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <Sparkles size={18} className="flex-shrink-0" />
-                <span>学習ダッシュボード</span>
-              </Link>
-            )}
+            <Link
+              href="/instagram/kpi"
+              onClick={() => handleSidebarTrackedClick("sidebar.kpi", "KPIコンソール", "/instagram/kpi")}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                pathname === "/instagram/kpi"
+                  ? "bg-orange-100 text-orange-800 font-medium"
+                  : "text-black hover:bg-gray-100"
+              }`}
+            >
+              <Target size={18} className="flex-shrink-0" />
+              <span>KPIコンソール</span>
+            </Link>
+            <Link
+              href="/instagram/report"
+              onClick={() => handleSidebarTrackedClick("sidebar.report", "月次レポート", "/instagram/report")}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                pathname === "/instagram/report"
+                  ? "bg-orange-100 text-orange-800 font-medium"
+                  : "text-black hover:bg-gray-100"
+              }`}
+            >
+              <BarChart3 size={18} className="flex-shrink-0" />
+              <span>月次レポート</span>
+            </Link>
+            <Link
+              href="/learning"
+              onClick={() => handleSidebarTrackedClick("sidebar.learning", "学習ダッシュボード", "/learning")}
+              className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
+                pathname.startsWith("/learning")
+                  ? "bg-orange-100 text-orange-800 font-medium"
+                  : "text-black hover:bg-gray-100"
+              }`}
+            >
+              <Sparkles size={18} className="flex-shrink-0" />
+              <span>学習ダッシュボード</span>
+            </Link>
             {isAdminConsoleRole && (
               <Link
                 href="/admin/maintenance"
@@ -470,7 +461,7 @@ export default function SNSLayout({
           </div>
         </div> */}
 
-        {/* 会員サイトボタン */}
+        {/* 会員サイトボタン
         <div className="px-4 pb-2 mt-4">
           <Link
             href="https://signal-portal.com/"
@@ -487,6 +478,7 @@ export default function SNSLayout({
             </svg>
           </Link>
         </div>
+        */}
 
         {/* ログアウトボタン */}
         <div className="px-4 pb-4">

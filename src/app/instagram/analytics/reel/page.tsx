@@ -4,8 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "../../../../components/auth-guard";
 import { useAuth } from "../../../../contexts/auth-context";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { canAccessFeature } from "@/lib/plan-access";
 import { notify } from "../../../../lib/ui/notifications";
 import ReelAnalyticsForm from "../../components/ReelAnalyticsForm";
 import SNSLayout from "../../../../components/sns-layout";
@@ -176,7 +174,6 @@ const createDefaultReelInputData = () => ({
 function AnalyticsReelContent() {
   const { user } = useAuth();
   const router = useRouter();
-  const { userProfile, loading: profileLoading } = useUserProfile();
 
   // すべてのHooksを早期リターンの前に定義
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
@@ -528,18 +525,6 @@ function AnalyticsReelContent() {
     }
   }, [user?.uid, postData, router, fetchAnalyticsData, isResetConfirming]);
 
-
-  // プラン階層別アクセス制御: 松プランのみアクセス可能
-  useEffect(() => {
-    if (!profileLoading && !canAccessFeature(userProfile, "canAccessAnalytics")) {
-      router.push("/instagram/lab/feed");
-    }
-  }, [userProfile, profileLoading, router]);
-
-  // アクセス権限がない場合は何も表示しない（リダイレクトされる）
-  if (profileLoading || !canAccessFeature(userProfile, "canAccessAnalytics")) {
-    return null;
-  }
 
   // 投稿分析データを保存（simple API経由）
   const handleSaveAnalytics = async (payload?: { memo: string }) => {

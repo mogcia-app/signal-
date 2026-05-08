@@ -4,8 +4,6 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../../../contexts/auth-context";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { canAccessFeature } from "@/lib/plan-access";
 import SNSLayout from "../../../../components/sns-layout";
 import { authFetch } from "../../../../utils/authFetch";
 import { notify } from "../../../../lib/ui/notifications";
@@ -105,7 +103,6 @@ export default function PostDetailPage() {
     typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
   const router = useRouter();
   const { user } = useAuth();
-  const { userProfile, loading: profileLoading } = useUserProfile();
 
   // すべてのHooksを早期リターンの前に定義
   const [post, setPost] = useState<PostData | null>(null);
@@ -117,14 +114,6 @@ export default function PostDetailPage() {
   const [resettingAnalytics, setResettingAnalytics] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [isResetConfirming, setIsResetConfirming] = useState(false);
-
-  // プラン階層別アクセス制御: 梅プランでは投稿詳細にアクセスできない
-  useEffect(() => {
-    if (!profileLoading && !canAccessFeature(userProfile, "canAccessPosts")) {
-      router.push("/dashboard");
-    }
-  }, [userProfile, profileLoading, router]);
-
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -294,18 +283,6 @@ export default function PostDetailPage() {
     };
     fetchPostAnalytics();
   }, [user?.uid, postId]);
-
-  // プラン階層別アクセス制御: 梅プランでは投稿詳細にアクセスできない
-  useEffect(() => {
-    if (!profileLoading && !canAccessFeature(userProfile, "canAccessPosts")) {
-      router.push("/dashboard");
-    }
-  }, [userProfile, profileLoading, router]);
-
-  // アクセス権限がない場合は何も表示しない（リダイレクトされる）
-  if (profileLoading || !canAccessFeature(userProfile, "canAccessPosts")) {
-    return null;
-  }
 
   // 投稿文からハッシュタグを抽出する関数
   const extractHashtagsFromContent = (content: string): string[] => {

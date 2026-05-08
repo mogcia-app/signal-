@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
 import { getUserProfile } from "@/lib/server/user-profile";
-import { canAccessFeature } from "@/lib/plan-access";
 import { buildAIContext } from "@/lib/ai/context";
 import { ReportRepository } from "@/repositories/report-repository";
 import { monthlyReviewStore } from "@/repositories/monthly-review-store";
@@ -62,13 +61,6 @@ export async function GET(request: NextRequest) {
     });
 
     const userProfile = await getUserProfile(uid);
-    if (!canAccessFeature(userProfile, "canAccessReport")) {
-      return NextResponse.json(
-        { success: false, error: "月次レポート機能は、現在のプランではご利用いただけません。" },
-        { status: 403 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const billingCycle = getBillingCycleContext({ userProfile });
     const date = searchParams.get("date") || billingCycle.current.key;
