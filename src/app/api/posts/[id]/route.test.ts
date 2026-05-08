@@ -3,8 +3,6 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockGetUserProfile = jest.fn();
-const mockCanAccessFeature = jest.fn();
 const mockPostGetById = jest.fn();
 
 jest.mock("@/repositories/post-repository", () => ({
@@ -23,14 +21,6 @@ jest.mock("@/lib/server/auth-context", () => {
   };
 });
 
-jest.mock("@/lib/server/user-profile", () => ({
-  getUserProfile: (...args: unknown[]) => mockGetUserProfile(...args),
-}));
-
-jest.mock("@/lib/plan-access", () => ({
-  canAccessFeature: (...args: unknown[]) => mockCanAccessFeature(...args),
-}));
-
 jest.mock("@/lib/server/post-image-storage", () => ({
   deletePostImageByUrl: jest.fn(),
   uploadPostImageDataUrl: jest.fn(),
@@ -48,8 +38,6 @@ describe("API regression foundation: /api/posts/[id]", () => {
     consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
     consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
-    mockGetUserProfile.mockResolvedValue({ plan: "matsu" });
-    mockCanAccessFeature.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -78,19 +66,19 @@ describe("API regression foundation: /api/posts/[id]", () => {
     });
   });
 
-  test("returns 403 when plan access is denied", async () => {
-    mockCanAccessFeature.mockReturnValueOnce(false);
+  test("returns 404 when the post does not exist", async () => {
+    mockPostGetById.mockResolvedValueOnce(null);
 
     const { GET } = await loadRoute();
     const request = createJsonRequest("http://localhost:3000/api/posts/post-1");
     const response = await GET(request as never, { params: Promise.resolve({ id: "post-1" }) });
     const body = await readJson<{ error: string }>(response);
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(404);
     expect(body).toEqual({
-      error: "投稿管理機能は、現在のプランではご利用いただけません。",
+      error: "投稿が見つかりません",
     });
-    expect(mockPostGetById).not.toHaveBeenCalled();
+    expect(mockPostGetById).toHaveBeenCalledWith("user-1", "post-1");
   });
 
   test("returns the requested post when authorized", async () => {

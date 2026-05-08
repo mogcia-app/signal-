@@ -3,8 +3,6 @@
 import { createJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
 const mockRequireAuthContext = jest.fn();
-const mockGetUserProfile = jest.fn();
-const mockCanAccessFeature = jest.fn();
 const mockPostList = jest.fn();
 
 jest.mock("@/repositories/post-repository", () => ({
@@ -20,14 +18,6 @@ jest.mock("../../../lib/server/auth-context", () => {
     requireAuthContext: (...args: unknown[]) => mockRequireAuthContext(...args),
   };
 });
-
-jest.mock("@/lib/server/user-profile", () => ({
-  getUserProfile: (...args: unknown[]) => mockGetUserProfile(...args),
-}));
-
-jest.mock("@/lib/plan-access", () => ({
-  canAccessFeature: (...args: unknown[]) => mockCanAccessFeature(...args),
-}));
 
 jest.mock("@/lib/server/post-image-storage", () => ({
   uploadPostImageDataUrl: jest.fn(),
@@ -45,8 +35,6 @@ describe("API regression foundation: /api/posts", () => {
     consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
     consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
-    mockGetUserProfile.mockResolvedValue({ plan: "matsu" });
-    mockCanAccessFeature.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -88,7 +76,7 @@ describe("API regression foundation: /api/posts", () => {
     expect(mockPostList).not.toHaveBeenCalled();
   });
 
-  test("returns posts for the authenticated user when feature access is allowed", async () => {
+  test("returns posts for the authenticated user", async () => {
     mockPostList.mockResolvedValueOnce({
       total: 1,
       posts: [
@@ -130,8 +118,6 @@ describe("API regression foundation: /api/posts", () => {
         title: "Post title",
       }),
     );
-    expect(mockGetUserProfile).toHaveBeenCalledWith("user-1");
-    expect(mockCanAccessFeature).toHaveBeenCalledWith({ plan: "matsu" }, "canAccessPosts");
     expect(mockPostList).toHaveBeenCalledWith({
       userId: "user-1",
       status: null,
