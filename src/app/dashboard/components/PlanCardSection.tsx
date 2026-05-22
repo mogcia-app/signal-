@@ -193,15 +193,17 @@ export function PlanCardSection({
                   <div>
                     <p className="text-[11px] text-gray-500 mb-1">投稿頻度</p>
                     <div className="flex flex-wrap gap-1.5 text-xs">
-                      <span className="px-2.5 py-1 bg-orange-50 text-orange-800">
-                        フィード {getWeeklyCountLabel(feedDays.length)}
-                      </span>
-                      <span className="px-2.5 py-1 bg-orange-50 text-orange-800">
-                        リール {getWeeklyCountLabel(reelDays.length)}
-                      </span>
-                      <span className="px-2.5 py-1 bg-orange-50 text-orange-800">
-                        ストーリーズ {getWeeklyCountLabel(storyDays.length)}
-                      </span>
+                      {[
+                        { label: "フィード", count: feedDays.length },
+                        { label: "リール", count: reelDays.length },
+                        { label: "ストーリーズ", count: storyDays.length },
+                      ]
+                        .filter((item) => item.count > 0)
+                        .map((item) => (
+                          <span key={item.label} className="px-2.5 py-1 bg-orange-50 text-orange-800">
+                            {item.label} {getWeeklyCountLabel(item.count)}
+                          </span>
+                        ))}
                     </div>
                   </div>
 
@@ -213,20 +215,18 @@ export function PlanCardSection({
                           { label: "フィード", days: feedDays },
                           { label: "リール", days: reelDays },
                           { label: "ストーリーズ", days: storyDays },
-                        ].map((item) => (
+                        ]
+                          .filter((item) => item.days.length > 0)
+                          .map((item) => (
                           <div key={item.label} className="flex items-center gap-2">
                             <span className="w-20 text-gray-600">{item.label}</span>
-                            {item.days.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {item.days.map((day) => (
-                                  <span key={`${item.label}-${day}`} className="px-1.5 py-0.5 bg-gray-100 text-gray-700">
-                                    {day}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">未設定</span>
-                            )}
+                            <div className="flex flex-wrap gap-1">
+                              {item.days.map((day) => (
+                                <span key={`${item.label}-${day}`} className="px-1.5 py-0.5 bg-gray-100 text-gray-700">
+                                  {day}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -274,7 +274,7 @@ export function PlanCardSection({
               placeholder="例: 15"
               className="w-full px-3 py-2 border border-gray-300 text-sm"
             />
-            <p className="mt-1 text-[11px] text-gray-500">現在フォロワー数に加算して目標値を計算します</p>
+            <p className="mt-1 text-[11px] text-gray-500">現在フォロワー数に加算して目標値を計算します。未入力時は10人で保存します</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">フィード投稿できそうな曜日（複数選択）</label>

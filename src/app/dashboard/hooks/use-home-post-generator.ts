@@ -56,6 +56,7 @@ export function useHomePostGenerator({
   const [homeImageContext, setHomeImageContext] = useState("");
   const [homeSelectedProductId, setHomeSelectedProductId] = useState("");
   const [homeAttachedImage, setHomeAttachedImage] = useState<AttachedImage | null>(null);
+  const [isTranslatingHomeDraft, setIsTranslatingHomeDraft] = useState(false);
   const homePostGenerationInFlightRef = useRef(false);
 
   const generatePostInHome = async () => {
@@ -292,6 +293,57 @@ export function useHomePostGenerator({
     toast.success("選択した候補を反映しました");
   };
 
+  const translateHomeDraftToEnglish = async () => {
+    if (isTranslatingHomeDraft) {return;}
+    if (!homeDraftTitle.trim() && !homeDraftContent.trim() && !homeDraftHashtagsText.trim()) {
+      toast.error("翻訳する投稿文がありません");
+      return;
+    }
+
+    setIsTranslatingHomeDraft(true);
+    try {
+      const response = await authFetch("/api/home/post-generation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "translateEnglish",
+          postType: homePostType,
+          prompt: "translate",
+          sourceTitle: homeDraftTitle.trim(),
+          sourceContent: homeDraftContent.trim(),
+          sourceHashtags: homeDraftHashtagsText
+            .split(",")
+            .map((tag) => tag.trim().replace(/^#+/, ""))
+            .filter(Boolean),
+          operationPurpose: String(dashboardCurrentPlan?.operationPurpose || "").trim() || quickPlanPurpose,
+          targetAudience: String(dashboardCurrentPlan?.targetAudience || "").trim() || quickPlanTargetAudience.trim(),
+          regionRestriction:
+            dashboardCurrentPlan?.regionRestriction === "restricted" ? "restricted" : quickPlanRegionRestriction,
+          regionName: String(dashboardCurrentPlan?.regionName || "").trim() || quickPlanRegionName.trim(),
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.success || !result?.data) {
+        throw new Error(result?.error || "英語翻訳に失敗しました");
+      }
+
+      setHomeDraftTitle(String(result.data.title || ""));
+      setHomeDraftContent(String(result.data.content || ""));
+      setHomeDraftHashtagsText(
+        Array.isArray(result.data.hashtags)
+          ? result.data.hashtags.map((tag: unknown) => String(tag || "").replace(/^#+/, "")).join(", ")
+          : ""
+      );
+      toast.success("英語に翻訳しました");
+    } catch (error) {
+      console.error("ホーム投稿翻訳エラー:", error);
+      toast.error(error instanceof Error ? error.message : "英語翻訳に失敗しました");
+    } finally {
+      setIsTranslatingHomeDraft(false);
+    }
+  };
+
   const handleHomeImageChange = async (file: File | null) => {
     if (!file) {return;}
     try {
@@ -429,9 +481,11 @@ export function useHomePostGenerator({
     setHomeSelectedProductId,
     homeAttachedImage,
     setHomeAttachedImage,
+    isTranslatingHomeDraft,
     generatePostInHome,
     copyGeneratedPost,
     applyGeneratedCandidate,
+    translateHomeDraftToEnglish,
     handleHomeImageChange,
     saveHomeDraft,
     resetHomePostGenerator,

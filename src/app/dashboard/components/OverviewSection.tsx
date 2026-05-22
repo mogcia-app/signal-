@@ -176,8 +176,7 @@ export function OverviewSection({
         </div>
       )}
 
-      {currentPlan && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white border border-gray-200 p-6">
             <h2 className="text-lg font-light text-gray-900 flex items-center gap-2 mb-4">
               <span>📌</span>
@@ -283,8 +282,7 @@ export function OverviewSection({
               <p className="text-sm text-gray-500 py-4">今週の予定から次の投稿を確認できます</p>
             )}
           </div>
-        </div>
-      )}
+      </div>
 
     </div>
   );

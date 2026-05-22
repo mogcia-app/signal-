@@ -27,7 +27,7 @@ interface HomePostGenerationRequest {
   imageContext?: string;
   generationVariant?: "random" | "advice";
   forcedProductId?: string;
-  action?: "suggestTime" | "generatePost";
+  action?: "suggestTime" | "generatePost" | "translateEnglish";
   autoGenerate?: boolean;
   mode?: "default" | "calendarTitle";
   avoidTitles?: string[];
@@ -36,6 +36,9 @@ interface HomePostGenerationRequest {
   regionName?: string;
   kpiFocus?: string;
   operationPurpose?: string;
+  sourceTitle?: string;
+  sourceContent?: string;
+  sourceHashtags?: string[];
 }
 
 const openai = process.env.OPENAI_API_KEY
@@ -294,6 +297,14 @@ const buildFiveHashtags = (aiHashtags: string[], fallbackHashtags: string[]): st
     unique.push(`ハッシュタグ${unique.length + 1}`);
   }
   return unique.slice(0, 5);
+};
+
+const parseSourceHashtags = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {return [];}
+  return value
+    .map((tag) => String(tag || "").replace(/^#+/, "").trim())
+    .filter(Boolean)
+    .slice(0, 5);
 };
 
 const normalizePostHint = (value: string): string =>
@@ -661,6 +672,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    if (!openai) {
+      return NextResponse.json({ error: "OpenAI APIキーが未設定です" }, { status: 500 });
+    }
+
+    const userProfile = await getUserProfile(uid);
     let prompt = String(body.prompt || "").trim();
     const imageContext = String(body.imageContext || "").trim();
     const rawImageData = String(body.imageData || "").trim();
@@ -674,15 +690,15 @@ export async function POST(request: NextRequest) {
     if (!prompt && normalizedImageData) {
       prompt = "添付画像に合う投稿文";
     }
-    if (!prompt) {
+    const sourceTitle = String(body.sourceTitle || "").trim();
+    const sourceContent = String(body.sourceContent || "").trim();
+    const sourceHashtags = parseSourceHashtags(body.sourceHashtags);
+    if (action !== "translateEnglish" && !prompt) {
       return NextResponse.json({ error: "投稿テーマを入力してください" }, { status: 400 });
     }
-
-    if (!openai) {
-      return NextResponse.json({ error: "OpenAI APIキーが未設定です" }, { status: 500 });
+    if (action === "translateEnglish" && !sourceTitle && !sourceContent && sourceHashtags.length === 0) {
+      return NextResponse.json({ error: "翻訳する投稿文がありません" }, { status: 400 });
     }
-
-    const userProfile = await getUserProfile(uid);
     const idempotencyKey =
       String(body.idempotencyKey || "").trim() ||
       buildAiRequestKey({
@@ -701,6 +717,9 @@ export async function POST(request: NextRequest) {
         targetAudience: body.targetAudience || "",
         regionRestriction: body.regionRestriction || "",
         regionName: body.regionName || "",
+        sourceTitle,
+        sourceContent,
+        sourceHashtags: sourceHashtags.join(","),
       });
     const lock = await acquireAiRequestLock({
       uid,
@@ -754,6 +773,80 @@ export async function POST(request: NextRequest) {
       targetLabel: inputTargetAudience || businessSignalsBase.targetLabel,
     };
     const kpiTag = normalizeKpiTag(fallbackKpiTag);
+
+    if (action === "translateEnglish") {
+      const translationPrompt = [
+        "以下のInstagram投稿文を、海外向けに自然な英語へ翻訳してください。",
+        `投稿タイプ: ${typeLabel}`,
+        operationPurpose ? `投稿目的: ${operationPurpose}` : "",
+        inputTargetAudience ? `ターゲット属性: ${inputTargetAudience}` : "",
+        businessSignals.industry ? `業種: ${businessSignals.industry}` : "",
+        selectedProduct?.name ? `主役商品: ${selectedProduct.name}` : "",
+        "条件:",
+        "- 直訳ではなく、Instagramで自然に読める英語にする",
+        "- 意味、訴求、CTA、改行構成はできるだけ維持する",
+        "- 絵文字は必要なら残してよい",
+        "- ハッシュタグは英語化し、#は付けずに返す",
+        "- タイトルは短く自然な英語にする",
+        "",
+        `title: ${sourceTitle || "(empty)"}`,
+        `content:\n${sourceContent || "(empty)"}`,
+        `hashtags: ${sourceHashtags.join(", ") || "(empty)"}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      const translationCompletion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You translate Instagram captions into natural English. Return JSON only with title, content, hashtags. hashtags must be an array of plain strings without #.",
+          },
+          {
+            role: "user",
+            content: translationPrompt,
+          },
+        ],
+      });
+
+      const translationText = translationCompletion.choices[0]?.message?.content || "{}";
+      const parsedTranslation = JSON.parse(translationText) as {
+        title?: string;
+        content?: string;
+        hashtags?: unknown;
+      };
+
+      const translatedHashtags = Array.isArray(parsedTranslation.hashtags)
+        ? parsedTranslation.hashtags.map((tag) => String(tag || "").replace(/^#+/, "").trim()).filter(Boolean)
+        : sourceHashtags;
+
+      const usage = await consumeAiOutput({
+        uid,
+        userProfile,
+        feature: "home_post_generation",
+      });
+
+      const responseBody = {
+        success: true,
+        data: {
+          title: String(parsedTranslation.title || sourceTitle).trim(),
+          content: String(parsedTranslation.content || sourceContent).trim(),
+          hashtags: translatedHashtags.slice(0, 5),
+        },
+        usage,
+      };
+      await completeAiRequestLock({
+        uid,
+        feature: "home_post_generation",
+        requestKey: idempotencyKey,
+        payload: { status: 200, body: responseBody },
+      }).catch(() => undefined);
+      return NextResponse.json(responseBody);
+    }
 
     const generationPromptText = [
       `投稿タイプ: ${typeLabel}`,

@@ -68,8 +68,8 @@ export async function createQuickPlanFlow({
     toast.error("計画開始日を設定してください");
     return;
   }
-  if (quickPlanFeedDays.length === 0 || quickPlanReelDays.length === 0 || quickPlanStoryDays.length === 0) {
-    toast.error("フィード・リール・ストーリーズの投稿曜日をすべて設定してください");
+  if (quickPlanFeedDays.length === 0 && quickPlanReelDays.length === 0 && quickPlanStoryDays.length === 0) {
+    toast.error("フィード・リール・ストーリーズのいずれか1つ以上で投稿曜日を設定してください");
     return;
   }
 

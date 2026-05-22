@@ -22,6 +22,7 @@ function isPlanComplete(formData: Record<string, unknown>, planStartDate: Date |
   const feedDays = Array.isArray(formData.feedDays) ? formData.feedDays : [];
   const reelDays = Array.isArray(formData.reelDays) ? formData.reelDays : [];
   const storyDays = Array.isArray(formData.storyDays) ? formData.storyDays : [];
+  const hasAnyPostingDays = feedDays.length > 0 || reelDays.length > 0 || storyDays.length > 0;
   const customIncrease = Number(formData.customTargetFollowers || 0);
   const targetFollowers = Number(formData.targetFollowers || 0);
   const currentFollowers = Number(formData.currentFollowers || 0);
@@ -30,9 +31,7 @@ function isPlanComplete(formData: Record<string, unknown>, planStartDate: Date |
   return (
     operationPurpose.length > 0 &&
     hasValidStartDate &&
-    feedDays.length > 0 &&
-    reelDays.length > 0 &&
-    storyDays.length > 0 &&
+    hasAnyPostingDays &&
     Number.isFinite(effectiveIncrease) &&
     effectiveIncrease > 0
   );

@@ -39,7 +39,9 @@ interface HomePostGeneratorSectionProps {
   setHomeDraftHashtagsText: React.Dispatch<React.SetStateAction<string>>;
   saveHomeDraft: () => Promise<void>;
   isSavingHomeDraft: boolean;
+  isTranslatingHomeDraft: boolean;
   copyGeneratedPost: () => Promise<void>;
+  translateHomeDraftToEnglish: () => Promise<void>;
   hasAppliedHomeCandidate: boolean;
   homePostType: "feed" | "reel" | "story";
   setHomePostType: React.Dispatch<React.SetStateAction<"feed" | "reel" | "story">>;
@@ -85,7 +87,9 @@ export function HomePostGeneratorSection({
   setHomeDraftHashtagsText,
   saveHomeDraft,
   isSavingHomeDraft,
+  isTranslatingHomeDraft,
   copyGeneratedPost,
+  translateHomeDraftToEnglish,
   hasAppliedHomeCandidate,
   homePostType,
   setHomePostType,
@@ -243,6 +247,15 @@ export function HomePostGeneratorSection({
                 className="w-full px-4 py-2 bg-gradient-to-r from-[#FF8A15] to-orange-500 text-white text-sm hover:from-[#e67a0f] hover:to-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto"
               >
                 {isSavingHomeDraft ? "保存中..." : "保存"}
+              </button>
+              <button
+                onClick={() => {
+                  void translateHomeDraftToEnglish();
+                }}
+                disabled={isTranslatingHomeDraft}
+                className="w-full px-3 py-2 border border-gray-300 text-xs text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto sm:py-1.5"
+              >
+                {isTranslatingHomeDraft ? "翻訳中..." : "英語に翻訳"}
               </button>
               <button
                 onClick={() => {

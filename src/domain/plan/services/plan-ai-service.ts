@@ -37,6 +37,37 @@ export class PlanAIGenerationService {
     return idx === -1 ? 7 : idx
   }
 
+  private static normalizeDayLabel(day: string): string {
+    const normalized = (day || "").replace("曜日", "").replace("曜", "").trim()
+    return normalized ? `${normalized}曜` : ""
+  }
+
+  private static getAllowedDaysByType(input: PlanInput): Record<"feed" | "reel" | "story", string[]> {
+    const normalizeUnique = (days?: string[]) =>
+      Array.from(
+        new Set(
+          (Array.isArray(days) ? days : [])
+            .map((day) => this.normalizeDayLabel(day))
+            .filter(Boolean)
+        )
+      ).sort((a, b) => this.dayIndex(a) - this.dayIndex(b))
+
+    return {
+      feed: normalizeUnique(input.feedDays),
+      reel: normalizeUnique(input.reelDays),
+      story: normalizeUnique(input.storyDays),
+    }
+  }
+
+  private static getAllowedDaysForType(
+    allowedDaysByType: Record<"feed" | "reel" | "story", string[]>,
+    type: "feed" | "reel" | "story"
+  ): string[] {
+    const allowed = allowedDaysByType[type]
+    if (allowed.length > 0) {return allowed}
+    return [...this.DEFAULT_DAYS]
+  }
+
   private static normalizeWeeklyPlans(
     weeklyPlansInput: unknown[],
     input: PlanInput,
@@ -48,6 +79,7 @@ export class PlanAIGenerationService {
   ): StrategyPlan["weeklyPlans"] {
     const feedPerWeek = this.toWeeklyCount(simulationResult.weeklyPostsNum)
     const reelPerWeek = this.toWeeklyCount(simulationResult.weeklyReelPosts)
+    const allowedDaysByType = this.getAllowedDaysByType(input)
     const themes = [
       "ブランド紹介・認知度アップ",
       "お客様の声・信頼構築",
@@ -77,10 +109,13 @@ export class PlanAIGenerationService {
 
       const rawPosts = Array.isArray(source.feedPosts) ? source.feedPosts : []
       const normalizedRaw = rawPosts.map((post, idx) => ({
-        day: post.day || this.DEFAULT_DAYS[idx % this.DEFAULT_DAYS.length],
+        day: this.normalizeDayLabel(post.day || "") || this.DEFAULT_DAYS[idx % this.DEFAULT_DAYS.length],
         content: post.content || "投稿コンテンツ",
         type: post.type === "reel" ? "reel" as const : "feed" as const,
-      }))
+      })).filter((post) => {
+        const allowedDays = this.getAllowedDaysForType(allowedDaysByType, post.type)
+        return allowedDays.includes(post.day)
+      })
 
       const dedupeByDay = (posts: Array<{ day: string; content: string; type: "feed" | "reel" }>) => {
         const seen = new Set<string>()
@@ -95,19 +130,20 @@ export class PlanAIGenerationService {
       const reelPosts = dedupeByDay(normalizedRaw.filter((p) => p.type === "reel"))
       const usedDays = new Set<string>([...feedPosts, ...reelPosts].map((p) => p.day))
 
-      const getNextAvailableDay = (seed: number) => {
-        for (let i = 0; i < this.DEFAULT_DAYS.length; i++) {
-          const candidate = this.DEFAULT_DAYS[(seed + i) % this.DEFAULT_DAYS.length]
+      const getNextAvailableDay = (type: "feed" | "reel", seed: number) => {
+        const allowedDays = this.getAllowedDaysForType(allowedDaysByType, type)
+        for (let i = 0; i < allowedDays.length; i++) {
+          const candidate = allowedDays[(seed + i) % allowedDays.length]
           if (!usedDays.has(candidate)) {
             return candidate
           }
         }
-        return this.DEFAULT_DAYS[seed % this.DEFAULT_DAYS.length]
+        return allowedDays[seed % allowedDays.length] || this.DEFAULT_DAYS[seed % this.DEFAULT_DAYS.length]
       }
 
       while (feedPosts.length < feedPerWeek) {
         const idx = feedPosts.length + reelPosts.length
-        const day = getNextAvailableDay(idx)
+        const day = getNextAvailableDay("feed", idx)
         feedPosts.push({
           day,
           content: `${source.theme || themes[week - 1]}（フィード）`,
@@ -118,7 +154,7 @@ export class PlanAIGenerationService {
 
       while (reelPosts.length < reelPerWeek) {
         const idx = reelPosts.length + feedPerWeek
-        const day = getNextAvailableDay(idx)
+        const day = getNextAvailableDay("reel", idx)
         reelPosts.push({
           day,
           content: `${source.theme || themes[week - 1]}（リール）`,
@@ -146,8 +182,10 @@ export class PlanAIGenerationService {
   private static normalizePostingSchedule(
     postingScheduleInput: unknown,
     weeklyPlans: StrategyPlan["weeklyPlans"],
-    storyPostsPerWeek: number
+    storyPostsPerWeek: number,
+    input: PlanInput
   ): AIGenerationResult["postingSchedule"] {
+    const allowedDaysByType = this.getAllowedDaysByType(input)
     const parsed = (postingScheduleInput || {}) as {
       feedPosts?: Array<{ day?: string; time?: string; type?: string }>
       storyPosts?: Array<{ day?: string; time?: string }>
@@ -157,8 +195,13 @@ export class PlanAIGenerationService {
     const week1Posts = week1?.feedPosts || []
     const scheduleMap = new Map(
       (Array.isArray(parsed.feedPosts) ? parsed.feedPosts : [])
-        .filter((p) => p.day)
-        .map((p) => [`${p.day}|${p.type === "reel" ? "reel" : "feed"}`, p.time || "13:00"])
+        .map((p) => ({
+          day: this.normalizeDayLabel(p.day || ""),
+          type: p.type === "reel" ? "reel" as const : "feed" as const,
+          time: p.time || "13:00",
+        }))
+        .filter((p) => p.day && this.getAllowedDaysForType(allowedDaysByType, p.type).includes(p.day))
+        .map((p) => [`${p.day}|${p.type}`, p.time])
     )
 
     const feedPosts = week1Posts.map((post) => {
@@ -173,13 +216,14 @@ export class PlanAIGenerationService {
 
     let storyPosts = Array.isArray(parsed.storyPosts)
       ? parsed.storyPosts
-          .filter((p) => p.day)
-          .map((p) => ({ day: p.day || "月曜", time: p.time || "11:00" }))
+          .map((p) => ({ day: this.normalizeDayLabel(p.day || ""), time: p.time || "11:00" }))
+          .filter((p) => p.day && this.getAllowedDaysForType(allowedDaysByType, "story").includes(p.day))
       : []
 
     if (storyPosts.length === 0 && storyPostsPerWeek > 0) {
+      const allowedStoryDays = this.getAllowedDaysForType(allowedDaysByType, "story")
       storyPosts = Array.from({ length: storyPostsPerWeek }).map((_, idx) => ({
-        day: this.DEFAULT_DAYS[idx % this.DEFAULT_DAYS.length],
+        day: allowedStoryDays[idx % allowedStoryDays.length] || this.DEFAULT_DAYS[idx % this.DEFAULT_DAYS.length],
         time: "11:00",
       }))
     }
@@ -236,7 +280,8 @@ export class PlanAIGenerationService {
       const postingSchedule = this.normalizePostingSchedule(
         parsed.postingSchedule,
         weeklyPlans,
-        simulationResult.storyPosts
+        simulationResult.storyPosts,
+        input
       )
 
       return {
@@ -269,6 +314,10 @@ export class PlanAIGenerationService {
     }
   ): string {
     const { weeklyIncreases, calculatedExpectedResults, weeklyPostsNum, weeklyReelPosts, monthlyFeedPosts: _monthlyFeedPosts, reelPosts: _reelPosts, storyPosts } = simulationResult
+    const allowedDaysByType = this.getAllowedDaysByType(input)
+    const feedDaysText = allowedDaysByType.feed.length > 0 ? allowedDaysByType.feed.join("、") : "指定なし"
+    const reelDaysText = allowedDaysByType.reel.length > 0 ? allowedDaysByType.reel.join("、") : "指定なし"
+    const storyDaysText = allowedDaysByType.story.length > 0 ? allowedDaysByType.story.join("、") : "指定なし"
 
     // 投稿頻度の文字列表現
     const _weeklyPostsText = input.weeklyPosts === "none" ? "投稿しない" 
@@ -305,6 +354,9 @@ export class PlanAIGenerationService {
 ${input.targetAudience ? `ターゲット: ${input.targetAudience}` : ""}
 ${input.postingTime ? `希望時間帯: ${postingTimeText}` : ""}
 計画開始日: ${startDayName}曜日
+フィード投稿曜日: ${feedDaysText}
+リール投稿曜日: ${reelDaysText}
+ストーリーズ投稿曜日: ${storyDaysText}
 
 【出力形式（JSONのみ）】
 {
@@ -344,6 +396,7 @@ ${input.postingTime ? `希望時間帯: ${postingTimeText}` : ""}
 4. 各週で必ずリール週${Math.round(weeklyReelPosts)}回（type:"reel"）を含めてください。各週の残りはフィード（type:"feed"）にしてください。
 5. 各週のテーマは"${input.operationPurpose}"に沿った内容にしてください。
 6. suggestedContentTypesに3〜5個の投稿種類を提案してください。
+7. フィードは「${feedDaysText}」に設定した曜日のみ、リールは「${reelDaysText}」に設定した曜日のみ、ストーリーズは「${storyDaysText}」に設定した曜日のみに配置してください。未設定の媒体は出力しないでください。
 
 【重要】"day"フィールドと"type"フィールドが欠けている投稿は生成しないでください。すべての投稿に必ず"day"、"content"、"type"を含めてください。`
   }
@@ -364,23 +417,39 @@ ${input.postingTime ? `希望時間帯: ${postingTimeText}` : ""}
     }
   ): AIGenerationResult {
     const { weeklyIncreases, calculatedExpectedResults, weeklyPostsNum, reelPosts, storyPosts } = simulationResult
+    const allowedDaysByType = this.getAllowedDaysByType(input)
 
     // デフォルトの投稿スケジュール
     const postingDays: Array<{ day: string; time: string; type: string }> = []
     const roundedWeeklyPosts = Math.round(weeklyPostsNum)
-    if (roundedWeeklyPosts >= 1) {postingDays.push({ day: "火曜", time: "19:00", type: "feed" })}
-    if (roundedWeeklyPosts >= 2) {postingDays.push({ day: "金曜", time: "12:00", type: "feed" })}
-    if (roundedWeeklyPosts >= 3) {postingDays.push({ day: "月曜", time: "13:00", type: "feed" })}
-    if (roundedWeeklyPosts >= 4) {postingDays.push({ day: "水曜", time: "15:00", type: "feed" })}
-    if (roundedWeeklyPosts >= 5) {postingDays.push({ day: "木曜", time: "18:00", type: "feed" })}
-    if (roundedWeeklyPosts >= 6) {postingDays.push({ day: "土曜", time: "12:00", type: "feed" })}
-    if (roundedWeeklyPosts >= 7) {postingDays.push({ day: "日曜", time: "14:00", type: "feed" })}
+    const roundedWeeklyReels = Math.round(simulationResult.weeklyReelPosts)
+    const feedDays = this.getAllowedDaysForType(allowedDaysByType, "feed")
+    const reelDays = this.getAllowedDaysForType(allowedDaysByType, "reel")
+    const storyDaysFromInput = this.getAllowedDaysForType(allowedDaysByType, "story")
+
+    for (let i = 0; i < roundedWeeklyPosts; i++) {
+      postingDays.push({
+        day: feedDays[i % feedDays.length] || this.DEFAULT_DAYS[i % this.DEFAULT_DAYS.length],
+        time: i % 2 === 0 ? "19:00" : "12:00",
+        type: "feed",
+      })
+    }
+    for (let i = 0; i < roundedWeeklyReels; i++) {
+      postingDays.push({
+        day: reelDays[i % reelDays.length] || this.DEFAULT_DAYS[i % this.DEFAULT_DAYS.length],
+        time: "20:00",
+        type: "reel",
+      })
+    }
+    postingDays.sort((a, b) => this.dayIndex(a.day) - this.dayIndex(b.day))
 
     const storyDays: Array<{ day: string; time: string }> = []
     if (storyPosts > 0) {
-      const storyDayNames = ["月", "火", "水", "木", "金", "土", "日"]
       for (let i = 0; i < storyPosts; i++) {
-        storyDays.push({ day: `${storyDayNames[i]}曜`, time: "11:00" })
+        storyDays.push({
+          day: storyDaysFromInput[i % storyDaysFromInput.length] || this.DEFAULT_DAYS[i % this.DEFAULT_DAYS.length],
+          time: "11:00",
+        })
       }
     }
 
@@ -395,10 +464,10 @@ ${input.postingTime ? `希望時間帯: ${postingTimeText}` : ""}
         targetFollowers: week1Target,
         increase: weeklyIncreases[0],
         theme: "ブランド紹介・認知度アップ",
-        feedPosts: postingDays.slice(0, roundedWeeklyPosts).map((day, idx) => ({
+        feedPosts: postingDays.map((day, idx) => ({
           day: day.day,
           content: idx === 0 ? "ブランドストーリー(カルーセル)" : "提供サービス一覧",
-          type: day.type === "reel" ? "reel" : undefined,
+          type: day.type,
         })),
         storyContent: storyPosts > 0 && storyDays.length > 0 
           ? storyDays.map((d, idx) => `${d.day}: ${idx === 0 ? "今週のテーマ予告" : idx === 1 ? "ブランドの歴史・創業秘話" : "週の振り返り"}`)
@@ -409,10 +478,10 @@ ${input.postingTime ? `希望時間帯: ${postingTimeText}` : ""}
         targetFollowers: week2Target,
         increase: weeklyIncreases[1],
         theme: "お客様の声・信頼構築",
-        feedPosts: postingDays.slice(0, roundedWeeklyPosts).map((day, idx) => ({
+        feedPosts: postingDays.map((day, idx) => ({
           day: day.day,
           content: idx === 0 ? "お客様インタビュー" : "ビフォーアフター事例",
-          type: (reelPosts > 0 && idx === postingDays.length - 1) ? "reel" : undefined,
+          type: day.type,
         })),
         storyContent: storyPosts > 0 && storyDays.length > 0
           ? storyDays.map((d, idx) => `${d.day}: ${idx === 0 ? "今週のテーマ紹介" : idx === 1 ? "製造現場の裏側" : "スタッフメッセージ"}`)
@@ -423,10 +492,10 @@ ${input.postingTime ? `希望時間帯: ${postingTimeText}` : ""}
         targetFollowers: week3Target,
         increase: weeklyIncreases[2],
         theme: "業界ノウハウ・専門性アピール",
-        feedPosts: postingDays.slice(0, roundedWeeklyPosts).map((day, idx) => ({
+        feedPosts: postingDays.map((day, idx) => ({
           day: day.day,
           content: idx === 0 ? "業界トレンド解説" : "お役立ち情報",
-          type: (reelPosts > 1 && idx === postingDays.length - 1) ? "reel" : undefined,
+          type: day.type,
         })),
         storyContent: storyPosts > 0 && storyDays.length > 0
           ? storyDays.map((d, idx) => `${d.day}: ${idx === 0 ? "今週の注目製品" : idx === 1 ? "製品の使い方ヒント" : "お客様の反応シェア"}`)
@@ -437,10 +506,10 @@ ${input.postingTime ? `希望時間帯: ${postingTimeText}` : ""}
         targetFollowers: input.targetFollowers,
         increase: weeklyIncreases[3],
         theme: "エンゲージメント強化・交流",
-        feedPosts: postingDays.slice(0, roundedWeeklyPosts).map((day, idx) => ({
+        feedPosts: postingDays.map((day, idx) => ({
           day: day.day,
           content: idx === 0 ? "フォロワー参加型企画" : "1ヶ月振り返り",
-          type: (reelPosts > 2 && idx === postingDays.length - 1) ? "reel" : undefined,
+          type: day.type,
         })),
         storyContent: storyPosts > 0 && storyDays.length > 0
           ? storyDays.map((d, idx) => `${d.day}: ${idx === 0 ? "来月の予告" : idx === 1 ? "スタッフが語るビジョン" : "1ヶ月の感謝メッセージ"}`)

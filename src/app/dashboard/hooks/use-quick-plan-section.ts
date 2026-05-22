@@ -26,8 +26,9 @@ export function useQuickPlanSection({
   planCardRef,
   setIsPlanCardHighlighted,
 }: UseQuickPlanSectionParams) {
+  const DEFAULT_TARGET_FOLLOWER_INCREASE = 10;
   const [quickPlanPurpose, setQuickPlanPurpose] = useState<string>("認知拡大");
-  const [quickPlanTargetFollowers, setQuickPlanTargetFollowers] = useState<number | "">("");
+  const [quickPlanTargetFollowers, setQuickPlanTargetFollowers] = useState<number | "">(DEFAULT_TARGET_FOLLOWER_INCREASE);
   const [quickPlanFeedDays, setQuickPlanFeedDays] = useState<WeekDay[]>([]);
   const [quickPlanReelDays, setQuickPlanReelDays] = useState<WeekDay[]>([]);
   const [quickPlanStoryDays, setQuickPlanStoryDays] = useState<WeekDay[]>([]);
@@ -113,7 +114,7 @@ export function useQuickPlanSection({
   const toggleStoryDay = (day: WeekDay) => toggleDaySelection(day, setQuickPlanStoryDays);
 
   const resetQuickPlanForm = (nextDate: Date = new Date()) => {
-    setQuickPlanTargetFollowers("");
+    setQuickPlanTargetFollowers(DEFAULT_TARGET_FOLLOWER_INCREASE);
     setQuickPlanFeedDays([]);
     setQuickPlanReelDays([]);
     setQuickPlanStoryDays([]);

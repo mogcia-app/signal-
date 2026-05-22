@@ -60,9 +60,9 @@ export async function POST(request: NextRequest) {
     if (!operationPurpose) {
       return NextResponse.json({ error: "投稿の目的を設定してください" }, { status: 400 });
     }
-    if (feedDays.length === 0 || reelDays.length === 0 || storyDays.length === 0) {
+    if (feedDays.length === 0 && reelDays.length === 0 && storyDays.length === 0) {
       return NextResponse.json(
-        { error: "フィード・リール・ストーリーズの投稿曜日をすべて設定してください" },
+        { error: "フィード・リール・ストーリーズのいずれか1つ以上で投稿曜日を設定してください" },
         { status: 400 }
       );
     }

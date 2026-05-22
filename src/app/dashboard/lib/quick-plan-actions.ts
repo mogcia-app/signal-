@@ -1,6 +1,8 @@
 import { authFetch } from "@/utils/authFetch";
 import type { WeekDay } from "../types";
 
+const DEFAULT_TARGET_FOLLOWER_INCREASE = 10;
+
 interface SaveQuickPlanParams {
   quickPlanPurpose: string;
   quickPlanTargetFollowers: number | "";
@@ -43,7 +45,8 @@ export async function saveQuickPlan(params: SaveQuickPlanParams): Promise<{
     throw new Error("現在のフォロワー数を取得できませんでした");
   }
 
-  const requestedIncrease = params.quickPlanTargetFollowers === "" ? NaN : Number(params.quickPlanTargetFollowers);
+  const requestedIncrease =
+    params.quickPlanTargetFollowers === "" ? DEFAULT_TARGET_FOLLOWER_INCREASE : Number(params.quickPlanTargetFollowers);
   const hasCustomTarget = Number.isFinite(requestedIncrease);
   if (!hasCustomTarget || requestedIncrease <= 0) {
     throw new Error("増加目標は1以上の値を設定してください");

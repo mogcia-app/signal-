@@ -349,6 +349,7 @@ export default function HomePage() {
     isGeneratingHomePost,
     homeGenerationProgress,
     isSavingHomeDraft,
+    isTranslatingHomeDraft,
     homeDraftTitle,
     setHomeDraftTitle,
     homeDraftContent,
@@ -370,6 +371,7 @@ export default function HomePage() {
     generatePostInHome,
     copyGeneratedPost,
     applyGeneratedCandidate,
+    translateHomeDraftToEnglish,
     handleHomeImageChange,
     saveHomeDraft,
     resetHomePostGenerator,
@@ -637,7 +639,9 @@ export default function HomePage() {
               setHomeDraftHashtagsText={setHomeDraftHashtagsText}
               saveHomeDraft={saveHomeDraft}
               isSavingHomeDraft={isSavingHomeDraft}
+              isTranslatingHomeDraft={isTranslatingHomeDraft}
               copyGeneratedPost={copyGeneratedPost}
+              translateHomeDraftToEnglish={translateHomeDraftToEnglish}
               hasAppliedHomeCandidate={hasAppliedHomeCandidate}
               homePostType={homePostType}
               setHomePostType={setHomePostType}
