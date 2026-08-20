@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import { COLLECTIONS } from "@/repositories/collections";
 import { toDate } from "@/repositories/firestore-utils";
 import type { UserProfile } from "@/types/user";
-import { getBillingCycleRangeForMonthKey } from "@/lib/server/billing-cycle";
+import { getCalendarMonthRangeForMonthKey } from "@/lib/server/billing-cycle";
 import type {
   DirectionAlignmentWarningDocument,
   ReportAnalyticsDocument,
@@ -30,7 +30,7 @@ export class ReportRepository {
     month: string,
     userProfile?: UserProfile | null
   ): Promise<ReportRepositoryData> {
-    const cycle = getBillingCycleRangeForMonthKey({
+    const cycle = getCalendarMonthRangeForMonthKey({
       userProfile,
       monthKey: month,
     });
@@ -112,14 +112,21 @@ export class ReportRepository {
     startTimestamp: FirebaseFirestore.Timestamp,
     endTimestamp: FirebaseFirestore.Timestamp
   ): Promise<string[]> {
+    const startDate = startTimestamp.toDate();
+    const endDate = endTimestamp.toDate();
     const snapshot = await adminDb
       .collection(COLLECTIONS.POSTS)
       .where("userId", "==", userId)
-      .where("createdAt", ">=", startTimestamp)
-      .where("createdAt", "<=", endTimestamp)
       .get();
 
-    return snapshot.docs.map((doc) => doc.id);
+    return snapshot.docs.flatMap((doc) => {
+      const data = doc.data();
+      const postDate = toDate(data.scheduledDate) || toDate(data.publishedAt) || toDate(data.createdAt);
+      if (!postDate || postDate < startDate || postDate > endDate) {
+        return [];
+      }
+      return [doc.id];
+    });
   }
 
   static async fetchActivePlan(userId: string): Promise<ReportPlanDocument | null> {

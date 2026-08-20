@@ -32,6 +32,7 @@ import {
   weekLabelFromKey,
 } from "../../utils/date-utils";
 import { ensureArray, toNumber } from "../../utils/validation";
+import { getLearningPhaseByInteractions } from "@/utils/learningPhase";
 
 const MASTER_CONTEXT_CACHE_COLLECTION = "ai_master_context_cache";
 const MASTER_CONTEXT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -920,14 +921,7 @@ export async function getMasterContext(
       .slice(0, 3)
       .map(([label]) => label);
 
-    const learningPhase =
-      totalInteractions >= 12
-        ? "master"
-        : totalInteractions >= 8
-          ? "optimized"
-          : totalInteractions >= 4
-            ? "learning"
-            : "initial";
+    const learningPhase = getLearningPhaseByInteractions(totalInteractions);
 
     const baseRagScore =
       (Object.keys(focusAreaCounts).length + frequentWatchouts.length + frequentHighlights.length) /
@@ -1062,4 +1056,3 @@ export async function getMasterContext(
     return createDefaultMasterContext(userId);
   }
 }
-

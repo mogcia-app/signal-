@@ -7,7 +7,11 @@ import { authFetch } from "../../utils/authFetch";
 import { handleError } from "../../utils/error-handling";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
 import { clientCache, generateCacheKey } from "../../utils/cache";
-import { getLearningPhaseLabel } from "@/utils/learningPhase";
+import {
+  LEARNING_PHASE_THRESHOLDS,
+  getLearningPhaseLabel,
+  getLearningPhaseProgress,
+} from "@/utils/learningPhase";
 import type {
   LearningBadge,
   MasterContextResponse,
@@ -199,6 +203,8 @@ export default function LearningDashboardPage() {
 
 
   const achievements = contextData?.achievements ?? [];
+  const learningTotal = contextData?.totalInteractions || 0;
+  const learningProgress = getLearningPhaseProgress(learningTotal);
 
   const badgeIconMap: Record<string, ReactNode> = {
     crown: <Crown className="h-5 w-5 text-amber-500" />,
@@ -399,59 +405,13 @@ export default function LearningDashboardPage() {
                   role="progressbar"
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-valuenow={(() => {
-                    const total = contextData.totalInteractions || 0;
-                    if (total >= 12) {
-                      return Math.min(100, 75 + ((total - 12) / 8) * 25);
-                    } else if (total >= 8) {
-                      return 50 + ((total - 8) / 4) * 25;
-                    } else if (total >= 4) {
-                      return 25 + ((total - 4) / 4) * 25;
-                    } else {
-                      return (total / 4) * 25;
-                    }
-                  })()}
-                  aria-label={`学習フェーズ: ${getLearningPhaseLabel(contextData.learningPhase)}、進捗: ${(() => {
-                    const total = contextData.totalInteractions || 0;
-                    let percent = 0;
-                    if (total >= 12) {
-                      percent = Math.min(100, 75 + ((total - 12) / 8) * 25);
-                    } else if (total >= 8) {
-                      percent = 50 + ((total - 8) / 4) * 25;
-                    } else if (total >= 4) {
-                      percent = 25 + ((total - 4) / 4) * 25;
-                    } else {
-                      percent = (total / 4) * 25;
-                    }
-                    return `${Math.round(percent)}%`;
-                  })()}`}
+                  aria-valuenow={learningProgress}
+                  aria-label={`学習フェーズ: ${getLearningPhaseLabel(contextData.learningPhase)}、進捗: ${Math.round(learningProgress)}%`}
                 >
                   <div
-                    className="absolute top-0 left-0 h-full bg-gray-400 transition-all duration-700 ease-out"
+                    className="absolute top-0 left-0 h-full bg-[#ff8a15] transition-all duration-700 ease-out"
                     style={{
-                      width: `${
-                        (() => {
-                          const total = contextData.totalInteractions || 0;
-                          // バックエンドのロジックに合わせて:
-                          // initial: 0-3件 → 0-25%
-                          // learning: 4-7件 → 25-50%
-                          // optimized: 8-11件 → 50-75%
-                          // master: 12件以上 → 75-100%
-                          if (total >= 12) {
-                            // 12件以上は75%から100%まで（12件で75%、20件で100%を想定）
-                            return Math.min(100, 75 + ((total - 12) / 8) * 25);
-                          } else if (total >= 8) {
-                            // 8-11件: 50%から75%まで
-                            return 50 + ((total - 8) / 4) * 25;
-                          } else if (total >= 4) {
-                            // 4-7件: 25%から50%まで
-                            return 25 + ((total - 4) / 4) * 25;
-                          } else {
-                            // 0-3件: 0%から25%まで
-                            return (total / 4) * 25;
-                          }
-                        })()
-                      }%`,
+                      width: `${learningProgress}%`,
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] text-gray-400">
@@ -463,13 +423,13 @@ export default function LearningDashboardPage() {
                 </div>
                 <div className="mt-3 text-xs text-gray-500">
                   {contextData.learningPhase === "initial" && (
-                    <>あと{Math.max(0, 4 - (contextData.totalInteractions || 0))}件分析すると、成長期に進みます（現在: {contextData.totalInteractions || 0}件 / 4件）</>
+                    <>あと{Math.max(0, LEARNING_PHASE_THRESHOLDS.learning - learningTotal)}件分析すると、成長期に進みます（現在: {learningTotal}件 / {LEARNING_PHASE_THRESHOLDS.learning}件）</>
                   )}
                   {contextData.learningPhase === "learning" && (
-                    <>あと{Math.max(0, 8 - (contextData.totalInteractions || 0))}件分析すると、成熟期に進みます（現在: {contextData.totalInteractions || 0}件 / 8件）</>
+                    <>あと{Math.max(0, LEARNING_PHASE_THRESHOLDS.optimized - learningTotal)}件分析すると、成熟期に進みます（現在: {learningTotal}件 / {LEARNING_PHASE_THRESHOLDS.optimized}件）</>
                   )}
                   {contextData.learningPhase === "optimized" && (
-                    <>あと{Math.max(0, 12 - (contextData.totalInteractions || 0))}件分析すると、マスター期に進みます（現在: {contextData.totalInteractions || 0}件 / 12件）</>
+                    <>あと{Math.max(0, LEARNING_PHASE_THRESHOLDS.master - learningTotal)}件分析すると、マスター期に進みます（現在: {learningTotal}件 / {LEARNING_PHASE_THRESHOLDS.master}件）</>
                   )}
                   {contextData.learningPhase === "master" && (
                     <>マスター期に到達しました。AIの提案が最高精度になっています。</>
@@ -541,9 +501,9 @@ export default function LearningDashboardPage() {
                         <span className="font-medium">もっと使うほど、AIがあなたに最適化されます</span>
                         <br className="mt-1" />
                         <span className="text-gray-500">
-                          {contextData.learningPhase === "initial" && "あと" + Math.max(0, 4 - (contextData.totalInteractions || 0)) + "件で成長期に"}
-                          {contextData.learningPhase === "learning" && "あと" + Math.max(0, 8 - (contextData.totalInteractions || 0)) + "件で成熟期に"}
-                          {contextData.learningPhase === "optimized" && "あと" + Math.max(0, 12 - (contextData.totalInteractions || 0)) + "件でマスター期に"}
+                          {contextData.learningPhase === "initial" && "あと" + Math.max(0, LEARNING_PHASE_THRESHOLDS.learning - learningTotal) + "件で成長期に"}
+                          {contextData.learningPhase === "learning" && "あと" + Math.max(0, LEARNING_PHASE_THRESHOLDS.optimized - learningTotal) + "件で成熟期に"}
+                          {contextData.learningPhase === "optimized" && "あと" + Math.max(0, LEARNING_PHASE_THRESHOLDS.master - learningTotal) + "件でマスター期に"}
                           {"到達します"}
                         </span>
                       </p>

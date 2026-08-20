@@ -181,6 +181,7 @@ export interface ReportData {
       postCount: number;
       analyzedCount: number;
       hasPlan: boolean;
+      displayHasPlan?: boolean;
     };
   };
   riskAlerts?: RiskAlert[];

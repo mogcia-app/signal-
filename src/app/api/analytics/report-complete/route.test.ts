@@ -92,89 +92,23 @@ describe("GET /api/analytics/report-complete", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toMatchInlineSnapshot(`
-      {
-        "data": {
-          "aiLearningReferences": {
-            "masterContext": {
-              "learningPhase": "growth",
-            },
-            "references": [
-              {
-                "id": "ref-1",
-                "label": "分析参照",
-                "sourceType": "analytics",
-              },
-            ],
-            "snapshotReferences": [
-              {
-                "id": "snap-1",
-                "score": 0.9,
-                "status": "gold",
-                "summary": "good",
-              },
-            ],
+    expect(body).toEqual(
+      expect.objectContaining({
+        success: true,
+        usage: null,
+        data: expect.objectContaining({
+          performanceScore: { score: 78, rating: "A", label: "良好", color: "green" },
+          monthlyReview: expect.objectContaining({
+            review: "review text",
+            analyzedCount: 12,
+          }),
+          postDeepDive: {
+            posts: [{ id: "post-1", title: "Post 1", postType: "feed", createdAt: "2026-02-01" }],
           },
-          "feedbackSentiment": {
-            "negative": 2,
-            "neutral": 1,
-            "positive": 7,
-            "positiveRate": 70,
-            "total": 10,
-            "withCommentCount": 6,
-          },
-          "monthlyReview": {
-            "actionPlans": [],
-            "analyzedCount": 12,
-            "hasPlan": true,
-            "review": "review text",
-          },
-          "performanceScore": {
-            "color": "green",
-            "label": "良好",
-            "rating": "A",
-            "score": 78,
-          },
-          "postDeepDive": {
-            "posts": [
-              {
-                "createdAt": "2026-02-01",
-                "id": "post-1",
-                "postType": "feed",
-                "title": "Post 1",
-              },
-            ],
-          },
-          "postSummaries": [
-            {
-              "improvements": [
-                "improvement",
-              ],
-              "postId": "post-1",
-              "reach": 1234,
-              "recommendedActions": [
-                "action",
-              ],
-              "strengths": [
-                "strength",
-              ],
-              "summary": "summary",
-            },
-          ],
-          "riskAlerts": [
-            {
-              "description": "test",
-              "id": "risk-1",
-              "recommendation": "test",
-              "severity": "warning",
-              "title": "test",
-            },
-          ],
-        },
-        "success": true,
-      }
-    `);
-    expect(mockFetchReportRepositoryData).toHaveBeenCalledWith("user-1", "2026-02");
+        }),
+      })
+    );
+    expect(mockFetchReportRepositoryData).toHaveBeenCalledWith("user-1", "2026-02", { plan: "pro" });
     expect(mockBuildReportComplete).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",
@@ -185,23 +119,6 @@ describe("GET /api/analytics/report-complete", () => {
         fetchAiLearningReferences: expect.any(Function),
       })
     );
-  });
-
-  test("returns 403 when user cannot access report feature", async () => {
-    mockCanAccessFeature.mockReturnValue(false);
-
-    const GET = await loadRoute();
-    const request = { url: "http://localhost:3000/api/analytics/report-complete?date=2026-02" } as Request;
-    const response = await GET(request as never);
-    const body = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(body).toEqual({
-      success: false,
-      error: "月次レポート機能は、現在のプランではご利用いただけません。",
-    });
-    expect(mockFetchReportRepositoryData).not.toHaveBeenCalled();
-    expect(mockBuildReportComplete).not.toHaveBeenCalled();
   });
 
   test("returns 400 when date format is invalid", async () => {

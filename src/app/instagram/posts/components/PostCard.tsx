@@ -13,6 +13,7 @@ import {
   Bookmark,
   BarChart3,
   TrendingUp,
+  Repeat2,
 } from "lucide-react";
 import { notify } from "@/lib/ui/notifications";
 
@@ -88,6 +89,7 @@ interface AnalyticsData {
   likes: number;
   comments: number;
   shares: number;
+  reposts?: number;
   saves: number;
   reach: number;
   engagementRate: number;
@@ -459,7 +461,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
         {/* 分析データ（分析済みの場合のみ表示） */}
         {hasAnalytics && postAnalytics && post.postType !== "story" && (
           <div className="mb-2 pt-2 border-t border-gray-100">
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-3 gap-2 text-center">
               <div>
                 <div className="flex items-center justify-center mb-0.5">
                   <Heart size={12} className="text-red-500" />
@@ -480,12 +482,32 @@ const PostCard: React.FC<PostCardProps> = ({ post, hasAnalytics, postAnalytics, 
               </div>
               <div>
                 <div className="flex items-center justify-center mb-0.5">
+                  <Eye size={12} className="text-gray-600" />
+                </div>
+                <div className="text-xs font-bold text-gray-900">
+                  {(postAnalytics.reach || 0).toLocaleString()}
+                </div>
+                <div className="text-[10px] text-gray-500 leading-none mt-0.5">リーチ</div>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="flex items-center justify-center mb-0.5">
                   <Share size={12} className="text-gray-600" />
                 </div>
                 <div className="text-xs font-bold text-gray-900">
                   {(postAnalytics.shares || 0).toLocaleString()}
                 </div>
                 <div className="text-[10px] text-gray-500 leading-none mt-0.5">シェア</div>
+              </div>
+              <div>
+                <div className="flex items-center justify-center mb-0.5">
+                  <Repeat2 size={12} className="text-gray-600" />
+                </div>
+                <div className="text-xs font-bold text-gray-900">
+                  {(postAnalytics.reposts || 0).toLocaleString()}
+                </div>
+                <div className="text-[10px] text-gray-500 leading-none mt-0.5">リポスト</div>
               </div>
               <div>
                 <div className="flex items-center justify-center mb-0.5">

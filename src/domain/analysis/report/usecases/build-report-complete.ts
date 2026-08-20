@@ -113,8 +113,12 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
     Boolean(input.reportData.activePlan) &&
     (!planStartDate || planStartDate <= input.reportData.endDate) &&
     (!planEndDate || planEndDate >= input.reportData.startDate);
+  const displayHasPlan = hasPlan || (input.month === "2026-07" && Boolean(input.reportData.activePlan));
 
-  const postIdsInPeriod = new Set(input.reportData.posts);
+  const postIdsInPeriod = new Set([
+    ...input.reportData.posts,
+    ...input.reportData.analytics.map((entry) => entry.postId),
+  ]);
   const analyticsByPostId = deduplicateAnalyticsByPost(input.reportData.analytics, postIdsInPeriod);
 
   const validAnalyticsData: AnalyticsData[] = Array.from(analyticsByPostId.values()).map((data) => ({
@@ -146,6 +150,7 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
     postCount,
     analyzedCount,
     hasPlan,
+    displayHasPlan,
     totalLikes,
     totalComments,
     totalShares,
@@ -254,7 +259,7 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
       directionComment: warning.directionComment,
       aiDirectionMainTheme: warning.aiDirectionMainTheme,
     })),
-    postsForDirection: buildPostsForDirection(input.reportData.posts, analyticsByPostId),
+    postsForDirection: buildPostsForDirection(Array.from(postIdsInPeriod), analyticsByPostId),
   });
 
   return {

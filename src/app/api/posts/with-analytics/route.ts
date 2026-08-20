@@ -57,6 +57,106 @@ const isAnalyzablePostType = (postType: unknown): boolean => {
   return normalized === "feed" || normalized === "reel";
 };
 
+const toDate = (value: unknown): Date | null => {
+  if (!value) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (value instanceof admin.firestore.Timestamp) {
+    return value.toDate();
+  }
+  if (typeof value === "object" && value && "toDate" in value) {
+    const date = (value as { toDate?: () => Date }).toDate?.();
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+  }
+  const parsed = new Date(String(value));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const toDateKey = (value: unknown): string => {
+  const date = toDate(value);
+  return date ? date.toISOString().slice(0, 10) : "";
+};
+
+const normalizeText = (value: unknown): string =>
+  String(value || "")
+    .replace(/[#\s。、，,.!！?？「」『』【】（）()［\]\-ー＿_]/g, "")
+    .toLowerCase()
+    .slice(0, 80);
+
+const getSortTime = (value: unknown): number => toDate(value)?.getTime() || 0;
+
+const getPostDateKey = (post: PostData): string =>
+  toDateKey(post.scheduledDate) || toDateKey(post.createdAt);
+
+const getAnalyticsDateKey = (analytics: AnalyticsData): string =>
+  toDateKey(analytics.publishedAt) || toDateKey(analytics.createdAt);
+
+const getPostType = (value: unknown): "feed" | "reel" | "story" => {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "reel" || raw === "story") {
+    return raw;
+  }
+  return "feed";
+};
+
+const findBestAnalyticsForPost = (
+  post: PostData,
+  analyticsData: AnalyticsData[],
+  claimedAnalyticsIds: Set<string>
+): AnalyticsData | null => {
+  const postKey = normalizePostId(post.id);
+  const exactMatches = analyticsData
+    .filter((analytics) => normalizePostId(analytics.postId) === postKey)
+    .sort((a, b) => getSortTime(b.createdAt) - getSortTime(a.createdAt));
+  if (exactMatches[0]) {
+    claimedAnalyticsIds.add(exactMatches[0].id);
+    return exactMatches[0];
+  }
+
+  const postType = getPostType(post.postType);
+  const postDateKey = getPostDateKey(post);
+  const postTitle = normalizeText(post.title);
+  const postContent = normalizeText(post.content);
+
+  const candidates = analyticsData
+    .filter((analytics) => {
+      if (claimedAnalyticsIds.has(analytics.id) || normalizePostId(analytics.postId)) {
+        return false;
+      }
+      const analyticsType = getPostType(analytics.category || analytics.postType);
+      return analyticsType === postType && getAnalyticsDateKey(analytics) === postDateKey;
+    })
+    .map((analytics) => {
+      const analyticsTitle = normalizeText(analytics.title);
+      const analyticsContent = normalizeText(analytics.content);
+      const titleMatches =
+        Boolean(postTitle && analyticsTitle) &&
+        (postTitle.includes(analyticsTitle.slice(0, 24)) || analyticsTitle.includes(postTitle.slice(0, 24)));
+      const contentMatches =
+        Boolean(postContent && analyticsContent) &&
+        (postContent.includes(analyticsContent.slice(0, 32)) || analyticsContent.includes(postContent.slice(0, 32)));
+      const score = 4 + (titleMatches ? 5 : 0) + (contentMatches ? 3 : 0);
+      return { analytics, score };
+    })
+    .sort((a, b) => b.score - a.score || getSortTime(b.analytics.createdAt) - getSortTime(a.analytics.createdAt));
+
+  const best = candidates[0];
+  if (!best) {
+    return null;
+  }
+
+  const sameDateAndTypeCount = candidates.length;
+  if (best.score >= 9 || sameDateAndTypeCount === 1) {
+    claimedAnalyticsIds.add(best.analytics.id);
+    return best.analytics;
+  }
+
+  return null;
+};
+
 /**
  * 投稿一覧ページ用のBFF API
  * 投稿データと分析データを結合し、分類・フィルタリング済みのデータを返す
@@ -206,12 +306,17 @@ export async function GET(request: NextRequest) {
       analyticsFromData: AnalyticsData | null;
     }
 
+    const claimedAnalyticsIds = new Set<string>();
     const postsWithAnalytics: PostWithAnalytics[] = sortedPosts.map((post) => {
       const postKey = normalizePostId(post.id);
+      const analyticsFromData = findBestAnalyticsForPost(post, analyticsData, claimedAnalyticsIds);
       const hasAnalytics =
         !isAnalyzablePostType(post.postType) ||
-        !!((postKey && analyzedPostIds.has(postKey)) || (post as PostData & { analytics?: unknown }).analytics);
-      const analyticsFromData = analyticsData.find((a) => normalizePostId(a.postId) === postKey);
+        !!(
+          analyticsFromData ||
+          (postKey && analyzedPostIds.has(postKey)) ||
+          (post as PostData & { analytics?: unknown }).analytics
+        );
 
       return {
         ...post,
@@ -222,7 +327,7 @@ export async function GET(request: NextRequest) {
 
     // タブカウントを計算
     const manualAnalyticsData = analyticsData.filter(
-      (a) => !a.postId || a.postId === "" || a.postId === undefined
+      (a) => (!a.postId || a.postId === "" || a.postId === undefined) && !claimedAnalyticsIds.has(a.id)
     );
 
     const allPostsCount = posts.length + manualAnalyticsData.length;
@@ -378,6 +483,7 @@ export async function GET(request: NextRequest) {
       likes: analytics.likes || 0,
       comments: analytics.comments || 0,
       shares: analytics.shares || 0,
+      reposts: analytics.reposts || 0,
       saves: analytics.saves || 0,
       reach: analytics.reach || 0,
       engagementRate: analytics.engagementRate || 0,

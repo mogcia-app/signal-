@@ -2,7 +2,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import * as admin from "firebase-admin";
 import { COLLECTIONS } from "@/repositories/collections";
 import { toDate, toPreviousMonth, toTimestampRange } from "@/repositories/firestore-utils";
-import { getBillingCycleRangeForMonthKey } from "@/lib/server/billing-cycle";
+import { getCalendarMonthRangeForMonthKey } from "@/lib/server/billing-cycle";
 import type { UserProfile } from "@/types/user";
 import type {
   AnalyticsDocument,
@@ -48,7 +48,7 @@ export class KpiDashboardRepository {
     cycleMonthKey: string,
     userProfile: UserProfile | null
   ): Promise<KpiRepositoryData> {
-    const cycle = getBillingCycleRangeForMonthKey({
+    const cycle = getCalendarMonthRangeForMonthKey({
       userProfile,
       monthKey: cycleMonthKey,
     });

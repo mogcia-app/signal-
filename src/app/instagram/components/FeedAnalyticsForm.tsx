@@ -14,7 +14,7 @@ import {
   Clipboard,
 } from "lucide-react";
 import { InputData } from "./types";
-import { parseInstagramNumber, parseInstagramPercent } from "../../../utils/instagram-data-parser";
+import { parseInstagramFeedData } from "../../../utils/instagram-data-parser";
 
 interface FeedAnalyticsFormProps {
   data: InputData;
@@ -41,22 +41,6 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
   const [memo, setMemo] = useState("");
   const [pasteSuccess, setPasteSuccess] = useState<string | null>(null);
   const [isAutoSaved, setIsAutoSaved] = useState(false);
-
-  const readNumberForLabel = (
-    line: string,
-    nextLine: string | undefined,
-    labels: string[]
-  ): number | null => {
-    const matchedLabel = labels.find((label) => line.includes(label));
-    if (!matchedLabel) {
-      return null;
-    }
-    const inlineValue = line
-      .replace(matchedLabel, "")
-      .replace(/[：:]/g, " ")
-      .trim();
-    return parseInstagramNumber(inlineValue) ?? parseInstagramNumber(nextLine);
-  };
 
   // Instagram分析データの貼り付け処理
   const handlePasteInstagramData = async () => {
@@ -100,6 +84,12 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
       if (parsed.shares !== null) {
         updatedData.shares = String(parsed.shares);
       }
+      if (parsed.reposts !== null) {
+        updatedData.reposts = String(parsed.reposts);
+      }
+      if (parsed.followerIncrease !== null) {
+        updatedData.followerIncrease = String(parsed.followerIncrease);
+      }
       if (parsed.reachedAccounts !== null) {
         updatedData.reachedAccounts = String(parsed.reachedAccounts);
       }
@@ -114,6 +104,12 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
       }
       if (parsed.reachSourceProfile !== null) {
         updatedData.reachSourceProfile = String(parsed.reachSourceProfile);
+      }
+      if (parsed.reachSourceExplore !== null) {
+        updatedData.reachSourceExplore = String(parsed.reachSourceExplore);
+      }
+      if (parsed.reachSourceSearch !== null) {
+        updatedData.reachSourceSearch = String(parsed.reachSourceSearch);
       }
       if (parsed.reachSourceOther !== null) {
         updatedData.reachSourceOther = String(parsed.reachSourceOther);
@@ -142,179 +138,6 @@ const FeedAnalyticsForm: React.FC<FeedAnalyticsFormProps> = ({
       });
       setTimeout(() => setToastMessage(null), 3000);
     }
-  };
-
-  // Instagram分析データの解析（フィード用）
-  const parseInstagramFeedData = (text: string) => {
-    const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line);
-    const result: {
-      hasData: boolean;
-      reach: number | null;
-      reachFollowerPercent: number | null;
-      interactionCount: number | null;
-      interactionFollowerPercent: number | null;
-      likes: number | null;
-      comments: number | null;
-      saves: number | null;
-      shares: number | null;
-      reachedAccounts: number | null;
-      profileVisits: number | null;
-      externalLinkTaps: number | null;
-      reachSourceFeed: number | null;
-      reachSourceProfile: number | null;
-      reachSourceOther: number | null;
-      profileFollows: number | null;
-    } = {
-      hasData: false,
-      reach: null,
-      reachFollowerPercent: null,
-      interactionCount: null,
-      interactionFollowerPercent: null,
-      likes: null,
-      comments: null,
-      saves: null,
-      shares: null,
-      reachedAccounts: null,
-      profileVisits: null,
-      externalLinkTaps: null,
-      reachSourceFeed: null,
-      reachSourceProfile: null,
-      reachSourceOther: null,
-      profileFollows: null,
-    };
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const nextLine = lines[i + 1];
-      const prevLine = lines[i - 1];
-
-      // ビュー/閲覧数/リーチ
-      const reach = line.includes("リーチしたアカウント")
-        ? null
-        : readNumberForLabel(line, nextLine, ["ビュー", "閲覧数", "リーチ"]);
-      if (reach !== null) {
-        result.reach = reach;
-        result.hasData = true;
-      }
-
-      // フォロワー以外（閲覧数の） - ビューの下にある場合
-      if (line === "フォロワー以外" && nextLine && prevLine && (prevLine === "ビュー" || prevLine.includes("閲覧数") || prevLine.includes("リーチ"))) {
-        const percent = parseInstagramPercent(nextLine);
-        if (percent !== null) {
-          result.reachFollowerPercent = percent;
-          result.hasData = true;
-        }
-      }
-
-      // ホーム → フィード
-      const feedSource = readNumberForLabel(line, nextLine, ["ホーム", "フィード"]);
-      if (feedSource !== null) {
-        result.reachSourceFeed = feedSource;
-        result.hasData = true;
-      }
-
-      // プロフィール（閲覧ソース）
-      if (
-        line.includes("プロフィール") &&
-        !line.includes("プロフィールへの") &&
-        prevLine !== "プロフィールのアクティビティ" &&
-        !prevLine?.includes("プロフィールへの")
-      ) {
-        const value = readNumberForLabel(line, nextLine, ["プロフィール"]);
-        if (value !== null) {
-          result.reachSourceProfile = value;
-          result.hasData = true;
-        }
-      }
-
-      // その他（閲覧ソース）
-      if (line.includes("その他") && !prevLine?.includes("フォロワー")) {
-        const value = readNumberForLabel(line, nextLine, ["その他"]);
-        if (value !== null) {
-          result.reachSourceOther = value;
-          result.hasData = true;
-        }
-      }
-
-      // リーチしたアカウント数
-      const reachedAccounts = readNumberForLabel(line, nextLine, ["リーチしたアカウント数", "リーチしたアカウント"]);
-      if (reachedAccounts !== null) {
-        result.reachedAccounts = reachedAccounts;
-        result.hasData = true;
-      }
-
-      // インタラクション数（単独の行）
-      const interactionCount =
-        line === "インタラクション" || /^インタラクション[：:\s]/.test(line)
-          ? readNumberForLabel(line, nextLine, ["インタラクション"])
-          : null;
-      if (interactionCount !== null) {
-        result.interactionCount = interactionCount;
-        result.hasData = true;
-      }
-
-      // インタラクションのフォロワー以外
-      if (line === "フォロワー以外" && prevLine === "インタラクション" && nextLine) {
-        const percent = parseInstagramPercent(nextLine);
-        if (percent !== null) {
-          result.interactionFollowerPercent = percent;
-          result.hasData = true;
-        }
-      }
-
-      // いいね
-      const likes = readNumberForLabel(line, nextLine, ["いいね数", "いいね", "「いいね！」"]);
-      if (likes !== null) {
-        result.likes = likes;
-        result.hasData = true;
-      }
-
-      // コメント
-      const comments = !prevLine?.includes("インタラクション")
-        ? readNumberForLabel(line, nextLine, ["コメント数", "コメント"])
-        : null;
-      if (comments !== null) {
-        result.comments = comments;
-        result.hasData = true;
-      }
-
-      // 保存数
-      const saves = readNumberForLabel(line, nextLine, ["保存数", "保存"]);
-      if (saves !== null) {
-        result.saves = saves;
-        result.hasData = true;
-      }
-
-      // シェア数
-      const shares = readNumberForLabel(line, nextLine, ["シェア数", "シェア"]);
-      if (shares !== null) {
-        result.shares = shares;
-        result.hasData = true;
-      }
-
-      // プロフィールへのアクセス
-      const profileVisits = readNumberForLabel(line, nextLine, ["プロフィールへのアクセス", "プロフィールアクセス"]);
-      if (profileVisits !== null) {
-        result.profileVisits = profileVisits;
-        result.hasData = true;
-      }
-
-      // 外部リンクのタップ数
-      const externalLinkTaps = readNumberForLabel(line, nextLine, ["外部リンクのタップ数", "外部リンクタップ"]);
-      if (externalLinkTaps !== null) {
-        result.externalLinkTaps = externalLinkTaps;
-        result.hasData = true;
-      }
-
-      // フォロー数
-      const follows = readNumberForLabel(line, nextLine, ["フォロー数"]);
-      if (follows !== null) {
-        result.profileFollows = follows;
-        result.hasData = true;
-      }
-    }
-
-    return result;
   };
 
   const handleInputChange = (field: keyof InputData, value: string) => {

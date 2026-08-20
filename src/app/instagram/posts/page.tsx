@@ -124,6 +124,7 @@ interface AnalyticsData {
   likes: number;
   comments: number;
   shares: number;
+  reposts?: number;
   saves: number;
   reach: number;
   engagementRate: number;
@@ -1098,6 +1099,23 @@ export default function InstagramPostsPage() {
                                 <div className="text-[10px] text-gray-500 mt-0.5">保存</div>
                               </div>
                             </div>
+                            <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+                              <div className="border border-gray-100 bg-gray-50 py-2">
+                                <div className="text-xs text-gray-500">リーチ</div>
+                                <div className="text-sm font-bold text-black">{(analytics.reach || 0).toLocaleString()}</div>
+                              </div>
+                              <div className="border border-gray-100 bg-gray-50 py-2">
+                                <div className="text-xs text-gray-500">リポスト</div>
+                                <div className="text-sm font-bold text-black">{(analytics.reposts || 0).toLocaleString()}</div>
+                              </div>
+                              <div className="border border-gray-100 bg-gray-50 py-2">
+                                <div className="text-xs text-gray-500">フォロワー増加</div>
+                                <div className="text-sm font-bold text-black">
+                                  {analytics.followerIncrease !== undefined && analytics.followerIncrease > 0 ? "+" : ""}
+                                  {(analytics.followerIncrease || 0).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1115,6 +1133,7 @@ export default function InstagramPostsPage() {
                 {filteredPosts.map((post: PostData & { hasAnalytics?: boolean; analyticsFromData?: PostData["analytics"] }) => {
                   const postIdKey = normalizePostId(post.id);
                   const hasAnalytics =
+                    Boolean(post.hasAnalytics) ||
                     analyticsData.some((a) => normalizePostId(a.postId) === postIdKey);
                   const analyticsFromData =
                     post.analyticsFromData ||
@@ -1126,6 +1145,7 @@ export default function InstagramPostsPage() {
                         likes: (analyticsFromData as { likes?: number })?.likes || 0,
                         comments: (analyticsFromData as { comments?: number })?.comments || 0,
                         shares: (analyticsFromData as { shares?: number })?.shares || 0,
+                        reposts: (analyticsFromData as { reposts?: number })?.reposts || 0,
                         saves: (analyticsFromData as { saves?: number })?.saves || 0,
                         reach: (analyticsFromData as { reach?: number })?.reach || 0,
                         engagementRate: (analyticsFromData as { engagementRate?: number })?.engagementRate || 0,

@@ -28,6 +28,7 @@ interface PerformanceScoreProps {
     postCount: number;
     analyzedCount: number;
     hasPlan: boolean;
+    displayHasPlan?: boolean;
   };
   isLoading?: boolean;
 }
@@ -42,6 +43,8 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
   metrics,
   isLoading = false,
 }) => {
+  const displayHasPlan = metrics.displayHasPlan ?? metrics.hasPlan;
+
   if (isLoading) {
     return (
       <div className="bg-white border border-gray-200 p-4 mb-4">
@@ -132,7 +135,7 @@ export const PerformanceScore: React.FC<PerformanceScoreProps> = ({
           <div className="bg-white p-2 sm:p-3 border border-gray-200">
             <p className="text-xs font-medium text-gray-600 mb-0.5 sm:mb-1">運用計画</p>
             <p className="text-sm sm:text-base font-bold">
-              {metrics.hasPlan ? (
+              {displayHasPlan ? (
                 <span className="text-green-600">作成済み</span>
               ) : (
                 <span className="text-gray-400">未設定</span>

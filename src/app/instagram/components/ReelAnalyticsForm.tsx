@@ -87,6 +87,12 @@ const ReelAnalyticsForm: React.FC<ReelAnalyticsFormProps> = ({
       if (parsed.shares !== null) {
         updatedData.shares = String(parsed.shares);
       }
+      if (parsed.reposts !== null) {
+        updatedData.reposts = String(parsed.reposts);
+      }
+      if (parsed.followerIncrease !== null) {
+        updatedData.followerIncrease = String(parsed.followerIncrease);
+      }
       if (parsed.reelReachSourceProfile !== null) {
         updatedData.reelReachSourceProfile = String(parsed.reelReachSourceProfile);
       }

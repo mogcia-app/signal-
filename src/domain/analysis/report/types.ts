@@ -38,6 +38,7 @@ export interface PerformanceScoreResult {
     postCount: number;
     analyzedCount: number;
     hasPlan: boolean;
+    displayHasPlan?: boolean;
   };
 }
 

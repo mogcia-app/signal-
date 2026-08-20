@@ -4,6 +4,7 @@ export function calculatePerformanceScore(params: {
   postCount: number;
   analyzedCount: number;
   hasPlan: boolean;
+  displayHasPlan?: boolean;
   totalLikes: number;
   totalComments: number;
   totalShares: number;
@@ -17,6 +18,7 @@ export function calculatePerformanceScore(params: {
     postCount,
     analyzedCount,
     hasPlan,
+    displayHasPlan,
     totalLikes,
     totalComments,
     totalShares,
@@ -54,6 +56,7 @@ export function calculatePerformanceScore(params: {
         postCount: 0,
         analyzedCount: 0,
         hasPlan,
+        displayHasPlan: displayHasPlan ?? hasPlan,
       },
     };
   }
@@ -159,6 +162,7 @@ export function calculatePerformanceScore(params: {
       postCount,
       analyzedCount,
       hasPlan,
+      displayHasPlan: displayHasPlan ?? hasPlan,
     },
   };
 }

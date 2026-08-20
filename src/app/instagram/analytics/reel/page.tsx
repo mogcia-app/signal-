@@ -10,6 +10,7 @@ import SNSLayout from "../../../../components/sns-layout";
 import { CheckCircle, RefreshCw, X } from "lucide-react";
 import type { CommentThread } from "../../components/types";
 import { authFetch } from "../../../../utils/authFetch";
+import { clientCache } from "../../../../utils/cache";
 
 // オーディエンス分析データの型定義
 interface AudienceData {
@@ -663,6 +664,7 @@ function AnalyticsReelContent() {
       // データを再取得
       await fetchAnalyticsData();
       if (typeof window !== "undefined") {
+        clientCache.clear();
         window.dispatchEvent(new Event("posts-analytics-updated"));
       }
 

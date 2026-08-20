@@ -11,12 +11,12 @@ import { DailyKPITrend } from "./components/DailyKPITrend";
 import { PostingTimeKPIAnalysis } from "./components/PostingTimeKPIAnalysis";
 import { useAuth } from "../../../contexts/auth-context";
 import { useKpiPageData } from "./hooks/useKpiPageData";
-import { useBillingCycleMonth } from "@/hooks/useBillingCycleMonth";
+import { useCalendarMonth } from "@/hooks/useCalendarMonth";
 
 export default function KPIPageClient() {
   const { user } = useAuth();
   const isAuthReady = useMemo(() => Boolean(user), [user]);
-  const { selectedMonth, setSelectedMonth, selectedPeriodLabel, isCycleResolved } = useBillingCycleMonth(isAuthReady);
+  const { selectedMonth, setSelectedMonth, selectedPeriodLabel, isCalendarResolved } = useCalendarMonth(isAuthReady);
   const {
     kpiData,
     isLoading,
@@ -27,10 +27,10 @@ export default function KPIPageClient() {
   } = useKpiPageData({ isAuthReady });
 
   useEffect(() => {
-    if (isAuthReady && isCycleResolved && selectedMonth) {
+    if (isAuthReady && isCalendarResolved && selectedMonth) {
       void fetchKPIBreakdown(selectedMonth);
     }
-  }, [fetchKPIBreakdown, isAuthReady, isCycleResolved, selectedMonth]);
+  }, [fetchKPIBreakdown, isAuthReady, isCalendarResolved, selectedMonth]);
 
   return (
     <SNSLayout customTitle="KPIコンソール" customDescription="主要KPIを要素ごとに分解し、何が伸びたか／落ちたかを素早く把握できます">

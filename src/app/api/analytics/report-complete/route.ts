@@ -8,7 +8,7 @@ import { buildReportComplete } from "@/domain/analysis/report/usecases/build-rep
 import { createReportAiClient } from "@/domain/analysis/report/usecases/create-report-ai-client";
 import { logImplicitAiAction } from "@/lib/ai/implicit-action-log";
 import { AiUsageLimitError, assertAiOutputAvailable, consumeAiOutput } from "@/lib/server/ai-usage-limit";
-import { getBillingCycleContext } from "@/lib/server/billing-cycle";
+import { getCalendarMonthRangeForMonthKey } from "@/lib/server/billing-cycle";
 import {
   acquireAiRequestLock,
   buildAiRequestKey,
@@ -62,8 +62,11 @@ export async function GET(request: NextRequest) {
 
     const userProfile = await getUserProfile(uid);
     const { searchParams } = new URL(request.url);
-    const billingCycle = getBillingCycleContext({ userProfile });
-    const date = searchParams.get("date") || billingCycle.current.key;
+    const calendarMonth = getCalendarMonthRangeForMonthKey({
+      userProfile,
+      monthKey: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+    });
+    const date = searchParams.get("date") || calendarMonth.key;
     const forceRegenerate = searchParams.get("regenerate") === "true";
     const requestId = String(searchParams.get("requestId") || "").trim();
 

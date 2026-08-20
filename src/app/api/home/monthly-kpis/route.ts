@@ -5,7 +5,7 @@ import * as admin from "firebase-admin";
 import { KpiDashboardRepository } from "@/repositories/kpi-dashboard-repository";
 import { aggregateKpiInput } from "@/domain/analysis/kpi/usecases/aggregate-kpi-input";
 import { getUserProfile } from "@/lib/server/user-profile";
-import { getBillingCycleContext } from "@/lib/server/billing-cycle";
+import { getCalendarMonthRangeForMonthKey } from "@/lib/server/billing-cycle";
 
 /**
  * 今月のKPIデータを取得（/kpi-breakdownと同じロジックを使用）
@@ -41,12 +41,13 @@ export async function GET(request: NextRequest) {
       previousStartDate = new Date(targetDate.getFullYear(), targetDate.getMonth() - 1, 1);
       previousEndDateExclusive = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
     } else {
-      const cycle = getBillingCycleContext({ userProfile, now });
-      dateStr = cycle.current.key;
-      startDate = cycle.current.start;
-      endDateExclusive = cycle.current.endExclusive;
-      previousStartDate = cycle.previous.start;
-      previousEndDateExclusive = cycle.previous.endExclusive;
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const range = getCalendarMonthRangeForMonthKey({ userProfile, monthKey: currentMonth, now });
+      dateStr = range.key;
+      startDate = range.start;
+      endDateExclusive = range.endExclusive;
+      previousStartDate = range.previousStart;
+      previousEndDateExclusive = range.previousEndExclusive;
     }
     const startTimestamp = admin.firestore.Timestamp.fromDate(startDate);
     const endExclusiveTimestamp = admin.firestore.Timestamp.fromDate(endDateExclusive);

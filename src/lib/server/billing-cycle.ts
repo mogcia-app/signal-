@@ -282,3 +282,41 @@ export function getBillingCycleRangeForMonthKey(params: {
     previousEndExclusive: start,
   };
 }
+
+export function getCalendarMonthRangeForMonthKey(params: {
+  userProfile: UserProfile | null | undefined;
+  monthKey: string;
+  now?: Date;
+}): {
+  timezone: string;
+  key: string;
+  start: Date;
+  endExclusive: Date;
+  previousKey: string;
+  previousStart: Date;
+  previousEndExclusive: Date;
+} {
+  const timezone = normalizeTimezone(params.userProfile?.timezone);
+  const parsed = parseMonthKey(params.monthKey);
+  const fallbackParts = getDatePartsInTimezone(params.now || new Date(), timezone);
+  const current = parsed || {
+    year: fallbackParts.year,
+    month: fallbackParts.month,
+  };
+  const next = shiftMonth(current.year, current.month, 1);
+  const prev = shiftMonth(current.year, current.month, -1);
+
+  const start = zonedStartOfDayToUtc(current.year, current.month, 1, timezone);
+  const endExclusive = zonedStartOfDayToUtc(next.year, next.month, 1, timezone);
+  const previousStart = zonedStartOfDayToUtc(prev.year, prev.month, 1, timezone);
+
+  return {
+    timezone,
+    key: monthKey(current.year, current.month),
+    start,
+    endExclusive,
+    previousKey: monthKey(prev.year, prev.month),
+    previousStart,
+    previousEndExclusive: start,
+  };
+}
