@@ -2,6 +2,58 @@
  * Instagram分析データのパースユーティリティ
  */
 
+export function parseInstagramNumber(value: string | null | undefined): number | null {
+  const raw = String(value || "")
+    .replace(/[０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0))
+    .replace(/,/g, "")
+    .trim();
+  const match = raw.match(/(\d+(?:\.\d+)?)\s*([万億kKＫ]?)/);
+  if (!match) {
+    return null;
+  }
+
+  const base = Number(match[1]);
+  if (!Number.isFinite(base)) {
+    return null;
+  }
+  const unit = match[2];
+  if (unit === "億") {
+    return Math.round(base * 100000000);
+  }
+  if (unit === "万") {
+    return Math.round(base * 10000);
+  }
+  if (unit === "k" || unit === "K" || unit === "Ｋ") {
+    return Math.round(base * 1000);
+  }
+  return Math.round(base);
+}
+
+export function parseInstagramPercent(value: string | null | undefined): number | null {
+  const raw = String(value || "")
+    .replace(/[０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0))
+    .replace(/,/g, "")
+    .trim();
+  const match = raw.match(/(\d+(?:\.\d+)?)\s*%?/);
+  if (!match) {
+    return null;
+  }
+  const percent = Number(match[1]);
+  return Number.isFinite(percent) ? percent : null;
+}
+
+function readNumberForLabel(line: string, nextLine: string | null, labels: string[]): number | null {
+  const matchedLabel = labels.find((label) => line.includes(label));
+  if (!matchedLabel) {
+    return null;
+  }
+  const inlineValue = line
+    .replace(matchedLabel, "")
+    .replace(/[：:]/g, " ")
+    .trim();
+  return parseInstagramNumber(inlineValue) ?? parseInstagramNumber(nextLine);
+}
+
 export interface ParsedInstagramReelData {
   hasData: boolean;
   reach: number | null;
@@ -58,118 +110,153 @@ export const parseInstagramReelData = (text: string): ParsedInstagramReelData =>
     const prevLine = i > 0 ? lines[i - 1] : null;
 
     // ビュー（閲覧数）
-    if (line === "ビュー" && nextLine && /^\d+$/.test(nextLine)) {
-      result.reach = parseInt(nextLine, 10);
+    const viewValue = line.includes("リーチしたアカウント")
+      ? null
+      : readNumberForLabel(line, nextLine, ["ビュー", "閲覧数", "リーチ"]);
+    if (viewValue !== null) {
+      result.reach = viewValue;
       result.hasData = true;
     }
 
     // フォロワー以外（閲覧数の） - ビューの下にある場合
     if (line === "フォロワー以外" && nextLine && prevLine && (prevLine === "ビュー" || prevLine.includes("閲覧数"))) {
-      const percent = parseFloat(nextLine.replace("%", ""));
-      if (!isNaN(percent)) {
+      const percent = parseInstagramPercent(nextLine);
+      if (percent !== null) {
         result.reelReachFollowerPercent = percent;
         result.hasData = true;
       }
     }
 
     // プロフィール（閲覧ソース）
-    if (line === "プロフィール" && nextLine && /^\d+$/.test(nextLine) && prevLine !== "プロフィールのアクティビティ" && !prevLine?.includes("プロフィールへの")) {
-      result.reelReachSourceProfile = parseInt(nextLine, 10);
-      result.hasData = true;
+    if (
+      line.includes("プロフィール") &&
+      !line.includes("プロフィールへの") &&
+      prevLine !== "プロフィールのアクティビティ" &&
+      !prevLine?.includes("プロフィールへの")
+    ) {
+      const value = readNumberForLabel(line, nextLine, ["プロフィール"]);
+      if (value !== null) {
+        result.reelReachSourceProfile = value;
+        result.hasData = true;
+      }
     }
 
     // リール（閲覧ソース）
-    if (line === "リール" && nextLine && /^\d+$/.test(nextLine) && !prevLine?.includes("閲覧")) {
-      result.reelReachSourceReel = parseInt(nextLine, 10);
-      result.hasData = true;
+    if (line.includes("リール") && !prevLine?.includes("閲覧")) {
+      const value = readNumberForLabel(line, nextLine, ["リール"]);
+      if (value !== null) {
+        result.reelReachSourceReel = value;
+        result.hasData = true;
+      }
     }
 
     // 発見（閲覧ソース）
-    if (line === "発見" && nextLine && /^\d+$/.test(nextLine)) {
-      result.reelReachSourceExplore = parseInt(nextLine, 10);
-      result.hasData = true;
+    if (line.includes("発見")) {
+      const value = readNumberForLabel(line, nextLine, ["発見"]);
+      if (value !== null) {
+        result.reelReachSourceExplore = value;
+        result.hasData = true;
+      }
     }
 
     // 検索（閲覧ソース）
-    if (line === "検索" && nextLine && /^\d+$/.test(nextLine)) {
-      result.reelReachSourceSearch = parseInt(nextLine, 10);
-      result.hasData = true;
+    if (line.includes("検索")) {
+      const value = readNumberForLabel(line, nextLine, ["検索"]);
+      if (value !== null) {
+        result.reelReachSourceSearch = value;
+        result.hasData = true;
+      }
     }
 
     // その他（閲覧ソース）
-    if (line === "その他" && nextLine && /^\d+$/.test(nextLine) && !prevLine?.includes("フォロワー")) {
-      result.reelReachSourceOther = parseInt(nextLine, 10);
-      result.hasData = true;
+    if (line.includes("その他") && !prevLine?.includes("フォロワー")) {
+      const value = readNumberForLabel(line, nextLine, ["その他"]);
+      if (value !== null) {
+        result.reelReachSourceOther = value;
+        result.hasData = true;
+      }
     }
 
     // リーチしたアカウント数
-    if (line.includes("リーチしたアカウント数") && nextLine && /^\d+$/.test(nextLine)) {
-      result.reelReachedAccounts = parseInt(nextLine, 10);
+    const reachedAccounts = readNumberForLabel(line, nextLine, ["リーチしたアカウント数", "リーチしたアカウント"]);
+    if (reachedAccounts !== null) {
+      result.reelReachedAccounts = reachedAccounts;
       result.hasData = true;
     }
 
     // インタラクション数（単独の行）
-    if (line === "インタラクション" && nextLine && /^\d+$/.test(nextLine)) {
-      result.reelInteractionCount = parseInt(nextLine, 10);
+    const interactionCount =
+      line === "インタラクション" || /^インタラクション[：:\s]/.test(line)
+        ? readNumberForLabel(line, nextLine, ["インタラクション"])
+        : null;
+    if (interactionCount !== null) {
+      result.reelInteractionCount = interactionCount;
       result.hasData = true;
     }
 
     // インタラクションのフォロワー以外
     if (line === "フォロワー以外" && prevLine === "インタラクション" && nextLine) {
-      const percent = parseFloat(nextLine.replace("%", ""));
-      if (!isNaN(percent)) {
+      const percent = parseInstagramPercent(nextLine);
+      if (percent !== null) {
         result.reelInteractionFollowerPercent = percent;
         result.hasData = true;
       }
     }
 
     // いいね
-    if ((line.includes("いいね") || line === "「いいね！」") && nextLine && /^\d+$/.test(nextLine)) {
-      result.likes = parseInt(nextLine, 10);
+    const likes = readNumberForLabel(line, nextLine, ["いいね数", "いいね", "「いいね！」"]);
+    if (likes !== null) {
+      result.likes = likes;
       result.hasData = true;
     }
 
     // コメント
-    if (line === "コメント" && nextLine && /^\d+$/.test(nextLine) && !prevLine?.includes("インタラクション")) {
-      result.comments = parseInt(nextLine, 10);
+    const comments = !prevLine?.includes("インタラクション")
+      ? readNumberForLabel(line, nextLine, ["コメント数", "コメント"])
+      : null;
+    if (comments !== null) {
+      result.comments = comments;
       result.hasData = true;
     }
 
     // 保存数
-    if (line === "保存数" && nextLine && /^\d+$/.test(nextLine)) {
-      result.saves = parseInt(nextLine, 10);
+    const saves = readNumberForLabel(line, nextLine, ["保存数", "保存"]);
+    if (saves !== null) {
+      result.saves = saves;
       result.hasData = true;
     }
 
     // シェア数
-    if (line === "シェア数" && nextLine && /^\d+$/.test(nextLine)) {
-      result.shares = parseInt(nextLine, 10);
+    const shares = readNumberForLabel(line, nextLine, ["シェア数", "シェア"]);
+    if (shares !== null) {
+      result.shares = shares;
       result.hasData = true;
     }
 
     // プロフィールへのアクセス
-    if (line === "プロフィールへのアクセス" && nextLine && /^\d+$/.test(nextLine)) {
-      result.profileVisits = parseInt(nextLine, 10);
+    const profileVisits = readNumberForLabel(line, nextLine, ["プロフィールへのアクセス", "プロフィールアクセス"]);
+    if (profileVisits !== null) {
+      result.profileVisits = profileVisits;
       result.hasData = true;
     }
 
     // 外部リンクのタップ数
-    if (line === "外部リンクのタップ数" && nextLine && /^\d+$/.test(nextLine)) {
-      result.externalLinkTaps = parseInt(nextLine, 10);
+    const externalLinkTaps = readNumberForLabel(line, nextLine, ["外部リンクのタップ数", "外部リンクタップ"]);
+    if (externalLinkTaps !== null) {
+      result.externalLinkTaps = externalLinkTaps;
       result.hasData = true;
     }
 
     // フォロー数
-    if (line === "フォロー数" && nextLine && /^\d+$/.test(nextLine)) {
-      result.profileFollows = parseInt(nextLine, 10);
+    const follows = readNumberForLabel(line, nextLine, ["フォロー数"]);
+    if (follows !== null) {
+      result.profileFollows = follows;
       result.hasData = true;
     }
   }
 
   return result;
 };
-
-
 
 
 
