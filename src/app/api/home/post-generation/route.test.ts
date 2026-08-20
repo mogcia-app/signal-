@@ -131,4 +131,53 @@ describe("/api/home/post-generation translateEnglish", () => {
     expect(mockCreate).toHaveBeenCalledTimes(1);
     expect(mockConsumeAiOutput).toHaveBeenCalled();
   });
+
+  test("uses Signal caption style for generated feed posts", async () => {
+    mockCreate.mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              title: "AI活用を仕組みにする",
+              content:
+                "「ChatGPTは使っています」\n\nもちろん、それも立派な第一歩です。\n\nただ、会社全体でAIを活用するなら、**AIを業務フローそのものに組み込むこと。**\n\n保存して見返してください。",
+              hashtags: ["生成AI", "AI導入", "業務効率化"],
+              suggestedTime: "09:00",
+              postHints: ["冒頭を読者の実際の発言にして、2行目で肯定してから課題へつなげる。"],
+            }),
+          },
+        },
+      ],
+    });
+
+    const { POST } = await loadRoute();
+    const request = createNextJsonRequest("http://localhost:3000/api/home/post-generation", {
+      method: "POST",
+      body: {
+        action: "generatePost",
+        postType: "feed",
+        prompt: "AI活用の考え方",
+        operationPurpose: "consultation",
+      },
+    });
+
+    const response = await POST(request);
+    const body = await readJson<{
+      success: boolean;
+      data: { content: string };
+    }>(response);
+
+    expect(response.status).toBe(200);
+    expect(body.data.content).toContain("AIを業務フローそのものに組み込むこと。");
+    expect(body.data.content).not.toContain("**");
+
+    const createArgs = mockCreate.mock.calls[0]?.[0] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(createArgs.messages[0].content).toContain("Signal.のInstagram投稿編集者");
+    expect(createArgs.messages[1].content).toContain("【Signal.キャプション型】");
+    expect(createArgs.messages[1].content).toContain("会話調の一言や引用風フック");
+    expect(createArgs.messages[1].content).toContain("文字数目安は450〜900字");
+    expect(createArgs.messages[1].content).toContain("最終本文にMarkdown記号を残さない");
+  });
 });

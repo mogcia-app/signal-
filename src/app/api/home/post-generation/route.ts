@@ -508,9 +508,40 @@ const normalizeToPostTitle = (params: {
 const normalizeGeneratedContent = (value: string): string => {
   return String(value || "")
     .replace(/\\n/g, "\n")
-    .replace(/\*\*/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, "")
+    .replace(/^[ \t]*>[ \t]?/gm, "")
     .replace(/\s+\n/g, "\n")
     .trim();
+};
+
+const buildSignalCaptionStyleGuide = (params: { postType: PostType; operationPurpose: string }): string => {
+  if (params.postType === "story") {
+    return "ストーリーズは短文のため、Signal.型長文キャプションは使わず、1枚目で反応したくなる問いに集中してください。";
+  }
+
+  const purposeHint = params.operationPurpose
+    ? `投稿目的「${params.operationPurpose}」に合わせて、最後のCTAを相談・保存・プロフィール遷移のどれかに寄せてください。`
+    : "最後のCTAは保存・DM・プロフィールリンクのいずれか自然なものにしてください。";
+
+  return [
+    "【Signal.キャプション型】",
+    "凡庸な説明文ではなく、以下の流れで「読ませる投稿文」にしてください。",
+    "1. 冒頭は会話調の一言や引用風フックで始める。例: 「うちもAI使ってます。ChatGPT使ってるので！」のように、読者が言いそうな言葉から入る。",
+    "2. その発言をいったん肯定する。読者を否定しない。",
+    "3. ただし書きで、見落としがちな論点を提示する。",
+    "4. Aさん/Bさん/Cさん、問い合わせ/商談/社内データのような具体例を3つ前後並べ、課題を構造化する。",
+    "5. 中盤に強い核心メッセージを1つ入れる。AI内部では強調を考えてよいが、最終本文にMarkdown記号を残さない。",
+    "6. その後、実務に落とした解決策を3文前後で書く。",
+    "7. 終盤にもう一度、短く刺さるまとめコピーを入れる。",
+    "8. 最後は保存CTA、相談CTA、ブランド/サービス説明の順で締める。",
+    "9. ハッシュタグは本文末尾に混ぜず、hashtags配列だけに入れる。",
+    "10. 文字数目安は450〜900字。短すぎる2〜4文の説明で終わらせない。",
+    "禁止: 「今日は〜を紹介します」「3つのポイントをご紹介」「参考にしてみてください」だけで終わる汎用文。",
+    purposeHint,
+  ].join("\n");
 };
 
 const enforceStoryShortCaption = (value: string): string => {
@@ -890,6 +921,7 @@ export async function POST(request: NextRequest) {
             .filter(Boolean)
             .join("\n")
         : "【トーン方針】共感重視トーン。読みやすく、前向きで軽やかな表現にしてください。",
+      mode !== "calendarTitle" ? buildSignalCaptionStyleGuide({ postType, operationPurpose }) : "",
       mode === "calendarTitle" && avoidTitles.length > 0
         ? `\n【使用禁止タイトル】\n${avoidTitles.map((title) => `- ${title}`).join("\n")}`
         : "",
@@ -900,7 +932,7 @@ export async function POST(request: NextRequest) {
         ? "タイトルは投稿サムネイルにそのまま使える、商品・ブランド訴求の文にしてください。禁止: ノウハウ見出し（コツ/構成/共通点/テンプレ/作り方/要点まとめ/豆知識）。『誰向けか』より『何を投稿するか』を優先し、商品・サービス名を含めてください。"
         : postType === "story"
           ? "本文はストーリーズ用の短文に限定してください。必須: 20〜50文字、1〜2行、1枚目で問いかけを置く。禁止: 長文説明、講義口調、箇条書き。Markdown記法（**）は禁止。"
-          : "本文は実務でそのまま投稿できるキャプションとして作成してください。禁止: 解説口調（今日は〜を紹介します等）、講義文、箇条書きの説明。必須: 冒頭フック1文 + 本文2-4文 + CTA1文。Markdown記法（**）は禁止。",
+          : "本文は実務でそのまま投稿できる長めのキャプションとして作成してください。必須: 会話調フック + 肯定 + ただし書き + 具体例3つ前後 + 核心文 + 解決策 + まとめコピー + 保存/相談CTA。Markdown記号（**, #, >, `）は本文内に残さない。",
     ]
       .filter(Boolean)
       .join("\n");
@@ -923,7 +955,7 @@ export async function POST(request: NextRequest) {
           content:
             mode === "calendarTitle"
               ? "あなたはInstagram運用担当の編集者です。出力はJSONのみ。必ず title, content, hashtags, suggestedTime, postHints を返してください。titleは12-24文字で具体語（題材・対象・行動）を含め、抽象語だけの表現は禁止。禁止例: 新しい月の始まり/新しい発見/知っておきたい。contentは空文字、hashtagsは空配列でよい。postHintsは『1文で実行できる改善指示』を1-3件で返してください。抽象語（意識/工夫/魅力など）だけの文は禁止。"
-              : "あなたはInstagram運用担当のアシスタントです。出力はJSONのみ。必ず title, content, hashtags, suggestedTime, postHints を返してください。hashtagsは#なしの配列、最大5件。postHintsは投稿文に沿った『1文で実行できる改善指示』を1-3件で返してください。抽象語（意識/工夫/魅力など）だけの文は禁止。",
+              : "あなたはSignal.のInstagram投稿編集者です。出力はJSONのみ。必ず title, content, hashtags, suggestedTime, postHints を返してください。contentは会話調フックから始まる長めの実投稿キャプションにし、読者の現状を肯定してから課題を構造化し、強い核心文と保存/相談CTAで締めてください。contentにMarkdown記号（**, #, >, `）を残さないでください。hashtagsは#なしの配列、最大5件。postHintsは投稿文に沿った『1文で実行できる改善指示』を1-3件で返してください。抽象語（意識/工夫/魅力など）だけの文は禁止。",
         },
         {
           role: "user",

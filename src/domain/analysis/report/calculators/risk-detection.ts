@@ -12,7 +12,11 @@ export interface PreviousMonthAggregates {
   totalLikes: number;
   totalReach: number;
   totalComments: number;
+  totalShares: number;
+  totalReposts: number;
+  totalSaves: number;
   totalFollowerIncrease: number;
+  engagementRate: number | null;
 }
 
 export function aggregatePreviousMonthAnalytics(
@@ -33,21 +37,32 @@ export function aggregatePreviousMonthAnalytics(
   let prevTotalLikes = 0;
   let prevTotalReach = 0;
   let prevTotalComments = 0;
+  let prevTotalShares = 0;
+  let prevTotalReposts = 0;
+  let prevTotalSaves = 0;
   let prevTotalFollowerIncrease = 0;
 
   prevAnalyticsByPostId.forEach((data) => {
     prevTotalLikes += Number(data.likes) || 0;
     prevTotalReach += Number(data.reach) || 0;
     prevTotalComments += Number(data.comments) || 0;
+    prevTotalShares += Number(data.shares) || 0;
+    prevTotalReposts += Number(data.reposts) || 0;
+    prevTotalSaves += Number(data.saves) || 0;
     prevTotalFollowerIncrease += Number(data.followerIncrease) || 0;
   });
+  const prevEngagement = prevTotalLikes + prevTotalComments + prevTotalShares;
 
   return {
     analyzedCount: prevAnalyticsByPostId.size,
     totalLikes: prevTotalLikes,
     totalReach: prevTotalReach,
     totalComments: prevTotalComments,
+    totalShares: prevTotalShares,
+    totalReposts: prevTotalReposts,
+    totalSaves: prevTotalSaves,
     totalFollowerIncrease: prevTotalFollowerIncrease,
+    engagementRate: prevTotalReach > 0 ? (prevEngagement / prevTotalReach) * 100 : null,
   };
 }
 

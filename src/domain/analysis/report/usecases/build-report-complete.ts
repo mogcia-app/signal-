@@ -163,6 +163,9 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
       likes: analytics.likes,
       reach: analytics.reach,
       comments: analytics.comments,
+      shares: analytics.shares,
+      reposts: analytics.reposts,
+      saves: analytics.saves,
       followerIncrease: analytics.followerIncrease,
     }))
   );
@@ -241,6 +244,7 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
       totalFollowerIncrease,
       engagementRate: performanceScore.kpis.engagementRate,
       engagementRateNeedsReachInput: performanceScore.kpis.engagementRateNeedsReachInput,
+      previous,
       prevTotalReach: previous.totalReach,
       prevTotalFollowerIncrease: previous.totalFollowerIncrease,
     },

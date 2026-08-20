@@ -55,8 +55,8 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({
           hasPlan: monthlyReview.hasPlan || false,
           analyzedCount: monthlyReview.analyzedCount || 0,
           generationState: monthlyReview.generationState || "locked",
-          requiredCount: monthlyReview.requiredCount || 10,
-          remainingCount: monthlyReview.remainingCount ?? Math.max(0, 10 - (monthlyReview.analyzedCount || 0)),
+          requiredCount: monthlyReview.requiredCount || 1,
+          remainingCount: monthlyReview.remainingCount ?? Math.max(0, 1 - (monthlyReview.analyzedCount || 0)),
         }
       : null;
   }, [reportData?.monthlyReview]);
@@ -99,7 +99,12 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({
                     {Math.min(reviewData.analyzedCount, reviewData.requiredCount)}/{reviewData.requiredCount}
                   </p>
                 </div>
-                <div className="grid grid-cols-10 gap-1">
+                <div
+                  className="grid gap-1"
+                  style={{
+                    gridTemplateColumns: `repeat(${Math.max(1, reviewData.requiredCount)}, minmax(0, 1fr))`,
+                  }}
+                >
                   {Array.from({ length: reviewData.requiredCount }).map((_, index) => {
                     const isFilled = index < Math.min(reviewData.analyzedCount, reviewData.requiredCount);
                     return (
@@ -114,7 +119,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({
                   {reviewData.generationState === "locked"
                     ? `あと${reviewData.remainingCount}件で分析レポート利用可能です。`
                     : reviewData.generationState === "ready"
-                      ? "10件達成しました。ボタンを押すと今月の振り返りを生成します。"
+                      ? "分析データがあります。ボタンを押すと今月の振り返りを生成します。"
                       : "生成済みの今月の振り返りを表示しています。"}
                 </p>
               </div>
@@ -139,7 +144,7 @@ export const MonthlyReview: React.FC<MonthlyReviewProps> = ({
               <div className="text-center py-4 text-gray-500">
                 <p className="text-sm">
                   {reviewData.generationState === "locked"
-                    ? "分析データが10件に達すると生成できます"
+                    ? "分析データが1件以上あると生成できます"
                     : "生成ボタンを押すと今月の振り返りが表示されます"}
                 </p>
               </div>

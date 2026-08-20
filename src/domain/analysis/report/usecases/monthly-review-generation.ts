@@ -8,6 +8,7 @@ export interface MonthlyReviewPromptInput {
   currentMonth: string;
   nextMonth: string;
   analyzedCount: number;
+  previousComparisonText: string;
   totalLikes: number;
   totalReposts: number;
   totalComments: number;
@@ -31,6 +32,7 @@ export interface MonthlyReviewPromptInput {
 export interface ProposalPromptInput {
   nextMonth: string;
   analyzedCount: number;
+  previousComparisonText: string;
   totalLikes: number;
   totalReposts: number;
   totalComments: number;
@@ -63,6 +65,66 @@ export function formatFollowerChangeText(prevTotalFollowerIncrease: number, tota
   return `（前月比${totalFollowerIncrease > prevTotalFollowerIncrease ? "+" : ""}${followerChange.toFixed(1)}％）`;
 }
 
+function formatSignedPercent(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function formatSignedPoint(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}pt`;
+}
+
+function formatMetricComparison(label: string, current: number, previous: number, unit = ""): string {
+  if (previous <= 0) {
+    return `- ${label}: 今月 ${current.toLocaleString()}${unit} / 前月データなし`;
+  }
+  const change = ((current - previous) / previous) * 100;
+  return `- ${label}: 今月 ${current.toLocaleString()}${unit} / 前月 ${previous.toLocaleString()}${unit} / 前月比 ${formatSignedPercent(change)}`;
+}
+
+export function buildPreviousComparisonText(input: {
+  analyzedCount: number;
+  totalLikes: number;
+  totalReach: number;
+  totalComments: number;
+  totalShares: number;
+  totalReposts: number;
+  totalSaves: number;
+  totalFollowerIncrease: number;
+  engagementRate: number | null;
+  previous: {
+    analyzedCount: number;
+    totalLikes: number;
+    totalReach: number;
+    totalComments: number;
+    totalShares: number;
+    totalReposts: number;
+    totalSaves: number;
+    totalFollowerIncrease: number;
+    engagementRate: number | null;
+  };
+}): string {
+  if (input.previous.analyzedCount <= 0) {
+    return "前月の分析済み投稿データがないため、前月比は算出できません。今月データを基準値として扱ってください。";
+  }
+
+  const engagementLine =
+    input.engagementRate === null || input.previous.engagementRate === null
+      ? "- エンゲージメント率: 今月または前月の閲覧数不足により比較不可"
+      : `- エンゲージメント率: 今月 ${input.engagementRate.toFixed(2)}% / 前月 ${input.previous.engagementRate.toFixed(2)}% / 前月差 ${formatSignedPoint(input.engagementRate - input.previous.engagementRate)}`;
+
+  return [
+    formatMetricComparison("分析済み投稿数", input.analyzedCount, input.previous.analyzedCount, "件"),
+    formatMetricComparison("閲覧数", input.totalReach, input.previous.totalReach, "人"),
+    formatMetricComparison("いいね数", input.totalLikes, input.previous.totalLikes, "件"),
+    formatMetricComparison("コメント数", input.totalComments, input.previous.totalComments, "件"),
+    formatMetricComparison("保存数", input.totalSaves, input.previous.totalSaves, "件"),
+    formatMetricComparison("シェア数", input.totalShares, input.previous.totalShares, "件"),
+    formatMetricComparison("リポスト数", input.totalReposts, input.previous.totalReposts, "件"),
+    formatMetricComparison("フォロワー増加数", input.totalFollowerIncrease, input.previous.totalFollowerIncrease, "人"),
+    engagementLine,
+  ].join("\n");
+}
+
 export function buildInsufficientDataMonthlyReview(params: {
   monthName: string;
   analyzedCount: number;
@@ -88,7 +150,7 @@ export function buildInsufficientDataMonthlyReview(params: {
 
 💡 総評
 
-${params.monthName}は分析済み投稿が${params.analyzedCount}件と、まだデータが少ない状態です。より精度の高い分析とAIによる振り返り・アクションプラン生成のためには、最低10件以上の分析済み投稿が必要です。
+${params.monthName}は分析済み投稿が${params.analyzedCount}件と、まだデータが少ない状態です。より精度の高い分析のためには、引き続き投稿データを蓄積していくことが大切です。
 
 引き続き投稿を分析してデータを蓄積していきましょう。`;
 }
@@ -192,6 +254,9 @@ ${input.hasPlan ? `- 運用計画: ${input.planTitle || "あり"}` : "- 運用�
 ${input.businessInfoText}
 ${input.aiSettingsText}
 
+【前月との比較】
+${input.previousComparisonText}
+
 【投稿タイプ別の統計】
 ${input.postTypeInfo}
 
@@ -205,6 +270,8 @@ ${directionBlock}
 - 出力は必ず以下のレポート形式に固定し、見出しを変えない。
 - 数値は入力データにあるものだけ使う（未提供データの推測禁止）。
 - パフォーマンス評価は主要KPI（いいね・コメント・シェア・保存・リポスト・フォロワー増減・エンゲージメント率）を基準にし、リーチ増減を主評価にしない。
+- 「前月からの変化」では、前月比較データを使って伸びた指標と落ちた指標を明確に分ける。
+- 「総評」では、良かったことと悪かったこと・課題を必ず両方書く。前月データがない場合は、今月の良かった点と次に検証すべき課題として書く。
 - 文体は自然で読みやすく、硬すぎる報告書口調を避ける。
 - 「コンテンツ別の傾向」では、投稿タイプ別統計を使って「フィードとリールのどちらが多いか」を必ず1文で触れる。
 - 「提案」は2つ固定。各提案は「タイトル + 説明 + 実行手順」の3要素を持たせる。
@@ -230,6 +297,14 @@ ${directionBlock}
 
 ⸻
 
+🔹 前月からの変化
+\t•\t伸びた指標：
+\t•\t落ちた指標：
+\t•\t変化から見えること：
+2〜3文で、先月と比べて何が変わったかを要約
+
+⸻
+
 🔹 コンテンツ別の傾向
 \t•\t投稿タイプの内訳（フィード/リール/ストーリー）：
 \t•\tもっとも閲覧されたコンテンツ：
@@ -238,6 +313,8 @@ ${directionBlock}
 ⸻
 
 💡 総評
+\t•\t良かったこと：
+\t•\t悪かったこと・課題：
 今月の成果と改善余地を2〜4文でまとめる
 
 ⸻
@@ -269,6 +346,9 @@ export function buildProposalPrompt(input: ProposalPromptInput): string {
 ${input.businessInfoText}
 ${input.aiSettingsText}
 
+【前月との比較】
+${input.previousComparisonText}
+
 【投稿タイプ別の統計】
 ${input.postTypeSummary}
 
@@ -277,6 +357,7 @@ ${input.postTypeSummary}
 - 提案は2つ固定で、番号付きで出力する。
 - 各提案は「タイトル」「説明」「→ 実行手順」の3要素で構成する。
 - 実行手順は抽象語だけで終わらせず、「何を」「どの型で」「何本」「どんなCTAで」のうち2要素以上を必ず含める。
+- 前月から悪化した指標や課題がある場合は、提案のうち少なくとも1つをその改善に紐づける。
 - 提案パートでハッシュタグには触れない。ハッシュタグ提案やタグ数の指定をしない。
 - 文体はやわらかく、短く、実務で使える表現にする。
 

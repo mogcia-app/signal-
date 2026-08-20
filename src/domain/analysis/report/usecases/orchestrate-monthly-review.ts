@@ -2,6 +2,7 @@ import type { AiClient, ParsedActionPlan } from "@/domain/analysis/report/types"
 import { extractActionPlansFromReview } from "@/domain/analysis/report/parsers/action-plans-from-review";
 import {
   buildAiErrorFallbackMonthlyReview,
+  buildPreviousComparisonText,
   buildNoDataMonthlyReview,
   formatFollowerChangeText,
   formatReachChangeText,
@@ -38,6 +39,17 @@ interface MonthlyTotals {
   totalFollowerIncrease: number;
   engagementRate: number | null;
   engagementRateNeedsReachInput: boolean;
+  previous: {
+    analyzedCount: number;
+    totalLikes: number;
+    totalReach: number;
+    totalComments: number;
+    totalShares: number;
+    totalReposts: number;
+    totalSaves: number;
+    totalFollowerIncrease: number;
+    engagementRate: number | null;
+  };
   prevTotalReach: number;
   prevTotalFollowerIncrease: number;
 }
@@ -64,7 +76,7 @@ export async function orchestrateMonthlyReview(
   requiredCount: number;
   remainingCount: number;
 }> {
-  const requiredCount = 10;
+  const requiredCount = 1;
   const remainingCount = Math.max(0, requiredCount - input.totals.analyzedCount);
   const monthName = getMonthName(input.month);
   const nextMonth = getNextMonthName(input.month);
@@ -73,6 +85,18 @@ export async function orchestrateMonthlyReview(
     input.totals.prevTotalFollowerIncrease,
     input.totals.totalFollowerIncrease
   );
+  const previousComparisonText = buildPreviousComparisonText({
+    analyzedCount: input.totals.analyzedCount,
+    totalLikes: input.totals.totalLikes,
+    totalReach: input.totals.totalReach,
+    totalComments: input.totals.totalComments,
+    totalShares: input.totals.totalShares,
+    totalReposts: input.totals.totalReposts,
+    totalSaves: input.totals.totalSaves,
+    totalFollowerIncrease: input.totals.totalFollowerIncrease,
+    engagementRate: input.totals.engagementRate,
+    previous: input.totals.previous,
+  });
 
   let monthlyReview = null;
   let actionPlans: ParsedActionPlan[] = [];
@@ -124,6 +148,7 @@ export async function orchestrateMonthlyReview(
             currentMonth: monthName,
             nextMonth,
             analyzedCount: input.totals.analyzedCount,
+            previousComparisonText,
             totalLikes: input.totals.totalLikes,
             totalReposts: input.totals.totalReposts,
             totalComments: input.totals.totalComments,
@@ -146,6 +171,7 @@ export async function orchestrateMonthlyReview(
           proposalPromptInput: {
             nextMonth,
             analyzedCount: input.totals.analyzedCount,
+            previousComparisonText,
             totalLikes: input.totals.totalLikes,
             totalReposts: input.totals.totalReposts,
             totalComments: input.totals.totalComments,
