@@ -287,15 +287,20 @@ export async function createScheduledPost(params: {
   return record;
 }
 
-export async function publishDueScheduledPosts(now = new Date()): Promise<{
+export async function publishDueScheduledPosts(options: { now?: Date; clientId?: string } = {}): Promise<{
   attempted: number;
   published: number;
   failed: number;
 }> {
-  const snapshot = await adminDb
+  const now = options.now ?? new Date();
+  const collection = adminDb
     .collection(COLLECTIONS.SCHEDULED_POSTS)
-    .where("status", "==", "scheduled")
-    .get();
+    .where("status", "==", "scheduled");
+
+  const snapshot = await (options.clientId
+    ? collection.where("client_id", "==", options.clientId)
+    : collection
+  ).get();
 
   const duePosts = snapshot.docs
     .map((doc) => ({ ref: doc.ref, record: normalizeScheduledPost(doc.id, doc.data()) }))

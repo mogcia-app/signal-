@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
+import { requireAdminContext } from "@/lib/server/admin-auth";
+import { buildErrorResponse } from "@/lib/server/auth-context";
 import { getMetaReviewConnectionStatus } from "@/lib/server/meta-review";
 
 function buildValidationError(message: string, status = 400) {
@@ -8,7 +9,7 @@ function buildValidationError(message: string, status = 400) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { uid } = await requireAuthContext(request, {
+    const { uid } = await requireAdminContext(request, {
       requireContract: false,
       rateLimit: { key: "review-meta-connect-status", limit: 30, windowSeconds: 60 },
       auditEventName: "review_meta_connect_status",

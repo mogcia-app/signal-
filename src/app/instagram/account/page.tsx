@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import SNSLayout from "@/components/sns-layout";
+import RequireAdmin from "@/components/require-admin";
 import { authFetch } from "@/utils/authFetch";
 
 type AccountResponse = {
@@ -13,7 +14,8 @@ type AccountResponse = {
       id: string;
       clientId: string;
       instagramUserId: string;
-      pageAccessToken: string;
+      hasAccessToken: boolean;
+      pageAccessTokenMasked: string | null;
       tokenExpireAt: string | null;
     } | null;
   };
@@ -37,6 +39,8 @@ export default function InstagramAccountPage() {
   const [clientId, setClientId] = useState("");
   const [instagramUserId, setInstagramUserId] = useState("");
   const [pageAccessToken, setPageAccessToken] = useState("");
+  const [pageAccessTokenMasked, setPageAccessTokenMasked] = useState<string | null>(null);
+  const [hasAccessToken, setHasAccessToken] = useState(false);
   const [tokenExpireAt, setTokenExpireAt] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,13 +53,15 @@ export default function InstagramAccountPage() {
       {
         client_id: clientId || "あなたのUID",
         instagram_user_id: instagramUserId || "1784...",
-        page_access_token: pageAccessToken || "EAAG...",
+        page_access_token: pageAccessToken
+          ? "入力中の新しいトークン"
+          : pageAccessTokenMasked || "未保存",
         token_expire_at: tokenExpireAt ? new Date(tokenExpireAt).toISOString() : null,
       },
       null,
       2,
     );
-  }, [clientId, instagramUserId, pageAccessToken, tokenExpireAt]);
+  }, [clientId, instagramUserId, pageAccessToken, pageAccessTokenMasked, tokenExpireAt]);
 
   useEffect(() => {
     const connected = searchParams.get("connected");
@@ -89,7 +95,9 @@ export default function InstagramAccountPage() {
         if (account) {
           setClientId(account.clientId);
           setInstagramUserId(account.instagramUserId);
-          setPageAccessToken(account.pageAccessToken);
+          setPageAccessToken("");
+          setHasAccessToken(account.hasAccessToken);
+          setPageAccessTokenMasked(account.pageAccessTokenMasked);
           setTokenExpireAt(toDatetimeLocalValue(account.tokenExpireAt));
         }
       } catch (loadError) {
@@ -135,7 +143,9 @@ export default function InstagramAccountPage() {
       const account = result.data.account;
       setClientId(account.clientId);
       setInstagramUserId(account.instagramUserId);
-      setPageAccessToken(account.pageAccessToken);
+      setPageAccessToken("");
+      setHasAccessToken(account.hasAccessToken);
+      setPageAccessTokenMasked(account.pageAccessTokenMasked);
       setTokenExpireAt(toDatetimeLocalValue(account.tokenExpireAt));
       setMessage("Instagramアカウント設定を保存しました。");
     } catch (saveError) {
@@ -176,7 +186,8 @@ export default function InstagramAccountPage() {
   };
 
   return (
-    <SNSLayout customTitle="Instagram連携設定" customDescription="自分の Instagram アカウント情報を登録">
+    <RequireAdmin>
+      <SNSLayout customTitle="Instagram連携設定" customDescription="自分の Instagram アカウント情報を登録">
       <div className="mx-auto max-w-5xl space-y-6">
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
           <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -228,12 +239,17 @@ export default function InstagramAccountPage() {
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-black">Page Access Token</label>
+                    {hasAccessToken ? (
+                      <p className="mb-2 text-xs text-gray-500">
+                        保存済み: {pageAccessTokenMasked || "あり"}。空欄のまま保存すると既存トークンを維持します。
+                      </p>
+                    ) : null}
                     <textarea
                       value={pageAccessToken}
                       onChange={(event) => setPageAccessToken(event.target.value)}
                       rows={6}
                       className="w-full rounded-2xl border border-gray-300 px-3 py-3 text-sm"
-                      placeholder="EAAG..."
+                      placeholder={hasAccessToken ? "新しいトークンで上書きする場合のみ入力" : "EAAG..."}
                     />
                   </div>
 
@@ -282,6 +298,7 @@ export default function InstagramAccountPage() {
           </aside>
         </section>
       </div>
-    </SNSLayout>
+      </SNSLayout>
+    </RequireAdmin>
   );
 }

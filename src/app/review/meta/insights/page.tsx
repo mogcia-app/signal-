@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import RequireAdmin from "@/components/require-admin";
 import SNSLayout from "@/components/sns-layout";
 import { authFetch } from "@/utils/authFetch";
 
@@ -48,7 +49,8 @@ export default function MetaReviewInsightsPage() {
   };
 
   return (
-    <SNSLayout customTitle="Meta審査: 投稿インサイト" customDescription="投稿単位の分析データ取得">
+    <RequireAdmin>
+      <SNSLayout customTitle="Meta審査: 投稿インサイト" customDescription="投稿単位の分析データ取得">
       <div className="max-w-3xl mx-auto p-6 space-y-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <h2 className="text-lg font-semibold mb-2">Reviewer向け手順</h2>
@@ -96,6 +98,7 @@ export default function MetaReviewInsightsPage() {
           </div>
         )}
       </div>
-    </SNSLayout>
+      </SNSLayout>
+    </RequireAdmin>
   );
 }

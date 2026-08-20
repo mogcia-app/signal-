@@ -33,8 +33,8 @@ export function calculatePerformanceScore(params: {
     return {
       score: 0,
       rating: "F",
-      label: "データ不足",
-      color: "red",
+      label: postCount > 0 ? "分析データ未入力" : "データ不足",
+      color: postCount > 0 ? "gray" : "red",
       breakdown: {
         engagement: 0,
         growth: 0,
@@ -53,8 +53,8 @@ export function calculatePerformanceScore(params: {
         engagementRateNeedsReachInput: false,
       },
       metrics: {
-        postCount: 0,
-        analyzedCount: 0,
+        postCount,
+        analyzedCount,
         hasPlan,
         displayHasPlan: displayHasPlan ?? hasPlan,
       },

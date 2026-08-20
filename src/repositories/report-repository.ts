@@ -121,7 +121,7 @@ export class ReportRepository {
 
     return snapshot.docs.flatMap((doc) => {
       const data = doc.data();
-      const postDate = toDate(data.scheduledDate) || toDate(data.publishedAt) || toDate(data.createdAt);
+      const postDate = toDate(data.publishedAt) || toDate(data.scheduledDate) || toDate(data.createdAt);
       if (!postDate || postDate < startDate || postDate > endDate) {
         return [];
       }

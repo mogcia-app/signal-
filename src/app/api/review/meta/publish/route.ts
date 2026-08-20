@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildErrorResponse, requireAuthContext } from "@/lib/server/auth-context";
+import { requireAdminContext } from "@/lib/server/admin-auth";
+import { buildErrorResponse } from "@/lib/server/auth-context";
 import { createScheduledPost, parseScheduledAt } from "@/lib/server/instagram-scheduler";
 
 interface PublishRequestBody {
@@ -14,7 +15,7 @@ function buildValidationError(message: string, status = 400) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { uid } = await requireAuthContext(request, {
+    const { uid } = await requireAdminContext(request, {
       requireContract: false,
       rateLimit: { key: "review-meta-publish", limit: 20, windowSeconds: 60 },
       auditEventName: "review_meta_publish",

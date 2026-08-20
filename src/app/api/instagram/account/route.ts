@@ -8,6 +8,30 @@ type UpsertBody = {
   tokenExpireAt?: string | null;
 };
 
+function maskToken(token: string | null | undefined): string | null {
+  if (!token) {
+    return null;
+  }
+  return token.length > 10 ? `${token.slice(0, 6)}...${token.slice(-4)}` : "保存済み";
+}
+
+function buildAccountResponse(account: {
+  id: string;
+  client_id: string;
+  instagram_user_id: string;
+  page_access_token: string;
+  token_expire_at?: Date | null;
+}) {
+  return {
+    id: account.id,
+    clientId: account.client_id,
+    instagramUserId: account.instagram_user_id,
+    hasAccessToken: Boolean(account.page_access_token),
+    pageAccessTokenMasked: maskToken(account.page_access_token),
+    tokenExpireAt: account.token_expire_at?.toISOString() || null,
+  };
+}
+
 function parseOptionalDate(value: string | null | undefined): Date | null {
   if (!value) {
     return null;
@@ -32,13 +56,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         account: account
-          ? {
-              id: account.id,
-              clientId: account.client_id,
-              instagramUserId: account.instagram_user_id,
-              pageAccessToken: account.page_access_token,
-              tokenExpireAt: account.token_expire_at?.toISOString() || null,
-            }
+          ? buildAccountResponse(account)
           : null,
       },
     });
@@ -65,8 +83,10 @@ export async function PUT(request: NextRequest) {
 
     const instagramUserId = typeof body.instagramUserId === "string" ? body.instagramUserId.trim() : "";
     const pageAccessToken = typeof body.pageAccessToken === "string" ? body.pageAccessToken.trim() : "";
+    const existingAccount = pageAccessToken ? null : await getInstagramAccountForClient(uid);
+    const effectivePageAccessToken = pageAccessToken || existingAccount?.page_access_token || "";
 
-    if (!instagramUserId || !pageAccessToken) {
+    if (!instagramUserId || !effectivePageAccessToken) {
       return NextResponse.json(
         { success: false, error: "instagramUserId, pageAccessToken are required." },
         { status: 400 },
@@ -86,20 +106,14 @@ export async function PUT(request: NextRequest) {
     const saved = await upsertInstagramAccount({
       clientId: uid,
       instagramUserId,
-      pageAccessToken,
+      pageAccessToken: effectivePageAccessToken,
       tokenExpireAt,
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        account: {
-          id: saved.id,
-          clientId: saved.client_id,
-          instagramUserId: saved.instagram_user_id,
-          pageAccessToken: saved.page_access_token,
-          tokenExpireAt: saved.token_expire_at?.toISOString() || null,
-        },
+        account: buildAccountResponse(saved),
       },
     });
   } catch (error) {

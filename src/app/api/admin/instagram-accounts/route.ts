@@ -14,6 +14,30 @@ type UpsertBody = {
   tokenExpireAt?: string | null;
 };
 
+function maskToken(token: string | null | undefined): string | null {
+  if (!token) {
+    return null;
+  }
+  return token.length > 10 ? `${token.slice(0, 6)}...${token.slice(-4)}` : "保存済み";
+}
+
+function buildAccountResponse(account: {
+  id: string;
+  client_id: string;
+  instagram_user_id: string;
+  page_access_token: string;
+  token_expire_at?: Date | null;
+}) {
+  return {
+    id: account.id,
+    clientId: account.client_id,
+    instagramUserId: account.instagram_user_id,
+    hasAccessToken: Boolean(account.page_access_token),
+    pageAccessTokenMasked: maskToken(account.page_access_token),
+    tokenExpireAt: account.token_expire_at?.toISOString() || null,
+  };
+}
+
 function parseOptionalDate(value: string | null | undefined): Date | null {
   if (!value) {
     return null;
@@ -39,15 +63,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: {
-          account: account
-            ? {
-                id: account.id,
-                clientId: account.client_id,
-                instagramUserId: account.instagram_user_id,
-                pageAccessToken: account.page_access_token,
-                tokenExpireAt: account.token_expire_at?.toISOString() || null,
-              }
-            : null,
+          account: account ? buildAccountResponse(account) : null,
         },
       });
     }
@@ -56,16 +72,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        accounts: accounts.map((account) => ({
-          id: account.id,
-          clientId: account.client_id,
-          instagramUserId: account.instagram_user_id,
-          pageAccessTokenMasked:
-            account.page_access_token.length > 10
-              ? `${account.page_access_token.slice(0, 6)}...${account.page_access_token.slice(-4)}`
-              : account.page_access_token,
-          tokenExpireAt: account.token_expire_at?.toISOString() || null,
-        })),
+        accounts: accounts.map((account) => buildAccountResponse(account)),
       },
     });
   } catch (error) {
@@ -92,8 +99,10 @@ export async function PUT(request: NextRequest) {
     const clientId = typeof body.clientId === "string" ? body.clientId.trim() : "";
     const instagramUserId = typeof body.instagramUserId === "string" ? body.instagramUserId.trim() : "";
     const pageAccessToken = typeof body.pageAccessToken === "string" ? body.pageAccessToken.trim() : "";
+    const existingAccount = clientId && !pageAccessToken ? await getInstagramAccountForClient(clientId) : null;
+    const effectivePageAccessToken = pageAccessToken || existingAccount?.page_access_token || "";
 
-    if (!clientId || !instagramUserId || !pageAccessToken) {
+    if (!clientId || !instagramUserId || !effectivePageAccessToken) {
       return NextResponse.json(
         { success: false, error: "clientId, instagramUserId, pageAccessToken are required." },
         { status: 400 },
@@ -113,20 +122,14 @@ export async function PUT(request: NextRequest) {
     const saved = await upsertInstagramAccount({
       clientId,
       instagramUserId,
-      pageAccessToken,
+      pageAccessToken: effectivePageAccessToken,
       tokenExpireAt,
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        account: {
-          id: saved.id,
-          clientId: saved.client_id,
-          instagramUserId: saved.instagram_user_id,
-          pageAccessToken: saved.page_access_token,
-          tokenExpireAt: saved.token_expire_at?.toISOString() || null,
-        },
+        account: buildAccountResponse(saved),
       },
     });
   } catch (error) {

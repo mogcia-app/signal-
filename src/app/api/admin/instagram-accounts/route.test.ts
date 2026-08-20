@@ -40,7 +40,15 @@ describe("API regression foundation: /api/admin/instagram-accounts", () => {
     );
     const body = await readJson<{
       success: boolean;
-      data: { account: { clientId: string; instagramUserId: string; pageAccessToken: string } | null };
+      data: {
+        account: {
+          clientId: string;
+          instagramUserId: string;
+          hasAccessToken: boolean;
+          pageAccessToken?: string;
+          pageAccessTokenMasked: string | null;
+        } | null;
+      };
     }>(response);
 
     expect(response.status).toBe(200);
@@ -49,9 +57,11 @@ describe("API regression foundation: /api/admin/instagram-accounts", () => {
       expect.objectContaining({
         clientId: "user-1",
         instagramUserId: "1784",
-        pageAccessToken: "token-value",
+        hasAccessToken: true,
+        pageAccessTokenMasked: "token-...alue",
       }),
     );
+    expect(body.data.account).not.toHaveProperty("pageAccessToken");
   });
 
   test("returns 400 when required fields are missing on update", async () => {
@@ -94,7 +104,16 @@ describe("API regression foundation: /api/admin/instagram-accounts", () => {
     );
     const body = await readJson<{
       success: boolean;
-      data: { account: { clientId: string; instagramUserId: string; tokenExpireAt: string | null } };
+      data: {
+        account: {
+          clientId: string;
+          instagramUserId: string;
+          hasAccessToken: boolean;
+          pageAccessToken?: string;
+          pageAccessTokenMasked: string | null;
+          tokenExpireAt: string | null;
+        };
+      };
     }>(response);
 
     expect(response.status).toBe(200);
@@ -103,8 +122,54 @@ describe("API regression foundation: /api/admin/instagram-accounts", () => {
       id: "acc-1",
       clientId: "user-1",
       instagramUserId: "1784",
-      pageAccessToken: "token-value",
+      hasAccessToken: true,
+      pageAccessTokenMasked: "token-...alue",
       tokenExpireAt: "2099-01-01T00:00:00.000Z",
+    });
+    expect(body.data.account).not.toHaveProperty("pageAccessToken");
+  });
+
+  test("keeps the existing token when updating with a blank token", async () => {
+    mockGetInstagramAccountForClient.mockResolvedValueOnce({
+      id: "acc-1",
+      client_id: "user-1",
+      instagram_user_id: "1784",
+      page_access_token: "existing-token-value",
+      token_expire_at: null,
+    });
+    mockUpsertInstagramAccount.mockResolvedValueOnce({
+      id: "acc-1",
+      client_id: "user-1",
+      instagram_user_id: "1784",
+      page_access_token: "existing-token-value",
+      token_expire_at: null,
+    });
+
+    const { PUT } = await loadRoute();
+    const response = await PUT(
+      createNextJsonRequest("http://localhost:3000/api/admin/instagram-accounts", {
+        method: "PUT",
+        body: {
+          clientId: "user-1",
+          instagramUserId: "1784",
+          pageAccessToken: "",
+          tokenExpireAt: null,
+        },
+      }) as never,
+    );
+    const body = await readJson<{
+      success: boolean;
+      data: { account: { pageAccessToken?: string; pageAccessTokenMasked: string | null } };
+    }>(response);
+
+    expect(response.status).toBe(200);
+    expect(body.data.account.pageAccessTokenMasked).toBe("existi...alue");
+    expect(body.data.account).not.toHaveProperty("pageAccessToken");
+    expect(mockUpsertInstagramAccount).toHaveBeenCalledWith({
+      clientId: "user-1",
+      instagramUserId: "1784",
+      pageAccessToken: "existing-token-value",
+      tokenExpireAt: null,
     });
   });
 });

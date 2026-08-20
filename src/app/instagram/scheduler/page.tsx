@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import RequireAdmin from "@/components/require-admin";
 import SNSLayout from "@/components/sns-layout";
 import { authFetch } from "@/utils/authFetch";
 
@@ -216,8 +217,9 @@ export default function InstagramSchedulerPage() {
   };
 
   return (
-    <SNSLayout customTitle="Instagram予約投稿" customDescription="画像アップロードからInstagram予約投稿までを実行">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <RequireAdmin>
+      <SNSLayout customTitle="Instagram予約投稿" customDescription="画像アップロードからInstagram予約投稿までを実行">
+        <div className="mx-auto max-w-6xl space-y-6">
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-start justify-between gap-4">
@@ -406,7 +408,8 @@ export default function InstagramSchedulerPage() {
             </div>
           )}
         </section>
-      </div>
-    </SNSLayout>
+        </div>
+      </SNSLayout>
+    </RequireAdmin>
   );
 }

@@ -5,6 +5,7 @@ import SNSLayout from "../../../components/sns-layout";
 import { ReportHeader } from "./components/ReportHeader";
 import { PerformanceScore } from "./components/PerformanceScore";
 import { MonthlyReview } from "./components/MonthlyReview";
+import { RiskDetection } from "./components/RiskDetection";
 import { useAuth } from "../../../contexts/auth-context";
 import { useProgress } from "../../../contexts/progress-context";
 import { useReportPageData } from "./hooks/useReportPageData";
@@ -118,6 +119,13 @@ export default function ReportPageClient() {
             />
           </div>
         )}
+
+        {/* リスク・異常検知 */}
+        <RiskDetection
+          selectedMonth={selectedMonth}
+          kpis={performanceScore?.kpis || null}
+          reportData={reportData}
+        />
 
         {/* 今月の振り返り */}
         <MonthlyReview 

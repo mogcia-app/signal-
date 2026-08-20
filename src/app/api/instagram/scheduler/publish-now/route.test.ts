@@ -58,5 +58,6 @@ describe("API regression foundation: /api/instagram/scheduler/publish-now", () =
         failed: 0,
       },
     });
+    expect(mockPublishDueScheduledPosts).toHaveBeenCalledWith({ clientId: "user-1" });
   });
 });

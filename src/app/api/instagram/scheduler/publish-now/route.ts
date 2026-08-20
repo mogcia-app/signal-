@@ -6,13 +6,13 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuthContext(request, {
+    const { uid } = await requireAuthContext(request, {
       requireContract: true,
       rateLimit: { key: "instagram-scheduler-publish-now", limit: 10, windowSeconds: 60 },
       auditEventName: "instagram_scheduler_publish_now",
     });
 
-    const result = await publishDueScheduledPosts();
+    const result = await publishDueScheduledPosts({ clientId: uid });
     return NextResponse.json({
       success: true,
       data: result,

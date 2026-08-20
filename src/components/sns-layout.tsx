@@ -347,36 +347,6 @@ export default function SNSLayout({
             </Link>
             {isAdminConsoleRole && (
               <Link
-                href="/admin/maintenance"
-                onClick={() =>
-                  handleSidebarTrackedClick("sidebar.admin_maintenance", "メンテナンス管理", "/admin/maintenance")
-                }
-                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
-                  pathname === "/admin/maintenance"
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <BarChart3 size={18} className="flex-shrink-0" />
-                <span>メンテナンス管理</span>
-              </Link>
-            )}
-            {isAdminConsoleRole && (
-              <Link
-                href="/admin/ui-events"
-                onClick={() => handleSidebarTrackedClick("sidebar.admin_ui_events", "UI操作ログ", "/admin/ui-events")}
-                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-none ${
-                  pathname === "/admin/ui-events"
-                    ? "bg-orange-100 text-orange-800 font-medium"
-                    : "text-black hover:bg-gray-100"
-                }`}
-              >
-                <BarChart3 size={18} className="flex-shrink-0" />
-                <span>UI操作ログ</span>
-              </Link>
-            )}
-            {isAdminConsoleRole && (
-              <Link
                 href="/admin/login-events"
                 onClick={() =>
                   handleSidebarTrackedClick("sidebar.admin_login_events", "ログイン監査ログ", "/admin/login-events")

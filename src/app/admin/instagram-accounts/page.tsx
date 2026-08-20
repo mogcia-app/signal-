@@ -8,8 +8,8 @@ type AdminAccount = {
   id: string;
   clientId: string;
   instagramUserId: string;
-  pageAccessToken?: string;
-  pageAccessTokenMasked?: string;
+  hasAccessToken: boolean;
+  pageAccessTokenMasked: string | null;
   tokenExpireAt: string | null;
 };
 
@@ -65,6 +65,8 @@ export default function AdminInstagramAccountsPage() {
   const [clientId, setClientId] = useState("");
   const [instagramUserId, setInstagramUserId] = useState("");
   const [pageAccessToken, setPageAccessToken] = useState("");
+  const [hasAccessToken, setHasAccessToken] = useState(false);
+  const [pageAccessTokenMasked, setPageAccessTokenMasked] = useState<string | null>(null);
   const [tokenExpireAt, setTokenExpireAt] = useState("");
   const [list, setList] = useState<AdminAccount[]>([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -80,13 +82,15 @@ export default function AdminInstagramAccountsPage() {
       {
         client_id: clientId || "Firebase Auth UID",
         instagram_user_id: instagramUserId || "1784...",
-        page_access_token: pageAccessToken || "EAAG...",
+        page_access_token: pageAccessToken
+          ? "入力中の新しいトークン"
+          : pageAccessTokenMasked || "未保存",
         token_expire_at: tokenExpireAt ? new Date(tokenExpireAt).toISOString() : "2099-01-01T00:00:00.000Z",
       },
       null,
       2,
     );
-  }, [clientId, instagramUserId, pageAccessToken, tokenExpireAt]);
+  }, [clientId, instagramUserId, pageAccessToken, pageAccessTokenMasked, tokenExpireAt]);
 
   const loadList = async () => {
     setLoadingList(true);
@@ -128,6 +132,8 @@ export default function AdminInstagramAccountsPage() {
       if (!account) {
         setInstagramUserId("");
         setPageAccessToken("");
+        setHasAccessToken(false);
+        setPageAccessTokenMasked(null);
         setTokenExpireAt("");
         setMessage("既存設定は見つかりませんでした。新規作成できます。");
         return;
@@ -135,7 +141,9 @@ export default function AdminInstagramAccountsPage() {
 
       setClientId(account.clientId);
       setInstagramUserId(account.instagramUserId);
-      setPageAccessToken(account.pageAccessToken || "");
+      setPageAccessToken("");
+      setHasAccessToken(account.hasAccessToken);
+      setPageAccessTokenMasked(account.pageAccessTokenMasked);
       setTokenExpireAt(toDatetimeLocalValue(account.tokenExpireAt));
       setMessage("既存設定を読み込みました。");
     } catch (lookupError) {
@@ -169,6 +177,9 @@ export default function AdminInstagramAccountsPage() {
       }
 
       setMessage("Instagramアカウント設定を保存しました。");
+      setPageAccessToken("");
+      setHasAccessToken(result.data.account.hasAccessToken);
+      setPageAccessTokenMasked(result.data.account.pageAccessTokenMasked);
       setTokenExpireAt(toDatetimeLocalValue(result.data.account.tokenExpireAt));
       await loadList();
     } catch (saveError) {
@@ -245,13 +256,18 @@ export default function AdminInstagramAccountsPage() {
               </div>
               <div>
                 <label className="mb-2 block text-sm font-medium text-black">Page Access Token</label>
+                {hasAccessToken ? (
+                  <p className="mb-2 text-xs text-gray-500">
+                    保存済み: {pageAccessTokenMasked || "あり"}。空欄のまま保存すると既存トークンを維持します。
+                  </p>
+                ) : null}
                 <textarea
                   value={pageAccessToken}
                   onChange={(event) => setPageAccessToken(event.target.value)}
                   rows={6}
                   className="w-full rounded-2xl border border-gray-300 px-3 py-3 text-sm"
-                  placeholder="EAAG..."
-                  required
+                  placeholder={hasAccessToken ? "新しいトークンで上書きする場合のみ入力" : "EAAG..."}
+                  required={!hasAccessToken}
                 />
               </div>
               <div>

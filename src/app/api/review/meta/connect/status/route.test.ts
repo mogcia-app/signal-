@@ -2,14 +2,14 @@
 
 import { createNextJsonRequest, readJson } from "@/test/api-route-test-helpers";
 
-const mockRequireAuthContext = jest.fn();
+const mockRequireAdminContext = jest.fn();
 const mockGetMetaReviewConnectionStatus = jest.fn();
 
-jest.mock("@/lib/server/auth-context", () => {
+jest.mock("@/lib/server/admin-auth", () => {
   const actual = jest.requireActual("@/lib/server/auth-context");
   return {
     ...actual,
-    requireAuthContext: (...args: unknown[]) => mockRequireAuthContext(...args),
+    requireAdminContext: (...args: unknown[]) => mockRequireAdminContext(...args),
   };
 });
 
@@ -24,7 +24,7 @@ describe("API regression foundation: /api/review/meta/connect/status", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
-    mockRequireAuthContext.mockResolvedValue({ uid: "user-1" });
+    mockRequireAdminContext.mockResolvedValue({ uid: "user-1" });
     mockGetMetaReviewConnectionStatus.mockResolvedValue({
       pageConnected: true,
       instagramConnected: true,
@@ -38,12 +38,12 @@ describe("API regression foundation: /api/review/meta/connect/status", () => {
     consoleWarnSpy.mockRestore();
   });
 
-  test("returns 401 when auth context rejects", async () => {
+  test("returns 401 when admin context rejects", async () => {
     const { UnauthorizedError } = jest.requireActual("@/lib/server/auth-context") as {
       UnauthorizedError: new (message?: string) => Error;
     };
 
-    mockRequireAuthContext.mockRejectedValueOnce(new UnauthorizedError("Missing Bearer token"));
+    mockRequireAdminContext.mockRejectedValueOnce(new UnauthorizedError("Missing Bearer token"));
 
     const { GET } = await loadRoute();
     const request = createNextJsonRequest("http://localhost:3000/api/review/meta/connect/status");
@@ -58,7 +58,7 @@ describe("API regression foundation: /api/review/meta/connect/status", () => {
     });
   });
 
-  test("returns live connection status for authenticated requests", async () => {
+  test("returns live connection status for admin requests", async () => {
     const { GET } = await loadRoute();
     const request = createNextJsonRequest("http://localhost:3000/api/review/meta/connect/status");
     const response = await GET(request as never);

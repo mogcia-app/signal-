@@ -24,6 +24,8 @@ export async function middleware(req: NextRequest) {
   const publicApiPaths = [
     "/api/auth/generate-custom-token", // 認証コールバック用（認証前にアクセスするため）
     "/api/tool-maintenance", // メンテナンス状態取得（ログインページで認証前にアクセスするため）
+    "/api/instagram/scheduler/publish-due", // CRON_SECRET はルート側で検証
+    "/api/admin/instagram-scheduler/publish-due", // CRON_SECRET はルート側で検証
   ];
 
   // 公開APIパスの場合は認証チェックをスキップ

@@ -177,6 +177,7 @@ export async function buildReportComplete(input: BuildReportCompleteInput): Prom
 
   const riskAlerts: RuntimeRiskAlert[] = detectRiskAlerts({
     current: {
+      postCount,
       analyzedCount,
       totalLikes,
       totalReach,

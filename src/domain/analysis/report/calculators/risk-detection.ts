@@ -68,6 +68,7 @@ export function aggregatePreviousMonthAnalytics(
 
 export function detectRiskAlerts(params: {
   current: {
+    postCount: number;
     analyzedCount: number;
     totalLikes: number;
     totalReach: number;
@@ -134,12 +135,20 @@ export function detectRiskAlerts(params: {
     }
   }
 
-  if (current.analyzedCount === 0 && previous.analyzedCount > 0) {
+  if (current.postCount === 0) {
     riskAlerts.push({
       id: "no-posts",
       severity: "critical",
       metric: "投稿数",
       message: "今月は投稿がありません。継続的な投稿がアカウント成長の鍵です。",
+      value: 0,
+    });
+  } else if (current.analyzedCount === 0 && previous.analyzedCount > 0) {
+    riskAlerts.push({
+      id: "no-analytics",
+      severity: "warning",
+      metric: "分析済み数",
+      message: `今月は${current.postCount}件投稿していますが、分析データが未入力です。入力するとレポートが生成されます。`,
       value: 0,
     });
   }

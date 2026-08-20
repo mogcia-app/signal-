@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import RequireAdmin from "@/components/require-admin";
 import SNSLayout from "@/components/sns-layout";
 import { authFetch } from "@/utils/authFetch";
 
@@ -40,7 +41,8 @@ export default function MetaReviewConnectPage() {
   }, []);
 
   return (
-    <SNSLayout customTitle="Meta審査: 接続確認" customDescription="FacebookページとInstagramアカウントの接続状態を確認">
+    <RequireAdmin>
+      <SNSLayout customTitle="Meta審査: 接続確認" customDescription="FacebookページとInstagramアカウントの接続状態を確認">
       <div className="max-w-3xl mx-auto p-6 space-y-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <h2 className="text-lg font-semibold mb-2">Reviewer向け手順</h2>
@@ -71,6 +73,7 @@ export default function MetaReviewConnectPage() {
           </div>
         )}
       </div>
-    </SNSLayout>
+      </SNSLayout>
+    </RequireAdmin>
   );
 }
