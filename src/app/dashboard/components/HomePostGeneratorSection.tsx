@@ -144,7 +144,21 @@ export function HomePostGeneratorSection({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <section className="lg:col-span-6 border border-gray-200 bg-white p-4 sm:p-6 lg:p-8 space-y-4">
             <h3 className="text-lg font-light text-gray-900 tracking-tight">投稿内容</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  投稿タイプ <span className="text-sm text-[#b42318]">*</span>
+                </label>
+                <select
+                  value={homePostType}
+                  onChange={(e) => setHomePostType(e.target.value as "feed" | "reel" | "story")}
+                  className="w-full px-3 py-2 border border-gray-300 text-sm text-gray-700 bg-white"
+                >
+                  <option value="feed">フィード</option>
+                  <option value="reel">リール</option>
+                  <option value="story">ストーリー</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">投稿日</label>
                 <input
@@ -273,20 +287,6 @@ export function HomePostGeneratorSection({
 
           <aside className="lg:col-span-6 border border-gray-200 bg-white p-4 sm:p-6 lg:p-8 space-y-4">
             <h3 className="text-lg font-light text-gray-900 tracking-tight">生成設定</h3>
-            <div className="border border-gray-200 bg-white p-3 space-y-2">
-              <p className="text-xs font-semibold text-gray-800">
-                投稿タイプ <span className="text-sm text-[#b42318]">*</span>
-              </p>
-              <select
-                value={homePostType}
-                onChange={(e) => setHomePostType(e.target.value as "feed" | "reel" | "story")}
-                className="w-full px-3 py-2 border border-gray-300 text-sm text-gray-700 bg-white"
-              >
-                <option value="feed">フィード</option>
-                <option value="reel">リール</option>
-                <option value="story">ストーリー</option>
-              </select>
-            </div>
             <div className="border border-gray-200 bg-white p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold text-gray-800">商品・サービス</p>
